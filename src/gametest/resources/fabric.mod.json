@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "plaincraft_great_wall_gametest",
+  "version": "1.0.0",
+  "name": "PlainCraft Great Wall GameTests",
+  "environment": "server",
+  "entrypoints": {
+    "fabric-gametest": ["local.plaincraft.greatwall.gametest.SkeletonGameTests"]
+  },
+  "depends": {
+    "plaincraft_great_wall": "*",
+    "fabric-gametest-api-v1": "*"
+  }
+}
+

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "plaincraft_great_wall",
+  "version": "${version}",
+  "name": "PlainCraft Great Wall",
+  "description": "Great Wall infrastructure prototype. World generation is not implemented or enabled.",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["local.plaincraft.greatwall.GreatWallMod"],
+    "client": ["local.plaincraft.greatwall.client.GreatWallClient"]
+  },
+  "depends": {
+    "fabricloader": "=${loader_version}",
+    "minecraft": "=1.21.1",
+    "java": ">=21",
+    "fabric-api": "=${fabric_version}"
+  }
+}
+

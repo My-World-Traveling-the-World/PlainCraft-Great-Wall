@@ -1,0 +1,37 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileClientJava UP-TO-DATE
+> Task :processClientResources UP-TO-DATE
+> Task :clientClasses UP-TO-DATE
+> Task :compileTestJava UP-TO-DATE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :testClasspathBridge UP-TO-DATE
+> Task :test UP-TO-DATE
+> Task :compileClientSmokeJava UP-TO-DATE
+> Task :generateLog4jConfig UP-TO-DATE
+> Task :generateRemapClasspath UP-TO-DATE
+> Task :generateDLIConfig UP-TO-DATE
+
+> Task :writeLocalVerification
+Recorded 193 resolved components in D:\云游四海-Mod源码\plaincraft-great-wall\gradle\verification-metadata.xml
+Persisted dependency lock state for buildscript of root project 'plaincraft-great-wall'
+Persisted dependency lock state for root project 'plaincraft-great-wall'
+
+[Incubating] Problems report is available at: file:///D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 8s
+12 actionable tasks: 1 executed, 11 up-to-date

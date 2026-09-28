@@ -1,0 +1,8 @@
+{
+  "pack": {
+    "pack_format": 34,
+    "supported_formats": { "min_inclusive": 34, "max_inclusive": 48 },
+    "description": "PlainCraft Great Wall: Minecraft 1.21.1 resources and data"
+  }
+}
+

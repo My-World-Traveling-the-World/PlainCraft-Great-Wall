@@ -1,0 +1,1049 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<verification-metadata xmlns='https://schema.gradle.org/dependency-verification'>
+  <configuration>
+    <verify-metadata>false</verify-metadata>
+    <verify-signatures>false</verify-signatures>
+  </configuration>
+  <components>
+    <component group='com.github.oshi' name='oshi-core' version='6.4.10'>
+      <artifact name='oshi-core-6.4.10.jar'>
+        <sha256 value='fef001a7a13515c273f30915915580782afbc45273cc07aa15994e51563ef310' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='com.google.code.gson' name='gson' version='2.10.1'>
+      <artifact name='gson-2.10.1.jar'>
+        <sha256 value='4241c14a7727c34feea6507ec801318a3d4a90f070e4525681079fb94ee4c593' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='com.google.guava' name='failureaccess' version='1.0.1'>
+      <artifact name='failureaccess-1.0.1.jar'>
+        <sha256 value='a171ee4c734dd2da837e4b16be9df4661afab72a41adaf31eb84dfdaf936ca26' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='com.google.guava' name='guava' version='32.1.2-jre'>
+      <artifact name='guava-32.1.2-jre.jar'>
+        <sha256 value='bc65dea7cfd9e4dacf8419d8af0e741655857d27885bb35d943d7187fc3a8fce' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='com.ibm.icu' name='icu4j' version='73.2'>
+      <artifact name='icu4j-73.2.jar'>
+        <sha256 value='29280822f4b0796acef1f79b90b1d0c1edd86c10e876a848e04b8a6298a16bf9' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='com.mojang' name='authlib' version='6.0.54'>
+      <artifact name='authlib-6.0.54.jar'>
+        <sha256 value='319ea7b53b5e52f62ad3e2b81e9db7f0751240edac548bd74f5f19e35dc21a3b' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='com.mojang' name='blocklist' version='1.0.10'>
+      <artifact name='blocklist-1.0.10.jar'>
+        <sha256 value='830bfd639c8db49236bbd8e45d3a2b8c96c56ff654a10118654958a6235d4c44' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='com.mojang' name='brigadier' version='1.3.10'>
+      <artifact name='brigadier-1.3.10.jar'>
+        <sha256 value='c8ee4136e474ac7723ca2b432ec8d1a2bc88ef7d1ec57c314ba9e33cdc83dd75' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='com.mojang' name='datafixerupper' version='8.0.16'>
+      <artifact name='datafixerupper-8.0.16.jar'>
+        <sha256 value='ffc138bc2596c291781b0d5e211ccac51f0f2345f27fc2742f335cedf7e2870d' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='com.mojang' name='logging' version='1.2.7'>
+      <artifact name='logging-1.2.7.jar'>
+        <sha256 value='3dc3190204bac5f4184d8405bfe1f724f73a6a15a0d3f36ec7f69e6872c1a76c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='com.mojang' name='patchy' version='2.2.10'>
+      <artifact name='patchy-2.2.10.jar'>
+        <sha256 value='16d70e7968b45caffc81576268eb000f473fb60bf257182d3447dea8ec919d5a' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='com.mojang' name='text2speech' version='1.17.9'>
+      <artifact name='text2speech-1.17.9.jar'>
+        <sha256 value='c2a95b499e76fada7dd63e9b0ec797b678d411c2b0ee6f37f4dc674662bfb0af' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='commons-codec' name='commons-codec' version='1.16.0'>
+      <artifact name='commons-codec-1.16.0.jar'>
+        <sha256 value='56595fb20b0b85bc91d0d503dad50bb7f1b9afc0eed5dffa6cbb25929000484d' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='commons-io' name='commons-io' version='2.15.1'>
+      <artifact name='commons-io-2.15.1.jar'>
+        <sha256 value='a58af12ee1b68cfd2ebb0c27caef164f084381a00ec81a48cc275fd7ea54e154' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='commons-logging' name='commons-logging' version='1.2'>
+      <artifact name='commons-logging-1.2.jar'>
+        <sha256 value='daddea1ea0be0f56978ab3006b8ac92834afeefbd9b7e4e6316fca57df0fa636' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='io.github.llamalad7' name='mixinextras-fabric' version='0.5.4'>
+      <artifact name='mixinextras-fabric-0.5.4.jar'>
+        <sha256 value='bd79ddb2f54b39a08deeb50cb12439bba01481264dd5a9f5ea830551bfef31ff' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='io.netty' name='netty-buffer' version='4.1.97.Final'>
+      <artifact name='netty-buffer-4.1.97.Final.jar'>
+        <sha256 value='a4393f5b395486cc74d0325c9b41311abb9513ba0fd7ef8cf46e9345c3bffbea' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='io.netty' name='netty-codec' version='4.1.97.Final'>
+      <artifact name='netty-codec-4.1.97.Final.jar'>
+        <sha256 value='bcc96737a0f912fcf031cf8c45ebda352a90a40437db0832caad3d5a63618b38' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='io.netty' name='netty-common' version='4.1.97.Final'>
+      <artifact name='netty-common-4.1.97.Final.jar'>
+        <sha256 value='a8aca0c8e9347acc75c885ecc749195d9775369aa520b9276f2d1128210a6c17' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='io.netty' name='netty-handler' version='4.1.97.Final'>
+      <artifact name='netty-handler-4.1.97.Final.jar'>
+        <sha256 value='bd4771d19149cbc9c7464ed2d58035d79cdfed7adb59d38718b0d8e7a3dcc2de' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='io.netty' name='netty-resolver' version='4.1.97.Final'>
+      <artifact name='netty-resolver-4.1.97.Final.jar'>
+        <sha256 value='38a018c6d9fb2cb11b72881354782b45080bbd20b9a0ad6cde28b80d431ed0b1' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='io.netty' name='netty-transport-classes-epoll' version='4.1.97.Final'>
+      <artifact name='netty-transport-classes-epoll-4.1.97.Final.jar'>
+        <sha256 value='ee65fa17fe65f18fd22269f92bddad85bfb3a263cf65eba01e116a2f30b86ff5' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='io.netty' name='netty-transport-native-epoll' version='4.1.97.Final'>
+      <artifact name='netty-transport-native-epoll-4.1.97.Final-linux-aarch_64.jar'>
+        <sha256 value='93b5fe8f3829dcb5e033d8d40d59159366ff4cf8266c903bbd6a4aeed9e59bac' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='netty-transport-native-epoll-4.1.97.Final-linux-x86_64.jar'>
+        <sha256 value='1e83fc9f82e5415cdbb688c6a5c6bbbd7d198e9fdd6fdf64b3dc5d54dd1acfd0' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='io.netty' name='netty-transport-native-unix-common' version='4.1.97.Final'>
+      <artifact name='netty-transport-native-unix-common-4.1.97.Final.jar'>
+        <sha256 value='412fe140257c2dda5a5e15bee911298bd61928d03ee6be4db588e82c196c5dc6' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='io.netty' name='netty-transport' version='4.1.97.Final'>
+      <artifact name='netty-transport-4.1.97.Final.jar'>
+        <sha256 value='197fd2d6c6b4afe677d9e95bf2e36b49a0bcabdfce0583683fb73f29a3f5a407' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='it.unimi.dsi' name='fastutil' version='8.5.12'>
+      <artifact name='fastutil-8.5.12.jar'>
+        <sha256 value='b5543ee08d062d551cf0a5c9bc0fb70588b0382079029ba48941fa9c9be8a5d4' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='loom' name='mappings' version='layered+hash.2198'>
+      <artifact name='mappings-layered+hash.2198.jar'>
+        <sha256 value='f47e6927f8c30d2be6db9d8e2ced9bef4bf92fa7343e98c1e511e49d7c025379' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-api-base' version='0.4.42+6573ed8c19'>
+      <artifact name='fabric-api-base-0.4.42+6573ed8c19.jar'>
+        <sha256 value='9826e6010c6f3fb07c7add396ca69c1430013e1e27b785354ba8bb1a346330fb' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-api-lookup-api-v1' version='1.6.72+7b3d111d19'>
+      <artifact name='fabric-api-lookup-api-v1-1.6.72+7b3d111d19.jar'>
+        <sha256 value='08b0f716f86552817e158c570f1e91c11ea12c5f2fd24f20ff88ed9390b8452d' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-api' version='0.116.14+1.21.1'>
+      <artifact name='fabric-api-0.116.14+1.21.1.jar'>
+        <sha256 value='333f15bceb117a0ac41e3396eac9873fa6c325c31e746d679809f9a7a0228196' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-biome-api-v1' version='13.0.31+d527f9fd19'>
+      <artifact name='fabric-biome-api-v1-13.0.31+d527f9fd19.jar'>
+        <sha256 value='1ce90ddb062d1a8e0f24c67b4e0fc3ce098beb5d6ba1b6da012c2a1644572520' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-block-api-v1' version='1.1.0+0bc3503219'>
+      <artifact name='fabric-block-api-v1-1.1.0+0bc3503219.jar'>
+        <sha256 value='6d1b4909a2a991eecb68dfd0033dc3501a1badbc08137034af8d480d52f49118' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-block-view-api-v2' version='1.0.11+ebb2264e19'>
+      <artifact name='fabric-block-view-api-v2-1.0.11+ebb2264e19.jar'>
+        <sha256 value='10034b44f28af0540f7a7c48b8efa3fe3adf070b57eaea5ac1f1b434914a2813' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-blockrenderlayer-v1' version='1.1.52+0af3f5a719'>
+      <artifact name='fabric-blockrenderlayer-v1-1.1.52+0af3f5a719.jar'>
+        <sha256 value='8595598283c77b9082407ef5b7cb9f253a90bbe962e70076fb07b0ea355dc303' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-client-tags-api-v1' version='1.2.0+1eb36c0719'>
+      <artifact name='fabric-client-tags-api-v1-1.2.0+1eb36c0719.jar'>
+        <sha256 value='19da428abbc221e720c7688305e13d53947a5df85b756fe5009bb8e140e4f5d1' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-command-api-v1' version='1.2.49+f71b366f19'>
+      <artifact name='fabric-command-api-v1-1.2.49+f71b366f19.jar'>
+        <sha256 value='4a1fa4f592f1ba0c103302a20bcf7108f45be1ba60ac425182b803d198e6aa6e' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-command-api-v2' version='2.2.28+6ced4dd919'>
+      <artifact name='fabric-command-api-v2-2.2.28+6ced4dd919.jar'>
+        <sha256 value='75619f381f916eca80a6a2414718e2e2dc7a31c1ff747fb5d70e8ac8d851a845' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-commands-v0' version='0.2.66+df3654b319'>
+      <artifact name='fabric-commands-v0-0.2.66+df3654b319.jar'>
+        <sha256 value='6db25c01574383321364c95f049478347fac945d030381df021f72b0bbc58c11' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-content-registries-v0' version='8.0.19+b559734419'>
+      <artifact name='fabric-content-registries-v0-8.0.19+b559734419.jar'>
+        <sha256 value='a2abf71388016cb2831820f1b5c217a151ef4ffeac0cdb28d789c9076d66a834' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-convention-tags-v1' version='2.1.7+7f945d5b19'>
+      <artifact name='fabric-convention-tags-v1-2.1.7+7f945d5b19.jar'>
+        <sha256 value='a84ab86898d11c77785f9b9e1ea3d11d9f81ef97f82bbf3e555ba4fd94c4ee1b' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-convention-tags-v2' version='2.12.0+c3656daa19'>
+      <artifact name='fabric-convention-tags-v2-2.12.0+c3656daa19.jar'>
+        <sha256 value='ab8c88c93fdd4a104e56f8e420ecf746b6a65809b56d333ce67fd59a8bd5c14d' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-crash-report-info-v1' version='0.2.29+0af3f5a719'>
+      <artifact name='fabric-crash-report-info-v1-0.2.29+0af3f5a719.jar'>
+        <sha256 value='84d32315e9cef9da2a5c5b8e4e3af388438a786770c1ed5e53a7fcfe93c334ac' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-data-attachment-api-v1' version='1.4.7+5b36e0f719'>
+      <artifact name='fabric-data-attachment-api-v1-1.4.7+5b36e0f719.jar'>
+        <sha256 value='5f7069558e8fee000b2d2ff2dc9310621deb3ee6ddf382ea58413f62763a7cce' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-data-generation-api-v1' version='20.3.0+1eb36c0719'>
+      <artifact name='fabric-data-generation-api-v1-20.3.0+1eb36c0719.jar'>
+        <sha256 value='da4829b47b9ebd37c991c547189ec2df8ae316f70ef6cc1c3539d74800754a97' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-dimensions-v1' version='4.0.1+65213ef819'>
+      <artifact name='fabric-dimensions-v1-4.0.1+65213ef819.jar'>
+        <sha256 value='17b195f0227f47c32d143c4553618e4668063c35922526f5c91fe601535a238c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-entity-events-v1' version='1.8.0+2b27e0a419'>
+      <artifact name='fabric-entity-events-v1-1.8.0+2b27e0a419.jar'>
+        <sha256 value='da4eb014197f0650b89caec55341c8f35b315f501b1089ef23f6ed52820dbb54' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-events-interaction-v0' version='0.7.14+ba9dae0619'>
+      <artifact name='fabric-events-interaction-v0-0.7.14+ba9dae0619.jar'>
+        <sha256 value='76e26a676c39907ac9bcf39005c92e2a61c3691adab94bcc633269f8ab06161a' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-game-rule-api-v1' version='1.0.53+6ced4dd919'>
+      <artifact name='fabric-game-rule-api-v1-1.0.53+6ced4dd919.jar'>
+        <sha256 value='b0b8586376363def6775ad5a0980b9b39384550133e5e3cc15e05b74949e2947' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-gametest-api-v1' version='2.0.5+6fc22b9919'>
+      <artifact name='fabric-gametest-api-v1-2.0.5+6fc22b9919.jar'>
+        <sha256 value='4ab11f76e1ebfa6a66a5fe234e51d7abc59852754e2e1ffca4c1a36596d14b00' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-item-api-v1' version='11.2.0+3b3cb2e819'>
+      <artifact name='fabric-item-api-v1-11.2.0+3b3cb2e819.jar'>
+        <sha256 value='8add021ad78782250760f5b5e0a7b4ccec515b3834ce40beaa378c9059a82ef8' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-item-group-api-v1' version='4.1.7+def88e3a19'>
+      <artifact name='fabric-item-group-api-v1-4.1.7+def88e3a19.jar'>
+        <sha256 value='03bfacd24e6d3462a9e286d42f99622cf5dd5e56c34b8083820e9b0bfb59c876' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-key-binding-api-v1' version='1.0.47+0af3f5a719'>
+      <artifact name='fabric-key-binding-api-v1-1.0.47+0af3f5a719.jar'>
+        <sha256 value='f7b6ad5ce9e768c1faa68891edad0e8c4efb0fcb1da65b726df36049780eda24' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-keybindings-v0' version='0.2.45+df3654b319'>
+      <artifact name='fabric-keybindings-v0-0.2.45+df3654b319.jar'>
+        <sha256 value='9cb06d529a6838f75b3e23c51f4163191e05feb1d3012fe7c0bf9feddba41b02' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-lifecycle-events-v1' version='2.6.0+0865547519'>
+      <artifact name='fabric-lifecycle-events-v1-2.6.0+0865547519.jar'>
+        <sha256 value='5435a65b1abd02812498c6a339e9bd84075711fc8d6b760ccdbbefaf00055681' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-loot-api-v2' version='3.0.15+3f89f5a519'>
+      <artifact name='fabric-loot-api-v2-3.0.15+3f89f5a519.jar'>
+        <sha256 value='4f780100db5c02681d94df359a76c05dd3dad4bf000e654c176f612520e7e64e' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-loot-api-v3' version='1.0.3+3f89f5a519'>
+      <artifact name='fabric-loot-api-v3-1.0.3+3f89f5a519.jar'>
+        <sha256 value='ed2a5d57e2aec87bc1d9f539648727b3bf214090a6fd6f451a1cb1e6e7ef85d3' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-message-api-v1' version='6.0.14+8aaf3aca19'>
+      <artifact name='fabric-message-api-v1-6.0.14+8aaf3aca19.jar'>
+        <sha256 value='291ba1cc27d7f9235da548a39a53981e4d0b6ec61fd9a9b8d20b8b17a403340f' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-model-loading-api-v1' version='2.1.0+b4d813fc19'>
+      <artifact name='fabric-model-loading-api-v1-2.1.0+b4d813fc19.jar'>
+        <sha256 value='935036a317a47ac61d7c837eac3045ca5b9f6c78685ed2ba9a648e25942b25b0' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-networking-api-v1' version='4.3.1+d30f6a7919'>
+      <artifact name='fabric-networking-api-v1-4.3.1+d30f6a7919.jar'>
+        <sha256 value='1553869fbac8b5498562f677807d6b4d4a07fe0569d87dee29b5ac02b4c6bb6c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-object-builder-api-v1' version='15.2.1+40875a9319'>
+      <artifact name='fabric-object-builder-api-v1-15.2.1+40875a9319.jar'>
+        <sha256 value='d31490657347f9526c92fd85280cf91a9162640359f1166234c6a059050a5d3a' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-particles-v1' version='4.0.2+6573ed8c19'>
+      <artifact name='fabric-particles-v1-4.0.2+6573ed8c19.jar'>
+        <sha256 value='95d2fbca3c560203e7ac91e6d02ed7bfdc9c75a1c7f0efffe5b14f87771e9341' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-recipe-api-v1' version='5.0.16+2475392c19'>
+      <artifact name='fabric-recipe-api-v1-5.0.16+2475392c19.jar'>
+        <sha256 value='cd89b33594083a2b0ac88df7071964a467c27036016805e33596eb98a6e384bb' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-registry-sync-v0' version='5.3.2+e3eddc2119'>
+      <artifact name='fabric-registry-sync-v0-5.3.2+e3eddc2119.jar'>
+        <sha256 value='7a97da7acece5a240ae5d61deea5e6cc2ee6d325d4ca970938dff361ccf19c8f' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-renderer-api-v1' version='3.4.1+b4d813fc19'>
+      <artifact name='fabric-renderer-api-v1-3.4.1+b4d813fc19.jar'>
+        <sha256 value='384909f4dab803231f9495642e7e6a7d7ef95355f52da7824b2c96335e9a7be6' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-renderer-indigo' version='1.7.1+c705a49c19'>
+      <artifact name='fabric-renderer-indigo-1.7.1+c705a49c19.jar'>
+        <sha256 value='159683db7eb19f231d67407cdc173cbfcae9850234edfaa4bf31823fb6cdcfbe' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-renderer-registries-v1' version='3.2.69+df3654b319'>
+      <artifact name='fabric-renderer-registries-v1-3.2.69+df3654b319.jar'>
+        <sha256 value='25ce1a155bb2eac6ba338c9218c423c153b70fc9018bf50c298ae528406f5674' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-rendering-data-attachment-v1' version='0.3.49+73761d2e19'>
+      <artifact name='fabric-rendering-data-attachment-v1-0.3.49+73761d2e19.jar'>
+        <sha256 value='f05f6dba87fa61507437ab3df309c50841f42c3eb33b8d95f6afd76d455ebd8f' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-rendering-fluids-v1' version='3.1.6+1daea21519'>
+      <artifact name='fabric-rendering-fluids-v1-3.1.6+1daea21519.jar'>
+        <sha256 value='173987e925fa78e70832098b065915c859775d7696960afdcf24e9c62eb4ea89' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-rendering-v0' version='1.1.72+df3654b319'>
+      <artifact name='fabric-rendering-v0-1.1.72+df3654b319.jar'>
+        <sha256 value='f6697d3533662284db0eedfdc9035356af0bb07e216bf90a9e8b86c1d68277f6' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-rendering-v1' version='5.1.0+ab4c25a019'>
+      <artifact name='fabric-rendering-v1-5.1.0+ab4c25a019.jar'>
+        <sha256 value='9638f5c3d10f150fbb7f07fb5533928f48c1c81cf6952b071e959c0c66c7b5c7' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-resource-conditions-api-v1' version='4.3.0+8dc279b119'>
+      <artifact name='fabric-resource-conditions-api-v1-4.3.0+8dc279b119.jar'>
+        <sha256 value='640219e65692e388cc232e772de2c6865f2b2a8812211b6de3b42c74b3b05c1a' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-resource-loader-v0' version='1.3.1+5b5275af19'>
+      <artifact name='fabric-resource-loader-v0-1.3.1+5b5275af19.jar'>
+        <sha256 value='4ff20e2e08febda5faa1522e940b1ebb3b5cdd83bf732dc07f112aaed9269ec1' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-screen-api-v1' version='2.0.26+639b4c0719'>
+      <artifact name='fabric-screen-api-v1-2.0.26+639b4c0719.jar'>
+        <sha256 value='f65bc6f9cf96a2cbd5bf7bb9131475141663b311d4680b62ecd383408543dd2e' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-screen-handler-api-v1' version='1.3.91+b559734419'>
+      <artifact name='fabric-screen-handler-api-v1-1.3.91+b559734419.jar'>
+        <sha256 value='94c5fba711e6425e4e33a078beac340e2d55756b6b31b7a948a3d71dcd1c343c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-sound-api-v1' version='1.0.23+6573ed8c19'>
+      <artifact name='fabric-sound-api-v1-1.0.23+6573ed8c19.jar'>
+        <sha256 value='f38e04c83151a28a501d9a3db86c330372da7f63b351341447e8f036287715e0' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-tag-api-v1' version='1.3.0+1eb36c0719'>
+      <artifact name='fabric-tag-api-v1-1.3.0+1eb36c0719.jar'>
+        <sha256 value='44766c507d3d66a99f704fb2f80dcf50445cd3003b74fe0e000c536d71cbdea9' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-transfer-api-v1' version='5.4.4+7b3d111d19'>
+      <artifact name='fabric-transfer-api-v1-5.4.4+7b3d111d19.jar'>
+        <sha256 value='54910ce92ab7d27f5bd7f4e1540d4eadf12a0067953ba5297bf84ba2c31ed5bd' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc.fabric-api' name='fabric-transitive-access-wideners-v1' version='6.2.0+45b9699719'>
+      <artifact name='fabric-transitive-access-wideners-v1-6.2.0+45b9699719.jar'>
+        <sha256 value='6afb1cc15635a5d305960212b37a37c87159ba4110d3c016d5aeac1016c54548' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc' name='dev-launch-injector' version='0.2.1+build.8'>
+      <artifact name='dev-launch-injector-0.2.1+build.8.jar'>
+        <sha256 value='63bebba2a134d891ac9ac1fec6746ae055cbb19a187e2e2e05a0b9ea857952d8' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc' name='fabric-loader' version='0.19.3'>
+      <artifact name='fabric-loader-0.19.3.jar'>
+        <sha256 value='73eed8c34bbad0320a2a3cba5346351e822f74f82b3f3c060574068474132958' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc' name='fabric-log4j-util' version='1.0.2'>
+      <artifact name='fabric-log4j-util-1.0.2.jar'>
+        <sha256 value='538e845a086d58301b7dfb2135db52213666374ee9a23f0d9dc776c6e37c25b2' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.fabricmc' name='sponge-mixin' version='0.17.3+mixin.0.8.7'>
+      <artifact name='sponge-mixin-0.17.3+mixin.0.8.7.jar'>
+        <sha256 value='9e90efec71d2bad5b96c9089f019d14a8603227d3c5f408d12f53fae89d99d41' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.java.dev.jna' name='jna-platform' version='5.14.0'>
+      <artifact name='jna-platform-5.14.0.jar'>
+        <sha256 value='ae4caceb3840730c2537f9b7fb55a01baba580286b4122951488bcee558c2449' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.java.dev.jna' name='jna' version='5.14.0'>
+      <artifact name='jna-5.14.0.jar'>
+        <sha256 value='34ed1e1f27fa896bca50dbc4e99cf3732967cec387a7a0d5e3486c09673fe8c6' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.minecraft' name='minecraft-clientOnly-6c431f37c1' version='1.21.1-loom.mappings.1_21_1.layered+hash.2198-v2'>
+      <artifact name='minecraft-clientOnly-6c431f37c1-1.21.1-loom.mappings.1_21_1.layered+hash.2198-v2.jar'>
+        <sha256 value='3061925051455583cbeb49390d709e8196f0c0b8c81fbeb06583d0b135d9fc16' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.minecraft' name='minecraft-common-6c431f37c1' version='1.21.1-loom.mappings.1_21_1.layered+hash.2198-v2'>
+      <artifact name='minecraft-common-6c431f37c1-1.21.1-loom.mappings.1_21_1.layered+hash.2198-v2.jar'>
+        <sha256 value='8c841861e96c6194fa951375ad896edc532cf3b557efb52a79372dcccc128d77' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='net.sf.jopt-simple' name='jopt-simple' version='5.0.4'>
+      <artifact name='jopt-simple-5.0.4.jar'>
+        <sha256 value='df26cc58f235f477db07f753ba5a3ab243ebe5789d9f89ecf68dd62ea9a66c28' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.apache.commons' name='commons-compress' version='1.26.0'>
+      <artifact name='commons-compress-1.26.0.jar'>
+        <sha256 value='051aceb8bbcc62d0f5b2b8ac72c53767f9c59bfbd050151e65bef6f51c8ed9c9' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.apache.commons' name='commons-lang3' version='3.14.0'>
+      <artifact name='commons-lang3-3.14.0.jar'>
+        <sha256 value='7b96bf3ee68949abb5bc465559ac270e0551596fa34523fddf890ec418dde13c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.apache.httpcomponents' name='httpclient' version='4.5.13'>
+      <artifact name='httpclient-4.5.13.jar'>
+        <sha256 value='6fe9026a566c6a5001608cf3fc32196641f6c1e5e1986d1037ccdbd5f31ef743' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.apache.httpcomponents' name='httpcore' version='4.4.16'>
+      <artifact name='httpcore-4.4.16.jar'>
+        <sha256 value='6c9b3dd142a09dc468e23ad39aad6f75a0f2b85125104469f026e52a474e464f' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.apache.logging.log4j' name='log4j-api' version='2.22.1'>
+      <artifact name='log4j-api-2.22.1.jar'>
+        <sha256 value='5d7beae7ff15d8516d6517121d7f12a79a6ac180df64b5fcec55d5be21056e53' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.apache.logging.log4j' name='log4j-core' version='2.22.1'>
+      <artifact name='log4j-core-2.22.1.jar'>
+        <sha256 value='46dccecac556623d8e2ce8648496824a82951d139062a4e61148aff1a25ed18d' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.apache.logging.log4j' name='log4j-slf4j2-impl' version='2.22.1'>
+      <artifact name='log4j-slf4j2-impl-2.22.1.jar'>
+        <sha256 value='1920cd69d8682c7ef249bb407a3d0685723aa1785867cf4c53258da6bf14da97' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.apiguardian' name='apiguardian-api' version='1.1.2'>
+      <artifact name='apiguardian-api-1.1.2.jar'>
+        <sha256 value='b509448ac506d607319f182537f0b35d71007582ec741832a1f111e5b5b70b38' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.jcraft' name='jorbis' version='0.0.17'>
+      <artifact name='jorbis-0.0.17.jar'>
+        <sha256 value='e067f29a3701426b67ed973036949c6e58ca5bb53eef7240b2e71e286d252a9e' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.jetbrains' name='annotations' version='26.0.2'>
+      <artifact name='annotations-26.0.2.jar'>
+        <sha256 value='2037be378980d3ba9333e97955f3b2cde392aa124d04ca73ce2eee6657199297' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.joml' name='joml' version='1.10.5'>
+      <artifact name='joml-1.10.5.jar'>
+        <sha256 value='cac9f22f83a7aa33eebda73c16ff5261e3cb4911b6bafcf4c79ea486099d0c9a' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.junit.jupiter' name='junit-jupiter-api' version='5.11.0'>
+      <artifact name='junit-jupiter-api-5.11.0.jar'>
+        <sha256 value='42aa202fc862f76cc5af65b47b1c0b1961cdd79cd2216405a6dfa2bd20b20974' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.junit.jupiter' name='junit-jupiter-engine' version='5.11.0'>
+      <artifact name='junit-jupiter-engine-5.11.0.jar'>
+        <sha256 value='7012423383d0c79d0347c5cf2bd1996c30a12240fb729e0cdfa954852ec693cc' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.junit.jupiter' name='junit-jupiter-params' version='5.11.0'>
+      <artifact name='junit-jupiter-params-5.11.0.jar'>
+        <sha256 value='92ccae2d72e8cc7ac4d3a912fd1a8fecc5e3040a62ac6c667a07a6f55b8023eb' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.junit.jupiter' name='junit-jupiter' version='5.11.0'>
+      <artifact name='junit-jupiter-5.11.0.jar'>
+        <sha256 value='234fe3f9118628d6de625ecc3d69140515e786fdf3cef037fc6ec94823c23ab6' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.junit.platform' name='junit-platform-commons' version='1.11.0'>
+      <artifact name='junit-platform-commons-1.11.0.jar'>
+        <sha256 value='609333a4545f9018eb0c59071efd30663a9e9fdce528121b65a04c27e5fc26a7' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.junit.platform' name='junit-platform-engine' version='1.11.0'>
+      <artifact name='junit-platform-engine-1.11.0.jar'>
+        <sha256 value='a7e67279c651c516949512b506916475a6d9e284cd4f4c30d029b4ad73a944d8' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.junit.platform' name='junit-platform-launcher' version='1.11.0'>
+      <artifact name='junit-platform-launcher-1.11.0.jar'>
+        <sha256 value='a44535e639814236844e2247204f89247d13af0cebdea53a42314100dfde19ce' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.lwjgl' name='lwjgl-freetype' version='3.3.3'>
+      <artifact name='lwjgl-freetype-3.3.3-natives-windows-arm64.jar'>
+        <sha256 value='b589983ec143ff09acd8d9a215b4ef3f80750855646c1b96279066ea5e44f40c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-freetype-3.3.3-natives-windows-x86.jar'>
+        <sha256 value='75a798a5f492e1376d05dc637a9105198e71d06f38a11e9bce1c5072e0d60b3a' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-freetype-3.3.3-natives-windows.jar'>
+        <sha256 value='022e59514b1ecb45249413ae62ad094971d7ac88c0dce9a32c627d06a3c01a1f' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-freetype-3.3.3.jar'>
+        <sha256 value='e1a7ab07106349d9a8a68f6860b7b73b353c502b81e662aca77f931c6fdd3de8' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.lwjgl' name='lwjgl-glfw' version='3.3.3'>
+      <artifact name='lwjgl-glfw-3.3.3-natives-windows-arm64.jar'>
+        <sha256 value='70ca9db0d2764cb9dbc8fb5fd425318c5af597173b134d03259e2030652e94b5' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-glfw-3.3.3-natives-windows-x86.jar'>
+        <sha256 value='9646555d405f0d2a3a9576b506f57c1632af64f69a8ae58cb0448ae04a9c7824' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-glfw-3.3.3-natives-windows.jar'>
+        <sha256 value='98155b451dfc6f585089dec77a12f9c05789c4dceb8da472f9d308160101a70d' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-glfw-3.3.3.jar'>
+        <sha256 value='bedc757fd2b1b255146db26b74b9cbd1fcf5644b89b47b104fa721c741604259' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.lwjgl' name='lwjgl-jemalloc' version='3.3.3'>
+      <artifact name='lwjgl-jemalloc-3.3.3-natives-windows-arm64.jar'>
+        <sha256 value='1f204ace18e3512765003d83b9a853856f65dda70b63b9722638483f2d5d34c2' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-jemalloc-3.3.3-natives-windows-x86.jar'>
+        <sha256 value='d9b4e06e2a84205583fb05440d2238385a91cb01a060ddb1d376223ae225f14a' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-jemalloc-3.3.3-natives-windows.jar'>
+        <sha256 value='9949c8e49998bd0c878d842884011f1383e2851005091e0b2bcf7b7671b848eb' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-jemalloc-3.3.3.jar'>
+        <sha256 value='e99e31269e6678a4bfc62ef24c50a481c01cbdd004861ece9a59ba12768c6516' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.lwjgl' name='lwjgl-openal' version='3.3.3'>
+      <artifact name='lwjgl-openal-3.3.3-natives-windows-arm64.jar'>
+        <sha256 value='875f81451731df2cac48bbe3c4559834a94d36fc15f461c933e4d4acdd2f1f26' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-openal-3.3.3-natives-windows-x86.jar'>
+        <sha256 value='852ca4e36b1fdfdd3efb6ce42f08b7d0f957b04c4bcfbd78057b0c799f399231' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-openal-3.3.3-natives-windows.jar'>
+        <sha256 value='e3da7c3db25c81db8d425ef1e3dbfa15000b040d669f008b0813c94333ac96c8' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-openal-3.3.3.jar'>
+        <sha256 value='ae0e82767cacf08921f578fba9d84753ddeb00ceada0510a2b4a882be28fbf95' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.lwjgl' name='lwjgl-opengl' version='3.3.3'>
+      <artifact name='lwjgl-opengl-3.3.3-natives-windows-arm64.jar'>
+        <sha256 value='68c8dbc41436e421ff0b3927e62d2aa533552d8f02d73de3fd928d7a51fd797a' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-opengl-3.3.3-natives-windows-x86.jar'>
+        <sha256 value='9d99d203de4e31286cae753a1dfb981367c93734f1944644ba71be521b3af2cc' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-opengl-3.3.3-natives-windows.jar'>
+        <sha256 value='f45e5f60596b03b2e3d8b98a123c855ebd0b5154c8155dc2a56b890ccc907477' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-opengl-3.3.3.jar'>
+        <sha256 value='5062da750e5f7ec89e27e8b67b7d40fa8c4b16890159e35f828116ce6c8eca1e' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.lwjgl' name='lwjgl-stb' version='3.3.3'>
+      <artifact name='lwjgl-stb-3.3.3-natives-windows-arm64.jar'>
+        <sha256 value='3d1454dfbad9e1b8a7da25e2928c16a4a63a14050b27da1912c3be0c60b02e7c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-stb-3.3.3-natives-windows-x86.jar'>
+        <sha256 value='46424e45459733b26c4a7b0dd2695209cb6938dafa3a9012c6a5682c94a2c40e' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-stb-3.3.3-natives-windows.jar'>
+        <sha256 value='d12ab866fe1169e924ac5b4d6bb7767ae7842a9fc8652798682c0069bb73fcf2' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-stb-3.3.3.jar'>
+        <sha256 value='0cff7aa46ea9d70fcc20857015293ea80fbf21adcac34600c84da9b81a44ca93' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.lwjgl' name='lwjgl-tinyfd' version='3.3.3'>
+      <artifact name='lwjgl-tinyfd-3.3.3-natives-windows-arm64.jar'>
+        <sha256 value='71076fc5c01788577719f4b1983473026b2eb8cbb02d3dc736f8b5724a49fd8c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-tinyfd-3.3.3-natives-windows-x86.jar'>
+        <sha256 value='43c9264f0661087b06ae29d78aab98121dfad69efe3202424e3419738d5e9994' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-tinyfd-3.3.3-natives-windows.jar'>
+        <sha256 value='02285911f1c881735fa4d0eb141ffeaafd9a2bb9349d98f7c1fb8a9cb49c0f58' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-tinyfd-3.3.3.jar'>
+        <sha256 value='ee0515054ee19a3f4088426fee9d879eb2ee657b07e5064e4e2c851f6adcf14b' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.lwjgl' name='lwjgl' version='3.3.3'>
+      <artifact name='lwjgl-3.3.3-natives-windows-arm64.jar'>
+        <sha256 value='d35582ca7edff59d4a5c8f4a0edec779caea4ca8e26c9aff8244710049bb4350' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-3.3.3-natives-windows-x86.jar'>
+        <sha256 value='22a22338262554eb5e133c8441deeedac84da082eb3bac84d032da4faf369749' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-3.3.3-natives-windows.jar'>
+        <sha256 value='5ee63a19187efe5bb8747fd24f7b13257db348df5ad641113a3695e43f213959' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+      <artifact name='lwjgl-3.3.3.jar'>
+        <sha256 value='dc9c7b2d48e8396d68895f8902ffa01e46253de44dfe927533ff09457ebfeec4' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.lz4' name='lz4-java' version='1.8.0'>
+      <artifact name='lz4-java-1.8.0.jar'>
+        <sha256 value='d74a3334fb35195009b338a951f918203d6bbca3d1d359033dc33edd1cadc9ef' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.opentest4j' name='opentest4j' version='1.3.0'>
+      <artifact name='opentest4j-1.3.0.jar'>
+        <sha256 value='48e2df636cab6563ced64dcdff8abb2355627cb236ef0bf37598682ddf742f1b' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.ow2.asm' name='asm-analysis' version='9.10.1'>
+      <artifact name='asm-analysis-9.10.1.jar'>
+        <sha256 value='dede75a21306b65974ecd8f87114ff6970f09fb794157a4ca09ab25c888c2bfc' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.ow2.asm' name='asm-commons' version='9.10.1'>
+      <artifact name='asm-commons-9.10.1.jar'>
+        <sha256 value='6d0abefb7cbf972ea16edb37ec14835372505063a45f976ab7ea889ed9497895' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.ow2.asm' name='asm-tree' version='9.10.1'>
+      <artifact name='asm-tree-9.10.1.jar'>
+        <sha256 value='3dfb0d5b6a106cd40b5b250e39935fbf2f927f4477546a5369a3ac609cf0506b' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.ow2.asm' name='asm-util' version='9.10.1'>
+      <artifact name='asm-util-9.10.1.jar'>
+        <sha256 value='1bb99d091fba2597dc6d51193e9bbcf0d8447e7ed96bd8f0198b18152f09655c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.ow2.asm' name='asm' version='9.10.1'>
+      <artifact name='asm-9.10.1.jar'>
+        <sha256 value='ed825d10ab1399c8c0cb669e688cf0c8c82629b4c8399b58352b68e92ca10fcb' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='org.slf4j' name='slf4j-api' version='2.0.9'>
+      <artifact name='slf4j-api-2.0.9.jar'>
+        <sha256 value='0818930dc8d7debb403204611691da58e49d42c50b6ffcfdce02dadb7c3c2b6c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-api-37f46004-common' version='0.116.14+1.21.1'>
+      <artifact name='fabric-api-37f46004-common-0.116.14+1.21.1.jar'>
+        <sha256 value='11f57c00c25ef2d73daff5d4592a4566ef944c2004498258054df0c1e6097edc' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-api-base-37f46004-common' version='0.4.42+6573ed8c19'>
+      <artifact name='fabric-api-base-37f46004-common-0.4.42+6573ed8c19.jar'>
+        <sha256 value='e1caabca47c07766d1bfbddd05fb4656a27a6a1a3686b489f3b8abf966a634db' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-api-lookup-api-v1-37f46004-common' version='1.6.72+7b3d111d19'>
+      <artifact name='fabric-api-lookup-api-v1-37f46004-common-1.6.72+7b3d111d19.jar'>
+        <sha256 value='52057d738c15284ed37a17e8eed87dfdd7cdb8add237563507bbd374e76819a0' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-biome-api-v1-37f46004-common' version='13.0.31+d527f9fd19'>
+      <artifact name='fabric-biome-api-v1-37f46004-common-13.0.31+d527f9fd19.jar'>
+        <sha256 value='86789538894017a1eb0550d4fbbbea791a1cfa0a068e988abd264634639efb6c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-block-api-v1-37f46004-common' version='1.1.0+0bc3503219'>
+      <artifact name='fabric-block-api-v1-37f46004-common-1.1.0+0bc3503219.jar'>
+        <sha256 value='33cae7d67b5a20028ed4c444e3353b62767c8e66ee09b42b565fafec9c91d345' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-block-view-api-v2-37f46004-client' version='1.0.11+ebb2264e19'>
+      <artifact name='fabric-block-view-api-v2-37f46004-client-1.0.11+ebb2264e19.jar'>
+        <sha256 value='b0e23efe49bec76f64491ac3e546c3a224d20d5b562dce67104c90d1f2a0a7ee' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-block-view-api-v2-37f46004-common' version='1.0.11+ebb2264e19'>
+      <artifact name='fabric-block-view-api-v2-37f46004-common-1.0.11+ebb2264e19.jar'>
+        <sha256 value='7dae68c0d57294d58f6d84dfa9f87578c1576299003999d4c2852e74a92940d7' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-blockrenderlayer-v1-37f46004-client' version='1.1.52+0af3f5a719'>
+      <artifact name='fabric-blockrenderlayer-v1-37f46004-client-1.1.52+0af3f5a719.jar'>
+        <sha256 value='34294f1a71fcc2a919d99dd63afda5bdea811f18643f216c8e567274103c26a7' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-client-tags-api-v1-37f46004-client' version='1.2.0+1eb36c0719'>
+      <artifact name='fabric-client-tags-api-v1-37f46004-client-1.2.0+1eb36c0719.jar'>
+        <sha256 value='543aa9dc34a45897ba411a5e75a20002a7d95f43d0dca64c1dbd3cd84004672e' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-command-api-v1-37f46004-common' version='1.2.49+f71b366f19'>
+      <artifact name='fabric-command-api-v1-37f46004-common-1.2.49+f71b366f19.jar'>
+        <sha256 value='7e37589caa11941ed25b60c6ca1e996cff2cbcf2263312716e4aa3e9269b55ca' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-command-api-v2-37f46004-client' version='2.2.28+6ced4dd919'>
+      <artifact name='fabric-command-api-v2-37f46004-client-2.2.28+6ced4dd919.jar'>
+        <sha256 value='8b46a386d66a951423951f3567ab09af930aa8968a8ba429b458f129541c4454' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-command-api-v2-37f46004-common' version='2.2.28+6ced4dd919'>
+      <artifact name='fabric-command-api-v2-37f46004-common-2.2.28+6ced4dd919.jar'>
+        <sha256 value='4ec97c99456d2cc7214a211c4e6ba1279702e5e3f312dd95447268bc77852cef' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-commands-v0-37f46004-common' version='0.2.66+df3654b319'>
+      <artifact name='fabric-commands-v0-37f46004-common-0.2.66+df3654b319.jar'>
+        <sha256 value='ec34b8018985e7f7ca30ffd790f4723b1044f0e36c72ab74c7d99d9d6a7b95e7' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-content-registries-v0-37f46004-common' version='8.0.19+b559734419'>
+      <artifact name='fabric-content-registries-v0-37f46004-common-8.0.19+b559734419.jar'>
+        <sha256 value='519e4751a01da9bb0eafd95d17be05f05ff8afa938841087f2b6eaef8034a589' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-convention-tags-v1-37f46004-common' version='2.1.7+7f945d5b19'>
+      <artifact name='fabric-convention-tags-v1-37f46004-common-2.1.7+7f945d5b19.jar'>
+        <sha256 value='b8000460fb37f7bbf4ef19770dbd61ab3e6ce1ca75f53320b2c917fe23feb940' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-convention-tags-v2-37f46004-common' version='2.12.0+c3656daa19'>
+      <artifact name='fabric-convention-tags-v2-37f46004-common-2.12.0+c3656daa19.jar'>
+        <sha256 value='571f709c04ffdbabdc7ae690c136df12fcf3fe723dc7c150bd391a2c4eeacf39' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-crash-report-info-v1-37f46004-common' version='0.2.29+0af3f5a719'>
+      <artifact name='fabric-crash-report-info-v1-37f46004-common-0.2.29+0af3f5a719.jar'>
+        <sha256 value='8a07e21a3925bf79707257f799082cee7c74daa16954a222ce50497ea456c369' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-data-attachment-api-v1-37f46004-client' version='1.4.7+5b36e0f719'>
+      <artifact name='fabric-data-attachment-api-v1-37f46004-client-1.4.7+5b36e0f719.jar'>
+        <sha256 value='b44fd5fbfe8dc4477d2a0c0dbeaef7e1b4aff9f6386164f3d84c627af9db7a8d' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-data-attachment-api-v1-37f46004-common' version='1.4.7+5b36e0f719'>
+      <artifact name='fabric-data-attachment-api-v1-37f46004-common-1.4.7+5b36e0f719.jar'>
+        <sha256 value='ba57daa32443861df743dc86eeda9df0dad18eaa6107d789b55a3e96fd4bac74' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-data-generation-api-v1-37f46004-client' version='20.3.0+1eb36c0719'>
+      <artifact name='fabric-data-generation-api-v1-37f46004-client-20.3.0+1eb36c0719.jar'>
+        <sha256 value='051961772e03a1962350bf431c70beac7bbe2675e68923723d30230cd92df0d7' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-data-generation-api-v1-37f46004-common' version='20.3.0+1eb36c0719'>
+      <artifact name='fabric-data-generation-api-v1-37f46004-common-20.3.0+1eb36c0719.jar'>
+        <sha256 value='d831d390fab0d66ccda23ea98608ee91194a43fd5270b9dce4ccaf8cfca53ddd' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-dimensions-v1-37f46004-common' version='4.0.1+65213ef819'>
+      <artifact name='fabric-dimensions-v1-37f46004-common-4.0.1+65213ef819.jar'>
+        <sha256 value='27515b42505e99cdde5a78f5ed707438db2aacb4d8469fd8041e94500491c911' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-entity-events-v1-37f46004-client' version='1.8.0+2b27e0a419'>
+      <artifact name='fabric-entity-events-v1-37f46004-client-1.8.0+2b27e0a419.jar'>
+        <sha256 value='38c5303d49b03d541a007f1775a9dff2eb20187742103778fb7f9ec40fd25f69' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-entity-events-v1-37f46004-common' version='1.8.0+2b27e0a419'>
+      <artifact name='fabric-entity-events-v1-37f46004-common-1.8.0+2b27e0a419.jar'>
+        <sha256 value='23073ff60c2eed9916ffae3f33d01b456b8b50c8ad4367b398b23eeab5a57402' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-events-interaction-v0-37f46004-client' version='0.7.14+ba9dae0619'>
+      <artifact name='fabric-events-interaction-v0-37f46004-client-0.7.14+ba9dae0619.jar'>
+        <sha256 value='992e183f5a0df4cfba9ff3346100a32b9580bdfc842addf749586edc08ff2e31' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-events-interaction-v0-37f46004-common' version='0.7.14+ba9dae0619'>
+      <artifact name='fabric-events-interaction-v0-37f46004-common-0.7.14+ba9dae0619.jar'>
+        <sha256 value='3d7d78f5347b04d9a7080697aca31d1c95f4dc352e29b14cc2cb531dc3a5051c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-game-rule-api-v1-37f46004-client' version='1.0.53+6ced4dd919'>
+      <artifact name='fabric-game-rule-api-v1-37f46004-client-1.0.53+6ced4dd919.jar'>
+        <sha256 value='933ff54ddb3021579f6882fe6263524c1148cdacacbdc3fe3bf2b90a9b7ef3bd' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-game-rule-api-v1-37f46004-common' version='1.0.53+6ced4dd919'>
+      <artifact name='fabric-game-rule-api-v1-37f46004-common-1.0.53+6ced4dd919.jar'>
+        <sha256 value='c00394274ae3296edfa8f9cf7bf0b38fb269d466311bee6871101c2a09045f45' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-gametest-api-v1-37f46004-common' version='2.0.5+6fc22b9919'>
+      <artifact name='fabric-gametest-api-v1-37f46004-common-2.0.5+6fc22b9919.jar'>
+        <sha256 value='1af708d07df4225ec8618d75c4c6c9eed17f9ebcf2ff40b430fd2adbab6e808c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-item-api-v1-37f46004-client' version='11.2.0+3b3cb2e819'>
+      <artifact name='fabric-item-api-v1-37f46004-client-11.2.0+3b3cb2e819.jar'>
+        <sha256 value='4e0a5ccc21c9fa69427391c80ed3256e02c278303ab13033942fd55ec05abbd0' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-item-api-v1-37f46004-common' version='11.2.0+3b3cb2e819'>
+      <artifact name='fabric-item-api-v1-37f46004-common-11.2.0+3b3cb2e819.jar'>
+        <sha256 value='c579dbb18d909b1feaee16f19cef77c22aba5e9d8bfea627a0da4bbebdf48bee' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-item-group-api-v1-37f46004-client' version='4.1.7+def88e3a19'>
+      <artifact name='fabric-item-group-api-v1-37f46004-client-4.1.7+def88e3a19.jar'>
+        <sha256 value='98afb0dfad8edb5b168b5b149aa893266544ec3617245db5fdb027c616478432' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-item-group-api-v1-37f46004-common' version='4.1.7+def88e3a19'>
+      <artifact name='fabric-item-group-api-v1-37f46004-common-4.1.7+def88e3a19.jar'>
+        <sha256 value='c3865b61bf26aabbef1fc9828c3edb4bae549d08d3b3f3411cfa13150a8f50d5' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-key-binding-api-v1-37f46004-client' version='1.0.47+0af3f5a719'>
+      <artifact name='fabric-key-binding-api-v1-37f46004-client-1.0.47+0af3f5a719.jar'>
+        <sha256 value='33e022df087aa74ae6824a207f9f85801c6a5e8ab29eb8db788211b48bb1c22d' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-keybindings-v0-37f46004-client' version='0.2.45+df3654b319'>
+      <artifact name='fabric-keybindings-v0-37f46004-client-0.2.45+df3654b319.jar'>
+        <sha256 value='21cf3d982a0dd139288c09fc8b3df2d36a735e24fc5e387a6daf0412a9a9e33e' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-lifecycle-events-v1-37f46004-client' version='2.6.0+0865547519'>
+      <artifact name='fabric-lifecycle-events-v1-37f46004-client-2.6.0+0865547519.jar'>
+        <sha256 value='e2a4addcb33a97dbdb5eae558615a9b830ff163a352530d6ffccb369ffea2f22' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-lifecycle-events-v1-37f46004-common' version='2.6.0+0865547519'>
+      <artifact name='fabric-lifecycle-events-v1-37f46004-common-2.6.0+0865547519.jar'>
+        <sha256 value='36bf6fed6b435a7142c54e1150e2f6d7314b76da1315834d6eb9f23bf63376b1' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-loot-api-v2-37f46004-common' version='3.0.15+3f89f5a519'>
+      <artifact name='fabric-loot-api-v2-37f46004-common-3.0.15+3f89f5a519.jar'>
+        <sha256 value='d5107ccd9c8998fa10a5cc4ebd465c1da783212a5e30497a889ddcc8339bfdce' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-loot-api-v3-37f46004-common' version='1.0.3+3f89f5a519'>
+      <artifact name='fabric-loot-api-v3-37f46004-common-1.0.3+3f89f5a519.jar'>
+        <sha256 value='3bba1b2cfd6463ca75112f2485b22f1f1a5fcaeafd44846bb24c654dd6a41941' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-message-api-v1-37f46004-client' version='6.0.14+8aaf3aca19'>
+      <artifact name='fabric-message-api-v1-37f46004-client-6.0.14+8aaf3aca19.jar'>
+        <sha256 value='41d89fca1fc33ff0f886b69333d8805cbd16054c40887a6eb97d9fd377dbee19' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-message-api-v1-37f46004-common' version='6.0.14+8aaf3aca19'>
+      <artifact name='fabric-message-api-v1-37f46004-common-6.0.14+8aaf3aca19.jar'>
+        <sha256 value='9446d8fe0647a01984e0447d1f5b5737ca1d6e0edf4af982332e2066b8fbfe3d' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-model-loading-api-v1-37f46004-client' version='2.1.0+b4d813fc19'>
+      <artifact name='fabric-model-loading-api-v1-37f46004-client-2.1.0+b4d813fc19.jar'>
+        <sha256 value='646171e9f0d361670746f598f8400a1d22363ebf1810a582560745180b46201e' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-networking-api-v1-37f46004-client' version='4.3.1+d30f6a7919'>
+      <artifact name='fabric-networking-api-v1-37f46004-client-4.3.1+d30f6a7919.jar'>
+        <sha256 value='03718e8f0db651b12d1a5ff607b7e96e6283366d666aa63ab7e1eabf78cdb55c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-networking-api-v1-37f46004-common' version='4.3.1+d30f6a7919'>
+      <artifact name='fabric-networking-api-v1-37f46004-common-4.3.1+d30f6a7919.jar'>
+        <sha256 value='a63fd8ec949b894aefb7591efe96706792b1fcf1d8499ff26b67b660bbda6774' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-object-builder-api-v1-37f46004-client' version='15.2.1+40875a9319'>
+      <artifact name='fabric-object-builder-api-v1-37f46004-client-15.2.1+40875a9319.jar'>
+        <sha256 value='4f099596f328241609e28663f772c9c36c15f273ea7643df20347f207d31f0b0' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-object-builder-api-v1-37f46004-common' version='15.2.1+40875a9319'>
+      <artifact name='fabric-object-builder-api-v1-37f46004-common-15.2.1+40875a9319.jar'>
+        <sha256 value='489178a2798dc05b570c3a8641900b3f58127c3ddac56c5f62802ff2e5e8af2b' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-particles-v1-37f46004-client' version='4.0.2+6573ed8c19'>
+      <artifact name='fabric-particles-v1-37f46004-client-4.0.2+6573ed8c19.jar'>
+        <sha256 value='cd8584d8e56b998edf0410cd1d34b428491abc60aceb6fd66e3752451a295768' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-particles-v1-37f46004-common' version='4.0.2+6573ed8c19'>
+      <artifact name='fabric-particles-v1-37f46004-common-4.0.2+6573ed8c19.jar'>
+        <sha256 value='ea20e16dbdedd5b88faf129ea47a4d7c8fe122837c487b881d1dd9b43d1f4fc7' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-recipe-api-v1-37f46004-client' version='5.0.16+2475392c19'>
+      <artifact name='fabric-recipe-api-v1-37f46004-client-5.0.16+2475392c19.jar'>
+        <sha256 value='a5fd3c07608de124edd7212a55f9346585a0aabb6070664873ac125616783bc0' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-recipe-api-v1-37f46004-common' version='5.0.16+2475392c19'>
+      <artifact name='fabric-recipe-api-v1-37f46004-common-5.0.16+2475392c19.jar'>
+        <sha256 value='040e822bb32fe152d0f1af1243fed04e0128401ce6d12bf390cc7270ebb2fde8' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-registry-sync-v0-37f46004-client' version='5.3.2+e3eddc2119'>
+      <artifact name='fabric-registry-sync-v0-37f46004-client-5.3.2+e3eddc2119.jar'>
+        <sha256 value='c0de6357b9f2f341ecdca0d4ed4ddb4988908583b2b20bf86a5383da0e3f030c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-registry-sync-v0-37f46004-common' version='5.3.2+e3eddc2119'>
+      <artifact name='fabric-registry-sync-v0-37f46004-common-5.3.2+e3eddc2119.jar'>
+        <sha256 value='960be4fcb37e167fe01e5603c882ec38bc240c80bf9e3311b7db25f9743ce184' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-renderer-api-v1-37f46004-client' version='3.4.1+b4d813fc19'>
+      <artifact name='fabric-renderer-api-v1-37f46004-client-3.4.1+b4d813fc19.jar'>
+        <sha256 value='157f54fb090481328739f3e5a6bac8c1120bed591d280cbe27a61e93e32d1858' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-renderer-indigo-37f46004-client' version='1.7.1+c705a49c19'>
+      <artifact name='fabric-renderer-indigo-37f46004-client-1.7.1+c705a49c19.jar'>
+        <sha256 value='298c6dee48c8a9c3437f69386e42a7628cbff6125e18fabedf0d4f988f3bbb88' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-renderer-registries-v1-37f46004-client' version='3.2.69+df3654b319'>
+      <artifact name='fabric-renderer-registries-v1-37f46004-client-3.2.69+df3654b319.jar'>
+        <sha256 value='cedbb56363bab4a59629943d8a5bbbebf2bc061602598cdf93c2d1dc708f07b2' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-rendering-data-attachment-v1-37f46004-client' version='0.3.49+73761d2e19'>
+      <artifact name='fabric-rendering-data-attachment-v1-37f46004-client-0.3.49+73761d2e19.jar'>
+        <sha256 value='45794a8473774686d91dbba1150343dd196d3be76ce069d673311d90bb3944ef' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-rendering-data-attachment-v1-37f46004-common' version='0.3.49+73761d2e19'>
+      <artifact name='fabric-rendering-data-attachment-v1-37f46004-common-0.3.49+73761d2e19.jar'>
+        <sha256 value='61061c706f3963f14e0b8c1095aeb03dcf8e9132c5e39a10cdfb89fcd3d2e602' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-rendering-fluids-v1-37f46004-client' version='3.1.6+1daea21519'>
+      <artifact name='fabric-rendering-fluids-v1-37f46004-client-3.1.6+1daea21519.jar'>
+        <sha256 value='c6bd3dc86d9be02cb7c456d31a24203cb2b22a6504de994cd025380696849562' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-rendering-fluids-v1-37f46004-common' version='3.1.6+1daea21519'>
+      <artifact name='fabric-rendering-fluids-v1-37f46004-common-3.1.6+1daea21519.jar'>
+        <sha256 value='aac206890eb77569dbdc1e2c967d871f37ee012198035860e78e91458a23b410' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-rendering-v0-37f46004-client' version='1.1.72+df3654b319'>
+      <artifact name='fabric-rendering-v0-37f46004-client-1.1.72+df3654b319.jar'>
+        <sha256 value='70b6e308d8888da1b8bf7e7f5425fc8accf618b985d4bdc037b7b96cb40116d6' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-rendering-v1-37f46004-client' version='5.1.0+ab4c25a019'>
+      <artifact name='fabric-rendering-v1-37f46004-client-5.1.0+ab4c25a019.jar'>
+        <sha256 value='28aa5b85205661d7b3609a909d4bd04ae46e780e3159630676817b0089ba1746' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-resource-conditions-api-v1-37f46004-common' version='4.3.0+8dc279b119'>
+      <artifact name='fabric-resource-conditions-api-v1-37f46004-common-4.3.0+8dc279b119.jar'>
+        <sha256 value='456ee31c9b05facf18377e7ad25eca2fd2570c304a4fb8267137420b12bf9dad' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-resource-loader-v0-37f46004-client' version='1.3.1+5b5275af19'>
+      <artifact name='fabric-resource-loader-v0-37f46004-client-1.3.1+5b5275af19.jar'>
+        <sha256 value='c73621c6b456075482e6be38a07ee94779ecb2899de5c1f682ddbec5dfcfa91f' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-resource-loader-v0-37f46004-common' version='1.3.1+5b5275af19'>
+      <artifact name='fabric-resource-loader-v0-37f46004-common-1.3.1+5b5275af19.jar'>
+        <sha256 value='1781b19af490d7bd91f9a879f906779de6461fca4716d55923ff5fb1fab78610' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-screen-api-v1-37f46004-client' version='2.0.26+639b4c0719'>
+      <artifact name='fabric-screen-api-v1-37f46004-client-2.0.26+639b4c0719.jar'>
+        <sha256 value='df4d0f218845f9fce495a3f5717c6d3299239135a2862e400ddfd581f9521f0d' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-screen-handler-api-v1-37f46004-client' version='1.3.91+b559734419'>
+      <artifact name='fabric-screen-handler-api-v1-37f46004-client-1.3.91+b559734419.jar'>
+        <sha256 value='ed69e9f3e6ddba4006ab82c1d41ff77b94fc208a3476932d9a664b1d1d46e5e9' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-screen-handler-api-v1-37f46004-common' version='1.3.91+b559734419'>
+      <artifact name='fabric-screen-handler-api-v1-37f46004-common-1.3.91+b559734419.jar'>
+        <sha256 value='a9ffbbec3952260cb0cf8a65ead36e01f09bb7cf25dba6c349a01365bfb04d1b' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-sound-api-v1-37f46004-client' version='1.0.23+6573ed8c19'>
+      <artifact name='fabric-sound-api-v1-37f46004-client-1.0.23+6573ed8c19.jar'>
+        <sha256 value='e99d00d8361ca4323ff2a12092fabcb47e1a6265c6a7bdb70d42e986bb109767' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-tag-api-v1-37f46004-common' version='1.3.0+1eb36c0719'>
+      <artifact name='fabric-tag-api-v1-37f46004-common-1.3.0+1eb36c0719.jar'>
+        <sha256 value='0bd4b729396a2a522a4c515a2bc88b0b58c8377739371a3346fbc982a6a42e4c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-transfer-api-v1-37f46004-client' version='5.4.4+7b3d111d19'>
+      <artifact name='fabric-transfer-api-v1-37f46004-client-5.4.4+7b3d111d19.jar'>
+        <sha256 value='44b8914fd369bf8fabf0c7517c20b0d947085a9c264e75bacbfed2e354298af8' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-transfer-api-v1-37f46004-common' version='5.4.4+7b3d111d19'>
+      <artifact name='fabric-transfer-api-v1-37f46004-common-5.4.4+7b3d111d19.jar'>
+        <sha256 value='8c288c38a38c358506b6637f6c21d6ba764aa2b0cefe4f64550c4d8c9c4ccc5c' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+    <component group='remapped.net.fabricmc.fabric-api' name='fabric-transitive-access-wideners-v1-37f46004-common' version='6.2.0+45b9699719'>
+      <artifact name='fabric-transitive-access-wideners-v1-37f46004-common-6.2.0+45b9699719.jar'>
+        <sha256 value='6fbf894982f818c8bfcf60ac284d36365880470274834c02f862f88a85f8c9c9' origin='Reviewed local offline cache; not upstream authenticated' />
+      </artifact>
+    </component>
+  </components>
+</verification-metadata>

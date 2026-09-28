@@ -1,0 +1,28 @@
+// Windows Java 21 decodes Gradle's UTF-8 @argfile using the native code page.
+// A manifest classpath uses ASCII file URIs without relocating the project.
+if (System.getProperty('os.name').startsWith('Windows') &&
+        !projectDir.absolutePath.chars().allMatch { it < 128 }) {
+    def projectKey = java.security.MessageDigest.getInstance('SHA-256')
+            .digest(projectDir.absolutePath.getBytes('UTF-8')).encodeHex().toString()
+    def cacheDir = new File(gradle.gradleUserHomeDir,
+            "caches/plaincraft-great-wall/test-classpath/${projectKey}")
+    if (!cacheDir.absolutePath.chars().allMatch { it < 128 }) {
+        throw new GradleException('Windows test bridge requires an ASCII Gradle user home')
+    }
+    def classpathBridge = tasks.register('testClasspathBridge', Jar) {
+        dependsOn tasks.named('testClasses')
+        archiveFileName = 'classpath.jar'
+        destinationDirectory = cacheDir
+        inputs.files(sourceSets.test.runtimeClasspath)
+        doFirst {
+            manifest.attributes('Class-Path': sourceSets.test.runtimeClasspath.files
+                    .collect { it.toURI().toASCIIString() }.join(' '))
+        }
+    }
+    tasks.named('test', Test) {
+        dependsOn classpathBridge
+        classpath = files(classpathBridge.flatMap { it.archiveFile })
+        // Keep dependencies in task inputs even though the JVM reads the manifest.
+        inputs.files(sourceSets.test.runtimeClasspath)
+    }
+}

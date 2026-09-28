@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "plaincraft_great_wall_client_smoke",
+  "version": "1.0.0",
+  "name": "PlainCraft Great Wall Client Smoke",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["local.plaincraft.greatwall.smoke.ClientSmoke"]
+  },
+  "depends": {
+    "plaincraft_great_wall": "*"
+  }
+}

@@ -1,0 +1,326 @@
+Initialized native services in: C:\Users\18364\.gradle\native
+Initialized jansi services in: C:\Users\18364\.gradle\native
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Starting process 'Gradle build daemon'. Working directory: C:\Users\18364\.gradle\daemon\9.4.1 Command: C:\Program Files\Java\jdk-21\bin\java.exe --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-opens=java.base/java.nio.charset=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.xml/javax.xml.namespace=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED -Xmx2G -Dfile.encoding=UTF-8 -Duser.country=CN -Duser.language=zh -Duser.variant -cp C:\Users\18364\.gradle\wrapper\dists\gradle-9.4.1-bin\45w7kj7s8jzqenl33wrwa0aoj\gradle-9.4.1\lib\gradle-daemon-main-9.4.1.jar -javaagent:C:\Users\18364\.gradle\wrapper\dists\gradle-9.4.1-bin\45w7kj7s8jzqenl33wrwa0aoj\gradle-9.4.1\lib\agents\gradle-instrumentation-agent-9.4.1.jar org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.4.1
+Successfully started process 'Gradle build daemon'
+An attempt to start the daemon took 1.201 secs.
+The client will now receive all logging from the daemon (pid: 26560). The daemon log file: C:\Users\18364\.gradle\daemon\9.4.1\daemon-26560.out.log
+Daemon will be stopped at the end of the build 
+Using 16 worker leases.
+Operational build model parameters: {cachingModelBuilding=false, configurationCache=false, configurationCacheDisabledReason=due to --write-verification-metadata, configurationCacheParallelLoad=false, configurationCacheParallelStore=false, configureOnDemand=false, invalidateCoupledProjects=false, isolatedProjects=false, modelAsProjectDependency=false, modelBuilding=false, parallelModelBuilding=false, parallelProjectConfiguration=false, parallelProjectExecution=true, resilientModelBuilding=false}
+Calculating task graph as configuration cache cannot be reused due to --write-verification-metadata
+Received JVM installation metadata from 'C:\Program Files\Java\jdk-21': {JAVA_HOME=C:\Program Files\Java\jdk-21, JAVA_VERSION=21.0.5, JAVA_VENDOR=Oracle Corporation, RUNTIME_NAME=Java(TM) SE Runtime Environment, RUNTIME_VERSION=21.0.5+9-LTS-239, VM_NAME=Java HotSpot(TM) 64-Bit Server VM, VM_VERSION=21.0.5+9-LTS-239, VM_VENDOR=Oracle Corporation, OS_ARCH=amd64}
+Watching the file system is configured to be enabled if available
+Now considering [D:\云游四海-Mod源码\plaincraft-great-wall] as hierarchies to watch
+File system watching is active
+Caching disabled for Groovy DSL script compilation (cp_init) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling initialization script 'D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s0-01\metadata-repair\proxy-probe.init.gradle' using SubsetScriptTransformer.
+Caching disabled for Groovy DSL script compilation (init) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling initialization script 'D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s0-01\metadata-repair\proxy-probe.init.gradle' using BuildScriptTransformer.
+Starting Build
+Caching disabled for Groovy DSL script compilation (cp_settings) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling settings file 'D:\云游四海-Mod源码\plaincraft-great-wall\settings.gradle' using SubsetScriptTransformer.
+Caching disabled for Groovy DSL script compilation (settings) because:
+  Build cache is disabled
+  Not worth caching.
+Compiling settings file 'D:\云游四海-Mod源码\plaincraft-great-wall\settings.gradle' using BuildScriptTransformer.
+Settings evaluated using settings file 'D:\云游四海-Mod源码\plaincraft-great-wall\settings.gradle'.
+[metadata-repair] Gradle JVM http proxy: 127.0.0.1:7897
+[metadata-repair] Gradle JVM https proxy: 127.0.0.1:7897
+Using local directory build cache for the root build (location = C:\Users\18364\.gradle\caches\build-cache-1, remove unused entries = after 7 days).
+Projects loaded. Root project using build file 'D:\云游四海-Mod源码\plaincraft-great-wall\build.gradle'.
+Included projects: [root project 'plaincraft-great-wall']
+
+> Configure project :
+Evaluating root project 'plaincraft-great-wall' using build file 'D:\云游四海-Mod源码\plaincraft-great-wall\build.gradle'.
+Downloading https://maven.fabricmc.net/fabric-loom/fabric-loom.gradle.plugin/1.16.3/fabric-loom.gradle.plugin-1.16.3.pom to C:\Users\18364\.gradle\.tmp\gradle_download2364425649467267628bin
+Resource missing. [HTTP HEAD: https://maven.fabricmc.net/fabric-loom/fabric-loom.gradle.plugin/1.16.3/fabric-loom.gradle.plugin-1.16.3.jar]
+Resolved plugin [id: 'fabric-loom', version: '1.16.3']
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-loom/1.16.3/fabric-loom-1.16.3.pom to C:\Users\18364\.gradle\.tmp\gradle_download2505820806299314357bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-loom/1.16.3/fabric-loom-1.16.3.module to C:\Users\18364\.gradle\.tmp\gradle_download1789317076730599130bin
+Downloading https://maven.fabricmc.net/org/ow2/asm/asm/9.9/asm-9.9.pom to C:\Users\18364\.gradle\.tmp\gradle_download14058046639275991603bin
+Downloading https://maven.fabricmc.net/org/ow2/asm/asm-analysis/9.9/asm-analysis-9.9.pom to C:\Users\18364\.gradle\.tmp\gradle_download220033672043461043bin
+Downloading https://maven.fabricmc.net/org/ow2/asm/asm-commons/9.9/asm-commons-9.9.pom to C:\Users\18364\.gradle\.tmp\gradle_download6234797088682925520bin
+Downloading https://maven.fabricmc.net/org/ow2/asm/asm-tree/9.9/asm-tree-9.9.pom to C:\Users\18364\.gradle\.tmp\gradle_download8382372861841899202bin
+Downloading https://maven.fabricmc.net/org/ow2/asm/asm-util/9.9/asm-util-9.9.pom to C:\Users\18364\.gradle\.tmp\gradle_download15291446548183701492bin
+Downloading https://maven.fabricmc.net/net/fabricmc/stitch/0.6.2/stitch-0.6.2.pom to C:\Users\18364\.gradle\.tmp\gradle_download5179736707414910723bin
+Downloading https://maven.fabricmc.net/net/fabricmc/stitch/0.6.2/stitch-0.6.2.module to C:\Users\18364\.gradle\.tmp\gradle_download9258228302011219542bin
+Downloading https://maven.fabricmc.net/net/fabricmc/tiny-remapper/0.13.0/tiny-remapper-0.13.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download9017344170281713278bin
+Downloading https://maven.fabricmc.net/net/fabricmc/tiny-remapper/0.13.0/tiny-remapper-0.13.0.module to C:\Users\18364\.gradle\.tmp\gradle_download4389210603353497948bin
+Downloading https://maven.fabricmc.net/net/fabricmc/class-tweaker/0.3.0-beta.2/class-tweaker-0.3.0-beta.2.pom to C:\Users\18364\.gradle\.tmp\gradle_download14927694461553756327bin
+Downloading https://maven.fabricmc.net/net/fabricmc/class-tweaker/0.3.0-beta.2/class-tweaker-0.3.0-beta.2.module to C:\Users\18364\.gradle\.tmp\gradle_download13676247584768102804bin
+Downloading https://maven.fabricmc.net/net/fabricmc/mapping-io/0.8.0/mapping-io-0.8.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download10043533235947762830bin
+Downloading https://maven.fabricmc.net/net/fabricmc/lorenz-tiny/4.0.2/lorenz-tiny-4.0.2.pom to C:\Users\18364\.gradle\.tmp\gradle_download3249260415973405332bin
+Downloading https://maven.fabricmc.net/net/fabricmc/lorenz-tiny/4.0.2/lorenz-tiny-4.0.2.module to C:\Users\18364\.gradle\.tmp\gradle_download8528466306962365633bin
+Downloading https://maven.fabricmc.net/net/fabricmc/mercury/0.4.3/mercury-0.4.3.pom to C:\Users\18364\.gradle\.tmp\gradle_download15847818832789148662bin
+Downloading https://maven.fabricmc.net/net/fabricmc/mercurymixin/0.2.2/mercurymixin-0.2.2.pom to C:\Users\18364\.gradle\.tmp\gradle_download17803945103463496865bin
+Downloading https://maven.fabricmc.net/net/fabricmc/mercurymixin/0.2.2/mercurymixin-0.2.2.module to C:\Users\18364\.gradle\.tmp\gradle_download8519128151363061003bin
+Downloading https://maven.fabricmc.net/net/fabricmc/unpick/unpick/3.0.0-beta.13/unpick-3.0.0-beta.13.pom to C:\Users\18364\.gradle\.tmp\gradle_download6581741519505259043bin
+Downloading https://maven.fabricmc.net/net/fabricmc/unpick/unpick/3.0.0-beta.13/unpick-3.0.0-beta.13.module to C:\Users\18364\.gradle\.tmp\gradle_download17327759070921298302bin
+Downloading https://maven.fabricmc.net/net/fabricmc/unpick/unpick-format-utils/3.0.0-beta.13/unpick-format-utils-3.0.0-beta.13.pom to C:\Users\18364\.gradle\.tmp\gradle_download18043403123678485970bin
+Downloading https://maven.fabricmc.net/net/fabricmc/unpick/unpick-format-utils/3.0.0-beta.13/unpick-format-utils-3.0.0-beta.13.module to C:\Users\18364\.gradle\.tmp\gradle_download13251747884537123346bin
+Downloading https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/2.3.0/kotlin-metadata-jvm-2.3.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download2799699490034395266bin
+Downloading https://maven.fabricmc.net/net/fabricmc/tiny-mappings-parser/0.3.0+build.17/tiny-mappings-parser-0.3.0+build.17.pom to C:\Users\18364\.gradle\.tmp\gradle_download5027607199884779136bin
+Downloading https://maven.fabricmc.net/net/fabricmc/tiny-mappings-parser/0.3.0+build.17/tiny-mappings-parser-0.3.0+build.17.module to C:\Users\18364\.gradle\.tmp\gradle_download11254008783519122997bin
+Fabric Loom: 1.16.3
+(kotlin.metadata.jvm.KotlinClassMetadata) with version (2.3.0-release-356) was loaded from (/C:/Users/18364/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-metadata-jvm/2.3.0/7758780509972cf8338f06649cc5e4b11acc14e/kotlin-metadata-jvm-2.3.0.jar)
+(org.objectweb.asm.ClassVisitor) with version (9.9) was loaded from (/C:/Users/18364/.gradle/caches/modules-2/files-2.1/org.ow2.asm/asm/9.9/c29635c8a7afa03d74b33c1884df8abb2b3f3dcc/asm-9.9.jar)
+(org.objectweb.asm.tree.analysis.Analyzer) with version (9.9) was loaded from (/C:/Users/18364/.gradle/caches/modules-2/files-2.1/org.ow2.asm/asm-analysis/9.9/bf4fa6e66638851c1cd22c2caea0c3ee5d5f437/asm-analysis-9.9.jar)
+(org.objectweb.asm.commons.ClassRemapper) with version (9.9) was loaded from (/C:/Users/18364/.gradle/caches/modules-2/files-2.1/org.ow2.asm/asm-commons/9.9/db9165a3bf908ded6b08612d583a15d1d0c7bda0/asm-commons-9.9.jar)
+(org.objectweb.asm.tree.ClassNode) with version (9.9) was loaded from (/C:/Users/18364/.gradle/caches/modules-2/files-2.1/org.ow2.asm/asm-tree/9.9/f8de6eead6d24dd0f45bd065bbe112b2cda6ea21/asm-tree-9.9.jar)
+(org.objectweb.asm.util.ASMifier) with version (9.9) was loaded from (/C:/Users/18364/.gradle/caches/modules-2/files-2.1/org.ow2.asm/asm-util/9.9/42fdfc0508b43807c8078d6e82ecff2ce2112ae8/asm-util-9.9.jar)
+(com.google.gson.Gson) with version (null) was loaded from (/C:/Users/18364/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.10.1/b3add478d4382b78ea20b1671390a858002feb6c/gson-2.10.1.jar)
+Using cached Minecraft jars
+:Extracting server jar from bootstrap
+Resolving all libraries for dependency verification metadata generation
+Cached resource https://libraries.minecraft.net/ca/weblite/java-objc-bridge/1.1/java-objc-bridge-1.1.pom is up-to-date (lastModified: Thu Oct 27 15:23:37 CST 2022).
+Downloading https://libraries.minecraft.net/io/netty/netty-transport-native-epoll/4.1.97.Final/netty-transport-native-epoll-4.1.97.Final.pom to C:\Users\18364\.gradle\.tmp\gradle_download176221440430730971bin
+Cached resource https://libraries.minecraft.net/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.pom is up-to-date (lastModified: Thu Oct 27 15:23:28 CST 2022).
+Cached resource https://libraries.minecraft.net/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.pom is up-to-date (lastModified: Thu Oct 27 15:24:07 CST 2022).
+Cached resource https://libraries.minecraft.net/com/google/j2objc/j2objc-annotations/2.8/j2objc-annotations-2.8.pom is up-to-date (lastModified: Tue Aug 29 15:33:54 CST 2023).
+Cached resource https://libraries.minecraft.net/com/google/errorprone/error_prone_annotations/2.18.0/error_prone_annotations-2.18.0.pom is up-to-date (lastModified: Tue Aug 29 15:33:54 CST 2023).
+Cached resource https://libraries.minecraft.net/org/checkerframework/checker-qual/3.33.0/checker-qual-3.33.0.pom is up-to-date (lastModified: Tue Aug 29 15:33:41 CST 2023).
+Resource missing. [HTTP HEAD: https://libraries.minecraft.net/com/google/errorprone/error_prone_parent/2.18.0/error_prone_parent-2.18.0.pom]
+Resource missing. [HTTP HEAD: https://libraries.minecraft.net/com/google/errorprone/error_prone_parent/2.18.0/error_prone_parent-2.18.0.jar]
+Resource missing. [HTTP HEAD: https://libraries.minecraft.net/com/google/errorprone/error_prone_parent/2.18.0/error_prone_parent-2.18.0.pom]
+Resource missing. [HTTP HEAD: https://libraries.minecraft.net/com/google/errorprone/error_prone_parent/2.18.0/error_prone_parent-2.18.0.jar]
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-glfw/3.3.3/lwjgl-glfw-3.3.3-natives-linux.jar to C:\Users\18364\.gradle\.tmp\gradle_download12886192712596759779bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-glfw/3.3.3/lwjgl-glfw-3.3.3-natives-macos-arm64.jar to C:\Users\18364\.gradle\.tmp\gradle_download1849305565622823686bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-freetype/3.3.3/lwjgl-freetype-3.3.3-natives-macos-patch.jar to C:\Users\18364\.gradle\.tmp\gradle_download5531762708349210817bin
+Cached resource https://libraries.minecraft.net/ca/weblite/java-objc-bridge/1.1/java-objc-bridge-1.1.jar is up-to-date (lastModified: Thu Oct 27 15:24:06 CST 2022).
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-freetype/3.3.3/lwjgl-freetype-3.3.3-natives-macos-arm64.jar to C:\Users\18364\.gradle\.tmp\gradle_download15071003538691679969bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-stb/3.3.3/lwjgl-stb-3.3.3-natives-linux.jar to C:\Users\18364\.gradle\.tmp\gradle_download4647913901492919367bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-opengl/3.3.3/lwjgl-opengl-3.3.3-natives-linux.jar to C:\Users\18364\.gradle\.tmp\gradle_download12546590148739041572bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-jemalloc/3.3.3/lwjgl-jemalloc-3.3.3-natives-macos.jar to C:\Users\18364\.gradle\.tmp\gradle_download10113145719154047486bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-stb/3.3.3/lwjgl-stb-3.3.3-natives-macos-arm64.jar to C:\Users\18364\.gradle\.tmp\gradle_download1589752941534162773bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-opengl/3.3.3/lwjgl-opengl-3.3.3-natives-macos-arm64.jar to C:\Users\18364\.gradle\.tmp\gradle_download14560649114839518788bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-glfw/3.3.3/lwjgl-glfw-3.3.3-natives-macos.jar to C:\Users\18364\.gradle\.tmp\gradle_download10721570973550425357bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-openal/3.3.3/lwjgl-openal-3.3.3-natives-macos.jar to C:\Users\18364\.gradle\.tmp\gradle_download11151349935140010756bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-openal/3.3.3/lwjgl-openal-3.3.3-natives-linux.jar to C:\Users\18364\.gradle\.tmp\gradle_download7324859981082084301bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-freetype/3.3.3/lwjgl-freetype-3.3.3-natives-linux.jar to C:\Users\18364\.gradle\.tmp\gradle_download8312363715173088133bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-jemalloc/3.3.3/lwjgl-jemalloc-3.3.3-natives-linux.jar to C:\Users\18364\.gradle\.tmp\gradle_download17178114444951484654bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-opengl/3.3.3/lwjgl-opengl-3.3.3-natives-macos.jar to C:\Users\18364\.gradle\.tmp\gradle_download3858947381574837178bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-jemalloc/3.3.3/lwjgl-jemalloc-3.3.3-natives-macos-arm64.jar to C:\Users\18364\.gradle\.tmp\gradle_download7880313925414035303bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-openal/3.3.3/lwjgl-openal-3.3.3-natives-macos-arm64.jar to C:\Users\18364\.gradle\.tmp\gradle_download17302256322519857894bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-tinyfd/3.3.3/lwjgl-tinyfd-3.3.3-natives-linux.jar to C:\Users\18364\.gradle\.tmp\gradle_download6256118270874461732bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-tinyfd/3.3.3/lwjgl-tinyfd-3.3.3-natives-macos.jar to C:\Users\18364\.gradle\.tmp\gradle_download2636224848684309760bin
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-tinyfd/3.3.3/lwjgl-tinyfd-3.3.3-natives-macos-arm64.jar to C:\Users\18364\.gradle\.tmp\gradle_download17833705052068778574bin
+Cached resource https://libraries.minecraft.net/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar is up-to-date (lastModified: Thu Oct 27 15:24:30 CST 2022).
+Cached resource https://libraries.minecraft.net/com/google/j2objc/j2objc-annotations/2.8/j2objc-annotations-2.8.jar is up-to-date (lastModified: Tue Aug 29 15:33:54 CST 2023).
+Cached resource https://libraries.minecraft.net/com/google/errorprone/error_prone_annotations/2.18.0/error_prone_annotations-2.18.0.jar is up-to-date (lastModified: Tue Aug 29 15:33:54 CST 2023).
+Found locally available resource with matching checksum: [https://libraries.minecraft.net/org/lwjgl/lwjgl/3.3.3/lwjgl-3.3.3-natives-macos.jar, C:\Users\18364\.gradle\caches\modules-2\files-2.1\org.lwjgl\lwjgl\3.3.3\33a6efa288390490ce6eb6c3df47ac21ecf648cf\lwjgl-3.3.3-natives-macos.jar]
+Found locally available resource with matching checksum: [https://libraries.minecraft.net/org/lwjgl/lwjgl/3.3.3/lwjgl-3.3.3-natives-macos-arm64.jar, C:\Users\18364\.gradle\caches\modules-2\files-2.1\org.lwjgl\lwjgl\3.3.3\226246e75f6bd8d4e1895bdce8638ef87808d114\lwjgl-3.3.3-natives-macos-arm64.jar]
+Downloading https://libraries.minecraft.net/org/lwjgl/lwjgl-stb/3.3.3/lwjgl-stb-3.3.3-natives-macos.jar to C:\Users\18364\.gradle\.tmp\gradle_download2937921108824879226bin
+Cached resource https://libraries.minecraft.net/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar is up-to-date (lastModified: Thu Oct 27 15:23:50 CST 2022).
+Cached resource https://libraries.minecraft.net/org/checkerframework/checker-qual/3.33.0/checker-qual-3.33.0.jar is up-to-date (lastModified: Tue Aug 29 15:33:42 CST 2023).
+Found locally available resource with matching checksum: [https://libraries.minecraft.net/org/lwjgl/lwjgl/3.3.3/lwjgl-3.3.3-natives-linux.jar, C:\Users\18364\.gradle\caches\modules-2\files-2.1\org.lwjgl\lwjgl\3.3.3\1713758e3660ba66e1e954396fd18126038b33c0\lwjgl-3.3.3-natives-linux.jar]
+Evaluating layer mapping: loom:mappings:layered+hash.2198
+Loaded state for lock with ID 'mappings'
+Loaded state for lock with ID 'mappings'
+Loaded state for lock with ID 'modApi'
+Loaded state for lock with ID 'modImplementation'
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.19.3/fabric-loader-0.19.3.pom to C:\Users\18364\.gradle\.tmp\gradle_download5965225785922879950bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.116.14+1.21.1/fabric-api-0.116.14+1.21.1.pom to C:\Users\18364\.gradle\.tmp\gradle_download16634191656654501033bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api-base/0.4.42+6573ed8c19/fabric-api-base-0.4.42+6573ed8c19.pom to C:\Users\18364\.gradle\.tmp\gradle_download17345472324386966729bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api-lookup-api-v1/1.6.72+7b3d111d19/fabric-api-lookup-api-v1-1.6.72+7b3d111d19.pom to C:\Users\18364\.gradle\.tmp\gradle_download6144880682707921468bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-biome-api-v1/13.0.31+d527f9fd19/fabric-biome-api-v1-13.0.31+d527f9fd19.pom to C:\Users\18364\.gradle\.tmp\gradle_download17313739879044662060bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-block-api-v1/1.1.0+0bc3503219/fabric-block-api-v1-1.1.0+0bc3503219.pom to C:\Users\18364\.gradle\.tmp\gradle_download12272276545968685393bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-block-view-api-v2/1.0.11+ebb2264e19/fabric-block-view-api-v2-1.0.11+ebb2264e19.pom to C:\Users\18364\.gradle\.tmp\gradle_download3724950801258283456bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-blockrenderlayer-v1/1.1.52+0af3f5a719/fabric-blockrenderlayer-v1-1.1.52+0af3f5a719.pom to C:\Users\18364\.gradle\.tmp\gradle_download1431669111500454252bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-client-tags-api-v1/1.2.0+1eb36c0719/fabric-client-tags-api-v1-1.2.0+1eb36c0719.pom to C:\Users\18364\.gradle\.tmp\gradle_download1321634573792389788bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-command-api-v2/2.2.28+6ced4dd919/fabric-command-api-v2-2.2.28+6ced4dd919.pom to C:\Users\18364\.gradle\.tmp\gradle_download14029355162361050733bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-content-registries-v0/8.0.19+b559734419/fabric-content-registries-v0-8.0.19+b559734419.pom to C:\Users\18364\.gradle\.tmp\gradle_download4479166758157811384bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-convention-tags-v2/2.12.0+c3656daa19/fabric-convention-tags-v2-2.12.0+c3656daa19.pom to C:\Users\18364\.gradle\.tmp\gradle_download10900997611322500123bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-crash-report-info-v1/0.2.29+0af3f5a719/fabric-crash-report-info-v1-0.2.29+0af3f5a719.pom to C:\Users\18364\.gradle\.tmp\gradle_download7271656728865512714bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-data-attachment-api-v1/1.4.7+5b36e0f719/fabric-data-attachment-api-v1-1.4.7+5b36e0f719.pom to C:\Users\18364\.gradle\.tmp\gradle_download14021141176653876577bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-data-generation-api-v1/20.3.0+1eb36c0719/fabric-data-generation-api-v1-20.3.0+1eb36c0719.pom to C:\Users\18364\.gradle\.tmp\gradle_download3528746833782944370bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-dimensions-v1/4.0.1+65213ef819/fabric-dimensions-v1-4.0.1+65213ef819.pom to C:\Users\18364\.gradle\.tmp\gradle_download5937763203350440532bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-entity-events-v1/1.8.0+2b27e0a419/fabric-entity-events-v1-1.8.0+2b27e0a419.pom to C:\Users\18364\.gradle\.tmp\gradle_download10829943883006680967bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-events-interaction-v0/0.7.14+ba9dae0619/fabric-events-interaction-v0-0.7.14+ba9dae0619.pom to C:\Users\18364\.gradle\.tmp\gradle_download13652777717696951838bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-game-rule-api-v1/1.0.53+6ced4dd919/fabric-game-rule-api-v1-1.0.53+6ced4dd919.pom to C:\Users\18364\.gradle\.tmp\gradle_download2174010705934813874bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-gametest-api-v1/2.0.5+6fc22b9919/fabric-gametest-api-v1-2.0.5+6fc22b9919.pom to C:\Users\18364\.gradle\.tmp\gradle_download416435509266301240bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-item-api-v1/11.2.0+3b3cb2e819/fabric-item-api-v1-11.2.0+3b3cb2e819.pom to C:\Users\18364\.gradle\.tmp\gradle_download12773216363461055458bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-item-group-api-v1/4.1.7+def88e3a19/fabric-item-group-api-v1-4.1.7+def88e3a19.pom to C:\Users\18364\.gradle\.tmp\gradle_download2992038576439997306bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-key-binding-api-v1/1.0.47+0af3f5a719/fabric-key-binding-api-v1-1.0.47+0af3f5a719.pom to C:\Users\18364\.gradle\.tmp\gradle_download12446624310221646196bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-lifecycle-events-v1/2.6.0+0865547519/fabric-lifecycle-events-v1-2.6.0+0865547519.pom to C:\Users\18364\.gradle\.tmp\gradle_download14789119849681348980bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-loot-api-v3/1.0.3+3f89f5a519/fabric-loot-api-v3-1.0.3+3f89f5a519.pom to C:\Users\18364\.gradle\.tmp\gradle_download1988575163226907639bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-message-api-v1/6.0.14+8aaf3aca19/fabric-message-api-v1-6.0.14+8aaf3aca19.pom to C:\Users\18364\.gradle\.tmp\gradle_download9798444577883640799bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-model-loading-api-v1/2.1.0+b4d813fc19/fabric-model-loading-api-v1-2.1.0+b4d813fc19.pom to C:\Users\18364\.gradle\.tmp\gradle_download18092638332206608201bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-networking-api-v1/4.3.1+d30f6a7919/fabric-networking-api-v1-4.3.1+d30f6a7919.pom to C:\Users\18364\.gradle\.tmp\gradle_download18075845109675231334bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-object-builder-api-v1/15.2.1+40875a9319/fabric-object-builder-api-v1-15.2.1+40875a9319.pom to C:\Users\18364\.gradle\.tmp\gradle_download9800584507282120048bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-particles-v1/4.0.2+6573ed8c19/fabric-particles-v1-4.0.2+6573ed8c19.pom to C:\Users\18364\.gradle\.tmp\gradle_download12559074555144595535bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-recipe-api-v1/5.0.16+2475392c19/fabric-recipe-api-v1-5.0.16+2475392c19.pom to C:\Users\18364\.gradle\.tmp\gradle_download4312739525786257881bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-registry-sync-v0/5.3.2+e3eddc2119/fabric-registry-sync-v0-5.3.2+e3eddc2119.pom to C:\Users\18364\.gradle\.tmp\gradle_download14917835471290258561bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-renderer-api-v1/3.4.1+b4d813fc19/fabric-renderer-api-v1-3.4.1+b4d813fc19.pom to C:\Users\18364\.gradle\.tmp\gradle_download2591195370908833703bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-renderer-indigo/1.7.1+c705a49c19/fabric-renderer-indigo-1.7.1+c705a49c19.pom to C:\Users\18364\.gradle\.tmp\gradle_download15580030253996082253bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-rendering-fluids-v1/3.1.6+1daea21519/fabric-rendering-fluids-v1-3.1.6+1daea21519.pom to C:\Users\18364\.gradle\.tmp\gradle_download5064834790522685136bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-rendering-v1/5.1.0+ab4c25a019/fabric-rendering-v1-5.1.0+ab4c25a019.pom to C:\Users\18364\.gradle\.tmp\gradle_download15856091091842627839bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-resource-conditions-api-v1/4.3.0+8dc279b119/fabric-resource-conditions-api-v1-4.3.0+8dc279b119.pom to C:\Users\18364\.gradle\.tmp\gradle_download15230627072620210823bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-resource-loader-v0/1.3.1+5b5275af19/fabric-resource-loader-v0-1.3.1+5b5275af19.pom to C:\Users\18364\.gradle\.tmp\gradle_download15362575974990050718bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-screen-api-v1/2.0.26+639b4c0719/fabric-screen-api-v1-2.0.26+639b4c0719.pom to C:\Users\18364\.gradle\.tmp\gradle_download8231959862085779577bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-screen-handler-api-v1/1.3.91+b559734419/fabric-screen-handler-api-v1-1.3.91+b559734419.pom to C:\Users\18364\.gradle\.tmp\gradle_download13454675500049293693bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-sound-api-v1/1.0.23+6573ed8c19/fabric-sound-api-v1-1.0.23+6573ed8c19.pom to C:\Users\18364\.gradle\.tmp\gradle_download11907545770262924732bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-tag-api-v1/1.3.0+1eb36c0719/fabric-tag-api-v1-1.3.0+1eb36c0719.pom to C:\Users\18364\.gradle\.tmp\gradle_download227255549360406001bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-transfer-api-v1/5.4.4+7b3d111d19/fabric-transfer-api-v1-5.4.4+7b3d111d19.pom to C:\Users\18364\.gradle\.tmp\gradle_download7045835965103141650bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-transitive-access-wideners-v1/6.2.0+45b9699719/fabric-transitive-access-wideners-v1-6.2.0+45b9699719.pom to C:\Users\18364\.gradle\.tmp\gradle_download4546386753415895803bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api-deprecated/0.116.14+1.21.1/fabric-api-deprecated-0.116.14+1.21.1.pom to C:\Users\18364\.gradle\.tmp\gradle_download2609921885205177694bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-command-api-v1/1.2.49+f71b366f19/fabric-command-api-v1-1.2.49+f71b366f19.pom to C:\Users\18364\.gradle\.tmp\gradle_download8920284819364716649bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-commands-v0/0.2.66+df3654b319/fabric-commands-v0-0.2.66+df3654b319.pom to C:\Users\18364\.gradle\.tmp\gradle_download12682515126391575321bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-convention-tags-v1/2.1.7+7f945d5b19/fabric-convention-tags-v1-2.1.7+7f945d5b19.pom to C:\Users\18364\.gradle\.tmp\gradle_download8799769829315097336bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-keybindings-v0/0.2.45+df3654b319/fabric-keybindings-v0-0.2.45+df3654b319.pom to C:\Users\18364\.gradle\.tmp\gradle_download12575047159569868594bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-loot-api-v2/3.0.15+3f89f5a519/fabric-loot-api-v2-3.0.15+3f89f5a519.pom to C:\Users\18364\.gradle\.tmp\gradle_download2565182519850862606bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-renderer-registries-v1/3.2.69+df3654b319/fabric-renderer-registries-v1-3.2.69+df3654b319.pom to C:\Users\18364\.gradle\.tmp\gradle_download1368713086362546308bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-rendering-data-attachment-v1/0.3.49+73761d2e19/fabric-rendering-data-attachment-v1-0.3.49+73761d2e19.pom to C:\Users\18364\.gradle\.tmp\gradle_download18157563694523443524bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-rendering-v0/1.1.72+df3654b319/fabric-rendering-v0-1.1.72+df3654b319.pom to C:\Users\18364\.gradle\.tmp\gradle_download14942106923791040912bin
+Loaded state for lock with ID 'modImplementation'
+Resource missing. [HTTP HEAD: https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api-deprecated/0.116.14+1.21.1/fabric-api-deprecated-0.116.14+1.21.1.jar]
+Loaded state for lock with ID 'modCompileOnly'
+Loaded state for lock with ID 'modCompileOnlyApi'
+Loaded state for lock with ID 'modRuntimeOnly'
+Loaded state for lock with ID 'modLocalRuntime'
+Loaded state for lock with ID 'modClientImplementation'
+Loaded state for lock with ID 'modClientCompileOnly'
+Loaded state for lock with ID 'modClientRuntimeOnly'
+Loaded state for lock with ID 'modGametestImplementation'
+Loaded state for lock with ID 'modGametestCompileOnly'
+Loaded state for lock with ID 'modGametestRuntimeOnly'
+Loaded state for lock with ID 'modApiCopy'
+Loaded state for lock with ID 'modImplementationCopy'
+Loaded state for lock with ID 'modImplementationCopy'
+Loaded state for lock with ID 'modRuntimeOnlyCopy'
+Loaded state for lock with ID 'modLocalRuntimeCopy'
+Loaded state for lock with ID 'modClientImplementationCopy'
+Loaded state for lock with ID 'modClientRuntimeOnlyCopy'
+Loaded state for lock with ID 'modApiCopy2'
+Loaded state for lock with ID 'modImplementationCopy2'
+Loaded state for lock with ID 'modImplementationCopy2'
+Loaded state for lock with ID 'modRuntimeOnlyCopy2'
+Loaded state for lock with ID 'modLocalRuntimeCopy2'
+Loaded state for lock with ID 'modApiCopy3'
+Loaded state for lock with ID 'modImplementationCopy3'
+Loaded state for lock with ID 'modImplementationCopy3'
+Loaded state for lock with ID 'modCompileOnlyCopy'
+Loaded state for lock with ID 'modCompileOnlyApiCopy'
+Loaded state for lock with ID 'modClientImplementationCopy2'
+Loaded state for lock with ID 'modClientCompileOnlyCopy'
+Mod dependency options: {"__inlineRefmap__":false,"__mappings__":"loom.mappings.1_21_1.layered+hash.2198-v2"}
+Loaded state for lock with ID 'modImplementationCopy4'
+Loaded state for lock with ID 'modImplementationCopy4'
+Applying installer data from C:\Users\18364\.gradle\caches\modules-2\files-2.1\net.fabricmc\fabric-loader\0.19.3\354dfaa02d0552e11867f85dff7cdbfaf813ba3e\fabric-loader-0.19.3.jar
+Loaded state for lock with ID 'modImplementationCopy5'
+Loaded state for lock with ID 'modImplementationCopy5'
+Found another installer JSON in (C:\Users\18364\.gradle\caches\modules-2\files-2.1\net.fabricmc\fabric-loader\0.19.3\354dfaa02d0552e11867f85dff7cdbfaf813ba3e\fabric-loader-0.19.3.jar), ignoring
+Loaded state for lock with ID 'modApiCopy4'
+Loaded state for lock with ID 'modApiCopy5'
+Loaded state for lock with ID 'modCompileOnlyCopy2'
+Loaded state for lock with ID 'modCompileOnlyApiCopy2'
+Loaded state for lock with ID 'modRuntimeOnlyCopy3'
+Loaded state for lock with ID 'modLocalRuntimeCopy3'
+Loaded state for lock with ID 'modClientImplementationCopy3'
+Loaded state for lock with ID 'modClientImplementationCopy4'
+Loaded state for lock with ID 'modClientCompileOnlyCopy2'
+Loaded state for lock with ID 'modClientRuntimeOnlyCopy2'
+Loaded state for lock with ID 'modGametestImplementationCopy'
+Loaded state for lock with ID 'modGametestImplementationCopy2'
+Loaded state for lock with ID 'modGametestCompileOnlyCopy'
+Loaded state for lock with ID 'modGametestRuntimeOnlyCopy'
+All projects evaluated.
+Task name matched 'help'
+Selected primary task 'help' from project :
+Tasks to be executed: [task ':help']
+Tasks that were excluded: []
+Resolve mutations for :help (Thread[#248,Execution worker,5,main]) started.
+:help (Thread[#247,included builds,5,main]) started.
+
+> Task :help
+Caching disabled for task ':help' because:
+  Produces only non-cacheable console output
+Task ':help' is not up-to-date because:
+  Task has not declared any outputs despite executing actions.
+
+Welcome to Gradle 9.4.1.
+
+To run a build, run gradlew <task> ...
+
+To see a list of available tasks, run gradlew tasks
+
+To see more detail about a task, run gradlew help --task <task>
+
+To see a list of command-line options, run gradlew --help
+
+For more detail on using Gradle, see https://docs.gradle.org/9.4.1/userguide/command_line_interface.html
+
+For troubleshooting, visit https://help.gradle.org
+Found dependency verification metadata file, updating
+Loaded state for lock with ID 'annotationProcessor'
+Downloading https://maven.fabricmc.net/net/fabricmc/cfr/0.2.2/cfr-0.2.2.pom to C:\Users\18364\.gradle\.tmp\gradle_download15617962138707012766bin
+Downloading https://maven.fabricmc.net/net/fabricmc/cfr/0.2.2/cfr-0.2.2.module to C:\Users\18364\.gradle\.tmp\gradle_download7671202700242450009bin
+Downloading https://maven.fabricmc.net/net/fabricmc/cfr/0.2.2/cfr-0.2.2.jar to C:\Users\18364\.gradle\.tmp\gradle_download11488544696051248899bin
+Loaded state for lock with ID 'clientAnnotationProcessor'
+Loaded state for lock with ID 'clientCompileClasspath'
+Downloading https://repo.maven.apache.org/maven2/org/jetbrains/annotations/26.0.2/annotations-26.0.2.pom to C:\Users\18364\.gradle\.tmp\gradle_download7848268609438904315bin
+Downloading https://repo.maven.apache.org/maven2/org/jetbrains/annotations/26.0.2/annotations-26.0.2.module to C:\Users\18364\.gradle\.tmp\gradle_download3294108650709613069bin
+Loaded state for lock with ID 'clientCompileClasspath'
+Downloading https://maven.fabricmc.net/net/fabricmc/dev-launch-injector/0.2.1+build.8/dev-launch-injector-0.2.1+build.8.pom to C:\Users\18364\.gradle\.tmp\gradle_download9066909273025529580bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-log4j-util/1.0.2/fabric-log4j-util-1.0.2.pom to C:\Users\18364\.gradle\.tmp\gradle_download13669778982106665297bin
+Downloading https://maven.fabricmc.net/net/fabricmc/fabric-log4j-util/1.0.2/fabric-log4j-util-1.0.2.module to C:\Users\18364\.gradle\.tmp\gradle_download2066808230658499128bin
+Loaded state for lock with ID 'clientSmokeAnnotationProcessor'
+Loaded state for lock with ID 'clientSmokeCompileClasspath'
+Loaded state for lock with ID 'compileClasspath'
+Loaded state for lock with ID 'compileClasspath'
+Loaded state for lock with ID 'gametestAnnotationProcessor'
+Loaded state for lock with ID 'gametestCompileClasspath'
+Loaded state for lock with ID 'gametestCompileClasspath'
+Loaded state for lock with ID 'gametestRuntimeClasspath'
+Loaded state for lock with ID 'gametestRuntimeClasspath'
+Loaded state for lock with ID 'includeInternal'
+Loaded state for lock with ID 'minecraftClientLibraries'
+Loaded state for lock with ID 'minecraftClientLibraries'
+Loaded state for lock with ID 'minecraftClientRuntimeLibraries'
+Loaded state for lock with ID 'minecraftClientRuntimeLibraries'
+Loaded state for lock with ID 'minecraftLibraries'
+Loaded state for lock with ID 'minecraftLibraries'
+Loaded state for lock with ID 'minecraftRuntimeLibraries'
+Loaded state for lock with ID 'minecraftRuntimeLibraries'
+Loaded state for lock with ID 'minecraftServerLibraries'
+Loaded state for lock with ID 'minecraftServerLibraries'
+Loaded state for lock with ID 'minecraftServerRuntimeLibraries'
+Loaded state for lock with ID 'minecraftServerRuntimeLibraries'
+Loaded state for lock with ID 'testAnnotationProcessor'
+Loaded state for lock with ID 'testCompileClasspath'
+Downloading https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.0/junit-jupiter-5.11.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download5432771995969023093bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.0/junit-bom-5.11.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download6464041746756314701bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.11.0/junit-bom-5.11.0.module to C:\Users\18364\.gradle\.tmp\gradle_download4153108225972297647bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.11.0/junit-jupiter-5.11.0.module to C:\Users\18364\.gradle\.tmp\gradle_download6878443806231972757bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.0/junit-jupiter-api-5.11.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download5718057776948222213bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.11.0/junit-jupiter-api-5.11.0.module to C:\Users\18364\.gradle\.tmp\gradle_download14982587405051162168bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.0/junit-jupiter-params-5.11.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download12607265373200930141bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.11.0/junit-jupiter-params-5.11.0.module to C:\Users\18364\.gradle\.tmp\gradle_download12910292355651714059bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.0/junit-platform-commons-1.11.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download10519401713112814047bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.11.0/junit-platform-commons-1.11.0.module to C:\Users\18364\.gradle\.tmp\gradle_download7242041604848559999bin
+Downloading https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download1498034417768480946bin
+Downloading https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.module to C:\Users\18364\.gradle\.tmp\gradle_download15600527097706577050bin
+Downloading https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.pom to C:\Users\18364\.gradle\.tmp\gradle_download4828240407416061317bin
+Downloading https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.module to C:\Users\18364\.gradle\.tmp\gradle_download2669221940992180049bin
+Loaded state for lock with ID 'testCompileClasspath'
+Loaded state for lock with ID 'testRuntimeClasspath'
+Downloading https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.0/junit-platform-launcher-1.11.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download11492390497608703111bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.11.0/junit-platform-launcher-1.11.0.module to C:\Users\18364\.gradle\.tmp\gradle_download7455603741780158377bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.0/junit-jupiter-engine-5.11.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download3829031079345642523bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.11.0/junit-jupiter-engine-5.11.0.module to C:\Users\18364\.gradle\.tmp\gradle_download16092898237572777894bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.0/junit-platform-engine-1.11.0.pom to C:\Users\18364\.gradle\.tmp\gradle_download3039708135511374260bin
+Downloading https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.11.0/junit-platform-engine-1.11.0.module to C:\Users\18364\.gradle\.tmp\gradle_download15987540122850345400bin
+Loaded state for lock with ID 'testRuntimeClasspath'
+Downloading https://repo.maven.apache.org/maven2/org/vineflower/vineflower/1.11.1/vineflower-1.11.1.pom to C:\Users\18364\.gradle\.tmp\gradle_download11319852054597836443bin
+Downloading https://repo.maven.apache.org/maven2/org/vineflower/vineflower/1.11.1/vineflower-1.11.1.jar to C:\Users\18364\.gradle\.tmp\gradle_download1591096891772293186bin
+
+BUILD SUCCESSFUL in 48s
+1 actionable task: 1 executed
+Watched directory hierarchies: []
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html

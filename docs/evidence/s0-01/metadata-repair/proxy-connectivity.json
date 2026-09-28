@@ -1,0 +1,6 @@
+{
+  "Endpoint": "https://maven.fabricmc.net/net/fabricmc/fabric-loom/1.16.3/fabric-loom-1.16.3.pom",
+  "StatusCode": 200,
+  "Proxy": "127.0.0.1:7897",
+  "Test": "HEAD only, no downloaded dependency"
+}

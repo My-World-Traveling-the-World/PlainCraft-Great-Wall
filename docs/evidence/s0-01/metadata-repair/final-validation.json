@@ -1,0 +1,14 @@
+{
+  "NetworkMetadataGeneration": "SUCCESS",
+  "OfflineBuildStrict": "SUCCESS",
+  "OfflineBuildStrictForcedNoBuildCache": "SUCCESS",
+  "JUnitTests": 3,
+  "JUnitFailures": 0,
+  "GameTestRequiredTests": 1,
+  "GameTestFailures": 0,
+  "ProxyRemoved": true,
+  "VersionInputsUnchanged": true,
+  "VerificationComponentCount": 266,
+  "VerificationXmlSHA256": "c4e281095c96f26a421fc7d676a6d218f20f9739b40978b061863707f7edcee5",
+  "ArtifactSHA256": "0c6aa88859fbea0f3843907347b2439f49e1dcbc3bdf0f881de973d611ae0ebd"
+}

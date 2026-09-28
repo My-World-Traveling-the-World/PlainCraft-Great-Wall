@@ -1,0 +1,58 @@
+// Opt-in trust-on-first-use snapshot of locally resolved artifacts, never a download.
+tasks.register('writeLocalVerification') {
+    group = 'verification'
+    description = 'Record SHA-256 of the resolved offline inputs; review before trusting.'
+    mustRunAfter tasks.named('build'), tasks.named('test')
+    doLast {
+        def entries = new TreeMap<String, Map>()
+        def candidates = []
+        candidates.addAll(buildscript.configurations.findAll { it.canBeResolved })
+        candidates.addAll(configurations.findAll {
+            it.canBeResolved && it.state != Configuration.State.UNRESOLVED
+        })
+        candidates.each { configuration ->
+            configuration.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+                def id = artifact.moduleVersion.id
+                def key = "${id.group}:${id.name}:${id.version}"
+                def component = entries.computeIfAbsent(key) {
+                    [group: id.group, name: id.name, version: id.version, artifacts: new TreeMap()]
+                }
+                def digest = java.security.MessageDigest.getInstance('SHA-256')
+                artifact.file.withInputStream { stream ->
+                    byte[] buffer = new byte[65536]
+                    for (int count; (count = stream.read(buffer)) != -1;) {
+                        digest.update(buffer, 0, count)
+                    }
+                }
+                def hash = digest.digest().encodeHex().toString()
+                def previous = component.artifacts.put(artifact.file.name, hash)
+                if (previous != null && previous != hash) {
+                    throw new GradleException("Conflicting artifact bytes: ${key}/${artifact.file.name}")
+                }
+            }
+        }
+        def target = file('gradle/verification-metadata.xml')
+        target.withWriter('UTF-8') { writer ->
+            def xml = new groovy.xml.MarkupBuilder(writer)
+            xml.mkp.xmlDeclaration(version: '1.0', encoding: 'UTF-8')
+            xml.'verification-metadata'(xmlns: 'https://schema.gradle.org/dependency-verification') {
+                xml.configuration {
+                    xml.'verify-metadata'(false)
+                    xml.'verify-signatures'(false)
+                }
+                xml.components {
+                    entries.values().each { entry ->
+                        xml.component(group: entry.group, name: entry.name, version: entry.version) {
+                            entry.artifacts.each { filename, hash ->
+                                xml.artifact(name: filename) {
+                                    xml.sha256(value: hash, origin: 'Reviewed local offline cache; not upstream authenticated')
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        logger.lifecycle("Recorded ${entries.size()} resolved components in ${target}")
+    }
+}
