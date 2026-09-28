@@ -1,0 +1,36 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileServerSmokeJava
+> Task :generateLog4jConfig UP-TO-DATE
+> Task :generateRemapClasspath UP-TO-DATE
+> Task :generateDLIConfig
+> Task :configureLaunch
+
+> Task :prepareServerSmoke
+Isolated smoke directory: D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\vanilla\vanilla-01
+
+> Task :processServerSmokeResources
+> Task :serverSmokeClasses
+> Task :runServerSmoke FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':runServerSmoke'.
+> Working directory 'D:\云游四海-Mod源码\plaincraft-great-wall\D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\vanilla\vanilla-01' does not exist.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 10s
+9 actionable tasks: 5 executed, 4 up-to-date

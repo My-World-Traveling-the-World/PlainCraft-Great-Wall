@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "plaincraft_great_wall_server_smoke",
+  "version": "1.0.0",
+  "name": "Great Wall Isolated Dedicated Server Smoke",
+  "environment": "server",
+  "entrypoints": {
+    "main": ["local.plaincraft.greatwall.smoke.ServerSmoke"]
+  },
+  "depends": {"plaincraft_great_wall": "*"}
+}

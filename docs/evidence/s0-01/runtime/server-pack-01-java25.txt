@@ -1,0 +1,1051 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileServerSmokeJava UP-TO-DATE
+> Task :generateLog4jConfig UP-TO-DATE
+> Task :generateRemapClasspath UP-TO-DATE
+> Task :generateDLIConfig UP-TO-DATE
+> Task :configureLaunch UP-TO-DATE
+
+> Task :prepareServerSmoke
+Isolated smoke directory: D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01
+
+> Task :processServerSmokeResources UP-TO-DATE
+> Task :serverSmokeClasses UP-TO-DATE
+
+> Task :runServerSmoke
+[01:40:53] [main/INFO] (FabricLoader/GameProvider) Loading Minecraft 1.21.1 with Fabric Loader 0.19.3
+[01:40:53] [ForkJoinPool-1-worker-13/WARN] (FabricLoader/Metadata) The mod "asynclocator" contains invalid entries in its mod json:
+- Unsupported root entry "credits" at line 10 column 12
+WARNING: Using incubator modules: jdk.incubator.vector
+[01:40:53] [ForkJoinPool-1-worker-6/WARN] (FabricLoader/Metadata) The mod "accessories_compat_layer" contains invalid entries in its mod json:
+- Unsupported root entry "#COMMENT_breaks" at line 53 column 20
+[01:40:53] [ForkJoinPool-1-worker-8/WARN] (FabricLoader/Metadata) Mod com_github_rtyley_animated-gif-lib-for-java uses the version animated-gif-lib-1.7 which isn't compatible with Loader's extended semantic version format (Could not parse version number component 'animated'!), SemVer is recommended for reliably evaluating dependencies and prioritizing newer version
+[01:40:53] [ForkJoinPool-1-worker-5/WARN] (FabricLoader/Metadata) Mod mydriasis uses the version r1.0.0+1.21.1 which isn't compatible with Loader's extended semantic version format (Could not parse version number component 'r1'!), SemVer is recommended for reliably evaluating dependencies and prioritizing newer version
+[01:40:53] [ForkJoinPool-1-worker-6/WARN] (FabricLoader/Metadata) Mod punchy uses the version 2.7d which isn't compatible with Loader's extended semantic version format (Could not parse version number component '7d'!), SemVer is recommended for reliably evaluating dependencies and prioritizing newer version
+[01:40:53] [ForkJoinPool-1-worker-10/WARN] (FabricLoader/Metadata) Mod stutterfix uses the version mc1.21-0.2.3 which isn't compatible with Loader's extended semantic version format (Could not parse version number component 'mc1'!), SemVer is recommended for reliably evaluating dependencies and prioritizing newer version
+[01:40:54] [ForkJoinPool-1-worker-5/WARN] (FabricLoader/Metadata) Mod catburger uses the version 1.0.3_fix2 which isn't compatible with Loader's extended semantic version format (Could not parse version number component '3_fix2'!), SemVer is recommended for reliably evaluating dependencies and prioritizing newer version
+[01:40:54] [ForkJoinPool-1-worker-13/WARN] (FabricLoader/Metadata) Mod footprintparticle uses the version 0.5.4b-mc1.21(.1) which isn't compatible with Loader's extended semantic version format (Invalid prerelease string 'mc1.21(.1)'!), SemVer is recommended for reliably evaluating dependencies and prioritizing newer version
+[01:40:54] [ForkJoinPool-1-worker-15/WARN] (FabricLoader/Metadata) Mod automobility uses the version 0.5.0.h which isn't compatible with Loader's extended semantic version format (Could not parse version number component 'h'!), SemVer is recommended for reliably evaluating dependencies and prioritizing newer version
+[01:40:54] [ForkJoinPool-1-worker-13/WARN] (FabricLoader/Metadata) Mod elytra_physics uses the version 2.6.2_mc1.21.1 which isn't compatible with Loader's extended semantic version format (Could not parse version number component '2_mc1'!), SemVer is recommended for reliably evaluating dependencies and prioritizing newer version
+[01:40:54] [main/INFO] (FabricLoader) Dependencies overridden for fastmove
+[01:40:54] [main/WARN] (FabricLoader/Resolution) Warnings were found!
+ - 模组 'Dont melt my snowy builds!' (nomeltsnowybuilds) 1.0.0+1.21.1 建议安装 模组 'Barebones McQoy' (mcqoy) 的 0.3.3+1.3.2 版本，但已经安装了的版本 0.4.1+fabric-1.20 不对！
+	 - 为了最佳体验，您应该安装 模组 'Barebones McQoy' (mcqoy) 的 0.3.3+1.3.2 版本。
+[01:40:54] [main/INFO] (FabricLoader) Loading 619 mods:
+	- abridged 2.0.2
+	- accents 2.0.2
+	- accessories 1.1.0-beta.53+1.21.1
+	- accessories_compat_layer 0.1.12
+	- actuallyharvest 1.1.7.6
+	- adorablehamsterpets 3.6.0-1.21.1+fabric
+	- adrenaline-rush 1.0.0
+	- advancement_biome_compass 1.1.3-local
+	- advancementframes 1.21-2.2.9
+	- adventureitemstats 0.7.0
+	- almanac 1.5.2
+	- amendments 1.21-2.1.7
+	- animalgarden_commonraven 0.116.7
+	- animalgarden_fennecfox 0.116.7
+	- animalgarden_owl 0.115.0
+	- appleskin 3.0.6+mc1.21
+	- architectury 13.0.8
+	- artifacts 13.2.1
+	   \-- expandability 12.0.0
+	- asynclocator 1.5.4
+	- automobility 0.5.0.h
+	   |-- de_javagl_obj 0.4.0
+	   \-- jsonem 0.3+1.21
+	- backpacked 3.0.5
+	- backpacked_shells 1.0.1
+	- backpackedwoc 3.0.3
+	- badmobs 1.0.0
+	- balm 21.0.57
+	   \-- kuma_api 21.0.8
+	- beautify 2.0.0+1.21.1
+	- better_climbing 3
+	- better_looting 2.1.1
+	- better_respawn 1.21.1-2.0.6
+	- betterbiomeblend 1.4.1
+	- betterdays 3.3.6.3
+	- bettermineshafts 1.21.1-Fabric-5.1.1
+	   \-- org_reflections_reflections 0.10.2
+	- betteroceanmonuments 1.21.1-Fabric-4.1.2
+	   \-- org_reflections_reflections 0.10.2
+	- betterstrongholds 1.21.1-Fabric-5.1.3
+	   \-- org_reflections_reflections 0.10.2
+	- betterthanmending 2.2.0
+	- biomesoplenty 21.1.0.13
+	- biomespy 1.3.3
+	- biomeswevegone 2.6.0
+	- birds-boids 1.3.1
+	- boids 2.0.4+1.21
+	   \-- blue_endless_jankson 1.2.3
+	- bookshelf 21.1.81
+	- bridgingmod 2.6.2+1.21.1
+	- c2me 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-base 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-client-uncapvd 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-fixes-chunkio-threading-issues 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-fixes-general-threading-issues 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-fixes-worldgen-threading-issues 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-fixes-worldgen-vanilla-bugs 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-notickvd 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-allocs 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-chunkio 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-dfc 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-math 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-natives-math 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-scheduling 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-worldgen-general 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-worldgen-vanilla 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-rewrites-chunk-system 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-rewrites-chunkio 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-server-utils 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-threading-lighting 0.4.0-alpha.0.27+1.21.1
+	   |-- com_github_ben-manes_caffeine_caffeine 3.2.1
+	   |-- com_ibm_async_asyncutil 0.1.0
+	   |-- io_reactivex_rxjava3_rxjava 3.1.12
+	   |-- net_objecthunter_exp4j 0.4.8
+	   |-- org_jctools_jctools-core 4.0.5
+	   \-- org_reactivestreams_reactive-streams 1.0.4
+	- c2me-opts-accel-opencl 0.4.0-alpha.0.27+1.21.1
+	   |-- org_apache_commons_commons-compress 1.28.0
+	   |-- org_lwjgl_lwjgl 3.3.3
+	   |-- org_lwjgl_lwjgl-opencl 3.3.3
+	   |-- org_lwjgl_lwjgl-zstd 3.3.3
+	   |-- org_lwjgl_lwjgl-zstd_natives-linux 3.3.3
+	   |-- org_lwjgl_lwjgl-zstd_natives-windows 3.3.3
+	   |-- org_lwjgl_lwjgl_natives-linux 3.3.3
+	   |-- org_lwjgl_lwjgl_natives-linux-arm64 3.3.3
+	   |-- org_lwjgl_lwjgl_natives-macos 3.3.3
+	   |-- org_lwjgl_lwjgl_natives-macos-arm64 3.3.3
+	   \-- org_lwjgl_lwjgl_natives-windows 3.3.3
+	- campfire 1.0.1-1.21
+	- caravans 3.0.0
+	- cardinal-components 6.1.3
+	   |-- cardinal-components-base 6.1.3
+	   |-- cardinal-components-block 6.1.3
+	   |-- cardinal-components-chunk 6.1.3
+	   |-- cardinal-components-entity 6.1.3
+	   |-- cardinal-components-item 6.1.3
+	   |-- cardinal-components-level 6.1.3
+	   |-- cardinal-components-scoreboard 6.1.3
+	   \-- cardinal-components-world 6.1.3
+	- catalogue 1.11.2
+	- catburger 1.0.3_fix2
+	- certain_questing_additions 1.2.0.2
+	- chestedcompanions 1.3.1
+	- chunky 1.4.23
+	- civil 2.0.0-release
+	- clientsort 2.2.2+1.21.1
+	- clienttweaks 21.1.11
+	- cloth-config 15.0.140
+	   \-- cloth-basic-math 0.6.1
+	- cobweb 1.4.0
+	- cocricot 1.0.6
+	- collective 8.39
+	- compatdelight 1.0.0.1
+	- configuration 3.1.1
+	- configured 2.6.3
+	- connectiblechains 2.5.7+1.21.1
+	   \-- com_moulberry_mixinconstraints 1.0.9
+	- coolrain 1.4.0-1.21.1
+	- copperagebackport 0.1.4
+	- corgilib 5.0.0.9
+	   |-- com_electronwill_night-config_core 3.8.3
+	   \-- com_electronwill_night-config_toml 3.8.3
+	- coroutil 1.21.1-1.3.8
+	- cratedelight 26.7.1-1.21-fabric
+	- crawl 0.14.9
+	- creativecore 2.13.39
+	   \-- net_neoforged_bus 7.2.0
+	- creeper_firework 2.2.0
+	- cristellib 3.1.7
+	   \-- blue_endless_jankson 1.2.3
+	- ctov 3.6.3
+	- cupboard 1.21-2.9
+	- damage-engine 1.3.4.2
+	- darktimer 1.2.1
+	- dear_diary 1.0.1
+	- debugify 1.21.1+1.0
+	- displaydelight 1.6.1-mc1.21.1
+	- drones 1.3.2
+	- dynamiccrosshair 9.11
+	   |-- dynamiccrosshair-api 1.2
+	   \-- libbamboo 2.25
+	- e33chat 2.4.8
+	- easyanvils 21.1.0
+	- easyelytratakeoff 4.5
+	- easymagic 21.1.4
+	- easyshulkerboxes 21.1.3
+	   \-- iteminteractions 21.1.4
+	- ecologics 2.3.7
+	- elytra_enchants 1.0.3+1.21
+	- elytraslot 9.0.1+1.21.1
+	- elytratrails 1.4.7.5-1.21.1
+	- emi 1.1.24+1.21.1+fabric
+	- end_villager_outpost 1.0.0
+	- ends_delight 2.6+refabricated.1.21.1
+	- entityculling 1.10.5
+	   |-- transition 1.0.21
+	   \-- trender 1.0.15
+	- erdtree_compass_addon 1.0.0
+	- eternaleats 1.0.7
+	   \-- tf_ssf_sfort_ini_sf-ini 1
+	- exlinecopperequipment 1.0.3
+	- expedition_essentials 1.0.0+plaincraft.1
+	- explorerscompass 1.21.1-2.6.0-fabric
+	- exposure 1.9.18
+	- exposure_catalog 1.1.1
+	   \-- fabric-permissions-api-v0 0.3.1
+	- exposure_expanded 1.0.1
+	- exposure_polaroid 1.1.3
+	- exposure_space 1.2
+	- fabric-api 0.116.14+1.21.1
+	- fabric-api-base 0.4.42+6573ed8c19
+	- fabric-api-lookup-api-v1 1.6.72+7b3d111d19
+	- fabric-biome-api-v1 13.0.31+d527f9fd19
+	- fabric-block-api-v1 1.1.0+0bc3503219
+	- fabric-block-view-api-v2 1.0.11+ebb2264e19
+	- fabric-command-api-v1 1.2.49+f71b366f19
+	- fabric-command-api-v2 2.2.28+6ced4dd919
+	- fabric-commands-v0 0.2.66+df3654b319
+	- fabric-content-registries-v0 8.0.19+b559734419
+	- fabric-convention-tags-v1 2.1.7+7f945d5b19
+	- fabric-convention-tags-v2 2.12.0+c3656daa19
+	- fabric-crash-report-info-v1 0.2.29+0af3f5a719
+	- fabric-data-attachment-api-v1 1.4.7+5b36e0f719
+	- fabric-data-generation-api-v1 20.3.0+1eb36c0719
+	- fabric-dimensions-v1 4.0.1+65213ef819
+	- fabric-entity-events-v1 1.8.0+2b27e0a419
+	- fabric-events-interaction-v0 0.7.14+ba9dae0619
+	- fabric-game-rule-api-v1 1.0.53+6ced4dd919
+	- fabric-gametest-api-v1 2.0.5+6fc22b9919
+	- fabric-item-api-v1 11.2.0+3b3cb2e819
+	- fabric-item-group-api-v1 4.1.7+def88e3a19
+	- fabric-language-kotlin 1.13.12+kotlin.2.4.0
+	   |-- org_jetbrains_kotlin_kotlin-reflect 2.4.0
+	   |-- org_jetbrains_kotlin_kotlin-stdlib 2.4.0
+	   |-- org_jetbrains_kotlin_kotlin-stdlib-jdk7 2.4.0
+	   |-- org_jetbrains_kotlin_kotlin-stdlib-jdk8 2.4.0
+	   |-- org_jetbrains_kotlinx_atomicfu-jvm 0.33.0
+	   |-- org_jetbrains_kotlinx_kotlinx-coroutines-core-jvm 1.11.0
+	   |-- org_jetbrains_kotlinx_kotlinx-coroutines-jdk8 1.11.0
+	   |-- org_jetbrains_kotlinx_kotlinx-datetime-jvm 0.8.0
+	   |-- org_jetbrains_kotlinx_kotlinx-io-bytestring-jvm 0.9.0
+	   |-- org_jetbrains_kotlinx_kotlinx-io-core-jvm 0.9.0
+	   |-- org_jetbrains_kotlinx_kotlinx-serialization-cbor-jvm 1.11.0
+	   |-- org_jetbrains_kotlinx_kotlinx-serialization-core-jvm 1.11.0
+	   \-- org_jetbrains_kotlinx_kotlinx-serialization-json-jvm 1.11.0
+	- fabric-lifecycle-events-v1 2.6.0+0865547519
+	- fabric-loot-api-v2 3.0.15+3f89f5a519
+	- fabric-loot-api-v3 1.0.3+3f89f5a519
+	- fabric-message-api-v1 6.0.14+8aaf3aca19
+	- fabric-networking-api-v1 4.3.1+d30f6a7919
+	- fabric-object-builder-api-v1 15.2.1+40875a9319
+	- fabric-particles-v1 4.0.2+6573ed8c19
+	- fabric-recipe-api-v1 5.0.16+2475392c19
+	- fabric-registry-sync-v0 5.3.2+e3eddc2119
+	- fabric-rendering-data-attachment-v1 0.3.49+73761d2e19
+	- fabric-rendering-fluids-v1 3.1.6+1daea21519
+	- fabric-resource-conditions-api-v1 4.3.0+8dc279b119
+	- fabric-resource-loader-v0 1.3.1+5b5275af19
+	- fabric-screen-handler-api-v1 1.3.91+b559734419
+	- fabric-tag-api-v1 1.3.0+1eb36c0719
+	- fabric-transfer-api-v1 5.4.4+7b3d111d19
+	- fabric-transitive-access-wideners-v1 6.2.0+45b9699719
+	- fabricloader 0.19.3
+	- fallingtree 1.21.1.11
+	- fancymenu 3.9.12
+	   |-- com_github_keksuccino_japng 0.5.3
+	   \-- com_github_rtyley_animated-gif-lib-for-java animated-gif-lib-1.7
+	- farmers_structures 1.0.0
+	- farmersdelight 1.21.1-3.3.3+refabricated
+	- fastmove 1.0.8
+	   |-- bendy-lib 5.0-rc2
+	   \-- playeranimator 1.0.2-rc1+1.21
+	- ferritecore 7.0.3
+	- fieldguide 1.13.1
+	- firstjoinmessage 3.8
+	- fishermens_trap 3.1.0
+	   \-- fiber 0.23.0-2
+	- food 1.3.1-fabric-1.21.1
+	- forgeconfigapiport 21.1.6
+	- formations 1.0.2
+	- formationsnether 1.0.5
+	- formationsoverworld 1.0.5
+	- fragmentum 2.2.4
+	   |-- com_github_figuramc_luaj_luaj-core 3.0.8-figura
+	   \-- com_github_figuramc_luaj_luaj-jse 3.0.8-figura
+	- framework 0.13.11
+	   |-- org_javassist_javassist 3.29.2-GA
+	   \-- org_reflections_reflections 0.10.2
+	- friendsandfoes 4.0.26
+	- friendsforlife 1.2.1
+	- ftbfiltersystem 21.1.4
+	- ftblibrary 2101.1.31
+	- ftbquests 2101.1.24
+	   \-- team_reborn_energy 4.1.0
+	- ftbteams 2101.1.10
+	- ftbxmodcompat 21.1.8
+	- fzzy_config 0.7.6+1.21
+	   |-- blue_endless_jankson 1.2.3
+	   |-- fabric-permissions-api-v0 0.3.1
+	   \-- net_peanuuutz_tomlkt_tomlkt-jvm 0.3.7
+	- gaboulibs 1.4
+	- galosphere 1.21.1-1.5.4
+	- geckolib 4.8.4
+	- genesis 1.1.0-1.21.1
+	- giant_natural_additions 1.0.0
+	- glideaway 1.2.3+1.21.1
+	   |-- common-protection-api 1.0.0
+	   \-- factorytools 0.3.1+1.21
+	- glitchcore 2.1.0.0
+	   \-- net_jodah_typetools 0.6.3
+	- glow_up 1.2.1-1.21-1.21.1
+	- goblintraders 1.11.2
+	- golemoverhaul 1.1.0
+	- goodending 1.1.0
+	- gpumemleakfix 1.21-1.8
+	- grapplemod 1.1+1.21.1.fabric
+	   |-- grapplemodcompat-create 1.0+1.21.1.fabric
+	   \-- grapplemodcompat-sable 1.0+1.21.1.fabric
+	- headpats 1.0.6+1.21.1
+	- healight 1.0.1
+	- healingcampfire 6.3
+	- heaven 1.0.0
+	- hobbit_hill_village 0.0.4
+	- homeostaticseasons 1.2.0.3
+	   |-- climatesettings 1.2.0
+	   \-- whitenoise 2.2.1
+	        |-- com_electronwill_night-config_core 3.8.3
+	        \-- com_electronwill_night-config_toml 3.8.3
+	- hopobetterunderwaterruins 1.2.1
+	- horse-spawn 1.9+1.21.1
+	- horseexpert 21.1.0
+	- horseman 1.5.11
+	- horseshoes 1.3.3
+	- iceberg 1.3.2
+	- immersive_aircraft 1.4.6+1.21.1
+	   \-- org_mariuszgromada_math_mathparser_org-mxparser 5.2.1
+	- immersive_armors 1.7.6+1.21.1
+	- immersive_furniture 0.2.0+1.21.1
+	- immersive_gateways 0.0.6
+	- immersive_horse_riding 1.1.0
+	   \-- mixinsquared 0.3.7-beta.2
+	- immersive_machinery 0.2.0+1.21.1
+	- immersive_melodies 0.6.4+1.21.1
+	- immersivelanterns 1.0.6
+	- infinitywaterbucket 3.0.0
+	- inline 1.21.1-1.2.2
+	- insecticide 0.14.2+1.21-1.21.1
+	   \-- org_yaml_snakeyaml 2.2
+	- ipla 5.3
+	- ironchest 2.0.4
+	   \-- libgui 11.1.0+1.21
+	        |-- jankson 8.0.0+j1.2.3
+	        |    \-- blue_endless_jankson 1.2.3
+	        \-- libninepatch 1.2.0
+	- jade 15.10.5+fabric
+	- jagmkiwis 1.2.1
+	- jamlib 1.3.6+1.21.1
+	   \-- blue_endless_jankson 1.2.3
+	- jasione 1.0.8+1.21.11-fabric
+	- java 25
+	- jei 19.27.0.343
+	- jeremyseqsdamageindicators 2.2.1-1.21.1
+	- jrftl 1.8.0
+	- kaleidoscope_cookery 1.4.1.1-fabric+mc1.21.1
+	- kaleidoscope_doll 1.0.9
+	- kaleidoscope_tavern 1.2.0.1-fabric+mc1.21.1
+	- keybindfixplus 2.0.0
+	- kmdtravel 0.2.0
+	- konkrete 1.9.9
+	- lavender 0.1.15+1.21
+	   |-- lavender-md 0.1.2+1.21
+	   \-- lavender-md-owo-ui 0.1.2+1.21
+	- leavesbegone 21.1.0
+	- letmedespawn 1.5.0
+	- libjf 3.17.5
+	   |-- libjf-base 3.17.3
+	   |-- libjf-config-commands 3.17.3
+	   |-- libjf-config-core-v2 3.17.3
+	   |-- libjf-config-network-v0 3.17.3
+	   |-- libjf-config-ui-tiny 3.17.3
+	   |-- libjf-data-manipulation-v0 3.17.3
+	   |-- libjf-data-v0 3.17.3
+	   |-- libjf-mainhttp-v0 3.17.3
+	   |-- libjf-resource-pack-entry-widgets-v0 3.17.3
+	   |-- libjf-translate-v1 3.17.3
+	   |-- libjf-unsafe-v0 3.17.5
+	   \-- libjf-web-v1 3.17.3
+	- librarianlib 5.0.0
+	   |-- liblib_albedo 5.0.0
+	   |-- liblib_core 5.0.0
+	   |-- liblib_etcetera 5.0.0
+	   |-- liblib_glitter 5.0.0
+	   \-- liblib_mosaic 5.0.0
+	- libraryferret 4.0.0
+	- litematica_printer 7.2.1
+	- lithium 0.15.4+mc1.21.1
+	- lithostitched 1.8.0+beta6
+	   \-- apollib 1.2.0
+	- lithostitched-c2me-opencl-compat 0.1.1-c2me027
+	- livelyinteractions 0.1.1-mc1.21.1
+	- living_legends 1.1.0
+	- longer_following_time 1.1.0
+	- mcqoy 0.4.1+fabric-1.20
+	   \-- folk_sisby_kaleido-config 0.3.3+1.3.2
+	- mcwifipnp 1.9.0
+	- medieval_buildings 1.1.1
+	- melody 1.0.10
+	- mes 2.0.3
+	- midnightlib 1.9.3
+	- midnightthoughts 1.5.5+fabric.1.21.1
+	- minecraft 1.21.1
+	- minemenu 1.14.2
+	   \-- commonnetworking 1.0.10-1.21
+	- mineralchance 3.8
+	- mixinextras 0.5.4
+	- mmr 1.0.3
+	- mns 3.0.0
+	- mobcapturingtool 4.1.0
+	- mobility 1.8.0
+	- modefite 1.0.1+1.21.1
+	- modernfix 5.25.1+mc1.21.1
+	- moderninline 0.1.1
+	- monolib 4.0.2
+	- monsters_in_the_closet 1.0.3+1.21
+	- moogs_structures 3.0.0+fabric
+	- moonlight 1.21.1-3.1.1
+	   \-- codecui 1.21.1-1.1.5
+	- more_lights 1.3
+	- moredelight 26.4.30-1.21-fabric
+	- mossylib 1.5.0+1.21.1+fabric
+	- movingelevators 1.4.12
+	- mr_ati_structuresfabricforge 1.4.5
+	- mr_better_mobdrop 1.2.5.1
+	- mr_blossom_blade 1.3
+	- mr_dough_slimeballrecipe 1.0
+	- mr_no_croptrample 1-ALT1
+	- mr_qraftyfied 9.1.1
+	- mr_qraftyfied_industrialstructures 1.0.0
+	- mr_sunken_spires 1.0
+	- mr_trek 1-B0.6.2
+	- mr_typewriter_daycounter 1.0
+	- mru 1.0.19+LTS+1.21.1+fabric
+	- mss 2.1.2
+	- music_hud 1.3.0-beta-2+1.21.1
+	- mvs 5.0.14
+	- mydriasis r1.0.0+1.21.1
+	- mysticsbiomes 3.5.3
+	- natures_spirit 2.2.5-1.21.1
+	- naturescompass 1.21.1-2.6.0-fabric
+	- nerb 0.4.3
+	- niftycarts 21.1.1
+	- niftycarts_wheels 1.0.0
+	- nomeltsnowybuilds 1.0.0+1.21.1
+	   \-- folk_sisby_kaleido-config 0.3.3+1.3.2
+	- obsidianboat 21.1.2+mc1.21.1
+	- ocean_lily_pad_village 1.0.0
+	- octolib 0.6.2
+	   \-- org_yaml_snakeyaml 2.2
+	- ohthetreesyoullgrow 5.3.2
+	- omegaconfig 1.5.1
+	- omnicrossbow 0.5.4+mc1.21.1
+	- omnilib 0.1.4
+	- oracle_index 1.2.0
+	   |-- ai_djl_api 0.31.1
+	   |-- ai_djl_huggingface_tokenizers 0.31.1
+	   |-- com_microsoft_onnxruntime_onnxruntime 1.20.0
+	   |-- dev_langchain4j_langchain4j 1.0.0
+	   |-- dev_langchain4j_langchain4j-core 1.0.0
+	   |-- dev_langchain4j_langchain4j-embeddings 1.0.0-beta5
+	   |-- dev_langchain4j_langchain4j-embeddings-all-minilm-l6-v2-q 1.0.0-beta5
+	   |-- org_apache_opennlp_opennlp-tools 2.5.4
+	   |-- org_commonmark_commonmark 0.27.1
+	   |-- org_commonmark_commonmark-ext-yaml-front-matter 0.27.1
+	   \-- org_jsoup_jsoup 1.17.2
+	- owo 0.12.15.4+1.21
+	   |-- io_wispforest_endec 0.1.5.1
+	   |-- io_wispforest_endec_gson 0.1.3.1
+	   |-- io_wispforest_endec_jankson 0.1.3.1
+	   \-- io_wispforest_endec_netty 0.1.2
+	- packetfixer 3.3.1
+	- papi 1.2.1
+	- particular 1.5.5
+	- patchouli 1.21.1-93-FABRIC
+	   \-- fiber 0.23.0-2
+	- paxi 1.21.1-Fabric-5.1.3
+	   \-- org_reflections_reflections 0.10.2
+	- pingwheel 1.12.1
+	- placeholder-api 2.4.2+1.21
+	- plaincraft-autotune 0.1.27-no-aggressive-startup
+	- plaincraft-chunky-autogen 0.7.38-ground-lod-diag
+	- plaincraft-fastmove-nullguard 0.1.0-local
+	- plaincraft-friendsandfoes-stability 0.1.0-local
+	- plaincraft-lithostitched-biome-optimizer 0.1.6.4-local
+	- plaincraft-pocket-repose-stability 0.1.2-nonblocking-chunk-scan
+	- plaincraft-tanshugetrees-worldgen-fix 0.1.3-local
+	- plaincraft-towns-towers-c2me-compat 0.1.0-local
+	- plaincraft-voxy-dirtysection-guard 0.1.0-local
+	- plaincraft_adorable_hamster_food_stack_fix 0.1.0-local
+	- plaincraft_atmospheric_fauna_l10n 1.0.0-zh-cn
+	- plaincraft_blocking_chunk_call_safety 0.1.1-log-rate-limit
+	- plaincraft_chunky_time_freeze 0.1.0-local
+	- plaincraft_erdtree_peaceful_zone 0.1.0-local
+	- plaincraft_erdtree_sanctuary 0.7.15-lss-hold-api
+	- plaincraft_erdtree_sapling 1.5.0
+	- plaincraft_exploration_map_nostall 0.1.0-local
+	- plaincraft_great_wall 0.1.0-s0.1
+	- plaincraft_great_wall_server_smoke 1.0.0
+	- plaincraft_height_6000_patch 0.1.0
+	- plaincraft_immersive_gateways_stability 0.1.10-local
+	- plaincraft_integrated_gpu_opencl_compat 0.2.0-local
+	- plaincraft_kaleidoscope_compat 0.1.2-local
+	- plaincraft_roadweaver_tans_compat 0.2.3-local
+	- plaincraft_spark_config_menu 0.2.0-local
+	- plaincraft_streams_floating_structure_safety 0.1.70-gpu-sampling-off-by-policy
+	- plaincraft_teleport_player_guard 1.0.0
+	- plaincraft_trek_structure_optimizer 0.1.2-local
+	- platform 1.3.3
+	- pocket-repose 1.3.2-1.21.1
+	- polymer-bundled 0.9.19+1.21.1
+	   |-- polymer-autohost 0.9.19+1.21.1
+	   |    \-- io_netty_netty-codec-http 4.1.82
+	   |-- polymer-blocks 0.9.19+1.21.1
+	   |-- polymer-common 0.9.19+1.21.1
+	   |    \-- packet_tweaker 0.5.6+1.21
+	   |-- polymer-core 0.9.19+1.21.1
+	   |    |-- polymer-networking 0.9.19+1.21.1
+	   |    |    \-- polymer-common 0.9.19+1.21.1
+	   |    |         \-- packet_tweaker 0.5.6+1.21
+	   |    \-- polymer-registry-sync-manipulator 0.9.19+1.21.1
+	   |-- polymer-resource-pack 0.9.19+1.21.1
+	   |    \-- polymer-common 0.9.19+1.21.1
+	   |         \-- packet_tweaker 0.5.6+1.21
+	   \-- polymer-virtual-entity 0.9.19+1.21.1
+	        \-- polymer-common 0.9.19+1.21.1
+	             \-- packet_tweaker 0.5.6+1.21
+	- polymorph 1.1.0+1.21.1
+	- pommel 1.4.2+1.21.x
+	- ponderer 1.7.1.5
+	   |-- flywheel 1.0.4+1.21.1
+	   \-- ponder 1.0.69
+	        |-- com_google_code_findbugs_jsr305 3.0.2
+	        |-- flywheel 1.0.0
+	        \-- javax_annotation_javax_annotation-api 1.3.2
+	- prickle 21.1.11
+	- puffish_biome_dither 1.0.0
+	- pull-me-up 0.0.8
+	- punchy_puppies 2.0.1
+	- pureamethysttools 3.0.0
+	- pureemeraldtools 4.0.1
+	- puzzleslib 21.1.52
+	- quick-pack 1.3.3
+	- qvmodel 0.3.5
+	- realisticdining 2.3.4
+	- redirected 1.0.0
+	- regions_unexplored 0.6.2
+	   \-- de_marhali_json5-java 3.0.0
+	- reliable_advancements 4.0.2
+	- reliable_recount 2.0.3
+	- resourcefulconfig 3.0.11
+	- resourcefullib 3.0.12
+	   |-- com_teamresourceful_bytecodecs 1.1.2
+	   \-- com_teamresourceful_yabn 1.0.3
+	- respackopts 4.14.0+1.21.1.4
+	   |-- io_gitlab_jfronny_muscript-all 2.0.0-SNAPSHOT
+	   \-- io_gitlab_jfronny_muscript-json 2.0.0-SNAPSHOT
+	- roadweaver 2.3.1-1.21.1-plaincraft-direct-core.0.8.405-audit-io-degradation-and-counter-cleanup
+	- rojiuramod 3.0.1
+	- ruokmod 1.7.4
+	- rusticdelight 1.6.0
+	- saturation_plus 1.3.1-1.21
+	- scalablelux 0.3.0-alpha.0.7+1.21.1
+	- seasonal_villages 1.0.0
+	- seaworthyboats 1.0
+	- shippy-ships 1.0.8
+	- simplytents 4.0-1.21.1.fabric
+	- sit 1.21-28
+	- skinlayers3d 1.11.2
+	   |-- transition 1.0.21
+	   \-- trender 1.0.15
+	- smallships 2.0.0-b2.1
+	- smartbrainlib 1.16.11
+	- smooth_steps 1.1.0
+	- smoothinventoryplayer 1.0.0
+	- smoothlight 1.0.0
+	- smsn 1.4.1-1.21.1
+	- snowyspirit 1.21.1-3.1.8
+	- sodiumleafculling-unofficial 2.0.0
+	- sol2f 3.2.0
+	- spark 1.10.109
+	   \-- fabric-permissions-api-v0 0.3.1
+	- spiral_tower_village 0.0.3
+	- spittingimage 3-1.21.1-fabric
+	- spyglass_improvements 1.5.7
+	- stackablepotions 1.0.0
+	- streamsreflowing 2.12.8
+	- structory 1.3.17
+	- structory_towers 1.0.17
+	- structure_layout_optimizer 1.0.12
+	- structures 3.4
+	- structuresplus 2.3
+	- structurify 2.0.28
+	- stutterfix mc1.21-0.2.3
+	- supermartijn642configlib 1.1.8
+	- supermartijn642corelib 1.1.21
+	- supplementaries 1.21-3.5.33
+	- swinginglanterns 1.21.1-1.5.0
+	- swordblockingmechanics 21.1.1
+	- t_and_t 1.13.9
+	- tanshugetrees 0.1.1-local
+	- tbouncepad 1.6.0
+	- tectonic 3.0.26
+	- terrablender 4.1.0.8
+	- terracart 1.9.0
+	- terralith 2.6.2
+	- things 0.4.2+1.21
+	- through-the-lilypads-gently 1.2.1
+	- tide 2.1
+	- toffys_hooks 2.2.2
+	- toms_storage 2.3.0
+	- touhou_little_maid 0.8.2-neo1.5.3+mc1.21.1
+	   \-- org_openjdk_nashorn_nashorn-core 15.4
+	- trade_cycling 1.21.1-1.0.20
+	   |-- fabric-key-binding-api-v1 1.0.47+0af3f5a76a
+	   \-- fabric-screen-api-v1 2.0.24+b55973446a
+	- tradeeverything 0.13.0
+	- tramplenomore 21.1.2
+	- transcendingtrident 4.9
+	- trashslot 21.1.11
+	- travelertoolbelt 1.0.2
+	- trenzalore 6.1.1
+	- trinkets 3.10.0
+	- tt20 0.8.3
+	- tweaksdelight 26.4.9-1.21-fabric
+	- twilightteleport 1.0.0+fabric1.21.1
+	- twoplayersonehorse 1.0.2
+	- txnilib 1.0.24
+	- ubesdelight 0.4.14
+	- universalbonemeal 21.1.0
+	- vanillabackport 1.1.7.10
+	- vectorientation 1.1
+	- visitingvillagers 1.0.2-mc1.21.1
+	- visualworkbench 21.1.2
+	- voicechat 1.21.1-2.6.21
+	   |-- fabric-key-binding-api-v1 1.0.47+0af3f5a76a
+	   \-- voicechat_api 2.6.20
+	- voxy 0.2.15-beta
+	   |-- org_apache_commons_commons-pool2 2.12.0
+	   |-- org_lwjgl_lwjgl-lmdb 3.3.3
+	   |-- org_lwjgl_lwjgl-lmdb_natives-linux 3.3.3
+	   |-- org_lwjgl_lwjgl-lmdb_natives-windows 3.3.3
+	   |-- org_lz4_lz4-java 1.8.0
+	   |-- org_rocksdb_rocksdbjni 10.2.1
+	   |-- org_tukaani_xz 1.10
+	   \-- redis_clients_jedis 5.1.0
+	- vss 0.3.5-fabric-1.21.1
+	   \-- com_github_luben_zstd-jni 1.5.7-3
+	- walljump 1.21.1-1.3.8-fabric
+	   |-- configlibtxf 1.21.1-2.0.4-fabric
+	   \-- keybindfixtxf 1.1.1
+	- watut 1.21.0-1.2.7
+	- waystones 21.1.33
+	- weaponmaster_ydm 4.4.1
+	- weatheredwells 0.2.0
+	- wildernature 1.1.4
+	- wingedsandals 1.0.5+1.21-1.21.1
+	- wings_ac 0.1.0-alpha.6-local
+	- wintery-atmosphere 1.0.1
+	- wits 1.3.0+1.21-fabric
+	- wooledboots 1.8.1
+	- worldgenfeaturefix 1.0.1
+	- worldportal 0.0.10+1.21
+	- wwoo 2.6.7
+	- xaerominimap 26.5.0
+	   \-- xaerolib 1.7.3
+	- xaeroworldmap 1.46.0
+	   \-- xaerolib 1.7.3
+	- yet_another_config_lib_v3 3.8.2+1.21.1-fabric
+	   |-- com_twelvemonkeys_common_common-image 3.12.0
+	   |-- com_twelvemonkeys_common_common-io 3.12.0
+	   |-- com_twelvemonkeys_common_common-lang 3.12.0
+	   |-- com_twelvemonkeys_imageio_imageio-core 3.12.0
+	   |-- com_twelvemonkeys_imageio_imageio-metadata 3.12.0
+	   |-- com_twelvemonkeys_imageio_imageio-webp 3.12.0
+	   |-- org_quiltmc_parsers_gson 0.2.1
+	   \-- org_quiltmc_parsers_json 0.2.1
+	- yigd 2.4.18
+	   |-- fabric-permissions-api-v0 0.3.1
+	   \-- libgui 11.1.0+1.21
+	        |-- jankson 8.0.0+j1.2.3
+	        |    \-- blue_endless_jankson 1.2.3
+	        \-- libninepatch 1.2.0
+	- yungsapi 1.21.1-Fabric-5.1.6
+	   |-- org_javassist_javassist 3.29.2-GA
+	   \-- org_reflections_reflections 0.10.2
+	- yungsbridges 1.21.1-Fabric-5.1.1
+	   \-- org_reflections_reflections 0.10.2
+	- yungscavebiomes 1.21.1-Fabric-3.1.1
+	   \-- org_reflections_reflections 0.10.2
+	- yungsextras 1.21.1-Fabric-5.1.1
+	   \-- org_reflections_reflections 0.10.2
+	- zfastnoise 1.0.13+1.21
+	- zipline 1.2.1+1.21.1
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/JsonPrimitive, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/JsonArray$EntryIterator, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/JsonArray$Entry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/StringParserContext, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/TokenParserContext, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/ArrayParserContext, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/POJODeserializer, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/CommentParserContext, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/ParserContext, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/ObjectParserContext, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/ElementParserContext, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/MarshallerImpl, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/AnnotatedElement, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/NumberParserContext, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/serializer/CommentSerializer, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/serializer/DeserializerFunctionPool, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/serializer/DeserializerFunctionPool$FunctionMatchFailedException, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/impl/serializer/InternalDeserializerFunction, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/Jankson$ParserFrame, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/JsonGrammar, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/Jankson, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/api/DeserializationException, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/api/DeserializerFunction, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/api/Marshaller, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/api/SyntaxError, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/Comment, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/JsonGrammar$Builder, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/JsonArray, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/JsonObject, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/JsonElement, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/JsonNull, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/Jankson$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/JsonObject$Entry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/magic/TypeMagic, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/annotation/Serializer, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/annotation/NonnullByDefault, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/annotation/Deserializer, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/annotation/SerializedName, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/annotation/Nullable, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/JsonObject$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-5/WARN] (FabricLoader/ModRemap) duplicate input class blue/endless/jankson/Jankson$Builder, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\blue_endless_jankson283902162717128124.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\fiber17692472855867051627.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/ValueWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/ValueParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TomlWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TomlParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TomlFormat, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/Toml, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TemporalWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TemporalParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TableWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TableParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/StringWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/StringParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/ArrayWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/ArrayParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/WriterSupplier, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/UnmodifiableConfigWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingSpliterator, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingSet, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingMapEntry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingMap, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingIterator, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingCollection, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/StringUtils, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/ObservedSet, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/ObservedMap, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/ObservedEntry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/IntDeque, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FastStringReader, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeUnmodifiableCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeUnmodifiableCommentedConfig$FakeCommentedEntry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeUnmodifiableCommentedConfig$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeCommentedConfig$FakeCommentedEntry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeCommentedConfig$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/ConfigWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/CommentedConfigWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/AbstractObserved, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/WritingMode, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/WritingException, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/WriterOutput, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/Utils, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ReaderInput, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ParsingMode, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ParsingMode$PutAction, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ParsingMode$MapPutAction, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ParsingException, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/NewlineStyle, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/IndentStyle, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ConfigWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ConfigParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/CharsWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/CharsWrapper$Builder, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/CharsWrapper$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/CharacterOutput, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/CharacterInput, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/AbstractInput, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/NoFormatFoundException, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/GenericBuilder, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FormatDetector, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileWatcher, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileWatcher$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileNotFoundAction, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileConfigBuilder, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/CommentedFileConfigBuilder, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/CommentedFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/CheckedFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/CheckedCommentedFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/AutosaveCommentedFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/AutoreloadFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/UnmodifiableConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/UnmodifiableConfig$Entry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/UnmodifiableCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/UnmodifiableCommentedConfig$Entry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/UnmodifiableCommentedConfig$CommentNode, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/SimpleConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/SimpleCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/NullObject, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/InMemoryFormat, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/InMemoryCommentedFormat, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/EnumGetMethod, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec$ValueSpec, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec$DumbSupplier, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec$CorrectionListener, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec$CorrectionAction, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigFormat, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/Config, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/Config$Entry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/Config$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/CommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/CommentedConfig$Entry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/CommentedConfig$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/CheckedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/CheckedCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/AbstractConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/AbstractConfig$EntryWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/AbstractCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:01] [pool-2-thread-7/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/AbstractCommentedConfig$CommentedEntryWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/ValueWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/ValueParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TomlWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TomlParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TomlFormat, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/Toml, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TemporalWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TemporalParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TableWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/TableParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/StringWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/StringParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/ArrayWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/toml/ArrayParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_toml15756635994470050257.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/WriterSupplier, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/UnmodifiableConfigWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingSpliterator, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingSet, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingMapEntry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingMap, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingListIterator, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingList, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingIterator, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/TransformingCollection, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/StringUtils, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/ObservedSet, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/ObservedMap, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/ObservedIterator, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/ObservedEntry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/IntDeque, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FastStringReader, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeUnmodifiableCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeUnmodifiableCommentedConfig$FakeCommentedEntry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeUnmodifiableCommentedConfig$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeCommentedConfig$FakeCommentedEntry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/FakeCommentedConfig$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/ConfigWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/CommentedConfigWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/utils/AbstractObserved, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/WritingMode, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/WritingException, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/WriterOutput, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/Utils, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ReaderInput, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ParsingMode, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ParsingMode$PutAction, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ParsingMode$MapPutAction, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ParsingException, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/NewlineStyle, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/IndentStyle, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ConfigWriter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ConfigParser, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/CharsWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/CharsWrapper$Builder, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/CharsWrapper$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/CharacterOutput, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/CharacterInput, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/ArrayInput, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/io/AbstractInput, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/WriteSyncFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/WriteAsyncFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/WriteAsyncFileConfig$WriteCompletedHandler, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/WriteAsyncFileConfig$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/SimpleCommentedFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/NoFormatFoundException, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/GenericBuilder, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FormatDetector, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileWatcher, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileWatcher$WatcherThread, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileWatcher$WatchedFile, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileWatcher$WatchedDir, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileWatcher$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileNotFoundAction, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileConfigBuilder, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/FileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/CommentedFileConfigBuilder, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/CommentedFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/CheckedFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/CheckedCommentedFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/AutosaveFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[冰山] Iceberg-1.21.1-fabric-1.3.2.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/AutosaveCommentedFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/file/AutoreloadFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/SpecValidator, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/SpecStringInRange, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/SpecStringInArray, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/SpecNotNull, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/SpecLongInRange, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/SpecIntInRange, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/SpecFloatInRange, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/SpecEnum, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/SpecDoubleInRange, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/SpecClassInArray, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ReflectionException, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/PreserveNotNull, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/Path, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ObjectConverter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ObjectBinder, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ObjectBinder$NoOpConverter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ObjectBinder$FieldInfos, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ObjectBinder$EnumValueConverter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ObjectBinder$BoundSearchResult, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ObjectBinder$BoundConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ObjectBinder$BoundConfig$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ObjectBinder$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/InvalidValueException, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ForceBreakdown, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/Converter, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ConvertedFormat, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ConvertedFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ConvertedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ConvertedConfig$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ConvertedCommentedFileConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ConvertedCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ConversionTable, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ConversionTable$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/ConversionTable$1$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/Conversion, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/AnnotationUtils, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/AdvancedPath, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/AbstractConvertedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/AbstractConvertedCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/conversion/AbstractConvertedCommentedConfig$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/UnmodifiableConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/UnmodifiableConfig$Entry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/UnmodifiableCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/UnmodifiableCommentedConfig$Entry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/UnmodifiableCommentedConfig$CommentNode, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/SimpleConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/SimpleCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/NullObject, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/InMemoryFormat, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/InMemoryCommentedFormat, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/EnumGetMethod, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec$ValueSpec, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec$DumbSupplier, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec$CorrectionListener, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec$CorrectionAction, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigSpec$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConfigFormat, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/Config, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/Config$Entry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/Config$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/ConcurrentConfigSpec, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/CommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/CommentedConfig$Entry, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/CommentedConfig$1, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/CheckedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/CheckedCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/AbstractConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/AbstractConfig$EntryWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/AbstractCommentedConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:02] [pool-2-thread-4/WARN] (FabricLoader/ModRemap) duplicate input class com/electronwill/nightconfig/core/AbstractCommentedConfig$CommentedEntryWrapper, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\.fabric\tmp\com_electronwill_night-config_core7451224511315298114.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\ipla-mc1.21.1-fabric-5.3.jar
+[01:41:04] [pool-2-thread-3/WARN] (FabricLoader/ModRemap) duplicate input class local/tanshugetreesfabric/client/HugeTreeWorldgenConfig, from D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[巨树移植]tanshugetrees-fabric-rebuild-0.1.1-local.jar and D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\pack-opencl\pack-01\mods\[巨树移植]tanshugetrees-fabric-rebuild-0.1.1-local.jar
+[01:41:05] [main/ERROR] (FabricLoader) Failed to remap mods!
+net.fabricmc.loader.impl.FormattedException: java.util.concurrent.CompletionException: java.lang.NullPointerException: Cannot invoke "org.objectweb.asm.FieldVisitor.visitAttribute(org.objectweb.asm.Attribute)" because "visitor" is null
+	at net.fabricmc.loader.impl.discovery.RuntimeModRemapper.remap(RuntimeModRemapper.java:221) ~[fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.loader.impl.FabricLoaderImpl.setup(FabricLoaderImpl.java:254) ~[fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.loader.impl.FabricLoaderImpl.load(FabricLoaderImpl.java:199) ~[fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.Knot.init(Knot.java:142) ~[fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:66) [fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.KnotServer.main(KnotServer.java:23) [fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.devlaunchinjector.Main.main(Main.java:86) [dev-launch-injector-0.2.1+build.8.jar:?]
+Caused by: java.util.concurrent.CompletionException: java.lang.NullPointerException: Cannot invoke "org.objectweb.asm.FieldVisitor.visitAttribute(org.objectweb.asm.Attribute)" because "visitor" is null
+	at java.base/java.util.concurrent.CompletableFuture.wrapInCompletionException(CompletableFuture.java:323) ~[?:?]
+	at java.base/java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:359) ~[?:?]
+	at java.base/java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:364) ~[?:?]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1791) ~[?:?]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1090) ~[?:?]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614) ~[?:?]
+	at java.base/java.lang.Thread.run(Thread.java:1474) ~[?:?]
+Caused by: java.lang.NullPointerException: Cannot invoke "org.objectweb.asm.FieldVisitor.visitAttribute(org.objectweb.asm.Attribute)" because "visitor" is null
+	at net.fabricmc.loader.impl.lib.classtweaker.classvisitor.EnumExtensionClassVisitor.visitEnd(EnumExtensionClassVisitor.java:116) ~[fabric-loader-0.19.3.jar:?]
+	at org.objectweb.asm.ClassReader.accept(ClassReader.java:749) ~[asm-9.10.1.jar:9.10.1]
+	at org.objectweb.asm.ClassReader.accept(ClassReader.java:425) ~[asm-9.10.1.jar:9.10.1]
+	at net.fabricmc.loader.impl.lib.tinyremapper.TinyRemapper.analyze(TinyRemapper.java:701) ~[fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.loader.impl.lib.tinyremapper.TinyRemapper.access$400(TinyRemapper.java:77) ~[fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.loader.impl.lib.tinyremapper.TinyRemapper$2.visitFile(TinyRemapper.java:590) ~[fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.loader.impl.lib.tinyremapper.TinyRemapper$2.visitFile(TinyRemapper.java:586) ~[fabric-loader-0.19.3.jar:?]
+	at java.base/java.nio.file.Files.walkFileTree(Files.java:2543) ~[?:?]
+	at java.base/java.nio.file.Files.walkFileTree(Files.java:2609) ~[?:?]
+	at net.fabricmc.loader.impl.lib.tinyremapper.TinyRemapper.readFile(TinyRemapper.java:586) ~[fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.loader.impl.lib.tinyremapper.TinyRemapper.access$200(TinyRemapper.java:77) ~[fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.loader.impl.lib.tinyremapper.TinyRemapper$1$1.get(TinyRemapper.java:558) ~[fabric-loader-0.19.3.jar:?]
+	at net.fabricmc.loader.impl.lib.tinyremapper.TinyRemapper$1$1.get(TinyRemapper.java:554) ~[fabric-loader-0.19.3.jar:?]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1789) ~[?:?]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1090) ~[?:?]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614) ~[?:?]
+	at java.base/java.lang.Thread.run(Thread.java:1474) ~[?:?]
+
+> Task :runServerSmoke FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':runServerSmoke'.
+> Process 'command 'C:\Program Files\Java\jdk-25.0.3\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 21s
+9 actionable tasks: 2 executed, 7 up-to-date

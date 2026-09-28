@@ -116,6 +116,7 @@ tasks.named('test', Test) {
 
 apply from: 'gradle/windows-test-classpath.gradle'
 apply from: 'gradle/dependency-evidence.gradle'
+apply from: 'gradle/smoke-tests.gradle'
 
 tasks.named('runGameTest') {
     doFirst { layout.buildDirectory.dir('reports/gametest').get().asFile.mkdirs() }

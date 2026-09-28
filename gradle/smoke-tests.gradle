@@ -1,0 +1,178 @@
+// Explicit test tasks only: never add the smoke mod to the production artifact.
+sourceSets {
+    serverSmoke {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + sourceSets.main.runtimeClasspath
+    }
+}
+
+def profile = providers.gradleProperty('smokeProfile').getOrElse('vanilla')
+def runId = providers.gradleProperty('smokeRunId').getOrElse(UUID.randomUUID().toString())
+if (!(profile in ['vanilla', 'tectonic', 'tectonic-c2me', 'pack-opencl']) ||
+        !(runId ==~ /[a-zA-Z0-9_-]{1,80}/)) {
+    throw new GradleException('Invalid isolated smoke profile or run ID')
+}
+def directory = layout.buildDirectory.dir("run/serverSmoke/${profile}/${runId}")
+def runtimeJava = providers.gradleProperty('smokeJavaVersion').getOrElse('21').toInteger()
+if (!(runtimeJava in [21, 25]) || (runtimeJava != 21 && profile != 'pack-opencl')) {
+    throw new GradleException('Only the existing OpenCL profile may opt into its required Java 25 runtime')
+}
+loom {
+    mods {
+        plaincraft_great_wall_server_smoke { sourceSet sourceSets.serverSmoke }
+    }
+    runs {
+        serverSmoke {
+            inherit server
+            source sourceSets.serverSmoke
+            runDir "build/run/serverSmoke/${profile}/${runId}"
+            vmArg profile == 'pack-opencl' ? '-Xmx8G' : '-Xmx4G'
+            vmArg "-Dgreatwall.smoke.profile=${profile}"
+            vmArg '-Dmixin.debug.export=true'
+            vmArg '-Dmixin.debug.export.decompile=false'
+            if (runtimeJava == 25) {
+                vmArg '--enable-native-access=ALL-UNNAMED'
+                vmArg '--add-modules=jdk.incubator.vector'
+            }
+            programArgs '--nogui', '--port', '0', '--world', 'world'
+        }
+    }
+}
+
+tasks.register('prepareServerSmoke') {
+    doLast {
+        def root = directory.get().asFile
+        if (new File(root, 'world').exists()) {
+            throw new GradleException('Refusing an existing smoke world; choose a new smokeRunId')
+        }
+        root.mkdirs()
+        new File(root, 'greatwall_test_world').setText("S0-01 ${profile} ${runId}\n", 'UTF-8')
+        // The user explicitly authorized isolated dedicated-server startup tests.
+        new File(root, 'eula.txt').setText('eula=true\n', 'UTF-8')
+        new File(root, 'server.properties').setText('''server-ip=127.0.0.1
+server-port=0
+online-mode=false
+enable-query=false
+enable-rcon=false
+level-seed=9282026
+level-type=minecraft:normal
+view-distance=2
+simulation-distance=2
+max-tick-time=60000
+sync-chunk-writes=true
+''', 'UTF-8')
+        logger.lifecycle("Isolated smoke directory: ${root}")
+    }
+}
+tasks.named('runServerSmoke') {
+    dependsOn tasks.named('prepareServerSmoke')
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
+}
+
+def smokeJar = tasks.register('serverSmokeJar', Jar) {
+    from sourceSets.serverSmoke.output
+    archiveClassifier = 'server-smoke-dev'
+    destinationDirectory = layout.buildDirectory.dir('smoke-libs')
+}
+def remapJarType = plugins.getPlugin('fabric-loom').class.classLoader.loadClass('net.fabricmc.loom.task.RemapJarTask')
+def remappedSmoke = tasks.register('remapServerSmokeJar', remapJarType) {
+    dependsOn smokeJar
+    inputFile = smokeJar.flatMap { it.archiveFile }
+    archiveClassifier = 'server-smoke'
+    destinationDirectory = layout.buildDirectory.dir('smoke-libs')
+    classpath.from(sourceSets.serverSmoke.compileClasspath)
+    addNestedDependencies = false
+    includesClientOnlyClasses = false
+}
+
+// Use already cached artifacts directly. Loom's installer-based production task
+// can download outside Gradle's resolver, which is forbidden for this workflow.
+def prepareProductionInputs = { runtimeSource, String gameJarName, File smokeFile ->
+    def gameJar = new File(gradle.gradleUserHomeDir, "caches/fabric-loom/1.21.1/${gameJarName}")
+    def intermediary = fileTree(new File(gradle.gradleUserHomeDir,
+            'caches/modules-2/files-2.1/net.fabricmc/intermediary/1.21.1')).matching {
+        include '**/intermediary-1.21.1.jar'
+    }.files
+    if (!gameJar.isFile() || intermediary.size() != 1) {
+        throw new GradleException('Missing cached production game/intermediary; downloads are forbidden')
+    }
+    def runtimeLibraries = runtimeSource.runtimeClasspath.files.findAll {
+        def path = it.absolutePath.replace('\\', '/')
+        path.contains('/modules-2/files-2.1/') && !path.contains('/net.fabricmc.fabric-api/') &&
+                !it.name.startsWith('dev-launch-injector-')
+    }
+    def evidence = new groovy.json.JsonSlurper().parse(file('docs/evidence/s0-01/environment.json'))
+    def api = evidence.artifacts.find { it.id == 'fabric-api' }
+    def apiFile = file(api.path)
+    def digest = java.security.MessageDigest.getInstance('SHA-256')
+    apiFile.withInputStream { stream ->
+        byte[] buffer = new byte[65536]
+        for (int count; (count = stream.read(buffer)) != -1;) { digest.update(buffer, 0, count) }
+    }
+    if (digest.digest().encodeHex().toString() != api.sha256) {
+        throw new GradleException('Local Fabric API differs from recorded locked artifact')
+    }
+    copy {
+        from apiFile, tasks.named('remapJar').get().archiveFile.get().asFile, smokeFile
+        into new File(directory.get().asFile, 'mods')
+    }
+    return files(runtimeLibraries, gameJar, intermediary)
+}
+tasks.register('runServerSmokeProduction', JavaExec) {
+    dependsOn tasks.named('prepareServerSmoke'), tasks.named('remapJar'), remappedSmoke
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
+    workingDir = directory.get().asFile
+    mainClass = 'net.fabricmc.loader.impl.launch.knot.KnotServer'
+    jvmArgs '-Xmx8G', '-Dfabric.development=false', '-Dfabric.noGui=true', "-Dgreatwall.smoke.profile=${profile}",
+            '-Dmixin.debug.export=true', '-Dmixin.debug.export.decompile=false'
+    if (runtimeJava == 25) {
+        jvmArgs '--enable-native-access=ALL-UNNAMED', '--add-modules=jdk.incubator.vector'
+    }
+    args '--nogui', '--port', '0', '--world', 'world'
+    doFirst {
+        classpath = prepareProductionInputs(sourceSets.main, 'minecraft-extracted_server.jar',
+                remappedSmoke.get().archiveFile.get().asFile)
+        logger.lifecycle("Production game runtime: ${javaLauncher.get().metadata.installationPath}")
+        new File(directory.get().asFile, 'production-classpath.txt').setText(
+                classpath.files.collect { it.absolutePath }.sort().join('\n') + '\n', 'UTF-8')
+    }
+}
+
+def clientSmokeJar = tasks.register('clientSmokeJar', Jar) {
+    from sourceSets.clientSmoke.output
+    archiveClassifier = 'client-smoke-dev'
+    destinationDirectory = layout.buildDirectory.dir('smoke-libs')
+}
+def remappedClientSmoke = tasks.register('remapClientSmokeJar', remapJarType) {
+    dependsOn clientSmokeJar
+    inputFile = clientSmokeJar.flatMap { it.archiveFile }
+    archiveClassifier = 'client-smoke'
+    destinationDirectory = layout.buildDirectory.dir('smoke-libs')
+    classpath.from(sourceSets.clientSmoke.compileClasspath)
+    addNestedDependencies = false
+    includesClientOnlyClasses = false
+}
+tasks.register('runClientSmokeProduction', JavaExec) {
+    dependsOn tasks.named('prepareServerSmoke'), tasks.named('remapJar'), remappedClientSmoke
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
+    workingDir = directory.get().asFile
+    mainClass = 'net.fabricmc.loader.impl.launch.knot.KnotClient'
+    jvmArgs '-Xmx8G', '-Dfabric.development=false', '-Dfabric.noGui=true', '-Dmixin.debug.export=true',
+            '-Dmixin.debug.export.decompile=false'
+    if (runtimeJava == 25) {
+        jvmArgs '--enable-native-access=ALL-UNNAMED', '--add-modules=jdk.incubator.vector'
+    }
+    args '--version', '1.21.1', '--username', 'GreatWallSmoke', '--accessToken', '0',
+            '--gameDir', directory.get().asFile.absolutePath, '--assetIndex', '1.21.1-17',
+            '--assetsDir', new File(gradle.gradleUserHomeDir, 'caches/fabric-loom/assets').absolutePath,
+            '--width', '854', '--height', '480'
+    doFirst {
+        classpath = prepareProductionInputs(sourceSets.client, 'minecraft-client.jar',
+                remappedClientSmoke.get().archiveFile.get().asFile)
+        def root = directory.get().asFile
+        new File(root, 'options.txt').setText('onboardAccessibility:false\nfullscreen:false\n', 'UTF-8')
+        new File(root, 'production-client-classpath.txt').setText(
+                classpath.files.collect { it.absolutePath }.sort().join('\n') + '\n', 'UTF-8')
+        logger.lifecycle("Production client runtime: ${javaLauncher.get().metadata.installationPath}")
+    }
+}
