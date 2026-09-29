@@ -21,6 +21,20 @@ import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.chunk.status.*;
 
 public final class ProductionBarrierTests implements FabricGameTest {
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=300)
+    public void rejectedIoDoesNotLeakSnapshotAdmission(GameTestHelper helper) {
+        var f=fixture(helper);
+        var service=new TerrainSnapshotService(ChunkEvidenceStore.production(Path.of("build","s1b-game-fixtures",UUID.randomUUID().toString())),
+                r->{throw new RejectedExecutionException("fixture rejection");},f.service().catalog());
+        try{
+            for(int n=0;n<300;n++){
+                var future=service.capture(f.coverage(),f.chunks(),f.engine(),H);
+                helper.assertTrue(future.isCompletedExceptionally(),"executor rejection terminates every future");
+                helper.assertTrue(service.diagnostics().values().stream().allMatch(v->v==0),"no rejected capture flight/claim/admission leak");
+            }
+            helper.succeed();
+        }finally{service.close();f.close();}
+    }
     private static final String H="a".repeat(64);
     private record Fixture(ChunkKey key,Coverage coverage,Map<ChunkKey,ChunkAccess> chunks,ExecutorService io,
             TerrainSnapshotService service,VanillaTerrainEngine engine) implements AutoCloseable {

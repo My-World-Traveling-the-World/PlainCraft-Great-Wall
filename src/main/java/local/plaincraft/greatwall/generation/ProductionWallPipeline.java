@@ -38,6 +38,7 @@ public final class ProductionWallPipeline implements AutoCloseable {
     private final ConcurrentHashMap<UUID,AutoCloseable> leases=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,CompletableFuture<Void>> queue=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,Boolean> state=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,Integer> admitted=new ConcurrentHashMap<>();
     public ProductionWallPipeline(WorldRecipe recipe,Ports ports,TerrainSnapshotService snapshots,
             RealizationPlanner realization,ChunkPlanCompiler compiler,ChunkWallWriter writer) {
         this.recipe=Objects.requireNonNull(recipe);this.ports=Objects.requireNonNull(ports);this.snapshots=Objects.requireNonNull(snapshots);
@@ -57,17 +58,26 @@ public final class ProductionWallPipeline implements AutoCloseable {
             active();trace.assertOutsideLock();
             if(!key.dimension().equals(recipe.dimension()))return CompletableFuture.completedFuture(null);
             if(key.x()!=owner.getPos().x||key.z()!=owner.getPos().z)throw failure(FailureCode.OWNERSHIP_CONFLICT,"owner mismatch");
+            var inFlight=flights.get(key);if(inFlight!=null)return inFlight.copy();
+            admitted.compute("count",(k,n)->{
+                int old=n==null?0:n;
+                if(old>=256)throw failure(FailureCode.CAPACITY,"production owner waiter limit");
+                return old+1;
+            });
             var promise=new CompletableFuture<Void>();var existing=flights.putIfAbsent(key,promise);
-            if(existing!=null)return existing.copy();
+            if(existing!=null){admitted.compute("count",(k,n)->n-1);return existing.copy();}
+            promise.whenComplete((v,e)->{flights.remove(key,promise);admitted.compute("count",(k,n)->n-1);});
             var done=new CompletableFuture<Void>();var prior=queue.put("tail",done);
+            try{
             prior.handle((v,e)->null).thenComposeAsync(v->runOwner(key,owner,engine),ports.worker())
                     .thenApplyAsync(v->{active();return v;},ports.worker()).whenComplete((v,error)->{
                 try{
                     if(error==null){active();promise.complete(null);}
                     else{promise.completeExceptionally(error);ports.fail().accept(error);}
                 }catch(Throwable stopped){promise.completeExceptionally(stopped);}
-                finally{flights.remove(key,promise);done.complete(null);}
+                finally{done.complete(null);}
             });
+            }catch(Throwable failure){promise.completeExceptionally(failure);done.complete(null);ports.fail().accept(failure);}
             return promise.copy();
         }catch(Throwable error){return failed(error);}
     }
@@ -220,7 +230,8 @@ public final class ProductionWallPipeline implements AutoCloseable {
     private <T> CompletableFuture<T> failed(Throwable error){ports.fail().accept(error);return CompletableFuture.failedFuture(error);}
     private void event(String e,ChunkKey key,String stage,String lock){trace.record(e,key.dimension(),key.x(),key.z(),stage,lock);}
     public Map<String,Long> diagnostics(){
-        var result=new HashMap<>(trace.counts());result.put("leases",(long)leases.size());result.put("flights",(long)flights.size());return Map.copyOf(result);
+        var result=new HashMap<>(trace.counts());result.put("leases",(long)leases.size());result.put("flights",(long)flights.size());
+        result.put("admitted",(long)admitted.getOrDefault("count",0));return Map.copyOf(result);
     }
     @Override public void close(){
         if(state.putIfAbsent("closed",true)!=null)return;

@@ -31,6 +31,7 @@ public final class ChunkWallWriter {
         var marker=owner.getAttached(TerrainMarkers.PRODUCTION);
         if(marker!=null && (!marker.recipe().equals(plan.recipeHash())||!marker.planHash().equals(plan.hash())
                 ||!marker.coverageHash().equals(plan.metadata().coverageHash())))throw failure("marker/proof identity mismatch");
+        if(marker!=null&&!marker.equals(marker(plan,marker.complete())))throw failure("marker/proof payload mismatch");
         if(marker!=null&&marker.complete())return new WriteReport(plan.owner(),0,plan.voxels().size(),List.of(),true,plan.hash());
         if(owner.getPersistedStatus().isOrAfter(ChunkStatus.FULL))throw failure("initial write cannot mutate a FULL chunk");
         var proofs=new HashMap<Point3i,BlockProof>();var entities=new HashMap<Point3i,BlockEntityIntent>();

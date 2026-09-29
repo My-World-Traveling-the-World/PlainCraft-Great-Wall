@@ -28,6 +28,7 @@ public final class TerrainSnapshotService implements AutoCloseable {
     private final ConcurrentHashMap<Coverage,CompletableFuture<CapturedTerrain>> flights=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ChunkKey,Coverage> claims=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,Boolean> state=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,Integer> admission=new ConcurrentHashMap<>();
     private final ChunkEvidenceStore store;
     private final Executor io;
     private final BlockCatalog catalog;
@@ -38,6 +39,7 @@ public final class TerrainSnapshotService implements AutoCloseable {
     public BlockCatalog catalog(){return catalog;}
     public CompletableFuture<CapturedTerrain> capture(Coverage coverage,Map<ChunkKey,ChunkAccess> featuresChunks,
             TerrainEngine engine,String recipeHash) {
+        CompletableFuture<CapturedTerrain> owned=null;boolean reserved=false;
         try {
             active();
             if(!coverage.hash().equals(DeterministicHash.sha256(EvidenceCodec.coverage(coverage))))throw failure(FailureCode.RECIPE_MISMATCH,"coverage hash mismatch");
@@ -52,12 +54,24 @@ public final class TerrainSnapshotService implements AutoCloseable {
                     throw failure(FailureCode.MISSING_FEATURES_PLAN,"FEATURES halo not ready: "+key);
             }
             var existing=flights.get(coverage);if(existing!=null)return existing.copy();
-            if(flights.size()>=256)throw failure(FailureCode.CAPACITY,"snapshot flight capacity");
+            var keys=keys(coverage,owner.getMinBuildHeight(),owner.getMaxBuildHeight());
+            admission.compute("count",(k,n)->{
+                int old=n==null?0:n;
+                if(old>=256)throw failure(FailureCode.CAPACITY,"snapshot flight capacity");
+                return old+1;
+            });
+            reserved=true;
             Coverage claim=claims.putIfAbsent(coverage.chunk(),coverage);
             if(claim!=null&&!claim.equals(coverage))throw failure(FailureCode.RECIPE_MISMATCH,"same owner requested two capture windows");
             var promise=new CompletableFuture<CapturedTerrain>();
-            existing=flights.putIfAbsent(coverage,promise);if(existing!=null)return existing.copy();
-            var keys=keys(coverage,owner.getMinBuildHeight(),owner.getMaxBuildHeight());
+            existing=flights.putIfAbsent(coverage,promise);
+            if(existing!=null){releaseAdmission();reserved=false;return existing.copy();}
+            owned=promise;
+            promise.whenComplete((v,e)->{
+                flights.remove(coverage,promise);claims.remove(coverage.chunk(),coverage);releaseAdmission();
+            });
+            reserved=false;
+            active();
             io(()->readSaved(coverage,keys,recipeHash)).thenComposeAsync(saved->
                     engine.exclusive(owner.getPos(),()->{
                         active();var marker=owner.getAttached(TerrainMarkers.PRODUCTION);
@@ -108,11 +122,16 @@ public final class TerrainSnapshotService implements AutoCloseable {
                     },io).whenComplete((value,error)->{
                         if(error==null&&!state.containsKey("closed"))promise.complete(value);
                         else promise.completeExceptionally(error!=null?error:failure(FailureCode.CLOSED,"snapshot service closed"));
-                        flights.remove(coverage,promise);claims.remove(coverage.chunk(),coverage);
                     });
             return promise.copy();
-        }catch(Throwable failure){return CompletableFuture.failedFuture(failure);}
+        }catch(Throwable failure){
+            if(owned!=null)owned.completeExceptionally(failure);
+            else if(reserved)releaseAdmission();
+            return CompletableFuture.failedFuture(failure);
+        }
     }
+    private void releaseAdmission(){admission.compute("count",(k,n)->{if(n==null||n<=0)throw new IllegalStateException("snapshot admission underflow");return n-1;});}
+    public Map<String,Integer> diagnostics(){return Map.of("flights",flights.size(),"claims",claims.size(),"admitted",admission.getOrDefault("count",0));}
     public CompletableFuture<Void> persistPlan(ChunkWritePlan plan){return io(()->{store.persistPlan(plan);return null;});}
     public CompletableFuture<Optional<ChunkWritePlan>> readPlan(ChunkKey owner){return io(()->store.readPlan(owner));}
     public CompletableFuture<Void> verifyLoaded(ChunkKey owner,TerrainMarkers.Marker marker,int minY,int maxY) {
@@ -120,7 +139,11 @@ public final class TerrainSnapshotService implements AutoCloseable {
             var coverage=store.readCoverage(owner).orElseThrow(()->failure(FailureCode.T0_MISSING,"FULL owner coverage missing"));
             var proof=store.readPlan(owner).orElseThrow(()->failure(FailureCode.T0_MISSING,"FULL owner proof missing"));
             if(!marker.complete()||!marker.recipe().equals(proof.recipeHash())||!marker.planHash().equals(proof.hash())
-                    ||!marker.coverageHash().equals(coverage.coverage().hash()))throw failure(FailureCode.T0_CORRUPT,"FULL marker mismatch");
+                    ||!marker.coverageHash().equals(coverage.coverage().hash())||!marker.coverageHash().equals(proof.metadata().coverageHash())
+                    ||marker.gateRevision()!=proof.metadata().gateRevision()||!marker.walkwayFeet().equals(proof.walkwayFeet())
+                    ||!marker.gameplay().equals(proof.blockEntities())||!marker.spawnSlots().equals(proof.metadata().spawnSlots())
+                    ||!marker.realizedStates().equals(proof.metadata().realizedStates()))
+                throw failure(FailureCode.T0_CORRUPT,"FULL marker mismatch");
             for(var key:keys(coverage.coverage(),minY,maxY))
                 if(store.read(key,marker.recipe()).isEmpty())throw failure(FailureCode.T0_MISSING,"FULL owner page missing");
             return null;

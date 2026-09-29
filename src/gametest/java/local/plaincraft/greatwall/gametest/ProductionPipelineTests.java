@@ -71,7 +71,15 @@ public final class ProductionPipelineTests implements FabricGameTest {
             if(owner.getAttached(TerrainMarkers.PRODUCTION)==null)throw new AssertionError("no production marker");
             owner.setBlockState(new BlockPos(50,83,0),Blocks.GOLD_BLOCK.defaultBlockState(),false);return (Void)null;
         })).thenComposeAsync(v->pipeline.beforeLight(key,owner,engine),io)
-                .thenCompose(v->pipeline.verifyLoaded(owner)).orTimeout(90,TimeUnit.SECONDS).whenComplete((v,error)->helper.getLevel().getServer().execute(()->{
+                .thenCompose(v->pipeline.verifyLoaded(owner)).thenCompose(v->{
+                    var marker=owner.getAttached(TerrainMarkers.PRODUCTION);
+                    var tampered=new TerrainMarkers.Marker(marker.recipe(),marker.coverageHash(),marker.planHash(),marker.gateRevision()+1,
+                            true,marker.walkwayFeet(),marker.gameplay(),marker.spawnSlots(),marker.realizedStates());
+                    return snapshots.verifyLoaded(key,tampered,-64,320).handle((ignored,error)->{
+                        if(error==null)throw new AssertionError("tampered marker revision accepted");
+                        return (Void)null;
+                    });
+                }).orTimeout(90,TimeUnit.SECONDS).whenComplete((v,error)->helper.getLevel().getServer().execute(()->{
             helper.runAfterDelay(1,()->{
                 try{
                     if(error!=null)helper.fail(error.toString());
