@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.component.RampSpecificationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-29T05:14:45.768Z" hostname="CAIMEO" time="0.003">
+  <properties/>
+  <testcase name="height32LandingSupportFallsBelowFrozenLocalBounds()" classname="local.plaincraft.greatwall.component.RampSpecificationTest" time="0.0"/>
+  <testcase name="[1] 1" classname="local.plaincraft.greatwall.component.RampSpecificationTest" time="0.0"/>
+  <testcase name="[2] 2" classname="local.plaincraft.greatwall.component.RampSpecificationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

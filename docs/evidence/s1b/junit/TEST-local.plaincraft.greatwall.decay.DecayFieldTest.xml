@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.decay.DecayFieldTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-29T05:14:45.771Z" hostname="CAIMEO" time="0.029">
+  <properties/>
+  <testcase name="familyBiasDoesNotChangeNoiseOrRequiredSupport()" classname="local.plaincraft.greatwall.decay.DecayFieldTest" time="0.003"/>
+  <testcase name="ruinHeightIsRelativeToGroundAndPartialDetailsAreGrouped()" classname="local.plaincraft.greatwall.decay.DecayFieldTest" time="0.0"/>
+  <testcase name="fieldIsDeterministicContinuousAndMaintenanceIsOrderIndependent()" classname="local.plaincraft.greatwall.decay.DecayFieldTest" time="0.025"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
