@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.terrain.GroundExitFallbackTest" tests="2" skipped="0" failures="1" errors="0" timestamp="2026-09-29T07:57:58.503Z" hostname="CAIMEO" time="9.051">
+  <properties/>
+  <testcase name="finiteRetreatCanFailAfterAnEarlierValidGroundExit()" classname="local.plaincraft.greatwall.terrain.GroundExitFallbackTest" time="5.518"/>
+  <testcase name="exhaustedCapSearchMustFallBackToTheEarlierGroundExitWithoutFatalGeneration()" classname="local.plaincraft.greatwall.terrain.GroundExitFallbackTest" time="3.517">
+    <failure message="org.opentest4j.AssertionFailedError: S1B contract requires fallback to the previous proven ground exit, not a fatal error on an ordinary supported ridge ==&gt; Unexpected exception thrown: local.plaincraft.greatwall.model.WallFailure: no proven ground exit for break at 122880" type="org.opentest4j.AssertionFailedError">org.opentest4j.AssertionFailedError: S1B contract requires fallback to the previous proven ground exit, not a fatal error on an ordinary supported ridge ==&gt; Unexpected exception thrown: local.plaincraft.greatwall.model.WallFailure: no proven ground exit for break at 122880
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:152)
+	at org.junit.jupiter.api.AssertDoesNotThrow.createAssertionFailedError(AssertDoesNotThrow.java:84)
+	at org.junit.jupiter.api.AssertDoesNotThrow.assertDoesNotThrow(AssertDoesNotThrow.java:75)
+	at org.junit.jupiter.api.AssertDoesNotThrow.assertDoesNotThrow(AssertDoesNotThrow.java:62)
+	at org.junit.jupiter.api.Assertions.assertDoesNotThrow(Assertions.java:3280)
+	at local.plaincraft.greatwall.terrain.GroundExitFallbackTest.exhaustedCapSearchMustFallBackToTheEarlierGroundExitWithoutFatalGeneration(GroundExitFallbackTest.java:76)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: local.plaincraft.greatwall.model.WallFailure: no proven ground exit for break at 122880
+	at local.plaincraft.greatwall.terrain.RealizationPlanner.addCap(RealizationPlanner.java:156)
+	at local.plaincraft.greatwall.terrain.RealizationPlanner.resolve(RealizationPlanner.java:118)
+	at local.plaincraft.greatwall.terrain.GroundExitFallbackTest.lambda$exhaustedCapSearchMustFallBackToTheEarlierGroundExitWithoutFatalGeneration$3(GroundExitFallbackTest.java:76)
+	at org.junit.jupiter.api.AssertDoesNotThrow.assertDoesNotThrow(AssertDoesNotThrow.java:71)
+	... 6 more
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.TerrainEvidenceTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-29T07:58:10.336Z" hostname="CAIMEO" time="0.109">
+  <properties/>
+  <testcase name="truncatedAndOversizedEvidenceFailsWithoutReconstruction()" classname="local.plaincraft.greatwall.TerrainEvidenceTest" time="0.044"/>
+  <testcase name="paletteNumberingDoesNotChangeCanonicalHash()" classname="local.plaincraft.greatwall.TerrainEvidenceTest" time="0.002"/>
+  <testcase name="evidenceRejectsDifferentRecipeAndOverwrite()" classname="local.plaincraft.greatwall.TerrainEvidenceTest" time="0.011"/>
+  <testcase name="windowIsInclusiveAndDataIsDefensivelyCopied()" classname="local.plaincraft.greatwall.TerrainEvidenceTest" time="0.002"/>
+  <testcase name="highYAndDimensionIdentitySurviveDiskRoundTrip()" classname="local.plaincraft.greatwall.TerrainEvidenceTest" time="0.02"/>
+  <testcase name="windowBoundsRejectOverflowAndInvalidPaletteIndices()" classname="local.plaincraft.greatwall.TerrainEvidenceTest" time="0.003"/>
+  <testcase name="ownerGuardUsesFloorDivisionAndProtectsPlayerChanges()" classname="local.plaincraft.greatwall.TerrainEvidenceTest" time="0.003"/>
+  <testcase name="durableRoundTripIsIdempotentAndNotACache()" classname="local.plaincraft.greatwall.TerrainEvidenceTest" time="0.022"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

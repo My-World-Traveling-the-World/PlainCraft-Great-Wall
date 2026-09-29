@@ -1,0 +1,43 @@
+{
+  "recordedAt": "2026-09-29T16:07:55.2284417+08:00",
+  "status": "BLOCKED",
+  "testedSourceCommit": "1d4ff2182834e28744fa93810d96ddcd3ec85e92",
+  "baseline": "80f2b24",
+  "command": ".\\gradlew.bat --offline --dependency-verification=strict build runGameTest --continue --rerun-tasks --no-build-cache --console=plain --no-daemon",
+  "javaHome": "C:\\Program Files\\Java\\jdk-21",
+  "exitCode": 1,
+  "junit": {
+    "suites": 34,
+    "total": 167,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "failedCases": [
+      {
+        "className": "local.plaincraft.greatwall.terrain.GroundExitFallbackTest",
+        "method": "exhaustedCapSearchMustFallBackToTheEarlierGroundExitWithoutFatalGeneration()",
+        "message": "org.opentest4j.AssertionFailedError: S1B contract requires fallback to the previous proven ground exit, not a fatal error on an ordinary supported ridge ==> Unexpected exception thrown: local.plaincraft.greatwall.model.WallFailure: no proven ground exit for break at 122880"
+      }
+    ]
+  },
+  "gameTest": {
+    "total": 17,
+    "failures": 0,
+    "scope": "Native ProtoChunk, Vanilla mailbox, analytic FEATURES fixtures, physical central boat passage; no production C2ME wall lifecycle"
+  },
+  "s0Matrix": {
+    "runs": 8,
+    "owners": 3200,
+    "allPassed": true,
+    "implementationCommit": "cec91b6",
+    "scope": "S0 experimental barrier; not production wall generation"
+  },
+  "buildLogSha256": "ec23da76a3aeeb50bf3eb4f049bcc63de51a2268035cc554c119f2b539be8556",
+  "gameXmlSha256": "d13d0bb046cd238b0172c7084ec557059a9472e7c4ba8ae8efa7bab53c08654d",
+  "proxyProperties": [],
+  "versionLockChanges": [],
+  "productionLifecycleEnabled": false,
+  "realModsModified": false,
+  "realSavesOpened": false,
+  "networkDownloads": false
+}

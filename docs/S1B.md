@@ -1,201 +1,203 @@
-# S1B 实施进度与阻塞报告
+# S1B 验收与阻塞报告
 
-日期：2026-09-29。审查通过的 S1A 基线：`80f2b24`。
+日期：2026-09-29。S1A 审查基线：`80f2b24`。本次实现末提交：`eae8993`；保留失败反例的源码提交：`1d4ff21`。
 
-**状态：BLOCKED，未完成、未签收，未进入 S1C。**
+**阶段状态：BLOCKED。未完成、未签收，未进入 S1C。**
 
-已按小批推进纯 Java 前置类和 WallSection/Ramp 候选实现。原八册规格、构建版本、依赖校验与 S0 worldgen 接线没有更改。遇到冻结马道坐标的必需地板/净空冲突后停止推进依赖它的城门、收头与生产写入；没有用不完整组件或跳过测试冒充 S1B 完成。
+用户批准的 H=1/2/3/32 修复已完成，原四个红项现在均通过，原公式反例仍保留。后续已实现构件、owner writer、耐久 T0/proof 与生产屏障策略，并完成下面列明的验证。当前不能签收的主要阻塞是 **B-S1B-03：有限收头候选全部失败后，跨 cell 退回前一个已验证地面出口的决议尚未实现**；也仍有第5节列明的规格细节未完成。
 
-## 1. 子批与范围
+此前等待马道批准的报告已原样归档到：
 
-| 提交 | 内容 | 当批实际验证 |
-| --- | --- | --- |
-| `f437fda` | Rasterizer、DecayField、PaletteBinding | 8 项定向 JUnit PASS，严格离线 |
-| `920abdb` | ComponentTemplate、SupportGraph、SurfaceProbe | 13 项定向 JUnit PASS，严格离线 |
-| `89ad77a` | ComponentAssembly、WALL 单元身份、纯 fixture | 13 项定向 JUnit PASS，含原 CanonicalCodec/ScheduleContract 回归 |
-| `b9edd4a` | 墙段、马道候选、完整必需地板冲突检查、边界反例 | 编译通过；最终全量 JUnit 131/135，4 项失败；不作为阶段签收 |
+`D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\continuation\pre-approval-report.md`
 
-`SupportGraph` 当前提供基础六邻接落地检查、重力支撑迭代清理和纯脚面可达性检查；它尚未完成梁/拱双支座专用验证、所有装饰 survival 和原版 collision shape 复核。`WallSection` 与 `Ramp` 是尚未交付完整 S1B 的候选，不应据类名存在就判定全部规格实现。
+旧报告、旧131/135结果和旧四项红色日志都是历史，不是当前结果。原八册未被静默重写；授权修订及新增接口闭包见 `docs/S1B-补充合同.md`。
 
-## 2. 阻塞证据
+## 1. 本次严格离线结果
 
-### B-S1B-01：H=1/2 必需底入口与顶平台冲突
-
-原文位置：
-
-`D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1-S5实施规格\S1-城墙本体.md:674`
-
-原文要求同时满足：
-
-```text
-H=upper-lower，H∈[1,32]
-L=ceil(H/2)，R=H-L，e=-27+L，t=(R>0?e-R+1:e)
-底入口：x=-29..-27，z=5..7，脚面 lower，至少两格净空
-顶平台：x=t-3..t-1，z=4..10，脚面 upper
-```
-
-两个边界都有 `L=1,e=-26,t=-26`。在同一个局部列 `(x=-28,z=6)`：
-
-| 高差 | 必需底入口空气 | 必需顶平台地板 | 结果 |
-| --- | --- | --- | --- |
-| H=1 | y=lower、lower+1 | y=upper-1=lower | 地板占底入口脚部空间 |
-| H=2 | y=lower、lower+1 | y=upper-1=lower+1 | 地板占底入口头部空间 |
-
-这是由原坐标直接推出的矛盾，不依赖我写的栅格化、支撑图或原版碰撞近似。上半砖同样侵入规定净空；不允许通过少放顶平台方块来假装满足两个平台。
-
-可独立复现的测试：
-
-`D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\component\RampSpecificationTest.java`
-
-`frozenSmallRampPlatformsIntersectRequiredEntranceAir(1/2)` 为两个 **PASS 的反例验证**，意思是确认原坐标确实相交，不是确认马道通过验收。
-
-### B-S1B-02：H=32 天然底平台支撑合同缺口
-
-原 localBounds 的最低输出 y 为 `W-32`，却允许 `lowerFeetY=W-32`，其地板/支撑在 `W-33`。例如 W=84，底入口脚面52，支撑方块51，超出模板声明的最低输出52。
-
-`height32LandingSupportFallsBelowFrozenLocalBounds` 验证了这一点。T0 读取窗口已有 W-35 guard，并不缺读取高度；缺的是纯模板/支撑图如何持有并使用只读天然脚面证据，或是否允许输出 AABB 向下多一格的明确合同。当前模板选择拒绝超出声明的候选，未擅自扩大。
-
-这项是接口/输出包络缺口，不声称“现实中无法建32格高马道”。
-
-### H=3 当前实现失败，不等同于 B-S1B-01
-
-`rampHeightBoundary(3)` 也失败。当前平台预留三格净空，上平台地板发生冲突。入口原文仅要求至少两格，这不能直接证明 H=3 的冻结几何无解。它属于候选实现仍未解决的短坡碰撞/通行问题，明确保留为失败，不虚报成设计已被否证。
-
-### 待批准的最小修订方向
-
-1. H=1/2 使用原 XZ 足印内、上下入口不重叠的短坡规则，并明确哪些现有平台公式在该分支不适用；H=3 同时用原版碰撞验证确定净空。不能只删红色测试或将合法高度范围偷偷改为 H>=4。
-2. 为 H=32 冻结只读天然底平台支撑证据合同，或明确批准 output localBounds 包含 W-33 的地板。两者不能由当前代码悄悄选择后声称“严格照原规格”。
-
-以上尚未写入原八册或采用到生产实现。需要规格修订确认后继续。
-
-## 3. 最终离线构建
-
-实际执行：
+实际执行，退出码 **1**：
 
 ```powershell
 Set-Location -LiteralPath 'D:\云游四海-Mod源码\plaincraft-great-wall'
 $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
-.\gradlew.bat --offline --dependency-verification=strict build --rerun-tasks --no-build-cache --console=plain --no-daemon
+.\gradlew.bat --offline --dependency-verification=strict build runGameTest --continue --rerun-tasks --no-build-cache --console=plain --no-daemon
 ```
 
-实际输出：
+`--continue` 只让其它验收任务也跑完，不跳过失败、不关闭校验、不把失败改成成功。
+
+关键输出：
 
 ```text
-All 1 required tests passed :)
-135 tests completed, 4 failed
-> Task :test FAILED
-BUILD FAILED in 1m 36s
+All 17 required tests passed :)
+167 tests completed, 1 failed
+BUILD FAILED in 2m 5s
 18 actionable tasks: 18 executed
 ```
 
-- Java 编译、资源处理和 remap 执行通过，但 **整个 build 失败**。生成过 jar 不等于可发布，不交付部署。
-- JUnit 24 个 suite，135 项，131 PASS、4 FAIL、0 skipped。原有 S0/S1A 的97项全部 PASS，S1B 新增38项中34 PASS、4 FAIL。
-- 4项失败全在 `WallRampTest.rampHeightBoundary`：H=1、2、3、32。H=4、20、31 通过纯模型检查。
-- Fabric GameTest **1/1 PASS**，仅既有 `coreLoadsWithoutOptionalIntegrations`。不是 S1B 构件 GameTest，不是 C2ME 100轮矩阵。
-- 测试服务器日志仍为 `world generation disabled`，正常保存、关服。没有启用墙生成。
-- 所有 Gradle 调用均使用 JDK21、`--offline --dependency-verification=strict`。未升级依赖，未添加代理或绕过校验。
-- 保留4项红色回归，没有 `@Disabled`、没有改断言让空组件冒充成功；因此当前分支预期仍是红色 build，等待规格修订与实现完成。
+- Java/客户端/GameTest编译和 remap 执行完成；**整个 build 失败，不可发布**。
+- JUnit：34个 suite，167项，166 PASS、1 FAIL、0 skipped。
+- 唯一 FAIL：`GroundExitFallbackTest.exhaustedCapSearchMustFallBackToTheEarlierGroundExitWithoutFatalGeneration`。
+- Fabric GameTest：17/17 PASS，正常保存、关服。
+- 没有 `@Disabled`、排除红项、空组件冒充成功或永久关闭依赖校验。
+- Java21、Mojmap、Gradle9.4.1、Loom1.16.3、Loader0.19.3、Fabric API0.116.14+1.21.1及JUnit5.11.0均保持原锁定版本。未下载依赖，未添加代理。
 
-原始证据：
+最终原始证据：
 
 ```text
-D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\strict-offline-build.txt
-D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\gametest-results.xml
-D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\junit\TEST-local.plaincraft.greatwall.component.WallRampTest.xml
-D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\junit\TEST-local.plaincraft.greatwall.component.RampSpecificationTest.xml
+D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\continuation\final\strict-offline-build.txt
+D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\continuation\final\gametest-results.xml
+D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\continuation\final\junit\
+D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\continuation\final\checks.json
 ```
 
-同目录 `junit` 保留其余22个 suite 的原始XML；`checks.json` 记录总数、失败项、源文件清单与构建日志 SHA-256。
+## 2. 冻结公式修订与反例
 
-原始 Gradle 日志第2行自带一个尾空格，保留原始证据，不为消除 `git diff --check` 对该日志的提示而改写输出。生产源码/测试源码的 whitespace 检查通过。
-
-## 4. 验收核对
-
-| 判据 | 预期 | 实际 | 状态 |
+| 原条目 | 真实矛盾/缺口 | 已采用的最小修订 | 反例及验证 |
 | --- | --- | --- | --- |
-| 栅格逆变换/负坐标/百万坐标 | 稳定覆盖、floorDiv、单次镜像 | RasterizerTest 5项通过 | PASS，纯JUnit |
-| 连贯破败、维护影响、全局S | 顺序无关、required保护 | DecayFieldTest 3项通过 | PASS，局部JUnit |
-| 完整组件支撑再裁owner | 缺任何必需列拒绝；必需净空不冲突 | ComponentAssemblyTest 3项通过 | PASS，纯JUnit；无writer接线 |
-| 基础连通/重力/两格净空 | 去孤块，必需断支撑拒绝 | SupportGraphTest 3项通过 | PASS，基础子集 |
-| 三层guard/支撑0、4、5、12、13 | 前四可支撑，13断；最低读W-35 | SurfaceProbeTest 10项通过 | PASS，冻结分类fixture |
-| 墙体20高10宽/顶部收8宽/6净道 | 名义墙段满足 | 单一平坦直段检查通过 | PASS，局部JUnit |
-| STONE/DEEPSLATE/SANDSTONE同几何 | 三族占位一致 | 完好墙段三族比较通过 | PASS，局部JUnit |
-| 0/15/30/45/60/90°墙顶连通 | 旋转后完整路径可达 | 旋转站点链fixture纯BFS通过 | PASS，纯模型；原版碰撞NOT_RUN |
-| 马道1..32完整可行 | 入口/顶平台齐全可达 | H=1/2/3/32未通过 | BLOCKED/FAIL |
-| 弯曲墙、真实坡道阶梯形状、全部破败四态 | 全组件、真实碰撞稳定 | 未完成全覆盖 | NOT_RUN |
-| 敌楼11×11、1/2/4chunk、各层可达 | 完整构件与owner重放 | EnemyTower尚未实现 | NOT_RUN |
-| 烽火台四火塘同ID | 四块未点燃且有支撑 | BeaconTower尚未实现 | NOT_RUN |
-| Gate/WaterGate/EndCap/FortPlaceholder | 通路、49/50/51、通地出口 | 尚未实现 | NOT_RUN |
-| 梁拱双支座、全部装饰survival、无孤立残片 | 全模板复核 | SupportGraph尚未完成对应扩展 | NOT_RUN |
-| Realization/ChunkPlanCompiler/ChunkWallWriter | 整件决议、owner限制、proof预检 | 尚未实现 | NOT_RUN |
-| 生产T0/metadata/markers/coordinator | 冻结coverage、耐久proof、复用原T0 | 未改造，仍为已签收S0实验实现 | NOT_RUN |
-| S1B ComponentGameTests/ProductionBarrierTests | 全表通过 | 尚未编写/运行 | NOT_RUN |
-| S0 100轮、worker1/2/8/16重跑 | 接入后无回归 | 未接入，本轮未重跑 | NOT_RUN |
-| 原有97项JUnit+已有1项GameTest | 通过 | 全部通过 | PASS，仅既有覆盖 |
-| S1B全部签收 | 严格离线build及全部门槛通过 | build失败且大量集成项未实施 | BLOCKED |
+| H=1/2/3 全部套 U形两跑平台 | H=1/2上下平台地板侵入必需净空；H=3候选也碰撞 | 仅H=1..3使用原足印内不重叠短坡；H≥4保留原两跑公式 | `RampSpecificationTest`保留原H1/H2坐标反例；`WallRampTest`逐一验证1..32全部平台、支撑和净空 |
+| Ramp localBounds.minY=-32 | lower=W-32 的地板在 W-33 | minY=-33，只多容纳这一层；不改探测窗口/支撑drop | 保留H32原包络反例；H32完整构件通过 |
+| 敌楼 maxYExclusive=W+7 | 最后脚面W+5所需三格净空包括W+7 | maxYExclusive=W+8，只增加空气包络 | 11×11实体尺寸不变；6朝向、各层通地原版碰撞通过 |
+| 收头退让被实现成沿旧切线平移、沿用旧W | 弯道/坡道离开站点合同；反向端点错误减S | 每4S采样真实位置、W、切向；方向取端点朝向与合同切向点积 | `capRetreatFollowsBendAndHeightInsteadOfOriginalTangent`保留原位置反例 |
+| 默认 Ramp/Gate 入口固定 W-20 | drop=4/5/12时填实后仍为高台，不等于通地 | 默认入口取完整入口足印已探明的自然地面，足印高差≤1；明确协商高度仍用原显式接口 | `defaultRampGroundEntranceTracksActualSupportedGround`、`filledFoundationsDoNotPretendTheirTopIsNaturalGround`及旧式高台反例通过 |
 
-## 5. 新建与修改文件
+H=1..32 合法范围未改。walkY合同未改。探测窗口仍 `[walkY-32,walkY+6]`，只读三层guard可到W-35；drop上限仍12。没有降分辨率、缩小构件或放宽支撑来换性能。
 
-生产源文件（均纯 Java；尚无 S1B worldgen 写入）：
+另外补足了冻结签名原先缺失的数据闭包：`SiteKind.WALL`、`ComponentVoxels.realizedState`、`WriteMetadata`、生产marker完整字段、耐久capture intent等；旧构造器保留，原几何和T0-v1字节协议不变。详细合同在补充文档中逐项列明。
 
-```text
-D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\geometry\Rasterizer.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\decay\DecayField.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\decay\PaletteBinding.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\decay\SupportGraph.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\generation\SurfaceProbe.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\component\ComponentTemplate.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\component\ComponentAssembly.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\component\WallSection.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\component\Ramp.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\model\WallTypes.java
+## 3. 已完成的实现批次
+
+每批生产类控制在1～3个；测试、合同说明与对应类一起提交。
+
+| 提交 | 内容 |
+| --- | --- |
+| `2cf4090` | 短坡/最低地板修复，保留1..32验收 |
+| `4ead623` | EnemyTower、BeaconTower、旋转功能格一对一绑定 |
+| `54f9a15` | Gate、EndCap、完整组件合并 |
+| `196ae43` | WaterGate、48×48 FortPlaceholder |
+| `6ad0fd7`、`22793f1` | ChunkPlanCompiler、写入metadata、破败状态传递 |
+| `b346946`、`4adf82f` | 冻结BlockCatalog、OwnershipGuard、原生writer/markers |
+| `87b1588`、`bec35d7` | 生产存证、coverage、capture intent |
+| `904a483` | TerrainSnapshotService、SnapshotColumnView |
+| `0bb8ff1`、`49bad68`、`1dd1fb7` | RealizationPlanner、逐列破败、真实曲线回退、末段裁切与终点原因 |
+| `cec91b6` | 生产版PREPARE→CAPTURE→APPLY与原版构件验证；S0实验策略保留 |
+| `a1934a9` | 显式双支座支撑组、原版船体通航及源水测试 |
+| `b7617df` | 拒绝IO后的future/claim计数清理、marker完整payload校验 |
+| `eae8993` | 默认入口真正落到已证自然地面 |
+| `1d4ff21` | 保留跨cell出口回退的失败验收 |
+
+`BlockCatalog` 的箱子属性序列化已由 Java `toString()` 修为原版 `Property.getName(value)`，实际含箱子的整件写入反例发现该问题。S0 token 和 T0-v1 hash 不因这项生产序列化修复改变。
+
+## 4. 验收核对与范围
+
+| 判据 | 预期 | 实际 | 结论 |
+| --- | --- | --- | --- |
+| 马道H=1..32 | 完整平台、两格净空、可达 | 原四红项及全部32高度的纯几何检查通过 | PASS；全部高度逐一原版实体运动尚NOT_RUN |
+| 默认地面入口drop0/4/5/12 | 入口在地面，不是高台 | 默认马道/城门/收头局部测试通过 | PASS，解析T0 |
+| 支撑drop0/4/5/12/13 | 前四支持、13拒绝 | SurfaceProbe边界/guard/遮蔽/保护测试通过 | PASS |
+| 墙体20×10、收分、6格净道 | 尺寸不变 | 纯几何通过；六朝向原版碰撞形状连通通过 | PASS，平坦代表fixture |
+| 三材质族同占位 | 几何一致 | 完好墙段比较通过 | PASS，局部；不是全构件全四态图册 |
+| 敌楼11×11/1、2、4owner | 所有层可达、重放同结果 | 原版ProtoChunk写入、逆序重放和原版碰撞检查通过 | PASS |
+| 烽火台四火塘同身份 | 不重复、不缺失、未点燃、有支撑 | 六朝向身份测试、破败功能删除、原版连接更新通过 | PASS，S3玩法未启用 |
+| 门洞不被马道堵住 | 上下通路完整 | Gate纯测试和原版碰撞检查通过 | PASS，代表fixture |
+| 收头通地、弯坡回退 | 正常候选真实可达 | 常规收头/三种落差/曲线重采样通过 | PASS，局部 |
+| 所有128格候选失败后退至旧出口 | 跨cell一致、不能fatal代替 | 解析山脊反例可稳定复现缺口 | **FAIL / B-S1B-03** |
+| 河流49/50/51 | 49跨、50/51不建水门 | 模板拒绝阈值、近侧cap、纯terminal决议通过 | PASS，各自测试范围 |
+| 原版船体穿主拱 | 无方块碰撞阻塞 | 实际Boat.move在隔离测试世界横穿物理主拱切片 | PASS；非玩家驾驶/长期浮力与流体压测 |
+| 源水不抬面不填净空 | 原水面以下source | 原版BlockState检查和4宽3高主通道检查通过 | PASS |
+| 无孤岛、重力、拱双支座 | 必需支撑不能假落地 | 纯支撑反例通过，城门接入双支座；代表废墟及楼梯/铁栏原版邻接更新通过 | PASS，明确子集，见未完成项 |
+| 整件决议→owner裁切→proof预检 | 不挖未知方块，不越界 | 顺序/hash/BE保护、全部写集预检、编辑后重放测试通过 | PASS |
+| 原T0耐久复用 | APPLY后不能重采墙 | 多页/20并发请求、磁盘逐字节重读、晚到复用通过 | PASS，原生ProtoChunk及Vanilla mailbox |
+| 历史/证据损坏 | fail closed | 缺页/缺proof/CRC/身份/marker payload测试通过 | PASS，对当前存证协议 |
+| IO拒绝/释放 | 无永久挂起 | 300次拒绝IO、flight/claim/admission归零通过 | PASS |
+| 生产完整屏障路径 | proof durable后exclusive写，回调锁外 | 解析合同+真实ProtoChunk/Vanilla mailbox完整链路及player edit重放通过 | PASS，FEATURES由fixture提供 |
+| S0百轮矩阵 | 1/2/8/16同输入同输出 | 8项全部通过，共3200owner | PASS，S0实验屏障，不冒充生产墙C2ME接线 |
+| S1B整体 | 所有规定行为和build通过 | 一项红色验收 + 未完成细节 | **BLOCKED** |
+
+GameTest对角色通路使用原版碰撞形状、0.6×1.8身体、半格节点检查，不是让真实玩家或寻路AI逐条走完全路。17项原始方法名和结果在最终XML中，不据测试名字扩大覆盖范围。
+
+## 5. 阻塞与未完成项
+
+主阻塞详细报告：
+
+`D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1B-跨单元出口阻塞.md`
+
+本例中前一个实际可行出口可能在128格回退/当前cell有限邻域之外。当前输入/缓存没有跨cell接受出口证明，也没有在所有相关owner APPLY前传播截断边界；现有代码只能 fail closed。不是旧马道批准仍未处理，更不是悄悄把异常当“成功断口”。
+
+另外以下范围尚未完成，**不列为PASS**：
+
+- Ramp固定四候选择优和完整外沿护栏尚未闭合；当前正常模板路径已验证，不等于四候选合同齐备。
+- WaterGate全部次跨的余数合并、自然薄冰主通航清除/旁冰保留策略、水门的显式双支座分组尚待完成；本次双支座已接城门。主通航和基本墩身规则已实现。
+- Realization维护影响目前来自计划中未抑制的站点，尚未收敛为仅“经完整T0接受的站点”；跨站点/水门/收头相邻冲突的完整矩阵未跑完。
+- 敌楼/关隘在非零基础落差下的每个外部地面入口、全部转弯坡度、所有装饰的原版survival尚未全覆盖。
+- T0/compiled字节限额已有检查，仍需压力验证峰值对象占用、在分配前的完整预留和长期pin行为；不以逻辑估算冒充实测内存上限。
+- 生产FEATURES真请求端口与真实CPU地形/C2ME生产墙的全链路验证为NOT_RUN；当前完整pipeline测试使用解析规划和预置FEATURES ProtoChunk。
+- S1C植被抑制/实际生命周期切换未实施。Tan's Huge Trees保护不足的profile仍拒绝授权；S5整包仍BLOCKED，没有删mod冒充兼容。
+
+## 6. S0矩阵证据
+
+实际命令：
+
+```powershell
+.\tools\Test-TerrainMatrix.ps1 -EvidenceStage s1b -Rounds 100
 ```
 
-`WallTypes` 仅追加 `SiteKind.WALL`，为普通64格墙单元提供不与站点冲突的身份；原站点编号不动。其余原有 S1A 类型未重写或回滚。细节在补充合同中公开记录。
+脚本内部每次均使用 JDK21、`--offline --dependency-verification=strict`，新建隔离世界；第三方jar只从本地实例复制并核对锁定SHA，不修改源实例。
 
-测试源文件：
+| profile | workers | rounds | owners | 结果 |
+| --- | --- | --- | --- | --- |
+| vanilla | 1 / 2 / 8 / 16 | 各100 | 各400 | 全PASS |
+| tectonic-c2me | 1 / 2 / 8 / 16 | 各100 | 各400 | 全PASS |
 
-```text
-D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\geometry\RasterizerTest.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\decay\DecayFieldTest.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\decay\SupportGraphTest.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\generation\SurfaceProbeTest.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\component\TemplateFixtures.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\component\ComponentAssemblyTest.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\component\WallRampTest.java
-D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\component\RampSpecificationTest.java
-```
+比较的是每个profile内跨并发的逐owner T0/realization/final hash；不宣称 vanilla 与 Tectonic 应具有相同地形。每个owner都验证捕获→落盘→写入时间顺序、native线程、FEATURES而非FULL请求、晚到T0复用、关服lease清零。
 
-报告与补充合同：
+矩阵执行于 `cec91b6` 实现基础；之后变化在生产构件/生产存证/生产策略，S0实验执行路径未改。最终源码再执行完整离线构建和17项GameTest。没有将本矩阵包装成新生产墙C2ME运行证明。
 
 ```text
-D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1B.md
-D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1B-补充合同.md
+D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\matrix\results.json
+D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\matrix\<run-id>\execution.json
+D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\matrix\<run-id>\terrain\
+D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\runtime\
 ```
 
-## 6. 复现命令
+## 7. 文件清单与复现
 
-只验证冻结坐标矛盾（预期成功，表示反例成立）：
+**全部新增/修改的源文件、测试、脚本及报告均以绝对路径列在机器可读清单中**，避免手写清单漏项：
+
+`D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\continuation\final\files.json`
+
+该清单对比 `80f2b24`，覆盖本阶段所有已提交代码及本次脚本/报告变动；每项含类别、完整路径、SHA256。大量矩阵原始文件另有：
+
+`D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\continuation\final\matrix-files.json`
+
+修复后的马道与原公式反例：
 
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
-.\gradlew.bat --offline --dependency-verification=strict test --tests '*RampSpecificationTest'
+.\gradlew.bat --offline --dependency-verification=strict test --tests '*RampSpecificationTest' --tests '*WallRampTest' --tests '*GateCapTest'
 ```
 
-复现未完成的马道边界验收（预期4项失败）：
+预期PASS。新的跨cell失败：
 
 ```powershell
-$env:JAVA_HOME='C:\Program Files\Java\jdk-21'
-.\gradlew.bat --offline --dependency-verification=strict test --tests '*WallRampTest'
+.\gradlew.bat --offline --dependency-verification=strict test --tests '*GroundExitFallbackTest'
 ```
 
-完整构建按第3节命令。单独定向测试会覆盖 build 目录中的当次JUnit报告，因此最终全量原始XML已复制到 docs/evidence，不用后续少量测试的成功覆盖本次失败结论。
+预期1 PASS、1 FAIL。完整构建见第1节；单独跑GameTest：
 
-## 7. 边界与后续恢复
+```powershell
+.\gradlew.bat --offline --dependency-verification=strict runGameTest
+```
 
-- 没有同步加载世界 chunk，没有 future join/get，没有调用 possibleBiomes。新代码不持有 Minecraft 世界对象。
-- 工作 HashMap/队列仅存在于单次纯函数调用/独占构件缓冲器，输出使用不可变 record 集合；没有新共享可变容器。
-- S0 的锁外 future、startup pump、PREPARE→CAPTURE→APPLY 与永久 T0 文件未改。也没有新增/清空永久历史。
-- 未触碰真实 mods、真实存档、旧世界回填；未使用网络补依赖；项目代理设置扫描无匹配。
-- 未改 RoadWeaver/C2ME/黄金树交互。S1C Tan's Huge Trees 与 S5 整包 BLOCKED 边界继续保留，未删除 mod。
-- 后续先确认/冻结马道修订规则并让红色测试真实转绿，再完成 WallSection/Ramp 的所有约束、其余构件及生产屏障，最后执行完整 GameTest 和 S0矩阵；不从当前候选直接跳到 S1C。
+预期17项PASS。定向运行会覆盖build内报告，因此完整验收的日志/XML已复制到docs独立保存。
+
+## 8. 操作边界
+
+- 未部署到真实mods，未打开真实存档，未增加旧世界回填。
+- 正式生产世界生成仍关闭；仅显式构造生产策略及隔离fixture执行实际方块写入。
+- 未同步worldgen getChunk / future join/get，未调用possibleBiomes。扫描中的 `String.join` 是字符串拼接，不是future等待。
+- 高Y坐标存三个int；没有把6000高度压入BlockPos.asLong。
+- T0/proof是耐久证据，不因缓存缺失静默重建；永久历史不被清空。
+- C2ME适配器的锁外订阅、native WORLDGEN锁调用和positionedExecutor保持既有实现。启动pump仍保留，不改用普通tick兜底。
+- 本次没有改RoadWeaver或黄金树代码；检查了本地C2ME适配源码与原版命名jar的相关方法，不凭名称猜ABI。
+- 未升级任何依赖、未设置代理、未联网补包。
+
+由于整体build仍红且第5节尚未闭合，本报告是明确的阻塞验收记录，不是交付签收。不能输出“S1B完成，请审查”。
