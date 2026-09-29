@@ -93,6 +93,36 @@ public final class ComponentGameTests implements FabricGameTest {
         helper.succeed();
     }
     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
+    public void supportedTowerAndFortEntrancesMeetNativeGround(GameTestHelper helper){
+        var cases=new ArrayList<int[]>();
+        for(int drop=0;drop<=12;drop++)cases.add(new int[]{drop,0});
+        for(int angle:new int[]{15,30,45,60,90})for(int drop:new int[]{4,5,12})cases.add(new int[]{drop,angle});
+        groundEntranceCase(helper,cases,0);
+    }
+    private static void groundEntranceCase(GameTestHelper helper,List<int[]> cases,int index){
+        if(index==cases.size()){helper.succeed();return;}
+        int drop=cases.get(index)[0],angle=cases.get(index)[1],ground=64-drop;
+        for(var kind:List.of(SiteKind.ENEMY_TOWER,SiteKind.FORT)){
+            Bounds bounds=kind==SiteKind.FORT?new Bounds(-24,-33,-24,24,8,24):new Bounds(-5,-33,-5,6,8,6);
+            var base=ComponentFixtures.input(kind,bounds,0,0,angle,DecayState.INTACT);
+            var supports=new HashMap<>(base.supports());
+            supports.replaceAll((p,v)->new ProbeResult(ProbeKind.SUPPORTED,ground,OptionalInt.empty(),OptionalInt.empty(),drop,ComponentFixtures.H));
+            var input=new ComponentInput(base.site(),base.stations(),supports,base.decay(),base.family(),false,List.of(),List.of());
+            ComponentTemplate template=kind==SiteKind.FORT?new FortPlaceholder(DECAY,ComponentFixtures.PALETTE):new EnemyTower(DECAY,ComponentFixtures.PALETTE);
+            var c=template.compile(input);routes(helper,c,ground);
+            var states=new HashMap<>(ComponentFixtures.states(c,ground));
+            var box=c.bounds();
+            for(int z=box.minZ()-1;z<=box.maxZExclusive();z++)for(int x=box.minX()-1;x<=box.maxXExclusive();x++)
+                states.putIfAbsent(new Point3i(x,ground-1,z),Blocks.STONE.defaultBlockState());
+            var expanded=new Bounds(box.minX()-1,box.minY(),box.minZ()-1,box.maxXExclusive()+1,box.maxYExclusive(),box.maxZExclusive()+1);
+            var wall=c.requiredRoutes().stream().flatMap(List::stream).filter(p->p.y()==84).findFirst().orElseThrow();
+            var reached=new ComponentFixtures.CollisionView(states).reachable(wall,expanded);
+            helper.assertTrue(reached.stream().anyMatch(p->p.y2()==ground*2&&(p.x2()<box.minX()*2||p.x2()>=box.maxXExclusive()*2
+                    ||p.z2()<box.minZ()*2||p.z2()>=box.maxZExclusive()*2)),"native ground exit "+kind+" drop="+drop+" angle="+angle);
+        }
+        helper.runAfterDelay(1,()->groundEntranceCase(helper,cases,index+1));
+    }
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
     public void capturedThinIceThawsOnlyInMainChannel(GameTestHelper helper){
         var catalog=new BlockCatalog(helper.getLevel().registryAccess());
         var key=new ChunkKey("minecraft:overworld",0,0);var pageKey=new local.plaincraft.greatwall.terrain.TerrainTile.Key(key.dimension(),0,0,0,127);

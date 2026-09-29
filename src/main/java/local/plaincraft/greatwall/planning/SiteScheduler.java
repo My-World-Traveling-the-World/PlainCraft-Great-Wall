@@ -109,11 +109,11 @@ public final class SiteScheduler {
 
     static Bounds footprint(SiteKind kind) {
         return switch (kind) {
-            case ENEMY_TOWER -> new Bounds(-5, -32, -5, 6, 7, 6);
+            case ENEMY_TOWER -> new Bounds(-5, -33, -5, 6, 8, 6);
             case BEACON -> new Bounds(-5, -32, -5, 5, 7, 5);
-            case GATE -> new Bounds(-30, -32, -15, 30, 4, 15);
-            case FORT -> new Bounds(-24, -32, -24, 24, 8, 24);
-            case RAMP -> new Bounds(-30, -32, 4, -6, 3, 15);
+            case GATE -> new Bounds(-30, -33, -15, 30, 4, 15);
+            case FORT -> new Bounds(-24, -33, -24, 24, 8, 24);
+            case RAMP -> new Bounds(-30, -33, -15, 30, 3, 15);
             default -> throw new IllegalArgumentException("not a scheduled fixed-footprint site: " + kind);
         };
     }
