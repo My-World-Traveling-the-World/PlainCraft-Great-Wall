@@ -1,6 +1,7 @@
 package local.plaincraft.greatwall.decay;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,6 +16,9 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** Whole-component support and route checks. Working collections are invocation-local. */
 public final class SupportGraph {
+    public record Span(Set<Point3i> load,Set<Point3i> left,Set<Point3i> right) {
+        public Span {load=Set.copyOf(load);left=Set.copyOf(left);right=Set.copyOf(right);}
+    }
     private static final int[][] SIDES = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
     private static final int[][] HORIZONTAL = {{1,0},{0,1},{-1,0},{0,-1}};
     private static final Comparator<Point3i> ORDER = Comparator.comparingInt(Point3i::y)
@@ -23,12 +27,16 @@ public final class SupportGraph {
     public SupportGraph() {}
 
     public ComponentVoxels validate(ComponentVoxels component, Set<Point3i> foundationRoots) {
+        return validate(component,foundationRoots,List.of());
+    }
+
+    public ComponentVoxels validate(ComponentVoxels component,Set<Point3i> foundationRoots,List<Span> spans) {
         Objects.requireNonNull(component); Objects.requireNonNull(foundationRoots);
         Map<Point3i,VoxelIntent> blocks = occupancy(component);
         Map<Point3i,VoxelIntent> retained = new HashMap<>(blocks);
         // Remove unstable nodes simultaneously, then flood again; decoration cannot root masonry.
         while (true) {
-            Set<Point3i> connected = rooted(retained, foundationRoots);
+            Set<Point3i> connected = rootedSpans(retained, foundationRoots,spans);
             var removed = new HashSet<Point3i>();
             for (VoxelIntent v : retained.values()) {
                 boolean keep = structural(v) ? connected.contains(v.pos()) : decorationSupported(v, retained, connected);
@@ -55,6 +63,23 @@ public final class SupportGraph {
             }
         }
         return result;
+    }
+
+    private static Set<Point3i> rootedSpans(Map<Point3i,VoxelIntent> blocks,Set<Point3i> roots,List<Span> spans) {
+        var blocked=new HashSet<Point3i>();spans.forEach(s->blocked.addAll(s.load()));
+        var allowed=new HashMap<>(blocks);blocked.forEach(allowed::remove);
+        var pending=new ArrayList<>(spans);
+        while(true){
+            var connected=rooted(allowed,roots);boolean progress=false;
+            for(var iterator=pending.iterator();iterator.hasNext();){
+                var span=iterator.next();
+                if(span.left().stream().anyMatch(connected::contains)&&span.right().stream().anyMatch(connected::contains)){
+                    span.load().forEach(p->{var value=blocks.get(p);if(value!=null)allowed.put(p,value);});
+                    iterator.remove();progress=true;
+                }
+            }
+            if(!progress)return connected;
+        }
     }
 
     private static Set<Point3i> rooted(Map<Point3i,VoxelIntent> blocks, Set<Point3i> foundationRoots) {

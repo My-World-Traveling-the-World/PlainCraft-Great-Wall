@@ -119,4 +119,56 @@ public final class ComponentGameTests implements FabricGameTest {
         }
         helper.succeed();
     }
+    private static ComponentInput water(int width){
+        var base=ComponentFixtures.input(SiteKind.WATER_GATE,new Bounds(-40,-32,-6,40,3,6),0,0,0,DecayState.INTACT);
+        var supports=new HashMap<Point3i,ProbeResult>();
+        base.supports().forEach((p,v)->supports.put(p,p.x()>=-24&&p.x()<25
+                ?new ProbeResult(ProbeKind.WATER,56,OptionalInt.of(65),OptionalInt.of(56),8,ComponentFixtures.H):v));
+        var evidence=new WaterEvidence(new ArcInterval((1024-24)*256L,(1024+25)*256L),
+                width<50?WaterClass.NARROW:WaterClass.WIDE,width*256L,49*256L,65,
+                List.of(new Point3i(-25,64,0),new Point3i(25,64,0)),List.of(new Point3i(0,56,0)),ComponentFixtures.H);
+        return new ComponentInput(base.site(),base.stations(),supports,base.decay(),base.family(),false,List.of(evidence),List.of());
+    }
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
+    public void sourceWaterNeverFillsBoatClearance(GameTestHelper helper){
+        var c=new WaterGate(DECAY,ComponentFixtures.PALETTE).compile(water(49));
+        helper.assertTrue(!c.voxels().isEmpty(),"49-wide crossing accepted with supported bed");
+        for(var v:c.voxels())if(v.kind()==IntentKind.FLUID)
+            helper.assertTrue(v.pos().y()<65&&BlockCatalog.resolveState(v.state()).getFluidState().isSource(),"water source below old surface only");
+        for(int z=-5;z<5;z++)for(int x=-2;x<2;x++)for(int y=65;y<68;y++){
+            var pos=new Point3i(x,y,z);
+            helper.assertTrue(c.voxels().stream().anyMatch(v->v.pos().equals(pos)&&v.kind()==IntentKind.OWNED_VOID),"three-block main boat clearance");
+        }
+        helper.succeed();
+    }
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
+    public void water49BoatPasses(GameTestHelper helper){
+        var c=new WaterGate(DECAY,ComponentFixtures.PALETTE).compile(water(49));
+        helper.assertTrue(!c.voxels().isEmpty(),"49-wide crossing built");
+        var origin=helper.absolutePos(new BlockPos(0,150,200));
+        var level=helper.getLevel();
+        // A small physical slice preserves the full central arch and water on both sides.
+        for(int z=-9;z<=9;z++)for(int x=-4;x<=4;x++)for(int y=55;y<72;y++)
+            level.setBlock(origin.offset(x,y-56,z),y<56?Blocks.STONE.defaultBlockState():
+                    y<65?Blocks.WATER.defaultBlockState():Blocks.AIR.defaultBlockState(),2);
+        for(var v:c.voxels())if(v.pos().x()>=-4&&v.pos().x()<=4)
+            level.setBlock(origin.offset(v.pos().x(),v.pos().y()-56,v.pos().z()),BlockCatalog.resolveState(v.state()),2);
+        var boat=new net.minecraft.world.entity.vehicle.Boat(level,origin.getX(),origin.getY()+65-56-.1,origin.getZ()-7);
+        try{
+            for(int step=0;step<56;step++)boat.move(net.minecraft.world.entity.MoverType.SELF,new net.minecraft.world.phys.Vec3(0,0,.25));
+            helper.assertTrue(boat.getZ()>=origin.getZ()+6.99,"native boat collision moves through central arch");
+        }finally{boat.discard();}
+        helper.succeed();
+    }
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
+    public void water50And51HaveOneTerminalCap(GameTestHelper helper){
+        for(int width:new int[]{50,51}){
+            helper.assertTrue(new WaterGate(DECAY,ComponentFixtures.PALETTE).compile(water(width)).voxels().isEmpty(),"wide water never gets a crossing");
+            var input=ComponentFixtures.input(SiteKind.END_CAP,new Bounds(-30,-33,-5,1,3,15),0,0,0,DecayState.INTACT);
+            var cap=new EndCap(DECAY,ComponentFixtures.PALETTE).compile(input);
+            helper.assertTrue(!cap.voxels().isEmpty()&&cap.voxels().stream().allMatch(v->v.pos().x()<0),"single near-side cap, no far-side body");
+            routes(helper,cap);
+        }
+        helper.succeed();
+    }
 }

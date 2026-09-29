@@ -9,6 +9,17 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 import org.junit.jupiter.api.Test;
 
 class SupportGraphTest {
+    @Test void oneAbutmentCannotRootTheOtherThroughItsOwnArch() {
+        var graph=new SupportGraph();
+        var left=new Point3i(0,0,0);var right=new Point3i(2,0,0);var beam=new Point3i(1,1,0);
+        var c=component(List.of(stone(0,0,0,true),stone(0,1,0,true),stone(1,1,0,true),
+                stone(2,1,0,true),stone(2,0,0,true)),List.of());
+        // Counterexample: undirected connectivity alone certifies a hanging opposite pillar.
+        assertEquals(5,graph.validate(c,Set.of(left)).voxels().size());
+        var span=new SupportGraph.Span(Set.of(beam),Set.of(left),Set.of(right));
+        assertThrows(WallFailure.class,()->graph.validate(c,Set.of(left),List.of(span)));
+        assertEquals(5,graph.validate(c,Set.of(left,right),List.of(span)).voxels().size());
+    }
     private static final SiteId ID = new SiteId("test", SiteKind.ENEMY_TOWER, 1);
     private static VoxelIntent stone(int x, int y, int z, boolean required) {
         return new VoxelIntent(new Point3i(x,y,z), IntentKind.SOLID, Part.CORE,

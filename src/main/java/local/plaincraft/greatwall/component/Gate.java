@@ -29,6 +29,8 @@ public final class Gate implements ComponentTemplate {
         a.box(-4,ground,-5,-2,ground+7,5,Part.ARCH,true);
         a.box(2,ground,-5,4,ground+7,5,Part.ARCH,true);
         a.box(-2,ground+6,-5,2,ground+8,5,Part.ARCH,true);
+        a.span(new Bounds(-2,ground+5,-5,2,3,5),
+                new Bounds(-4,-33,-5,-2,3,5),new Bounds(2,-33,-5,4,3,5));
         a.floor(-29,3,-26,5,0,Part.FLOOR,"north");
         a.floor(-29,-5,-26,-3,0,Part.FLOOR,"north");
         a.route(new Point3i(0,ground,-5),new Point3i(0,ground,4));

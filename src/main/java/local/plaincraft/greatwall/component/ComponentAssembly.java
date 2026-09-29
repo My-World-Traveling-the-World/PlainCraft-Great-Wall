@@ -31,6 +31,8 @@ final class ComponentAssembly {
     private final List<List<Point3i>> routes = new ArrayList<>();
     private final Map<Point3i,BlockEntityIntent> entities = new HashMap<>();
     private final List<SpawnSlot> spawns = new ArrayList<>();
+    private record LocalSpan(Bounds load,Bounds left,Bounds right) {}
+    private final List<LocalSpan> spans=new ArrayList<>();
     private boolean conflictingRequiredFloor;
 
     ComponentAssembly(ComponentInput input, Bounds localBounds, DecayField decay, PaletteBinding palette) {
@@ -87,6 +89,7 @@ final class ComponentAssembly {
     }
 
     void spawn(Point3i feet, int index) { spawns.add(new SpawnSlot(input.site().id(),index,feet,"minecraft:pillager")); }
+    void span(Bounds load,Bounds left,Bounds right){spans.add(new LocalSpan(load,left,right));}
 
     ComponentVoxels finish() {
         return finish(Rasterizer.worldBounds(input.site().frame(), localBounds), (x,z) -> {
@@ -107,6 +110,8 @@ final class ComponentAssembly {
             java.util.function.LongFunction<DecaySample> samples) {
         if (input.site().state() == SiteState.SUPPRESSED || conflictingRequiredFloor) return empty(input.site().id(), worldBounds);
         var voxels = new ArrayList<VoxelIntent>(); var roots = new HashSet<Point3i>();
+        var loads=new ArrayList<Set<Point3i>>();var lefts=new ArrayList<Set<Point3i>>();var rights=new ArrayList<Set<Point3i>>();
+        for(var ignored:spans){loads.add(new HashSet<>());lefts.add(new HashSet<>());rights.add(new HashSet<>());}
         var localToWorld = new HashMap<Point3i,List<Point3i>>();
         long componentHash = identityHash(input.site().id());
         boolean functional = input.decay().state() == DecayState.INTACT || input.decay().state() == DecayState.PARTIAL;
@@ -147,6 +152,12 @@ final class ComponentAssembly {
                 voxels.add(new VoxelIntent(world,kind,cell.part(),block,input.site().id(),
                         required && cell.part() == Part.AIR ? 900 : priority(input.site().id().kind()),required,cell.walkable() && columnFunctional));
                 if (kind == IntentKind.SOLID && y <= support.groundTopY()) roots.add(world);
+                if(kind==IntentKind.SOLID)for(int n=0;n<spans.size();n++){
+                    var span=spans.get(n);
+                    if(contains(span.load(),local))loads.get(n).add(world);
+                    if(contains(span.left(),local))lefts.get(n).add(world);
+                    if(contains(span.right(),local))rights.get(n).add(world);
+                }
                 if (columnFunctional && (entities.containsKey(local) || routes.stream().anyMatch(r -> r.contains(local))
                         || spawns.stream().anyMatch(s -> s.feet().equals(local))))
                     localToWorld.computeIfAbsent(local, unused -> new ArrayList<>()).add(world);
@@ -212,7 +223,9 @@ final class ComponentAssembly {
         }
         voxels.sort(Comparator.comparing(VoxelIntent::pos,ORDER));
         var result = state(hashed(input.site().id(),worldBounds,voxels,worldEntities,worldSpawns,worldRoutes),realizedState);
-        return new SupportGraph().validate(result,roots);
+        var groups=new ArrayList<SupportGraph.Span>();
+        for(int n=0;n<spans.size();n++)groups.add(new SupportGraph.Span(loads.get(n),lefts.get(n),rights.get(n)));
+        return new SupportGraph().validate(result,roots,groups);
     }
 
     String facing(int dx, int dz) {
