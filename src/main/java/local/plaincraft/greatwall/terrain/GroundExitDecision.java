@@ -41,17 +41,18 @@ public record GroundExitDecision(Key key, Exit left, Optional<Exit> right, long 
                 throw new IllegalArgumentException("edge must bound the walk run");
         }
     }
-    public record Cap(SiteId site, Edge edge, long actualSQ8, String componentHash) {
+    public record Cap(SiteId site, Edge edge, long actualSQ8, String componentHash, ArcInterval footprint) {
+        public Cap(SiteId site,Edge edge,long actualSQ8,String componentHash) {
+            this(site,edge,actualSQ8,componentHash,new ArcInterval(footprintStart(edge,actualSQ8),footprintEnd(edge,actualSQ8)));
+        }
         public Cap {
-            Objects.requireNonNull(site); Objects.requireNonNull(edge); WallTypes.requireHash(componentHash);
+            Objects.requireNonNull(site); Objects.requireNonNull(edge); WallTypes.requireHash(componentHash);Objects.requireNonNull(footprint);
             long retreat = edge.reverse() ? actualSQ8 - edge.sQ8() : edge.sQ8() - actualSQ8;
             if (site.kind() != SiteKind.END_CAP || retreat < 0 || retreat > 128L * 256 || retreat % (4 * 256) != 0)
                 throw new IllegalArgumentException("cap violates fixed retreat schedule");
-            if (footprintStart(edge, actualSQ8) < edge.allowed().fromQ8()
-                    || footprintEnd(edge, actualSQ8) > edge.allowed().toQ8())
+            if (footprint.fromQ8() < edge.allowed().fromQ8() || footprint.toQ8() > edge.allowed().toQ8())
                 throw new IllegalArgumentException("cap crosses another walk-run boundary");
         }
-        public ArcInterval footprint() { return new ArcInterval(footprintStart(edge, actualSQ8), footprintEnd(edge, actualSQ8)); }
         private static long footprintStart(Edge e, long s) { return e.reverse() ? s : s - 30L * 256; }
         private static long footprintEnd(Edge e, long s) { return e.reverse() ? s + 30L * 256 : s; }
     }

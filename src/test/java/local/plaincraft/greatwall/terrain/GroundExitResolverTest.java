@@ -101,7 +101,44 @@ class GroundExitResolverTest {
             var bytes=GroundExitCodec.encode(resolver.require(cell(7)).get(10,TimeUnit.SECONDS).getFirst());
             assertThrows(IOException.class,()->GroundExitCodec.decode(Arrays.copyOf(bytes,bytes.length-1)));
             assertThrows(IOException.class,()->GroundExitCodec.decode(Arrays.copyOf(bytes,bytes.length+1)));
-            bytes[7]=2;assertThrows(IOException.class,()->GroundExitCodec.decode(bytes));
+            bytes[7]=3;assertThrows(IOException.class,()->GroundExitCodec.decode(bytes));
+        }
+    }
+    @Test void distantSparseRequestStreamsSlicesWithoutUnboundedPinnedSummaries() throws Exception {
+        long terminalCell=8192;
+        var source=new Source(){@Override public CompletableFuture<Slice> inspect(CellKey k){
+            return CompletableFuture.completedFuture(new Slice(k,k.arcCell()==0?List.of(ROOT):List.of(),List.of(),
+                    Optional.of(new BreakInterval(new ArcInterval(terminalCell*GroundExitDecision.CELL_Q8+32*256,Long.MAX_VALUE),
+                            BreakReason.WORLD_LIMIT,BreakScope.PLANNED)),T));
+        }};
+        try(var worker=Executors.newSingleThreadExecutor();var resolver=new GroundExitResolver(source,worker,64*1024)){
+            var d=resolver.require(cell(8000)).get(30,TimeUnit.SECONDS).getFirst();
+            assertEquals(24*256L,d.breaks().getFirst().range().fromQ8());
+            assertTrue(resolver.diagnostics().get("summary-bytes")<=32*1024);
+            assertTrue(resolver.diagnostics().get("summaries")<=256);
+            resolver.close();assertEquals(0,resolver.diagnostics().get("summary-bytes"));
+        }
+    }
+    @Test void identityIncludesRemoteT0AndAcceptedCapSiteAndFinalCut() throws Exception {
+        GroundExitDecision first;
+        try(var worker=Executors.newSingleThreadExecutor();var resolver=new GroundExitResolver(new Source(),worker,1<<20)){
+            first=resolver.require(cell(2)).get(10,TimeUnit.SECONDS).getFirst();
+        }
+        var changed=new Source(){@Override public CompletableFuture<Slice> inspect(CellKey k){
+            return super.inspect(k).thenApply(s->new Slice(s.cell(),s.exits(),s.breaks(),s.terminal(),H));
+        }};
+        try(var worker=Executors.newSingleThreadExecutor();var resolver=new GroundExitResolver(changed,worker,1<<20)){
+            var second=resolver.require(cell(2)).get(10,TimeUnit.SECONDS).getFirst();
+            assertEquals(first.breaks(),second.breaks());assertNotEquals(first.t0Hash(),second.t0Hash());assertNotEquals(first.hash(),second.hash());
+        }
+        var withCap=new Source(){@Override public CompletableFuture<CapVote> cap(Key k,Edge e){
+            var id=new SiteId("fixture",SiteKind.END_CAP,e.sQ8()*2);
+            return CompletableFuture.completedFuture(new CapVote(Optional.of(new Cap(id,e,e.sQ8()-4*256,H)),T));
+        }};
+        try(var worker=Executors.newSingleThreadExecutor();var resolver=new GroundExitResolver(withCap,worker,1<<20)){
+            var d=resolver.require(cell(2)).get(10,TimeUnit.SECONDS).getFirst();
+            assertEquals(SiteKind.END_CAP,d.caps().getFirst().site().kind());assertEquals(476*256L,d.caps().getFirst().actualSQ8());
+            assertEquals(480*256L,d.breaks().getFirst().range().fromQ8());assertNotEquals(first.hash(),d.hash());
         }
     }
 }

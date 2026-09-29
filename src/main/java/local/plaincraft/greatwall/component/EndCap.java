@@ -11,10 +11,11 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** A terminal-side taper connected to a complete ground exit; never creates a far-bank cap. */
 public final class EndCap implements ComponentTemplate {
+    private static final Bounds ENVELOPE=new Bounds(-30,-33,-15,30,3,15);
     private final DecayField decay;
     private final PaletteBinding palette;
     public EndCap(DecayField decay,PaletteBinding palette) {this.decay=Objects.requireNonNull(decay);this.palette=Objects.requireNonNull(palette);}
-    @Override public Bounds localBounds(ComponentInput input) {Objects.requireNonNull(input);return new Bounds(-30,-33,-5,1,3,15);}
+    @Override public Bounds localBounds(ComponentInput input) {Objects.requireNonNull(input);return ENVELOPE;}
     /** Every retry samples the immutable station ribbon, including reverse-side caps. */
     public static List<SiteRecord> candidates(SiteRecord site,List<Station> stations) {
         if(stations.size()<2)throw new IllegalArgumentException("cap needs station ribbon");
@@ -34,7 +35,7 @@ public final class EndCap implements ComponentTemplate {
             double norm=StrictMath.hypot(dx,dz);
             var frame=new Frame(point,direction*(int)StrictMath.round(dx*(1L<<30)/norm),
                     direction*(int)StrictMath.round(dz*(1L<<30)/norm),w,site.frame().mirror());
-            Bounds bounds=Rasterizer.worldBounds(frame,new Bounds(-30,-33,-5,1,3,15));
+            Bounds bounds=Rasterizer.worldBounds(frame,ENVELOPE);
             result.add(new SiteRecord(site.id(),s,frame,bounds,site.state(),site.absorbedBy(),site.reason()));
         }
         return List.copyOf(result);
@@ -60,6 +61,16 @@ public final class EndCap implements ComponentTemplate {
     }
     /** Compile one already-probed candidate; the realization planner owns retry publication. */
     public ComponentVoxels compileAt(ComponentInput current) {
+        for(int candidate=0;candidate<4;candidate++)try {
+            var result=compileVariant(current,candidate);
+            if(!result.voxels().isEmpty())return result;
+        }catch(WallFailure e){if(e.code()!=FailureCode.OWNERSHIP_CONFLICT)throw e;}
+        return ComponentAssembly.empty(current.site().id(),Rasterizer.worldBounds(current.site().frame(),ENVELOPE));
+    }
+    private ComponentVoxels compileVariant(ComponentInput input,int candidate) {
+                var f=input.site().frame();boolean positiveX=candidate>=2;
+                var bodyFrame=new Frame(f.center(),f.txQ30(),f.tzQ30(),f.walkY(),f.mirror()^(candidate%2==1));
+                var current=ComponentComposer.frame(input,bodyFrame,input.site().globalSQ8());
                 var a=new ComponentAssembly(current,localBounds(current),decay,palette);
                 a.foundation(-30,-5,0,5,-20);
                 for(int x=-30;x<0;x++) {
@@ -70,6 +81,18 @@ public final class EndCap implements ComponentTemplate {
                 a.floor(-30,-3,-8,3,0,Part.FLOOR,"east");
                 a.floor(-29,3,-26,5,0,Part.FLOOR,"north");
                 a.route(new Point3i(-29,0,0),new Point3i(-9,0,0),new Point3i(-28,0,4));
-                return ComponentComposer.merge(current,List.of(a.finish(),new Ramp(decay,palette).compileInFrame(current)));
+                if(positiveX) {
+                    a.foundation(-29,3,29,6,-1);
+                    a.floor(-29,3,29,6,0,Part.FLOOR,"east");
+                    a.route(new Point3i(-28,0,3),new Point3i(28,0,4));
+                }
+                var rampFrame=positiveX?new Frame(f.center(),-bodyFrame.txQ30(),-bodyFrame.tzQ30(),f.walkY(),!bodyFrame.mirror()):bodyFrame;
+                var ramp=new Ramp(decay,palette).compileInFrame(ComponentComposer.frame(current,rampFrame,current.site().globalSQ8()));
+                var body=a.finish();
+                var result=ComponentComposer.merge(current,List.of(body,ramp));
+                if(!result.voxels().isEmpty()&&!new local.plaincraft.greatwall.decay.SupportGraph().reachable(result,
+                        body.requiredRoutes().getFirst().getFirst(),ramp.requiredRoutes().getFirst().getFirst()))
+                    return ComponentAssembly.empty(current.site().id(),result.bounds());
+                return result;
     }
 }

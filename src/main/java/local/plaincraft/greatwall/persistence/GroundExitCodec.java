@@ -13,7 +13,7 @@ public final class GroundExitCodec {
     private GroundExitCodec() {}
     public static byte[] encode(GroundExitDecision d) {
         try (var bytes = new ByteArrayOutputStream(); var out = new DataOutputStream(bytes)) {
-            out.writeInt(0x50474531); out.writeInt(1);
+            out.writeInt(0x50474531); out.writeInt(2);
             out.writeUTF(d.key().recipeHash()); out.writeUTF(d.key().dimension()); range(out,d.key().range());
             exit(out,d.left()); out.writeBoolean(d.right().isPresent());
             if(d.right().isPresent()) exit(out,d.right().get());
@@ -23,7 +23,7 @@ public final class GroundExitCodec {
             out.writeInt(d.exclusions().size());for(var r:d.exclusions())range(out,r);
             out.writeInt(d.caps().size());for(var c:d.caps()) {
                 site(out,c.site());out.writeLong(c.edge().sQ8());out.writeBoolean(c.edge().reverse());range(out,c.edge().allowed());
-                out.writeLong(c.actualSQ8());out.writeUTF(c.componentHash());
+                out.writeLong(c.actualSQ8());out.writeUTF(c.componentHash());range(out,c.footprint());
             }
             out.flush(); if(bytes.size()>LIMIT)throw new IllegalArgumentException("exit certificate exceeds 8MiB");
             return bytes.toByteArray();
@@ -36,14 +36,14 @@ public final class GroundExitCodec {
     public static GroundExitDecision decode(byte[] bytes) throws IOException {
         if(bytes.length>LIMIT)throw new IOException("exit certificate exceeds 8MiB");
         try(var in=new DataInputStream(new ByteArrayInputStream(bytes))) {
-            if(in.readInt()!=0x50474531||in.readInt()!=1)throw new IOException("exit certificate header");
+            if(in.readInt()!=0x50474531||in.readInt()!=2)throw new IOException("exit certificate header");
             var key=new Key(in.readUTF(),in.readUTF(),range(in));var left=exit(in);
             Optional<Exit> right=bool(in)?Optional.of(exit(in)):Optional.empty();long terminal=in.readLong();String t0=in.readUTF();
             var breaks=new ArrayList<BreakInterval>();int n=count(in);
             for(int i=0;i<n;i++)breaks.add(new BreakInterval(range(in),BreakReason.valueOf(in.readUTF()),BreakScope.valueOf(in.readUTF())));
             var exclusions=new ArrayList<ArcInterval>();n=count(in);for(int i=0;i<n;i++)exclusions.add(range(in));
             var caps=new ArrayList<Cap>();n=count(in);for(int i=0;i<n;i++)caps.add(new Cap(site(in),
-                    new Edge(in.readLong(),bool(in),range(in)),in.readLong(),in.readUTF()));
+                    new Edge(in.readLong(),bool(in),range(in)),in.readLong(),in.readUTF(),range(in)));
             if(in.read()!=-1)throw new IOException("exit certificate trailing bytes");
             return new GroundExitDecision(key,left,right,terminal,breaks,exclusions,caps,t0,DeterministicHash.sha256(bytes));
         } catch(IllegalArgumentException e) { throw new IOException("invalid exit certificate",e); }
