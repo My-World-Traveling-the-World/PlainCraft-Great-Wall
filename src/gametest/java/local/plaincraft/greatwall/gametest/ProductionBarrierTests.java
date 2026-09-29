@@ -77,7 +77,12 @@ public final class ProductionBarrierTests implements FabricGameTest {
                         Map.entry(saved,second)))).whenComplete((pair,error)->helper.getLevel().getServer().execute(()->helper.runAfterDelay(1,()->{
                     try{
                         if(error!=null)helper.fail(error.toString());
-                        helper.assertTrue(pair.getKey().tiles().equals(pair.getValue().tiles()),"late cell reuses durable original pages");
+                        helper.assertTrue(pair.getKey().tiles().keySet().equals(pair.getValue().tiles().keySet()),"same durable page set");
+                        for(var entry:pair.getKey().tiles().entrySet()){
+                            var restored=pair.getValue().tiles().get(entry.getKey());var original=entry.getValue();
+                            helper.assertTrue(original.hash().equals(restored.hash())&&original.palette().equals(restored.palette())
+                                    &&Arrays.equals(original.copyStates(),restored.copyStates()),"late cell reuses byte-identical original pages");
+                        }
                         var tile=pair.getValue().tiles().values().stream().filter(t->t.key().minY()==0).findFirst().orElseThrow();
                         helper.assertTrue(tile.state(0,107,0).startsWith("minecraft:stone{"),"T0 must not contain applied wall");
                         helper.assertTrue(f.chunks().get(f.key()).getBlockState(new BlockPos(0,107,0)).is(Blocks.GOLD_BLOCK),"capture must not alter current blocks");

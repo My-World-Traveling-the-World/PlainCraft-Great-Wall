@@ -51,3 +51,10 @@
 
 - 冻结要求“向已证支撑侧每4格回退”保留。旧候选实现把回退写成原 tangent 的直线平移且沿用原 W，弯道/坡道会离开合同；反向端点还错误地减 S。改为在站点链逐个采样 `S - direction * retreat` 的位置、W、切向，direction 由端点朝向与合同切向的点积确定。半径上限仍128，步长仍4，不扩大搜索预算。反例测试明确证明旧位置不在曲线上。
 - WallSection 区分可渲染区间与可走区间；每世界列按其全球 S 获取破败样本。低矮废墟继续输出有根实体，但不保留空中的步道、功能或路线。最后一个64格 cell 允许裁到真实合同终点，不申请不存在的下一段；cell 身份不重编。
+
+## 生产策略与原版序列化核验
+
+- `WallStageCoordinator` 新生产构造委托 `ProductionWallPipeline`；原 S0 构造及实验路径保留。生产策略不实例化 `BarrierFixtureLayout`，单个 owner 异步排队、逐 cell 收集 T0，并在 proof force 完成后进入 native exclusive。FEATURES 租约按实际写半径分配，单份不超过81；结果回调在锁外执行，测试哨兵会拒绝锁内重新请求。
+- Pipeline 的 `Ports` 仅隔离“规划租约 / FEATURES租约 / session有效性 / 失败通道 / 工作executor”，正式构造接既有真实端口；GameTest 用解析合同和原生 ProtoChunk 执行同一生产链路。S1C 才切换实际生命周期和 mod hooks，不冒充已启用真实全世界生成。
+- `BlockCatalog.specification` 必须用原版 `Property.getName(value)` 而非枚举 `toString()`。箱子类型的 Java 枚举字符串与合法方块属性字符串不同，实际写入反例已触发 preflight 拒绝；采用原版序列化后，含箱子的敌楼整件跨 owner 写入通过。S0 `TerrainTile` canonical v1/hash 与 S0 实验 token 不变。
+- GameTest “从磁盘重读T0”比较页 key、palette、完整状态数组和SHA，不比较 Java 对象引用。异步IO测试同时设置墙钟90秒上限，避免测试服务器高速 tick 提前超时；失败产物保留在 continuation 证据目录。

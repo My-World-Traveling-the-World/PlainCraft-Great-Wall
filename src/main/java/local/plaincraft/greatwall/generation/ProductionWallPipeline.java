@@ -1,0 +1,233 @@
+package local.plaincraft.greatwall.generation;
+
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.*;
+import local.plaincraft.greatwall.diagnostics.StageTrace;
+import local.plaincraft.greatwall.geometry.DeterministicHash;
+import local.plaincraft.greatwall.geometry.FixedMath;
+import local.plaincraft.greatwall.model.PlanLease;
+import local.plaincraft.greatwall.model.WallFailure;
+import local.plaincraft.greatwall.model.WallTypes.*;
+import local.plaincraft.greatwall.terrain.*;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.status.*;
+
+/** Production strategy. Async admission happens outside native locks; no future is synchronously waited. */
+public final class ProductionWallPipeline implements AutoCloseable {
+    public record Ports(BiFunction<ChunkKey,Integer,PlanLease<PlanWindow>> plans,
+            Function<List<ChunkPos>,PlanLease<Map<ChunkPos,ChunkAccess>>> features,
+            Runnable assertActive,Consumer<Throwable> fail,Executor worker) {
+        public Ports {Objects.requireNonNull(plans);Objects.requireNonNull(features);Objects.requireNonNull(assertActive);
+            Objects.requireNonNull(fail);Objects.requireNonNull(worker);}
+    }
+    private record Collected(List<RealizationCell> cells,Map<Point3i,String> before,Coverage own,long bytes) {
+        Collected {cells=List.copyOf(cells);before=Map.copyOf(before);}
+    }
+    private final WorldRecipe recipe;
+    private final Ports ports;
+    private final TerrainSnapshotService snapshots;
+    private final RealizationPlanner realization;
+    private final ChunkPlanCompiler compiler;
+    private final ChunkWallWriter writer;
+    private final CoveragePlanner coverage=new CoveragePlanner();
+    private final StageTrace trace=new StageTrace(UUID.randomUUID());
+    private final ConcurrentHashMap<ChunkKey,CompletableFuture<Void>> flights=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID,AutoCloseable> leases=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,CompletableFuture<Void>> queue=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,Boolean> state=new ConcurrentHashMap<>();
+    public ProductionWallPipeline(WorldRecipe recipe,Ports ports,TerrainSnapshotService snapshots,
+            RealizationPlanner realization,ChunkPlanCompiler compiler,ChunkWallWriter writer) {
+        this.recipe=Objects.requireNonNull(recipe);this.ports=Objects.requireNonNull(ports);this.snapshots=Objects.requireNonNull(snapshots);
+        this.realization=Objects.requireNonNull(realization);this.compiler=Objects.requireNonNull(compiler);this.writer=Objects.requireNonNull(writer);
+        queue.put("tail",CompletableFuture.completedFuture(null));
+    }
+    public CompletableFuture<Void> beforeFeatures(ChunkKey key) {
+        try{
+            active();trace.assertOutsideLock();
+            var lease=track(ports.plans().apply(key,32));
+            return lease.future().thenAccept(plans->{active();event("PRODUCTION_PLAN_READY",key,"prepare","none");})
+                    .whenComplete((v,e)->release(lease));
+        }catch(Throwable error){return failed(error);}
+    }
+    public CompletableFuture<Void> beforeLight(ChunkKey key,ChunkAccess owner,TerrainEngine engine) {
+        try{
+            active();trace.assertOutsideLock();
+            if(!key.dimension().equals(recipe.dimension()))return CompletableFuture.completedFuture(null);
+            if(key.x()!=owner.getPos().x||key.z()!=owner.getPos().z)throw failure(FailureCode.OWNERSHIP_CONFLICT,"owner mismatch");
+            var promise=new CompletableFuture<Void>();var existing=flights.putIfAbsent(key,promise);
+            if(existing!=null)return existing.copy();
+            var done=new CompletableFuture<Void>();var prior=queue.put("tail",done);
+            prior.handle((v,e)->null).thenComposeAsync(v->runOwner(key,owner,engine),ports.worker())
+                    .thenApplyAsync(v->{active();return v;},ports.worker()).whenComplete((v,error)->{
+                try{
+                    if(error==null){active();promise.complete(null);}
+                    else{promise.completeExceptionally(error);ports.fail().accept(error);}
+                }catch(Throwable stopped){promise.completeExceptionally(stopped);}
+                finally{flights.remove(key,promise);done.complete(null);}
+            });
+            return promise.copy();
+        }catch(Throwable error){return failed(error);}
+    }
+    private CompletableFuture<Void> runOwner(ChunkKey key,ChunkAccess owner,TerrainEngine engine) {
+        active();
+        // Replays validate durable evidence and the marker; player edits are not recaptured as T0.
+        return engine.exclusive(owner.getPos(),()->{active();return owner.getAttached(TerrainMarkers.PRODUCTION);})
+                .thenComposeAsync(marker->{
+                    if(marker!=null&&marker.complete())
+                        return verifyLoaded(key,marker,owner.getMinBuildHeight(),owner.getMaxBuildHeight());
+                    var lease=track(ports.plans().apply(key,512));
+                    return lease.future().thenComposeAsync(plans->{
+                        active();var cells=coverage.cellsForChunk(key,plans);
+                        if(cells.isEmpty())return CompletableFuture.completedFuture(null);
+                        if(owner.getPersistedStatus().isOrAfter(ChunkStatus.FULL))
+                            throw failure(FailureCode.EXISTING_WORLD,"FULL wall owner lacks completed marker");
+                        CompletableFuture<Collected> chain=CompletableFuture.completedFuture(new Collected(List.of(),Map.of(),null,0));
+                        for(var cell:cells)chain=chain.thenComposeAsync(prior->resolveCell(cell,plans,key,engine)
+                                .thenApply(next->combine(prior,next)),ports.worker());
+                        return chain.thenComposeAsync(collected->{
+                            active();
+                            if(collected.own()==null)throw failure(FailureCode.T0_MISSING,"owner not in realization evidence");
+                            var plan=compiler.bindCoverage(compiler.compile(key,recipe.recipeHash(),collected.cells(),collected.before()),collected.own().hash());
+                            event("PRODUCTION_COMPILED",key,"compile","none");
+                            return snapshots.persistPlan(plan).thenCompose(v->{
+                                active();event("PRODUCTION_PROOF_DURABLE",key,"persist","none");
+                                return engine.exclusive(owner.getPos(),()->{
+                                    active();event("PRODUCTION_APPLY_ENTER",key,"apply",engine.name());
+                                    var report=writer.apply(owner,plan,WriteMode.INITIAL);
+                                    if(!report.complete())throw failure(FailureCode.OWNERSHIP_CONFLICT,"preflight conflicts: "+report.conflicts());
+                                    event("PRODUCTION_APPLY_EXIT",key,"apply",engine.name());return (Void)null;
+                                });
+                            });
+                        },ports.worker());
+                    },ports.worker()).whenComplete((v,e)->release(lease));
+                },ports.worker());
+    }
+    private CompletableFuture<Collected> resolveCell(CellKey cell,PlanWindow initial,ChunkKey owner,TerrainEngine engine) {
+        active();
+        var near=cellCenter(cell,initial);
+        var lease=track(ports.plans().apply(near,512));
+        return lease.future().thenComposeAsync(plans->{
+            active();var owners=coverage.realizationOwners(cell,plans);
+            if(owners.isEmpty())return CompletableFuture.completedFuture(new Collected(List.of(),Map.of(),null,0));
+            CompletableFuture<TerrainSnapshotService.CapturedTerrain> chain=CompletableFuture.completedFuture(
+                    new TerrainSnapshotService.CapturedTerrain(Map.of(),Map.of()));
+            for(var member:owners)chain=chain.thenComposeAsync(all->capture(member,engine).thenApply(one->{
+                var tiles=new HashMap<>(all.tiles());tiles.putAll(one.tiles());
+                var metadata=new HashMap<>(all.metadata());metadata.putAll(one.metadata());
+                long bytes=terrainBytes(tiles,metadata);
+                if(bytes>recipe.config().terrainBytes())throw failure(FailureCode.CAPACITY,"pinned cell T0 exceeds byte budget: "+bytes);
+                return new TerrainSnapshotService.CapturedTerrain(tiles,metadata);
+            }),ports.worker());
+            return chain.thenApplyAsync(captured->{
+                active();var columns=new HashMap<Point3i,SurfaceProbe.ColumnView>();var protection=new ArrayList<Bounds>();
+                for(var metadata:captured.metadata().values()){
+                    var key=metadata.coverage().chunk();protection.addAll(metadata.protectedStructures());
+                    for(int z=key.z()*16;z<key.z()*16+16;z++)for(int x=key.x()*16;x<key.x()*16+16;x++)
+                        columns.put(new Point3i(x,0,z),new SnapshotColumnView(x,z,metadata,captured.tiles(),snapshots.catalog()));
+                }
+                String protectionHash=DeterministicHash.sha256(captured.metadata().values().stream()
+                        .map(CaptureMetadata::hash).sorted().toList().toString().getBytes(StandardCharsets.UTF_8));
+                var result=realization.resolve(new RealizationPlanner.Input(cell,plans,captured.tiles(),columns,protection,Map.of(),0,protectionHash));
+                var before=new HashMap<Point3i,String>();
+                for(var component:result.components())for(var v:component.voxels())if(Math.floorDiv(v.pos().x(),16)==owner.x()
+                        &&Math.floorDiv(v.pos().z(),16)==owner.z()){
+                    var column=columns.get(new Point3i(v.pos().x(),0,v.pos().z()));
+                    if(column==null)throw failure(FailureCode.T0_MISSING,"write outside captured columns");
+                    before.put(v.pos(),column.state(v.pos().y()));
+                }
+                var own=captured.metadata().get(owner);
+                return new Collected(List.of(result),before,own==null?null:own.coverage(),componentBytes(result));
+            },ports.worker());
+        },ports.worker()).whenComplete((v,e)->release(lease));
+    }
+    private CompletableFuture<TerrainSnapshotService.CapturedTerrain> capture(ChunkKey key,TerrainEngine engine) {
+        active();var plan=track(ports.plans().apply(key,256));
+        return plan.future().thenComposeAsync(window->{
+            active();Coverage c=coverage.forChunk(key,window,recipe.bounds());
+            int radius=ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES).blockStateWriteRadius();
+            if(radius<0||radius>4)throw failure(FailureCode.UNSUPPORTED_ADAPTER,"FEATURES write radius");
+            var positions=new ArrayList<ChunkPos>();
+            for(int x=-radius;x<=radius;x++)for(int z=-radius;z<=radius;z++)positions.add(new ChunkPos(key.x()+x,key.z()+z));
+            var features=track(ports.features().apply(List.copyOf(positions)));
+            event("PRODUCTION_PREPARE_FEATURES",key,"features","none");
+            return features.future().thenComposeAsync(chunks->{
+                active();var map=new HashMap<ChunkKey,ChunkAccess>();
+                chunks.forEach((p,ch)->map.put(new ChunkKey(key.dimension(),p.x,p.z),ch));
+                return snapshots.capture(c,Map.copyOf(map),engine,recipe.recipeHash());
+            },ports.worker()).whenComplete((v,e)->release(features));
+        },ports.worker()).whenComplete((v,e)->release(plan));
+    }
+    public CompletableFuture<Void> verifyLoaded(ChunkAccess owner) {
+        var key=new ChunkKey(recipe.dimension(),owner.getPos().x,owner.getPos().z);
+        var marker=owner.getAttached(TerrainMarkers.PRODUCTION);
+        if(marker!=null)return verifyLoaded(key,marker,owner.getMinBuildHeight(),owner.getMaxBuildHeight());
+        try{
+            active();var lease=track(ports.plans().apply(key,512));
+            return lease.future().thenAccept(plans->{
+                active();
+                if(!coverage.cellsForChunk(key,plans).isEmpty())
+                    throw failure(FailureCode.EXISTING_WORLD,"FULL wall owner without production marker; no old-world backfill");
+            }).whenComplete((v,e)->release(lease));
+        }catch(Throwable error){return failed(error);}
+    }
+    private CompletableFuture<Void> verifyLoaded(ChunkKey key,TerrainMarkers.Marker marker,int minY,int maxY) {
+        active();
+        if(!marker.recipe().equals(recipe.recipeHash()))return failed(failure(FailureCode.RECIPE_MISMATCH,"foreign FULL marker"));
+        return snapshots.verifyLoaded(key,marker,minY,maxY).thenRun(()->{active();event("PRODUCTION_REPLAY_VERIFIED",key,"load-read-only","none");});
+    }
+    private Collected combine(Collected a,Collected b) {
+        long bytes=Math.addExact(a.bytes(),b.bytes());
+        if(bytes>recipe.config().compiledBytes())throw failure(FailureCode.CAPACITY,"compiled whole components exceed byte budget: "+bytes);
+        var cells=new ArrayList<>(a.cells());cells.addAll(b.cells());
+        var before=new HashMap<>(a.before());b.before().forEach((p,value)->{
+            var old=before.putIfAbsent(p,value);if(old!=null&&!old.equals(value))throw failure(FailureCode.T0_CORRUPT,"two before-states");
+        });
+        if(a.own()!=null&&b.own()!=null&&!a.own().equals(b.own()))throw failure(FailureCode.RECIPE_MISMATCH,"owner coverage changed between cells");
+        return new Collected(cells,before,a.own()==null?b.own():a.own(),bytes);
+    }
+    private ChunkKey cellCenter(CellKey cell,PlanWindow window) {
+        long s=cell.arcCell()*64L*256+32L*256;
+        var stations=window.plans().stream().flatMap(p->p.stations().stations().stream()).sorted(Comparator.comparingLong(Station::globalSQ8)).toList();
+        if(stations.isEmpty())throw failure(FailureCode.MISSING_FEATURES_PLAN,"empty cell contracts");
+        var point=stations.getLast().point();
+        for(int i=1;i<stations.size();i++){
+            var a=stations.get(i-1);var b=stations.get(i);
+            if(s<a.globalSQ8()||s>b.globalSQ8()||b.globalSQ8()==a.globalSQ8())continue;
+            long length=b.globalSQ8()-a.globalSQ8(),offset=s-a.globalSQ8();
+            point=new Point2q(a.point().xQ8()+FixedMath.mulDiv(b.point().xQ8()-a.point().xQ8(),offset,length),
+                    a.point().zQ8()+FixedMath.mulDiv(b.point().zQ8()-a.point().zQ8(),offset,length));break;
+        }
+        return new ChunkKey(cell.dimension(),Math.floorDiv(FixedMath.floorBlock(point.xQ8()),16),Math.floorDiv(FixedMath.floorBlock(point.zQ8()),16));
+    }
+    private static long terrainBytes(Map<TerrainTile.Key,TerrainTile> tiles,Map<ChunkKey,CaptureMetadata> metadata) {
+        long bytes=0;
+        for(var t:tiles.values())bytes+=256L+t.key().volume()*4L+t.palette().stream().mapToLong(s->64L+s.length()*2L).sum();
+        for(var m:metadata.values())bytes+=16384L+96L*(m.blockEntities().size()+m.immutableBlocks().size()+m.protectedStructures().size());
+        return bytes;
+    }
+    private static long componentBytes(RealizationCell cell){
+        return cell.components().stream().mapToLong(c->512L+c.voxels().size()*256L+c.blockEntities().size()*256L).sum();
+    }
+    private <T> PlanLease<T> track(PlanLease<T> lease){
+        leases.put(lease.id(),lease);
+        try{active();return lease;}catch(Throwable error){release(lease);throw error;}
+    }
+    private void release(PlanLease<?> lease){leases.remove(lease.id());lease.close();}
+    private void active(){if(state.containsKey("closed"))throw failure(FailureCode.CLOSED,"production pipeline closed");ports.assertActive().run();}
+    private <T> CompletableFuture<T> failed(Throwable error){ports.fail().accept(error);return CompletableFuture.failedFuture(error);}
+    private void event(String e,ChunkKey key,String stage,String lock){trace.record(e,key.dimension(),key.x(),key.z(),stage,lock);}
+    public Map<String,Long> diagnostics(){
+        var result=new HashMap<>(trace.counts());result.put("leases",(long)leases.size());result.put("flights",(long)flights.size());return Map.copyOf(result);
+    }
+    @Override public void close(){
+        if(state.putIfAbsent("closed",true)!=null)return;
+        flights.values().forEach(f->f.completeExceptionally(failure(FailureCode.CLOSED,"production pipeline closed")));flights.clear();
+        leases.values().forEach(l->{try{l.close();}catch(Exception ignored){}});leases.clear();
+        queue.values().forEach(f->f.completeExceptionally(failure(FailureCode.CLOSED,"production pipeline closed")));
+        snapshots.close();
+    }
+    private static WallFailure failure(FailureCode code,String message){return new WallFailure(code,message);}
+}

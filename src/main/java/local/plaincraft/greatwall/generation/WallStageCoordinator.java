@@ -20,6 +20,11 @@ import local.plaincraft.greatwall.mixin.ChunkMapAccess;
 import local.plaincraft.greatwall.lifecycle.WorldServices;
 import local.plaincraft.greatwall.persistence.ChunkEvidenceStore;
 import local.plaincraft.greatwall.planning.ProbePlanner;
+import local.plaincraft.greatwall.planning.PlannerScheduler;
+import local.plaincraft.greatwall.model.PlanLease;
+import local.plaincraft.greatwall.model.WallTypes.*;
+import local.plaincraft.greatwall.terrain.RealizationPlanner;
+import local.plaincraft.greatwall.terrain.TerrainSnapshotService;
 import local.plaincraft.greatwall.terrain.TerrainTile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -41,6 +46,7 @@ public final class WallStageCoordinator implements AutoCloseable {
     private final Path root;
     private final ChunkEvidenceStore store;
     private final BarrierFixtureLayout layout;
+    private final ProductionWallPipeline production;
     private final StageTrace trace = new StageTrace(UUID.randomUUID());
     private final ConcurrentHashMap<TerrainTile.Key, CompletableFuture<TerrainTile>> tiles = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ChunkPos, CompletableFuture<Void>> applies = new ConcurrentHashMap<>();
@@ -63,11 +69,32 @@ public final class WallStageCoordinator implements AutoCloseable {
         this.level = level; this.session = session; this.recipe = recipe; this.root = root;
         layout = new BarrierFixtureLayout(Integer.getInteger("greatwall.s0.terrainRounds", 1));
         store = new ChunkEvidenceStore(root.resolve("evidence"));
+        production=null;
         timer.setRemoveOnCancelPolicy(true);
     }
-    public BarrierFixtureLayout layout() { return layout; }
+    public WallStageCoordinator(ServerLevel level,WorldServices session,WorldRecipe recipe,PlannerScheduler planner,
+            TerrainSnapshotService snapshots,RealizationPlanner realization,ChunkPlanCompiler compiler,ChunkWallWriter writer) {
+        this.level=level;this.session=session;this.recipe=recipe.recipeHash();this.root=null;this.store=null;this.layout=null;
+        this.production=new ProductionWallPipeline(recipe,new ProductionWallPipeline.Ports(
+                (key,margin)->planner.requireWindow(key,margin,Priority.PLAYER),
+                positions->{var lease=new FeaturesLease(level,positions,trace);
+                    return new PlanLease<>(UUID.randomUUID(),lease.ready(),lease::close);},
+                session::assertActiveSession,session::failRequiredPlan,io),snapshots,realization,compiler,writer);
+    }
+    public BarrierFixtureLayout layout() {
+        if(production!=null)throw new IllegalStateException("production has no laboratory layout");
+        return layout;
+    }
+    public CompletableFuture<Void> beforeFeatures(ChunkKey key) {
+        if(production==null)throw new IllegalStateException("S0 strategy has no production plan");
+        return production.beforeFeatures(key);
+    }
+    public CompletableFuture<Void> beforeLight(ChunkKey key,ChunkAccess owner,TerrainEngine engine) {
+        if(production==null)throw new IllegalStateException("S0 strategy has no production plan");
+        return production.beforeLight(key,owner,engine);
+    }
     public Map<ChunkPos, Result> results() { return Map.copyOf(results); }
-    public Map<String, Long> counts() { return trace.counts(); }
+    public Map<String, Long> counts() { return production==null?trace.counts():production.diagnostics(); }
     private void active() {
         session.assertActiveSession();
         if (state.containsKey("closed")) throw new IllegalStateException("T0 session closed");
@@ -76,6 +103,7 @@ public final class WallStageCoordinator implements AutoCloseable {
         trace.record(event, level.dimension().location().toString(), pos.x, pos.z, stage, lock);
     }
     public CompletableFuture<Void> delayFeatures(ChunkPos pos) {
+        if(production!=null)return beforeFeatures(new ChunkKey(level.dimension().location().toString(),pos.x,pos.z));
         if (!layout.featureSource(pos)) return CompletableFuture.completedFuture(null);
         active();
         var future = new CompletableFuture<Void>();
@@ -90,6 +118,7 @@ public final class WallStageCoordinator implements AutoCloseable {
         return future;
     }
     public CompletableFuture<Void> beforeLight(ChunkPos owner, ChunkAccess chunk, TerrainEngine engine) {
+        if(production!=null)return beforeLight(new ChunkKey(level.dimension().location().toString(),owner.x,owner.z),chunk,engine);
         if (!layout.owns(owner)) return CompletableFuture.completedFuture(null);
         active(); trace.assertOutsideLock();
         engines.putIfAbsent(owner, engine);
@@ -223,6 +252,7 @@ public final class WallStageCoordinator implements AutoCloseable {
         event("OUTPUT_STABLE_AT_FULL", chunk.getPos(), "full-validation", "server-main-read");
     }
     public CompletableFuture<Void> verifyLoaded(ChunkAccess chunk) {
+        if(production!=null)return production.verifyLoaded(chunk);
         ChunkPos owner = chunk.getPos();
         if (!layout.owns(owner)) return CompletableFuture.completedFuture(null);
         if (results.containsKey(owner)) return CompletableFuture.completedFuture(null);
@@ -285,6 +315,7 @@ public final class WallStageCoordinator implements AutoCloseable {
                 + ":fluid=" + BuiltInRegistries.FLUID.getKey(state.getFluidState().getType()) + ":be=" + protectedBlock;
     }
     public void export() {
+        if(production!=null)return;
         try {
             Files.createDirectories(root);
             var gson = new GsonBuilder().setPrettyPrinting().create();
@@ -298,6 +329,7 @@ public final class WallStageCoordinator implements AutoCloseable {
     }
     @Override public void close() {
         if (state.putIfAbsent("closed", true) != null) return;
+        if(production!=null){production.close();timer.shutdownNow();io.shutdown();return;}
         tiles.values().forEach(future -> future.cancel(false));
         applies.values().forEach(future -> future.cancel(false));
         validations.values().forEach(future -> future.cancel(false));

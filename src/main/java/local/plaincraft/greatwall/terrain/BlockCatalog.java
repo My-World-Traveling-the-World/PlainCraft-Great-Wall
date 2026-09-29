@@ -66,7 +66,7 @@ public final class BlockCatalog {
     }
     public static BlockSpec specification(BlockState state) {
         var values=new TreeMap<String,String>();
-        state.getValues().forEach((p,v)->values.put(p.getName(),v.toString()));
+        state.getProperties().forEach(p->values.put(p.getName(),serialized(state,p)));
         return new BlockSpec(BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString(),values);
     }
     public static String token(BlockState state,boolean entity) {
@@ -76,6 +76,9 @@ public final class BlockCatalog {
     private static <T extends Comparable<T>> BlockState with(BlockState state,Property<T> property,String value) {
         T parsed=property.getValue(value).orElseThrow(()->new WallFailure(FailureCode.INVALID_RESOURCE,"invalid block property value "+value));
         return state.setValue(property,parsed);
+    }
+    private static <T extends Comparable<T>> String serialized(BlockState state,Property<T> property) {
+        return property.getName(state.getValue(property));
     }
     private static boolean natural(String id) {
         return switch(id) {
