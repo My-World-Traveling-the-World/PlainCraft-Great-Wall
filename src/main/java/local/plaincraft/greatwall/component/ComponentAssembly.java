@@ -28,7 +28,9 @@ final class ComponentAssembly {
     private final Bounds localBounds;
     private final DecayField decay;
     private final PaletteBinding palette;
-    private final Map<Point3i,Cell> cells = new HashMap<>();
+    private Map<Point3i,Cell> cells = new HashMap<>();
+    private long cellBytes;
+    private boolean finished;
     private final List<List<Point3i>> routes = new ArrayList<>();
     private final Map<Point3i,BlockEntityIntent> entities = new HashMap<>();
     private final List<SpawnSlot> spawns = new ArrayList<>();
@@ -47,6 +49,7 @@ final class ComponentAssembly {
     }
 
     void put(int x, int y, int z, Part part, boolean required, boolean walkable, Map<String,String> properties) {
+        if(finished)throw new IllegalStateException("assembly already finished");
         Point3i p = new Point3i(x,y,z);
         if (!contains(localBounds, p)) throw new IllegalArgumentException("template escaped frozen bounds: " + p);
         Cell previous = cells.get(p);
@@ -57,7 +60,7 @@ final class ComponentAssembly {
         }
         if (previous != null && previous.required() && previous.walkable() && part == Part.AIR && required)
             conflictingRequiredFloor = true;
-        if(previous==null)CompiledAllocation.charge(256);
+        if(previous==null){CompiledAllocation.charge(256);cellBytes=Math.addExact(cellBytes,256);}
         cells.put(p, new Cell(part, required, walkable, Map.copyOf(properties)));
     }
 
@@ -123,6 +126,9 @@ final class ComponentAssembly {
 
     ComponentVoxels finish(Bounds worldBounds, ColumnMapper mapper, CellRule rule,
             java.util.function.LongFunction<DecaySample> samples,java.util.function.Function<Point3i,RouteAnchor> anchors) {
+        if(finished)throw new IllegalStateException("assembly already finished");
+        finished=true;
+        try {
         if (input.site().state() == SiteState.SUPPRESSED || conflictingRequiredFloor) return empty(input.site().id(), worldBounds);
         var voxels = new ArrayList<VoxelIntent>(); var roots = new HashSet<Point3i>();
         var loads=new ArrayList<Set<Point3i>>();var lefts=new ArrayList<Set<Point3i>>();var rights=new ArrayList<Set<Point3i>>();
@@ -250,6 +256,11 @@ final class ComponentAssembly {
         var groups=new ArrayList<SupportGraph.Span>();
         for(int n=0;n<spans.size();n++)groups.add(new SupportGraph.Span(loads.get(n),lefts.get(n),rights.get(n)));
         return new SupportGraph().validate(result,roots,groups);
+        } finally {
+            // No returned immutable component refers to this builder's local cell table.
+            cells=Map.of();routes.clear();entities.clear();spawns.clear();spans.clear();
+            CompiledAllocation.discard(cellBytes);cellBytes=0;
+        }
     }
 
     String facing(int dx, int dz) {

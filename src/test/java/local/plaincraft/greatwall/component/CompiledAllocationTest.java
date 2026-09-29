@@ -9,6 +9,17 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 import org.junit.jupiter.api.Test;
 
 class CompiledAllocationTest {
+    @Test void fortReleasesConsumedBuilderTablesBeforeMergingWithoutIncreasingBudget() {
+        var input=TemplateFixtures.input(SiteKind.FORT,new Bounds(-24,-33,-24,24,8,24));
+        var template=new FortPlaceholder(new DecayField(0),TemplateFixtures.PALETTE);
+        var expected=template.compile(input);
+        try(var budget=new AllocationBudget(32L<<20)) {
+            var actual=CompiledAllocation.run(budget,()->CompiledAllocation.component(()->template.compile(input)),CompiledAllocation::bytes);
+            assertEquals(expected,actual);assertFalse(actual.voxels().isEmpty());
+            assertTrue(budget.stats().peak()<=32L<<20);
+            assertEquals(CompiledAllocation.bytes(actual),budget.stats().used());
+        }
+    }
     @Test void insufficientCapacityRejectsBeforeAnyPaletteOrVoxelProduction() {
         var calls=new AtomicInteger();
         PaletteBinding palette=(i,p,l,w,s,h)->{calls.incrementAndGet();return TemplateFixtures.PALETTE.resolve(i,p,l,w,s,h);};
