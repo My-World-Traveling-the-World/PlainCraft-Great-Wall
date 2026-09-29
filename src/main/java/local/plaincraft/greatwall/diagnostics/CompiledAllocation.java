@@ -43,6 +43,10 @@ public final class CompiledAllocation {
             else {parent.charged=Math.addExact(parent.charged,keep);CURRENT.set(parent);}
         }
     }
+    /** Transfers all precharged output to the caller's arena; the caller closes that arena after use. */
+    public static <T> T retainAll(AllocationBudget budget,Supplier<T> producer) {
+        return run(budget,producer,ignored->CURRENT.get().charged);
+    }
     public static ComponentVoxels component(Supplier<ComponentVoxels> producer) {
         var frame=CURRENT.get();if(frame==null)return producer.get();
         return run(frame.budget,()->{charge(512);return producer.get();},CompiledAllocation::bytes);

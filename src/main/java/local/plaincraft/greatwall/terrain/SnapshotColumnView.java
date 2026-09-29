@@ -16,15 +16,32 @@ public final class SnapshotColumnView implements SurfaceProbe.ColumnView {
     private final BlockCatalog catalog;
     private final String hash;
     public SnapshotColumnView(int x,int z,CaptureMetadata metadata,Map<TerrainTile.Key,TerrainTile> tiles,BlockCatalog catalog) {
-        this.x=x;this.z=z;this.metadata=Objects.requireNonNull(metadata);this.catalog=Objects.requireNonNull(catalog);
-        this.column=metadata.columns().stream().filter(c->c.x()==x&&c.z()==z).findFirst()
-                .orElseThrow(()->new WallFailure(FailureCode.T0_MISSING,"missing column summary"));
+        this(x,z,metadata,metadata.columns().stream().filter(c->c.x()==x&&c.z()==z).findFirst()
+                .orElseThrow(()->new WallFailure(FailureCode.T0_MISSING,"missing column summary")),index(metadata,tiles),catalog);
+    }
+    private record PageIndex(Map<Integer,TerrainTile> pages,String hashSuffix) {}
+    private static PageIndex index(CaptureMetadata metadata,Map<TerrainTile.Key,TerrainTile> tiles) {
         var pages=new TreeMap<Integer,TerrainTile>();
         tiles.values().stream().filter(t->t.key().dimension().equals(metadata.coverage().chunk().dimension())
-                &&t.key().chunkX()==Math.floorDiv(x,16)&&t.key().chunkZ()==Math.floorDiv(z,16))
+                &&t.key().chunkX()==metadata.coverage().chunk().x()&&t.key().chunkZ()==metadata.coverage().chunk().z())
                 .forEach(t->{if(pages.put(Math.floorDiv(t.key().minY(),128)*128,t)!=null)throw new IllegalArgumentException("duplicate page");});
-        this.pages=Map.copyOf(pages);
-        this.hash=DeterministicHash.sha256((metadata.hash()+"\n"+x+":"+z+"\n"+pages.values().stream().map(TerrainTile::hash).toList()).getBytes(StandardCharsets.UTF_8));
+        return new PageIndex(Map.copyOf(pages),pages.values().stream().map(TerrainTile::hash).toList().toString());
+    }
+    private SnapshotColumnView(int x,int z,CaptureMetadata metadata,ColumnEvidence column,PageIndex index,BlockCatalog catalog) {
+        this.x=x;this.z=z;this.metadata=Objects.requireNonNull(metadata);this.catalog=Objects.requireNonNull(catalog);
+        this.column=Objects.requireNonNull(column);this.pages=index.pages();
+        this.hash=DeterministicHash.sha256((metadata.hash()+"\n"+x+":"+z+"\n"+index.hashSuffix()).getBytes(StandardCharsets.UTF_8));
+    }
+    /** One immutable page index per owner, shared by its 256 views even in a tall dimension. */
+    public static Map<Point3i,SurfaceProbe.ColumnView> columns(CaptureMetadata metadata,Map<TerrainTile.Key,TerrainTile> tiles,BlockCatalog catalog) {
+        var index=index(metadata,tiles);var result=new HashMap<Point3i,SurfaceProbe.ColumnView>();
+        for(var column:metadata.columns()) {
+            var key=new Point3i(column.x(),0,column.z());
+            if(result.putIfAbsent(key,new SnapshotColumnView(column.x(),column.z(),metadata,column,index,catalog))!=null)
+                throw new WallFailure(FailureCode.T0_CORRUPT,"duplicate column summary");
+        }
+        if(result.size()!=256)throw new WallFailure(FailureCode.T0_MISSING,"owner needs 256 column summaries");
+        return Map.copyOf(result);
     }
     @Override public String state(int y){
         var tile=pages.get(Math.floorDiv(y,128)*128);
