@@ -9,5 +9,6 @@
 5. CanonicalCodec补充`stations(StationTable)`、`prefix(PrefixSummary)`、`readPrefix(byte[])`，用于原规格已有站表hash与前缀存储；前缀proofHash是必须保存的链字段，不是被省略的自身payload校验和。`readWritePlan(byte[])`执行8MiB/有界集合检查；带`DimensionBounds`重载额外检查体素数量及所有Y，生产调用后者，不猜维度高度。
 6. PrefixSummaryIndex新增静态纯函数`reduce(PrefixSummary,SegmentGeometry)`，原`combine`委托它；缓存验证用同一归约公式，不复制另一套链哈希算法。
 7. PrefixSummaryIndex增加四参构造（最后参数`Executor io`），三参构造保留给独立IO owner测试。生产必须传独立IO executor。SegmentCacheStore增加`recipeHash()`不可变访问器、`corruptCount()`诊断访问器；前缀读取用冻结recipe且在IO执行，不在pump同步读盘。缓存CRC32C覆盖压缩字节，SHA-256覆盖原始canonical字节。前缀链固定为`SHA256(CanonicalCodec.prefix(新的边界/累计长/terminal/旧proof) || nextGeometryHash的32字节)`。
+8. HeightContractPlanner增加纯函数`samplePoints(SegmentGeometry,PrefixSummary,List<SiteRecord>)`，返回稳定去重的合同列请求；不含已在RouteShape采过的两端点，最多5998。平台九点沿模板X/Z各取min+0.5、0、max-0.5，平台Y取脚面中位数+20。原规格未定义Gate侧翼socket，S1A不臆造：Gate可吸收的socket数=0，冲突塔保留ID并SUPPRESSED(CONFLICT)。Fort按S3已有两侧翼定义，一类最多一个，最多两个；原日程S不改变。公共纯函数`PrefixSummaryIndex.origin()`统一零前缀，不各类复制seed proof常量。
 
 本文件不宣称以上实现/测试已经完成；实际状态只记在`docs/S1A.md`。
