@@ -113,3 +113,17 @@
 验证范围：JUnit两个模板逐一d=0..12；原版碰撞GameTest共56组（两模板×[0°十三个drop + 15/30/45/60/90°的drop4/5/12]），从W路线到包络外自然地面。测试人工添加的是与support一致的天然地板fixture，不改生产地形保护。混合坡面/曲线邻构件干涉仍单独标记未验，不扩大本测试含义。
 
 测试修正记录：新GroundEntranceTest初版把带一格guard的worldBounds当实际墙边，连d=0也错误失败；现以真实体素XZ足印判定出口。保留首次日志/XML但不拿它作为冻结公式矛盾证据。独立坐标反例和全部有效通地断言均保留；没有删除红项或降低通路要求。
+
+## 马道底入口与上层护栏基础的封闭矛盾
+
+原坐标式保留两跑顶部平台末端护栏 `X=t-4, Z[4,11)`，护栏基础自 `Y=-33` 填到上层脚面。H=20 时 `t=-26`，所以这道完整基础正好位于 X=-30，封住底平台 `X[-29,-26), Z[5,8)` 的前端；两侧底护栏与上层基础同时挡住其它出口。内部路线各自可达，不代表能走到天然地面。
+
+实际反例：`AdjacentFixtureDiagnosticTests.flatGateMustConnectWithCapturedGroundNotAnAirBackground` 在原实现中补入同一 T0 的全部天然地面后仍不能从门洞到墙顶，墙顶也不能走出完整 Gate bounds。原始失败日志和 XML 保存在 `docs/evidence/s1b-closeout/gate-red/`，不是推测或空气视图假红。
+
+最小修订：在现有 LOCAL 包络内增加一列入口平台 `X[-30,-29), Z[5,8)`；脚面仍为 lower，地板在 lower-1，必需净空为 `[lower,lower+3)`。它在护栏生成后声明，清除入口处的下部基础但保留上方护栏和承重结构。默认入口地面预检相应覆盖 `X[-30,-26), Z[5,8)`，不以缺失的新入口列作为可用地面。短坡 H=1..3 使用相同的入口规则。
+
+不变项：原两跑阶梯/转台坐标、LOCAL 外包络、三格通路宽、H=1..32、drop<=12、探测窗口、四朝向顺序、128/4 收头退让与 owner 权限均不变。没有扩大用户需求。
+
+反例保留：`RampSpecificationTest.frozenUpperEndRailSealsTheGroundLandingAtHeightTwenty` 独立保留旧式坐标见证；Gate 原版诊断把修复的入口按旧式填回后必须再次断开，当前实现则必须跨全部 requiredRoutes 并达到外部天然地面。`WallRampTest` 逐 H 检查完整三宽地板/净空；`RampGroundPortalTests` 枚举 32 高度 × 六朝向 = 192 条原版碰撞路径，逐条验证墙顶路线到完整包络外天然地面。
+
+本次定向验证：`build/s1b-ground-portal-v1.log` 严格离线 BUILD SUCCESSFUL；3 个 GameTest 方法通过，包含 192/192 条入口矩阵，以及保留旧封闭式的 Gate 反例对照。它不代替尚待重跑的 547 条相邻矩阵和默认完整构建。

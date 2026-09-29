@@ -106,6 +106,14 @@ class WallRampTest {
             }
             for (int z=5;z<8;z++) for (int x=-29;x<-26;x++)
                 assertTrue(occupied.containsKey(new Point3i(x,83-height,z)),"complete lower landing H="+height);
+            for(int z=5;z<8;z++) {
+                assertTrue(occupied.containsKey(new Point3i(-30,83-height,z)),"ground portal floor H="+height);
+                for(int y=84-height;y<87-height;y++) {
+                    var portal=new Point3i(-30,y,z);
+                    assertTrue(c.voxels().stream().anyMatch(v->v.pos().equals(portal)&&v.kind()==IntentKind.OWNED_VOID&&v.required()),
+                            "required three-wide exterior portal H="+height+" pos="+portal);
+                }
+            }
             if (height<=3) for (int z=4;z<11;z++) for (int x=-26+height;x<-23+height;x++)
                 assertTrue(occupied.containsKey(new Point3i(x,83,z)),"complete upper landing H="+height);
         }

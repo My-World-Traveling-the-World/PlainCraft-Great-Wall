@@ -34,7 +34,7 @@ public final class Ramp implements ComponentTemplate {
     }
     /** A compound template fixes its own connector frame and must not silently rotate one child. */
     ComponentVoxels compileInFrame(ComponentInput input) {
-        int lower=ground(input,-29,5,-26,8);
+        int lower=ground(input,-30,5,-26,8);
         if(lower==Integer.MIN_VALUE)return ComponentAssembly.empty(input.site().id(),input.site().bounds());
         return compileBetween(input,lower,input.site().frame().walkY());
     }
@@ -72,6 +72,7 @@ public final class Ramp implements ComponentTemplate {
             for(int j=0;j<height;j++)a.rail(-26+j,lower+j+1,4);
             for(int x=end;x<end+3;x++)a.rail(x,upper,11);
             for(int z=4;z<=10;z++)a.rail(end+3,upper,z);
+            groundEntrance(a,lower);
             return a.finish();
         }
         int left = ((int) height+1)/2, right = (int) height-left, e = -27+left;
@@ -98,7 +99,13 @@ public final class Ramp implements ComponentTemplate {
         for(int z=5;z<11;z++)a.rail(e+4,lower+left,z);
         for(int x=t-3;x<t;x++)a.rail(x,upper,11);
         for(int z=4;z<11;z++)a.rail(t-4,upper,z);
+        groundEntrance(a,lower);
         return a.finish();
+    }
+
+    private static void groundEntrance(ComponentAssembly a,int lower) {
+        // The upper landing's filled end rail must not seal the ground landing underneath.
+        landing(a,-30,5,-29,8,lower);
     }
 
     private static void lowerRails(ComponentAssembly a,int lower) {

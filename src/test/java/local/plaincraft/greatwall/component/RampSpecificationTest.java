@@ -7,6 +7,14 @@ import org.junit.jupiter.api.Test;
 
 /** Coordinate-only witnesses of the frozen specification, independent of template implementation. */
 class RampSpecificationTest {
+    @Test void frozenUpperEndRailSealsTheGroundLandingAtHeightTwenty() {
+        int height=20,lower=-height,left=(height+1)/2,right=height-left,e=-27+left,t=e-right+1;
+        assertEquals(-30,t-4,"filled upper end rail directly fronts the lower landing");
+        for(int z=5;z<8;z++)for(int y=lower;y<lower+3;y++) {
+            assertTrue(z>=4&&z<11&&y>=-33&&y<0,"old end-rail foundation occupies entrance clearance");
+            assertTrue(-29>(t-4),"lower landing lies behind that closed front wall");
+        }
+    }
     @ParameterizedTest @ValueSource(ints={1,2})
     void frozenSmallRampPlatformsIntersectRequiredEntranceAir(int height) {
         int lower = 0, upper = height;
