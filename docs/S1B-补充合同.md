@@ -39,3 +39,10 @@
 - 敌楼西侧宽4外立面门口保持不变，W 高度的内部连廊从西跑最后一级所在 z=-2 接中央，不能用横向楼板封掉西跑尚低于 W 的梯井。屋顶对应第二圈尚未升到 W+5 的梯井先扣除。
 - 离散旋转可能让指定局部格没有对应世界列。路线锚点只允许落到距其理论中心1.5格内、同脚面高度、实际有地板和两格净空的步道格；没有合格格则拒绝，不凭空生成路。
 - 功能方块与实体意图做一对一匹配：按局部坐标稳定顺序挑选未占用的实际功能格，必要时在同高度、同1.5格界限的非必需空气格上绑定，须已有支撑；未选中的重复栅格功能块删除。篝火正下方同步绑定 hay_block，四个localFireIndex保留，不靠数量近似。所有修改仍在完整组件内、写世界前决议。
+
+## 生产写入的数据闭包补齐
+
+- 原 `ChunkWritePlan` 没有 coverageHash、gateRevision、spawnSlots、realizedStates，无法凭现有 `ChunkWallWriter.apply(owner,plan,mode)` 生成规格要求的完整 marker。新增不可变 `WriteMetadata` 并作为计划字段保留；旧构造器委托 EMPTY，只用于旧测试/接口兼容。生产 coordinator 必须在持久化前调用 `ChunkPlanCompiler.bindCoverage` 绑定 owner 的耐久 coverageHash。
+- 原 `ComponentVoxels` 没有破败状态，不能从残块高度猜玩法状态。追加 `realizedState`；原构造器仍在，缺省 INTACT；真实模板传实际状态。状态进入 component hash。
+- 非空生产 WriteMetadata 在原 writePlan payload 尾追加有魔数 PGWM 的明确扩展，读写同样有界；旧无扩展 payload 仍可读，旧构造器生成的字节不变。几何/段计划 canonical、T0-v1 和所有永久历史协议不改。
+- 这是新世界生产接口的缺字段补充，不是对既有世界 marker 的回填升级。生产接线仍须冻结新模板指纹。

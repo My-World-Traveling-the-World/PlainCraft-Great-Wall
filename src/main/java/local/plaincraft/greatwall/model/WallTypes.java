@@ -485,7 +485,11 @@ public final class WallTypes {
 
     public record ComponentVoxels(SiteId id, Bounds bounds, List<VoxelIntent> voxels,
             List<BlockEntityIntent> blockEntities, List<SpawnSlot> spawnSlots,
-            List<List<Point3i>> requiredRoutes, String hash) {
+            List<List<Point3i>> requiredRoutes, DecayState realizedState, String hash) {
+        public ComponentVoxels(SiteId id, Bounds bounds, List<VoxelIntent> voxels, List<BlockEntityIntent> blockEntities,
+                List<SpawnSlot> spawnSlots, List<List<Point3i>> requiredRoutes, String hash) {
+            this(id,bounds,voxels,blockEntities,spawnSlots,requiredRoutes,DecayState.INTACT,hash);
+        }
         public ComponentVoxels {
             Objects.requireNonNull(id, "id");
             Objects.requireNonNull(bounds, "bounds");
@@ -493,6 +497,7 @@ public final class WallTypes {
             blockEntities = List.copyOf(blockEntities);
             spawnSlots = List.copyOf(spawnSlots);
             requiredRoutes = requiredRoutes.stream().map(List::copyOf).toList();
+            Objects.requireNonNull(realizedState,"realizedState");
             requireHash(hash);
         }
     }
@@ -511,10 +516,24 @@ public final class WallTypes {
         }
     }
 
+    public record WriteMetadata(String coverageHash, long gateRevision, List<SpawnSlot> spawnSlots,
+            Map<SiteId,DecayState> realizedStates) {
+        public static final WriteMetadata EMPTY = new WriteMetadata("0".repeat(64),0,List.of(),Map.of());
+        public WriteMetadata {
+            requireHash(coverageHash);
+            if(gateRevision<0) throw new IllegalArgumentException("gateRevision>=0 required");
+            spawnSlots=List.copyOf(spawnSlots); realizedStates=Map.copyOf(realizedStates);
+        }
+    }
+
     public record ChunkWritePlan(ChunkKey owner, String recipeHash, String inputHash,
             List<VoxelIntent> voxels, List<BlockProof> proofs,
             List<BlockEntityIntent> blockEntities, List<Point3i> postprocess,
-            List<Point3i> fluidTicks, List<Point3i> walkwayFeet, String hash) {
+            List<Point3i> fluidTicks, List<Point3i> walkwayFeet, WriteMetadata metadata, String hash) {
+        public ChunkWritePlan(ChunkKey owner,String recipeHash,String inputHash,List<VoxelIntent> voxels,List<BlockProof> proofs,
+                List<BlockEntityIntent> blockEntities,List<Point3i> postprocess,List<Point3i> fluidTicks,List<Point3i> walkwayFeet,String hash) {
+            this(owner,recipeHash,inputHash,voxels,proofs,blockEntities,postprocess,fluidTicks,walkwayFeet,WriteMetadata.EMPTY,hash);
+        }
         public ChunkWritePlan {
             Objects.requireNonNull(owner, "owner");
             requireHash(recipeHash);
@@ -525,6 +544,7 @@ public final class WallTypes {
             postprocess = List.copyOf(postprocess);
             fluidTicks = List.copyOf(fluidTicks);
             walkwayFeet = List.copyOf(walkwayFeet);
+            Objects.requireNonNull(metadata,"metadata");
             requireHash(hash);
         }
     }

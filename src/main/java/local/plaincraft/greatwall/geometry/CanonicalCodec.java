@@ -105,6 +105,7 @@ public final class CanonicalCodec {
                 siteId(o, s.site()); o.writeInt(s.slot()); point3(o, s.feet()); string(o, s.entityType());
             });
             list(out, value.requiredRoutes(), (o, points) -> list(o, points, CanonicalCodec::point3));
+            enumeration(out,value.realizedState());
         });
     }
 
@@ -115,6 +116,17 @@ public final class CanonicalCodec {
             list(out, value.blockEntities(), CanonicalCodec::blockEntity);
             list(out, value.postprocess(), CanonicalCodec::point3); list(out, value.fluidTicks(), CanonicalCodec::point3);
             list(out, value.walkwayFeet(), CanonicalCodec::point3);
+            if (!value.metadata().equals(WriteMetadata.EMPTY)) {
+                out.writeInt(0x5047574d);
+                string(out,value.metadata().coverageHash());out.writeLong(value.metadata().gateRevision());
+                list(out,value.metadata().spawnSlots(),(o,s)->{
+                    siteId(o,s.site());o.writeInt(s.slot());point3(o,s.feet());string(o,s.entityType());
+                });
+                var entries=value.metadata().realizedStates().entrySet().stream()
+                        .sorted(Comparator.comparing((Map.Entry<SiteId,DecayState> e)->e.getKey().wallId(),UTF8)
+                                .thenComparing(e->e.getKey().kind().name()).thenComparingLong(e->e.getKey().ordinal())).toList();
+                list(out,entries,(o,e)->{siteId(o,e.getKey());enumeration(o,e.getValue());});
+            }
         });
     }
 
@@ -128,8 +140,19 @@ public final class CanonicalCodec {
             var postprocess = list(in, 8 * MIB / 12, CanonicalCodec::point3);
             var fluids = list(in, 8 * MIB / 12, CanonicalCodec::point3);
             var feet = list(in, 8 * MIB / 12, CanonicalCodec::point3);
+            WriteMetadata metadata=WriteMetadata.EMPTY;
+            if(in.available()>0) {
+                if(in.readInt()!=0x5047574d) throw new IOException("unknown write metadata extension");
+                String coverage=string(in);long revision=in.readLong();
+                var slots=list(in,4096,i->new SpawnSlot(siteId(i),i.readInt(),point3(i),string(i)));
+                var states=new LinkedHashMap<SiteId,DecayState>();
+                int count=count(in,4096);
+                for(int n=0;n<count;n++) if(states.put(siteId(in),enumeration(in,DecayState.class))!=null)
+                    throw new IOException("duplicate realized state");
+                metadata=new WriteMetadata(coverage,revision,slots,states);
+            }
             var result = new ChunkWritePlan(owner, recipe, input, voxels, proofs, entities, postprocess, fluids, feet,
-                    DeterministicHash.sha256(payload));
+                    metadata,DeterministicHash.sha256(payload));
             validatePositions(result, null);
             return result;
         });
@@ -155,6 +178,7 @@ public final class CanonicalCodec {
         for (var v : value.postprocess()) validatePosition(v, value.owner(), bounds);
         for (var v : value.fluidTicks()) validatePosition(v, value.owner(), bounds);
         for (var v : value.walkwayFeet()) validatePosition(v, value.owner(), bounds);
+        for (var v : value.metadata().spawnSlots()) validatePosition(v.feet(),value.owner(),bounds);
     }
 
     private static void validatePosition(Point3i p, ChunkKey owner, DimensionBounds bounds) throws IOException {
