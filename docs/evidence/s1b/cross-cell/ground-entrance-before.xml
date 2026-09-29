@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.component.GroundEntranceTest" tests="3" skipped="0" failures="2" errors="0" timestamp="2026-09-29T10:34:19.130Z" hostname="CAIMEO" time="0.635">
+  <properties/>
+  <testcase name="fortCourtyardAndBothInternalRampsMeetNaturalGround()" classname="local.plaincraft.greatwall.component.GroundEntranceTest" time="0.572">
+    <failure message="org.opentest4j.AssertionFailedError: fort drop=0 must reach the exterior, not just a basement floor ==&gt; expected: &lt;true&gt; but was: &lt;false&gt;" type="org.opentest4j.AssertionFailedError">org.opentest4j.AssertionFailedError: fort drop=0 must reach the exterior, not just a basement floor ==&gt; expected: &lt;true&gt; but was: &lt;false&gt;
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:214)
+	at local.plaincraft.greatwall.component.GroundEntranceTest.assertGroundExit(GroundEntranceTest.java:40)
+	at local.plaincraft.greatwall.component.GroundEntranceTest.fortCourtyardAndBothInternalRampsMeetNaturalGround(GroundEntranceTest.java:30)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+</failure>
+  </testcase>
+  <testcase name="nominalGroundFormulaIsNotAnExitWhenFoundationDropIsNonzero()" classname="local.plaincraft.greatwall.component.GroundEntranceTest" time="0.002"/>
+  <testcase name="enemyTowerHasARealGroundExitForEverySupportedFoundationDrop()" classname="local.plaincraft.greatwall.component.GroundEntranceTest" time="0.049">
+    <failure message="org.opentest4j.AssertionFailedError: tower drop=0 must reach the exterior, not just a basement floor ==&gt; expected: &lt;true&gt; but was: &lt;false&gt;" type="org.opentest4j.AssertionFailedError">org.opentest4j.AssertionFailedError: tower drop=0 must reach the exterior, not just a basement floor ==&gt; expected: &lt;true&gt; but was: &lt;false&gt;
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:214)
+	at local.plaincraft.greatwall.component.GroundEntranceTest.assertGroundExit(GroundEntranceTest.java:40)
+	at local.plaincraft.greatwall.component.GroundEntranceTest.enemyTowerHasARealGroundExitForEverySupportedFoundationDrop(GroundEntranceTest.java:22)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

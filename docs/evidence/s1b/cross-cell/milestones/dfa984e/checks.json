@@ -1,0 +1,21 @@
+{
+  "date": "2026-09-29",
+  "head": "dfa984e82e5c6343d428edb9f3d7bedf33c950a5",
+  "jdk": "21",
+  "offline": true,
+  "dependencyVerification": "strict",
+  "buildExitCode": 0,
+  "junit": {
+    "tests": 191,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 38
+  },
+  "gametest": {
+    "tests": 21,
+    "failures": 0
+  },
+  "productionHooksEnabled": false,
+  "s1cStarted": false
+}

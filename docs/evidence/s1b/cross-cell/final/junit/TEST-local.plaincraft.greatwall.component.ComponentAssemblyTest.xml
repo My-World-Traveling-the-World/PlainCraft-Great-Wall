@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.component.ComponentAssemblyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-29T10:47:23.978Z" hostname="CAIMEO" time="0.133">
+  <properties/>
+  <testcase name="candidatesAndInputAreNotMutatedByRepeatedCompilation()" classname="local.plaincraft.greatwall.component.ComponentAssemblyTest" time="0.117"/>
+  <testcase name="incompatibleRequiredFloorAndHeadroomRejectWholeComponent()" classname="local.plaincraft.greatwall.component.ComponentAssemblyTest" time="0.001"/>
+  <testcase name="wholeComponentNeedsEverySupportBeforeClipping()" classname="local.plaincraft.greatwall.component.ComponentAssemblyTest" time="0.015"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

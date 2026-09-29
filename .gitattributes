@@ -1,0 +1,10 @@
+# Preserve the exact bytes covered by this audit's evidence checksums.
+docs/evidence/s1b/cross-cell/** -text whitespace=cr-at-eol
+docs/evidence/s1b/matrix/cross-cell/** -text whitespace=cr-at-eol
+docs/evidence/s1b/runtime/s003-tectonic-c2me-c1-32acbfbd-inputs.json -text whitespace=cr-at-eol
+docs/evidence/s1b/runtime/s003-tectonic-c2me-c2-716df51d-inputs.json -text whitespace=cr-at-eol
+docs/evidence/s1b/runtime/s003-tectonic-c2me-c8-7a72080a-inputs.json -text whitespace=cr-at-eol
+docs/evidence/s1b/runtime/s003-tectonic-c2me-c16-52b66d1f-inputs.json -text whitespace=cr-at-eol
+# Raw command logs retain Gradle's trailing spaces and final blank lines.
+docs/evidence/s1b/cross-cell/**/*.txt -whitespace
+docs/evidence/s1b/matrix/cross-cell/**/gradle.txt -whitespace

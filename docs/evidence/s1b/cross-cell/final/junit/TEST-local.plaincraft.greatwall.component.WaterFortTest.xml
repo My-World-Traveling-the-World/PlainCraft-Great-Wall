@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.component.WaterFortTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-29T10:47:33.219Z" hostname="CAIMEO" time="2.889">
+  <properties/>
+  <testcase name="fortStays48AndHasNoGameplayEntities()" classname="local.plaincraft.greatwall.component.WaterFortTest" time="0.201"/>
+  <testcase name="naturalThinIceOnlyClearsMainFourAndCannotBecomeAnUnsupportedPier()" classname="local.plaincraft.greatwall.component.WaterFortTest" time="0.213"/>
+  <testcase name="secondarySpansNeverLeaveOneOrTwoWideRemaindersOrExceedSix()" classname="local.plaincraft.greatwall.component.WaterFortTest" time="2.369"/>
+  <testcase name="width49Crosses50And51AreRejectedWithoutWaterRise()" classname="local.plaincraft.greatwall.component.WaterFortTest" time="0.103"/>
+  <testcase name="sevenColumnTailCannotBeMergedIntoFourPlusTwoPierUnderSixLimit()" classname="local.plaincraft.greatwall.component.WaterFortTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

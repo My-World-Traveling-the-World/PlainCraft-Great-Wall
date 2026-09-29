@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.terrain.RealizationPlannerTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-29T10:07:04.197Z" hostname="CAIMEO" time="13.81">
+  <properties/>
+  <testcase name="partialTerminalCellKeepsOneNearSideCapAndOriginalReason()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="3.064"/>
+  <testcase name="orderIndependentCellKeepsStationContractImmutable()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="1.905"/>
+  <testcase name="capVotesCannotOverwriteAnAcceptedWholeGateFootprint()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="6.896"/>
+  <testcase name="frozenGateRevisionChangesCellHashWithoutChangingGeometry()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="1.945"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

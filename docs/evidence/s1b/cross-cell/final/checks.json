@@ -1,0 +1,74 @@
+{
+  "generatedAt": "2026-09-29T19:09:18.8109791+08:00",
+  "stage": "S1B",
+  "stageStatus": "BLOCKED",
+  "bS1B03": "PASS",
+  "testedSourceCommit": "7964b599312effbbe865347e2d880679c4b2124a",
+  "command": ".\\gradlew.bat --offline --dependency-verification=strict build runGameTest --continue --rerun-tasks --no-build-cache --console=plain --no-daemon",
+  "javaHome": "C:\\Program Files\\Java\\jdk-21",
+  "offline": true,
+  "dependencyVerification": "strict",
+  "buildExitCode": 0,
+  "junit": {
+    "tests": 195.0,
+    "failures": 0.0,
+    "errors": 0.0,
+    "skipped": 0.0,
+    "suites": 39
+  },
+  "gametest": {
+    "nativeEntranceCombinations": 56,
+    "tests": 22,
+    "failures": 0
+  },
+  "matrix": {
+    "runs": 8,
+    "scope": "S0 experimental barrier regression; NOT production wall C2ME certification",
+    "passed": true,
+    "owners": 3200,
+    "sourceCommit": "dfa984e82e5c6343d428edb9f3d7bedf33c950a5"
+  },
+  "productionHooksEnabled": false,
+  "s1cStarted": false,
+  "projectProxyLines": 0,
+  "lockedInputsUnchanged": true,
+  "artifact": {
+    "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build\\libs\\plaincraft-great-wall-0.1.0-s0.3.jar",
+    "bytes": 581626,
+    "sha256": "2be2533e24624e16b89a9b2a87729d4215399fa07a945dc75fbb857474af7dae"
+  },
+  "lockHashes": [
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\gradle.properties",
+      "bytes": 371,
+      "sha256": "784ac5909d4fb0c3927cce7f76b5a6ba0a1c7e9e3434955e71748f3de9a3df64"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build.gradle",
+      "bytes": 3565,
+      "sha256": "963032831cd5a751f21e0951eb5cae31aa7846df92787fa3142159bf38fd08f7"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\gradle.lockfile",
+      "bytes": 44292,
+      "sha256": "367ba3559edbec89d075630c6ce9a2b881620de0028ef2b43366fb58640651f4"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\gradle\\verification-metadata.xml",
+      "bytes": 160853,
+      "sha256": "c4e281095c96f26a421fc7d676a6d218f20f9739b40978b061863707f7edcee5"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\gradle\\wrapper\\gradle-wrapper.properties",
+      "bytes": 253,
+      "sha256": "8db3649f3cfc8789495b80e1cf8c66b2e547d3b2c0bae19c9a5b2ccb5b6cf4ee"
+    }
+  ],
+  "notRun": [
+    "Complete pre-allocation resource reservation and peak pinned-memory proof",
+    "Complete site/water/cap collision and slope/decoration survival matrix",
+    "S1C real CPU/Tectonic/C2ME production-wall lifecycle",
+    "S4 visual atlas and S5 24-hour/Chunky stress",
+    "Tan Huge Trees whole-pack authorization"
+  ]
+}

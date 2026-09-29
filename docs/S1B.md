@@ -1,4 +1,87 @@
-# S1B 验收与阻塞报告
+# S1B 验收与剩余工作报告
+
+## 当前结果（2026-09-29，跨cell修复后）
+
+**B-S1B-03已实现并通过验证。S1B整体仍为BLOCKED，未整体签收；生产接线关闭，S1C未启动。**
+
+本轮接续 `0be2433`，不是等待用户再次批准。跨cell决议及后续马道/水门/楼体入口收尾均已编写代码。最终受测源码提交为 `7964b59`；构建运行时是同一份未提交源码，完成后原样提交，没有在测试后修改源码。当前报告以本节和 `evidence/s1b/cross-cell/final/checks.json` 为准；下方旧的167/1 FAIL是特意保留的历史，不能当作当前结果。
+
+### 本轮实际验证
+
+- 严格离线全量构建已通过：`build runGameTest --continue --rerun-tasks --no-build-cache`，保持 `--offline --dependency-verification=strict`、JDK21。
+- 全量JUnit 195项、39个suite，0失败、0错误、0跳过；含S0/S1A回归，不把全部数量冒充S1B独有测试。
+- Fabric GameTest 22/22通过。范围是解析规划+原版BlockState/ProtoChunk/Vanilla mailbox，不是已启用真实生产墙世界。最终构建退出码0，耗时7分10秒，18个任务全部实际执行。
+- 真实山脊反例转绿：所有局部马道仍不可行，但共同决议将断口退到关隘出口；早/晚cell使用同一边界。原局部不可行反例继续保留。
+- 原生两owner测试：APPLY前完成远端决议；早/晚owner都不保留被撤回步道；服务冷重开后的逆序重放保留玩家金块。
+- 正序/逆序/随机/并发、冷热服务、延迟证据、取消隔离、拒绝executor、关闭、缺T0、缺/坏耐久证据、8192-cell稀疏摘要容量均有定向测试。
+- 补齐马道四候選和有支撑外沿护栏；H=1..32逐一通过原版碰撞形状通路检查，不声称人工玩家实走。
+- 收头四种马道与主体做跨子组件连通验证，证书保存实际占用S足印；cap接受前避开完整Gate/站点/水门。
+- 在同一退让S上，首个可落地朝向被足印/碰撞决议否决后继续测试其余朝向；证书重放按componentHash恢复所选候选，不再默认重新选择第一个朝向。定向测试验证全部四候选、全拒绝及按hash重放。
+- 水门次跨4..49宽度、显式双支座、单层自然薄冰证据及原版writer主航道化水/旁冰保留通过；冰面桥墩冲突时拒绝整件，不挖旁冰或留悬空墩。
+- 敌楼/关隘占位体非零基础落差入口已修复：JUnit逐一检查drop0..12；原版碰撞检查两类构件的56组组合（0°的13个drop，另5个朝向的drop4/5/12），墙顶可走到组件外自然地面。没有把解析地形测试写成人工玩家实走。
+
+### 五项修复边界
+
+| 边界 | 落地方式 | 结果 |
+|---|---|---|
+| recipe+绝对S+SiteId+T0+最终截断 | GroundExitDecision与schema2二进制证书；cap实际足印入hash | PASS |
+| 共同决议先于APPLY | GroundExitResolver single-flight；ProductionWallPipeline先require再resolve/compile | PASS（纯协议及原生fixture） |
+| 不由加载侧/冷热决定 | 完整T0和自然出口证明；缺列T0_MISSING；冻结摘要有界复用 | PASS |
+| 较早出口锁外异步依赖 | ArcPlanProvider按真实PrefixSummary取S；逐cell FEATURES/CAPTURE，无同步future等待 | PASS（S0适配器未变；新生产C2ME世界NOT_RUN） |
+| 不撤销旧owner、不毁玩家改动 | intent→证书→seal；build-exits绑定write proof；完整marker只读重放 | PASS |
+
+完整协议、接口与资源边界：`D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1B-跨cell决议实现.md`。
+
+### 冻结公式和接口变更
+
+见 `S1B-补充合同.md` 新增章节：原H=1/2/3/32反例不删；四候选包络恢复原规定范围；正向cap连接平台保持在原60×30包络内；末跨保留 `4+2+1>6` 反例并将尾部2列归入岸侧基础；ProbeResult追加可选thinIceY且保留旧构造器。原20×10墙、H范围、128/4日程、drop12、owner权限不变。
+
+32高度原版测试首次失败是fixture仍将beforeStates地面写死64，与较低supports矛盾。只修fixture地面参数，没有放宽天然实体/负空间保护；失败日志另存 `cross-cell/native-fixture-mismatch.txt`。
+
+楼体入口补充修订：敌楼在11×11内部环道向下补阶，原两层、上部梯段和屋顶不动；关隘在48×48内降低庭院/门道至已证地面，内部两条三宽坡道增加相应级数。两者最小Y改为-33以容纳drop12地板。SiteScheduler同步授权过的包络（含此前Gate/Ramp/敌楼净空修订），不改折线、walkY、300格序号、退让日程或探测深度。精确坐标式和反例见补充合同。
+
+新GroundEntranceTest首次编写时错误地把含一格guard的worldBounds当实际墙边，导致drop0也报错。保留该次原始日志/XML在 `ground-entrance-before.*`；它们是测试修正记录，**不是冻结公式矛盾的证据**。现测试使用实际体素足印；独立保留 `nominalGroundFormulaIsNotAnExitWhenFoundationDropIsNonzero` 证明原W-20入口与真实地面相差4/5/12格、W-32脚面需要W-33地板；有效通地验收没有删减。
+
+### S1B尚未整体签收的原因
+
+这些不是授权问题，也不是B03仍未实现；不能把已通过子集外推为全部完成：
+
+1. **T0/compiled完整分配前预留、实际峰值pin压力**尚未闭合。现有有限窗口、字节计量、失败/关闭释放及新的有界决议缓存，不等于已证明整个Java堆峰值；仍有分配后才检查的路径。
+2. **全站点/水门/收头相邻碰撞矩阵、曲坡和装饰survival**未跑完。楼体入口在明确列出的drop/朝向组合已经通过，不能外推到混合斜坡/弯道/邻构件干涉的所有组合。本轮有定向冲突消解和动态WATER_GATE同步撤回，不将局部测试标成全组合PASS。
+
+另列后续阶段而非冒充本阶段已验：**真实CPU/Tectonic/C2ME生产墙与生命周期**属于S1C后续接线，仍NOT_RUN。Tan's Huge Trees profile继续拒绝授权，S5整包不因本轮结果解除BLOCKED。没有因这些后续阶段未开始而声称B03未完成。
+
+因此本轮不写“S1B完成，请审查”。
+
+### 最终证据和复现
+
+本轮新增/修改文件完整绝对路径、SHA-256及提交清单：
+
+`D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b\cross-cell\final\files.json`
+
+全量日志、原始XML、机器汇总同目录保存。修复前报告/阻塞报告完整原件保存在 `cross-cell/pre-fix-report.md` 与 `cross-cell/pre-fix-blocker.md`；原continuation证据及旧S0/S1B矩阵没有覆盖。
+
+```powershell
+Set-Location -LiteralPath 'D:\云游四海-Mod源码\plaincraft-great-wall'
+$env:JAVA_HOME='C:\Program Files\Java\jdk-21'
+New-Item -ItemType Directory -Path '.\build' -Force | Out-Null
+.\gradlew.bat --offline --dependency-verification=strict build runGameTest --continue --rerun-tasks --no-build-cache --console=plain --no-daemon *> '.\build\s1b-cross-cell-latest.txt'
+$buildExitCode = $LASTEXITCODE
+.\tools\Test-TerrainMatrix.ps1 -EvidenceStage s1b -EvidenceRun cross-cell -Rounds 100
+.\tools\Export-S1BCrossCellEvidence.ps1 -BuildLog '.\build\s1b-cross-cell-latest.txt' -BuildExitCode $buildExitCode
+```
+
+本轮百轮矩阵另存 `docs/evidence/s1b/matrix/cross-cell/`；原版与Tectonic+C2ME各1/2/8/16线程、每项400owner，**8/8通过，共3200owner，脚本退出码0**。矩阵执行于 `dfa984e`；之后两笔提交仅改生产收头候选/模板/规划足印及测试，S0实验路径未变。矩阵验证S0实验屏障，不冒充S1C生产墙认证。最终 `7964b59` 源码又跑过上列完整构建与22项GameTest。
+
+归档工具只核验和复制已完成结果，不运行构建、不联网；源码/锁配置有未提交差异、测试失败或跳过、矩阵不足8项均拒绝导出。`files.json`记录本轮源文件/测试/脚本/报告的完整路径和SHA，`matrix-files.json`记录矩阵原始证据。此前191/21的中间全量结果保存在 `cross-cell/milestones/dfa984e/`，当前最终目录为195/22。
+
+本轮证据路径在`.gitattributes`中关闭文本换行转换，保持日志/XML/JSON的原始校验字节，并识别原生CRLF；仅原始命令日志跳过空白格式检查，保留Gradle输出的行末空格和末尾空行，不改日志取悦格式检查。源码/报告仍正常检查，清单同时记录工作区原始SHA-256与Git规范化blob身份，避免另一台机器的CRLF/LF检出策略被误报为源码内容改变。
+
+未升级依赖、未联网、未设置代理；未部署真实mods、未打开真实存档、未写旧世界回填；未碰possibleBiomes，未加worldgen同步getChunk/join/get，未改变startup pump或C2ME锁授权。
+
+---
+
+## 修复前报告原文（历史，不是当前测试结果）
 
 日期：2026-09-29。S1A 审查基线：`80f2b24`。本次实现末提交：`eae8993`；保留失败反例的源码提交：`1d4ff21`。
 
