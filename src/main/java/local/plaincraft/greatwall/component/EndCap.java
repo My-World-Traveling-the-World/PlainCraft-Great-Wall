@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.Objects;
 import local.plaincraft.greatwall.decay.DecayField;
 import local.plaincraft.greatwall.decay.PaletteBinding;
-import local.plaincraft.greatwall.geometry.Projection;
+import local.plaincraft.greatwall.geometry.FixedMath;
+import local.plaincraft.greatwall.geometry.Rasterizer;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
@@ -14,13 +15,39 @@ public final class EndCap implements ComponentTemplate {
     private final PaletteBinding palette;
     public EndCap(DecayField decay,PaletteBinding palette) {this.decay=Objects.requireNonNull(decay);this.palette=Objects.requireNonNull(palette);}
     @Override public Bounds localBounds(ComponentInput input) {Objects.requireNonNull(input);return new Bounds(-30,-33,-5,1,3,15);}
+    /** Every retry samples the immutable station ribbon, including reverse-side caps. */
+    public static List<SiteRecord> candidates(SiteRecord site,List<Station> stations) {
+        if(stations.size()<2)throw new IllegalArgumentException("cap needs station ribbon");
+        Station[] original=edge(stations,site.globalSQ8());
+        long dx=original[1].point().xQ8()-original[0].point().xQ8();
+        long dz=original[1].point().zQ8()-original[0].point().zQ8();
+        int direction=dx*site.frame().txQ30()+dz*site.frame().tzQ30()>=0?1:-1;
+        var result=new java.util.ArrayList<SiteRecord>();
+        for(int retreat=0;retreat<=128;retreat+=4) {
+            long s=site.globalSQ8()-direction*retreat*256L;
+            if(s<stations.getFirst().globalSQ8()||s>stations.getLast().globalSQ8())break;
+            Station[] pair=edge(stations,s);var a=pair[0];var b=pair[1];
+            long length=b.globalSQ8()-a.globalSQ8(),offset=s-a.globalSQ8();
+            dx=b.point().xQ8()-a.point().xQ8();dz=b.point().zQ8()-a.point().zQ8();
+            var point=new Point2q(a.point().xQ8()+FixedMath.mulDiv(dx,offset,length),a.point().zQ8()+FixedMath.mulDiv(dz,offset,length));
+            int w=a.walkY()+(int)FixedMath.roundDiv((long)(b.walkY()-a.walkY())*offset,length);
+            double norm=StrictMath.hypot(dx,dz);
+            var frame=new Frame(point,direction*(int)StrictMath.round(dx*(1L<<30)/norm),
+                    direction*(int)StrictMath.round(dz*(1L<<30)/norm),w,site.frame().mirror());
+            Bounds bounds=Rasterizer.worldBounds(frame,new Bounds(-30,-33,-5,1,3,15));
+            result.add(new SiteRecord(site.id(),s,frame,bounds,site.state(),site.absorbedBy(),site.reason()));
+        }
+        return List.copyOf(result);
+    }
+    private static Station[] edge(List<Station> stations,long s) {
+        for(int i=1;i<stations.size();i++)if(s>=stations.get(i-1).globalSQ8()&&s<=stations.get(i).globalSQ8())
+            return new Station[]{stations.get(i-1),stations.get(i)};
+        throw new IllegalArgumentException("cap outside station ribbon");
+    }
     @Override public ComponentVoxels compile(ComponentInput input) {
         ComponentVoxels last=null;
-        for(int retreat=0;retreat<=128;retreat+=4) {
-            if(input.site().globalSQ8()<retreat*256L) break;
-            var f=input.site().frame();
-            var moved=new Frame(Projection.local(f,-retreat*256L,0),f.txQ30(),f.tzQ30(),f.walkY(),f.mirror());
-            var current=ComponentComposer.frame(input,moved,input.site().globalSQ8()-retreat*256L);
+        for(var candidate:candidates(input.site(),input.stations())) {
+            var current=ComponentComposer.frame(input,candidate.frame(),candidate.globalSQ8());
             try {
                 var a=new ComponentAssembly(current,localBounds(current),decay,palette);
                 a.foundation(-30,-5,0,5,-20);

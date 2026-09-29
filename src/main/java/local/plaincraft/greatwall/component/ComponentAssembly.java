@@ -100,14 +100,23 @@ final class ComponentAssembly {
     }
 
     ComponentVoxels finish(Bounds worldBounds, ColumnMapper mapper, CellRule rule) {
+        return finish(worldBounds,mapper,rule,s -> input.decay());
+    }
+
+    ComponentVoxels finish(Bounds worldBounds, ColumnMapper mapper, CellRule rule,
+            java.util.function.LongFunction<DecaySample> samples) {
         if (input.site().state() == SiteState.SUPPRESSED || conflictingRequiredFloor) return empty(input.site().id(), worldBounds);
         var voxels = new ArrayList<VoxelIntent>(); var roots = new HashSet<Point3i>();
         var localToWorld = new HashMap<Point3i,List<Point3i>>();
         long componentHash = identityHash(input.site().id());
         boolean functional = input.decay().state() == DecayState.INTACT || input.decay().state() == DecayState.PARTIAL;
+        DecayState realizedState=input.decay().state();
         for (int z = worldBounds.minZ(); z < worldBounds.maxZExclusive(); z++) for (int x = worldBounds.minX(); x < worldBounds.maxXExclusive(); x++) {
             Column column = mapper.map(x,z);
             if (column == null) continue;
+            DecaySample sample=Objects.requireNonNull(samples.apply(column.globalS()));
+            boolean columnFunctional=sample.state()==DecayState.INTACT||sample.state()==DecayState.PARTIAL;
+            if(sample.state().ordinal()>realizedState.ordinal())realizedState=sample.state();
             ProbeResult support = null;
             boolean checked = false;
             for (int y = worldBounds.minY(); y < worldBounds.maxYExclusive(); y++) {
@@ -123,9 +132,9 @@ final class ComponentAssembly {
                 }
                 if (y < support.groundTopY() - 1) continue;
                 if (cell.part() == Part.WATER && y < support.groundTopY()) continue;
-                if (cell.part() == Part.AIR && !functional) continue;
-                boolean required = cell.required() && (functional || local.y() < -20 + input.decay().keepHeight());
-                if (!decay.keep(input.decay(), cell.part(), local, column.globalS(), componentHash, required)) continue;
+                if (cell.part() == Part.AIR && !columnFunctional) continue;
+                boolean required = cell.required() && (columnFunctional || local.y() < -20 + sample.keepHeight());
+                if (!decay.keep(sample, cell.part(), local, column.globalS(), componentHash, required)) continue;
                 Point3i world = new Point3i(x,y,z);
                 long hash = DeterministicHash.fields(componentHash,"voxel",x,y,z);
                 BlockSpec block = cell.part() == Part.AIR ? new BlockSpec("minecraft:air",Map.of())
@@ -136,9 +145,9 @@ final class ComponentAssembly {
                 }
                 IntentKind kind = cell.part() == Part.AIR ? IntentKind.OWNED_VOID : cell.part() == Part.WATER ? IntentKind.FLUID : IntentKind.SOLID;
                 voxels.add(new VoxelIntent(world,kind,cell.part(),block,input.site().id(),
-                        required && cell.part() == Part.AIR ? 900 : priority(input.site().id().kind()),required,cell.walkable() && functional));
+                        required && cell.part() == Part.AIR ? 900 : priority(input.site().id().kind()),required,cell.walkable() && columnFunctional));
                 if (kind == IntentKind.SOLID && y <= support.groundTopY()) roots.add(world);
-                if (functional && (entities.containsKey(local) || routes.stream().anyMatch(r -> r.contains(local))
+                if (columnFunctional && (entities.containsKey(local) || routes.stream().anyMatch(r -> r.contains(local))
                         || spawns.stream().anyMatch(s -> s.feet().equals(local))))
                     localToWorld.computeIfAbsent(local, unused -> new ArrayList<>()).add(world);
             }
@@ -147,7 +156,7 @@ final class ComponentAssembly {
         var occupied = new HashMap<Point3i,VoxelIntent>();
         for (var voxel : voxels) if (voxel.kind() == IntentKind.SOLID) occupied.put(voxel.pos(),voxel);
         var worldRoutes = new ArrayList<List<Point3i>>();
-        if (functional) for (List<Point3i> route : routes) {
+        if (functional || input.site().id().kind()==SiteKind.WALL) for (List<Point3i> route : routes) {
             var converted = new ArrayList<Point3i>();
             for (Point3i p : route) {
                 Point3i world = representative(p,localToWorld);
@@ -202,7 +211,7 @@ final class ComponentAssembly {
             if (world != null) worldSpawns.add(new SpawnSlot(s.site(),s.slot(),world,s.entityType()));
         }
         voxels.sort(Comparator.comparing(VoxelIntent::pos,ORDER));
-        var result = state(hashed(input.site().id(),worldBounds,voxels,worldEntities,worldSpawns,worldRoutes),input.decay().state());
+        var result = state(hashed(input.site().id(),worldBounds,voxels,worldEntities,worldSpawns,worldRoutes),realizedState);
         return new SupportGraph().validate(result,roots);
     }
 

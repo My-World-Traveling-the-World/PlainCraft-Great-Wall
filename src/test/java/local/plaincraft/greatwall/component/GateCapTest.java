@@ -7,6 +7,28 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 import org.junit.jupiter.api.Test;
 
 class GateCapTest {
+    @Test void capRetreatFollowsBendAndHeightInsteadOfOriginalTangent() {
+        var input=TemplateFixtures.input(SiteKind.END_CAP,new Bounds(-30,-33,-5,1,3,15));
+        var stations=java.util.List.of(new Station(0,new Point2q(0,0),80,0),
+                new Station(32*256,new Point2q(32*256,0),84,0),
+                new Station(64*256,new Point2q(32*256,32*256),88,0));
+        var site=new SiteRecord(input.site().id(),48*256,new Frame(new Point2q(32*256,16*256),0,1<<30,86,false),
+                input.site().bounds(),SiteState.PLANNED,java.util.Optional.empty(),java.util.Optional.empty());
+        var candidates=EndCap.candidates(site,stations);
+        var at24=candidates.get(6);
+        assertEquals(new Point2q(24*256,0),at24.frame().center());
+        assertEquals(83,at24.frame().walkY());
+        assertEquals(1<<30,at24.frame().txQ30());
+        // Original translation incorrectly places this retry at (32,-8), still at W=86.
+        assertNotEquals(local.plaincraft.greatwall.geometry.Projection.local(site.frame(),-24*256,0),at24.frame().center());
+        var reverse=new SiteRecord(site.id(),site.globalSQ8(),new Frame(site.frame().center(),0,-(1<<30),86,true),
+                site.bounds(),site.state(),site.absorbedBy(),site.reason());
+        var downstream=EndCap.candidates(reverse,stations).get(1);
+        assertEquals(52*256,downstream.globalSQ8());
+        assertEquals(new Point2q(32*256,20*256),downstream.frame().center());
+        assertEquals(86,downstream.frame().walkY()); // Frozen roundDiv resolves exact halves downward.
+        assertEquals(87,EndCap.candidates(reverse,stations).get(2).frame().walkY());
+    }
     @Test void rampsNeverBlockGateApproach() {
         var input=TemplateFixtures.input(SiteKind.GATE,new Bounds(-30,-33,-15,30,4,15));
         var gate=new Gate(new DecayField(0),TemplateFixtures.PALETTE);

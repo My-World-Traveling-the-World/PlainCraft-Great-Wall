@@ -37,14 +37,25 @@ public final class WallSection implements ComponentTemplate {
     }
 
     public ComponentVoxels compileIntervals(ComponentInput input,List<ArcInterval> intervals) {
+        return compileIntervals(input,intervals,
+                input.decay().state()==DecayState.INTACT||input.decay().state()==DecayState.PARTIAL?intervals:List.of(),s->input.decay());
+    }
+
+    /** Rendering and walkability are separate: low ruins remain visible without claiming a walkway. */
+    public ComponentVoxels compileIntervals(ComponentInput input,List<ArcInterval> intervals,
+            List<ArcInterval> walkable,java.util.function.LongFunction<DecaySample> samples) {
         List<Station> stations = input.stations();
-        long center = input.site().globalSQ8(), from = Math.max(0,center-32L*256), to = center+32L*256;
+        long center = input.site().globalSQ8(), from = Math.max(0,center-32L*256);
+        if(stations.size()<2)throw new IllegalArgumentException("wall requires complete station ribbon");
+        long to = Math.min(stations.getLast().globalSQ8(),center+32L*256);
         if (stations.size() < 2 || stations.getFirst().globalSQ8() > from || stations.getLast().globalSQ8() < to)
             throw new IllegalArgumentException("wall requires complete station ribbon");
         Bounds bounds = curveBounds(stations,from,to);
         var assembly = new ComponentAssembly(input,localBounds(input),decay,palette);
-        for(var interval:intervals) {
+        for(var interval:intervals)
             if(interval.fromQ8()<from||interval.toQ8()>to)throw new IllegalArgumentException("build interval outside cell");
+        for(var interval:walkable) {
+            if(interval.fromQ8()<from||interval.toQ8()>to)throw new IllegalArgumentException("walkable interval outside cell");
             int left=FixedMath.floorBlock(interval.fromQ8()-center)+1,right=FixedMath.floorBlock(interval.toQ8()-center)-2;
             if(right>=left)assembly.route(new Point3i(left,0,0),new Point3i(right,0,0));
         }
@@ -80,10 +91,10 @@ public final class WallSection implements ComponentTemplate {
             int crenel = z == -4 && Math.floorMod(Math.floorDiv(globalS,256),4) < 2 ? 2 : 1;
             if (y < crenel) return cell(Part.PARAPET,false,false,Map.of());
             if (z == 3 && y == 1 && Math.floorMod(Math.floorDiv(globalS,256),16) == 0
-                    && input.decay().state() == DecayState.INTACT)
+                    && samples.apply(globalS).state() == DecayState.INTACT)
                 return cell(Part.LAMP,false,false,Map.of("hanging","false","waterlogged","false"));
             return null;
-        });
+        },samples);
     }
 
     private static ComponentAssembly.Cell cell(Part p, boolean required, boolean walk, Map<String,String> properties) {
