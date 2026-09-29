@@ -133,6 +133,14 @@ public final class TerrainSnapshotService implements AutoCloseable {
     private void releaseAdmission(){admission.compute("count",(k,n)->{if(n==null||n<=0)throw new IllegalStateException("snapshot admission underflow");return n-1;});}
     public Map<String,Integer> diagnostics(){return Map.of("flights",flights.size(),"claims",claims.size(),"admitted",admission.getOrDefault("count",0));}
     public CompletableFuture<Void> persistPlan(ChunkWritePlan plan){return io(()->{store.persistPlan(plan);return null;});}
+    public CompletableFuture<Void> persistExitDecision(GroundExitDecision decision){return io(()->{store.persistExitDecision(decision);return null;});}
+    public CompletableFuture<Void> persistPlan(ChunkWritePlan plan,List<GroundExitDecision> decisions) {
+        var frozen=List.copyOf(decisions);
+        return io(()->{store.persistExitProof(plan,frozen);store.persistPlan(plan);return null;});
+    }
+    public CompletableFuture<Void> verifyExitProof(ChunkKey owner) {
+        return io(()->{store.verifyExitProof(store.readPlan(owner).orElseThrow(()->failure(FailureCode.T0_MISSING,"exit owner proof missing")));return null;});
+    }
     public CompletableFuture<Optional<ChunkWritePlan>> readPlan(ChunkKey owner){return io(()->store.readPlan(owner));}
     public CompletableFuture<Void> verifyLoaded(ChunkKey owner,TerrainMarkers.Marker marker,int minY,int maxY) {
         return io(()->{

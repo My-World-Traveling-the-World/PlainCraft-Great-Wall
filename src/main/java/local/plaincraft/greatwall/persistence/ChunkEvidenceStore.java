@@ -21,6 +21,7 @@ import local.plaincraft.greatwall.terrain.TerrainTile;
 import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallTypes.*;
+import local.plaincraft.greatwall.terrain.GroundExitDecision;
 
 /** Authoritative generation evidence, NOT a regenerable station cache. Called on the IO owner. */
 public final class ChunkEvidenceStore {
@@ -152,6 +153,78 @@ public final class ChunkEvidenceStore {
         var value=CanonicalCodec.readWritePlan(data.get());
         if(!value.owner().equals(key))throw new IOException("proof owner mismatch");
         return Optional.of(value);
+    }
+    public void persistExitDecision(GroundExitDecision decision)throws IOException {
+        byte[] bytes=GroundExitCodec.encode(decision);
+        if(!decision.hash().equals(DeterministicHash.sha256(bytes)))throw new IOException("exit decision hash mismatch");
+        GroundExitCodec.decode(bytes);
+        // A sealed certificate is authority, not a regenerable cache. Intent alone is a pre-APPLY crash.
+        readExitDecision(decision.key());
+        byte[] identity=java.util.HexFormat.of().parseHex(decision.hash());
+        persistRecord(exitAuxPath(decision.key(),"intent"),0x50474534,identity);
+        persistRecord(exitPath(decision.key()),0x50474532,bytes);
+        persistRecord(exitAuxPath(decision.key(),"sealed"),0x50474535,identity);
+    }
+    public Optional<GroundExitDecision> readExitDecision(GroundExitDecision.Key key)throws IOException {
+        var intent=readRecord(exitAuxPath(key,"intent"),0x50474534);
+        var sealed=readRecord(exitAuxPath(key,"sealed"),0x50474535);
+        var bytes=readRecord(exitPath(key),0x50474532);
+        if(sealed.isPresent()&&(bytes.isEmpty()||intent.isEmpty()))throw new IOException("sealed exit decision lost evidence");
+        if(bytes.isEmpty())return Optional.empty();
+        if(intent.isEmpty())throw new IOException("exit decision without intent");
+        var decision=GroundExitCodec.decode(bytes.get());
+        if(!decision.key().equals(key))throw new IOException("exit decision identity mismatch");
+        byte[] hash=java.util.HexFormat.of().parseHex(decision.hash());
+        if(!java.util.Arrays.equals(intent.get(),hash)||sealed.isPresent()&&!java.util.Arrays.equals(sealed.get(),hash))
+            throw new IOException("exit decision seal/hash mismatch");
+        return sealed.isPresent()?Optional.of(decision):Optional.empty();
+    }
+    /** A write proof cannot be published until every shared exit certificate is durable. */
+    public void persistExitProof(ChunkWritePlan plan,java.util.List<GroundExitDecision> decisions)throws IOException {
+        if(decisions.isEmpty())throw new IOException("production proof lacks ground-exit decisions");
+        var unique=new java.util.TreeMap<String,GroundExitDecision>();
+        for(var d:decisions) {
+            if(!d.key().recipeHash().equals(plan.recipeHash())||!d.key().dimension().equals(plan.owner().dimension()))
+                throw new IOException("foreign exit decision in owner proof");
+            var saved=readExitDecision(d.key()).orElseThrow(()->new IOException("exit decision missing before owner proof"));
+            if(!saved.equals(d))throw new IOException("exit decision differs from durable evidence");
+            unique.put(d.hash(),d);
+        }
+        var bytes=new ByteArrayOutputStream();
+        try(var out=new DataOutputStream(bytes)) {
+            out.writeUTF(plan.hash());out.writeInt(unique.size());
+            for(var d:unique.values()) {
+                out.writeUTF(d.key().recipeHash());out.writeUTF(d.key().dimension());
+                out.writeLong(d.key().range().fromQ8());out.writeLong(d.key().range().toQ8());out.writeUTF(d.hash());
+            }
+        }
+        persistRecord(directory(plan.owner()).resolve("build-exits.bin"),0x50474533,bytes.toByteArray());
+    }
+    public void verifyExitProof(ChunkWritePlan plan)throws IOException {
+        var bytes=readRecord(directory(plan.owner()).resolve("build-exits.bin"),0x50474533)
+                .orElseThrow(()->new IOException("production owner lost exit proof"));
+        try(var in=new DataInputStream(new ByteArrayInputStream(bytes))) {
+            if(!in.readUTF().equals(plan.hash()))throw new IOException("exit proof/write proof mismatch");
+            int count=in.readInt();if(count<1||count>4096)throw new IOException("exit proof count");
+            String previous="";
+            for(int n=0;n<count;n++) {
+                var key=new GroundExitDecision.Key(in.readUTF(),in.readUTF(),new ArcInterval(in.readLong(),in.readLong()));
+                String hash=in.readUTF();
+                if(!key.recipeHash().equals(plan.recipeHash())||!key.dimension().equals(plan.owner().dimension())||hash.compareTo(previous)<=0)
+                    throw new IOException("exit proof identity/order");
+                previous=hash;
+                var decision=readExitDecision(key).orElseThrow(()->new IOException("referenced exit decision missing"));
+                if(!decision.hash().equals(hash))throw new IOException("referenced exit decision changed");
+            }
+            if(in.read()!=-1)throw new IOException("exit proof trailing bytes");
+        } catch(IllegalArgumentException e){throw new IOException("invalid exit proof",e);}
+    }
+    private Path exitPath(GroundExitDecision.Key key) {
+        return root.resolve(DeterministicHash.sha256(key.dimension().getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                .resolve("ground-exits").resolve(key.recipeHash()).resolve(key.range().fromQ8()+"_"+key.range().toQ8()+".bin");
+    }
+    private Path exitAuxPath(GroundExitDecision.Key key,String suffix) {
+        Path path=exitPath(key);return path.resolveSibling(path.getFileName()+"."+suffix);
     }
     private Path directory(ChunkKey key) {
         return root.resolve(DeterministicHash.sha256(key.dimension().getBytes(java.nio.charset.StandardCharsets.UTF_8)))
