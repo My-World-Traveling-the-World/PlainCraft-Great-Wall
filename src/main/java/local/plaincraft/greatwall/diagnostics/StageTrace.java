@@ -39,6 +39,9 @@ public final class StageTrace {
     }
 
     public static void enterLockAction() { LOCK_DEPTH.set(LOCK_DEPTH.get() + 1); }
+    public static void assertInsideLock() {
+        if(LOCK_DEPTH.get()==0) throw new IllegalStateException("Owner mutation requires native TerrainEngine authorization");
+    }
     public static void leaveLockAction() {
         int next = LOCK_DEPTH.get() - 1;
         if (next == 0) LOCK_DEPTH.remove(); else LOCK_DEPTH.set(next);
