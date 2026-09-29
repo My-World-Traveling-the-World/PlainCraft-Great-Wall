@@ -122,6 +122,7 @@ final class ComponentAssembly {
                         return empty(input.site().id(),worldBounds);
                 }
                 if (y < support.groundTopY() - 1) continue;
+                if (cell.part() == Part.WATER && y < support.groundTopY()) continue;
                 if (cell.part() == Part.AIR && !functional) continue;
                 boolean required = cell.required() && (functional || local.y() < -20 + input.decay().keepHeight());
                 if (!decay.keep(input.decay(), cell.part(), local, column.globalS(), componentHash, required)) continue;
