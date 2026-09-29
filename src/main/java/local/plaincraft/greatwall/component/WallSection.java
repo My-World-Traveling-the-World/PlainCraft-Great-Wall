@@ -138,7 +138,8 @@ public final class WallSection implements ComponentTemplate {
     private static ComponentAssembly.Column column(List<Station> stations, int x, int z,
             long center, long from, long to, boolean mirror) {
         long px = (long) x*256+128, pz = (long) z*256+128, best = Long.MAX_VALUE;
-        ComponentAssembly.Column result = null;
+        int selected = -1;
+        long selectedNumerator = 0, selectedDenominator = 1;
         for (int i = 1; i < stations.size(); i++) {
             Station a = stations.get(i-1), b = stations.get(i);
             if (b.globalSQ8() < from-1024 || a.globalSQ8() > to+1024) continue;
@@ -150,14 +151,20 @@ public final class WallSection implements ComponentTemplate {
             long dx = px-nx, dz = pz-nz, dist = dx*dx+dz*dz;
             if (dist >= best) continue;
             best = dist;
-            long s = a.globalSQ8()+FixedMath.mulDiv(b.globalSQ8()-a.globalSQ8(),num,den);
-            long lateral = FixedMath.mulDiv(vx,wz,FixedMath.hypotQ8(vx,vz))
-                    - FixedMath.mulDiv(vz,wx,FixedMath.hypotQ8(vx,vz));
-            if (mirror) lateral = -lateral;
-            result = s >= from && s < to ? new ComponentAssembly.Column(FixedMath.floorBlock(s-center),
-                    FixedMath.floorBlock(lateral),height(stations,s),s) : null;
+            selected = i; selectedNumerator = num; selectedDenominator = den;
         }
-        return result;
+        if (selected < 0) return null;
+        // Preserve the first nearest edge and its original rounding; interpolate only the winner.
+        Station a = stations.get(selected-1), b = stations.get(selected);
+        long s = a.globalSQ8()+FixedMath.mulDiv(b.globalSQ8()-a.globalSQ8(),selectedNumerator,selectedDenominator);
+        if (s < from || s >= to) return null;
+        long vx = b.point().xQ8()-a.point().xQ8(), vz = b.point().zQ8()-a.point().zQ8();
+        long length = FixedMath.hypotQ8(vx,vz);
+        long lateral = FixedMath.mulDiv(vx,pz-a.point().zQ8(),length)
+                - FixedMath.mulDiv(vz,px-a.point().xQ8(),length);
+        if (mirror) lateral = -lateral;
+        return new ComponentAssembly.Column(FixedMath.floorBlock(s-center),
+                FixedMath.floorBlock(lateral),height(stations,s),s);
     }
 
     private static int height(List<Station> stations, long s) {
