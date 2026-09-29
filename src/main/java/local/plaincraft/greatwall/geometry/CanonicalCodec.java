@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import local.plaincraft.greatwall.diagnostics.BoundedByteArrayOutputStream;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** Version-one semantic bytes. Only the root object's self hash is omitted. */
@@ -384,10 +385,9 @@ public final class CanonicalCodec {
         if (!expected.equals(actual)) throw new IOException("nested hash mismatch");
     }
     private static byte[] encode(int limit, Encoder writer) {
-        var bytes = new ByteArrayOutputStream();
+        var bytes = new BoundedByteArrayOutputStream(limit);
         try (var out = new DataOutputStream(bytes)) {
             out.writeInt(1); writer.write(out);
-            if (bytes.size() > limit) throw new IllegalArgumentException("canonical payload exceeds limit");
             return bytes.toByteArray();
         } catch (IOException invalid) { throw new IllegalArgumentException("invalid canonical value", invalid); }
     }
