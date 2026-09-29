@@ -13,6 +13,7 @@ import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
+import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 
 /** Pure whole-component resolution followed by owner clipping; no live-world reads. */
 public final class ChunkPlanCompiler {
@@ -21,6 +22,12 @@ public final class ChunkPlanCompiler {
     public ChunkPlanCompiler() {}
     public ChunkWritePlan compile(ChunkKey owner,String recipeHash,List<RealizationCell> cells,Map<Point3i,String> beforeStates) {
         Objects.requireNonNull(owner);Objects.requireNonNull(beforeStates);
+        long candidates=0,owned=0;
+        for(var cell:cells)for(var c:cell.components())for(var voxel:c.voxels()) {
+            candidates++;
+            if(owns(owner,voxel.pos())&&voxel.kind()!=IntentKind.KEEP)owned++;
+        }
+        CompiledAllocation.charge(Math.addExact(4096L,Math.addExact(Math.multiplyExact(candidates,128L),Math.multiplyExact(owned,512L))));
         var components=new TreeMap<SiteId,ComponentVoxels>(SITE);
         var inputs=new TreeSet<String>();var t0=new TreeSet<String>();long revision=0;
         for(var cell:cells) {
@@ -29,7 +36,7 @@ public final class ChunkPlanCompiler {
             inputs.add(cell.hash()+":"+cell.gateRevision()+":"+cell.protectionHash());
             t0.add(cell.t0Hash()); revision=Math.max(revision,cell.gateRevision());
             for(var c:cell.components()) {
-                if(!c.hash().equals(DeterministicHash.sha256(CanonicalCodec.component(c)))) throw failure("component hash mismatch");
+                if(!c.hash().equals(CanonicalCodec.componentHash(c))) throw failure("component hash mismatch");
                 var old=components.putIfAbsent(c.id(),c);
                 if(old!=null&&!old.hash().equals(c.hash())) throw failure("same component has two realizations");
             }
@@ -96,7 +103,7 @@ public final class ChunkPlanCompiler {
     }
     private static ChunkWritePlan rehash(ChunkWritePlan p) {
         return new ChunkWritePlan(p.owner(),p.recipeHash(),p.inputHash(),p.voxels(),p.proofs(),p.blockEntities(),p.postprocess(),
-                p.fluidTicks(),p.walkwayFeet(),p.metadata(),DeterministicHash.sha256(CanonicalCodec.writePlan(p)));
+                p.fluidTicks(),p.walkwayFeet(),p.metadata(),CanonicalCodec.writePlanHash(p));
     }
     private static VoxelIntent winner(VoxelIntent a,VoxelIntent b) {
         if(a.equals(b))return a;

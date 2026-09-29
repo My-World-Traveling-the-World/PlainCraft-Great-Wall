@@ -187,7 +187,7 @@ public final class SupportGraph {
             List<BlockEntityIntent> entities, List<SpawnSlot> slots) {
         var value = new ComponentVoxels(c.id(), c.bounds(), voxels, entities, slots, c.requiredRoutes(),c.realizedState(), "0".repeat(64));
         return new ComponentVoxels(value.id(), value.bounds(), value.voxels(), value.blockEntities(), value.spawnSlots(),
-                value.requiredRoutes(),value.realizedState(), DeterministicHash.sha256(CanonicalCodec.component(value)));
+                value.requiredRoutes(),value.realizedState(), CanonicalCodec.componentHash(value));
     }
 
     private static Point3i offset(Point3i p, int x, int y, int z) {
