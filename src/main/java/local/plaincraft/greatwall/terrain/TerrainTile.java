@@ -1,8 +1,9 @@
 package local.plaincraft.greatwall.terrain;
 
 import java.util.List;
-import local.plaincraft.greatwall.geometry.DeterministicHash;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /** An immutable, bounded T0 window; coordinates are three ints, never packed BlockPos. */
 public final class TerrainTile {
@@ -32,12 +33,19 @@ public final class TerrainTile {
         this.recipe = recipe;
         this.palette = List.copyOf(palette);
         this.states = states.clone();
-        var canonical = new StringBuilder("T0-v1\n").append(recipe).append('\n').append(key.identity()).append('\n');
+        MessageDigest digest;
+        try { digest = MessageDigest.getInstance("SHA-256"); }
+        catch (NoSuchAlgorithmException impossible) { throw new AssertionError("JDK lacks SHA-256", impossible); }
+        update(digest, "T0-v1\n");
+        update(digest, recipe); update(digest, "\n");
+        update(digest, key.identity()); update(digest, "\n");
+        byte[][] lines = new byte[this.palette.size()][];
+        for (int n = 0; n < lines.length; n++) lines[n] = (this.palette.get(n) + "\n").getBytes(StandardCharsets.UTF_8);
         for (int state : this.states) {
             if (state < 0 || state >= palette.size()) throw new IllegalArgumentException("Invalid palette index");
-            canonical.append(this.palette.get(state)).append('\n');
+            digest.update(lines[state]);
         }
-        hash = DeterministicHash.sha256(canonical.toString().getBytes(StandardCharsets.UTF_8));
+        hash = java.util.HexFormat.of().formatHex(digest.digest());
     }
     public Key key() { return key; }
     public String recipe() { return recipe; }
@@ -49,5 +57,9 @@ public final class TerrainTile {
             throw new IllegalArgumentException("Outside captured T0");
         }
         return palette.get(states[((y - key.minY()) * 16 + localZ) * 16 + localX]);
+    }
+
+    private static void update(MessageDigest digest, String value) {
+        digest.update(value.getBytes(StandardCharsets.UTF_8));
     }
 }

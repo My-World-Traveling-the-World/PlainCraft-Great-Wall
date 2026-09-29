@@ -22,6 +22,7 @@ import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.GroundExitDecision;
+import local.plaincraft.greatwall.diagnostics.BoundedByteArrayOutputStream;
 
 /** Authoritative generation evidence, NOT a regenerable station cache. Called on the IO owner. */
 public final class ChunkEvidenceStore {
@@ -46,11 +47,17 @@ public final class ChunkEvidenceStore {
             if (input.readInt() != MAGIC || input.readInt() != 1) throw new IOException("T0_CORRUPT: header");
             int size = input.readInt();
             long checksum = input.readLong();
-            byte[] compressed = input.readNBytes(LIMIT + 1);
-            if (size < 0 || size > LIMIT || compressed.length > LIMIT) throw new IOException("T0_CORRUPT: length");
+            if (size < 0 || size > LIMIT) throw new IOException("T0_CORRUPT: length");
+            int compressedSize = Math.toIntExact(Files.size(file) - 20);
+            if (compressedSize < 0 || compressedSize > LIMIT - 20) throw new IOException("T0_CORRUPT: compressed length");
+            byte[] compressed = new byte[compressedSize];
+            input.readFully(compressed);
+            if (input.read() != -1) throw new IOException("T0_CORRUPT: file grew while reading");
             byte[] raw;
-            try (var inflater = new InflaterInputStream(new ByteArrayInputStream(compressed))) {
-                raw = inflater.readNBytes(LIMIT + 1);
+            try (var inflater = new DataInputStream(new InflaterInputStream(new ByteArrayInputStream(compressed)))) {
+                raw = new byte[size];
+                inflater.readFully(raw);
+                if (inflater.read() != -1) throw new IOException("T0_CORRUPT: inflated length");
             }
             CRC32C crc = new CRC32C();
             crc.update(raw);
@@ -83,7 +90,7 @@ public final class ChunkEvidenceStore {
             if (!prior.get().hash().equals(tile.hash())) throw new IOException("T0_CONFLICT: attempted overwrite");
             return prior.get();
         }
-        var raw = new ByteArrayOutputStream();
+        var raw = new BoundedByteArrayOutputStream(LIMIT);
         try (var out = new DataOutputStream(raw)) {
             out.writeUTF(tile.recipe());
             out.writeUTF(tile.key().dimension());
@@ -95,9 +102,8 @@ public final class ChunkEvidenceStore {
             for (int state : tile.copyStates()) out.writeInt(state);
         }
         byte[] bytes = raw.toByteArray();
-        if (bytes.length > LIMIT) throw new IOException("T0 evidence exceeds bounded record size");
         CRC32C crc = new CRC32C(); crc.update(bytes);
-        var encoded = new ByteArrayOutputStream();
+        var encoded = new BoundedByteArrayOutputStream(LIMIT);
         try (var out = new DataOutputStream(encoded)) {
             out.writeInt(MAGIC); out.writeInt(1); out.writeInt(bytes.length); out.writeLong(crc.getValue());
             try (var deflater = new DeflaterOutputStream(out)) { deflater.write(bytes); }
@@ -190,7 +196,7 @@ public final class ChunkEvidenceStore {
             if(!saved.equals(d))throw new IOException("exit decision differs from durable evidence");
             unique.put(d.hash(),d);
         }
-        var bytes=new ByteArrayOutputStream();
+        var bytes=new BoundedByteArrayOutputStream(8*1024*1024);
         try(var out=new DataOutputStream(bytes)) {
             out.writeUTF(plan.hash());out.writeInt(unique.size());
             for(var d:unique.values()) {
@@ -238,7 +244,7 @@ public final class ChunkEvidenceStore {
         }
         if(bytes.length>8*1024*1024)throw new IOException("record exceeds 8MiB");
         CRC32C crc=new CRC32C();crc.update(bytes);
-        var encoded=new ByteArrayOutputStream();
+        var encoded=new BoundedByteArrayOutputStream(8*1024*1024+52);
         try(var out=new DataOutputStream(encoded)){
             out.writeInt(magic);out.writeInt(1);out.writeInt(bytes.length);out.writeLong(crc.getValue());
             out.write(java.util.HexFormat.of().parseHex(DeterministicHash.sha256(bytes)));out.write(bytes);

@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallTypes.*;
+import local.plaincraft.greatwall.diagnostics.BoundedByteArrayOutputStream;
 
 /** Bounded canonical production capture metadata, separate from disposable segment caches. */
 public final class EvidenceCodec {
@@ -12,7 +13,7 @@ public final class EvidenceCodec {
     private EvidenceCodec() {}
     public static byte[] coverage(Coverage c) {
         try {
-            var bytes=new ByteArrayOutputStream();var out=new DataOutputStream(bytes);
+            var bytes=new BoundedByteArrayOutputStream(8192);var out=new DataOutputStream(bytes);
             string(out,c.chunk().dimension());out.writeInt(c.chunk().x());out.writeInt(c.chunk().z());
             out.writeInt(c.tileBases().size());for(int base:c.tileBases())out.writeInt(base);
             bounds(out,c.readBounds());out.flush();return bytes.toByteArray();
@@ -29,7 +30,7 @@ public final class EvidenceCodec {
     }
     public static byte[] metadata(CaptureMetadata value) {
         try {
-            var bytes=new ByteArrayOutputStream();var out=new DataOutputStream(bytes);var c=value.coverage();
+            var bytes=new BoundedByteArrayOutputStream(8*1024*1024);var out=new DataOutputStream(bytes);var c=value.coverage();
             string(out,c.chunk().dimension());out.writeInt(c.chunk().x());out.writeInt(c.chunk().z());
             out.writeInt(c.tileBases().size());for(int base:c.tileBases())out.writeInt(base);
             bounds(out,c.readBounds());string(out,c.hash());
@@ -39,7 +40,6 @@ public final class EvidenceCodec {
                     .thenComparingInt(Bounds::minX).thenComparingInt(Bounds::maxYExclusive).thenComparingInt(Bounds::maxZExclusive).thenComparingInt(Bounds::maxXExclusive)).toList();
             out.writeInt(boxes.size());for(var box:boxes)bounds(out,box);
             points(out,value.blockEntities());points(out,value.immutableBlocks());out.flush();
-            if(bytes.size()>8*1024*1024)throw new IllegalArgumentException("capture metadata exceeds 8MiB");
             return bytes.toByteArray();
         } catch(IOException impossible){throw new AssertionError(impossible);}
     }
@@ -83,6 +83,7 @@ public final class EvidenceCodec {
     private static Bounds bounds(DataInputStream in)throws IOException{return new Bounds(in.readInt(),in.readInt(),in.readInt(),in.readInt(),in.readInt(),in.readInt());}
     private static int count(DataInputStream in,int max)throws IOException{int n=in.readInt();if(n<0||n>max)throw new IOException("count out of bounds");return n;}
     private static void string(DataOutputStream out,String s)throws IOException{
+        if(s.length()>4096)throw new IOException("string too long");
         byte[] b=s.getBytes(StandardCharsets.UTF_8);if(b.length>4096)throw new IOException("string too long");out.writeInt(b.length);out.write(b);
     }
     private static String string(DataInputStream in)throws IOException{
