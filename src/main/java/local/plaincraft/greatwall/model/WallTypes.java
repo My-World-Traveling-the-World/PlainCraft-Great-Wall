@@ -419,12 +419,18 @@ public final class WallTypes {
     }
 
     public record ProbeResult(ProbeKind kind, int groundTopY, OptionalInt waterTopY,
-            OptionalInt bedTopY, int drop, String evidenceHash) {
+            OptionalInt bedTopY, int drop, String evidenceHash, OptionalInt thinIceY) {
+        public ProbeResult(ProbeKind kind,int groundTopY,OptionalInt waterTopY,OptionalInt bedTopY,int drop,String evidenceHash) {
+            this(kind,groundTopY,waterTopY,bedTopY,drop,evidenceHash,OptionalInt.empty());
+        }
         public ProbeResult {
             Objects.requireNonNull(kind, "kind");
             Objects.requireNonNull(waterTopY, "waterTopY");
             Objects.requireNonNull(bedTopY, "bedTopY");
             requireHash(evidenceHash);
+            Objects.requireNonNull(thinIceY,"thinIceY");
+            if(thinIceY.isPresent()&&(kind!=ProbeKind.WATER||waterTopY.isEmpty()||thinIceY.getAsInt()+1!=waterTopY.getAsInt()))
+                throw new IllegalArgumentException("thin ice must be the exposed water surface");
         }
     }
 

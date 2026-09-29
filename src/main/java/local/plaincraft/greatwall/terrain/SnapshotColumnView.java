@@ -34,8 +34,17 @@ public final class SnapshotColumnView implements SurfaceProbe.ColumnView {
     @Override public boolean solidSupport(int y){return catalog.flags(state(y)).support();}
     @Override public boolean protectedAt(int y){
         var p=new Point3i(x,y,z);
-        return catalog.flags(state(y)).protectedBlock()||metadata.blockEntities().contains(p)||metadata.immutableBlocks().contains(p)
+        return catalog.flags(state(y)).protectedBlock()||state(y).startsWith("minecraft:ice{")&&!naturalThinIce(y)
+                ||metadata.blockEntities().contains(p)||metadata.immutableBlocks().contains(p)
                 ||metadata.protectedStructures().stream().anyMatch(b->x>=b.minX()&&x<b.maxXExclusive()&&z>=b.minZ()&&z<b.maxZExclusive()&&y>=b.minY()&&y<b.maxYExclusive());
+    }
+    @Override public boolean naturalThinIce(int y) {
+        if(y<=metadata.coverage().readBounds().minY()||y+1>=metadata.coverage().readBounds().maxYExclusive())return false;
+        var p=new Point3i(x,y,z);
+        return state(y).startsWith("minecraft:ice{")&&catalog.flags(state(y-1)).water()
+                &&catalog.flags(state(y+1)).replaceablePlant()&&!metadata.blockEntities().contains(p)
+                &&!metadata.immutableBlocks().contains(p)&&metadata.protectedStructures().stream().noneMatch(b->
+                x>=b.minX()&&x<b.maxXExclusive()&&z>=b.minZ()&&z<b.maxZExclusive()&&y>=b.minY()&&y<b.maxYExclusive());
     }
     @Override public boolean water(int y){return catalog.flags(state(y)).water();}
     @Override public boolean airOrReplaceablePlant(int y){return catalog.flags(state(y)).replaceablePlant();}

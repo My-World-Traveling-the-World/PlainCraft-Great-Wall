@@ -14,6 +14,7 @@ public final class SurfaceProbe {
         boolean airOrReplaceablePlant(int y);
         int highestNonPlantFeet();
         String hash();
+        default boolean naturalThinIce(int y) { return false; }
     }
 
     public SurfaceProbe() {}
@@ -33,9 +34,11 @@ public final class SurfaceProbe {
         for (int y = hi; y >= lo - 3; y--)
             if (column.protectedAt(y)) return result(ProbeKind.PROTECTED, g, OptionalInt.empty(), 0, hash);
         OptionalInt water = OptionalInt.empty();
+        OptionalInt ice = OptionalInt.empty();
         boolean exposed = true;
         for (int h = hi; h >= lo; h--) {
-            if (column.water(h)) {
+            if (column.water(h) || column.naturalThinIce(h)) {
+                if(exposed && water.isEmpty() && column.naturalThinIce(h))ice=OptionalInt.of(h);
                 if (exposed && water.isEmpty()) water = OptionalInt.of(Math.addExact(h, 1));
             } else if (!column.airOrReplaceablePlant(h)) {
                 exposed = false;
@@ -44,7 +47,8 @@ public final class SurfaceProbe {
                 int drop = Math.max(0, Math.subtractExact(g, h));
                 if (h >= walkY) return result(ProbeKind.UPPER_CENSORED, h, water, drop, hash);
                 if (drop > 12) return result(ProbeKind.NO_SUPPORT, h, water, drop, hash);
-                return result(water.isPresent() ? ProbeKind.WATER : ProbeKind.SUPPORTED, h, water, drop, hash);
+                return new ProbeResult(water.isPresent() ? ProbeKind.WATER : ProbeKind.SUPPORTED,h,water,
+                        water.isPresent()?OptionalInt.of(h):OptionalInt.empty(),drop,hash,ice);
             }
         }
         return result(ProbeKind.NO_SUPPORT, lo, water, Math.max(0, g - lo), hash);

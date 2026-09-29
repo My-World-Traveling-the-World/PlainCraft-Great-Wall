@@ -12,6 +12,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 class SurfaceProbeTest {
     private static final DimensionBounds BOUNDS = new DimensionBounds(-64, 8192, 29_999_000);
     private static final int W = 6000;
+    @Test void onlyExposedSingleNaturalIceLayerIsRecordedWithoutWideningWindow() {
+        var c=new Column(W-24);c.waterTop=W-18;c.iceY=W-19;
+        var result=new SurfaceProbe().probe(c,W,BOUNDS);
+        assertEquals(ProbeKind.WATER,result.kind());assertEquals(c.iceY,result.thinIceY().orElseThrow());
+        assertEquals(c.waterTop,result.waterTopY().orElseThrow());
+        c.protectedY=c.iceY;assertEquals(ProbeKind.PROTECTED,new SurfaceProbe().probe(c,W,BOUNDS).kind());
+    }
 
     @ParameterizedTest @ValueSource(ints = {0,4,5,12,13})
     void dropBoundary(int drop) {
@@ -66,13 +73,14 @@ class SurfaceProbeTest {
         private final Set<Integer> reads = new HashSet<>();
         private boolean sentinel = true, missing;
         private int protectedY = Integer.MIN_VALUE, thinRoof = Integer.MIN_VALUE;
-        private int plant = Integer.MIN_VALUE, powderSnow = Integer.MIN_VALUE, waterTop = Integer.MIN_VALUE;
+        private int plant = Integer.MIN_VALUE, powderSnow = Integer.MIN_VALUE, waterTop = Integer.MIN_VALUE,iceY=Integer.MIN_VALUE;
         Column(int ground) { this.ground = ground; }
         @Override public String state(int y) {
             reads.add(y);
             if (missing && y == W + 7) throw new WallFailure(FailureCode.T0_MISSING, "missing test page");
             if (y == plant) return "minecraft:oak_leaves";
             if (y == powderSnow) return "minecraft:powder_snow";
+            if (y == iceY) return "minecraft:ice";
             if (y < ground || y == thinRoof) return "minecraft:stone";
             if (y < waterTop) return "minecraft:water";
             if (!sentinel && y == W + 7) return "minecraft:stone";
@@ -81,6 +89,7 @@ class SurfaceProbeTest {
         @Override public boolean solidSupport(int y) { return state(y).equals("minecraft:stone"); }
         @Override public boolean protectedAt(int y) { state(y); return y == protectedY; }
         @Override public boolean water(int y) { return state(y).equals("minecraft:water"); }
+        @Override public boolean naturalThinIce(int y){return y==iceY&&water(y-1)&&airOrReplaceablePlant(y+1);}
         @Override public boolean airOrReplaceablePlant(int y) { String s = state(y); return s.equals("minecraft:air") || s.equals("minecraft:oak_leaves"); }
         @Override public int highestNonPlantFeet() { return Math.max(ground, waterTop); }
         @Override public String hash() { return "a".repeat(64); }
