@@ -14,7 +14,7 @@ public final class Ramp implements ComponentTemplate {
         this.decay = Objects.requireNonNull(decay); this.palette = Objects.requireNonNull(palette);
     }
     @Override public Bounds localBounds(ComponentInput input) {
-        Objects.requireNonNull(input); return new Bounds(-30,-32,4,-6,3,15);
+        Objects.requireNonNull(input); return new Bounds(-30,-33,4,-6,3,15);
     }
     @Override public ComponentVoxels compile(ComponentInput input) {
         return compileBetween(input,input.site().frame().walkY()-20,input.site().frame().walkY());
@@ -26,6 +26,18 @@ public final class Ramp implements ComponentTemplate {
             throw new IllegalArgumentException("ramp height/window contract");
         var a = new ComponentAssembly(input,localBounds(input),decay,palette);
         int lower = lowerFeetY-w, upper = upperFeetY-w;
+        if (height <= 3) {
+            landing(a,-29,5,-26,8,lower);
+            for (int j = 0; j < height; j++) {
+                int x = -26+j, feet = lower+j+1;
+                a.foundation(x,5,x+1,8,feet-1);
+                a.floor(x,5,x+1,8,feet,Part.STAIR,a.facing(1,0));
+            }
+            int end = -26+(int) height;
+            landing(a,end,4,end+3,11,upper);
+            a.route(new Point3i(-28,lower,6),new Point3i(end+1,upper,6),new Point3i(end+1,upper,4));
+            return a.finish();
+        }
         int left = ((int) height+1)/2, right = (int) height-left, e = -27+left;
         landing(a,-29,5,-26,8,lower);
         for (int j = 0; j < left; j++) {

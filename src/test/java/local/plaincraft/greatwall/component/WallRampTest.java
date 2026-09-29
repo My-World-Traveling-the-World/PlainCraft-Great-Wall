@@ -14,7 +14,7 @@ class WallRampTest {
     private final WallSection wall = new WallSection(new DecayField(0),TemplateFixtures.PALETTE);
     private final Ramp ramp = new Ramp(new DecayField(0),TemplateFixtures.PALETTE);
     private static final Bounds WALL = new Bounds(-32,-32,-5,32,3,5);
-    private static final Bounds RAMP = new Bounds(-30,-32,4,-6,3,15);
+    private static final Bounds RAMP = new Bounds(-30,-33,4,-6,3,15);
     @Test void wallHas20By10TaperAndSixClearLane() {
         var c = wall.compile(TemplateFixtures.input(SiteKind.WALL,WALL));
         assertFalse(c.voxels().isEmpty());
@@ -50,5 +50,23 @@ class WallRampTest {
     void rampHeightBoundary(int height) {
         var input = TemplateFixtures.input(SiteKind.RAMP,RAMP,0,0,0,PaletteFamily.STONE,DecayState.INTACT,Math.max(0,height-20));
         assertFalse(ramp.compileBetween(input,84-height,84).voxels().isEmpty(),"height="+height);
+    }
+    @Test void allThirtyTwoHeightsKeepTheirRequiredLandingsAndHeadroom() {
+        for (int height = 1; height <= 32; height++) {
+            var input = TemplateFixtures.input(SiteKind.RAMP,RAMP,0,0,0,PaletteFamily.STONE,DecayState.INTACT,Math.max(0,height-20));
+            var c = ramp.compileBetween(input,84-height,84);
+            assertFalse(c.voxels().isEmpty(),"height="+height);
+            var occupied = c.voxels().stream().filter(v -> v.kind()==IntentKind.SOLID)
+                    .collect(Collectors.toMap(VoxelIntent::pos,v -> v));
+            for (var route : c.requiredRoutes()) for (var feet : route) {
+                assertTrue(occupied.containsKey(new Point3i(feet.x(),feet.y()-1,feet.z())),"floor "+feet);
+                assertFalse(occupied.containsKey(feet),"feet "+feet);
+                assertFalse(occupied.containsKey(new Point3i(feet.x(),feet.y()+1,feet.z())),"head "+feet);
+            }
+            for (int z=5;z<8;z++) for (int x=-29;x<-26;x++)
+                assertTrue(occupied.containsKey(new Point3i(x,83-height,z)),"complete lower landing H="+height);
+            if (height<=3) for (int z=4;z<11;z++) for (int x=-26+height;x<-23+height;x++)
+                assertTrue(occupied.containsKey(new Point3i(x,83,z)),"complete upper landing H="+height);
+        }
     }
 }
