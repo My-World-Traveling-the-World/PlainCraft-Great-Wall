@@ -51,7 +51,9 @@ public final class ChunkPlanCompiler {
             if(before==null) throw new WallFailure(FailureCode.T0_MISSING,"missing before-state "+v.pos());
             boolean be=before.endsWith(":be=true");
             if(be) throw failure("foreign block entity in write set");
-            if((v.kind()==IntentKind.OWNED_VOID||v.kind()==IntentKind.FLUID)&&!replaceableVoid(before))
+            boolean thaw=v.component().kind()==SiteKind.WATER_GATE&&v.part()==Part.WATER&&v.kind()==IntentKind.FLUID
+                    &&before.startsWith("minecraft:ice{")&&!be;
+            if((v.kind()==IntentKind.OWNED_VOID||v.kind()==IntentKind.FLUID)&&!replaceableVoid(before)&&!thaw)
                 throw failure("negative space cannot carve natural/foreign solid: "+v.pos());
             String after=token(v.state(),entityPositions.contains(v.pos()));
             voxels.add(v);proofs.add(new BlockProof(v.pos(),before,after,be,v.component()));

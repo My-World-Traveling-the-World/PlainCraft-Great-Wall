@@ -1,6 +1,8 @@
 package local.plaincraft.greatwall.component;
 
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import local.plaincraft.greatwall.decay.DecayField;
 import local.plaincraft.greatwall.decay.PaletteBinding;
@@ -10,6 +12,7 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** Source-water-preserving narrow-river crossing; width 50 is never admitted here. */
 public final class WaterGate implements ComponentTemplate {
+    private record Span(int from,int to) {}
     private final DecayField decay;
     private final PaletteBinding palette;
     public WaterGate(DecayField decay,PaletteBinding palette){this.decay=Objects.requireNonNull(decay);this.palette=Objects.requireNonNull(palette);}
@@ -39,11 +42,13 @@ public final class WaterGate implements ComponentTemplate {
         a.box(b.minX(),-16,-5,b.maxXExclusive(),-8,5,Part.CORE,false);
         a.box(b.minX(),-8,-4,b.maxXExclusive(),0,4,Part.CORE,false);
         a.floor(b.minX(),-3,b.maxXExclusive(),3,0,Part.FLOOR,"east");
-        for(int x=from;x<to;x++) {
-            int phase=Math.floorMod(x+2,6);
-            boolean pier=phase>=4 && x>=from+3 && x<to-3;
-            if(pier) {a.box(x,-32,-5,x+1,0,5,Part.ARCH,true);continue;}
-            double offset=phase<4?(phase-1.5)/2.0:0;
+        var spans=new ArrayList<Span>();spans.add(new Span(-2,2));
+        spans.addAll(sideSpans(to));
+        for(var s:sideSpans(-from))spans.add(new Span(-s.to(),-s.from()));
+        for(int x=Math.min(from,-4);x<Math.max(to,4);x++) {
+            Span span=null;for(var s:spans)if(x>=s.from()&&x<s.to()){span=s;break;}
+            if(span==null) {a.box(x,-32,-5,x+1,0,5,Part.ARCH,true);continue;}
+            double offset=(x+0.5-(span.from()+span.to())/2.0)/((span.to()-span.from())/2.0);
             int arc=(int)StrictMath.floor(2*StrictMath.sqrt(Math.max(0,1-offset*offset)));
             int ceiling=Math.min(-2,water+3+arc);
             for(int z=-6;z<6;z++) for(int y=b.minY();y<water;y++)
@@ -51,8 +56,22 @@ public final class WaterGate implements ComponentTemplate {
             a.box(x,water,-5,x+1,ceiling,5,Part.AIR,true);
             a.box(x,ceiling,-5,x+1,ceiling+1,5,Part.ARCH,true);
         }
+        for(var span:spans)a.span(new Bounds(span.from(),water+3,-5,span.to(),3,5),
+                new Bounds(span.from()-2,-32,-5,span.from(),3,5),new Bounds(span.to(),-32,-5,span.to()+2,3,5));
         a.route(new Point3i(b.minX()+1,0,0),new Point3i(b.maxXExclusive()-2,0,0));
         return a.finish();
+    }
+    private static List<Span> sideSpans(int bank) {
+        var result=new ArrayList<Span>();int cursor=4;
+        while(bank-cursor>6) {
+            int remaining=bank-cursor;
+            // A seven/eight-column tail cannot be two >=3 spans plus a two-column pier.
+            // Absorb its final two columns into the existing bank apron, not a >6 arch.
+            if(remaining<=8){result.add(new Span(cursor,bank-2));return List.copyOf(result);}
+            result.add(new Span(cursor,cursor+4));cursor+=6;
+        }
+        if(bank-cursor>=3)result.add(new Span(cursor,bank));
+        return List.copyOf(result);
     }
     private static WaterEvidence evidence(ComponentInput input) {
         Objects.requireNonNull(input);

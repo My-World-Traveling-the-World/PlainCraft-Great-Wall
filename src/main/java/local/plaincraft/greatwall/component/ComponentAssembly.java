@@ -143,7 +143,14 @@ final class ComponentAssembly {
                         return empty(input.site().id(),worldBounds);
                 }
                 if (y < support.groundTopY() - 1) continue;
-                if (cell.part() == Part.WATER && y < support.groundTopY()) continue;
+                if (support.thinIceY().isPresent()&&y==support.thinIceY().getAsInt()) {
+                    boolean main=input.site().id().kind()==SiteKind.WATER_GATE&&local.x()>=-2&&local.x()<2&&cell.part()==Part.WATER;
+                    if(!main) {
+                        if(cell.required()&&cell.part()!=Part.AIR)return empty(input.site().id(),worldBounds);
+                        continue;
+                    }
+                }
+                if (cell.part() == Part.WATER && (y < support.groundTopY()||support.waterTopY().isEmpty()||y>=support.waterTopY().getAsInt())) continue;
                 if (cell.part() == Part.AIR && !columnFunctional) continue;
                 boolean required = cell.required() && (columnFunctional || local.y() < -20 + sample.keepHeight());
                 if (!decay.keep(sample, cell.part(), local, column.globalS(), componentHash, required)) continue;
