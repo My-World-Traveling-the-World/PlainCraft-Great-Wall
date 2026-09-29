@@ -202,7 +202,7 @@ final class ComponentAssembly {
             if (world != null) worldSpawns.add(new SpawnSlot(s.site(),s.slot(),world,s.entityType()));
         }
         voxels.sort(Comparator.comparing(VoxelIntent::pos,ORDER));
-        var result = hashed(input.site().id(),worldBounds,voxels,worldEntities,worldSpawns,worldRoutes);
+        var result = state(hashed(input.site().id(),worldBounds,voxels,worldEntities,worldSpawns,worldRoutes),input.decay().state());
         return new SupportGraph().validate(result,roots);
     }
 
@@ -223,6 +223,12 @@ final class ComponentAssembly {
             List<SpawnSlot> spawns, List<List<Point3i>> routes) {
         var value = new ComponentVoxels(id,b,v,be,spawns,routes,"0".repeat(64));
         return new ComponentVoxels(id,b,v,be,spawns,routes,DeterministicHash.sha256(CanonicalCodec.component(value)));
+    }
+
+    static ComponentVoxels state(ComponentVoxels c,DecayState state) {
+        var value=new ComponentVoxels(c.id(),c.bounds(),c.voxels(),c.blockEntities(),c.spawnSlots(),c.requiredRoutes(),state,"0".repeat(64));
+        return new ComponentVoxels(value.id(),value.bounds(),value.voxels(),value.blockEntities(),value.spawnSlots(),
+                value.requiredRoutes(),state,DeterministicHash.sha256(CanonicalCodec.component(value)));
     }
 
     static int priority(SiteKind kind) {

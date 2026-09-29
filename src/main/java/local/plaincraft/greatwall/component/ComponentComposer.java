@@ -37,7 +37,7 @@ final class ComponentComposer {
             if(support!=null && v.kind()==IntentKind.SOLID && v.pos().y()<=support.groundTopY()) roots.add(v.pos());
         }
         var sorted=voxels.values().stream().sorted(java.util.Comparator.comparing(VoxelIntent::pos,ComponentAssembly.ORDER)).toList();
-        var result=ComponentAssembly.hashed(input.site().id(),b,sorted,entities,slots,routes);
+        var result=ComponentAssembly.state(ComponentAssembly.hashed(input.site().id(),b,sorted,entities,slots,routes),input.decay().state());
         return new SupportGraph().validate(result,roots);
     }
 

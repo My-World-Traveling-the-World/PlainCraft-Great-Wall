@@ -36,6 +36,7 @@ class TemplateTest {
             assertFalse(c.voxels().isEmpty());
             assertTrue(c.blockEntities().isEmpty()); assertTrue(c.spawnSlots().isEmpty());
             assertTrue(c.voxels().stream().noneMatch(v->v.part()==Part.CAMPFIRE));
+            assertEquals(state,c.realizedState());
         }
     }
     @Test void allHeadingsKeepFourFireIdentitiesAndTowerRoutes() {
