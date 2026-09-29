@@ -20,7 +20,7 @@ public final class WallTypes {
 
     // ── 枚举 ────────────────────────────────────────────────
 
-    public enum SiteKind { ENEMY_TOWER, BEACON, GATE, FORT, WATER_GATE, END_CAP, RAMP }
+    public enum SiteKind { ENEMY_TOWER, BEACON, GATE, FORT, WATER_GATE, END_CAP, RAMP, WALL }
 
     public enum SiteState { PLANNED, ABSORBED, SUPPRESSED, BUILT }
 

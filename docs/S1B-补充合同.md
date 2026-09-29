@@ -8,3 +8,10 @@
 - 变换使用整数/BigInteger 中间积；逆变换只对世界方块中心执行一次 Z 镜像。输出高度只加一次 W。
 - `DecayField` 的格点噪声 domain 固定为 `decay-noise`，ordered fields 为 `(scaleBlocks, knotIndex)`；部分破败垛口/灯的整组 domain 为 `decay-group`，fields 为 `(floorDiv(globalSQ8,1024), componentHash)`。微缺口仍严格使用规格的 `decay-detail`。
 - 维护影响用最近站点距离，输入顺序不影响结果。超出 48 格影响严格为零。所有方法无 Minecraft 依赖，没有全局可变缓存。
+
+## 构件输入闭包
+
+- 公共 `SiteKind` 原来只有七类站点，无法为 `WallSection` 分配无冲突身份。追加 `WALL`，ordinal 是非负 64 格全球弧长 cell 编号；不复用 RAMP 身份。原枚举名称、站点编号及 S1A canonical 编码保持不变。
+- `ComponentInput.supports` 键冻结为 `(世界x, 该列合同W, 世界z)`；不将 groundTopY 放进键，不允许构件从世界补查。构件任一需要的列缺失时返回显式空构件。
+- `ComponentAssembly` 是包内、单次编译独占的缓冲器，集中实现模板共同算法；局部候选经世界列中心逆栅格化，完整支撑判定后再输出不可变数据。其局部 HashMap 不跨线程发布。
+- S1B 的 `SurfaceProbe`、`SupportGraph` 提前到模板前实现，二者只依赖已冻结公共类型，没有倒置依赖。
