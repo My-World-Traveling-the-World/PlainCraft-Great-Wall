@@ -58,3 +58,9 @@
 - Pipeline 的 `Ports` 仅隔离“规划租约 / FEATURES租约 / session有效性 / 失败通道 / 工作executor”，正式构造接既有真实端口；GameTest 用解析合同和原生 ProtoChunk 执行同一生产链路。S1C 才切换实际生命周期和 mod hooks，不冒充已启用真实全世界生成。
 - `BlockCatalog.specification` 必须用原版 `Property.getName(value)` 而非枚举 `toString()`。箱子类型的 Java 枚举字符串与合法方块属性字符串不同，实际写入反例已触发 preflight 拒绝；采用原版序列化后，含箱子的敌楼整件跨 owner 写入通过。S0 `TerrainTile` canonical v1/hash 与 S0 实验 token 不变。
 - GameTest “从磁盘重读T0”比较页 key、palette、完整状态数组和SHA，不比较 Java 对象引用。异步IO测试同时设置墙钟90秒上限，避免测试服务器高速 tick 提前超时；失败产物保留在 continuation 证据目录。
+
+## 默认落地高度的最小修订
+
+- 原冻结默认式 `Ramp.compile → compileBetween(W-20,W)` 在 drop=4/5/12 时把入口架在实际地面上方4/5/12格；填实其下方只能得到高台，不能证明可以从地面进入。保留调用原显式式得到高台的反例测试。
+- 默认 `Ramp.compile` 改读完整底入口足印的已捕获 support，取最大自然 groundTopY，足印高差不得超过1；以该高度接 W。超过 [W-32,W) 或缺支撑整件拒绝。`compileBetween(lower,upper)` 仍接受 H=1..32，供指定高度平台/道路合同使用。
+- 无道路冻结高度的 `Gate.compile` 同样取已证门洞地表高度；已有 `frozenGateY` 的调用仍严格使用 `compileAtGround`，不改协商值。walkY 不改变，T0 探测窗口不扩大，最大基础 drop12 不改变。

@@ -12,7 +12,11 @@ public final class Gate implements ComponentTemplate {
     private final PaletteBinding palette;
     public Gate(DecayField decay,PaletteBinding palette) {this.decay=Objects.requireNonNull(decay);this.palette=Objects.requireNonNull(palette);}
     @Override public Bounds localBounds(ComponentInput input) { Objects.requireNonNull(input);return new Bounds(-30,-33,-15,30,4,15); }
-    @Override public ComponentVoxels compile(ComponentInput input) {return compileAtGround(input,input.site().frame().walkY()-20);}
+    @Override public ComponentVoxels compile(ComponentInput input) {
+        int ground=Ramp.ground(input,-2,-5,2,5);
+        if(ground==Integer.MIN_VALUE)return ComponentAssembly.empty(input.site().id(),input.site().bounds());
+        return compileAtGround(input,ground);
+    }
     public ComponentVoxels compileAtGround(ComponentInput input,int frozenGroundY) {
         int w=input.site().frame().walkY(),ground=frozenGroundY-w;
         if((long)frozenGroundY+7>w-1 || ground< -32) throw new IllegalArgumentException("gate height outside frozen arch envelope");

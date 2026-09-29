@@ -3,6 +3,7 @@ package local.plaincraft.greatwall.component;
 import java.util.Objects;
 import local.plaincraft.greatwall.decay.DecayField;
 import local.plaincraft.greatwall.decay.PaletteBinding;
+import local.plaincraft.greatwall.geometry.Rasterizer;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** Two filled three-wide stair runs, with a separate ground and wall landing. */
@@ -17,7 +18,22 @@ public final class Ramp implements ComponentTemplate {
         Objects.requireNonNull(input); return new Bounds(-30,-33,4,-6,3,15);
     }
     @Override public ComponentVoxels compile(ComponentInput input) {
-        return compileBetween(input,input.site().frame().walkY()-20,input.site().frame().walkY());
+        int lower=ground(input,-29,5,-26,8);
+        if(lower==Integer.MIN_VALUE)return ComponentAssembly.empty(input.site().id(),input.site().bounds());
+        return compileBetween(input,lower,input.site().frame().walkY());
+    }
+    static int ground(ComponentInput input,int x0,int z0,int x1,int z1) {
+        var frame=input.site().frame();
+        var bounds=Rasterizer.worldBounds(frame,new Bounds(x0,-33,z0,x1,3,z1));
+        int min=Integer.MAX_VALUE,max=Integer.MIN_VALUE,count=0;
+        for(int z=bounds.minZ();z<bounds.maxZExclusive();z++)for(int x=bounds.minX();x<bounds.maxXExclusive();x++){
+            var local=Rasterizer.localCell(frame,new Point3i(x,frame.walkY(),z));
+            if(local.x()<x0||local.x()>=x1||local.z()<z0||local.z()>=z1)continue;
+            var support=input.supports().get(new Point3i(x,frame.walkY(),z));
+            if(support==null||support.kind()!=ProbeKind.SUPPORTED)return Integer.MIN_VALUE;
+            min=Math.min(min,support.groundTopY());max=Math.max(max,support.groundTopY());count++;
+        }
+        return count==0||max-min>1||max<frame.walkY()-32||max>=frame.walkY()?Integer.MIN_VALUE:max;
     }
     public ComponentVoxels compileBetween(ComponentInput input, int lowerFeetY, int upperFeetY) {
         int w = input.site().frame().walkY();

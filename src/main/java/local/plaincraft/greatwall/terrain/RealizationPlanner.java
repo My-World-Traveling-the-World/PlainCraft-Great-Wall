@@ -158,8 +158,10 @@ public final class RealizationPlanner {
     private ComponentVoxels compile(SiteKind kind,ComponentInput candidate,Input input) {
         var template=templates.get(kind);if(template==null)throw new IllegalArgumentException("missing template "+kind);
         try{
-            if(template instanceof Gate gate)return gate.compileAtGround(candidate,input.frozenGateY().getOrDefault(
-                    new GateId(candidate.site().id().wallId(),"planned",candidate.site().id().ordinal()),candidate.site().frame().walkY()-20));
+            if(template instanceof Gate gate){
+                Integer ground=input.frozenGateY().get(new GateId(candidate.site().id().wallId(),"planned",candidate.site().id().ordinal()));
+                return ground==null?gate.compile(candidate):gate.compileAtGround(candidate,ground);
+            }
             return template.compile(candidate);
         }catch(WallFailure failure){if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT)throw failure;return null;}
     }

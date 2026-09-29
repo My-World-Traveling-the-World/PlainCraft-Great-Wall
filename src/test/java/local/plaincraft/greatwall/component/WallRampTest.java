@@ -11,6 +11,20 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class WallRampTest {
+    @ParameterizedTest @ValueSource(ints={0,4,5,12})
+    void defaultRampGroundEntranceTracksActualSupportedGround(int drop) {
+        var input=TemplateFixtures.input(SiteKind.RAMP,new Bounds(-30,-33,4,-6,3,15),0,0,0,PaletteFamily.STONE,DecayState.INTACT,drop);
+        var ramp=new Ramp(new DecayField(0),TemplateFixtures.PALETTE);
+        var c=ramp.compile(input);
+        assertFalse(c.voxels().isEmpty());
+        assertEquals(64-drop,c.requiredRoutes().getFirst().getFirst().y());
+        if(drop>0){
+            var nominal=ramp.compileBetween(input,64,84);
+            assertEquals(64,nominal.requiredRoutes().getFirst().getFirst().y());
+            assertTrue(nominal.requiredRoutes().getFirst().getFirst().y()-(64-drop)>1,
+                    "counterexample: old W-20 default creates an unclimbable ground entrance");
+        }
+    }
     private final WallSection wall = new WallSection(new DecayField(0),TemplateFixtures.PALETTE);
     private final Ramp ramp = new Ramp(new DecayField(0),TemplateFixtures.PALETTE);
     private static final Bounds WALL = new Bounds(-32,-32,-5,32,3,5);

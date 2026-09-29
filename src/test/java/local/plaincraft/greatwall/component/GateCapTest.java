@@ -7,6 +7,18 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 import org.junit.jupiter.api.Test;
 
 class GateCapTest {
+    @Test void filledFoundationsDoNotPretendTheirTopIsNaturalGround() {
+        for(int drop:new int[]{4,5,12}){
+            var input=TemplateFixtures.input(SiteKind.GATE,new Bounds(-30,-33,-15,30,4,15),0,0,0,PaletteFamily.STONE,DecayState.INTACT,drop);
+            var c=new Gate(new DecayField(0),TemplateFixtures.PALETTE).compile(input);
+            assertFalse(c.voxels().isEmpty());
+            assertTrue(new SupportGraph().reachable(c,new Point3i(0,64-drop,-5),new Point3i(0,64-drop,4)));
+            var capInput=TemplateFixtures.input(SiteKind.END_CAP,new Bounds(-30,-33,-5,1,3,15),0,0,0,PaletteFamily.STONE,DecayState.INTACT,drop);
+            var cap=new EndCap(new DecayField(0),TemplateFixtures.PALETTE).compile(capInput);
+            assertFalse(cap.voxels().isEmpty());
+            assertTrue(new SupportGraph().reachable(cap,new Point3i(-9,84,0),new Point3i(-28,64-drop,6)));
+        }
+    }
     @Test void capRetreatFollowsBendAndHeightInsteadOfOriginalTangent() {
         var input=TemplateFixtures.input(SiteKind.END_CAP,new Bounds(-30,-33,-5,1,3,15));
         var stations=java.util.List.of(new Station(0,new Point2q(0,0),80,0),
