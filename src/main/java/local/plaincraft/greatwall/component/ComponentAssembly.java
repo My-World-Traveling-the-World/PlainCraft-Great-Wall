@@ -19,6 +19,7 @@ import local.plaincraft.greatwall.geometry.Projection;
 import local.plaincraft.greatwall.geometry.Rasterizer;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
+import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 
 /** Invocation-owned template buffer; inverse rasterizes full components before owner clipping. */
 final class ComponentAssembly {
@@ -38,6 +39,7 @@ final class ComponentAssembly {
     ComponentAssembly(ComponentInput input, Bounds localBounds, DecayField decay, PaletteBinding palette) {
         this.input = Objects.requireNonNull(input); this.localBounds = Objects.requireNonNull(localBounds);
         this.decay = Objects.requireNonNull(decay); this.palette = Objects.requireNonNull(palette);
+        CompiledAllocation.charge(512);
     }
 
     void put(int x, int y, int z, Part part, boolean required, boolean walkable) {
@@ -55,6 +57,7 @@ final class ComponentAssembly {
         }
         if (previous != null && previous.required() && previous.walkable() && part == Part.AIR && required)
             conflictingRequiredFloor = true;
+        if(previous==null)CompiledAllocation.charge(256);
         cells.put(p, new Cell(part, required, walkable, Map.copyOf(properties)));
     }
 
@@ -115,6 +118,11 @@ final class ComponentAssembly {
 
     ComponentVoxels finish(Bounds worldBounds, ColumnMapper mapper, CellRule rule,
             java.util.function.LongFunction<DecaySample> samples) {
+        return finish(worldBounds,mapper,rule,samples,null);
+    }
+
+    ComponentVoxels finish(Bounds worldBounds, ColumnMapper mapper, CellRule rule,
+            java.util.function.LongFunction<DecaySample> samples,java.util.function.Function<Point3i,RouteAnchor> anchors) {
         if (input.site().state() == SiteState.SUPPRESSED || conflictingRequiredFloor) return empty(input.site().id(), worldBounds);
         var voxels = new ArrayList<VoxelIntent>(); var roots = new HashSet<Point3i>();
         var loads=new ArrayList<Set<Point3i>>();var lefts=new ArrayList<Set<Point3i>>();var rights=new ArrayList<Set<Point3i>>();
@@ -155,6 +163,7 @@ final class ComponentAssembly {
                 boolean required = cell.required() && (columnFunctional || local.y() < -20 + sample.keepHeight());
                 if (!decay.keep(sample, cell.part(), local, column.globalS(), componentHash, required)) continue;
                 Point3i world = new Point3i(x,y,z);
+                CompiledAllocation.charge(256);
                 long hash = DeterministicHash.fields(componentHash,"voxel",x,y,z);
                 BlockSpec block = cell.part() == Part.AIR ? new BlockSpec("minecraft:air",Map.of())
                         : palette.resolve(input,cell.part(),local,world,column.globalS(),hash);
@@ -185,7 +194,7 @@ final class ComponentAssembly {
             var converted = new ArrayList<Point3i>();
             for (Point3i p : route) {
                 Point3i world = representative(p,localToWorld);
-                if (world == null) world = nearbyFeet(p,voxels,occupied);
+                if (world == null) world = anchors==null?nearbyFeet(p,voxels,occupied):nearbyFeet(anchors.apply(p),voxels,occupied);
                 if (world == null) return empty(input.site().id(),worldBounds);
                 converted.add(world);
             }
@@ -224,6 +233,7 @@ final class ComponentAssembly {
                             input.site().id(),priority(input.site().id().kind()),true,false);
                     voxels.removeIf(v->v.pos().equals(below)); voxels.add(hay); occupied.put(below,hay);
                 }
+                CompiledAllocation.charge(256);
                 worldEntities.add(new BlockEntityIntent(world,entity.type(),entity.site(),entity.localId(),entity.fields()));
             }
             Set<String> types=entities.values().stream().map(BlockEntityIntent::type).collect(java.util.stream.Collectors.toSet());
@@ -299,6 +309,10 @@ final class ComponentAssembly {
         if(input.site().frame().mirror()) normal=-normal;
         Point2q center=Projection.local(input.site().frame(),(long)local.x()*256+128,normal);
         int y=input.site().frame().walkY()+local.y();
+        return nearbyFeet(new RouteAnchor(center,y),voxels,occupied);
+    }
+    private Point3i nearbyFeet(RouteAnchor anchor,List<VoxelIntent> voxels,Map<Point3i,VoxelIntent> occupied) {
+        Point2q center=anchor.center();int y=anchor.feetY();
         return voxels.stream().filter(v->v.walkable() && v.pos().y()==y-1)
                 .map(v->new Point3i(v.pos().x(),y,v.pos().z()))
                 .filter(p->!occupied.containsKey(p) && !occupied.containsKey(new Point3i(p.x(),y+1,p.z())))
@@ -317,6 +331,7 @@ final class ComponentAssembly {
     }
 
     record Cell(Part part, boolean required, boolean walkable, Map<String,String> properties) {}
+    record RouteAnchor(Point2q center,int feetY) {}
     record Column(int x, int z, int walkY, long globalS) {}
     @FunctionalInterface interface ColumnMapper { Column map(int worldX, int worldZ); }
     @FunctionalInterface interface CellRule { Cell cell(Point3i local); }
