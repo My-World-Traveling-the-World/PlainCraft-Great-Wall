@@ -261,6 +261,8 @@ public final class WallTypes {
             int degradation, String hash) {
         public RouteShape {
             Objects.requireNonNull(key, "key");
+            Objects.requireNonNull(start, "start");
+            Objects.requireNonNull(end, "end");
             points = List.copyOf(points);
             localSQ8 = List.copyOf(localSQ8);
             if (points.size() < 2) throw new IllegalArgumentException("points>=2 required");
@@ -284,6 +286,20 @@ public final class WallTypes {
             Objects.requireNonNull(center, "center");
             Objects.requireNonNull(previous, "previous");
             Objects.requireNonNull(next, "next");
+            previous.ifPresent(value -> {
+                if (center.key().index() == 0 || value.key().index() != center.key().index() - 1
+                        || !value.key().recipeHash().equals(center.key().recipeHash())
+                        || !value.key().dimension().equals(center.key().dimension())) {
+                    throw new IllegalArgumentException("previous must be the adjacent segment of the same recipe");
+                }
+            });
+            next.ifPresent(value -> {
+                if (center.key().index() == Long.MAX_VALUE || value.key().index() != center.key().index() + 1
+                        || !value.key().recipeHash().equals(center.key().recipeHash())
+                        || !value.key().dimension().equals(center.key().dimension())) {
+                    throw new IllegalArgumentException("next must be the adjacent segment of the same recipe");
+                }
+            });
         }
     }
 
@@ -476,7 +492,7 @@ public final class WallTypes {
             voxels = List.copyOf(voxels);
             blockEntities = List.copyOf(blockEntities);
             spawnSlots = List.copyOf(spawnSlots);
-            requiredRoutes = List.copyOf(requiredRoutes);
+            requiredRoutes = requiredRoutes.stream().map(List::copyOf).toList();
             requireHash(hash);
         }
     }
@@ -591,15 +607,13 @@ public final class WallTypes {
     }
 
     static void requireDirection(int x, int z) {
-        long sq = (long) x * x + (long) z * z;
-        if (sq == 0) throw new IllegalArgumentException("zero direction rejected");
-        // 方向向量平方与 2^60 的相对误差 ≤ 2^-27（即向量模长必须约等于 2^30）
-        long mag = (long) Math.sqrt((double) sq);
-        long ref = 1L << 30;
-        long diff = Math.abs(mag * mag - sq);
-        // 校验：sq 与 (1<<30)^2 = 2^60 的相对误差
-        double rel = Math.abs((double) sq - 0x4000000000000000L) / 0x4000000000000000L;
-        if (rel > (1.0 / (1L << 27))) {
+        final long squared;
+        try {
+            squared = Math.addExact((long) x * x, (long) z * z);
+        } catch (ArithmeticException overflow) {
+            throw new IllegalArgumentException("direction magnitude overflow", overflow);
+        }
+        if (Math.abs(squared - (1L << 60)) > (1L << 33)) {
             throw new IllegalArgumentException("direction magnitude must be ~2^30");
         }
     }

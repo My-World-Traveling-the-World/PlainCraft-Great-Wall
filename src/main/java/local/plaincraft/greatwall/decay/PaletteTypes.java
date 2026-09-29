@@ -39,7 +39,7 @@ public final class PaletteTypes {
             weights = List.copyOf(weights);
             WallTypes.requireHash(hash);
             // 仅非零项且 sum==65536
-            int sum = 0;
+            long sum = 0;
             for (Weight w : weights) {
                 if (w.weightQ16() == 0) throw new IllegalArgumentException("zero weight not allowed in Mix");
                 sum += w.weightQ16();
@@ -60,7 +60,7 @@ public final class PaletteTypes {
         public Table {
             if (variant == null || decay == null || part == null) throw new IllegalArgumentException("null key required");
             entries = List.copyOf(entries);
-            int sum = 0;
+            long sum = 0;
             for (WeightedState e : entries) {
                 sum += e.weight();
             }
