@@ -1,0 +1,172 @@
+package local.plaincraft.greatwall.planning;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import local.plaincraft.greatwall.geometry.CanonicalCodec;
+import local.plaincraft.greatwall.model.PlanLease;
+import local.plaincraft.greatwall.model.WallFailure;
+import local.plaincraft.greatwall.model.WallTypes.*;
+import local.plaincraft.greatwall.persistence.SegmentCacheStore;
+import local.plaincraft.greatwall.terrain.AnalyticTerrainOracle;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class PlannerSchedulerTest {
+    @TempDir Path directory;
+
+    private static ScheduledExecutorService ticks(PlannerScheduler scheduler) {
+        var timer = Executors.newSingleThreadScheduledExecutor();
+        timer.scheduleAtFixedRate(() -> scheduler.tick(new SliceBudget(65536, System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(100))), 0, 5, TimeUnit.MILLISECONDS);
+        return timer;
+    }
+
+    @Test void hundredCallersShareOneCompute() throws Exception {
+        var recipe = PlanningFixtures.recipe(0); var created = new AtomicInteger();
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> {
+                 created.incrementAndGet(); return new AnalyticTerrainOracle((x, z) -> AnalyticTerrainOracle.dry(64), false);
+             }, new SegmentCacheStore(directory.resolve("cache"), recipe), io);
+             var timer = ticks(scheduler)) {
+            var leases = new ArrayList<PlanLease<SegmentGeometry>>();
+            for (int i = 0; i < 100; i++) leases.add(scheduler.requireGeometry(0, Priority.PLAYER));
+            var expected = leases.getFirst().future().get(30, TimeUnit.SECONDS);
+            for (var lease : leases) { assertSame(expected, lease.future().get(5, TimeUnit.SECONDS)); lease.close(); }
+            assertEquals(3, created.get(), "two routes and one hydrology cursor");
+        }
+    }
+
+    @Test void cancelOneLeaseKeepsOthers() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(true), new SegmentCacheStore(directory.resolve("cache"), recipe), io);
+             var timer = ticks(scheduler)) {
+            var cancelled = scheduler.requireGeometry(0, Priority.PLAYER);
+            var retained = scheduler.requireGeometry(0, Priority.PLAYER);
+            cancelled.close();
+            assertEquals(0, retained.future().get(30, TimeUnit.SECONDS).key().index());
+            assertTrue(cancelled.future().isCancelled()); retained.close();
+        }
+    }
+
+    @Test void closeTerminatesAllFutures() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        try (var io = Executors.newSingleThreadExecutor()) {
+            var scheduler = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(false), new SegmentCacheStore(directory.resolve("cache"), recipe), io);
+            var leases = List.of(scheduler.requireRoute(0, Priority.PLAYER), scheduler.requireGeometry(0, Priority.PLAYER),
+                    scheduler.requirePlan(1, Priority.PLAYER));
+            scheduler.close();
+            for (var lease : leases) {
+                assertThrows(Exception.class, () -> lease.future().get(5, TimeUnit.SECONDS));
+                lease.close();
+            }
+            assertThrows(WallFailure.class, () -> scheduler.requireRoute(0, Priority.PLAYER));
+        }
+    }
+
+    @Test void lateWorldACallbackCannotPublishWorldB() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        var delayedIo = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();
+        var a = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(false), new SegmentCacheStore(directory.resolve("a/cache"), recipe), delayedIo::add);
+        var old = a.requireGeometry(0, Priority.PLAYER);
+        long timeout = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (delayedIo.isEmpty() && System.nanoTime() < timeout) Thread.sleep(5);
+        assertFalse(delayedIo.isEmpty());
+        a.close();
+        try (var io = Executors.newSingleThreadExecutor();
+             var b = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(false), new SegmentCacheStore(directory.resolve("b/cache"), recipe), io);
+             var timer = ticks(b)) {
+            for (var task : delayedIo) task.run();
+            assertTrue(old.future().isCompletedExceptionally());
+            try (var fresh = b.requireGeometry(0, Priority.PLAYER)) {
+                assertEquals(0, fresh.future().get(30, TimeUnit.SECONDS).key().index());
+            }
+        }
+    }
+
+    @Test void neighborHydrologyNeverWaitsOnNeighborGeometry() throws Exception {
+        var recipe = PlanningFixtures.recipe(1);
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(true), new SegmentCacheStore(directory.resolve("cache"), recipe), io);
+             var timer = ticks(scheduler)) {
+            var leases = new ArrayList<PlanLease<SegmentGeometry>>();
+            for (long i : new long[] {3, 1, 2, 0}) leases.add(scheduler.requireGeometry(i, Priority.PLAYER));
+            for (var lease : leases) {
+                var actual = lease.future().get(30, TimeUnit.SECONDS);
+                var expected = scheduler.computeGeometryNow(actual.key().index());
+                assertArrayEquals(CanonicalCodec.geometry(expected), CanonicalCodec.geometry(actual));
+                lease.close();
+            }
+        }
+    }
+
+    @Test void lastSafeSegmentEndsBeforeWorldLimit() throws Exception {
+        var recipe = PlanningFixtures.recipe(0, 1 << 30, 0, 6000);
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(true), new SegmentCacheStore(directory.resolve("cache"), recipe), io);
+             var timer = ticks(scheduler)) {
+            try (var first = scheduler.requireGeometry(0, Priority.PLAYER); var last = scheduler.requireGeometry(1, Priority.PLAYER)) {
+                assertTrue(first.future().get(30, TimeUnit.SECONDS).terminal().isEmpty());
+                var value = last.future().get(30, TimeUnit.SECONDS);
+                assertEquals(TerminalKind.WORLD_LIMIT, value.terminal().orElseThrow().kind());
+                assertEquals(value.localSQ8().getLast(), value.terminal().get().localSQ8());
+            }
+            assertThrows(WallFailure.class, () -> scheduler.requireGeometry(2, Priority.PLAYER));
+        }
+    }
+
+    @Test void startupPumpProgressesWithoutNormalTicks() throws Exception {
+        var recipe = PlanningFixtures.recipe(0, 1 << 30, 0, 6000);
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(true), new SegmentCacheStore(directory.resolve("cache"), recipe), io)) {
+            var lease = scheduler.requirePlan(1, Priority.PLAYER);
+            scheduler.startupPump();
+            var plan = lease.future().get(30, TimeUnit.SECONDS);
+            assertFalse(plan.stations().stations().isEmpty());
+            assertEquals(1, plan.geometry().key().index());
+            assertFalse(plan.sites().isEmpty());
+            lease.close();
+        }
+    }
+
+    @Test void otherDimensionAndDistantLateralChunksReturnExplicitEmptyWindows() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(true), new SegmentCacheStore(directory.resolve("cache"), recipe), io)) {
+            try (var nether = scheduler.requireWindow(new ChunkKey("minecraft:the_nether", 0, 0), 32, Priority.PLAYER);
+                 var distant = scheduler.requireWindow(new ChunkKey(recipe.dimension(), 0, 10000), 32, Priority.PLAYER)) {
+                assertTrue(nether.future().get(1, TimeUnit.SECONDS).plans().isEmpty());
+                assertTrue(distant.future().get(1, TimeUnit.SECONDS).plans().isEmpty());
+            }
+        }
+    }
+
+    @Test void rejectedIoExecutorCannotLeaveAnUnfinishedFuture() {
+        var recipe = PlanningFixtures.recipe(0);
+        try (var scheduler = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(false),
+                new SegmentCacheStore(directory.resolve("cache"), recipe), task -> { throw new RejectedExecutionException("fixture"); })) {
+            var lease = scheduler.requireGeometry(0, Priority.PLAYER);
+            assertThrows(Exception.class, () -> lease.future().get(5, TimeUnit.SECONDS));
+            assertTrue(lease.future().isCompletedExceptionally());
+            lease.close();
+        }
+    }
+
+    @Test void nonOverworldAndTamperedRecipeCannotCreateSecondPlanner() {
+        var valid = PlanningFixtures.recipe(0);
+        var otherDimension = new WorldRecipe(valid.instance(), valid.wallId(), valid.seed(), "minecraft:the_nether",
+                valid.frozenSpawn(), valid.axis(), valid.bounds(), valid.config(), valid.terrainHash(), valid.paletteHash(),
+                valid.templatesHash(), valid.recipeHash());
+        assertThrows(WallFailure.class, () -> new PlannerScheduler(otherDimension, () -> AnalyticTerrainOracle.ridge(true),
+                new SegmentCacheStore(directory.resolve("nether/cache"), otherDimension), Runnable::run));
+        var tampered = new WorldRecipe(valid.instance(), valid.wallId(), 99, valid.dimension(),
+                valid.frozenSpawn(), valid.axis(), valid.bounds(), valid.config(), valid.terrainHash(), valid.paletteHash(),
+                valid.templatesHash(), valid.recipeHash());
+        assertThrows(WallFailure.class, () -> new PlannerScheduler(tampered, () -> AnalyticTerrainOracle.ridge(true),
+                new SegmentCacheStore(directory.resolve("tampered/cache"), tampered), Runnable::run));
+    }
+}

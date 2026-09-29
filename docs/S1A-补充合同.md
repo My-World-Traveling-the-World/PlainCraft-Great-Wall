@@ -10,5 +10,8 @@
 6. PrefixSummaryIndex新增静态纯函数`reduce(PrefixSummary,SegmentGeometry)`，原`combine`委托它；缓存验证用同一归约公式，不复制另一套链哈希算法。
 7. PrefixSummaryIndex增加四参构造（最后参数`Executor io`），三参构造保留给独立IO owner测试。生产必须传独立IO executor。SegmentCacheStore增加`recipeHash()`不可变访问器、`corruptCount()`诊断访问器；前缀读取用冻结recipe且在IO执行，不在pump同步读盘。缓存CRC32C覆盖压缩字节，SHA-256覆盖原始canonical字节。前缀链固定为`SHA256(CanonicalCodec.prefix(新的边界/累计长/terminal/旧proof) || nextGeometryHash的32字节)`。
 8. HeightContractPlanner增加纯函数`samplePoints(SegmentGeometry,PrefixSummary,List<SiteRecord>)`，返回稳定去重的合同列请求；不含已在RouteShape采过的两端点，最多5998。平台九点沿模板X/Z各取min+0.5、0、max-0.5，平台Y取脚面中位数+20。原规格未定义Gate侧翼socket，S1A不臆造：Gate可吸收的socket数=0，冲突塔保留ID并SUPPRESSED(CONFLICT)。Fort按S3已有两侧翼定义，一类最多一个，最多两个；原日程S不改变。公共纯函数`PrefixSummaryIndex.origin()`统一零前缀，不各类复制seed proof常量。
+9. PlannerScheduler增加只读`diagnostics()`（`Map<String,Long>`不可变快照），记录启动结果、缓存禁写、同步诊断次数/最大耗时、64原语批次最大耗时与超过40ms次数；时间不进入hash。水平安全包络保守取512+192+96+48=848格（载波、残差、构件与参考侧采样），以完整段而非单锚点判定WORLD_LIMIT。
+10. 确定性哈希的长度混合固定为：`h=mix64(mix64(seed)^mix64(domainUtf8.length))`；逐字节后`h=mix64(h^mix64(values.length))`，再依序混值。原文“先混长度”在此展开为唯一编码。水文九点/扇形评分的侧点按投影轴坐标系旋转；前瞻点使用固定COARSE请求，边界/水文/高度使用REFERENCE。地下有顶盖水体必须由oracle输出干燥的顶盖脚面，参考列截断或有水无河床不能认证为干地。
+11. BudgetCache先预留`4096*waiterLimit+256*entryLimit`字节请求/索引元数据，再从同一个byteLimit内分配值与进行中reservation；默认段缓存64MiB不变、4096调用者/256完成项不变。route/geometry/plan的上界分别1/2/4MiB。值的retained公式见PlannerScheduler，不以canonical字节数充当堆占用。该公式的堆/JFR实测仍属S5，不能写成已测得精确堆大小。
 
 本文件不宣称以上实现/测试已经完成；实际状态只记在`docs/S1A.md`。

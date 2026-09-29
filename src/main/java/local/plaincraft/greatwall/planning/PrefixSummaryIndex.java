@@ -59,13 +59,16 @@ public final class PrefixSummaryIndex implements AutoCloseable {
                             .max(java.util.Comparator.comparingLong(PrefixSummary::beforeSegment)).orElseThrow();
                     long diskIndex = segment / 256 * 256;
                     if (diskIndex > before.beforeSegment() && !state.containsKey("cache-read-disabled")) {
-                        CompletableFuture.supplyAsync(() -> {
+                        try { CompletableFuture.supplyAsync(() -> {
                             try { return cache.readPrefix(diskIndex, cache.recipeHash()); }
                             catch (java.io.IOException failure) { state.put("cache-read-disabled", true); return Optional.<PrefixSummary>empty(); }
                         }, io).whenCompleteAsync((cached, failure) -> {
                             if (failure != null) identity.completeExceptionally(failure);
                             else advance(new Reduction(segment, cached.orElse(before), identity));
-                        }, owner);
+                        }, owner); }
+                        catch (java.util.concurrent.RejectedExecutionException full) {
+                            state.put("cache-read-disabled", true); advance(new Reduction(segment, before, identity));
+                        }
                     } else advance(new Reduction(segment, before, identity));
                 });
             }
@@ -112,10 +115,11 @@ public final class PrefixSummaryIndex implements AutoCloseable {
                         checkpoints.putIfAbsent(r.before.beforeSegment(), r.before);
                         var checkpoint = r.before;
                         if (!state.containsKey("cache-write-disabled")) {
-                            CompletableFuture.runAsync(() -> {
+                            try { CompletableFuture.runAsync(() -> {
                                 try { cache.writePrefix(checkpoint, geometry.key().recipeHash()); }
                                 catch (java.io.IOException ignored) { state.put("cache-write-disabled", true); }
-                            }, io);
+                            }, io); }
+                            catch (java.util.concurrent.RejectedExecutionException full) { state.put("cache-write-disabled", true); }
                         }
                     }
                     advance(r);
