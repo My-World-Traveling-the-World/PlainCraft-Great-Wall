@@ -1,59 +1,91 @@
 package local.plaincraft.greatwall.persistence;
 
-import java.io.*;
-import java.util.*;
-import local.plaincraft.greatwall.geometry.DeterministicHash;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Optional;
+import local.plaincraft.greatwall.diagnostics.CodecIO;
+import local.plaincraft.greatwall.diagnostics.CodecMemory;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.GroundExitDecision;
 import local.plaincraft.greatwall.terrain.GroundExitDecision.*;
 
-/** Versioned, bounded binary evidence; never Java serialization or locale-dependent text. */
+/** Unchanged schema-2 certificate bytes, with exact buffers and allocation-free payload hashing. */
 public final class GroundExitCodec {
     public static final int LIMIT = 8 * 1024 * 1024;
     private GroundExitCodec() {}
-    public static byte[] encode(GroundExitDecision d) {
-        try (var bytes = new ByteArrayOutputStream(); var out = new DataOutputStream(bytes)) {
-            out.writeInt(0x50474531); out.writeInt(2);
-            out.writeUTF(d.key().recipeHash()); out.writeUTF(d.key().dimension()); range(out,d.key().range());
-            exit(out,d.left()); out.writeBoolean(d.right().isPresent());
-            if(d.right().isPresent()) exit(out,d.right().get());
-            out.writeLong(d.terminalSQ8()); out.writeUTF(d.t0Hash());
-            out.writeInt(d.breaks().size());
-            for(var b:d.breaks()) { range(out,b.range());out.writeUTF(b.reason().name());out.writeUTF(b.scope().name()); }
-            out.writeInt(d.exclusions().size());for(var r:d.exclusions())range(out,r);
-            out.writeInt(d.caps().size());for(var c:d.caps()) {
-                site(out,c.site());out.writeLong(c.edge().sQ8());out.writeBoolean(c.edge().reverse());range(out,c.edge().allowed());
-                out.writeLong(c.actualSQ8());out.writeUTF(c.componentHash());range(out,c.footprint());
-            }
-            out.flush(); if(bytes.size()>LIMIT)throw new IllegalArgumentException("exit certificate exceeds 8MiB");
-            return bytes.toByteArray();
-        } catch(IOException e) { throw new UncheckedIOException(e); }
+    public static byte[] encode(GroundExitDecision value) { return CodecIO.encode(LIMIT, out -> body(out, value)); }
+    public static String hash(GroundExitDecision value) { return CodecIO.hash(LIMIT, out -> body(out, value)); }
+    public static void writeTo(OutputStream target, GroundExitDecision value) throws IOException { CodecIO.write(target, LIMIT, out -> body(out, value)); }
+
+    private static void body(DataOutputStream out, GroundExitDecision value) throws IOException {
+        out.writeInt(0x50474531); out.writeInt(2);
+        utf(out, value.key().recipeHash()); utf(out, value.key().dimension()); range(out, value.key().range());
+        exit(out, value.left()); out.writeBoolean(value.right().isPresent());
+        if (value.right().isPresent()) exit(out, value.right().get());
+        out.writeLong(value.terminalSQ8()); utf(out, value.t0Hash());
+        out.writeInt(value.breaks().size());
+        for (var gap : value.breaks()) { range(out, gap.range()); utf(out, gap.reason().name()); utf(out, gap.scope().name()); }
+        out.writeInt(value.exclusions().size()); for (var r : value.exclusions()) range(out, r);
+        out.writeInt(value.caps().size());
+        for (var cap : value.caps()) {
+            site(out, cap.site()); out.writeLong(cap.edge().sQ8()); out.writeBoolean(cap.edge().reverse()); range(out, cap.edge().allowed());
+            out.writeLong(cap.actualSQ8()); utf(out, cap.componentHash()); range(out, cap.footprint());
+        }
     }
-    public static GroundExitDecision hashed(GroundExitDecision d) {
-        return new GroundExitDecision(d.key(),d.left(),d.right(),d.terminalSQ8(),d.breaks(),d.exclusions(),d.caps(),d.t0Hash(),
-                DeterministicHash.sha256(encode(d)));
+
+    public static GroundExitDecision hashed(GroundExitDecision value) {
+        try (var memory = CodecMemory.open()) {
+            CodecMemory.charge(128);
+            var hash = hash(value);
+            var result = new GroundExitDecision(value.key(), value.left(), value.right(), value.terminalSQ8(),
+                    value.breaks(), value.exclusions(), value.caps(), value.t0Hash(), hash);
+            return memory.keep(result, 128 + CodecMemory.stringBytes(64));
+        }
     }
+
     public static GroundExitDecision decode(byte[] bytes) throws IOException {
-        if(bytes.length>LIMIT)throw new IOException("exit certificate exceeds 8MiB");
-        try(var in=new DataInputStream(new ByteArrayInputStream(bytes))) {
-            if(in.readInt()!=0x50474531||in.readInt()!=2)throw new IOException("exit certificate header");
-            var key=new Key(in.readUTF(),in.readUTF(),range(in));var left=exit(in);
-            Optional<Exit> right=bool(in)?Optional.of(exit(in)):Optional.empty();long terminal=in.readLong();String t0=in.readUTF();
-            var breaks=new ArrayList<BreakInterval>();int n=count(in);
-            for(int i=0;i<n;i++)breaks.add(new BreakInterval(range(in),BreakReason.valueOf(in.readUTF()),BreakScope.valueOf(in.readUTF())));
-            var exclusions=new ArrayList<ArcInterval>();n=count(in);for(int i=0;i<n;i++)exclusions.add(range(in));
-            var caps=new ArrayList<Cap>();n=count(in);for(int i=0;i<n;i++)caps.add(new Cap(site(in),
-                    new Edge(in.readLong(),bool(in),range(in)),in.readLong(),in.readUTF(),range(in)));
-            if(in.read()!=-1)throw new IOException("exit certificate trailing bytes");
-            return new GroundExitDecision(key,left,right,terminal,breaks,exclusions,caps,t0,DeterministicHash.sha256(bytes));
-        } catch(IllegalArgumentException e) { throw new IOException("invalid exit certificate",e); }
+        try (var memory = CodecMemory.open()) {
+            var value = CodecIO.decode(bytes, LIMIT, in -> {
+                if (in.readInt() != 0x50474531 || in.readInt() != 2) throw new IOException("exit certificate header");
+                CodecMemory.charge(192);
+                var key = new Key(utf(in), utf(in), range(in));
+                var left = exit(in);
+                Optional<Exit> right = Optional.empty();
+                if (bool(in)) { CodecMemory.charge(64); right = Optional.of(exit(in)); }
+                long terminal = in.readLong(); String t0 = utf(in);
+                var breaks = CodecIO.list(in, 16384, i -> {
+                    CodecMemory.charge(64);
+                    return new BreakInterval(range(i), enumeration(i, BreakReason.class), enumeration(i, BreakScope.class));
+                });
+                var exclusions = CodecIO.list(in, 16384, GroundExitCodec::range);
+                var caps = CodecIO.list(in, 16384, i -> {
+                    CodecMemory.charge(128);
+                    return new Cap(site(i), new Edge(i.readLong(), bool(i), range(i)), i.readLong(), utf(i), range(i));
+                });
+                return new GroundExitDecision(key, left, right, terminal, breaks, exclusions, caps, t0, CodecIO.sha256(bytes));
+            });
+            return memory.keep(value, CodecMemory.retainedBytes(value));
+        }
     }
-    private static boolean bool(DataInputStream in)throws IOException {int b=in.readUnsignedByte();if(b>1)throw new IOException("boolean");return b==1;}
-    private static int count(DataInputStream in)throws IOException {int n=in.readInt();if(n<0||n>16384)throw new IOException("exit list bound");return n;}
-    private static void range(DataOutputStream o,ArcInterval r)throws IOException{o.writeLong(r.fromQ8());o.writeLong(r.toQ8());}
-    private static ArcInterval range(DataInputStream i)throws IOException{return new ArcInterval(i.readLong(),i.readLong());}
-    private static void site(DataOutputStream o,SiteId s)throws IOException{o.writeUTF(s.wallId());o.writeUTF(s.kind().name());o.writeLong(s.ordinal());}
-    private static SiteId site(DataInputStream i)throws IOException{return new SiteId(i.readUTF(),SiteKind.valueOf(i.readUTF()),i.readLong());}
-    private static void exit(DataOutputStream o,Exit e)throws IOException{site(o,e.site());o.writeLong(e.sQ8());range(o,e.footprint());o.writeUTF(e.componentHash());o.writeUTF(e.t0Hash());}
-    private static Exit exit(DataInputStream i)throws IOException{return new Exit(site(i),i.readLong(),range(i),i.readUTF(),i.readUTF());}
+    public static void validate(GroundExitDecision value) throws IOException {
+        if (value.breaks().size() > 16384 || value.exclusions().size() > 16384 || value.caps().size() > 16384)
+            throw new IOException("exit list bound");
+    }
+    private static boolean bool(DataInputStream in) throws IOException { int value = in.readUnsignedByte(); if (value > 1) throw new IOException("boolean"); return value == 1; }
+    private static void range(DataOutputStream out, ArcInterval value) throws IOException { out.writeLong(value.fromQ8()); out.writeLong(value.toQ8()); }
+    private static ArcInterval range(DataInputStream in) throws IOException { CodecMemory.charge(64); return new ArcInterval(in.readLong(), in.readLong()); }
+    private static void site(DataOutputStream out, SiteId value) throws IOException { utf(out, value.wallId()); utf(out, value.kind().name()); out.writeLong(value.ordinal()); }
+    private static SiteId site(DataInputStream in) throws IOException { CodecMemory.charge(64); return new SiteId(utf(in), enumeration(in, SiteKind.class), in.readLong()); }
+    private static void exit(DataOutputStream out, Exit value) throws IOException { site(out, value.site()); out.writeLong(value.sQ8()); range(out, value.footprint()); utf(out, value.componentHash()); utf(out, value.t0Hash()); }
+    private static Exit exit(DataInputStream in) throws IOException { CodecMemory.charge(64); return new Exit(site(in), in.readLong(), range(in), utf(in), utf(in)); }
+    private static void utf(DataOutputStream out, String value) throws IOException { CodecMemory.writeModifiedUtf(out, value); }
+    private static String utf(DataInputStream in) throws IOException { return CodecMemory.readModifiedUtf(in); }
+    private static <E extends Enum<E>> E enumeration(DataInputStream in, Class<E> type) throws IOException {
+        String name = utf(in);
+        try { return Enum.valueOf(type, name); }
+        catch (IllegalArgumentException invalid) { throw new IOException("invalid exit enum", invalid); }
+        finally { CodecMemory.discard(CodecMemory.stringBytes(name.length())); }
+    }
 }

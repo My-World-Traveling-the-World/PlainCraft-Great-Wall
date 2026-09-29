@@ -1,29 +1,23 @@
 package local.plaincraft.greatwall.geometry;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import local.plaincraft.greatwall.diagnostics.BoundedByteArrayOutputStream;
+import local.plaincraft.greatwall.diagnostics.CodecIO;
+import local.plaincraft.greatwall.diagnostics.CodecMemory;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** Version-one semantic bytes. Only the root object's self hash is omitted. */
 public final class CanonicalCodec {
     private static final int MIB = 1024 * 1024;
     private static final String ZERO = "0".repeat(64);
-    private static final Comparator<String> UTF8 = (a, b) -> Arrays.compareUnsigned(
-            a.getBytes(StandardCharsets.UTF_8), b.getBytes(StandardCharsets.UTF_8));
+    private static final Comparator<String> UTF8 = CanonicalCodec::compareUtf8;
 
     private CanonicalCodec() {}
 
@@ -43,7 +37,7 @@ public final class CanonicalCodec {
     }
 
     public static SegmentGeometry readGeometry(byte[] payload) throws IOException {
-        return decode(payload, 2 * MIB, in -> withHash(geometryBody(in), DeterministicHash.sha256(payload)));
+        return decode(payload, 2 * MIB, in -> withHash(geometryBody(in), CodecIO.sha256(payload)));
     }
 
     public static byte[] plan(SegmentPlan value) {
@@ -59,15 +53,16 @@ public final class CanonicalCodec {
         return decode(payload, 4 * MIB, in -> {
             var geometry = geometryBody(in);
             String geometryHash = string(in);
-            requireHash(geometryHash, DeterministicHash.sha256(geometry(geometry)));
+            try (var scratch = CodecMemory.open()) { requireHash(geometryHash, hashGeometry(geometry)); }
             geometry = withHash(geometry, geometryHash);
             var prefix = prefixBody(in);
             var stations = stationsBody(in);
             String stationHash = string(in);
-            requireHash(stationHash, DeterministicHash.sha256(stations(stations)));
+            try (var scratch = CodecMemory.open()) { requireHash(stationHash, hashStations(stations)); }
+            CodecMemory.charge(128);
             stations = new StationTable(stations.stations(), stations.breaks(), stationHash);
             return new SegmentPlan(geometry, prefix, stations, list(in, 64, CanonicalCodec::site),
-                    DeterministicHash.sha256(payload));
+                    CodecIO.sha256(payload));
         });
     }
 
@@ -99,7 +94,10 @@ public final class CanonicalCodec {
     }
 
     public static byte[] component(ComponentVoxels value) {
-        return encode(8 * MIB, out -> {
+        return encode(8 * MIB, out -> componentBody(out, value));
+    }
+
+    private static void componentBody(DataOutputStream out, ComponentVoxels value) throws IOException {
             siteId(out, value.id()); bounds(out, value.bounds()); list(out, value.voxels(), CanonicalCodec::voxel);
             list(out, value.blockEntities(), CanonicalCodec::blockEntity);
             list(out, value.spawnSlots(), (o, s) -> {
@@ -107,11 +105,37 @@ public final class CanonicalCodec {
             });
             list(out, value.requiredRoutes(), (o, points) -> list(o, points, CanonicalCodec::point3));
             enumeration(out,value.realizedState());
-        });
+    }
+
+    public static String hashComponent(ComponentVoxels value) {
+        return CodecIO.hash(8 * MIB, out -> { out.writeInt(1); componentBody(out, value); });
+    }
+    public static String componentHash(ComponentVoxels value) { return hashComponent(value); }
+
+    public static String hashGeometry(SegmentGeometry value) {
+        return CodecIO.hash(2 * MIB, out -> { out.writeInt(1); geometryBody(out, value); });
+    }
+
+    public static String hashStations(StationTable value) {
+        return CodecIO.hash(2 * MIB, out -> { out.writeInt(1); stationsBody(out, value); });
     }
 
     public static byte[] writePlan(ChunkWritePlan value) {
-        return encode(8 * MIB, out -> {
+        return encode(8 * MIB, out -> writePlanBody(out, value));
+    }
+
+    public static void writePlanTo(java.io.OutputStream target, ChunkWritePlan value) throws IOException {
+        CodecIO.write(target, 8 * MIB, out -> { out.writeInt(1); writePlanBody(out, value); });
+    }
+
+    public static String hashWritePlan(ChunkWritePlan value) {
+        return CodecIO.hash(8 * MIB, out -> { out.writeInt(1); writePlanBody(out, value); });
+    }
+    public static String writePlanHash(ChunkWritePlan value) { return hashWritePlan(value); }
+
+    public static long retainedBytes(ChunkWritePlan value) { return CodecMemory.retainedBytes(value); }
+
+    private static void writePlanBody(DataOutputStream out, ChunkWritePlan value) throws IOException {
             chunk(out, value.owner()); string(out, value.recipeHash()); string(out, value.inputHash());
             list(out, value.voxels(), CanonicalCodec::voxel); list(out, value.proofs(), CanonicalCodec::proof);
             list(out, value.blockEntities(), CanonicalCodec::blockEntity);
@@ -123,16 +147,38 @@ public final class CanonicalCodec {
                 list(out,value.metadata().spawnSlots(),(o,s)->{
                     siteId(o,s.site());o.writeInt(s.slot());point3(o,s.feet());string(o,s.entityType());
                 });
+                try (var scratch = CodecMemory.scratch(128 + 32L * value.metadata().realizedStates().size())) {
                 var entries=value.metadata().realizedStates().entrySet().stream()
                         .sorted(Comparator.comparing((Map.Entry<SiteId,DecayState> e)->e.getKey().wallId(),UTF8)
                                 .thenComparing(e->e.getKey().kind().name()).thenComparingLong(e->e.getKey().ordinal())).toList();
                 list(out,entries,(o,e)->{siteId(o,e.getKey());enumeration(o,e.getValue());});
+                }
             }
-        });
+    }
+
+    /** Same list/map/position checks as decoding, without constructing a duplicate plan. */
+    public static void validateWritePlan(ChunkWritePlan value) throws IOException {
+        validatePositions(value, null);
+        int max = 8 * MIB / 12;
+        if (value.voxels().size() > max || value.proofs().size() > max || value.blockEntities().size() > max
+                || value.postprocess().size() > max || value.fluidTicks().size() > max || value.walkwayFeet().size() > max
+                || value.metadata().spawnSlots().size() > 4096 || value.metadata().realizedStates().size() > 4096)
+            throw new IOException("write proof list exceeds canonical bound");
+        for (var voxel : value.voxels()) if (voxel.state().properties().size() > 4096) throw new IOException("block property bound");
+        for (var entity : value.blockEntities()) {
+            if (entity.fields().size() > 4096) throw new IOException("entity field bound");
+            try (var scratch = CodecMemory.scratch(128 + 32L * entity.fields().size())) {
+                var keys = new ArrayList<>(entity.fields().keySet());
+                keys.sort(UTF8);
+                for (int i = 1; i < keys.size(); i++) if (UTF8.compare(keys.get(i - 1), keys.get(i)) == 0)
+                    throw new IOException("duplicate UTF-8 map key after replacement");
+            }
+        }
     }
 
     public static ChunkWritePlan readWritePlan(byte[] payload) throws IOException {
-        return decode(payload, 8 * MIB, in -> {
+        try (var memory = CodecMemory.open()) {
+        var decoded = decode(payload, 8 * MIB, in -> {
             var owner = chunk(in);
             String recipe = string(in), input = string(in);
             var voxels = list(in, 8 * MIB / 12, CanonicalCodec::voxel);
@@ -145,25 +191,33 @@ public final class CanonicalCodec {
             if(in.available()>0) {
                 if(in.readInt()!=0x5047574d) throw new IOException("unknown write metadata extension");
                 String coverage=string(in);long revision=in.readLong();
-                var slots=list(in,4096,i->new SpawnSlot(siteId(i),i.readInt(),point3(i),string(i)));
-                var states=new LinkedHashMap<SiteId,DecayState>();
+                var slots=list(in,4096,i->{CodecMemory.charge(64);return new SpawnSlot(siteId(i),i.readInt(),point3(i),string(i));});
                 int count=count(in,4096);
+                CodecMemory.charge(64 + CodecMemory.mapBytes(count));
+                try (var scratch = CodecMemory.scratch(CodecMemory.mapBytes(count) + 64)) {
+                var states=new LinkedHashMap<SiteId,DecayState>();
                 for(int n=0;n<count;n++) if(states.put(siteId(in),enumeration(in,DecayState.class))!=null)
                     throw new IOException("duplicate realized state");
                 metadata=new WriteMetadata(coverage,revision,slots,states);
+                }
             }
+            CodecMemory.charge(128);
             var result = new ChunkWritePlan(owner, recipe, input, voxels, proofs, entities, postprocess, fluids, feet,
-                    metadata,DeterministicHash.sha256(payload));
+                    metadata,CodecIO.sha256(payload));
             validatePositions(result, null);
             return result;
         });
+        return memory.keep(decoded, retainedBytes(decoded));
+        }
     }
 
     public static ChunkWritePlan readWritePlan(byte[] payload, DimensionBounds bounds) throws IOException {
         if (bounds == null) throw new NullPointerException("bounds");
-        var result = readWritePlan(payload);
-        validatePositions(result, bounds);
-        return result;
+        try (var memory = CodecMemory.open()) {
+            var result = readWritePlan(payload);
+            validatePositions(result, bounds);
+            return memory.keep(result, retainedBytes(result));
+        }
     }
 
     private static void validatePositions(ChunkWritePlan value, DimensionBounds bounds) throws IOException {
@@ -201,21 +255,25 @@ public final class CanonicalCodec {
     private static SegmentGeometry geometryBody(DataInputStream in) throws IOException {
         var key = key(in);
         var points = list(in, 8193, CanonicalCodec::point);
-        var lengths = list(in, 8193, DataInputStream::readLong);
+        var lengths = list(in, 8193, i -> { CodecMemory.charge(32); return i.readLong(); });
         var water = list(in, 4096, CanonicalCodec::water);
         var terminal = optional(in, CanonicalCodec::terminal);
         var start = boundary(in); var end = boundary(in);
+        CodecMemory.charge(128);
         var result = new SegmentGeometry(key, points, lengths, water, terminal, start, end,
                 in.readInt(), in.readInt(), ZERO);
+        try (var scratch = CodecMemory.scratch(128 + 96L * points.size())) {
         if (start.index() != key.index() || end.index() != Math.addExact(key.index(), 1)
                 || !points.getFirst().equals(start.point()) || !points.getLast().equals(end.point())
                 || !lengths.equals(ArcLength.accumulate(points))) throw new IOException("geometry chain mismatch");
+        }
         if (terminal.isPresent() && (terminal.get().segment() != key.index() || terminal.get().localSQ8() < 0
                 || terminal.get().localSQ8() > lengths.getLast())) throw new IOException("terminal outside segment");
         return result;
     }
 
     private static SegmentGeometry withHash(SegmentGeometry v, String hash) {
+        CodecMemory.charge(128);
         return new SegmentGeometry(v.key(), v.points(), v.localSQ8(), v.water(), v.terminal(), v.start(), v.end(),
                 v.logicalColumns(), v.degradation(), hash);
     }
@@ -228,9 +286,10 @@ public final class CanonicalCodec {
     }
 
     private static StationTable stationsBody(DataInputStream in) throws IOException {
-        var stations = list(in, 16384, i -> new Station(i.readLong(), point(i), i.readInt(), i.readInt()));
-        var breaks = list(in, 4096, i -> new BreakInterval(interval(i), enumeration(i, BreakReason.class),
-                enumeration(i, BreakScope.class)));
+        var stations = list(in, 16384, i -> { CodecMemory.charge(64); return new Station(i.readLong(), point(i), i.readInt(), i.readInt()); });
+        var breaks = list(in, 4096, i -> { CodecMemory.charge(64); return new BreakInterval(interval(i), enumeration(i, BreakReason.class),
+                enumeration(i, BreakScope.class)); });
+        CodecMemory.charge(64);
         return new StationTable(stations, breaks, ZERO);
     }
 
@@ -240,6 +299,7 @@ public final class CanonicalCodec {
     }
 
     private static PrefixSummary prefixBody(DataInputStream in) throws IOException {
+        CodecMemory.charge(64);
         return new PrefixSummary(in.readLong(), in.readLong(), optional(in, CanonicalCodec::terminal), string(in));
     }
 
@@ -250,6 +310,7 @@ public final class CanonicalCodec {
     }
 
     private static SiteRecord site(DataInputStream in) throws IOException {
+        CodecMemory.charge(64);
         return new SiteRecord(siteId(in), in.readLong(), frame(in), bounds(in), enumeration(in, SiteState.class),
                 optional(in, CanonicalCodec::siteId), optional(in, i -> enumeration(i, BreakReason.class)));
     }
@@ -261,6 +322,7 @@ public final class CanonicalCodec {
     }
 
     private static VoxelIntent voxel(DataInputStream in) throws IOException {
+        CodecMemory.charge(128);
         return new VoxelIntent(point3(in), enumeration(in, IntentKind.class), enumeration(in, Part.class),
                 new BlockSpec(string(in), map(in)), siteId(in), in.readInt(), bool(in), bool(in));
     }
@@ -271,6 +333,7 @@ public final class CanonicalCodec {
     }
 
     private static BlockProof proof(DataInputStream in) throws IOException {
+        CodecMemory.charge(64);
         return new BlockProof(point3(in), string(in), string(in), bool(in), siteId(in));
     }
 
@@ -279,6 +342,7 @@ public final class CanonicalCodec {
     }
 
     private static BlockEntityIntent blockEntity(DataInputStream in) throws IOException {
+        CodecMemory.charge(64);
         return new BlockEntityIntent(point3(in), string(in), siteId(in), in.readInt(), map(in));
     }
 
@@ -289,6 +353,7 @@ public final class CanonicalCodec {
     }
 
     private static WaterEvidence water(DataInputStream in) throws IOException {
+        CodecMemory.charge(64);
         return new WaterEvidence(interval(in), enumeration(in, WaterClass.class), in.readLong(), in.readLong(),
                 in.readInt(), list(in, 4096, CanonicalCodec::point3), list(in, 4096, CanonicalCodec::point3), string(in));
     }
@@ -296,49 +361,46 @@ public final class CanonicalCodec {
     private static void key(DataOutputStream out, SegmentKey v) throws IOException {
         string(out, v.recipeHash()); string(out, v.dimension()); out.writeLong(v.index());
     }
-    private static SegmentKey key(DataInputStream in) throws IOException { return new SegmentKey(string(in), string(in), in.readLong()); }
+    private static SegmentKey key(DataInputStream in) throws IOException { CodecMemory.charge(64); return new SegmentKey(string(in), string(in), in.readLong()); }
     private static void chunk(DataOutputStream out, ChunkKey v) throws IOException { string(out, v.dimension()); out.writeInt(v.x()); out.writeInt(v.z()); }
-    private static ChunkKey chunk(DataInputStream in) throws IOException { return new ChunkKey(string(in), in.readInt(), in.readInt()); }
+    private static ChunkKey chunk(DataInputStream in) throws IOException { CodecMemory.charge(64); return new ChunkKey(string(in), in.readInt(), in.readInt()); }
     private static void siteId(DataOutputStream out, SiteId v) throws IOException { string(out, v.wallId()); enumeration(out, v.kind()); out.writeLong(v.ordinal()); }
-    private static SiteId siteId(DataInputStream in) throws IOException { return new SiteId(string(in), enumeration(in, SiteKind.class), in.readLong()); }
+    private static SiteId siteId(DataInputStream in) throws IOException { CodecMemory.charge(64); return new SiteId(string(in), enumeration(in, SiteKind.class), in.readLong()); }
     private static void point(DataOutputStream out, Point2q p) throws IOException { out.writeLong(p.xQ8()); out.writeLong(p.zQ8()); }
-    private static Point2q point(DataInputStream in) throws IOException { return new Point2q(in.readLong(), in.readLong()); }
+    private static Point2q point(DataInputStream in) throws IOException { CodecMemory.charge(64); return new Point2q(in.readLong(), in.readLong()); }
     private static void point3(DataOutputStream out, Point3i p) throws IOException { out.writeInt(p.x()); out.writeInt(p.y()); out.writeInt(p.z()); }
-    private static Point3i point3(DataInputStream in) throws IOException { return new Point3i(in.readInt(), in.readInt(), in.readInt()); }
+    private static Point3i point3(DataInputStream in) throws IOException { CodecMemory.charge(64); return new Point3i(in.readInt(), in.readInt(), in.readInt()); }
     private static void bounds(DataOutputStream out, Bounds v) throws IOException {
         out.writeInt(v.minX()); out.writeInt(v.minY()); out.writeInt(v.minZ());
         out.writeInt(v.maxXExclusive()); out.writeInt(v.maxYExclusive()); out.writeInt(v.maxZExclusive());
     }
-    private static Bounds bounds(DataInputStream in) throws IOException { return new Bounds(in.readInt(), in.readInt(), in.readInt(), in.readInt(), in.readInt(), in.readInt()); }
+    private static Bounds bounds(DataInputStream in) throws IOException { CodecMemory.charge(64); return new Bounds(in.readInt(), in.readInt(), in.readInt(), in.readInt(), in.readInt(), in.readInt()); }
     private static void frame(DataOutputStream out, Frame v) throws IOException {
         point(out, v.center()); out.writeInt(v.txQ30()); out.writeInt(v.tzQ30()); out.writeInt(v.walkY()); out.writeBoolean(v.mirror());
     }
-    private static Frame frame(DataInputStream in) throws IOException { return new Frame(point(in), in.readInt(), in.readInt(), in.readInt(), bool(in)); }
+    private static Frame frame(DataInputStream in) throws IOException { CodecMemory.charge(64); return new Frame(point(in), in.readInt(), in.readInt(), in.readInt(), bool(in)); }
     private static void boundary(DataOutputStream out, Boundary v) throws IOException { out.writeLong(v.index()); point(out, v.point()); out.writeInt(v.walkY()); string(out, v.identity()); }
-    private static Boundary boundary(DataInputStream in) throws IOException { return new Boundary(in.readLong(), point(in), in.readInt(), string(in)); }
+    private static Boundary boundary(DataInputStream in) throws IOException { CodecMemory.charge(64); return new Boundary(in.readLong(), point(in), in.readInt(), string(in)); }
     private static void interval(DataOutputStream out, ArcInterval v) throws IOException { out.writeLong(v.fromQ8()); out.writeLong(v.toQ8()); }
-    private static ArcInterval interval(DataInputStream in) throws IOException { return new ArcInterval(in.readLong(), in.readLong()); }
+    private static ArcInterval interval(DataInputStream in) throws IOException { CodecMemory.charge(64); return new ArcInterval(in.readLong(), in.readLong()); }
     private static void terminal(DataOutputStream out, Terminal v) throws IOException { out.writeLong(v.segment()); out.writeLong(v.localSQ8()); enumeration(out, v.kind()); }
-    private static Terminal terminal(DataInputStream in) throws IOException { return new Terminal(in.readLong(), in.readLong(), enumeration(in, TerminalKind.class)); }
+    private static Terminal terminal(DataInputStream in) throws IOException { CodecMemory.charge(64); return new Terminal(in.readLong(), in.readLong(), enumeration(in, TerminalKind.class)); }
 
     private static void string(DataOutputStream out, String value) throws IOException {
-        var bytes = StandardCharsets.UTF_8.newEncoder().onMalformedInput(CodingErrorAction.REPORT)
-                .onUnmappableCharacter(CodingErrorAction.REPORT).encode(java.nio.CharBuffer.wrap(value));
-        if (bytes.remaining() > 4096) throw new IOException("string exceeds 4096 bytes");
-        out.writeInt(bytes.remaining());
-        while (bytes.hasRemaining()) out.writeByte(bytes.get());
+        if (value.length() > 4096) throw new IOException("string exceeds 4096 bytes");
+        CodecMemory.writeUtf8(out, value, 4096);
     }
 
     private static String string(DataInputStream in) throws IOException {
-        int count = count(in, 4096);
-        return StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
-                .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(in.readNBytes(count))).toString();
+        return CodecMemory.readUtf8(in, 4096);
     }
 
     private static void enumeration(DataOutputStream out, Enum<?> v) throws IOException { string(out, v.name()); }
     private static <E extends Enum<E>> E enumeration(DataInputStream in, Class<E> type) throws IOException {
-        try { return Enum.valueOf(type, string(in)); }
+        String name = string(in);
+        try { return Enum.valueOf(type, name); }
         catch (IllegalArgumentException invalid) { throw new IOException("unknown " + type.getSimpleName(), invalid); }
+        finally { CodecMemory.discard(CodecMemory.stringBytes(name.length())); }
     }
     private static boolean bool(DataInputStream in) throws IOException {
         int value = in.readUnsignedByte();
@@ -349,16 +411,14 @@ public final class CanonicalCodec {
         out.writeBoolean(v.isPresent()); if (v.isPresent()) writer.write(out, v.get());
     }
     private static <T> Optional<T> optional(DataInputStream in, Reader<T> reader) throws IOException {
-        return bool(in) ? Optional.of(reader.read(in)) : Optional.empty();
+        if (!bool(in)) return Optional.empty();
+        CodecMemory.charge(64); return Optional.of(reader.read(in));
     }
     private static <T> void list(DataOutputStream out, List<T> v, Writer<T> writer) throws IOException {
         out.writeInt(v.size()); for (T item : v) writer.write(out, item);
     }
     private static <T> List<T> list(DataInputStream in, int limit, Reader<T> reader) throws IOException {
-        int count = count(in, limit);
-        var result = new ArrayList<T>(Math.min(count, 1024));
-        for (int i = 0; i < count; i++) result.add(reader.read(in));
-        return List.copyOf(result);
+        return CodecIO.list(in, limit, reader::read);
     }
     private static int count(DataInputStream in, int limit) throws IOException {
         int count = in.readInt();
@@ -366,12 +426,16 @@ public final class CanonicalCodec {
         return count;
     }
     private static void map(DataOutputStream out, Map<String, String> value) throws IOException {
+        try (var scratch = CodecMemory.scratch(128 + 32L * value.size())) {
         var keys = new ArrayList<>(value.keySet()); keys.sort(UTF8);
         out.writeInt(keys.size());
         for (String key : keys) { string(out, key); string(out, value.get(key)); }
+        }
     }
     private static Map<String, String> map(DataInputStream in) throws IOException {
         int count = count(in, 4096);
+        CodecMemory.charge(CodecMemory.mapBytes(count));
+        try (var scratch = CodecMemory.scratch(64 + CodecMemory.mapBytes(count))) {
         var result = new LinkedHashMap<String, String>();
         String previous = null;
         for (int i = 0; i < count; i++) {
@@ -380,27 +444,31 @@ public final class CanonicalCodec {
             result.put(key, string(in)); previous = key;
         }
         return Map.copyOf(result);
+        }
     }
     private static void requireHash(String actual, String expected) throws IOException {
         if (!expected.equals(actual)) throw new IOException("nested hash mismatch");
     }
     private static byte[] encode(int limit, Encoder writer) {
-        var bytes = new BoundedByteArrayOutputStream(limit);
-        try (var out = new DataOutputStream(bytes)) {
-            out.writeInt(1); writer.write(out);
-            return bytes.toByteArray();
-        } catch (IOException invalid) { throw new IllegalArgumentException("invalid canonical value", invalid); }
+        return CodecIO.encode(limit, out -> { out.writeInt(1); writer.write(out); });
     }
     private static <T> T decode(byte[] payload, int limit, Reader<T> reader) throws IOException {
-        if (payload.length > limit) throw new IOException("canonical payload exceeds limit");
-        try (var in = new DataInputStream(new ByteArrayInputStream(payload))) {
+        return CodecIO.decode(payload, limit, in -> {
             if (in.readInt() != 1) throw new IOException("unknown canonical schema");
-            T result = reader.read(in);
-            if (in.available() != 0) throw new IOException("trailing canonical bytes");
-            return result;
-        } catch (IllegalArgumentException | ArithmeticException invalid) {
-            throw new IOException("invalid canonical object", invalid);
+            return reader.read(in);
+        });
+    }
+
+    private static int compareUtf8(String a, String b) {
+        int x = 0, y = 0;
+        while (x < a.length() && y < b.length()) {
+            int ca = a.codePointAt(x), cb = b.codePointAt(y);
+            x += Character.charCount(ca); y += Character.charCount(cb);
+            if (ca >= 0xd800 && ca <= 0xdfff) ca = '?';
+            if (cb >= 0xd800 && cb <= 0xdfff) cb = '?';
+            if (ca != cb) return Integer.compare(ca, cb);
         }
+        return Integer.compare(a.length() - x, b.length() - y);
     }
     @FunctionalInterface private interface Encoder { void write(DataOutputStream out) throws IOException; }
     @FunctionalInterface private interface Writer<T> { void write(DataOutputStream out, T value) throws IOException; }
