@@ -98,6 +98,8 @@ public final class ChunkPlanCompiler {
     }
     private static VoxelIntent winner(VoxelIntent a,VoxelIntent b) {
         if(a.equals(b))return a;
+        if(a.kind()==IntentKind.OWNED_VOID&&b.kind()==IntentKind.OWNED_VOID)
+            return a.priority()!=b.priority()?(a.priority()>b.priority()?a:b):(SITE.compare(a.component(),b.component())<=0?a:b);
         if(a.kind()==IntentKind.OWNED_VOID||b.kind()==IntentKind.OWNED_VOID) {
             var empty=a.kind()==IntentKind.OWNED_VOID?a:b;var other=empty==a?b:a;
             if(!empty.component().equals(other.component()) && !(empty.component().wallId().equals(other.component().wallId())
@@ -113,6 +115,7 @@ public final class ChunkPlanCompiler {
         return a;
     }
     private static VoxelIntent connections(VoxelIntent v,Map<Point3i,VoxelIntent> logical) {
+        if(v.state().id().endsWith("_stairs"))return stairShape(v,logical);
         if(v.part()!=Part.FENCE)return v;
         var properties=new TreeMap<>(v.state().properties());properties.putIfAbsent("waterlogged","false");
         String[] names={"north","east","south","west"};int[][] sides={{0,-1},{1,0},{0,1},{-1,0}};
@@ -121,6 +124,27 @@ public final class ChunkPlanCompiler {
             boolean connected=solid(n)&&(n.part()==Part.FENCE||switch(n.part()){case FOUNDATION,CORE,SKIN,ARCH,ROOF,HAY->true;default->false;});
             properties.put(names[i],Boolean.toString(connected));
         }
+        return new VoxelIntent(v.pos(),v.kind(),v.part(),new BlockSpec(v.state().id(),properties),v.component(),v.priority(),v.required(),v.walkable());
+    }
+    private static VoxelIntent stairShape(VoxelIntent v,Map<Point3i,VoxelIntent> logical) {
+        String[] directions={"north","east","south","west"};int[][] offsets={{0,-1},{1,0},{0,1},{-1,0}};
+        String facing=v.state().properties().get("facing"),half=v.state().properties().get("half");
+        int index=List.of(directions).indexOf(facing);
+        if(index<0||half==null)throw failure("stairs lack frozen facing/half");
+        String shape="straight";
+        for(int pass=0;pass<2;pass++){
+            int side=pass==0?index:(index+2)%4;
+            var neighbor=logical.get(new Point3i(v.pos().x()+offsets[side][0],v.pos().y(),v.pos().z()+offsets[side][1]));
+            if(neighbor==null||!neighbor.state().id().endsWith("_stairs")||!half.equals(neighbor.state().properties().get("half")))continue;
+            int next=List.of(directions).indexOf(neighbor.state().properties().get("facing"));
+            if(next<0||next%2==index%2)continue;
+            int check=pass==0?(next+2)%4:next;
+            var corner=logical.get(new Point3i(v.pos().x()+offsets[check][0],v.pos().y(),v.pos().z()+offsets[check][1]));
+            if(corner!=null&&corner.state().id().endsWith("_stairs")&&facing.equals(corner.state().properties().get("facing"))
+                    &&half.equals(corner.state().properties().get("half")))continue;
+            shape=(pass==0?"outer_":"inner_")+(next==(index+3)%4?"left":"right");break;
+        }
+        var properties=new TreeMap<>(v.state().properties());properties.put("shape",shape);
         return new VoxelIntent(v.pos(),v.kind(),v.part(),new BlockSpec(v.state().id(),properties),v.component(),v.priority(),v.required(),v.walkable());
     }
     private static boolean solid(VoxelIntent v){return v!=null&&v.kind()==IntentKind.SOLID;}

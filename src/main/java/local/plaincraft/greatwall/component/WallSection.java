@@ -23,14 +23,35 @@ public final class WallSection implements ComponentTemplate {
     }
 
     @Override public ComponentVoxels compile(ComponentInput input) {
+        long center=input.site().globalSQ8();
+        return compileIntervals(input,List.of(new ArcInterval(Math.max(0,center-32L*256),center+32L*256)));
+    }
+
+    public record ColumnContract(long globalSQ8,int lateralCell,int walkY) {}
+    public static ColumnContract contract(List<Station> stations,int x,int z) {
+        if(stations.size()<2)throw new IllegalArgumentException("station ribbon needs two points");
+        var c=column(stations,x,z,stations.getFirst().globalSQ8(),stations.getFirst().globalSQ8(),
+                Math.addExact(stations.getLast().globalSQ8(),1),false);
+        if(c==null)throw new IllegalArgumentException("column outside ribbon");
+        return new ColumnContract(c.globalS(),c.z(),c.walkY());
+    }
+
+    public ComponentVoxels compileIntervals(ComponentInput input,List<ArcInterval> intervals) {
         List<Station> stations = input.stations();
         long center = input.site().globalSQ8(), from = Math.max(0,center-32L*256), to = center+32L*256;
         if (stations.size() < 2 || stations.getFirst().globalSQ8() > from || stations.getLast().globalSQ8() < to)
             throw new IllegalArgumentException("wall requires complete station ribbon");
         Bounds bounds = curveBounds(stations,from,to);
         var assembly = new ComponentAssembly(input,localBounds(input),decay,palette);
-        assembly.route(new Point3i((int) ((from-center)/256)+1,0,0),new Point3i(30,0,0));
-        return assembly.finish(bounds,(x,z) -> column(stations,x,z,center,from,to,input.site().frame().mirror()),p -> {
+        for(var interval:intervals) {
+            if(interval.fromQ8()<from||interval.toQ8()>to)throw new IllegalArgumentException("build interval outside cell");
+            int left=FixedMath.floorBlock(interval.fromQ8()-center)+1,right=FixedMath.floorBlock(interval.toQ8()-center)-2;
+            if(right>=left)assembly.route(new Point3i(left,0,0),new Point3i(right,0,0));
+        }
+        return assembly.finish(bounds,(x,z) -> {
+            var column=column(stations,x,z,center,from,to,input.site().frame().mirror());
+            return column!=null&&intervals.stream().anyMatch(i->column.globalS()>=i.fromQ8()&&column.globalS()<i.toQ8())?column:null;
+        },p -> {
             if (!ComponentAssembly.contains(localBounds(input),p)) return null;
             int y = p.y(), z = p.z();
             long globalS = center + (long) p.x()*256;
