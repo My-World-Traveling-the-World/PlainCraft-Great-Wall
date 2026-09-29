@@ -19,7 +19,8 @@ public final class C2meProbeAdapter {
     private C2meProbeAdapter() {}
 
     public static Completable gate(Object context, Object delegate, Completable original) {
-        if (!delegate.toString().equals("minecraft:features")) return original;
+        String status = delegate.toString();
+        if (!status.equals("minecraft:features") && !status.equals("minecraft:initialize_light")) return original;
         var access = (ChunkMapAccess) invoke(context, "tacs");
         var level = access.greatwall$level();
         var service = WorldServices.find(level.getServer());
@@ -35,7 +36,16 @@ public final class C2meProbeAdapter {
             throw new IllegalStateException("Pinned C2ME positionedExecutor is unavailable", failure);
         }
         String dimension = level.dimension().location().toString();
-        var lease = service.require(dimension, pos.x, pos.z, "c2me:features");
+        var barrier = service.barrier(level);
+        if (status.equals("minecraft:initialize_light")) {
+            if (barrier == null || !barrier.layout().owns(pos)) return original;
+            var state = ((java.util.concurrent.atomic.AtomicReference<?>) invoke(holder, "getItem")).get();
+            var chunk = (net.minecraft.world.level.chunk.ChunkAccess) invoke(state, "chunk");
+            return Completable.fromCompletionStage(barrier.beforeLight(pos, chunk, new C2meTerrainEngine(manager)))
+                    .observeOn(Schedulers.from(executor)).andThen(original).doOnError(service::failRequiredPlan);
+        }
+        var lease = service.require(dimension, pos.x, pos.z, "c2me:features").thenCompose(plan -> barrier == null
+                ? CompletableFuture.completedFuture(null) : barrier.delayFeatures(pos));
         return Completable.fromCompletionStage(lease).observeOn(Schedulers.from(executor))
                 .andThen(Completable.create(emitter -> {
                     service.assertActiveSession();
@@ -72,7 +82,7 @@ public final class C2meProbeAdapter {
         };
     }
 
-    private static Object invoke(Object receiver, String method) {
+    public static Object invoke(Object receiver, String method) {
         try { return receiver.getClass().getMethod(method).invoke(receiver); }
         catch (InvocationTargetException failure) { throw new IllegalStateException(method, failure.getCause()); }
         catch (ReflectiveOperationException failure) { throw new IllegalStateException("Pinned C2ME API missing: " + method, failure); }

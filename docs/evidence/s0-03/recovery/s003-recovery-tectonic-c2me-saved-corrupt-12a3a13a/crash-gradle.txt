@@ -1,0 +1,374 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileServerSmokeJava UP-TO-DATE
+> Task :generateLog4jConfig UP-TO-DATE
+> Task :generateRemapClasspath UP-TO-DATE
+> Task :generateDLIConfig UP-TO-DATE
+> Task :configureLaunch UP-TO-DATE
+
+> Task :prepareServerSmoke
+Isolated smoke directory: D:\云游四海-Mod源码\plaincraft-great-wall\build\run\serverSmoke\tectonic-c2me\s003-recovery-tectonic-c2me-saved-corrupt-12a3a13a
+
+> Task :processServerSmokeResources UP-TO-DATE
+> Task :serverSmokeClasses UP-TO-DATE
+
+> Task :runServerSmoke
+[08:51:49] [main/INFO] (FabricLoader/GameProvider) Loading Minecraft 1.21.1 with Fabric Loader 0.19.3
+[08:51:49] [main/INFO] (FabricLoader) Loading 76 mods:
+	- c2me 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-base 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-client-uncapvd 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-fixes-chunkio-threading-issues 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-fixes-general-threading-issues 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-fixes-worldgen-threading-issues 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-fixes-worldgen-vanilla-bugs 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-notickvd 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-allocs 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-chunkio 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-dfc 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-math 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-scheduling 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-worldgen-general 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-opts-worldgen-vanilla 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-rewrites-chunk-system 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-rewrites-chunkio 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-server-utils 0.4.0-alpha.0.27+1.21.1
+	   |-- c2me-threading-lighting 0.4.0-alpha.0.27+1.21.1
+	   |-- com_electronwill_night-config_core 3.6.5
+	   |-- com_electronwill_night-config_toml 3.6.5
+	   |-- com_github_ben-manes_caffeine_caffeine 3.2.1
+	   |-- com_ibm_async_asyncutil 0.1.0
+	   |-- io_reactivex_rxjava3_rxjava 3.1.12
+	   |-- mixinsquared 0.3.7-beta.1
+	   |-- net_objecthunter_exp4j 0.4.8
+	   |-- org_jctools_jctools-core 4.0.5
+	   \-- org_reactivestreams_reactive-streams 1.0.4
+	- fabric-api 0.116.14+1.21.1
+	- fabric-api-base 0.4.42+6573ed8c19
+	- fabric-api-lookup-api-v1 1.6.72+7b3d111d19
+	- fabric-biome-api-v1 13.0.31+d527f9fd19
+	- fabric-block-api-v1 1.1.0+0bc3503219
+	- fabric-block-view-api-v2 1.0.11+ebb2264e19
+	- fabric-command-api-v1 1.2.49+f71b366f19
+	- fabric-command-api-v2 2.2.28+6ced4dd919
+	- fabric-commands-v0 0.2.66+df3654b319
+	- fabric-content-registries-v0 8.0.19+b559734419
+	- fabric-convention-tags-v1 2.1.7+7f945d5b19
+	- fabric-convention-tags-v2 2.12.0+c3656daa19
+	- fabric-crash-report-info-v1 0.2.29+0af3f5a719
+	- fabric-data-attachment-api-v1 1.4.7+5b36e0f719
+	- fabric-data-generation-api-v1 20.3.0+1eb36c0719
+	- fabric-dimensions-v1 4.0.1+65213ef819
+	- fabric-entity-events-v1 1.8.0+2b27e0a419
+	- fabric-events-interaction-v0 0.7.14+ba9dae0619
+	- fabric-game-rule-api-v1 1.0.53+6ced4dd919
+	- fabric-gametest-api-v1 2.0.5+6fc22b9919
+	- fabric-item-api-v1 11.2.0+3b3cb2e819
+	- fabric-item-group-api-v1 4.1.7+def88e3a19
+	- fabric-lifecycle-events-v1 2.6.0+0865547519
+	- fabric-loot-api-v2 3.0.15+3f89f5a519
+	- fabric-loot-api-v3 1.0.3+3f89f5a519
+	- fabric-message-api-v1 6.0.14+8aaf3aca19
+	- fabric-networking-api-v1 4.3.1+d30f6a7919
+	- fabric-object-builder-api-v1 15.2.1+40875a9319
+	- fabric-particles-v1 4.0.2+6573ed8c19
+	- fabric-recipe-api-v1 5.0.16+2475392c19
+	- fabric-registry-sync-v0 5.3.2+e3eddc2119
+	- fabric-rendering-data-attachment-v1 0.3.49+73761d2e19
+	- fabric-rendering-fluids-v1 3.1.6+1daea21519
+	- fabric-resource-conditions-api-v1 4.3.0+8dc279b119
+	- fabric-resource-loader-v0 1.3.1+5b5275af19
+	- fabric-screen-handler-api-v1 1.3.91+b559734419
+	- fabric-tag-api-v1 1.3.0+1eb36c0719
+	- fabric-transfer-api-v1 5.4.4+7b3d111d19
+	- fabric-transitive-access-wideners-v1 6.2.0+45b9699719
+	- fabricloader 0.19.3
+	- java 21
+	- lithostitched 1.8.0+beta6
+	   \-- apollib 1.2.0
+	        \-- de_marhali_json5-java 3.0.0
+	- minecraft 1.21.1
+	- mixinextras 0.5.4
+	- plaincraft_great_wall 0.1.0-s0.3
+	- plaincraft_great_wall_server_smoke 1.0.0
+	- tectonic 3.0.26
+[08:51:53] [pool-2-thread-11/WARN] (FabricLoader/ModRemap) Cannot remap getChunkBlocking(IILnet/minecraft/world/chunk/ChunkStatus;Z)Lnet/minecraft/world/chunk/Chunk; because it does not exist in any of the targets [net/minecraft/class_3215]
+[08:51:53] [pool-2-thread-11/WARN] (FabricLoader/ModRemap) Cannot remap getChunkBlocking(IILnet/minecraft/world/level/chunk/status/ChunkStatus;Z)Lnet/minecraft/world/level/chunk/ChunkAccess; because it does not exist in any of the targets [net/minecraft/class_3215]
+[08:51:55] [main/INFO] (FabricLoader/Mixin) SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/C:/Users/18364/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar Service=Knot/Fabric Env=SERVER
+[08:51:55] [main/INFO] (FabricLoader/Mixin) Loaded Fabric development mappings for mixin remapper!
+[08:51:56] [main/INFO] (FabricLoader/Mixin) Compatibility level set to JAVA_17
+[08:51:56] [main/INFO] (FabricLoader/Mixin) Compatibility level set to JAVA_21
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.opts.dfc.mixin
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.base.mixin
+[08:51:56] [main/INFO] (C2ME Config System) Config threadPoolPriority changed from 4 to 5
+[08:51:56] [main/INFO] (C2ME Config System) Config globalExecutorParallelism changed from 5 to 14
+[08:51:56] [main/INFO] (C2ME Config System) Global Executor Parallelism: 14 configured, 5 evaluated, 5 default evaluated
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.opts.worldgen.general.mixin
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.fixes.chunkio.threading_issues.mixin
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.opts.math.mixin
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.opts.chunkio.mixin
+[08:51:56] [main/INFO] (C2ME Config System) Config ioSystem.chunkDataCacheSoftLimit changed from 8192 to 1536
+[08:51:56] [main/INFO] (C2ME Config System) Config ioSystem.chunkDataCacheLimit changed from 32678 to 6144
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.rewrites.chunksystem.mixin
+[08:51:56] [main/INFO] (C2ME Config System) Config chunkSystem.lowMemoryMode changed from false to true
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.rewrites.chunkio.mixin
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.opts.worldgen.vanilla.mixin
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.threading.lighting.mixin
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.opts.scheduling.mixin
+[08:51:56] [main/INFO] (C2ME Config System) Config generalOptimizations.midTickChunkTasksInterval changed from 100000 to 100000
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.fixes.worldgen.vanilla_bugs.mixin
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.server.utils.mixin
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.fixes.worldgen.threading_issues.mixin
+[08:51:56] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.notickvd.mixin
+[08:51:57] [main/INFO] (C2ME Config System) Config noTickViewDistance.maxConcurrentChunkLoads changed from 42 to 46
+[08:51:57] [main/INFO] (C2ME Config System) Config noTickViewDistance.chunkSendingSpeedMultiplierPercentage changed from 200 to 200
+[08:51:57] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.opts.allocs.mixin
+[08:51:57] [main/INFO] (C2ME Modules Manager) Initializing com.ishland.c2me.fixes.general.threading_issues.mixin
+[08:51:57] [main/WARN] (FabricLoader/Mixin) Error loading class: ca/spottedleaf/starlight/common/integration/v0/ChunkSystemHooks (java.lang.ClassNotFoundException: ca/spottedleaf/starlight/common/integration/v0/ChunkSystemHooks)
+[08:51:57] [main/WARN] (FabricLoader/Mixin) @Mixin target ca/spottedleaf/starlight/common/integration/v0/ChunkSystemHooks was not found c2me-rewrites-chunk-system.mixins.json:scalablelux.MixinChunkSystemHooks from mod c2me-rewrites-chunk-system
+[08:51:57] [main/WARN] (FabricLoader/Mixin) Error loading class: ca/spottedleaf/starlight/common/thread/SchedulingUtil (java.lang.ClassNotFoundException: ca/spottedleaf/starlight/common/thread/SchedulingUtil)
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .clientSideConfig.modifyMaxVDConfig.enableExtRenderDistanceProtocol because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .clientSideConfig.modifyMaxVDConfig.enabled because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .clientSideConfig.modifyMaxVDConfig.maxViewDistance because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .clientSideConfig.modifyMaxVDConfig because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .clientSideConfig because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.preferFastCompilation because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.enableIntelFastCompilation because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.disableBuiltinDeviceBlocklist because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.enabled because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.maxConcurrentTasksPerDevice because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.enableNvidiaFastCompilation because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.useSmallerBatches because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.preserveAllControlFlows because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.lowPriorityQueues because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.allowAcceleratorDevices because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.allowIncompatibilityFallback because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.useDevicePrioritization because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.allowGPUDevices because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.deviceUUIDWhitelist because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.allowCPUDevices because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.doExplicitFlushes because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel.deviceUUIDBlacklist because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .openclAccel because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .vanillaWorldGenOptimizations.nativeAcceleration.allowAVX512 because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .vanillaWorldGenOptimizations.nativeAcceleration.enabled because it is not used
+[08:51:57] [main/INFO] (C2ME Config System) Removing config entry .vanillaWorldGenOptimizations.nativeAcceleration because it is not used
+[08:51:57] [main/INFO] (FabricLoader/MixinExtras|Service) Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.4).
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:S0-01] Common entrypoint loaded; world generation disabled
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] apollib=1.2.0
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-base=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-fixes-chunkio-threading-issues=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-fixes-general-threading-issues=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-fixes-worldgen-threading-issues=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-fixes-worldgen-vanilla-bugs=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-notickvd=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-opts-allocs=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-opts-chunkio=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-opts-dfc=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-opts-math=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-opts-scheduling=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-opts-worldgen-general=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-opts-worldgen-vanilla=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-rewrites-chunk-system=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-rewrites-chunkio=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-server-utils=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] c2me-threading-lighting=0.4.0-alpha.0.27+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] com_electronwill_night-config_core=3.6.5
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] com_electronwill_night-config_toml=3.6.5
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] com_github_ben-manes_caffeine_caffeine=3.2.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] com_ibm_async_asyncutil=0.1.0
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] de_marhali_json5-java=3.0.0
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-api=0.116.14+1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-api-base=0.4.42+6573ed8c19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-api-lookup-api-v1=1.6.72+7b3d111d19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-biome-api-v1=13.0.31+d527f9fd19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-block-api-v1=1.1.0+0bc3503219
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-block-view-api-v2=1.0.11+ebb2264e19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-command-api-v1=1.2.49+f71b366f19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-command-api-v2=2.2.28+6ced4dd919
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-commands-v0=0.2.66+df3654b319
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-content-registries-v0=8.0.19+b559734419
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-convention-tags-v1=2.1.7+7f945d5b19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-convention-tags-v2=2.12.0+c3656daa19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-crash-report-info-v1=0.2.29+0af3f5a719
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-data-attachment-api-v1=1.4.7+5b36e0f719
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-data-generation-api-v1=20.3.0+1eb36c0719
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-dimensions-v1=4.0.1+65213ef819
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-entity-events-v1=1.8.0+2b27e0a419
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-events-interaction-v0=0.7.14+ba9dae0619
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-game-rule-api-v1=1.0.53+6ced4dd919
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-gametest-api-v1=2.0.5+6fc22b9919
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-item-api-v1=11.2.0+3b3cb2e819
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-item-group-api-v1=4.1.7+def88e3a19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-lifecycle-events-v1=2.6.0+0865547519
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-loot-api-v2=3.0.15+3f89f5a519
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-loot-api-v3=1.0.3+3f89f5a519
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-message-api-v1=6.0.14+8aaf3aca19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-networking-api-v1=4.3.1+d30f6a7919
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-object-builder-api-v1=15.2.1+40875a9319
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-particles-v1=4.0.2+6573ed8c19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-recipe-api-v1=5.0.16+2475392c19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-registry-sync-v0=5.3.2+e3eddc2119
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-rendering-data-attachment-v1=0.3.49+73761d2e19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-rendering-fluids-v1=3.1.6+1daea21519
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-resource-conditions-api-v1=4.3.0+8dc279b119
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-resource-loader-v0=1.3.1+5b5275af19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-screen-handler-api-v1=1.3.91+b559734419
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-tag-api-v1=1.3.0+1eb36c0719
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-transfer-api-v1=5.4.4+7b3d111d19
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabric-transitive-access-wideners-v1=6.2.0+45b9699719
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] fabricloader=0.19.3
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] io_reactivex_rxjava3_rxjava=3.1.12
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] java=21
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] lithostitched=1.8.0+beta6
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] minecraft=1.21.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] mixinextras=0.5.4
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] mixinsquared=0.3.7-beta.1
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] net_objecthunter_exp4j=0.4.8
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] org_jctools_jctools-core=4.0.5
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] org_reactivestreams_reactive-streams=1.0.4
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] plaincraft_great_wall=0.1.0-s0.3
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] plaincraft_great_wall_server_smoke=1.0.0
+[08:52:04] [main/INFO] (plaincraft_great_wall) [GreatWall:version] tectonic=3.0.26
+[08:52:04] [main/INFO] (Minecraft) Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
+[08:52:05] [main/INFO] (Minecraft) No existing world data, creating new world
+[08:52:05] [main/INFO] (Minecraft) Loaded 1290 recipes
+[08:52:06] [main/INFO] (Minecraft) Loaded 1399 advancements
+[08:52:06] [main/INFO] (BiomeModificationImpl) Applied 64 biome modifications to 64 of 64 new biomes in 6.882 ms
+[08:52:06] [Server thread/INFO] (plaincraft_great_wall) [GreatWall:S0-02] BOOTSTRAP session=0ed326bd-a4bc-4ee2-95bd-f920d7580d20 startupPump=explicit newWorld=true
+[08:52:06] [Server thread/INFO] (Minecraft) Starting minecraft server version 1.21.1
+[08:52:06] [Server thread/INFO] (Minecraft) Loading properties
+[08:52:06] [Server thread/INFO] (Minecraft) Default game type: SURVIVAL
+[08:52:06] [Server thread/INFO] (Minecraft) Generating keypair
+[08:52:06] [Server thread/INFO] (Minecraft) Starting Minecraft server on 127.0.0.1:0
+[08:52:06] [Server thread/INFO] (Minecraft) Using default channel type
+[08:52:06] [Server thread/WARN] (Minecraft) **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[08:52:06] [Server thread/WARN] (Minecraft) The server will make no attempt to authenticate usernames. Beware.
+[08:52:06] [Server thread/WARN] (Minecraft) While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[08:52:06] [Server thread/WARN] (Minecraft) To change this, set "online-mode" to "true" in the server.properties file.
+[08:52:06] [Server thread/INFO] (Minecraft) Preparing level "world"
+[08:52:06] [Server thread/INFO] (CheckedThreadLocalRandom) Enforcing safe world random access
+[08:52:06] [Server thread/INFO] (AxisBindings) Bound to lithostitched dev.worldgen.lithostitched.impl.worldgen.densityfunction.AxisDensityFunction
+[08:52:06] [Server thread/INFO] (CeilBindings) Bound to lithostitched dev.worldgen.lithostitched.impl.worldgen.densityfunction.CeilDensityFunction
+[08:52:06] [Server thread/INFO] (CosBindings) Bound to lithostitched dev.worldgen.lithostitched.impl.worldgen.densityfunction.CosDensityFunction
+[08:52:06] [Server thread/INFO] (FastNoiseBindings) Bound to lithostitched dev.worldgen.lithostitched.impl.worldgen.densityfunction.FastNoiseDensityFunction
+[08:52:06] [Server thread/INFO] (FloorBindings) Bound to lithostitched dev.worldgen.lithostitched.impl.worldgen.densityfunction.FloorDensityFunction
+[08:52:06] [Server thread/INFO] (MixBindings) Bound to lithostitched dev.worldgen.lithostitched.impl.worldgen.densityfunction.MixDensityFunction
+[08:52:06] [Server thread/INFO] (SelectBindings) Bound to lithostitched dev.worldgen.lithostitched.impl.worldgen.densityfunction.SelectDensityFunction
+[08:52:06] [Server thread/INFO] (ShiftBindings) Bound to lithostitched dev.worldgen.lithostitched.impl.worldgen.densityfunction.ShiftDensityFunction
+[08:52:06] [Server thread/INFO] (SinBindings) Bound to lithostitched dev.worldgen.lithostitched.impl.worldgen.densityfunction.SinDensityFunction
+[08:52:06] [Server thread/INFO] (SqrtBindings) Bound to lithostitched dev.worldgen.lithostitched.impl.worldgen.densityfunction.SqrtDensityFunction
+[08:52:06] [Server thread/INFO] (ConfigClampBindings) Bound to tectonic dev.worldgen.tectonic.worldgen.densityfunction.ConfigClamp
+[08:52:06] [Server thread/INFO] (ConfigNoiseBindings) Bound to tectonic dev.worldgen.tectonic.worldgen.densityfunction.ConfigNoise
+[08:52:06] [Server thread/INFO] (InvertBindings) Bound to tectonic dev.worldgen.tectonic.worldgen.densityfunction.Invert
+[08:52:06] [Server thread/INFO] (Minecraft) [STDOUT]: Density function compilation finished in 78.16 ms
+[08:52:07] [Server thread/INFO] (TheSpeedyObjectFactory) Using TheSpeedyObjectFactory with Unsafe
+[PlainCraft C2ME QoS] Normal adaptive lane changed: cpu=-1.0%, heap=79.5%, pool=14, previous=8, effective=10.
+[PlainCraft C2ME QoS] Hardware budget changed: logical=16, heap=79.6%, autoBudget=12, configured=auto, effective=12.
+[PlainCraft C2ME QoS] Direct WorkerThread gate active: configuredPool=auto, logical=16, dynamicBudget=12, actualPool=12, normal=10, hyperspeed=5, chunky=14, teleport=12.
+[PlainCraft C2ME QoS] NoTickVD profile=normal, configured=46, effective=46, calls=1, sources(chunky=false,hyperspeed=false).
+[PlainCraft C2ME QoS] Profile=normal, workerLimit=10.
+[08:52:07] [c2me-worker-12/INFO] (plaincraft_great_wall) [GreatWall:S0-02] WAIT_PLAN_NO_LOCK session=0ed326bd-a4bc-4ee2-95bd-f920d7580d20 chunk=0,0 stage=c2me:features
+[08:52:08] [Server thread/INFO] (Minecraft) [STDOUT]: Density function compilation finished in 27.83 ms
+[08:52:08] [Server thread/INFO] (Minecraft) [STDOUT]: Density function compilation finished in 18.55 ms
+[08:52:08] [Server thread/INFO] (Minecraft) Preparing start region for dimension minecraft:overworld
+[PlainCraft C2ME QoS] Normal adaptive lane changed: cpu=-1.0%, heap=77.5%, pool=12, previous=10, effective=12.
+[08:52:08] [c2me-worker-8/INFO] (Minecraft) Preparing spawn area: 2%
+[08:52:08] [Server thread/INFO] (Minecraft) Time elapsed: 415 ms
+[08:52:08] [Server thread/INFO] (Minecraft) Done (2.216s)! For help, type "help"
+[08:52:08] [Server thread/INFO] (plaincraft_great_wall) [GreatWall:S0-02] ACTIVE session=0ed326bd-a4bc-4ee2-95bd-f920d7580d20 counts={STARTUP_WARMING=1, WRITE_LOCK_ACQUIRED=81, REQUEST_PLAN=81, PLAN_READY=81, WAIT_PLAN_NO_LOCK=81, STAGE_ENTER=81, STAGE_EXIT=81}
+[08:52:08] [Server thread/INFO] (plaincraft_great_wall) [GreatWall:S0-01] SERVER_SMOKE_STARTED serverClass=net.minecraft.server.dedicated.DedicatedServer
+profile=tectonic-c2me
+seed=9282026
+minY=-64
+maxYExclusive=320
+generator=net.minecraft.world.level.levelgen.FlatLevelSource
+loadedChunks=15
+mods=76
+
+[08:52:08] [Server thread/INFO] (plaincraft_great_wall) [GreatWall:S0-03] FIXTURE_BEGIN rounds=1 concurrency=2 engineWorkersProperty=2
+[08:52:09] [Server thread/INFO] (Minecraft) Saving the game (this may take a moment!)
+[08:52:09] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (world): All chunks are saved
+[08:52:09] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[08:52:09] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[08:52:09] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage: All dimensions are saved
+[08:52:09] [Server thread/INFO] (Minecraft) Saved the game
+[08:52:09] [Server thread/INFO] (plaincraft_great_wall) [GreatWall:S0-03] CRASH_READY_AFTER_SAVE owners=4
+
+> Task :runServerSmoke FAILED
+9 actionable tasks: 2 executed, 7 up-to-date
+/*******************************************************************************************************************************************************************************************************************************************/
+/*                                                                                                           SpongePowered MIXIN                                                                                                           */
+/*******************************************************************************************************************************************************************************************************************************************/
+/*                                         Code source : file:/C:/Users/18364/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/41c4a3984a80f4679e759fb9f495587acc5cdac7/sponge-mixin-0.17.3+mixin.0.8.7.jar */
+/*                                    Internal Version : 0.8.7                                                                                                                                                                             */
+/*                                        Java Version : 21.0 (supports compatibility 6-21)                                                                                                                                                */
+/*                         Default Compatibility Level : JAVA_8                                                                                                                                                                            */
+/*                   Max Effective Compatibility Level : JAVA_13                                                                                                                                                                           */
+/*                                Detected ASM Version : ASM 9.10.1 (ASM10_EXPERIMENTAL)                                                                                                                                                   */
+/*                          Detected ASM Supports Java : Up to Java 27 (class file version 71.0)                                                                                                                                           */
+/*******************************************************************************************************************************************************************************************************************************************/
+/*                                        Service Name : Knot/Fabric                                                                                                                                                                       */
+/*                                 Mixin Service Class : net.fabricmc.loader.impl.launch.knot.MixinServiceKnot                                                                                                                             */
+/*                       Global Property Service Class : net.fabricmc.loader.impl.launch.knot.FabricGlobalPropertyService                                                                                                                  */
+/*                                 Logger Adapter Type : Fabric Mixin Logger                                                                                                                                                               */
+/*******************************************************************************************************************************************************************************************************************************************/
+/*                                         mixin.debug : <false>                                                                                                                                                                           */
+/*                                  mixin.debug.export : - <true>                                                                                                                                                                          */
+/*                           mixin.debug.export.filter : - - <null>                                                                                                                                                                        */
+/*                        mixin.debug.export.decompile : - - <false>                                                                                                                                                                       */
+/*                  mixin.debug.export.decompile.async : - - - <false>                                                                                                                                                                     */
+/* mixin.debug.export.decompile.mergeGenericSignatures : - - - <false>                                                                                                                                                                     */
+/*                                  mixin.debug.verify : - <false>                                                                                                                                                                         */
+/*                                 mixin.debug.verbose : - <false>                                                                                                                                                                         */
+/*                         mixin.debug.countInjections : - <false>                                                                                                                                                                         */
+/*                                  mixin.debug.strict : - <false>                                                                                                                                                                         */
+/*                           mixin.debug.strict.unique : - - <false>                                                                                                                                                                       */
+/*                          mixin.debug.strict.targets : - - <false>                                                                                                                                                                       */
+/*                                mixin.debug.profiler : - <false>                                                                                                                                                                         */
+/*                           mixin.dumpTargetOnFailure : <false>                                                                                                                                                                           */
+/*                                        mixin.checks : <false>                                                                                                                                                                           */
+/*                             mixin.checks.interfaces : - <false>                                                                                                                                                                         */
+/*                      mixin.checks.interfaces.strict : - - <false>                                                                                                                                                                       */
+/*                             mixin.ignoreConstraints : <false>                                                                                                                                                                           */
+/*                                       mixin.hotSwap : <false>                                                                                                                                                                           */
+/*                                       mixin.env.obf : - <false>                                                                                                                                                                         */
+/*                             mixin.env.disableRefMap : - <false>                                                                                                                                                                         */
+/*                               mixin.env.remapRefMap : - <false>                                                                                                                                                                         */
+/*                       mixin.env.refMapRemappingFile : - <>                                                                                                                                                                              */
+/*                        mixin.env.refMapRemappingEnv : - <searge>                                                                                                                                                                        */
+/*                      mixin.env.allowPermissiveMatch : - <false>                                                                                                                                                                         */
+/*                            mixin.env.ignoreRequired : - <false>                                                                                                                                                                         */
+/*                               mixin.env.compatLevel : - <false>                                                                                                                                                                         */
+/*                          mixin.env.shiftByViolation : - <warn>                                                                                                                                                                          */
+/*                      mixin.initialiserInjectionMode : <default>                                                                                                                                                                         */
+/*               mixin.tunable.classReaderExpandFrames : - <false>                                                                                                                                                                         */
+/*******************************************************************************************************************************************************************************************************************************************/
+/*                                    UNSAFE_INJECTION : available=<true> enabled=<true>                                                                                                                                                   */
+/*                       INJECTORS_IN_INTERFACE_MIXINS : available=<true> enabled=<true>                                                                                                                                                   */
+/*******************************************************************************************************************************************************************************************************************************************/
+/*                                       Detected Side : SERVER                                                                                                                                                                            */
+/*******************************************************************************************************************************************************************************************************************************************/
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':runServerSmoke'.
+> Process 'command 'C:\Program Files\Java\jdk-21\bin\java.exe'' finished with non-zero exit value -1 (NTSTATUS 0xFFFFFFFF)
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 30s
+

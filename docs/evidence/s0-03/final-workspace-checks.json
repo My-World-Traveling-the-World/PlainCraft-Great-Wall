@@ -1,0 +1,23 @@
+{
+  "recordedAt": "2026-09-29T09:35:27.1325592+08:00",
+  "project": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "sourceAndBuildHashesVerified": 55,
+  "sourceAndBuildHashesMatch": true,
+  "artifact": "plaincraft-great-wall-0.1.0-s0.3.jar",
+  "artifactSha256": "9cc20034a84e20abd0a212f516b671ffed9864a8ff6e9a4bbb221133ed4985eb",
+  "junitTests": 22,
+  "startupRegressionCases": 3,
+  "startupRegressionPassed": true,
+  "clientSmokePassed": true,
+  "clientAssets": "UP-TO-DATE; local cache reuse",
+  "javaOrJcmdProcesses": 0,
+  "projectProxySettings": 0,
+  "faultVerifierTempDirectories": 0,
+  "transientEvidenceFiles": 0,
+  "toolParseErrors": 0,
+  "whitespaceCheckExcludingRawTextLogs": "passed",
+  "rawTextLogWhitespace": "Original console trailing spaces and blank EOF lines retained; full diff check reports these only.",
+  "historicalS0_02EvidenceUnchanged": true,
+  "scope": "S0 laboratory only; no production wall, deployment, real-world save access, or dependency version upgrade.",
+  "retainedEvidence": "Intentional archived logs, T0 files, and ignored isolated build worlds are retained for reproducibility."
+}

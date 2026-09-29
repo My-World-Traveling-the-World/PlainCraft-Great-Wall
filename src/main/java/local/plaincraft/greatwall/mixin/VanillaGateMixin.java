@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import java.util.concurrent.CompletableFuture;
 import local.plaincraft.greatwall.lifecycle.WorldServices;
+import local.plaincraft.greatwall.generation.VanillaTerrainEngine;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
 import net.minecraft.server.level.GenerationChunkHolder;
@@ -20,19 +21,29 @@ public abstract class VanillaGateMixin {
             StaticCache2D<GenerationChunkHolder> chunks, Operation<CompletableFuture<ChunkAccess>> original) {
         var access = (ChunkMapAccess) this;
         var services = WorldServices.find(access.greatwall$level().getServer());
-        if (services == null || step.targetStatus() != ChunkStatus.FEATURES) {
+        if (services == null) {
             return original.call(holder, step, chunks);
         }
         var pos = holder.getPos();
         var dimension = access.greatwall$level().dimension().location().toString();
-        return services.require(dimension, pos.x, pos.z, "vanilla:features")
+        var barrier = services.barrier(access.greatwall$level());
+        java.util.concurrent.Executor executor = command -> access.greatwall$worldgenMailbox()
+                .tell(ChunkTaskPriorityQueueSorter.message(holder, command));
+        if (barrier != null && step.targetStatus() == ChunkStatus.INITIALIZE_LIGHT && barrier.layout().owns(pos)) {
+            return barrier.beforeLight(pos, holder.getChunkIfPresentUnchecked(ChunkStatus.FEATURES),
+                    new VanillaTerrainEngine(access.greatwall$level())).thenComposeAsync(ignored ->
+                    original.call(holder, step, chunks), executor);
+        }
+        if (step.targetStatus() != ChunkStatus.FEATURES) return original.call(holder, step, chunks);
+        return services.require(dimension, pos.x, pos.z, "vanilla:features").thenCompose(plan -> barrier == null
+                        ? CompletableFuture.completedFuture(null) : barrier.delayFeatures(pos))
                 .<CompletableFuture<ChunkAccess>>handleAsync((plan, planningFailure) -> {
             if (planningFailure != null) return CompletableFuture.failedFuture(planningFailure);
             services.assertActiveSession();
             services.trace("STAGE_ENTER", dimension, pos.x, pos.z, "vanilla:features", "vanilla-mailbox");
             return original.call(holder, step, chunks).whenComplete((chunk, failure) ->
                     services.trace("STAGE_EXIT", dimension, pos.x, pos.z, "vanilla:features", "vanilla-mailbox"));
-        }, command -> access.greatwall$worldgenMailbox().tell(ChunkTaskPriorityQueueSorter.message(holder, command)))
+        }, executor)
                 .thenCompose(result -> result);
     }
 }

@@ -1,0 +1,20 @@
+{
+  "id": "s003-recovery-tectonic-c2me-saved-missing-569cc99e",
+  "profile": "tectonic-c2me",
+  "crashPoint": "saved",
+  "fault": "missing",
+  "survivingEvidence": 4,
+  "passed": true,
+  "counts": {
+    "CAPTURE_EXIT": 3,
+    "FEATURE_DELAY_OUTSIDE_LOCK": 4,
+    "CELL_REQUEST": 4,
+    "T0_REUSED": 7,
+    "CAPTURE_ENTER": 4,
+    "T0_DISK_REUSED": 3,
+    "APPLY_REPLAY_NOOP": 1,
+    "APPLY_ENTER": 1,
+    "PREPARE_FEATURES": 36,
+    "T0_DURABLE": 3
+  }
+}

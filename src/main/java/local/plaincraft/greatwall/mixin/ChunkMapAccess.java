@@ -4,6 +4,7 @@ import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.thread.ProcessorHandle;
+import net.minecraft.util.thread.BlockableEventLoop;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -12,4 +13,5 @@ public interface ChunkMapAccess {
     @Accessor("level") ServerLevel greatwall$level();
     @Accessor("worldgenMailbox")
     ProcessorHandle<ChunkTaskPriorityQueueSorter.Message<Runnable>> greatwall$worldgenMailbox();
+    @Accessor("mainThreadExecutor") BlockableEventLoop<Runnable> greatwall$chunkMainExecutor();
 }

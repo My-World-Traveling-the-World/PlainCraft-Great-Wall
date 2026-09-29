@@ -15,6 +15,8 @@ if (!(profile in ['vanilla', 'tectonic', 'tectonic-c2me', 'pack-opencl']) ||
 def directory = layout.buildDirectory.dir("run/serverSmoke/${profile}/${runId}")
 def runtimeJava = providers.gradleProperty('smokeJavaVersion').getOrElse('21').toInteger()
 def disableRewrite = providers.gradleProperty('s0DisableRewrite').getOrElse('false').toBoolean()
+def terrainProbe = providers.gradleProperty('s0Terrain').getOrElse('false').toBoolean()
+def terrainResume = providers.gradleProperty('s0TerrainResume').getOrElse('false').toBoolean()
 if (disableRewrite && profile != 'tectonic-c2me') {
     throw new GradleException('Rewrite-disable capability test is isolated to the C2ME CPU profile')
 }
@@ -25,10 +27,26 @@ def probeArgs = [
     "-Dgreatwall.s0.reload=${providers.gradleProperty('s0Reload').getOrElse('none')}",
     "-Dgreatwall.s0.reloadWorldgen=${providers.gradleProperty('s0ReloadWorldgen').getOrElse('false')}",
     "-Dgreatwall.s0.entries=${providers.gradleProperty('s0Entries').getOrElse('false')}",
+    "-Dgreatwall.s0.terrain=${terrainProbe}",
+    "-Dgreatwall.s0.terrainRounds=${providers.gradleProperty('s0TerrainRounds').getOrElse('1')}",
+    "-Dgreatwall.s0.terrainConcurrency=${providers.gradleProperty('s0TerrainConcurrency').getOrElse('1')}",
+    "-Dgreatwall.s0.terrainOrder=${providers.gradleProperty('s0TerrainOrder').getOrElse('1')}",
+    "-Dgreatwall.s0.terrainSkip=${providers.gradleProperty('s0TerrainSkip').getOrElse('false')}",
+    "-Dgreatwall.s0.terrainPauseBeforeApply=${providers.gradleProperty('s0TerrainPauseBeforeApply').getOrElse('false')}",
+    "-Dgreatwall.s0.terrainCrashAfterSave=${providers.gradleProperty('s0TerrainCrashAfterSave').getOrElse('false')}",
+    "-Dgreatwall.s0.terrainResume=${terrainResume}",
+    "-Dgreatwall.s0.terrainFixedWorkers=${providers.gradleProperty('s0TerrainFixedWorkers').getOrElse('false')}",
+    "-Dgreatwall.s0.runId=${runId}",
     "-Dgreatwall.s0.disableRewrite=${disableRewrite}",
     "-Dgreatwall.s0.expectedFailure=${providers.gradleProperty('s0ExpectedFailure').getOrElse('false')}",
     "-Dgreatwall.s0.expectedAdapter=${!disableRewrite && (profile == 'tectonic-c2me' || profile == 'pack-opencl') ? 'c2me' : 'vanilla'}"
 ]
+if (terrainProbe) probeArgs.add("-Dmax.bg.threads=${providers.gradleProperty('s0TerrainConcurrency').getOrElse('1')}")
+if (providers.gradleProperty('s0TerrainFixedWorkers').getOrElse('false').toBoolean()) {
+    if (!terrainProbe) throw new GradleException('Fixed workers are only permitted in the isolated terrain fixture')
+    // Make the vanilla pool's CPU-derived ceiling high enough for the 16-worker test.
+    probeArgs.add('-XX:ActiveProcessorCount=24')
+}
 if (disableRewrite) probeArgs.add('-Dfabric.debug.disableModIds=c2me-rewrites-chunk-system,c2me-notickvd')
 if (!(runtimeJava in [21, 25]) || (runtimeJava != 21 && profile != 'pack-opencl')) {
     throw new GradleException('Only the existing OpenCL profile may opt into its required Java 25 runtime')
@@ -60,6 +78,14 @@ loom {
 tasks.register('prepareServerSmoke') {
     doLast {
         def root = directory.get().asFile
+        if (terrainResume) {
+            if (!terrainProbe || !new File(root, 'greatwall_test_world').isFile() ||
+                    !new File(root, 'world/greatwall-s0/recipes').isDirectory()) {
+                throw new GradleException('Recovery is restricted to an identified S0 test world')
+            }
+            logger.lifecycle("Resuming this isolated S0 crash-recovery fixture: ${root}")
+            return
+        }
         if (new File(root, 'world').exists()) {
             throw new GradleException('Refusing an existing smoke world; choose a new smokeRunId')
         }
@@ -79,6 +105,12 @@ simulation-distance=2
 max-tick-time=60000
 sync-chunk-writes=true
 ''', 'UTF-8')
+        if (terrainProbe) {
+            new File(root, 'server.properties').append('''level-type=minecraft:flat
+generator-settings={"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"biome":"minecraft:plains","features":true,"lakes":false,"structure_overrides":[]}
+spawn-protection=0
+''', 'UTF-8')
+        }
         if (providers.gradleProperty('s0Reload').getOrElse('none') != 'none') {
             def fixture = new File(root, 'world/datapacks/greatwall-s0')
             fixture.mkdirs()
@@ -90,10 +122,26 @@ sync-chunk-writes=true
         logger.lifecycle("Isolated smoke directory: ${root}")
     }
 }
+def terrainWorkerAgent = tasks.register('terrainWorkerAgent', Jar) {
+    dependsOn tasks.named('serverSmokeClasses')
+    from(sourceSets.serverSmoke.output) { include 'local/plaincraft/greatwall/smoke/WorkerCountAgent*.class' }
+    archiveClassifier = 'terrain-worker-agent'
+    destinationDirectory = layout.buildDirectory.dir('smoke-libs')
+    doFirst {
+        def asm = sourceSets.serverSmoke.compileClasspath.files.findAll { it.name ==~ /asm-[0-9].*\.jar/ }
+        if (asm.size() != 1) throw new GradleException('Expected one already locked ASM core for test-only agent')
+        manifest.attributes('Premain-Class': 'local.plaincraft.greatwall.smoke.WorkerCountAgent',
+                'Class-Path': asm[0].toURI().toASCIIString())
+    }
+}
 tasks.named('runServerSmoke') {
-    timeout = java.time.Duration.ofMinutes(3)
+    timeout = java.time.Duration.ofMinutes(terrainProbe ? 10 : 3)
     dependsOn tasks.named('prepareServerSmoke')
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
+    if (providers.gradleProperty('s0TerrainFixedWorkers').getOrElse('false').toBoolean() && profile == 'tectonic-c2me') {
+        dependsOn terrainWorkerAgent
+        doFirst { jvmArgs "-javaagent:${terrainWorkerAgent.get().archiveFile.get().asFile.absolutePath}" }
+    }
 }
 
 def smokeJar = tasks.register('serverSmokeJar', Jar) {

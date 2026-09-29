@@ -19,7 +19,7 @@ public final class ProbeMixinPlugin implements IMixinConfigPlugin {
         if (!version.equals("0.4.0-alpha.0.27+1.21.1")) {
             throw new IllegalStateException("Uncertified C2ME adapter version: " + version);
         }
-        return List.of("C2meGateMixin");
+        return List.of("C2meGateMixin", "C2meFeatureSkipMixin");
     }
     @Override public void preApply(String target, ClassNode node, String mixin, IMixinInfo info) {}
     @Override public void postApply(String target, ClassNode node, String mixin, IMixinInfo info) {}

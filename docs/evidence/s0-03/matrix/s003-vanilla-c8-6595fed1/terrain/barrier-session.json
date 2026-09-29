@@ -1,0 +1,20 @@
+{
+  "leases": 0,
+  "owners": 400,
+  "delays": 0,
+  "counts": {
+    "APPLY_ENTER": 400,
+    "T0_CAPTURED": 400,
+    "CAPTURE_ENTER": 400,
+    "T0_REUSED": 700,
+    "CELL_REQUEST": 400,
+    "FEATURE_DELAY_OUTSIDE_LOCK": 400,
+    "CAPTURE_EXIT": 400,
+    "APPLY_EXIT": 400,
+    "T0_DURABLE": 400,
+    "PREPARE_FEATURES": 3600
+  },
+  "closed": true,
+  "tiles": 400,
+  "recipe": "78cf252c3aaf359e079b1038cb63a3e1c87e7185fab2f276cc74440bc34fab15"
+}

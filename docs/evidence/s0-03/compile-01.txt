@@ -1,0 +1,58 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava
+D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\generation\FeaturesLease.java:21: 错误: 对于create(String,Comparator<T#1>), 找不到合适的方法
+    private static final TicketType<String> TYPE = TicketType.create("greatwall_s0_features", Comparator.naturalOrder());
+                                                             ^
+    方法 TicketType.<T#2>create(String,Comparator<T#2>)不适用
+      (推断类型不符合等式约束条件
+        推断: T#3
+        等式约束条件: T#4)
+    方法 TicketType.<T#5>create(String,Comparator<T#5>,int)不适用
+      (无法推断类型变量 T#5
+        (实际参数列表和形式参数列表长度不同))
+  其中, T#1,T#2,T#3,T#4,T#5是类型变量:
+    T#1扩展Comparable<? super T#1>
+    T#2扩展已在方法 <T#2>create(String,Comparator<T#2>)中声明的Object
+    T#3扩展Comparable<? super T#3>
+    T#4扩展Comparable<? super T#3>
+    T#5扩展已在方法 <T#5>create(String,Comparator<T#5>,int)中声明的Object
+1 个错误
+
+> Task :compileJava FAILED
+
+[Incubating] Problems report is available at: file:///D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler output below.
+  D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\generation\FeaturesLease.java:21: 错误: 对于create(String,Comparator<T#1>), 找不到合适的方法
+      private static final TicketType<String> TYPE = TicketType.create("greatwall_s0_features", Comparator.naturalOrder());
+                                                               ^
+      方法 TicketType.<T#2>create(String,Comparator<T#2>)不适用
+        (推断类型不符合等式约束条件
+          推断: T#3
+          等式约束条件: T#4)
+      方法 TicketType.<T#5>create(String,Comparator<T#5>,int)不适用
+        (无法推断类型变量 T#5
+          (实际参数列表和形式参数列表长度不同))
+    其中, T#1,T#2,T#3,T#4,T#5是类型变量:
+      T#1扩展Comparable<? super T#1>
+      T#2扩展已在方法 <T#2>create(String,Comparator<T#2>)中声明的Object
+      T#3扩展Comparable<? super T#3>
+      T#4扩展Comparable<? super T#3>
+      T#5扩展已在方法 <T#5>create(String,Comparator<T#5>,int)中声明的Object
+  1 个错误
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+BUILD FAILED in 11s
+1 actionable task: 1 executed

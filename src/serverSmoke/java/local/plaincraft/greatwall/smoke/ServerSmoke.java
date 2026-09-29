@@ -20,9 +20,11 @@ public final class ServerSmoke implements ModInitializer {
     private String evidence;
     private int reloadRound;
     private final RuntimeEntryFixture entries = new RuntimeEntryFixture();
+    private final TerrainBarrierFixture terrain = new TerrainBarrierFixture();
 
     @Override
     public void onInitialize() {
+        TerrainBarrierFixture.register();
         Path directory = FabricLoader.getInstance().getGameDir().toAbsolutePath().normalize();
         if (!Files.isRegularFile(directory.resolve("greatwall_test_world"))) {
             throw new IllegalStateException("Smoke requires an explicit isolated test-world marker");
@@ -64,7 +66,9 @@ public final class ServerSmoke implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (!started || stopRequested) return;
             ticks++;
-            if (Boolean.getBoolean("greatwall.s0.entries")) {
+            if (Boolean.getBoolean("greatwall.s0.terrain")) {
+                if (!terrain.tick(server, ticks)) return;
+            } else if (Boolean.getBoolean("greatwall.s0.entries")) {
                 if (!entries.tick(server, ticks)) return;
             } else if (!System.getProperty("greatwall.s0.reload", "none").equals("none")) {
                 if (!reloadFixture(server)) return;

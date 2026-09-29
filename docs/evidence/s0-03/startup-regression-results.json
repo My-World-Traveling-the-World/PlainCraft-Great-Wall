@@ -1,0 +1,47 @@
+[
+  {
+    "id": "s002-vanilla-1-success-1f16d5ae",
+    "profile": "vanilla",
+    "delayMs": 1,
+    "outcome": "SUCCESS",
+    "cancel": false,
+    "reload": "none",
+    "entries": false,
+    "postReload": false,
+    "disableRewrite": false,
+    "exitCode": 0,
+    "seconds": 28.427,
+    "counts": {
+      "REQUEST_PLAN": 81,
+      "WAIT_PLAN_NO_LOCK": 81,
+      "STAGE_ENTER": 81,
+      "PLAN_READY": 81,
+      "STAGE_EXIT": 81,
+      "STARTUP_WARMING": 1
+    },
+    "passed": true
+  },
+  {
+    "id": "s002-tectonic-c2me-1-success-9cdd294a",
+    "profile": "tectonic-c2me",
+    "delayMs": 1,
+    "outcome": "SUCCESS",
+    "cancel": false,
+    "reload": "none",
+    "entries": false,
+    "postReload": false,
+    "disableRewrite": false,
+    "exitCode": 0,
+    "seconds": 39.526,
+    "counts": {
+      "STARTUP_WARMING": 1,
+      "STAGE_EXIT": 81,
+      "STAGE_ENTER": 81,
+      "WAIT_PLAN_NO_LOCK": 81,
+      "PLAN_READY": 81,
+      "REQUEST_PLAN": 81,
+      "WRITE_LOCK_ACQUIRED": 81
+    },
+    "passed": true
+  }
+]

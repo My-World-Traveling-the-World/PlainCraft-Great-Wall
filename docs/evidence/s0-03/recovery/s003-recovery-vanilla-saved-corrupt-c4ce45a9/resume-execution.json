@@ -1,0 +1,21 @@
+{
+  "phase": "resume",
+  "exitCode": 1,
+  "seconds": 21.918037,
+  "forcedTestJvmKill": false,
+  "arguments": [
+    "--offline",
+    "runServerSmoke",
+    "-PsmokeProfile=vanilla",
+    "-PsmokeRunId=s003-recovery-vanilla-saved-corrupt-c4ce45a9",
+    "-Ps0Probe=true",
+    "-Ps0Terrain=true",
+    "-Ps0TerrainRounds=1",
+    "-Ps0TerrainConcurrency=2",
+    "-Ps0TerrainResume=true",
+    "-Ps0ExpectedFailure=true",
+    "--dependency-verification=strict",
+    "--no-daemon",
+    "--console=plain"
+  ]
+}

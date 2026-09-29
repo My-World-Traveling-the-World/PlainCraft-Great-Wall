@@ -1,0 +1,26 @@
+{
+  "id": "s003-tectonic-c2me-c2-64b94adb",
+  "profile": "tectonic-c2me",
+  "workers": 2,
+  "rounds": 1,
+  "skip": true,
+  "exitCode": 0,
+  "seconds": 33.4858351,
+  "arguments": [
+    "--offline",
+    "runServerSmoke",
+    "-PsmokeProfile=tectonic-c2me",
+    "-PsmokeRunId=s003-tectonic-c2me-c2-64b94adb",
+    "-Ps0Probe=true",
+    "-Ps0Terrain=true",
+    "-Ps0TerrainRounds=1",
+    "-Ps0TerrainConcurrency=2",
+    "-Ps0TerrainOrder=209",
+    "-Ps0TerrainSkip=true",
+    "-Ps0TerrainFixedWorkers=false",
+    "-Ps0ExpectedFailure=true",
+    "--dependency-verification=strict",
+    "--no-daemon",
+    "--console=plain"
+  ]
+}

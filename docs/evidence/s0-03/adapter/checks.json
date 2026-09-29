@@ -1,0 +1,15 @@
+{
+  "matrixCases": 8,
+  "rounds": 800,
+  "owners": 3200,
+  "recoveryCases": 8,
+  "skipCases": 1,
+  "originalQosRounds": 100,
+  "originalQosOwners": 400,
+  "originalQosMatchesCalibrated": true,
+  "redlineViolations": 0,
+  "proxySettings": 0,
+  "lockSha256": "367ba3559edbec89d075630c6ce9a2b881620de0028ef2b43366fb58640651f4",
+  "verificationSha256": "c4e281095c96f26a421fc7d676a6d218f20f9739b40978b061863707f7edcee5",
+  "calibration": "Fixed-worker cases use test-only premain calibration of two QoS capacity methods; native region locks unchanged. Recovery and skip fault use the original QoS policy."
+}

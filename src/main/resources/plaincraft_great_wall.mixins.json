@@ -3,6 +3,6 @@
   "package": "local.plaincraft.greatwall.mixin",
   "compatibilityLevel": "JAVA_21",
   "plugin": "local.plaincraft.greatwall.compat.c2me.ProbeMixinPlugin",
-  "mixins": ["ChunkMapAccess", "MinecraftServerProbeMixin", "VanillaGateMixin"],
+  "mixins": ["ChunkMapAccess", "TerrainChunkAccess", "MinecraftServerProbeMixin", "VanillaGateMixin"],
   "injectors": {"defaultRequire": 1}
 }

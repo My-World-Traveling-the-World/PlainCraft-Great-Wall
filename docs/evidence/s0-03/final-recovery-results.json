@@ -1,0 +1,162 @@
+[
+  {
+    "id": "s003-recovery-tectonic-c2me-durable-none-39fd8778",
+    "profile": "tectonic-c2me",
+    "crashPoint": "durable",
+    "fault": "none",
+    "survivingEvidence": 4,
+    "passed": true,
+    "counts": {
+      "T0_REUSED": 7,
+      "FEATURE_DELAY_OUTSIDE_LOCK": 4,
+      "OUTPUT_STABLE_AT_FULL": 4,
+      "CELL_REQUEST": 4,
+      "APPLY_EXIT": 4,
+      "T0_DURABLE": 4,
+      "T0_DISK_REUSED": 4,
+      "CAPTURE_ENTER": 4,
+      "PREPARE_FEATURES": 36,
+      "APPLY_ENTER": 4,
+      "CAPTURE_EXIT": 4
+    }
+  },
+  {
+    "id": "s003-recovery-tectonic-c2me-saved-corrupt-ea6dae41",
+    "profile": "tectonic-c2me",
+    "crashPoint": "saved",
+    "fault": "corrupt",
+    "survivingEvidence": 4,
+    "passed": true,
+    "counts": {
+      "PREPARE_FEATURES": 36,
+      "T0_DURABLE": 2,
+      "APPLY_EXIT": 1,
+      "CAPTURE_EXIT": 3,
+      "FEATURE_DELAY_OUTSIDE_LOCK": 4,
+      "CELL_REQUEST": 4,
+      "T0_REUSED": 7,
+      "CAPTURE_ENTER": 3,
+      "T0_DISK_REUSED": 3,
+      "APPLY_ENTER": 1
+    }
+  },
+  {
+    "id": "s003-recovery-tectonic-c2me-saved-missing-dd4fe7d9",
+    "profile": "tectonic-c2me",
+    "crashPoint": "saved",
+    "fault": "missing",
+    "survivingEvidence": 4,
+    "passed": true,
+    "counts": {
+      "CAPTURE_EXIT": 3,
+      "T0_DURABLE": 3,
+      "PREPARE_FEATURES": 36,
+      "APPLY_ENTER": 1,
+      "APPLY_REPLAY_NOOP": 1,
+      "T0_DISK_REUSED": 3,
+      "CAPTURE_ENTER": 4,
+      "T0_REUSED": 7,
+      "CELL_REQUEST": 4,
+      "FEATURE_DELAY_OUTSIDE_LOCK": 4
+    }
+  },
+  {
+    "id": "s003-recovery-tectonic-c2me-saved-none-9c299be9",
+    "profile": "tectonic-c2me",
+    "crashPoint": "saved",
+    "fault": "none",
+    "survivingEvidence": 4,
+    "passed": true,
+    "counts": {
+      "PREPARE_FEATURES": 36,
+      "APPLY_ENTER": 4,
+      "CAPTURE_EXIT": 4,
+      "T0_REUSED": 7,
+      "FEATURE_DELAY_OUTSIDE_LOCK": 4,
+      "APPLY_REPLAY_NOOP": 4,
+      "OUTPUT_STABLE_AT_FULL": 4,
+      "CELL_REQUEST": 4,
+      "T0_DURABLE": 4,
+      "T0_DISK_REUSED": 4,
+      "CAPTURE_ENTER": 4
+    }
+  },
+  {
+    "id": "s003-recovery-vanilla-durable-none-a76e1e5d",
+    "profile": "vanilla",
+    "crashPoint": "durable",
+    "fault": "none",
+    "survivingEvidence": 4,
+    "passed": true,
+    "counts": {
+      "CAPTURE_EXIT": 4,
+      "APPLY_ENTER": 4,
+      "PREPARE_FEATURES": 36,
+      "CAPTURE_ENTER": 4,
+      "T0_DISK_REUSED": 4,
+      "T0_DURABLE": 4,
+      "APPLY_EXIT": 4,
+      "CELL_REQUEST": 4,
+      "OUTPUT_STABLE_AT_FULL": 4,
+      "FEATURE_DELAY_OUTSIDE_LOCK": 4,
+      "T0_REUSED": 7
+    }
+  },
+  {
+    "id": "s003-recovery-vanilla-saved-corrupt-4101a861",
+    "profile": "vanilla",
+    "crashPoint": "saved",
+    "fault": "corrupt",
+    "survivingEvidence": 4,
+    "passed": true,
+    "counts": {
+      "T0_REUSED": 7,
+      "CELL_REQUEST": 4,
+      "CAPTURE_ENTER": 3,
+      "T0_DISK_REUSED": 3,
+      "FEATURE_DELAY_OUTSIDE_LOCK": 4,
+      "T0_DURABLE": 1,
+      "CAPTURE_EXIT": 3,
+      "PREPARE_FEATURES": 36
+    }
+  },
+  {
+    "id": "s003-recovery-vanilla-saved-missing-931b2bcd",
+    "profile": "vanilla",
+    "crashPoint": "saved",
+    "fault": "missing",
+    "survivingEvidence": 4,
+    "passed": true,
+    "counts": {
+      "T0_DURABLE": 1,
+      "FEATURE_DELAY_OUTSIDE_LOCK": 4,
+      "T0_DISK_REUSED": 3,
+      "CAPTURE_ENTER": 4,
+      "CELL_REQUEST": 4,
+      "T0_REUSED": 7,
+      "PREPARE_FEATURES": 36,
+      "CAPTURE_EXIT": 3
+    }
+  },
+  {
+    "id": "s003-recovery-vanilla-saved-none-9e7fe890",
+    "profile": "vanilla",
+    "crashPoint": "saved",
+    "fault": "none",
+    "survivingEvidence": 4,
+    "passed": true,
+    "counts": {
+      "PREPARE_FEATURES": 36,
+      "APPLY_ENTER": 4,
+      "CAPTURE_EXIT": 4,
+      "T0_REUSED": 7,
+      "FEATURE_DELAY_OUTSIDE_LOCK": 4,
+      "APPLY_REPLAY_NOOP": 4,
+      "OUTPUT_STABLE_AT_FULL": 4,
+      "CELL_REQUEST": 4,
+      "T0_DURABLE": 4,
+      "T0_DISK_REUSED": 4,
+      "CAPTURE_ENTER": 4
+    }
+  }
+]

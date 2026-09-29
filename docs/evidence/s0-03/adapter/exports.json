@@ -1,0 +1,32 @@
+[
+  {
+    "id": "s003-vanilla-c1-c649f6d7",
+    "class": "net\\minecraft\\server\\level\\ChunkMap.class",
+    "sha256": "429EF4D5CCA8FE9B5F5B536E66B19D831411879336DFC627D5CEA5A349F9332A"
+  },
+  {
+    "id": "s003-vanilla-c1-c649f6d7",
+    "class": "net\\minecraft\\server\\level\\ServerChunkCache.class",
+    "sha256": "8353FDE8EBF46DE0B8892E5D659CDFF2DDA4820E1006A85CF463ADA8DEA586AF"
+  },
+  {
+    "id": "s003-tectonic-c2me-c1-888c0234",
+    "class": "net\\minecraft\\server\\level\\ChunkMap.class",
+    "sha256": "35C4D8387C35C8BA90AC95947B9E0E7848AB5F8047509D403CF75E3C08356B09"
+  },
+  {
+    "id": "s003-tectonic-c2me-c1-888c0234",
+    "class": "net\\minecraft\\server\\level\\ServerChunkCache.class",
+    "sha256": "35E3BFD565C833FDFFCDCD4FF09DCCD5538F6D0ADA703AF7617E96061D429AE9"
+  },
+  {
+    "id": "s003-tectonic-c2me-c1-888c0234",
+    "class": "com\\ishland\\c2me\\rewrites\\chunksystem\\common\\statuses\\VanillaWorldGenerationDelegate.class",
+    "sha256": "8F5A312AE69A06FBC60003DDD46FB0A27B5CB6A914CD375FD45711658A76FA7B"
+  },
+  {
+    "id": "s003-tectonic-c2me-c1-888c0234",
+    "class": "test-only RuntimeLimiter",
+    "sha256": "6AB559AE7F7BD370237E1888A098AC511F9396DB252697B1CE1317B8FC8DAB9B"
+  }
+]

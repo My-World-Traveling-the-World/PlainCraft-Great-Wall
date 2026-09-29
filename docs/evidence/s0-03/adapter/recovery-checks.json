@@ -1,0 +1,58 @@
+[
+  {
+    "id": "s003-recovery-tectonic-c2me-durable-none-39fd8778",
+    "actualProcessKill": true,
+    "closed": true,
+    "savedOutputHashesEqual": null,
+    "passed": true
+  },
+  {
+    "id": "s003-recovery-tectonic-c2me-saved-corrupt-ea6dae41",
+    "actualProcessKill": true,
+    "closed": true,
+    "savedOutputHashesEqual": null,
+    "passed": true
+  },
+  {
+    "id": "s003-recovery-tectonic-c2me-saved-missing-dd4fe7d9",
+    "actualProcessKill": true,
+    "closed": true,
+    "savedOutputHashesEqual": null,
+    "passed": true
+  },
+  {
+    "id": "s003-recovery-tectonic-c2me-saved-none-9c299be9",
+    "actualProcessKill": true,
+    "closed": true,
+    "savedOutputHashesEqual": true,
+    "passed": true
+  },
+  {
+    "id": "s003-recovery-vanilla-durable-none-a76e1e5d",
+    "actualProcessKill": true,
+    "closed": true,
+    "savedOutputHashesEqual": null,
+    "passed": true
+  },
+  {
+    "id": "s003-recovery-vanilla-saved-corrupt-4101a861",
+    "actualProcessKill": true,
+    "closed": true,
+    "savedOutputHashesEqual": null,
+    "passed": true
+  },
+  {
+    "id": "s003-recovery-vanilla-saved-missing-931b2bcd",
+    "actualProcessKill": true,
+    "closed": true,
+    "savedOutputHashesEqual": null,
+    "passed": true
+  },
+  {
+    "id": "s003-recovery-vanilla-saved-none-9e7fe890",
+    "actualProcessKill": true,
+    "closed": true,
+    "savedOutputHashesEqual": true,
+    "passed": true
+  }
+]

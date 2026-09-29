@@ -1,0 +1,21 @@
+[
+  {
+    "case": "independent healthy replay",
+    "passed": true
+  },
+  {
+    "case": "affected owner writes",
+    "passed": true,
+    "reason": "An owner depending on damaged evidence entered APPLY"
+  },
+  {
+    "case": "terrain recaptured",
+    "passed": true,
+    "reason": "Damaged-evidence recovery recaptured terrain or did not close"
+  },
+  {
+    "case": "healthy result altered",
+    "passed": true,
+    "reason": "Independent healthy recovery changed the pre-crash result"
+  }
+]

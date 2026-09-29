@@ -1,0 +1,20 @@
+{
+  "recipe": "435fe219efb64e8d878c7eb7ee6f2ae061b117d129258be23c6d39c4baf047dc",
+  "tiles": 4,
+  "closed": true,
+  "counts": {
+    "PREPARE_FEATURES": 36,
+    "T0_DURABLE": 2,
+    "APPLY_EXIT": 1,
+    "CAPTURE_EXIT": 3,
+    "FEATURE_DELAY_OUTSIDE_LOCK": 4,
+    "CELL_REQUEST": 4,
+    "T0_REUSED": 7,
+    "CAPTURE_ENTER": 3,
+    "T0_DISK_REUSED": 3,
+    "APPLY_ENTER": 1
+  },
+  "delays": 0,
+  "owners": 4,
+  "leases": 0
+}

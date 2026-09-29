@@ -10,10 +10,12 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import local.plaincraft.greatwall.GreatWallMod;
+import local.plaincraft.greatwall.generation.WallStageCoordinator;
 import local.plaincraft.greatwall.planning.ProbePlanner;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -31,6 +33,7 @@ public final class WorldServices {
     private final boolean authorizedNewWorld;
     private final ConcurrentHashMap<String, WorldRecipeGuard> recipes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> failure = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<ServerLevel, WallStageCoordinator> barriers = new ConcurrentHashMap<>();
 
     private WorldServices(MinecraftServer server) {
         this.server = server;
@@ -65,6 +68,10 @@ public final class WorldServices {
         ServerWorldEvents.LOAD.register((server, level) -> {
             var services = find(server);
             if (services != null) services.openDimension(level);
+        });
+        ServerChunkEvents.CHUNK_LOAD.register((level, chunk) -> {
+            var service = find(level.getServer());
+            if (service != null && service.barrier(level) != null) service.barrier(level).verifyLoaded(chunk);
         });
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             var services = find(server);
@@ -105,6 +112,7 @@ public final class WorldServices {
             var services = find(server);
             if (services != null) {
                 services.planner.close();
+                services.barriers.values().forEach(WallStageCoordinator::close);
                 // Vanilla can fail while saving errored generation; preserve proof before that call.
                 services.writeEvidence("STOPPING");
             }
@@ -138,11 +146,16 @@ public final class WorldServices {
             throw new IllegalStateException("Cannot authorize the S0 world recipe", failure);
         }
         if (level.dimension().equals(Level.OVERWORLD)) {
+            if (Boolean.getBoolean("greatwall.s0.terrain")) {
+                barriers.put(level, new WallStageCoordinator(level, this, recipes.get(dimension).hash(),
+                        evidenceDirectory.resolve("terrain")));
+            }
             planner.transition(BootstrapState.BOOTSTRAP, BootstrapState.RECIPE_READY);
         }
     }
 
     public static WorldServices find(MinecraftServer server) { return SESSIONS.get(server); }
+    public WallStageCoordinator barrier(ServerLevel level) { return barriers.get(level); }
     public static void warming(MinecraftServer server) {
         var services = find(server);
         if (services != null) {

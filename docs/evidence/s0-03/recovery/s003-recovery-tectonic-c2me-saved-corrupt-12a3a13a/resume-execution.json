@@ -1,0 +1,21 @@
+{
+  "phase": "resume",
+  "exitCode": 0,
+  "seconds": 30.0336851,
+  "forcedTestJvmKill": false,
+  "arguments": [
+    "--offline",
+    "runServerSmoke",
+    "-PsmokeProfile=tectonic-c2me",
+    "-PsmokeRunId=s003-recovery-tectonic-c2me-saved-corrupt-12a3a13a",
+    "-Ps0Probe=true",
+    "-Ps0Terrain=true",
+    "-Ps0TerrainRounds=1",
+    "-Ps0TerrainConcurrency=2",
+    "-Ps0TerrainResume=true",
+    "-Ps0ExpectedFailure=true",
+    "--dependency-verification=strict",
+    "--no-daemon",
+    "--console=plain"
+  ]
+}

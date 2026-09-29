@@ -1,0 +1,13 @@
+{
+  "damagedOwner": "2000:2000",
+  "affectedOwners": [
+    "2000:2000",
+    "2000:2001",
+    "2001:2001"
+  ],
+  "affectedApplyCount": 0,
+  "recaptureCount": 0,
+  "healthyOutputCount": 0,
+  "healthyHashesUnchanged": true,
+  "evidenceNotRecreated": true
+}

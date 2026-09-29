@@ -1,0 +1,146 @@
+[
+  {
+    "id": "s003-vanilla-c1-c649f6d7",
+    "profile": "vanilla",
+    "workers": 1,
+    "stage": "CAPTURE",
+    "p50Ms": 0.7649,
+    "p95Ms": 1.403,
+    "maxMs": 12.4629
+  },
+  {
+    "id": "s003-vanilla-c1-c649f6d7",
+    "profile": "vanilla",
+    "workers": 1,
+    "stage": "APPLY",
+    "p50Ms": 0.7806,
+    "p95Ms": 1.358,
+    "maxMs": 21.999
+  },
+  {
+    "id": "s003-vanilla-c2-df9bc551",
+    "profile": "vanilla",
+    "workers": 2,
+    "stage": "CAPTURE",
+    "p50Ms": 0.804,
+    "p95Ms": 1.6165,
+    "maxMs": 40.4116
+  },
+  {
+    "id": "s003-vanilla-c2-df9bc551",
+    "profile": "vanilla",
+    "workers": 2,
+    "stage": "APPLY",
+    "p50Ms": 0.8479,
+    "p95Ms": 1.4672,
+    "maxMs": 43.5
+  },
+  {
+    "id": "s003-vanilla-c8-4f6a91d9",
+    "profile": "vanilla",
+    "workers": 8,
+    "stage": "CAPTURE",
+    "p50Ms": 0.7761,
+    "p95Ms": 1.7023,
+    "maxMs": 16.524
+  },
+  {
+    "id": "s003-vanilla-c8-4f6a91d9",
+    "profile": "vanilla",
+    "workers": 8,
+    "stage": "APPLY",
+    "p50Ms": 0.7881,
+    "p95Ms": 1.8553,
+    "maxMs": 13.4048
+  },
+  {
+    "id": "s003-vanilla-c16-7f2c69fc",
+    "profile": "vanilla",
+    "workers": 16,
+    "stage": "CAPTURE",
+    "p50Ms": 0.7719,
+    "p95Ms": 1.4843,
+    "maxMs": 10.2959
+  },
+  {
+    "id": "s003-vanilla-c16-7f2c69fc",
+    "profile": "vanilla",
+    "workers": 16,
+    "stage": "APPLY",
+    "p50Ms": 0.8031,
+    "p95Ms": 1.5656,
+    "maxMs": 15.4868
+  },
+  {
+    "id": "s003-tectonic-c2me-c1-888c0234",
+    "profile": "tectonic-c2me",
+    "workers": 1,
+    "stage": "CAPTURE",
+    "p50Ms": 0.7122,
+    "p95Ms": 1.0246,
+    "maxMs": 5.7529
+  },
+  {
+    "id": "s003-tectonic-c2me-c1-888c0234",
+    "profile": "tectonic-c2me",
+    "workers": 1,
+    "stage": "APPLY",
+    "p50Ms": 0.7287,
+    "p95Ms": 1.027,
+    "maxMs": 4.9582
+  },
+  {
+    "id": "s003-tectonic-c2me-c2-c8a9c099",
+    "profile": "tectonic-c2me",
+    "workers": 2,
+    "stage": "CAPTURE",
+    "p50Ms": 0.767,
+    "p95Ms": 1.34,
+    "maxMs": 9.2935
+  },
+  {
+    "id": "s003-tectonic-c2me-c2-c8a9c099",
+    "profile": "tectonic-c2me",
+    "workers": 2,
+    "stage": "APPLY",
+    "p50Ms": 0.79,
+    "p95Ms": 1.2696,
+    "maxMs": 8.963
+  },
+  {
+    "id": "s003-tectonic-c2me-c8-b7f38768",
+    "profile": "tectonic-c2me",
+    "workers": 8,
+    "stage": "CAPTURE",
+    "p50Ms": 1.3868,
+    "p95Ms": 10.1375,
+    "maxMs": 34.3928
+  },
+  {
+    "id": "s003-tectonic-c2me-c8-b7f38768",
+    "profile": "tectonic-c2me",
+    "workers": 8,
+    "stage": "APPLY",
+    "p50Ms": 1.4089,
+    "p95Ms": 5.1161,
+    "maxMs": 22.0908
+  },
+  {
+    "id": "s003-tectonic-c2me-c16-b769e637",
+    "profile": "tectonic-c2me",
+    "workers": 16,
+    "stage": "CAPTURE",
+    "p50Ms": 1.9294,
+    "p95Ms": 21.0112,
+    "maxMs": 42.4618
+  },
+  {
+    "id": "s003-tectonic-c2me-c16-b769e637",
+    "profile": "tectonic-c2me",
+    "workers": 16,
+    "stage": "APPLY",
+    "p50Ms": 1.4077,
+    "p95Ms": 7.7964,
+    "maxMs": 40.9982
+  }
+]
