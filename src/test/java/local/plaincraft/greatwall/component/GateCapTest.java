@@ -7,6 +7,19 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 import org.junit.jupiter.api.Test;
 
 class GateCapTest {
+    @Test void nonWalkableCapStatesRetainRuinsWithoutReadingANonexistentRoute() {
+        for(var state:java.util.List.of(DecayState.RUIN,DecayState.BURIED)) {
+            var input=TemplateFixtures.input(SiteKind.END_CAP,new Bounds(-30,-33,-15,30,3,15),
+                    0,0,0,PaletteFamily.STONE,state,0);
+            var cap=assertDoesNotThrow(()->new EndCap(new DecayField(0),TemplateFixtures.PALETTE).compile(input));
+            assertFalse(cap.voxels().isEmpty(),"visible rooted ruins must not be discarded");
+            assertTrue(cap.requiredRoutes().isEmpty());
+            assertTrue(cap.voxels().stream().noneMatch(VoxelIntent::walkable));
+            assertTrue(cap.blockEntities().isEmpty());
+            // This is the old accessor, retained as a concrete counterexample to the old assumption.
+            assertThrows(java.util.NoSuchElementException.class,()->cap.requiredRoutes().getFirst());
+        }
+    }
     @Test void filledFoundationsDoNotPretendTheirTopIsNaturalGround() {
         for(int drop:new int[]{4,5,12}){
             var input=TemplateFixtures.input(SiteKind.GATE,new Bounds(-30,-33,-15,30,4,15),0,0,0,PaletteFamily.STONE,DecayState.INTACT,drop);

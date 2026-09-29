@@ -7,12 +7,15 @@ import java.util.List;
 import local.plaincraft.greatwall.decay.SupportGraph;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
+import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 
 /** Internal composition only: all children must already belong to the same complete site. */
 final class ComponentComposer {
     private ComponentComposer() {}
     static ComponentVoxels merge(ComponentInput input,List<ComponentVoxels> children) {
         if(children.isEmpty()) throw new IllegalArgumentException("empty composition");
+        long entries=0;for(var child:children)entries=Math.addExact(entries,child.voxels().size());
+        CompiledAllocation.charge(Math.multiplyExact(entries,128));
         Bounds b=children.getFirst().bounds();
         var voxels=new HashMap<Point3i,VoxelIntent>(); var entities=new ArrayList<BlockEntityIntent>();
         var slots=new ArrayList<SpawnSlot>(); var routes=new ArrayList<List<Point3i>>(); var roots=new HashSet<Point3i>();

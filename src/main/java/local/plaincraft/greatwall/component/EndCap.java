@@ -9,6 +9,7 @@ import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.geometry.Rasterizer;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
+import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 
 /** A terminal-side taper connected to a complete ground exit; never creates a far-bank cap. */
 public final class EndCap implements ComponentTemplate {
@@ -68,8 +69,10 @@ public final class EndCap implements ComponentTemplate {
     public ComponentVoxels compileAt(ComponentInput current,Predicate<ComponentVoxels> admissible) {
         Objects.requireNonNull(admissible);
         for(int candidate=0;candidate<4;candidate++)try {
-            var result=compileVariant(current,candidate);
+            int variant=candidate;
+            var result=CompiledAllocation.component(()->compileVariant(current,variant));
             if(!result.voxels().isEmpty()&&admissible.test(result))return result;
+            CompiledAllocation.discard(CompiledAllocation.bytes(result));
         }catch(WallFailure e){if(e.code()!=FailureCode.OWNERSHIP_CONFLICT)throw e;}
         return ComponentAssembly.empty(current.site().id(),Rasterizer.worldBounds(current.site().frame(),ENVELOPE));
     }
@@ -96,9 +99,13 @@ public final class EndCap implements ComponentTemplate {
                 var ramp=new Ramp(decay,palette).compileInFrame(ComponentComposer.frame(current,rampFrame,current.site().globalSQ8()));
                 var body=a.finish();
                 var result=ComponentComposer.merge(current,List.of(body,ramp));
-                if(!result.voxels().isEmpty()&&!new local.plaincraft.greatwall.decay.SupportGraph().reachable(result,
-                        body.requiredRoutes().getFirst().getFirst(),ramp.requiredRoutes().getFirst().getFirst()))
-                    return ComponentAssembly.empty(current.site().id(),result.bounds());
+                boolean functional=current.decay().state()==DecayState.INTACT||current.decay().state()==DecayState.PARTIAL;
+                if(!result.voxels().isEmpty()&&functional) {
+                    if(body.requiredRoutes().isEmpty()||ramp.requiredRoutes().isEmpty()
+                            ||!new local.plaincraft.greatwall.decay.SupportGraph().reachable(result,
+                                    body.requiredRoutes().getFirst().getFirst(),ramp.requiredRoutes().getFirst().getFirst()))
+                        return ComponentAssembly.empty(current.site().id(),result.bounds());
+                }
                 return result;
     }
 }

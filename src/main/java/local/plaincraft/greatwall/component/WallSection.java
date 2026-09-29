@@ -94,7 +94,24 @@ public final class WallSection implements ComponentTemplate {
                     && samples.apply(globalS).state() == DecayState.INTACT)
                 return cell(Part.LAMP,false,false,Map.of("hanging","false","waterlogged","false"));
             return null;
-        },samples);
+        },samples,p->routeAnchor(input,p));
+    }
+
+    /** Curve routes use the same station ribbon as the rasterizer, not the center's straight tangent. */
+    private static ComponentAssembly.RouteAnchor routeAnchor(ComponentInput input,Point3i local) {
+        long s=input.site().globalSQ8()+local.x()*256L+128;
+        var stations=input.stations();
+        for(int i=1;i<stations.size();i++) {
+            var a=stations.get(i-1);var b=stations.get(i);
+            if(s<a.globalSQ8()||s>b.globalSQ8())continue;
+            long dx=b.point().xQ8()-a.point().xQ8(),dz=b.point().zQ8()-a.point().zQ8();
+            long span=b.globalSQ8()-a.globalSQ8(),offset=s-a.globalSQ8(),length=FixedMath.hypotQ8(dx,dz);
+            long n=local.z()*256L+128;if(input.site().frame().mirror())n=-n;
+            var point=new Point2q(a.point().xQ8()+FixedMath.mulDiv(dx,offset,span)-FixedMath.mulDiv(dz,n,length),
+                    a.point().zQ8()+FixedMath.mulDiv(dz,offset,span)+FixedMath.mulDiv(dx,n,length));
+            return new ComponentAssembly.RouteAnchor(point,height(stations,s)+local.y());
+        }
+        throw new IllegalArgumentException("route anchor outside station ribbon");
     }
 
     private static ComponentAssembly.Cell cell(Part p, boolean required, boolean walk, Map<String,String> properties) {
