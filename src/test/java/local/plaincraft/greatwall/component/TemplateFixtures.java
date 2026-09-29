@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import local.plaincraft.greatwall.decay.PaletteBinding;
 import local.plaincraft.greatwall.geometry.Rasterizer;
+import local.plaincraft.greatwall.geometry.Projection;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 final class TemplateFixtures {
@@ -42,8 +43,8 @@ final class TemplateFixtures {
             for (int xx = worldBounds.minX(); xx < worldBounds.maxXExclusive(); xx++)
                 supports.put(new Point3i(xx,84,zz),new ProbeResult(drop <= 12 ? ProbeKind.SUPPORTED : ProbeKind.NO_SUPPORT,
                         64-drop,OptionalInt.empty(),OptionalInt.empty(),drop,HASH));
-        return new ComponentInput(site,List.of(new Station(0,new Point2q((x-320L)*256,z*256L),84,0),
-                new Station(640L*256,new Point2q((x+320L)*256,z*256L),84,0)),supports,
+        return new ComponentInput(site,List.of(new Station(0,Projection.local(frame,-320L*256,0),84,0),
+                new Station(640L*256,Projection.local(frame,320L*256,0),84,0)),supports,
                 new DecaySample(state,state == DecayState.INTACT ? 0 : state == DecayState.PARTIAL ? 25000 : 55000,
                         state == DecayState.INTACT ? 20 : state == DecayState.PARTIAL ? 16 : 2),
                 family,false,List.of(),List.of());

@@ -31,6 +31,7 @@ final class ComponentAssembly {
     private final List<List<Point3i>> routes = new ArrayList<>();
     private final Map<Point3i,BlockEntityIntent> entities = new HashMap<>();
     private final List<SpawnSlot> spawns = new ArrayList<>();
+    private boolean conflictingRequiredFloor;
 
     ComponentAssembly(ComponentInput input, Bounds localBounds, DecayField decay, PaletteBinding palette) {
         this.input = Objects.requireNonNull(input); this.localBounds = Objects.requireNonNull(localBounds);
@@ -45,7 +46,13 @@ final class ComponentAssembly {
         Point3i p = new Point3i(x,y,z);
         if (!contains(localBounds, p)) throw new IllegalArgumentException("template escaped frozen bounds: " + p);
         Cell previous = cells.get(p);
-        if (previous != null && previous.part() == Part.AIR && previous.required() && part != Part.AIR) return;
+        if (previous != null && previous.required() && previous.walkable() && part == Part.FOUNDATION) return;
+        if (previous != null && previous.part() == Part.AIR && previous.required() && part != Part.AIR) {
+            if (required && walkable) conflictingRequiredFloor = true;
+            return;
+        }
+        if (previous != null && previous.required() && previous.walkable() && part == Part.AIR && required)
+            conflictingRequiredFloor = true;
         cells.put(p, new Cell(part, required, walkable, Map.copyOf(properties)));
     }
 
@@ -59,12 +66,17 @@ final class ComponentAssembly {
     }
 
     void floor(int x0, int z0, int x1, int z1, int feet, Part part, String facing) {
+        floor(x0,z0,x1,z1,feet,part,facing,3);
+    }
+
+    void floor(int x0, int z0, int x1, int z1, int feet, Part part, String facing, int clearance) {
+        if (clearance < 2 || clearance > 3) throw new IllegalArgumentException("clearance must be two or three blocks");
         for (int z = z0; z < z1; z++) for (int x = x0; x < x1; x++) {
             Map<String,String> properties = part == Part.STAIR
                     ? Map.of("facing", facing, "half", "bottom", "shape", "straight", "waterlogged", "false")
                     : part == Part.FLOOR || part == Part.SLAB ? Map.of("type","top","waterlogged","false") : Map.of();
             put(x,feet-1,z,part,true,true,properties);
-            for (int h = 0; h < 3; h++) put(x,feet+h,z,Part.AIR,true,false);
+            for (int h = 0; h < clearance; h++) put(x,feet+h,z,Part.AIR,true,false);
         }
     }
 
@@ -88,7 +100,7 @@ final class ComponentAssembly {
     }
 
     ComponentVoxels finish(Bounds worldBounds, ColumnMapper mapper, CellRule rule) {
-        if (input.site().state() == SiteState.SUPPRESSED) return empty(input.site().id(), worldBounds);
+        if (input.site().state() == SiteState.SUPPRESSED || conflictingRequiredFloor) return empty(input.site().id(), worldBounds);
         var voxels = new ArrayList<VoxelIntent>(); var roots = new HashSet<Point3i>();
         var localToWorld = new HashMap<Point3i,List<Point3i>>();
         long componentHash = identityHash(input.site().id());
@@ -197,7 +209,9 @@ final class ComponentAssembly {
     private Point3i representative(Point3i local, Map<Point3i,List<Point3i>> map) {
         List<Point3i> candidates = map.get(local);
         if (candidates == null || candidates.isEmpty()) return null;
-        Point2q center = Projection.local(input.site().frame(),(long) local.x() * 256 + 128,(long) local.z() * 256 + 128);
+        long normal = (long) local.z() * 256 + 128;
+        if (input.site().frame().mirror()) normal = -normal;
+        Point2q center = Projection.local(input.site().frame(),(long) local.x() * 256 + 128,normal);
         return candidates.stream().min(Comparator.<Point3i>comparingLong(p -> {
             long dx = (long) p.x() * 256 + 128 - center.xQ8(), dz = (long) p.z() * 256 + 128 - center.zQ8();
             return dx * dx + dz * dz;

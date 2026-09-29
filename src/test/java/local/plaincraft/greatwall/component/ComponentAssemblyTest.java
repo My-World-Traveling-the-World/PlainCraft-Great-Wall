@@ -29,4 +29,12 @@ class ComponentAssemblyTest {
         assertThrows(UnsupportedOperationException.class, () -> compile(input).voxels().clear());
         assertTrue(compile(input).voxels().stream().anyMatch(v -> v.kind() == IntentKind.OWNED_VOID));
     }
+    @Test void incompatibleRequiredFloorAndHeadroomRejectWholeComponent() {
+        var input = TemplateFixtures.input(SiteKind.ENEMY_TOWER,BOUNDS);
+        var a = new ComponentAssembly(input,BOUNDS,new DecayField(0),TemplateFixtures.PALETTE);
+        a.foundation(-2,-2,3,3,-2);
+        a.floor(-2,-2,3,3,-1,Part.FLOOR,"east",2);
+        a.floor(-2,-2,3,3,0,Part.FLOOR,"east",2);
+        assertTrue(a.finish().voxels().isEmpty());
+    }
 }
