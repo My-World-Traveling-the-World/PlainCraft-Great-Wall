@@ -4,6 +4,7 @@ param(
     [ValidateSet(1,2,8,16)][int[]]$Concurrency = @(1,2,8,16),
     [ValidateRange(1,100)][int]$Rounds = 100,
     [ValidateSet('s0-03','s1b')][string]$EvidenceStage = 's0-03',
+    [ValidatePattern('^[a-z0-9-]*$')][string]$EvidenceRun = '',
     [switch]$SkipFault,
     [switch]$OriginalQos
 )
@@ -11,6 +12,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $project = Split-Path $PSScriptRoot -Parent
 $evidence = Join-Path $project "docs\evidence\$EvidenceStage\matrix"
+if ($EvidenceRun) { $evidence = Join-Path $evidence $EvidenceRun }
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 $results = [Collections.Generic.List[object]]::new()
 if (($SkipFault -or $OriginalQos) -and ($Profiles.Count -ne 1 -or $Profiles[0] -ne 'tectonic-c2me')) {

@@ -31,6 +31,7 @@ public final class GroundExitResolver implements AutoCloseable {
     private final ConcurrentHashMap<CellKey,CompletableFuture<List<GroundExitDecision>>> requests=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Key,CompletableFuture<GroundExitDecision>> sections=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<CellKey,Slice> summaries=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Key,GroundExitDecision> sealed=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,Integer> state=new ConcurrentHashMap<>();
 
     public GroundExitResolver(Source source,Executor worker,long summaryBytes) {
@@ -103,17 +104,36 @@ public final class GroundExitResolver implements AutoCloseable {
         },worker);
     }
     private CompletableFuture<GroundExitDecision> section(Key key,Exit left,Right right) {
-        active();var promise=new CompletableFuture<GroundExitDecision>();var old=sections.putIfAbsent(key,promise);
+        active();var known=sealed.get(key);
+        if(known!=null) {
+            if(!known.left().equals(left)||!known.right().equals(right.exit())
+                    ||known.terminalSQ8()!=(right.exit().isPresent()?Long.MAX_VALUE:right.s()))
+                throw fail(FailureCode.T0_CORRUPT,"accepted exits changed after sealing");
+            return CompletableFuture.completedFuture(known);
+        }
+        var promise=new CompletableFuture<GroundExitDecision>();var old=sections.putIfAbsent(key,promise);
         if(old!=null)return old.copy();
         promise.whenComplete((v,e)->sections.remove(key,promise));
         long first=Math.floorDiv(left.sQ8(),GroundExitDecision.CELL_Q8),last=Math.floorDiv(right.s(),GroundExitDecision.CELL_Q8);
         try {
             gather(key,first,last,new Evidence(List.of(),digest("ground-exit-v1")))
                     .thenComposeAsync(e->decide(key,left,right,e),worker)
-                    .thenComposeAsync(d->{active();return source.persist(d).thenApply(v->d);},worker)
+                    .thenComposeAsync(d->{active();return source.persist(d).thenApply(v->{remember(d);return d;});},worker)
                     .whenComplete((v,e)->complete(promise,v,e));
         }catch(Throwable error){promise.completeExceptionally(error);}
         return promise.copy();
+    }
+    private void remember(GroundExitDecision d) {
+        int bytes=Math.toIntExact(2048L+d.breaks().size()*128L+d.exclusions().size()*64L+d.caps().size()*512L);
+        state.compute("summary-bytes",(k,n)->{
+            int used=n==null?0:n;
+            if(!state.containsKey("closed")&&(long)used+bytes<=Math.min(summaryBytes/2,4L<<20)&&sealed.size()<256) {
+                var old=sealed.putIfAbsent(d.key(),d);
+                if(old==null)return used+bytes;
+                if(!old.equals(d))throw fail(FailureCode.T0_CORRUPT,"two sealed decisions for one interval");
+            }
+            return used;
+        });
     }
     private CompletableFuture<Evidence> gather(Key key,long cell,long last,Evidence prior) {
         var result=new CompletableFuture<Evidence>();gatherNext(key,cell,last,prior,result);return result;
@@ -224,6 +244,6 @@ public final class GroundExitResolver implements AutoCloseable {
         if(state.putIfAbsent("closed",1)!=null)return;
         var failure=fail(FailureCode.CLOSED,"exit resolver closed");
         requests.values().forEach(f->f.completeExceptionally(failure));sections.values().forEach(f->f.completeExceptionally(failure));
-        state.compute("summary-bytes",(k,n)->{summaries.clear();return 0;});
+        state.compute("summary-bytes",(k,n)->{summaries.clear();sealed.clear();return 0;});
     }
 }
