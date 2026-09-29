@@ -8,5 +8,6 @@
 4. RouteShape含SEARCH与boundary两个计数，SegmentGeometry只有总计数。route内存cache miss不从geometry总数猜两个分账；重新跑同一个Ridge纯函数。geometry磁盘cache仍可直接用于geometry，不增永久路线路径协议。
 5. CanonicalCodec补充`stations(StationTable)`、`prefix(PrefixSummary)`、`readPrefix(byte[])`，用于原规格已有站表hash与前缀存储；前缀proofHash是必须保存的链字段，不是被省略的自身payload校验和。`readWritePlan(byte[])`执行8MiB/有界集合检查；带`DimensionBounds`重载额外检查体素数量及所有Y，生产调用后者，不猜维度高度。
 6. PrefixSummaryIndex新增静态纯函数`reduce(PrefixSummary,SegmentGeometry)`，原`combine`委托它；缓存验证用同一归约公式，不复制另一套链哈希算法。
+7. PrefixSummaryIndex增加四参构造（最后参数`Executor io`），三参构造保留给独立IO owner测试。生产必须传独立IO executor。SegmentCacheStore增加`recipeHash()`不可变访问器、`corruptCount()`诊断访问器；前缀读取用冻结recipe且在IO执行，不在pump同步读盘。缓存CRC32C覆盖压缩字节，SHA-256覆盖原始canonical字节。前缀链固定为`SHA256(CanonicalCodec.prefix(新的边界/累计长/terminal/旧proof) || nextGeometryHash的32字节)`。
 
 本文件不宣称以上实现/测试已经完成；实际状态只记在`docs/S1A.md`。

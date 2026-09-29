@@ -1,6 +1,9 @@
 package local.plaincraft.greatwall.planning;
 
 import java.util.UUID;
+import java.util.List;
+import java.util.Optional;
+import local.plaincraft.greatwall.geometry.ArcLength;
 import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallTypes.*;
@@ -19,5 +22,15 @@ public final class PlanningFixtures {
         String hash = DeterministicHash.sha256(CanonicalCodec.recipe(r));
         return new WorldRecipe(r.instance(), hash, seed, r.dimension(), r.frozenSpawn(), r.axis(), r.bounds(),
                 r.config(), r.terrainHash(), r.paletteHash(), r.templatesHash(), hash);
+    }
+
+    public static SegmentGeometry geometry(WorldRecipe recipe, long index, Optional<Terminal> terminal) {
+        var a = new AnchorField(recipe);
+        var points = List.of(a.at(index).point(), a.at(index + 1).point());
+        var value = new SegmentGeometry(new SegmentKey(recipe.recipeHash(), recipe.dimension(), index), points,
+                ArcLength.accumulate(points), List.of(), terminal, new Boundary(index, points.getFirst(), 84, "b" + index),
+                new Boundary(index + 1, points.getLast(), 84, "b" + (index + 1)), 2, 0, HASH);
+        return new SegmentGeometry(value.key(), value.points(), value.localSQ8(), value.water(), value.terminal(),
+                value.start(), value.end(), value.logicalColumns(), value.degradation(), DeterministicHash.sha256(CanonicalCodec.geometry(value)));
     }
 }
