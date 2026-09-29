@@ -201,6 +201,8 @@ public final class RidgePlanner {
         if (c.curveIndex == 0) {
             c.tangents = new long[129];
             for (int i = 1; i < 128; i++) c.tangents[i] = FixedMath.roundDiv(c.controls.get(i + 1) - c.controls.get(i - 1), 2);
+            c.tangents[1] = 0;
+            c.tangents[127] = 0;
         }
         int i = c.curveIndex;
         double a = 2 * c.controls.get(i) - 2 * c.controls.get(i + 1) + c.tangents[i] + c.tangents[i + 1];
@@ -257,6 +259,9 @@ public final class RidgePlanner {
                     + (t3 - 32 * t2 + 256 * t) * c.tangents[edge]
                     + (-2 * t3 + 48 * t2) * c.controls.get(edge + 1)
                     + (t3 - 16 * t2) * c.tangents[edge + 1], 4096);
+        }
+        if (Math.abs(residual) > 192L * 256) {
+            c.fallback = true; c.degradation = 3; c.points.clear(); return;
         }
         Point2q point = position(c, u * 256, residual);
         if (!inside(point)) throw new WallFailure(FailureCode.OUT_OF_BOUNDS, "route leaves frozen bounds");

@@ -108,6 +108,14 @@ class HydrologyTest {
         assertEquals(FailureCode.ROOT_NOT_FOUND, failure.code());
     }
 
+    @Test void missingBedOrCensoredReferenceIsNotCertifiedDry() {
+        var failure = assertThrows(WallFailure.class, () -> classify(0, false, 64, (x, z) -> new ColumnSample(
+                64, java.util.OptionalInt.of(70), java.util.OptionalInt.empty(), "minecraft:river", Quality.REFERENCE, false)));
+        assertEquals(FailureCode.HYDROLOGY_UNRESOLVED, failure.code());
+        assertThrows(WallFailure.class, () -> classify(0, false, 64, (x, z) -> new ColumnSample(
+                64, java.util.OptionalInt.empty(), java.util.OptionalInt.empty(), "minecraft:plains", Quality.CENSORED, true)));
+    }
+
     @Test void sliceAndCacheTemperatureDoNotAffectWaterEvidence() {
         var expected = classify(0, false, 1, river(100, 49, 58));
         for (int slice : new int[] {7, 64, 256}) assertEquals(expected, classify(0, false, slice, river(100, 49, 58)));

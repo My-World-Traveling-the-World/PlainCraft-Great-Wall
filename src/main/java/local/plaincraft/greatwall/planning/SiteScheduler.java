@@ -80,6 +80,7 @@ public final class SiteScheduler {
                 s.absorbedBy().ifPresent(included::add);
             }
         }
+        for (var s : resolved) if (s.absorbedBy().filter(included::contains).isPresent()) included.add(s.id());
         for (var s : resolved) if (included.contains(s.id()) && selected.stream().noneMatch(v -> v.id().equals(s.id()))) selected.add(s);
         selected.sort(ORDER);
         if (selected.size() > 64) throw new WallFailure(FailureCode.BUDGET_EXHAUSTED, "more than 64 sites per plan");

@@ -253,7 +253,12 @@ public final class HydrologyClassifier {
             c.column = c.oracle.begin(cell.x, cell.z, SampleKind.REFERENCE); return null;
         }
         if (!c.column.done()) { c.oracle.advance(c.column, 1); return null; }
-        var value = c.oracle.finish(c.column); c.column = null; c.cache.put(key, value); return value;
+        var value = c.oracle.finish(c.column); c.column = null;
+        if (value.quality() != Quality.REFERENCE || value.upperCensored()
+                || value.waterTopY().isPresent() && value.bedTopY().isEmpty()) {
+            throw new WallFailure(FailureCode.HYDROLOGY_UNRESOLVED, "reference column cannot certify ground or river bed");
+        }
+        c.cache.put(key, value); return value;
     }
 
     private static boolean wet(ColumnSample sample) {

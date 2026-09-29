@@ -56,6 +56,10 @@ class RidgePlannerTest {
         var anchor = new AnchorField(PlanningFixtures.recipe(1));
         assertEquals(anchor.carrier(0, 2047 * 256), a.points().get(2047));
         assertEquals(anchor.carrier(1, 256), b.points().get(1));
+        for (int u = 1; u <= 16; u++) {
+            assertEquals(anchor.carrier(0, (2048 - u) * 256), a.points().get(2048 - u));
+            assertEquals(anchor.carrier(1, u * 256), b.points().get(u));
+        }
     }
 
     @Test void budgetNeverExceeds150000() {
