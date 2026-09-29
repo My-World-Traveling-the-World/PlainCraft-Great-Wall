@@ -11,6 +11,33 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class WallRampTest {
+    @Test void fixedFourCandidateOrderUsesCompleteFootprintsAndNeverLoadedSide() {
+        var full=TemplateFixtures.input(SiteKind.RAMP,new Bounds(-30,-33,-15,30,3,15));
+        for(int first=0;first<4;first++) {
+            int candidate=first;var map=new java.util.HashMap<>(full.supports());
+            map.replaceAll((p,v)->{
+                int slot=(p.x()>=0?2:0)+(p.z()<0?1:0);
+                return slot<candidate?new ProbeResult(ProbeKind.NO_SUPPORT,0,java.util.OptionalInt.empty(),java.util.OptionalInt.empty(),64,TemplateFixtures.HASH):v;
+            });
+            var input=new ComponentInput(full.site(),full.stations(),map,full.decay(),full.family(),false,full.waters(),full.materials());
+            var c=new Ramp(new DecayField(0),TemplateFixtures.PALETTE).compile(input);
+            assertFalse(c.voxels().isEmpty(),"candidate="+first);
+            var ground=c.requiredRoutes().getFirst().getFirst();
+            assertEquals(first>=2,ground.x()>=0);assertEquals(first%2==1,ground.z()<0);
+        }
+    }
+    @Test void outerRailsAreGroundedAndNeverReplaceTheThreeWideRuns() {
+        var input=TemplateFixtures.input(SiteKind.RAMP,RAMP);
+        var c=ramp.compileBetween(input,64,84);
+        assertTrue(c.voxels().stream().anyMatch(v->v.part()==Part.PARAPET));
+        for(int j=0;j<10;j++)for(int z=5;z<=7;z++) {
+            var p=new Point3i(-26+j,64+j,z);
+            assertTrue(c.voxels().stream().anyMatch(v->v.pos().equals(p)&&v.part()==Part.STAIR&&v.walkable()));
+        }
+        for(var rail:c.voxels().stream().filter(v->v.part()==Part.PARAPET).toList())
+            assertTrue(c.voxels().stream().anyMatch(v->v.pos().equals(new Point3i(rail.pos().x(),rail.pos().y()-1,rail.pos().z()))
+                    &&v.kind()==IntentKind.SOLID));
+    }
     @ParameterizedTest @ValueSource(ints={0,4,5,12})
     void defaultRampGroundEntranceTracksActualSupportedGround(int drop) {
         var input=TemplateFixtures.input(SiteKind.RAMP,new Bounds(-30,-33,4,-6,3,15),0,0,0,PaletteFamily.STONE,DecayState.INTACT,drop);

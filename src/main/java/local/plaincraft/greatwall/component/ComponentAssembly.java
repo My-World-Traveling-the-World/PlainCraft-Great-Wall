@@ -84,6 +84,13 @@ final class ComponentAssembly {
 
     void route(Point3i... points) { routes.add(List.of(points)); }
 
+    void rail(int x,int feet,int z) {
+        var p=new Point3i(x,feet,z);var prior=cells.get(p);
+        if(prior!=null&&prior.required())return;
+        foundation(x,z,x+1,z+1,feet);
+        put(x,feet,z,Part.PARAPET,false,false);
+    }
+
     void entity(Point3i local, String type, int index, Map<String,String> fields) {
         entities.put(local, new BlockEntityIntent(local,type,input.site().id(),index,fields));
     }

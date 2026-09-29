@@ -70,6 +70,6 @@ public final class EndCap implements ComponentTemplate {
                 a.floor(-30,-3,-8,3,0,Part.FLOOR,"east");
                 a.floor(-29,3,-26,5,0,Part.FLOOR,"north");
                 a.route(new Point3i(-29,0,0),new Point3i(-9,0,0),new Point3i(-28,0,4));
-                return ComponentComposer.merge(current,List.of(a.finish(),new Ramp(decay,palette).compile(current)));
+                return ComponentComposer.merge(current,List.of(a.finish(),new Ramp(decay,palette).compileInFrame(current)));
     }
 }
