@@ -1,0 +1,360 @@
+{
+  "generatedAt": "2026-09-29T12:51:24.2194095+08:00",
+  "stage": "S1A",
+  "baseline": "5ad1a37",
+  "head": "ef3fadac974fd71841056a102a1f872ada038042",
+  "sourceChecks": {
+    "lockedInputsUnchanged": true,
+    "projectProxyLines": 0,
+    "pureJavaFiles": 19,
+    "forbiddenPatternMatches": 0
+  },
+  "junit": {
+    "skipped": 0,
+    "failures": 0.0,
+    "tests": 97.0,
+    "suites": [
+      {
+        "name": "local.plaincraft.greatwall.BuildContractTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.044
+      },
+      {
+        "name": "local.plaincraft.greatwall.diagnostics.BudgetCacheTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.019
+      },
+      {
+        "name": "local.plaincraft.greatwall.geometry.ArcLengthTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.006
+      },
+      {
+        "name": "local.plaincraft.greatwall.geometry.CanonicalCodecTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.068
+      },
+      {
+        "name": "local.plaincraft.greatwall.geometry.FixedMathTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.034
+      },
+      {
+        "name": "local.plaincraft.greatwall.model.ModelContractTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.014
+      },
+      {
+        "name": "local.plaincraft.greatwall.persistence.SegmentCacheTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 6.116
+      },
+      {
+        "name": "local.plaincraft.greatwall.planning.AnchorProjectionTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.115
+      },
+      {
+        "name": "local.plaincraft.greatwall.planning.GeometryDeterminismTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 22.134
+      },
+      {
+        "name": "local.plaincraft.greatwall.planning.PlannerSchedulerTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 2.573
+      },
+      {
+        "name": "local.plaincraft.greatwall.planning.PrefixSummaryIndexTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.01
+      },
+      {
+        "name": "local.plaincraft.greatwall.planning.RidgePlannerTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 21.714
+      },
+      {
+        "name": "local.plaincraft.greatwall.planning.ScheduleContractTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.032
+      },
+      {
+        "name": "local.plaincraft.greatwall.ProbePlannerTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 2.712
+      },
+      {
+        "name": "local.plaincraft.greatwall.terrain.HydrologyTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.221
+      },
+      {
+        "name": "local.plaincraft.greatwall.TerrainEvidenceTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.137
+      },
+      {
+        "name": "local.plaincraft.greatwall.WorldRecipeGuardTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 0.031
+      }
+    ]
+  },
+  "gameTest": {
+    "scope": "Existing isolated S0 GameTest regression; no S1B or real terrain integration",
+    "failures": 0,
+    "cases": 1
+  },
+  "artifact": {
+    "sha256": "7fd88c25213c223326e8611d15f83720cd6ea785482a6a4153a0cc0a3f807b33",
+    "bytes": 338781,
+    "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build\\libs\\plaincraft-great-wall-0.1.0-s0.3.jar"
+  },
+  "sourceHashes": [
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\FixedMath.java",
+      "sha256": "073e0e988fdaff9e64f3ca2421a511bffbcf6ec657244ea0e50ca84abf5996b6"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\DeterministicHash.java",
+      "sha256": "a772fa8771236c23d61e861406da0f49517ef3dbe05ec04d8bc2c8089015c838"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\CanonicalCodec.java",
+      "sha256": "269f80e369a2d8d59717c229595712fab281296d07a274eda975ebeb73ca6e31"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\ArcLength.java",
+      "sha256": "b731db0c9c448a153490df6d6bcbd1e6eb45c71b7d5877dca3de5a1d5f574bd8"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\Projection.java",
+      "sha256": "38b1e0c7b873e7fb6f661c270f067245f24287af69663a0bf19ddf2cafb77cca"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\AnchorField.java",
+      "sha256": "8001be47de9fca21ce59994d25f7556db51b1d8645622f974d55b4e65727280d"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\NaturalTerrainOracle.java",
+      "sha256": "5c3b6242eebcfcd02f2050f79d0009929a4c4cb0446d42d9acb7b958a812e4bc"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\RidgePlanner.java",
+      "sha256": "af9fb1c0caceb0779e54079e4adf93b9092c99d29b5e9fdf034766bde94bb565"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\HydrologyClassifier.java",
+      "sha256": "fbfdf5874fa90d41b29ddb6a0f37104d6d578012db36243997938e2850ddf1aa"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\SegmentCacheStore.java",
+      "sha256": "34cb7d277c8d072fa817bd1ed31334dff95844dc64dd6688c4cd6387d666f08e"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\PrefixSummaryIndex.java",
+      "sha256": "1b2d739effa2abd227ab6c6881ba11fc667da5c0c8d024c5780128649edb1e2f"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\SiteScheduler.java",
+      "sha256": "d9ac3d1c2e325b7f76573d6e543a455a426d291ecf8e49dd980e669001a408ff"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\HeightContractPlanner.java",
+      "sha256": "b5b068fe071d07fdbc510600f4d5fabec642d1de2942c94368fb1fda4a3b4e66"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\BudgetCache.java",
+      "sha256": "6f4a4cd34fc04aa648a730ba536b5e504b2faca0d047b3c421b76d4edd135756"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\PlannerScheduler.java",
+      "sha256": "d3b6b146ee7b2def2dc1f4268a18c3d604b295bdb315a1db169e63db40b0c31f"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\model\\WallTypes.java",
+      "sha256": "6a44900c5f50fe0e83a2017934804b47170edb573545126942faa554cac5c128"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\model\\WallFailure.java",
+      "sha256": "920b4046c660bb9167e5f9e0c80ae957189230861ea5ac6bf0aaa3a1bc8d16eb"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\model\\PlanLease.java",
+      "sha256": "21fa5361b4a37c229f47c193c688a4540c32f49584f2395275f27b32dd54cd27"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\decay\\PaletteTypes.java",
+      "sha256": "1a077c541bd688719b152f65bcf11812a157ccfea0d681556edfebe860ad3e56"
+    }
+  ],
+  "lockHashes": [
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\gradle.properties",
+      "sha256": "784ac5909d4fb0c3927cce7f76b5a6ba0a1c7e9e3434955e71748f3de9a3df64"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build.gradle",
+      "sha256": "963032831cd5a751f21e0951eb5cae31aa7846df92787fa3142159bf38fd08f7"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\gradle.lockfile",
+      "sha256": "367ba3559edbec89d075630c6ce9a2b881620de0028ef2b43366fb58640651f4"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\gradle\\verification-metadata.xml",
+      "sha256": "c4e281095c96f26a421fc7d676a6d218f20f9739b40978b061863707f7edcee5"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\gradle\\wrapper\\gradle-wrapper.properties",
+      "sha256": "8db3649f3cfc8789495b80e1cf8c66b2e547d3b2c0bae19c9a5b2ccb5b6cf4ee"
+    }
+  ],
+  "fullFileInventory": [
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\all-junit.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\anchor-projection.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\budget-cache.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\cache-prefix.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\codec-arc.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\final-checks.json",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\final-offline-build.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\fixed-math.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\fixed-math.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\gametest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\hydrology.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.BuildContractTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.diagnostics.BudgetCacheTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.geometry.ArcLengthTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.geometry.CanonicalCodecTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.geometry.FixedMathTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.model.ModelContractTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.persistence.SegmentCacheTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.planning.AnchorProjectionTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.planning.GeometryDeterminismTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.planning.PlannerSchedulerTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.planning.PrefixSummaryIndexTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.planning.RidgePlannerTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.planning.ScheduleContractTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.ProbePlannerTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.terrain.HydrologyTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.TerrainEvidenceTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\junit\\TEST-local.plaincraft.greatwall.WorldRecipeGuardTest.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\model-after.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\model-after.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\model-before.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\model-before.xml",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\partial-offline-build.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\pre-admission-offline-build.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\ridge.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\schedule-height.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\scheduler-admission.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\scheduler-compile.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1a\\scheduler.txt",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\S1-S5实施规格\\00-公共类型与协议.md",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\S1-S5实施规格\\06-本地ABI与证据.md",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\S1-S5实施规格\\README.md",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\S1-S5实施规格\\S1-城墙本体.md",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\S1-S5实施规格\\S2-道路联动.md",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\S1-S5实施规格\\S3-探索与FTB.md",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\S1-S5实施规格\\S4-材质与视觉.md",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\S1-S5实施规格\\S5-恢复压测与发布.md",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\S1A-补充合同.md",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\S1A.md",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\decay\\PaletteTypes.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\BudgetCache.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\ArcLength.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\CanonicalCodec.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\DeterministicHash.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\FixedMath.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\Projection.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\model\\PlanLease.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\model\\WallFailure.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\model\\WallTypes.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\SegmentCacheStore.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\AnchorField.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\HeightContractPlanner.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\PlannerScheduler.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\PrefixSummaryIndex.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\RidgePlanner.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\planning\\SiteScheduler.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\HydrologyClassifier.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\NaturalTerrainOracle.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\diagnostics\\BudgetCacheTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\geometry\\ArcLengthTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\geometry\\CanonicalCodecTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\geometry\\FixedMathTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\model\\ModelContractTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\persistence\\SegmentCacheTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\planning\\AnchorProjectionTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\planning\\GeometryDeterminismTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\planning\\PlannerSchedulerTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\planning\\PlanningFixtures.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\planning\\PrefixSummaryIndexTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\planning\\RidgePlannerTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\planning\\ScheduleContractTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\terrain\\AnalyticTerrainOracle.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\terrain\\HydrologyTest.java",
+    "D:\\云游四海-Mod源码\\plaincraft-great-wall\\tools\\Export-S1AEvidence.ps1"
+  ],
+  "notRun": [
+    "S1B block construction",
+    "S1C real terrain/C2ME integration",
+    "Real-terrain 40ms bound",
+    "JFR retained-heap calibration",
+    "RoadWeaver/FTB integration",
+    "24h/Chunky stress",
+    "Tan Huge Trees whole-pack authorization"
+  ]
+}
