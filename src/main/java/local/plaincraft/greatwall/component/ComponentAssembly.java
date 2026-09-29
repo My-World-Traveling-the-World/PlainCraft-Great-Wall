@@ -143,33 +143,66 @@ final class ComponentAssembly {
             }
         }
         voxels.sort(Comparator.comparing(VoxelIntent::pos,ORDER));
+        var occupied = new HashMap<Point3i,VoxelIntent>();
+        for (var voxel : voxels) if (voxel.kind() == IntentKind.SOLID) occupied.put(voxel.pos(),voxel);
         var worldRoutes = new ArrayList<List<Point3i>>();
         if (functional) for (List<Point3i> route : routes) {
             var converted = new ArrayList<Point3i>();
             for (Point3i p : route) {
                 Point3i world = representative(p,localToWorld);
+                if (world == null) world = nearbyFeet(p,voxels,occupied);
                 if (world == null) return empty(input.site().id(),worldBounds);
                 converted.add(world);
             }
             worldRoutes.add(List.copyOf(converted));
         }
         var worldEntities = new ArrayList<BlockEntityIntent>();
-        if (functional) entities.entrySet().stream().sorted(Map.Entry.comparingByKey(ORDER)).forEach(e -> {
-            Point3i world = representative(e.getKey(),localToWorld);
-            if (world != null) worldEntities.add(new BlockEntityIntent(world,e.getValue().type(),e.getValue().site(),
-                    e.getValue().localId(),e.getValue().fields()));
-        });
+        if (functional) {
+            var used = new HashSet<Point3i>();
+            for (var entry : entities.entrySet().stream().sorted(Map.Entry.comparingByKey(ORDER)).toList()) {
+                Point3i local = entry.getKey();
+                var entity = entry.getValue();
+                long normal=(long)local.z()*256+128;
+                if(input.site().frame().mirror()) normal=-normal;
+                Point2q target=Projection.local(input.site().frame(),(long)local.x()*256+128,normal);
+                int y=input.site().frame().walkY()+local.y();
+                Point3i world=voxels.stream().filter(v->v.pos().y()==y && !used.contains(v.pos()))
+                        .filter(v->v.state().id().equals(entity.type()) || v.kind()==IntentKind.OWNED_VOID && !v.required())
+                        .map(VoxelIntent::pos).filter(p->distance(p,target)<=384L*384)
+                        .filter(p->occupied.containsKey(new Point3i(p.x(),y-1,p.z())))
+                        .min(Comparator.<Point3i>comparingInt(p->{
+                            var current=occupied.get(p);
+                            return current!=null && current.state().id().equals(entity.type()) ? 0 : 1;
+                        }).thenComparingLong(p->distance(p,target)).thenComparing(ORDER)).orElseThrow(()->
+                                new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"cannot bind unique functional voxel: "+entity));
+                used.add(world);
+                var cell=cells.get(local);
+                BlockSpec state=palette.resolve(input,cell.part(),local,world,input.site().globalSQ8(),
+                        DeterministicHash.fields(componentHash,"functional",entity.localId()));
+                var properties=new HashMap<>(state.properties()); properties.putAll(cell.properties());
+                var placed=new VoxelIntent(world,IntentKind.SOLID,cell.part(),new BlockSpec(state.id(),properties),
+                        input.site().id(),priority(input.site().id().kind()),true,false);
+                voxels.removeIf(v->v.pos().equals(world)); voxels.add(placed); occupied.put(world,placed);
+                if(cell.part()==Part.CAMPFIRE) {
+                    var below=new Point3i(world.x(),y-1,world.z());
+                    var hay=new VoxelIntent(below,IntentKind.SOLID,Part.HAY,new BlockSpec("minecraft:hay_block",Map.of("axis","y")),
+                            input.site().id(),priority(input.site().id().kind()),true,false);
+                    voxels.removeIf(v->v.pos().equals(below)); voxels.add(hay); occupied.put(below,hay);
+                }
+                worldEntities.add(new BlockEntityIntent(world,entity.type(),entity.site(),entity.localId(),entity.fields()));
+            }
+            Set<String> types=entities.values().stream().map(BlockEntityIntent::type).collect(java.util.stream.Collectors.toSet());
+            voxels.removeIf(v->types.contains(v.state().id()) && !used.contains(v.pos()));
+        }
         var worldSpawns = new ArrayList<SpawnSlot>();
         if (functional) for (SpawnSlot s : spawns) {
             Point3i world = representative(s.feet(),localToWorld);
+            if (world == null) world = nearbyFeet(s.feet(),voxels,occupied);
             if (world != null) worldSpawns.add(new SpawnSlot(s.site(),s.slot(),world,s.entityType()));
         }
+        voxels.sort(Comparator.comparing(VoxelIntent::pos,ORDER));
         var result = hashed(input.site().id(),worldBounds,voxels,worldEntities,worldSpawns,worldRoutes);
-        try { return new SupportGraph().validate(result,roots); }
-        catch (WallFailure failure) {
-            if (failure.code() != FailureCode.OWNERSHIP_CONFLICT) throw failure;
-            return empty(input.site().id(),worldBounds);
-        }
+        return new SupportGraph().validate(result,roots);
     }
 
     String facing(int dx, int dz) {
@@ -216,6 +249,23 @@ final class ComponentAssembly {
             long dx = (long) p.x() * 256 + 128 - center.xQ8(), dz = (long) p.z() * 256 + 128 - center.zQ8();
             return dx * dx + dz * dz;
         }).thenComparing(ORDER)).orElseThrow();
+    }
+
+    private Point3i nearbyFeet(Point3i local,List<VoxelIntent> voxels,Map<Point3i,VoxelIntent> occupied) {
+        long normal=(long)local.z()*256+128;
+        if(input.site().frame().mirror()) normal=-normal;
+        Point2q center=Projection.local(input.site().frame(),(long)local.x()*256+128,normal);
+        int y=input.site().frame().walkY()+local.y();
+        return voxels.stream().filter(v->v.walkable() && v.pos().y()==y-1)
+                .map(v->new Point3i(v.pos().x(),y,v.pos().z()))
+                .filter(p->!occupied.containsKey(p) && !occupied.containsKey(new Point3i(p.x(),y+1,p.z())))
+                .filter(p->distance(p,center)<=384L*384)
+                .min(Comparator.<Point3i>comparingLong(p->distance(p,center)).thenComparing(ORDER)).orElse(null);
+    }
+
+    private static long distance(Point3i p,Point2q center) {
+        long dx=(long)p.x()*256+128-center.xQ8(), dz=(long)p.z()*256+128-center.zQ8();
+        return dx*dx+dz*dz;
     }
 
     static boolean contains(Bounds b, Point3i p) {
