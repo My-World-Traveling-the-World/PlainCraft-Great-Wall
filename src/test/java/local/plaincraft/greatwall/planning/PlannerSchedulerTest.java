@@ -169,4 +169,21 @@ class PlannerSchedulerTest {
         assertThrows(WallFailure.class, () -> new PlannerScheduler(tampered, () -> AnalyticTerrainOracle.ridge(true),
                 new SegmentCacheStore(directory.resolve("tampered/cache"), tampered), Runnable::run));
     }
+
+    @Test void manyDistinctPlansCannotReserveAwayTheirDependencies() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> new AnalyticTerrainOracle(
+                     (x, z) -> AnalyticTerrainOracle.dry(64), true), new SegmentCacheStore(directory.resolve("cache"), recipe), io);
+             var timer = ticks(scheduler)) {
+            var leases = new ArrayList<PlanLease<SegmentPlan>>();
+            try {
+                for (int i = 19; i >= 0; i--) leases.add(scheduler.requirePlan(i, Priority.PLAYER));
+                for (var lease : leases) {
+                    var plan = lease.future().get(30, TimeUnit.SECONDS);
+                    assertFalse(plan.stations().stations().isEmpty());
+                }
+            } finally { leases.forEach(PlanLease::close); }
+        }
+    }
 }

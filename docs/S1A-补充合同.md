@@ -13,5 +13,6 @@
 9. PlannerScheduler增加只读`diagnostics()`（`Map<String,Long>`不可变快照），记录启动结果、缓存禁写、同步诊断次数/最大耗时、64原语批次最大耗时与超过40ms次数；时间不进入hash。水平安全包络保守取512+192+96+48=848格（载波、残差、构件与参考侧采样），以完整段而非单锚点判定WORLD_LIMIT。
 10. 确定性哈希的长度混合固定为：`h=mix64(mix64(seed)^mix64(domainUtf8.length))`；逐字节后`h=mix64(h^mix64(values.length))`，再依序混值。原文“先混长度”在此展开为唯一编码。水文九点/扇形评分的侧点按投影轴坐标系旋转；前瞻点使用固定COARSE请求，边界/水文/高度使用REFERENCE。地下有顶盖水体必须由oracle输出干燥的顶盖脚面，参考列截断或有水无河床不能认证为干地。
 11. BudgetCache先预留`4096*waiterLimit+256*entryLimit`字节请求/索引元数据，再从同一个byteLimit内分配值与进行中reservation；默认段缓存64MiB不变、4096调用者/256完成项不变。route/geometry/plan的上界分别1/2/4MiB。值的retained公式见PlannerScheduler，不以canonical字节数充当堆占用。该公式的堆/JFR实测仍属S5，不能写成已测得精确堆大小。
+12. 在申请缓存reservation之前，PlannerScheduler的plan和geometry各只准入4个申请，其余进入有界owner队列；route不依赖父级准入。此门槛防止父级plan占满64MiB后自身依赖的route永远无法reserve。不得把准入门槛放到reservation之后；同一结果的后续调用者仍各有独立pin，不取消其他调用者。
 
 本文件不宣称以上实现/测试已经完成；实际状态只记在`docs/S1A.md`。

@@ -34,6 +34,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private final ConcurrentHashMap<SegmentKey, CompletableFuture<SegmentPlan>> planFlights = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, JobProgress> progress = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, PlanLease<?>> callerLeases = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, CompletableFuture<PlanLease<Object>>> acquisitions = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> state = new ConcurrentHashMap<>();
     private final ScheduledThreadPoolExecutor pump;
     private final PrefixSummaryIndex prefixes;
@@ -52,8 +53,9 @@ public final class PlannerScheduler implements AutoCloseable {
             .thenComparingLong(j -> j.sequence));
     private final ArrayDeque<Runnable> geometryQueue = new ArrayDeque<>();
     private final ArrayDeque<Runnable> ioQueue = new ArrayDeque<>();
+    private final ArrayDeque<Runnable> planAdmissions = new ArrayDeque<>(), geometryAdmissions = new ArrayDeque<>();
     private final Map<UUID, Job<?>> activeJobs = new HashMap<>();
-    private int activeGeometry, credits, activeIo;
+    private int activeGeometry, credits, activeIo, admittedPlans, admittedGeometries;
     private long deadline, sequence, background = 4;
     private ScheduledFuture<?> startupTimer;
     private PlanLease<SegmentPlan> backgroundLease;
@@ -390,9 +392,49 @@ public final class PlannerScheduler implements AutoCloseable {
 
     private <T> PlanLease<T> acquire(CacheKey key, long upper, Class<T> type, Supplier<CompletionStage<Object>> loader) {
         if (closed()) return new PlanLease<>(UUID.randomUUID(), CompletableFuture.failedFuture(closedFailure()), () -> {});
-        var acquired = memory.acquire(key, upper, loader).toCompletableFuture();
+        var acquired = new CompletableFuture<PlanLease<Object>>();
+        UUID id = UUID.randomUUID();
+        boolean[] accepted = {false};
+        state.compute("acquisitions", (k, old) -> {
+            long count = old == null ? 0 : old;
+            if (count >= 4096) return count;
+            accepted[0] = true; return count + 1;
+        });
+        if (!accepted[0]) return new PlanLease<>(id, CompletableFuture.failedFuture(
+                new WallFailure(FailureCode.CAPACITY, "planner acquisition capacity")), () -> {});
+        acquisitions.put(id, acquired);
+        acquired.whenComplete((v, e) -> {
+            acquisitions.remove(id); state.compute("acquisitions", (k, old) -> old - 1);
+        });
+        pump.execute(() -> {
+            if (closed()) { acquired.completeExceptionally(closedFailure()); return; }
+            Runnable start = () -> startAcquire(key, upper, loader, acquired);
+            if (key.kind.equals("plan")) planAdmissions.add(start);
+            else if (key.kind.equals("geometry")) geometryAdmissions.add(start);
+            else start.run();
+            drainAdmissions();
+        });
         CompletableFuture<T> view = acquired.thenCompose(lease -> lease.future().thenApply(type::cast));
         return outer(view, () -> acquired.thenAccept(PlanLease::close));
+    }
+
+    private void startAcquire(CacheKey key, long upper, Supplier<CompletionStage<Object>> loader,
+            CompletableFuture<PlanLease<Object>> result) {
+        if (key.kind.equals("plan")) admittedPlans++;
+        if (key.kind.equals("geometry")) admittedGeometries++;
+        memory.acquire(key, upper, loader).whenCompleteAsync((lease, failure) -> {
+            if (key.kind.equals("plan")) admittedPlans--;
+            if (key.kind.equals("geometry")) admittedGeometries--;
+            if (failure != null) result.completeExceptionally(failure);
+            else if (!result.complete(lease)) lease.close();
+            drainAdmissions();
+        }, pump);
+    }
+
+    private void drainAdmissions() {
+        // Reserve dependency headroom before allocating a parent plan/geometry reservation.
+        while (!closed() && admittedGeometries < 4 && !geometryAdmissions.isEmpty()) geometryAdmissions.removeFirst().run();
+        while (!closed() && admittedPlans < 4 && !planAdmissions.isEmpty()) planAdmissions.removeFirst().run();
     }
 
     private <T> PlanLease<T> outer(CompletionStage<T> shared, Runnable release) {
@@ -520,11 +562,13 @@ public final class PlannerScheduler implements AutoCloseable {
         routeFlights.forEach((key, future) -> future.completeExceptionally(closedFailure()));
         geometryFlights.forEach((key, future) -> future.completeExceptionally(closedFailure()));
         planFlights.forEach((key, future) -> future.completeExceptionally(closedFailure()));
+        acquisitions.forEach((id, future) -> future.completeExceptionally(closedFailure()));
         prefixes.close(); callerLeases.forEach((id, lease) -> lease.close()); memory.close();
         pump.execute(() -> {
             if (startupTimer != null) startupTimer.cancel(false);
             pending.forEach(job -> job.result.completeExceptionally(closedFailure()));
-            pending.clear(); geometryQueue.clear(); ioQueue.clear(); activeJobs.clear(); progress.clear();
+            pending.clear(); geometryQueue.clear(); ioQueue.clear(); planAdmissions.clear(); geometryAdmissions.clear();
+            activeJobs.clear(); progress.clear();
             for (int lane = 0; lane < lanes.size(); lane++) {
                 var job = laneState.get(lane).job;
                 lanes.get(lane).execute(() -> { if (job != null && job.oracle != null) job.oracle.close(); });
