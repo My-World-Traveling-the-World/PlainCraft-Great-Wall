@@ -39,6 +39,11 @@ public final class ChunkPlanCompiler {
         var resolved=new TreeMap<Point3i,VoxelIntent>(POS);
         for(var v:logical.values()) resolved.put(v.pos(),connections(v,logical));
         var voxels=new ArrayList<VoxelIntent>();var proofs=new ArrayList<BlockProof>();
+        var entityPositions=new java.util.HashSet<Point3i>();
+        for(var c:components.values()) for(var e:c.blockEntities()) {
+            var v=resolved.get(e.pos());
+            if(v!=null&&v.component().equals(e.site())&&v.state().id().equals(e.type()))entityPositions.add(e.pos());
+        }
         var post=new TreeSet<Point3i>(POS);var fluid=new TreeSet<Point3i>(POS);var feet=new TreeSet<Point3i>(POS);
         for(var v:resolved.values()) {
             if(!owns(owner,v.pos())||v.kind()==IntentKind.KEEP) continue;
@@ -48,7 +53,7 @@ public final class ChunkPlanCompiler {
             if(be) throw failure("foreign block entity in write set");
             if((v.kind()==IntentKind.OWNED_VOID||v.kind()==IntentKind.FLUID)&&!replaceableVoid(before))
                 throw failure("negative space cannot carve natural/foreign solid: "+v.pos());
-            String after=token(v.state());
+            String after=token(v.state(),entityPositions.contains(v.pos()));
             voxels.add(v);proofs.add(new BlockProof(v.pos(),before,after,be,v.component()));
             if(v.state().id().endsWith("_stairs")||v.state().id().endsWith("_slab")||v.part()==Part.FENCE) post.add(v.pos());
             if(v.kind()==IntentKind.FLUID||"true".equals(v.state().properties().get("waterlogged"))) fluid.add(v.pos());
@@ -81,8 +86,11 @@ public final class ChunkPlanCompiler {
                 plan.postprocess(),plan.fluidTicks(),plan.walkwayFeet(),new WriteMetadata(coverageHash,m.gateRevision(),m.spawnSlots(),m.realizedStates()),"0".repeat(64)));
     }
     public static String token(BlockSpec state) {
+        return token(state,false);
+    }
+    public static String token(BlockSpec state,boolean entity) {
         String fluid=state.id().equals("minecraft:water")||"true".equals(state.properties().get("waterlogged"))?"minecraft:water":"minecraft:empty";
-        return state.id()+new TreeMap<>(state.properties()).toString()+":fluid="+fluid+":be=false";
+        return state.id()+new TreeMap<>(state.properties()).toString()+":fluid="+fluid+":be="+entity;
     }
     private static ChunkWritePlan rehash(ChunkWritePlan p) {
         return new ChunkWritePlan(p.owner(),p.recipeHash(),p.inputHash(),p.voxels(),p.proofs(),p.blockEntities(),p.postprocess(),

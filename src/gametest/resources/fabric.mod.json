@@ -5,11 +5,13 @@
   "name": "PlainCraft Great Wall GameTests",
   "environment": "server",
   "entrypoints": {
-    "fabric-gametest": ["local.plaincraft.greatwall.gametest.SkeletonGameTests"]
+    "fabric-gametest": [
+      "local.plaincraft.greatwall.gametest.SkeletonGameTests",
+      "local.plaincraft.greatwall.gametest.WriterGameTests"
+    ]
   },
   "depends": {
     "plaincraft_great_wall": "*",
     "fabric-gametest-api-v1": "*"
   }
 }
-
