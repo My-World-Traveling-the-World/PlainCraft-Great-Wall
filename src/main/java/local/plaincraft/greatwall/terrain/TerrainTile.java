@@ -1,7 +1,8 @@
 package local.plaincraft.greatwall.terrain;
 
 import java.util.List;
-import local.plaincraft.greatwall.planning.ProbePlanner;
+import local.plaincraft.greatwall.geometry.DeterministicHash;
+import java.nio.charset.StandardCharsets;
 
 /** An immutable, bounded T0 window; coordinates are three ints, never packed BlockPos. */
 public final class TerrainTile {
@@ -36,7 +37,7 @@ public final class TerrainTile {
             if (state < 0 || state >= palette.size()) throw new IllegalArgumentException("Invalid palette index");
             canonical.append(this.palette.get(state)).append('\n');
         }
-        hash = ProbePlanner.hash(canonical.toString());
+        hash = DeterministicHash.sha256(canonical.toString().getBytes(StandardCharsets.UTF_8));
     }
     public Key key() { return key; }
     public String recipe() { return recipe; }
