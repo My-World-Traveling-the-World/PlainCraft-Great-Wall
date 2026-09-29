@@ -2,6 +2,7 @@ package local.plaincraft.greatwall.component;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import local.plaincraft.greatwall.decay.DecayField;
 import local.plaincraft.greatwall.decay.PaletteBinding;
 import local.plaincraft.greatwall.geometry.FixedMath;
@@ -61,9 +62,14 @@ public final class EndCap implements ComponentTemplate {
     }
     /** Compile one already-probed candidate; the realization planner owns retry publication. */
     public ComponentVoxels compileAt(ComponentInput current) {
+        return compileAt(current,result->true);
+    }
+    /** Test every orientation at this retreat against the shared interval certificate. */
+    public ComponentVoxels compileAt(ComponentInput current,Predicate<ComponentVoxels> admissible) {
+        Objects.requireNonNull(admissible);
         for(int candidate=0;candidate<4;candidate++)try {
             var result=compileVariant(current,candidate);
-            if(!result.voxels().isEmpty())return result;
+            if(!result.voxels().isEmpty()&&admissible.test(result))return result;
         }catch(WallFailure e){if(e.code()!=FailureCode.OWNERSHIP_CONFLICT)throw e;}
         return ComponentAssembly.empty(current.site().id(),Rasterizer.worldBounds(current.site().frame(),ENVELOPE));
     }

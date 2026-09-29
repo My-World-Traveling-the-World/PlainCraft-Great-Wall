@@ -164,7 +164,7 @@ public final class RealizationPlanner {
                     var attempt=EndCap.candidates(original,stations).stream().filter(a->a.globalSQ8()==cap.actualSQ8()).findFirst()
                             .orElseThrow(()->new WallFailure(FailureCode.T0_CORRUPT,"certified cap left station ribbon"));
                     var compiled=((EndCap)templates.get(SiteKind.END_CAP)).compileAt(componentInput(input,attempt,stations,
-                            new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,supported));
+                            new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,supported),c->c.hash().equals(cap.componentHash()));
                     if(!compiled.id().equals(cap.site())||!compiled.hash().equals(cap.componentHash()))
                         throw new WallFailure(FailureCode.T0_CORRUPT,"certified cap changed before APPLY");
                     accepted.add(compiled);
@@ -211,22 +211,26 @@ public final class RealizationPlanner {
             if(a<edge.allowed().fromQ8()||b>edge.allowed().toQ8())continue;
             try {
                 var c=((EndCap)templates.get(SiteKind.END_CAP)).compileAt(componentInput(input,attempt,ribbon,
-                        new DecaySample(DecayState.INTACT,0,20),List.of(),limits,Map.of()));
+                        new DecaySample(DecayState.INTACT,0,20),List.of(),limits,Map.of()),candidate->{
+                            var footprint=capFootprint(candidate,ribbon);
+                            return footprint.fromQ8()>=edge.allowed().fromQ8()&&footprint.toQ8()<=edge.allowed().toQ8()
+                                    &&occupied.stream().noneMatch(r->r.fromQ8()<footprint.toQ8()&&r.toQ8()>footprint.fromQ8());
+                        });
                 if(!c.voxels().isEmpty()) {
-                    long min=Long.MAX_VALUE,max=Long.MIN_VALUE;
-                    for(var v:c.voxels()) {
-                        long s=WallSection.contract(ribbon,v.pos().x(),v.pos().z()).globalSQ8();
-                        min=Math.min(min,Math.floorDiv(s,256)*256);max=Math.max(max,(Math.floorDiv(s,256)+1)*256);
-                    }
-                    if(min<edge.allowed().fromQ8()||max>edge.allowed().toQ8())continue;
-                    long start=min,end=max;
-                    if(occupied.stream().anyMatch(r->r.fromQ8()<end&&r.toQ8()>start))continue;
                     return new GroundExitDecision.CapVote(Optional.of(new GroundExitDecision.Cap(c.id(),edge,
-                            attempt.globalSQ8(),c.hash(),new ArcInterval(min,max))),evidenceHash(input));
+                            attempt.globalSQ8(),c.hash(),capFootprint(c,ribbon))),evidenceHash(input));
                 }
             }catch(WallFailure e){if(e.code()!=FailureCode.OWNERSHIP_CONFLICT)throw e;}
         }
         return new GroundExitDecision.CapVote(Optional.empty(),evidenceHash(input));
+    }
+    private static ArcInterval capFootprint(ComponentVoxels component,List<Station> ribbon) {
+        long min=Long.MAX_VALUE,max=Long.MIN_VALUE;
+        for(var voxel:component.voxels()) {
+            long s=WallSection.contract(ribbon,voxel.pos().x(),voxel.pos().z()).globalSQ8();
+            min=Math.min(min,Math.floorDiv(s,256)*256);max=Math.max(max,(Math.floorDiv(s,256)+1)*256);
+        }
+        return new ArcInterval(min,max);
     }
     private List<ArcInterval> capObstacles(Input input,List<Station> ribbon,DimensionBounds limits,long edge) {
         var result=new ArrayList<ArcInterval>();var field=new DecayField(recipe==null?0:recipe.seed());
