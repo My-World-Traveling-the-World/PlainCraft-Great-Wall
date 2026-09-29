@@ -20,8 +20,11 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 public final class ComponentGameTests implements FabricGameTest {
     private static final DecayField DECAY=new DecayField(0);
     private static void routes(GameTestHelper h,ComponentVoxels c){
+        routes(h,c,64);
+    }
+    private static void routes(GameTestHelper h,ComponentVoxels c,int ground){
         h.assertTrue(!c.voxels().isEmpty(),"component must not be suppressed by fixture");
-        var collision=new ComponentFixtures.CollisionView(ComponentFixtures.states(c));
+        var collision=new ComponentFixtures.CollisionView(ComponentFixtures.states(c,ground));
         for(var route:c.requiredRoutes()){
             var visited=collision.reachable(route.getFirst(),c.bounds());
             for(var p:route)h.assertTrue(visited.contains(new ComponentFixtures.Foot(p.x()*2,p.y()*2,p.z()*2)),
@@ -79,9 +82,81 @@ public final class ComponentGameTests implements FabricGameTest {
         helper.succeed();
     }
     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
+    public void allRampHeightsHaveNativeCollisionClearanceWithRails(GameTestHelper helper){
+        for(int height=1;height<=32;height++) {
+            var base=ComponentFixtures.input(SiteKind.RAMP,new Bounds(-30,-33,4,-6,3,15),0,0,0,DecayState.INTACT);
+            var supports=new HashMap<>(base.supports());int ground=Math.min(64,84-height);
+            supports.replaceAll((p,v)->new ProbeResult(ProbeKind.SUPPORTED,ground,OptionalInt.empty(),OptionalInt.empty(),64-ground,ComponentFixtures.H));
+            var input=new ComponentInput(base.site(),base.stations(),supports,base.decay(),base.family(),false,List.of(),List.of());
+            routes(helper,new Ramp(DECAY,ComponentFixtures.PALETTE).compileBetween(input,84-height,84),ground);
+        }
+        helper.succeed();
+    }
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
+    public void capturedThinIceThawsOnlyInMainChannel(GameTestHelper helper){
+        var catalog=new BlockCatalog(helper.getLevel().registryAccess());
+        var key=new ChunkKey("minecraft:overworld",0,0);var pageKey=new local.plaincraft.greatwall.terrain.TerrainTile.Key(key.dimension(),0,0,0,127);
+        var palette=List.of(Blocks.AIR,Blocks.STONE,Blocks.WATER,Blocks.ICE).stream().map(b->BlockCatalog.token(b.defaultBlockState(),false)).toList();
+        int[] data=new int[32768];var summaries=new ArrayList<ColumnEvidence>();
+        for(int z=0;z<16;z++)for(int x=0;x<16;x++){
+            summaries.add(new ColumnEvidence(x,z,66,false));
+            for(int y=0;y<128;y++)data[(y*16+z)*16+x]=y<60?1:y<66?(y==65&&(x==0||x==5)?3:2):0;
+        }
+        var tile=new local.plaincraft.greatwall.terrain.TerrainTile(pageKey,ComponentFixtures.H,palette,data);
+        var coverage=new Coverage(key,List.of(0),new Bounds(0,49,0,16,92,16),ComponentFixtures.H);
+        var metadata=local.plaincraft.greatwall.persistence.EvidenceCodec.hashed(new CaptureMetadata(coverage,summaries,List.of(),Set.of(),Set.of(),ComponentFixtures.H));
+        var column=new local.plaincraft.greatwall.terrain.SnapshotColumnView(0,0,metadata,Map.of(pageKey,tile),catalog);
+        var probe=new SurfaceProbe().probe(column,84,new DimensionBounds(0,128,29_999_000));
+        helper.assertTrue(probe.kind()==ProbeKind.WATER&&probe.thinIceY().orElseThrow()==65,"thin ice proven from frozen native states");
+        var initial=water(49);var supports=new HashMap<>(initial.supports());
+        supports.replaceAll((p,v)->p.x()>=-24&&p.x()<25?new ProbeResult(ProbeKind.WATER,60,OptionalInt.of(66),OptionalInt.of(60),4,ComponentFixtures.H,
+                (p.x()==0||p.x()==5)?OptionalInt.of(65):OptionalInt.empty()):v);
+        var old=initial.waters().getFirst();var water=new WaterEvidence(old.crossing(),old.classification(),old.channelWidthQ8(),old.crossingSpanQ8(),66,
+                old.banks(),List.of(new Point3i(0,60,0)),old.inputHash());
+        var component=new WaterGate(DECAY,ComponentFixtures.PALETTE).compile(new ComponentInput(initial.site(),initial.stations(),supports,
+                initial.decay(),initial.family(),false,List.of(water),List.of()));
+        helper.assertTrue(!component.voxels().isEmpty(),"ice fixture builds");
+        var before=new HashMap<Point3i,String>();
+        for(var v:component.voxels())before.put(v.pos(),BlockCatalog.token(v.pos().y()<60?Blocks.STONE.defaultBlockState():
+                v.pos().y()<66?(v.pos().y()==65&&(v.pos().x()==0||v.pos().x()==5)?Blocks.ICE.defaultBlockState():Blocks.WATER.defaultBlockState()):
+                Blocks.AIR.defaultBlockState(),false));
+        var cell=new RealizationCell(new CellKey(ComponentFixtures.H,key.dimension(),16),List.of(),List.of(component),ComponentFixtures.H,0,ComponentFixtures.H,ComponentFixtures.H);
+        var compiler=new ChunkPlanCompiler();var plan=compiler.bindCoverage(compiler.compile(key,ComponentFixtures.H,List.of(cell),before),ComponentFixtures.H);
+        var chunk=new ProtoChunk(new ChunkPos(0,0),UpgradeData.EMPTY,helper.getLevel(),helper.getLevel().registryAccess().registryOrThrow(Registries.BIOME),null);
+        chunk.setPersistedStatus(ChunkStatus.FEATURES);
+        for(var v:plan.voxels())chunk.setBlockState(new BlockPos(v.pos().x(),v.pos().y(),v.pos().z()),v.pos().y()<60?Blocks.STONE.defaultBlockState():
+                v.pos().y()<66?(v.pos().y()==65&&(v.pos().x()==0||v.pos().x()==5)?Blocks.ICE.defaultBlockState():Blocks.WATER.defaultBlockState()):
+                Blocks.AIR.defaultBlockState(),false);
+        chunk.setBlockState(new BlockPos(5,65,0),Blocks.ICE.defaultBlockState(),false);
+        StageTrace.enterLockAction();
+        try{helper.assertTrue(new ChunkWallWriter().apply(chunk,plan,WriteMode.INITIAL).complete(),"ice owner preflight and APPLY");}
+        finally{StageTrace.leaveLockAction();}
+        helper.assertTrue(chunk.getBlockState(new BlockPos(0,65,0)).is(Blocks.WATER),"main ice returns to original-level source water");
+        helper.assertTrue(chunk.getBlockState(new BlockPos(5,65,0)).is(Blocks.ICE),"side ice remains byte-for-byte unchanged");
+        helper.succeed();
+    }
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
     public void capHasGroundEgress(GameTestHelper helper){
         routes(helper,new EndCap(DECAY,ComponentFixtures.PALETTE).compile(ComponentFixtures.input(SiteKind.END_CAP,
                 new Bounds(-30,-33,-5,1,3,15),0,0,0,DecayState.INTACT)));
+        helper.succeed();
+    }
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
+    public void alternativeCapRampsStayConnectedThroughNativeCollisionShapes(GameTestHelper helper){
+        var base=ComponentFixtures.input(SiteKind.END_CAP,new Bounds(-30,-33,-15,30,3,15),0,0,0,DecayState.INTACT);
+        for(int first=1;first<4;first++){
+            int target=first;var supports=new HashMap<>(base.supports());
+            supports.replaceAll((p,v)->{
+                int slot=(p.x()>=0?2:0)+(p.z()<0?1:0);
+                boolean entrance=(p.x()>=-29&&p.x()<-26||p.x()>=26&&p.x()<29)&&(p.z()==6||p.z()==-7);
+                return entrance&&slot<target?new ProbeResult(ProbeKind.NO_SUPPORT,0,OptionalInt.empty(),OptionalInt.empty(),64,ComponentFixtures.H):v;
+            });
+            var input=new ComponentInput(base.site(),base.stations(),supports,base.decay(),base.family(),false,List.of(),List.of());
+            var c=new EndCap(DECAY,ComponentFixtures.PALETTE).compileAt(input);routes(helper,c);
+            var ground=c.requiredRoutes().getLast().getFirst();
+            var reachable=new ComponentFixtures.CollisionView(ComponentFixtures.states(c)).reachable(c.requiredRoutes().getFirst().getFirst(),c.bounds());
+            helper.assertTrue(reachable.contains(new ComponentFixtures.Foot(ground.x()*2,ground.y()*2,ground.z()*2)),"alternate cap has no disconnected ramp");
+        }
         helper.succeed();
     }
     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)

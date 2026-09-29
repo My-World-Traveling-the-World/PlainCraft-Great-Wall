@@ -39,18 +39,24 @@ final class ComponentFixtures {
                         state==DecayState.INTACT?20:state==DecayState.PARTIAL?15:2),PaletteFamily.STONE,false,List.of(),List.of());
     }
     static Map<ChunkKey,ChunkWritePlan> plans(ComponentVoxels c){
+        return plans(c,64);
+    }
+    static Map<ChunkKey,ChunkWritePlan> plans(ComponentVoxels c,int ground){
         var cell=new RealizationCell(new CellKey(H,"minecraft:overworld",16),List.of(),List.of(c),H,0,H,H);
         var owners=new HashSet<ChunkKey>();var before=new HashMap<Point3i,String>();
         for(var v:c.voxels()){
             owners.add(new ChunkKey("minecraft:overworld",Math.floorDiv(v.pos().x(),16),Math.floorDiv(v.pos().z(),16)));
-            before.put(v.pos(),BlockCatalog.token(v.pos().y()<64?Blocks.STONE.defaultBlockState():Blocks.AIR.defaultBlockState(),false));
+            before.put(v.pos(),BlockCatalog.token(v.pos().y()<ground?Blocks.STONE.defaultBlockState():Blocks.AIR.defaultBlockState(),false));
         }
         var result=new HashMap<ChunkKey,ChunkWritePlan>();var compiler=new ChunkPlanCompiler();
         for(var key:owners)result.put(key,compiler.bindCoverage(compiler.compile(key,H,List.of(cell),before),H));
         return Map.copyOf(result);
     }
     static Map<Point3i,BlockState> states(ComponentVoxels c){
-        var result=new HashMap<Point3i,BlockState>();plans(c).values().forEach(p->p.voxels().forEach(v->result.put(v.pos(),BlockCatalog.resolveState(v.state()))));
+        return states(c,64);
+    }
+    static Map<Point3i,BlockState> states(ComponentVoxels c,int ground){
+        var result=new HashMap<Point3i,BlockState>();plans(c,ground).values().forEach(p->p.voxels().forEach(v->result.put(v.pos(),BlockCatalog.resolveState(v.state()))));
         return Map.copyOf(result);
     }
     static LevelAccessor view(Map<Point3i,BlockState> states){

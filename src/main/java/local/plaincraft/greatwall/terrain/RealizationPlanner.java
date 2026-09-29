@@ -58,6 +58,7 @@ public final class RealizationPlanner {
         if(from<stations.getFirst().globalSQ8())
             throw new WallFailure(FailureCode.MISSING_FEATURES_PLAN,"cell needs complete station ribbon");
         to=Math.min(to,stations.getLast().globalSQ8());
+        if(inspection!=null||decisions!=null)requireRibbonColumns(input,stations,from,to);
         var bounds=recipe!=null?recipe.bounds():new DimensionBounds(
                 input.tiles().keySet().stream().mapToInt(TerrainTile.Key::minY).min().orElseThrow(),
                 input.tiles().keySet().stream().mapToInt(k->k.maxY()+1).max().orElseThrow(),29_999_000);
@@ -170,8 +171,13 @@ public final class RealizationPlanner {
                 }
             }
             // The final cut is shared, including cells hundreds of blocks before the failing endpoint.
-            accepted.removeIf(c->c.id().kind()!=SiteKind.END_CAP&&sites.stream().filter(s->s.id().equals(c.id()))
-                    .anyMatch(s->capExclusions.stream().anyMatch(r->s.globalSQ8()>=r.fromQ8()&&s.globalSQ8()<r.toQ8())));
+            accepted.removeIf(c->{
+                if(c.id().kind()==SiteKind.END_CAP)return false;
+                long center=c.id().kind()==SiteKind.WATER_GATE?waters.stream().filter(w->w.crossing().fromQ8()==c.id().ordinal())
+                        .mapToLong(w->w.crossing().fromQ8()+(w.crossing().toQ8()-w.crossing().fromQ8())/2).findFirst().orElseThrow():
+                        sites.stream().filter(s->s.id().equals(c.id())).mapToLong(SiteRecord::globalSQ8).findFirst().orElseThrow();
+                return capExclusions.stream().anyMatch(r->center>=r.fromQ8()&&center<r.toQ8());
+            });
             walkMerged=merge(certifiedBreaks);
         }
         excluded.addAll(capExclusions);
@@ -198,6 +204,7 @@ public final class RealizationPlanner {
         var limits=recipe==null?new DimensionBounds(input.tiles().keySet().stream().mapToInt(TerrainTile.Key::minY).min().orElseThrow(),
                 input.tiles().keySet().stream().mapToInt(k->k.maxY()+1).max().orElseThrow(),29_999_000):recipe.bounds();
         var original=capSite(wall,edge.sQ8(),edge.reverse(),ribbon);
+        var occupied=capObstacles(input,ribbon,limits,edge.sQ8());
         for(var attempt:EndCap.candidates(original,ribbon)) {
             long a=edge.reverse()?attempt.globalSQ8():attempt.globalSQ8()-30L*256;
             long b=edge.reverse()?attempt.globalSQ8()+30L*256:attempt.globalSQ8();
@@ -205,11 +212,37 @@ public final class RealizationPlanner {
             try {
                 var c=((EndCap)templates.get(SiteKind.END_CAP)).compileAt(componentInput(input,attempt,ribbon,
                         new DecaySample(DecayState.INTACT,0,20),List.of(),limits,Map.of()));
-                if(!c.voxels().isEmpty())return new GroundExitDecision.CapVote(Optional.of(new GroundExitDecision.Cap(c.id(),edge,
-                        attempt.globalSQ8(),c.hash())),evidenceHash(input));
+                if(!c.voxels().isEmpty()) {
+                    long min=Long.MAX_VALUE,max=Long.MIN_VALUE;
+                    for(var v:c.voxels()) {
+                        long s=WallSection.contract(ribbon,v.pos().x(),v.pos().z()).globalSQ8();
+                        min=Math.min(min,Math.floorDiv(s,256)*256);max=Math.max(max,(Math.floorDiv(s,256)+1)*256);
+                    }
+                    if(min<edge.allowed().fromQ8()||max>edge.allowed().toQ8())continue;
+                    long start=min,end=max;
+                    if(occupied.stream().anyMatch(r->r.fromQ8()<end&&r.toQ8()>start))continue;
+                    return new GroundExitDecision.CapVote(Optional.of(new GroundExitDecision.Cap(c.id(),edge,
+                            attempt.globalSQ8(),c.hash(),new ArcInterval(min,max))),evidenceHash(input));
+                }
             }catch(WallFailure e){if(e.code()!=FailureCode.OWNERSHIP_CONFLICT)throw e;}
         }
         return new GroundExitDecision.CapVote(Optional.empty(),evidenceHash(input));
+    }
+    private List<ArcInterval> capObstacles(Input input,List<Station> ribbon,DimensionBounds limits,long edge) {
+        var result=new ArrayList<ArcInterval>();var field=new DecayField(recipe==null?0:recipe.seed());
+        var water=waters(input.plans());
+        for(var w:water)if(w.classification()!=WaterClass.DRY)result.add(new ArcInterval(Math.max(0,w.crossing().fromQ8()-8*256L),w.crossing().toQ8()+8*256L));
+        for(var s:sites(input.plans())) {
+            if(Math.abs(s.globalSQ8()-edge)>192*256L||s.state()==SiteState.SUPPRESSED||s.state()==SiteState.ABSORBED)continue;
+            long extent=switch(s.id().kind()){case FORT->24L*256;case GATE->30L*256;case ENEMY_TOWER->6L*256;case BEACON->5L*256;default->0;};
+            if(extent==0)continue;
+            var range=new ArcInterval(Math.max(0,s.globalSQ8()-extent),s.globalSQ8()+extent);
+            if(result.stream().anyMatch(r->r.fromQ8()<range.toQ8()&&r.toQ8()>range.fromQ8()))continue;
+            var candidate=componentInput(input,s,ribbon,field.sample(s.globalSQ8(),PaletteFamily.STONE,List.of(s.globalSQ8())),List.of(),limits,Map.of());
+            var c=compile(s.id().kind(),candidate,input);
+            if(c!=null&&!c.voxels().isEmpty())result.add(range);
+        }
+        return List.copyOf(result);
     }
     private static SiteRecord capSite(String wall,long s,boolean reverse,List<Station> ribbon) {
         var value=site(wall,SiteKind.END_CAP,Math.addExact(Math.multiplyExact(s,2),reverse?1:0),s,ribbon);
@@ -262,6 +295,7 @@ public final class RealizationPlanner {
                 if(feet.contains(n)){if(seen.add(n))queue.addLast(n);continue;}
                 var column=input.columns().get(new Point3i(n.x(),0,n.z()));
                 if(column==null)throw new WallFailure(FailureCode.T0_MISSING,"ground-exit apron not captured");
+                column=protectedView(column,n,input.protectedBounds());
                 if(n.y()<site.frame().walkY()&&column.highestNonPlantFeet()==n.y()&&column.solidSupport(n.y()-1)
                         &&!solids.contains(n)&&!solids.contains(new Point3i(n.x(),n.y()+1,n.z()))
                         &&column.airOrReplaceablePlant(n.y())&&column.airOrReplaceablePlant(n.y()+1)
@@ -310,13 +344,22 @@ public final class RealizationPlanner {
         var provisional=new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,List.of());
         var template=templates.get(site.id().kind());if(template==null)throw new IllegalArgumentException("missing template "+site.id().kind());
         Bounds world=Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
-        for(var e:input.columns().entrySet()) {
-            int x=e.getKey().x(),z=e.getKey().z();
-            if(x<world.minX()||x>=world.maxXExclusive()||z<world.minZ()||z>=world.maxZExclusive())continue;
+        for(int z=world.minZ();z<world.maxZExclusive();z++)for(int x=world.minX();x<world.maxXExclusive();x++) {
+            var pos=new Point3i(x,0,z);var column=input.columns().get(pos);
+            if(column==null)throw new WallFailure(FailureCode.T0_MISSING,"complete component T0 column missing: "+pos);
             var key=new Point3i(x,site.frame().walkY(),z);
-            supports.computeIfAbsent(key,k->probe.probe(protectedView(e.getValue(),e.getKey(),input.protectedBounds()),k.y(),bounds));
+            supports.computeIfAbsent(key,k->probe.probe(protectedView(column,pos,input.protectedBounds()),k.y(),bounds));
         }
         return new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,List.of());
+    }
+    private static void requireRibbonColumns(Input input,List<Station> ribbon,long from,long to) {
+        for(long s=from;s<to;s+=256) {
+            var center=site("probe",SiteKind.WALL,0,s,ribbon).frame().center();
+            int x=FixedMath.floorBlock(center.xQ8()),z=FixedMath.floorBlock(center.zQ8());
+            for(int dz=-7;dz<=7;dz++)for(int dx=-7;dx<=7;dx++)
+                if(!input.columns().containsKey(new Point3i(x+dx,0,z+dz)))
+                    throw new WallFailure(FailureCode.T0_MISSING,"wall core T0 column missing");
+        }
     }
     private static SiteRecord site(String wall,SiteKind kind,long ordinal,long s,List<Station> stations) {
         int i=1;while(i<stations.size()-1&&stations.get(i).globalSQ8()<s)i++;
@@ -376,6 +419,7 @@ public final class RealizationPlanner {
             public String state(int y){return original.state(y);}public boolean solidSupport(int y){return original.solidSupport(y);}
             public boolean water(int y){return original.water(y);}public boolean airOrReplaceablePlant(int y){return original.airOrReplaceablePlant(y);}
             public int highestNonPlantFeet(){return original.highestNonPlantFeet();}public String hash(){return original.hash();}
+            public boolean naturalThinIce(int y){return original.naturalThinIce(y)&&!protectedAt(y);}
             public boolean protectedAt(int y){return original.protectedAt(y)||boxes.stream().anyMatch(b->pos.x()>=b.minX()&&pos.x()<b.maxXExclusive()
                     &&pos.z()>=b.minZ()&&pos.z()<b.maxZExclusive()&&y>=b.minY()&&y<b.maxYExclusive());}
         };

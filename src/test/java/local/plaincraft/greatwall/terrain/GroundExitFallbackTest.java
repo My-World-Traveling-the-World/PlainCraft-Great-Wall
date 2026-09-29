@@ -107,6 +107,12 @@ class GroundExitFallbackTest {
             public CompletableFuture<Void> persist(GroundExitDecision decision){return CompletableFuture.completedFuture(null);}
         },worker,1<<20);
     }
+    @Test void missingFootprintColumnFailsBeforeExitCanBeVotedDown() {
+        var f=fixture();var i=at(f,0);var columns=new HashMap<>(i.columns());columns.remove(new Point3i(-20,0,-20));
+        var incomplete=new RealizationPlanner.Input(i.key(),i.plans(),i.tiles(),columns,i.protectedBounds(),i.frozenGateY(),i.gateRevision(),i.protectionHash());
+        var failure=assertThrows(WallFailure.class,()->f.planner().inspect(incomplete));
+        assertEquals(FailureCode.T0_MISSING,failure.code(),"cache absence is not physical infeasibility");
+    }
     private static final class RidgeColumn implements SurfaceProbe.ColumnView {
         private final int ground;
         RidgeColumn(int ground){this.ground=ground;}

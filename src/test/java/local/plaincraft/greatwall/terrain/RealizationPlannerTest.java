@@ -52,6 +52,17 @@ class RealizationPlannerTest {
         var a=planner().resolve(input(false,0));var b=planner().resolve(input(false,1));
         assertEquals(a.components(),b.components());assertNotEquals(a.hash(),b.hash());
     }
+    @Test void capVotesCannotOverwriteAnAcceptedWholeGateFootprint() {
+        var base=input(false,0);var p=base.plans().plans().getFirst();
+        var gate=new SiteRecord(new SiteId("fixture",SiteKind.GATE,1),340*256L,
+                new Frame(new Point2q(340*256L,0),1<<30,0,84,false),new Bounds(310,51,-15,370,88,15),
+                SiteState.PLANNED,Optional.empty(),Optional.empty());
+        var plans=new PlanWindow(List.of(new SegmentPlan(p.geometry(),p.prefix(),p.stations(),List.of(gate),p.hash())));
+        var request=new RealizationPlanner.Input(base.key(),plans,base.tiles(),base.columns(),List.of(),Map.of(),0,H);
+        var vote=terminalPlanner().probeCap(request,new GroundExitDecision.Edge(380*256L,false,new ArcInterval(200*256L,380*256L)));
+        assertTrue(vote.cap().isPresent());
+        assertTrue(vote.cap().orElseThrow().footprint().toQ8()<=310*256L,"whole gate wins before a cap can be certified");
+    }
     @Test void partialTerminalCellKeepsOneNearSideCapAndOriginalReason() {
         for(var kind:TerminalKind.values()){
             var base=input(false,0);var old=base.plans().plans().getFirst();

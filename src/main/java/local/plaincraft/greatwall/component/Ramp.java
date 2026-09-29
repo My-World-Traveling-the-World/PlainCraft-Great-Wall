@@ -5,6 +5,7 @@ import local.plaincraft.greatwall.decay.DecayField;
 import local.plaincraft.greatwall.decay.PaletteBinding;
 import local.plaincraft.greatwall.geometry.Rasterizer;
 import local.plaincraft.greatwall.model.WallTypes.*;
+import local.plaincraft.greatwall.model.WallFailure;
 
 /** Two filled three-wide stair runs, with a separate ground and wall landing. */
 public final class Ramp implements ComponentTemplate {
@@ -24,8 +25,10 @@ public final class Ramp implements ComponentTemplate {
             boolean reverse=n>=2,mirror=(n%2==1)^reverse^f.mirror();
             var frame=new Frame(f.center(),reverse?-f.txQ30():f.txQ30(),reverse?-f.tzQ30():f.tzQ30(),f.walkY(),mirror);
             var candidate=ComponentComposer.frame(input,frame,input.site().globalSQ8());
-            var result=compileInFrame(candidate);
-            if(!result.voxels().isEmpty())return result;
+            try {
+                var result=compileInFrame(candidate);
+                if(!result.voxels().isEmpty())return result;
+            }catch(WallFailure failure){if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT)throw failure;}
         }
         return ComponentAssembly.empty(input.site().id(),input.site().bounds());
     }
