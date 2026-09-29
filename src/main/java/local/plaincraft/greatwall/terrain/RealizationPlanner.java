@@ -31,13 +31,30 @@ public final class RealizationPlanner {
         this.recipe=recipe;this.probe=Objects.requireNonNull(probe);this.templates=Map.copyOf(templates);
     }
     public RealizationCell resolve(Input input) {
+        return resolve(input,null,null);
+    }
+    /** Production callers must obtain these certificates through the lock-external resolver first. */
+    public RealizationCell resolve(Input input,List<GroundExitDecision> decisions) {
+        Objects.requireNonNull(decisions);
+        return resolve(input,List.copyOf(decisions),null);
+    }
+    public GroundExitDecision.Slice inspect(Input input) {
+        GroundExitDecision.Slice[] result={null};
+        resolve(input,null,s->result[0]=s);
+        return Objects.requireNonNull(result[0],"missing exit slice");
+    }
+    private RealizationCell resolve(Input input,List<GroundExitDecision> decisions,
+            java.util.function.Consumer<GroundExitDecision.Slice> inspection) {
         if(input.key().arcCell()<0)throw new IllegalArgumentException("negative arc cell");
         if(recipe!=null&&(!recipe.recipeHash().equals(input.key().recipeHash())||!recipe.dimension().equals(input.key().dimension())))
             throw new WallFailure(FailureCode.RECIPE_MISMATCH,"foreign realization request");
         var stations=stations(input.plans());var accepted=new ArrayList<ComponentVoxels>();var breaks=new ArrayList<BreakInterval>();
         long from=Math.multiplyExact(input.key().arcCell(),64L*256),to=Math.addExact(from,64L*256);
         String t0=hash(input.tiles().values().stream().map(t->t.key().identity()+":"+t.hash()).sorted().toList().toString());
-        if(stations.size()<2||from>=stations.getLast().globalSQ8())return result(input,breaks,accepted,t0);
+        if(stations.size()<2||from>=stations.getLast().globalSQ8()) {
+            if(inspection!=null)inspection.accept(new GroundExitDecision.Slice(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHash(input)));
+            return result(input,breaks,accepted,t0);
+        }
         if(from<stations.getFirst().globalSQ8())
             throw new WallFailure(FailureCode.MISSING_FEATURES_PLAN,"cell needs complete station ribbon");
         to=Math.min(to,stations.getLast().globalSQ8());
@@ -47,8 +64,7 @@ public final class RealizationPlanner {
         String wall=recipe!=null?recipe.wallId():input.plans().plans().stream().flatMap(p->p.sites().stream()).findFirst()
                 .map(s->s.id().wallId()).orElse(input.key().recipeHash());
         var field=new DecayField(recipe==null?0:recipe.seed());
-        var sites=sites(input.plans());var maintained=sites.stream().filter(s->s.state()!=SiteState.SUPPRESSED&&s.state()!=SiteState.ABSORBED)
-                .map(SiteRecord::globalSQ8).toList();
+        var sites=sites(input.plans());var maintained=new ArrayList<Long>();var exits=new ArrayList<GroundExitDecision.Exit>();
         var waters=waters(input.plans());long terminal=Long.MAX_VALUE;BreakReason terminalReason=BreakReason.RIVER_WIDE;
         for(var p:input.plans().plans()){
             breaks.addAll(p.stations().breaks());
@@ -85,12 +101,19 @@ public final class RealizationPlanner {
                     &&w.crossing().toQ8()+8L*256>siteFrom))continue;
             occupied.add(new ArcInterval(Math.max(0,site.globalSQ8()-extent),site.globalSQ8()+extent));
             // All cells can vote on a site's full footprint; only its center cell publishes it.
-            var candidate=componentInput(input,site,stations,field.sample(site.globalSQ8(),PaletteFamily.STONE,maintained),List.of(),bounds,supported);
+            var candidate=componentInput(input,site,stations,field.sample(site.globalSQ8(),PaletteFamily.STONE,List.of(site.globalSQ8())),List.of(),bounds,supported);
             ComponentVoxels component=compile(site.id().kind(),candidate,input);
             if(component==null||component.voxels().isEmpty()){
                 if(site.id().kind()==SiteKind.FORT&&site.id().ordinal()==0)throw new WallFailure(FailureCode.ROOT_NOT_FOUND,"fort0 realization failed");
                 breaks.add(new BreakInterval(new ArcInterval(Math.max(0,site.globalSQ8()-extent-8L*256),site.globalSQ8()+extent+8L*256),BreakReason.CONFLICT,BreakScope.REALIZED));
-            }else if(site.globalSQ8()>=from&&site.globalSQ8()<to&&site.globalSQ8()<terminal)accepted.add(component);
+            }else {
+                maintained.add(site.globalSQ8());
+                if(site.globalSQ8()>=from&&site.globalSQ8()<to&&site.globalSQ8()<terminal) {
+                    accepted.add(component);
+                    if(naturalExit(input,site,component))exits.add(new GroundExitDecision.Exit(site.id(),site.globalSQ8(),
+                            new ArcInterval(siteFrom,siteTo),component.hash(),evidenceHash(input)));
+                }
+            }
         }
         for(var water:waters) {
             if(water.classification()!=WaterClass.NARROW)continue;
@@ -113,11 +136,43 @@ public final class RealizationPlanner {
                 walkBreaks.add(new BreakInterval(new ArcInterval(s,Math.min(s+256,decayTo)),BreakReason.BURIED,BreakScope.REALIZED));
         }
         var walkMerged=merge(walkBreaks);
+        if(inspection!=null) {
+            var core=new ArrayList<BreakInterval>();
+            for(var gap:walkMerged) {
+                long a=Math.max(from,gap.range().fromQ8()),b=Math.min(to,gap.range().toQ8());
+                if(a<b)core.add(new BreakInterval(new ArcInterval(a,b),gap.reason(),gap.scope()));
+            }
+            inspection.accept(new GroundExitDecision.Slice(input.key(),exits,core,terminal(input.plans()),evidenceHash(input)));
+            return result(input,walkMerged,accepted,t0);
+        }
         var capExclusions=new ArrayList<ArcInterval>();
-        for(var gap:walkMerged){
+        if(decisions==null)for(var gap:walkMerged){
             addCap(input,wall,gap.range().fromQ8(),false,from,to,terminal,stations,field,maintained,bounds,supported,accepted,capExclusions);
             if(gap.range().toQ8()!=Long.MAX_VALUE&&gap.range().toQ8()<terminal&&gap.range().toQ8()<decayTo)
                 addCap(input,wall,gap.range().toQ8(),true,from,to,terminal,stations,field,maintained,bounds,supported,accepted,capExclusions);
+        }
+        else {
+            validateDecisions(input,decisions,from,to);
+            var certifiedBreaks=new ArrayList<BreakInterval>();
+            for(var decision:decisions) {
+                certifiedBreaks.addAll(decision.breaks());capExclusions.addAll(decision.exclusions());
+                for(var cap:decision.caps()) {
+                    long s=cap.edge().sQ8();
+                    if(s<from||s>=to&&!(s==to&&s==stations.getLast().globalSQ8()))continue;
+                    var original=capSite(wall,s,cap.edge().reverse(),stations);
+                    var attempt=EndCap.candidates(original,stations).stream().filter(a->a.globalSQ8()==cap.actualSQ8()).findFirst()
+                            .orElseThrow(()->new WallFailure(FailureCode.T0_CORRUPT,"certified cap left station ribbon"));
+                    var compiled=((EndCap)templates.get(SiteKind.END_CAP)).compileAt(componentInput(input,attempt,stations,
+                            new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,supported));
+                    if(!compiled.id().equals(cap.site())||!compiled.hash().equals(cap.componentHash()))
+                        throw new WallFailure(FailureCode.T0_CORRUPT,"certified cap changed before APPLY");
+                    accepted.add(compiled);
+                }
+            }
+            // The final cut is shared, including cells hundreds of blocks before the failing endpoint.
+            accepted.removeIf(c->c.id().kind()!=SiteKind.END_CAP&&sites.stream().filter(s->s.id().equals(c.id()))
+                    .anyMatch(s->capExclusions.stream().anyMatch(r->s.globalSQ8()>=r.fromQ8()&&s.globalSQ8()<r.toQ8())));
+            walkMerged=merge(certifiedBreaks);
         }
         excluded.addAll(capExclusions);
         var buildable=subtract(new ArcInterval(from,to),excluded);
@@ -132,7 +187,91 @@ public final class RealizationPlanner {
                     s->field.sample(s,PaletteFamily.STONE,maintained));
             if(!component.voxels().isEmpty())accepted.add(component);
         }
-        return result(input,walkMerged,accepted,t0);
+        var resolved=result(input,walkMerged,accepted,t0);
+        if(decisions==null)return resolved;
+        return new RealizationCell(resolved.key(),resolved.breaks(),resolved.components(),resolved.t0Hash(),resolved.gateRevision(),
+                resolved.protectionHash(),hash(resolved.hash()+"\n"+decisions.stream().map(GroundExitDecision::hash).sorted().toList()));
+    }
+    public GroundExitDecision.CapVote probeCap(Input input,GroundExitDecision.Edge edge) {
+        var ribbon=stations(input.plans());
+        String wall=recipe==null?sites(input.plans()).getFirst().id().wallId():recipe.wallId();
+        var limits=recipe==null?new DimensionBounds(input.tiles().keySet().stream().mapToInt(TerrainTile.Key::minY).min().orElseThrow(),
+                input.tiles().keySet().stream().mapToInt(k->k.maxY()+1).max().orElseThrow(),29_999_000):recipe.bounds();
+        var original=capSite(wall,edge.sQ8(),edge.reverse(),ribbon);
+        for(var attempt:EndCap.candidates(original,ribbon)) {
+            long a=edge.reverse()?attempt.globalSQ8():attempt.globalSQ8()-30L*256;
+            long b=edge.reverse()?attempt.globalSQ8()+30L*256:attempt.globalSQ8();
+            if(a<edge.allowed().fromQ8()||b>edge.allowed().toQ8())continue;
+            try {
+                var c=((EndCap)templates.get(SiteKind.END_CAP)).compileAt(componentInput(input,attempt,ribbon,
+                        new DecaySample(DecayState.INTACT,0,20),List.of(),limits,Map.of()));
+                if(!c.voxels().isEmpty())return new GroundExitDecision.CapVote(Optional.of(new GroundExitDecision.Cap(c.id(),edge,
+                        attempt.globalSQ8(),c.hash())),evidenceHash(input));
+            }catch(WallFailure e){if(e.code()!=FailureCode.OWNERSHIP_CONFLICT)throw e;}
+        }
+        return new GroundExitDecision.CapVote(Optional.empty(),evidenceHash(input));
+    }
+    private static SiteRecord capSite(String wall,long s,boolean reverse,List<Station> ribbon) {
+        var value=site(wall,SiteKind.END_CAP,Math.addExact(Math.multiplyExact(s,2),reverse?1:0),s,ribbon);
+        if(!reverse)return value;
+        var f=value.frame();return new SiteRecord(value.id(),s,new Frame(f.center(),-f.txQ30(),-f.tzQ30(),f.walkY(),!f.mirror()),
+                value.bounds(),value.state(),value.absorbedBy(),value.reason());
+    }
+    private static Optional<BreakInterval> terminal(PlanWindow plans) {
+        return plans.plans().stream().filter(p->p.geometry().terminal().isPresent()).map(p->{
+            var t=p.geometry().terminal().orElseThrow();return new BreakInterval(new ArcInterval(p.prefix().lengthBeforeQ8()+t.localSQ8(),Long.MAX_VALUE),
+                    t.kind()==TerminalKind.WORLD_LIMIT?BreakReason.WORLD_LIMIT:BreakReason.RIVER_WIDE,BreakScope.PLANNED);
+        }).min(Comparator.comparingLong(b->b.range().fromQ8()));
+    }
+    private static String evidenceHash(Input input) {
+        var columns=input.columns().entrySet().stream().sorted(Map.Entry.comparingByKey(Comparator.comparingInt(Point3i::x).thenComparingInt(Point3i::z)))
+                .map(e->e.getKey()+":"+e.getValue().hash()).toList();
+        return hash(input.key()+"\n"+input.plans().plans().stream().map(SegmentPlan::hash).sorted().toList()+"\n"
+                +input.tiles().values().stream().map(t->t.key().identity()+":"+t.hash()).sorted().toList()+"\n"+columns+"\n"
+                +input.protectionHash()+"\n"+input.gateRevision()+"\n"+input.frozenGateY().entrySet().stream().map(Object::toString).sorted().toList());
+    }
+    private static void validateDecisions(Input input,List<GroundExitDecision> decisions,long from,long to) {
+        long cursor=from;
+        for(var d:decisions.stream().sorted(Comparator.comparingLong(d->d.key().range().fromQ8())).toList()) {
+            if(!d.key().recipeHash().equals(input.key().recipeHash())||!d.key().dimension().equals(input.key().dimension())
+                    ||!d.hash().equals(local.plaincraft.greatwall.persistence.GroundExitCodec.hashed(d).hash()))
+                throw new WallFailure(FailureCode.RECIPE_MISMATCH,"foreign exit decision");
+            if(d.key().range().fromQ8()>cursor)throw new WallFailure(FailureCode.MISSING_FEATURES_PLAN,"gap in exit decisions");
+            cursor=Math.max(cursor,d.key().range().toQ8());
+        }
+        if(cursor<to)throw new WallFailure(FailureCode.MISSING_FEATURES_PLAN,"uncertified cell cannot APPLY");
+    }
+    private static boolean naturalExit(Input input,SiteRecord site,ComponentVoxels component) {
+        if(component.requiredRoutes().isEmpty())return false;
+        var solids=new HashSet<Point3i>();
+        for(var v:component.voxels()) {
+            if(v.kind()==IntentKind.SOLID)solids.add(v.pos());
+        }
+        var feet=new HashSet<Point3i>();
+        for(var v:component.voxels())if(v.walkable()) {
+            var p=new Point3i(v.pos().x(),v.pos().y()+1,v.pos().z());
+            if(!solids.contains(p)&&!solids.contains(new Point3i(p.x(),p.y()+1,p.z())))feet.add(p);
+        }
+        var queue=new ArrayDeque<Point3i>();var seen=new HashSet<Point3i>();
+        for(var p:feet)if(p.y()==site.frame().walkY()){queue.add(p);seen.add(p);}
+        var box=component.bounds();
+        while(!queue.isEmpty()) {
+            var p=queue.removeFirst();
+            for(var dir:new int[][]{{1,0},{-1,0},{0,1},{0,-1}})for(int dy=-1;dy<=1;dy++) {
+                var n=new Point3i(p.x()+dir[0],p.y()+dy,p.z()+dir[1]);
+                if(feet.contains(n)){if(seen.add(n))queue.addLast(n);continue;}
+                var column=input.columns().get(new Point3i(n.x(),0,n.z()));
+                if(column==null)throw new WallFailure(FailureCode.T0_MISSING,"ground-exit apron not captured");
+                if(n.y()<site.frame().walkY()&&column.highestNonPlantFeet()==n.y()&&column.solidSupport(n.y()-1)
+                        &&!solids.contains(n)&&!solids.contains(new Point3i(n.x(),n.y()+1,n.z()))
+                        &&column.airOrReplaceablePlant(n.y())&&column.airOrReplaceablePlant(n.y()+1)
+                        &&!column.protectedAt(n.y())&&!column.protectedAt(n.y()-1)) {
+                    if(n.x()<box.minX()||n.x()>=box.maxXExclusive()||n.z()<box.minZ()||n.z()>=box.maxZExclusive())return true;
+                    if(seen.add(n))queue.addLast(n);
+                }
+            }
+        }
+        return false;
     }
     private void addCap(Input input,String wall,long s,boolean reverse,long from,long to,long terminal,List<Station> stations,
             DecayField field,List<Long> maintained,DimensionBounds bounds,Map<Point3i,ProbeResult> known,List<ComponentVoxels> components,

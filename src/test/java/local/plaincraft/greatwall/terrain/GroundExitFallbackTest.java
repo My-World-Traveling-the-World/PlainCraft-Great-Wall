@@ -2,6 +2,7 @@ package local.plaincraft.greatwall.terrain;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.*;
+import java.util.concurrent.*;
 import local.plaincraft.greatwall.component.*;
 import local.plaincraft.greatwall.decay.*;
 import local.plaincraft.greatwall.generation.SurfaceProbe;
@@ -71,12 +72,40 @@ class GroundExitFallbackTest {
         assertEquals(FailureCode.OWNERSHIP_CONFLICT,failure.code());
         assertTrue(failure.getMessage().contains("no proven ground exit"));
     }
-    @Test void exhaustedCapSearchMustFallBackToTheEarlierGroundExitWithoutFatalGeneration(){
+    @Test void exhaustedCapSearchMustFallBackToTheEarlierGroundExitWithoutFatalGeneration() throws Exception {
         var f=fixture();
-        var resolved=assertDoesNotThrow(()->f.planner().resolve(f.terminal()),
+        try(var worker=Executors.newSingleThreadExecutor();var resolver=resolver(f,worker)) {
+        assertFalse(f.planner().inspect(at(f,0)).exits().isEmpty(),()->"root must expose a ground exit: "+
+                f.planner().resolve(at(f,0)).components().stream().map(c->c.id()+" "+c.requiredRoutes()+" "+
+                        c.voxels().stream().filter(VoxelIntent::walkable).collect(java.util.stream.Collectors.groupingBy(v->v.pos().y(),java.util.stream.Collectors.counting()))).toList());
+        var decisions=assertDoesNotThrow(()->resolver.require(f.terminal().key()).get(60,TimeUnit.SECONDS),
+                "S1B requires asynchronously proving the earlier exit before any cell may APPLY");
+        var resolved=assertDoesNotThrow(()->f.planner().resolve(f.terminal(),decisions),
                 "S1B contract requires fallback to the previous proven ground exit, not a fatal error on an ordinary supported ridge");
         assertTrue(resolved.breaks().stream().anyMatch(b->b.range().fromQ8()<=24*256L&&b.range().toQ8()==Long.MAX_VALUE),
                 "fallback must withdraw the continuous walking interval before owner APPLY, not invent an unsupported ramp");
+        var earlyDecisions=resolver.require(f.early().key()).get(60,TimeUnit.SECONDS);
+        assertEquals(decisions,earlyDecisions,"late and early consumers wait for the same final interval");
+        var early=f.planner().resolve(f.early(),earlyDecisions);
+        assertTrue(early.components().stream().flatMap(c->c.voxels().stream()).noneMatch(VoxelIntent::walkable));
+        var root=f.planner().resolve(at(f,0),resolver.require(at(f,0).key()).get(60,TimeUnit.SECONDS));
+        assertTrue(root.components().stream().anyMatch(c->c.id().equals(f.root().id())));
+        }
+    }
+    private static RealizationPlanner.Input at(Fixture f,long cell) {
+        var i=f.early();return new RealizationPlanner.Input(new CellKey(i.key().recipeHash(),i.key().dimension(),cell),
+                i.plans(),i.tiles(),i.columns(),i.protectedBounds(),i.frozenGateY(),i.gateRevision(),i.protectionHash());
+    }
+    private static GroundExitResolver resolver(Fixture f,Executor worker) {
+        return new GroundExitResolver(new GroundExitResolver.Source(){
+            public CompletableFuture<GroundExitDecision.Slice> inspect(CellKey key){
+                return CompletableFuture.supplyAsync(()->f.planner().inspect(at(f,key.arcCell())),worker);
+            }
+            public CompletableFuture<GroundExitDecision.CapVote> cap(GroundExitDecision.Key key,GroundExitDecision.Edge edge){
+                return CompletableFuture.supplyAsync(()->f.planner().probeCap(at(f,Math.floorDiv(edge.sQ8(),64L*256)),edge),worker);
+            }
+            public CompletableFuture<Void> persist(GroundExitDecision decision){return CompletableFuture.completedFuture(null);}
+        },worker,1<<20);
     }
     private static final class RidgeColumn implements SurfaceProbe.ColumnView {
         private final int ground;
