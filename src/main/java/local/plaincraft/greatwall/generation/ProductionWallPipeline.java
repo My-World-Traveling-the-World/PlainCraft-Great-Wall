@@ -18,13 +18,17 @@ import net.minecraft.world.level.chunk.status.*;
 /** Production strategy. Async admission happens outside native locks; no future is synchronously waited. */
 public final class ProductionWallPipeline implements AutoCloseable {
     public record Ports(BiFunction<ChunkKey,Integer,PlanLease<PlanWindow>> plans,
+            Function<CellKey,PlanLease<PlanWindow>> arcPlans,
             Function<List<ChunkPos>,PlanLease<Map<ChunkPos,ChunkAccess>>> features,
             Runnable assertActive,Consumer<Throwable> fail,Executor worker) {
-        public Ports {Objects.requireNonNull(plans);Objects.requireNonNull(features);Objects.requireNonNull(assertActive);
+        public Ports {Objects.requireNonNull(plans);Objects.requireNonNull(arcPlans);Objects.requireNonNull(features);Objects.requireNonNull(assertActive);
             Objects.requireNonNull(fail);Objects.requireNonNull(worker);}
     }
-    private record Collected(List<RealizationCell> cells,Map<Point3i,String> before,Coverage own,long bytes) {
-        Collected {cells=List.copyOf(cells);before=Map.copyOf(before);}
+    private record Collected(List<RealizationCell> cells,Map<Point3i,String> before,Coverage own,long bytes,List<GroundExitDecision> exits) {
+        Collected {cells=List.copyOf(cells);before=Map.copyOf(before);exits=List.copyOf(exits);}
+    }
+    private record CellTerrain(RealizationPlanner.Input input,Map<ChunkKey,CaptureMetadata> metadata) {
+        CellTerrain {metadata=Map.copyOf(metadata);}
     }
     private final WorldRecipe recipe;
     private final Ports ports;
@@ -39,6 +43,7 @@ public final class ProductionWallPipeline implements AutoCloseable {
     private final ConcurrentHashMap<String,CompletableFuture<Void>> queue=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,Boolean> state=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,Integer> admitted=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,GroundExitResolver> exitResolvers=new ConcurrentHashMap<>();
     public ProductionWallPipeline(WorldRecipe recipe,Ports ports,TerrainSnapshotService snapshots,
             RealizationPlanner realization,ChunkPlanCompiler compiler,ChunkWallWriter writer) {
         this.recipe=Objects.requireNonNull(recipe);this.ports=Objects.requireNonNull(ports);this.snapshots=Objects.requireNonNull(snapshots);
@@ -94,7 +99,7 @@ public final class ProductionWallPipeline implements AutoCloseable {
                         if(cells.isEmpty())return CompletableFuture.completedFuture(null);
                         if(owner.getPersistedStatus().isOrAfter(ChunkStatus.FULL))
                             throw failure(FailureCode.EXISTING_WORLD,"FULL wall owner lacks completed marker");
-                        CompletableFuture<Collected> chain=CompletableFuture.completedFuture(new Collected(List.of(),Map.of(),null,0));
+                        CompletableFuture<Collected> chain=CompletableFuture.completedFuture(new Collected(List.of(),Map.of(),null,0,List.of()));
                         for(var cell:cells)chain=chain.thenComposeAsync(prior->resolveCell(cell,plans,key,engine)
                                 .thenApply(next->combine(prior,next)),ports.worker());
                         return chain.thenComposeAsync(collected->{
@@ -102,7 +107,7 @@ public final class ProductionWallPipeline implements AutoCloseable {
                             if(collected.own()==null)throw failure(FailureCode.T0_MISSING,"owner not in realization evidence");
                             var plan=compiler.bindCoverage(compiler.compile(key,recipe.recipeHash(),collected.cells(),collected.before()),collected.own().hash());
                             event("PRODUCTION_COMPILED",key,"compile","none");
-                            return snapshots.persistPlan(plan).thenCompose(v->{
+                            return snapshots.persistPlan(plan,collected.exits()).thenCompose(v->{
                                 active();event("PRODUCTION_PROOF_DURABLE",key,"persist","none");
                                 return engine.exclusive(owner.getPos(),()->{
                                     active();event("PRODUCTION_APPLY_ENTER",key,"apply",engine.name());
@@ -116,12 +121,42 @@ public final class ProductionWallPipeline implements AutoCloseable {
                 },ports.worker());
     }
     private CompletableFuture<Collected> resolveCell(CellKey cell,PlanWindow initial,ChunkKey owner,TerrainEngine engine) {
+        return exitResolver(engine).require(cell).thenComposeAsync(decisions->{
+            active();event("PRODUCTION_EXIT_READY",owner,"certified","none");
+            return loadCell(cell,engine).thenApplyAsync(data->{
+                active();var input=data.input();var result=realization.resolve(input,decisions);
+                var before=new HashMap<Point3i,String>();
+                for(var component:result.components())for(var v:component.voxels())if(Math.floorDiv(v.pos().x(),16)==owner.x()
+                        &&Math.floorDiv(v.pos().z(),16)==owner.z()){
+                    var column=input.columns().get(new Point3i(v.pos().x(),0,v.pos().z()));
+                    if(column==null)throw failure(FailureCode.T0_MISSING,"write outside captured columns");
+                    before.put(v.pos(),column.state(v.pos().y()));
+                }
+                var own=data.metadata().get(owner);
+                return new Collected(List.of(result),before,own==null?null:own.coverage(),componentBytes(result),decisions);
+            },ports.worker());
+        },ports.worker());
+    }
+    private GroundExitResolver exitResolver(TerrainEngine engine) {
+        return exitResolvers.computeIfAbsent(engine.name(),name->new GroundExitResolver(new GroundExitResolver.Source(){
+            public CompletableFuture<GroundExitDecision.Slice> inspect(CellKey cell) {
+                trace.assertOutsideLock();return loadCell(cell,engine).thenApplyAsync(data->realization.inspect(data.input()),ports.worker());
+            }
+            public CompletableFuture<GroundExitDecision.CapVote> cap(GroundExitDecision.Key key,GroundExitDecision.Edge edge) {
+                trace.assertOutsideLock();var cell=new CellKey(key.recipeHash(),key.dimension(),Math.floorDiv(edge.sQ8(),64L*256));
+                return loadCell(cell,engine).thenApplyAsync(data->realization.probeCap(data.input(),edge),ports.worker());
+            }
+            public CompletableFuture<Void> persist(GroundExitDecision decision) {
+                trace.assertOutsideLock();return snapshots.persistExitDecision(decision);
+            }
+        },ports.worker(),Math.min(8L<<20,recipe.config().compiledBytes()/4)));
+    }
+    private CompletableFuture<CellTerrain> loadCell(CellKey cell,TerrainEngine engine) {
         active();
-        var near=cellCenter(cell,initial);
-        var lease=track(ports.plans().apply(near,512));
+        trace.assertOutsideLock();
+        var lease=track(ports.arcPlans().apply(cell));
         return lease.future().thenComposeAsync(plans->{
             active();var owners=coverage.realizationOwners(cell,plans);
-            if(owners.isEmpty())return CompletableFuture.completedFuture(new Collected(List.of(),Map.of(),null,0));
             CompletableFuture<TerrainSnapshotService.CapturedTerrain> chain=CompletableFuture.completedFuture(
                     new TerrainSnapshotService.CapturedTerrain(Map.of(),Map.of()));
             for(var member:owners)chain=chain.thenComposeAsync(all->capture(member,engine).thenApply(one->{
@@ -140,16 +175,7 @@ public final class ProductionWallPipeline implements AutoCloseable {
                 }
                 String protectionHash=DeterministicHash.sha256(captured.metadata().values().stream()
                         .map(CaptureMetadata::hash).sorted().toList().toString().getBytes(StandardCharsets.UTF_8));
-                var result=realization.resolve(new RealizationPlanner.Input(cell,plans,captured.tiles(),columns,protection,Map.of(),0,protectionHash));
-                var before=new HashMap<Point3i,String>();
-                for(var component:result.components())for(var v:component.voxels())if(Math.floorDiv(v.pos().x(),16)==owner.x()
-                        &&Math.floorDiv(v.pos().z(),16)==owner.z()){
-                    var column=columns.get(new Point3i(v.pos().x(),0,v.pos().z()));
-                    if(column==null)throw failure(FailureCode.T0_MISSING,"write outside captured columns");
-                    before.put(v.pos(),column.state(v.pos().y()));
-                }
-                var own=captured.metadata().get(owner);
-                return new Collected(List.of(result),before,own==null?null:own.coverage(),componentBytes(result));
+                return new CellTerrain(new RealizationPlanner.Input(cell,plans,captured.tiles(),columns,protection,Map.of(),0,protectionHash),captured.metadata());
             },ports.worker());
         },ports.worker()).whenComplete((v,e)->release(lease));
     }
@@ -186,7 +212,8 @@ public final class ProductionWallPipeline implements AutoCloseable {
     private CompletableFuture<Void> verifyLoaded(ChunkKey key,TerrainMarkers.Marker marker,int minY,int maxY) {
         active();
         if(!marker.recipe().equals(recipe.recipeHash()))return failed(failure(FailureCode.RECIPE_MISMATCH,"foreign FULL marker"));
-        return snapshots.verifyLoaded(key,marker,minY,maxY).thenRun(()->{active();event("PRODUCTION_REPLAY_VERIFIED",key,"load-read-only","none");});
+        return snapshots.verifyLoaded(key,marker,minY,maxY).thenCompose(v->snapshots.verifyExitProof(key))
+                .thenRun(()->{active();event("PRODUCTION_REPLAY_VERIFIED",key,"load-read-only","none");});
     }
     private Collected combine(Collected a,Collected b) {
         long bytes=Math.addExact(a.bytes(),b.bytes());
@@ -196,7 +223,9 @@ public final class ProductionWallPipeline implements AutoCloseable {
             var old=before.putIfAbsent(p,value);if(old!=null&&!old.equals(value))throw failure(FailureCode.T0_CORRUPT,"two before-states");
         });
         if(a.own()!=null&&b.own()!=null&&!a.own().equals(b.own()))throw failure(FailureCode.RECIPE_MISMATCH,"owner coverage changed between cells");
-        return new Collected(cells,before,a.own()==null?b.own():a.own(),bytes);
+        var exits=new TreeMap<String,GroundExitDecision>();
+        for(var d:a.exits())exits.put(d.hash(),d);for(var d:b.exits())exits.put(d.hash(),d);
+        return new Collected(cells,before,a.own()==null?b.own():a.own(),bytes,List.copyOf(exits.values()));
     }
     private ChunkKey cellCenter(CellKey cell,PlanWindow window) {
         long s=cell.arcCell()*64L*256+32L*256;
@@ -238,6 +267,7 @@ public final class ProductionWallPipeline implements AutoCloseable {
         flights.values().forEach(f->f.completeExceptionally(failure(FailureCode.CLOSED,"production pipeline closed")));flights.clear();
         leases.values().forEach(l->{try{l.close();}catch(Exception ignored){}});leases.clear();
         queue.values().forEach(f->f.completeExceptionally(failure(FailureCode.CLOSED,"production pipeline closed")));
+        exitResolvers.values().forEach(GroundExitResolver::close);exitResolvers.clear();
         snapshots.close();
     }
     private static WallFailure failure(FailureCode code,String message){return new WallFailure(code,message);}

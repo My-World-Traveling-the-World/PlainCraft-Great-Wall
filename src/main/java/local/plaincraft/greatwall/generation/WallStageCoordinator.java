@@ -21,6 +21,7 @@ import local.plaincraft.greatwall.lifecycle.WorldServices;
 import local.plaincraft.greatwall.persistence.ChunkEvidenceStore;
 import local.plaincraft.greatwall.planning.ProbePlanner;
 import local.plaincraft.greatwall.planning.PlannerScheduler;
+import local.plaincraft.greatwall.planning.ArcPlanProvider;
 import local.plaincraft.greatwall.model.PlanLease;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.RealizationPlanner;
@@ -47,6 +48,7 @@ public final class WallStageCoordinator implements AutoCloseable {
     private final ChunkEvidenceStore store;
     private final BarrierFixtureLayout layout;
     private final ProductionWallPipeline production;
+    private final ArcPlanProvider arcPlans;
     private final StageTrace trace = new StageTrace(UUID.randomUUID());
     private final ConcurrentHashMap<TerrainTile.Key, CompletableFuture<TerrainTile>> tiles = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ChunkPos, CompletableFuture<Void>> applies = new ConcurrentHashMap<>();
@@ -69,14 +71,16 @@ public final class WallStageCoordinator implements AutoCloseable {
         this.level = level; this.session = session; this.recipe = recipe; this.root = root;
         layout = new BarrierFixtureLayout(Integer.getInteger("greatwall.s0.terrainRounds", 1));
         store = new ChunkEvidenceStore(root.resolve("evidence"));
-        production=null;
+        production=null;arcPlans=null;
         timer.setRemoveOnCancelPolicy(true);
     }
     public WallStageCoordinator(ServerLevel level,WorldServices session,WorldRecipe recipe,PlannerScheduler planner,
             TerrainSnapshotService snapshots,RealizationPlanner realization,ChunkPlanCompiler compiler,ChunkWallWriter writer) {
         this.level=level;this.session=session;this.recipe=recipe.recipeHash();this.root=null;this.store=null;this.layout=null;
+        this.arcPlans=new ArcPlanProvider(n->planner.requirePlan(n,Priority.PLAYER),io);
         this.production=new ProductionWallPipeline(recipe,new ProductionWallPipeline.Ports(
                 (key,margin)->planner.requireWindow(key,margin,Priority.PLAYER),
+                arcPlans::require,
                 positions->{var lease=new FeaturesLease(level,positions,trace);
                     return new PlanLease<>(UUID.randomUUID(),lease.ready(),lease::close);},
                 session::assertActiveSession,session::failRequiredPlan,io),snapshots,realization,compiler,writer);
@@ -329,7 +333,7 @@ public final class WallStageCoordinator implements AutoCloseable {
     }
     @Override public void close() {
         if (state.putIfAbsent("closed", true) != null) return;
-        if(production!=null){production.close();timer.shutdownNow();io.shutdown();return;}
+        if(production!=null){production.close();arcPlans.close();timer.shutdownNow();io.shutdown();return;}
         tiles.values().forEach(future -> future.cancel(false));
         applies.values().forEach(future -> future.cancel(false));
         validations.values().forEach(future -> future.cancel(false));

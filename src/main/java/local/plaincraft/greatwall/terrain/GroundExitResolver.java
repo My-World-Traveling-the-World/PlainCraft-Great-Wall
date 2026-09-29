@@ -30,6 +30,7 @@ public final class GroundExitResolver implements AutoCloseable {
     private final long summaryBytes;
     private final ConcurrentHashMap<CellKey,CompletableFuture<List<GroundExitDecision>>> requests=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Key,CompletableFuture<GroundExitDecision>> sections=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<CellKey,Slice> summaries=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,Integer> state=new ConcurrentHashMap<>();
 
     public GroundExitResolver(Source source,Executor worker,long summaryBytes) {
@@ -58,23 +59,37 @@ public final class GroundExitResolver implements AutoCloseable {
         }
     }
     private CompletableFuture<Exit> left(CellKey cell,long before) {
-        return inspect(cell).thenComposeAsync(slice->{
+        var result=new CompletableFuture<Exit>();scanLeft(cell,before,result);return result;
+    }
+    private void scanLeft(CellKey cell,long before,CompletableFuture<Exit> result) {
+        if(result.isDone())return;
+        try {inspect(cell).thenAcceptAsync(slice->{
             var exit=slice.exits().stream().filter(e->e.sQ8()<=before).max(Comparator.comparingLong(Exit::sQ8));
-            if(exit.isPresent())return CompletableFuture.completedFuture(exit.get());
+            if(exit.isPresent()){result.complete(exit.get());return;}
             if(cell.arcCell()==0)throw fail(FailureCode.ROOT_NOT_FOUND,"no T0-accepted ground exit at or before requested cell");
-            return left(at(cell,cell.arcCell()-1),before);
-        },worker);
+            long previous=cell.arcCell()-1;
+            if(slice.terminal().isPresent())previous=Math.min(previous,Math.floorDiv(slice.terminal().get().range().fromQ8(),GroundExitDecision.CELL_Q8));
+            scanLeft(at(cell,previous),before,result);
+        },worker).whenComplete((v,e)->{if(e!=null)result.completeExceptionally(e);});
+        }catch(Throwable e){result.completeExceptionally(e);}
     }
     private CompletableFuture<Right> right(CellKey cell,long after) {
-        return inspect(cell).thenComposeAsync(slice->{
+        var result=new CompletableFuture<Right>();scanRight(cell,after,result);return result;
+    }
+    private void scanRight(CellKey cell,long after,CompletableFuture<Right> result) {
+        if(result.isDone())return;
+        try {inspect(cell).thenAcceptAsync(slice->{
             var exit=slice.exits().stream().filter(e->e.sQ8()>after).min(Comparator.comparingLong(Exit::sQ8));
-            if(exit.isPresent() && (slice.terminal().isEmpty()||exit.get().sQ8()<slice.terminal().get().range().fromQ8()))
-                return CompletableFuture.completedFuture(new Right(exit,Optional.empty()));
+            if(exit.isPresent() && (slice.terminal().isEmpty()||exit.get().sQ8()<slice.terminal().get().range().fromQ8())) {
+                result.complete(new Right(exit,Optional.empty()));return;
+            }
             long next=Math.multiplyExact(Math.addExact(cell.arcCell(),1),GroundExitDecision.CELL_Q8);
-            if(slice.terminal().isPresent()&&slice.terminal().get().range().fromQ8()<=next)
-                return CompletableFuture.completedFuture(new Right(Optional.empty(),slice.terminal()));
-            return right(at(cell,cell.arcCell()+1),after);
-        },worker);
+            if(slice.terminal().isPresent()&&slice.terminal().get().range().fromQ8()<=next) {
+                result.complete(new Right(Optional.empty(),slice.terminal()));return;
+            }
+            scanRight(at(cell,cell.arcCell()+1),after,result);
+        },worker).whenComplete((v,e)->{if(e!=null)result.completeExceptionally(e);});
+        }catch(Throwable e){result.completeExceptionally(e);}
     }
     private CompletableFuture<List<GroundExitDecision>> cover(CellKey request,Exit left,long to,List<GroundExitDecision> prior) {
         checkBytes(1024L+prior.size()*2048L);
@@ -101,12 +116,17 @@ public final class GroundExitResolver implements AutoCloseable {
         return promise.copy();
     }
     private CompletableFuture<Evidence> gather(Key key,long cell,long last,Evidence prior) {
-        return inspect(new CellKey(key.recipeHash(),key.dimension(),cell)).thenComposeAsync(slice->{
+        var result=new CompletableFuture<Evidence>();gatherNext(key,cell,last,prior,result);return result;
+    }
+    private void gatherNext(Key key,long cell,long last,Evidence prior,CompletableFuture<Evidence> result) {
+        if(result.isDone())return;
+        try {inspect(new CellKey(key.recipeHash(),key.dimension(),cell)).thenAcceptAsync(slice->{
             var gaps=new ArrayList<>(prior.gaps());gaps.addAll(slice.breaks());
             var merged=merge(gaps);checkBytes(1024L+merged.size()*128L);
             var next=new Evidence(merged,digest(prior.hash()+"\n"+cell+"\n"+slice.t0Hash()));
-            return cell==last?CompletableFuture.completedFuture(next):gather(key,cell+1,last,next);
-        },worker);
+            if(cell==last)result.complete(next);else gatherNext(key,cell+1,last,next,result);
+        },worker).whenComplete((v,e)->{if(e!=null)result.completeExceptionally(e);});
+        }catch(Throwable e){result.completeExceptionally(e);}
     }
     private CompletableFuture<GroundExitDecision> decide(Key key,Exit left,Right right,Evidence evidence) {
         long lo=left.footprint().toQ8(),hi=right.exit().map(e->e.footprint().fromQ8()).orElse(right.s());
@@ -162,8 +182,19 @@ public final class GroundExitResolver implements AutoCloseable {
         },worker);
     }
     private CompletableFuture<Slice> inspect(CellKey cell) {
-        active();return source.inspect(cell).thenApplyAsync(s->{
+        active();var known=summaries.get(cell);if(known!=null)return CompletableFuture.completedFuture(known);
+        return source.inspect(cell).thenApplyAsync(s->{
             active();if(!s.cell().equals(cell))throw fail(FailureCode.RECIPE_MISMATCH,"foreign exit slice");
+            int bytes=Math.toIntExact(1024L+s.exits().size()*1024L+s.breaks().size()*128L);
+            state.compute("summary-bytes",(k,n)->{
+                int used=n==null?0:n;
+                if(!state.containsKey("closed")&&(long)used+bytes<=Math.min(summaryBytes/2,4L<<20)&&summaries.size()<256){
+                    var prior=summaries.putIfAbsent(cell,s);
+                    if(prior==null)return used+bytes;
+                    if(!prior.equals(s))throw fail(FailureCode.T0_CORRUPT,"same cell has two exit surveys");
+                }
+                return used;
+            });
             return s;
         },worker);
     }
@@ -187,10 +218,12 @@ public final class GroundExitResolver implements AutoCloseable {
     private static CellKey at(CellKey key,long cell){return new CellKey(key.recipeHash(),key.dimension(),cell);}
     private static String digest(String s){return DeterministicHash.sha256(s.getBytes(StandardCharsets.UTF_8));}
     private static WallFailure fail(FailureCode code,String message){return new WallFailure(code,message);}
-    public Map<String,Integer> diagnostics(){return Map.of("requests",requests.size(),"sections",sections.size(),"admitted",state.getOrDefault("admitted",0));}
+    public Map<String,Integer> diagnostics(){return Map.of("requests",requests.size(),"sections",sections.size(),"admitted",state.getOrDefault("admitted",0),
+            "summary-bytes",state.getOrDefault("summary-bytes",0),"summaries",summaries.size());}
     @Override public void close(){
         if(state.putIfAbsent("closed",1)!=null)return;
         var failure=fail(FailureCode.CLOSED,"exit resolver closed");
         requests.values().forEach(f->f.completeExceptionally(failure));sections.values().forEach(f->f.completeExceptionally(failure));
+        state.compute("summary-bytes",(k,n)->{summaries.clear();return 0;});
     }
 }
