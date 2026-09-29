@@ -10,6 +10,23 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 public final class EvidenceCodec {
     private static final Comparator<Point3i> POS=Comparator.comparingInt(Point3i::y).thenComparingInt(Point3i::z).thenComparingInt(Point3i::x);
     private EvidenceCodec() {}
+    public static byte[] coverage(Coverage c) {
+        try {
+            var bytes=new ByteArrayOutputStream();var out=new DataOutputStream(bytes);
+            string(out,c.chunk().dimension());out.writeInt(c.chunk().x());out.writeInt(c.chunk().z());
+            out.writeInt(c.tileBases().size());for(int base:c.tileBases())out.writeInt(base);
+            bounds(out,c.readBounds());out.flush();return bytes.toByteArray();
+        }catch(IOException impossible){throw new AssertionError(impossible);}
+    }
+    public static Coverage readCoverage(byte[] bytes)throws IOException {
+        if(bytes.length>8192)throw new IOException("coverage exceeds limit");
+        try(var in=new DataInputStream(new ByteArrayInputStream(bytes))){
+            var key=new ChunkKey(string(in),in.readInt(),in.readInt());
+            int count=count(in,64);var bases=new ArrayList<Integer>();for(int i=0;i<count;i++)bases.add(in.readInt());
+            var b=bounds(in);if(in.read()!=-1)throw new IOException("coverage trailing bytes");
+            return new Coverage(key,bases,b,DeterministicHash.sha256(bytes));
+        }catch(IllegalArgumentException invalid){throw new IOException("invalid coverage",invalid);}
+    }
     public static byte[] metadata(CaptureMetadata value) {
         try {
             var bytes=new ByteArrayOutputStream();var out=new DataOutputStream(bytes);var c=value.coverage();

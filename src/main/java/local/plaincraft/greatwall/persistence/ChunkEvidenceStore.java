@@ -121,6 +121,18 @@ public final class ChunkEvidenceStore {
         EvidenceCodec.readMetadata(bytes);
         persistRecord(directory(value.coverage().chunk()).resolve("coverage.bin"),0x50474331,bytes);
     }
+    public void persistCoverageIntent(Coverage value)throws IOException {
+        byte[] bytes=EvidenceCodec.coverage(value);
+        if(!value.hash().equals(DeterministicHash.sha256(bytes)))throw new IOException("coverage intent hash mismatch");
+        persistRecord(directory(value.chunk()).resolve("capture-intent.bin"),0x50474931,bytes);
+    }
+    public Optional<Coverage> readCoverageIntent(ChunkKey key)throws IOException {
+        var bytes=readRecord(directory(key).resolve("capture-intent.bin"),0x50474931);
+        if(bytes.isEmpty())return Optional.empty();
+        var c=EvidenceCodec.readCoverage(bytes.get());
+        if(!c.chunk().equals(key))throw new IOException("capture intent owner mismatch");
+        return Optional.of(c);
+    }
     public Optional<CaptureMetadata> readCoverage(ChunkKey key)throws IOException {
         var data=readRecord(directory(key).resolve("coverage.bin"),0x50474331);
         if(data.isEmpty())return Optional.empty();
