@@ -11,6 +11,8 @@ import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.ChunkEvidenceStore;
 import local.plaincraft.greatwall.persistence.EvidenceCodec;
+import local.plaincraft.greatwall.diagnostics.AllocationBudget;
+import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.level.ChunkPos;
@@ -25,10 +27,13 @@ public final class TerrainSnapshotService implements AutoCloseable {
         public CapturedTerrain {tiles=Map.copyOf(tiles);metadata=Map.copyOf(metadata);}
     }
     private record Saved(Map<TerrainTile.Key,TerrainTile> tiles,Optional<CaptureMetadata> metadata) {}
-    private final ConcurrentHashMap<Coverage,CompletableFuture<CapturedTerrain>> flights=new ConcurrentHashMap<>();
+    private record Hints(Map<TerrainTile.Key,Long> pages,OptionalLong metadata) {}
+    private record Flight(CompletableFuture<CapturedTerrain> result,AllocationBudget allocations,String recipe) {}
+    private final ConcurrentHashMap<Coverage,Flight> flights=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ChunkKey,Coverage> claims=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,Boolean> state=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,Integer> admission=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,Long> allocationCounts=new ConcurrentHashMap<>();
     private final ChunkEvidenceStore store;
     private final Executor io;
     private final BlockCatalog catalog;
@@ -37,11 +42,16 @@ public final class TerrainSnapshotService implements AutoCloseable {
         this.store=Objects.requireNonNull(store);this.io=Objects.requireNonNull(io);this.catalog=Objects.requireNonNull(catalog);
     }
     public BlockCatalog catalog(){return catalog;}
+    public long dataProductions(){return allocationCounts.getOrDefault("data",0L);}
     public CompletableFuture<CapturedTerrain> capture(Coverage coverage,Map<ChunkKey,ChunkAccess> featuresChunks,
-            TerrainEngine engine,String recipeHash) {
-        CompletableFuture<CapturedTerrain> owned=null;boolean reserved=false;
+            TerrainEngine engine,String recipeHash,AllocationBudget allocations) {
+        Flight owned=null;boolean reserved=false;
+        var scratch=new ConcurrentHashMap<String,AllocationBudget.Pin>();
+        var retained=new ConcurrentHashMap<String,AllocationBudget.Pin>();
+        var scratchBudget=new AllocationBudget(24L<<20);
         try {
             active();
+            if(allocations.stats().closed())throw failure(FailureCode.CLOSED,"capture allocation owner closed");
             if(!coverage.hash().equals(DeterministicHash.sha256(EvidenceCodec.coverage(coverage))))throw failure(FailureCode.RECIPE_MISMATCH,"coverage hash mismatch");
             ChunkAccess owner=featuresChunks.get(coverage.chunk());
             if(owner==null)throw failure(FailureCode.T0_MISSING,"owner not prepared");
@@ -53,7 +63,7 @@ public final class TerrainSnapshotService implements AutoCloseable {
                 if(chunk==null||!chunk.getPersistedStatus().isOrAfter(ChunkStatus.FEATURES)||chunk.getPos().x!=key.x()||chunk.getPos().z!=key.z())
                     throw failure(FailureCode.MISSING_FEATURES_PLAN,"FEATURES halo not ready: "+key);
             }
-            var existing=flights.get(coverage);if(existing!=null)return existing.copy();
+            var existing=flights.get(coverage);if(existing!=null)return captureView(existing,allocations,recipeHash);
             var keys=keys(coverage,owner.getMinBuildHeight(),owner.getMaxBuildHeight());
             admission.compute("count",(k,n)->{
                 int old=n==null?0:n;
@@ -64,15 +74,19 @@ public final class TerrainSnapshotService implements AutoCloseable {
             Coverage claim=claims.putIfAbsent(coverage.chunk(),coverage);
             if(claim!=null&&!claim.equals(coverage))throw failure(FailureCode.RECIPE_MISMATCH,"same owner requested two capture windows");
             var promise=new CompletableFuture<CapturedTerrain>();
-            existing=flights.putIfAbsent(coverage,promise);
-            if(existing!=null){releaseAdmission();reserved=false;return existing.copy();}
-            owned=promise;
-            promise.whenComplete((v,e)->{
-                flights.remove(coverage,promise);claims.remove(coverage.chunk(),coverage);releaseAdmission();
-            });
+            var flight=new Flight(promise,allocations,recipeHash);
+            existing=flights.putIfAbsent(coverage,flight);
+            if(existing!=null){releaseAdmission();reserved=false;return captureView(existing,allocations,recipeHash);}
+            owned=flight;
             reserved=false;
+            var scratchPin=allocations.reserve(24L<<20);scratch.put("working",scratchPin);
             active();
-            io(()->readSaved(coverage,keys,recipeHash)).thenComposeAsync(saved->
+            io(()->allocationHints(coverage,keys)).thenComposeAsync(hints->engine.exclusive(owner.getPos(),()->{
+                active();return forecast(owner,keys,hints);
+            }),io).thenComposeAsync(bytes->{
+                active();var pin=allocations.reserve(bytes);retained.put("capture",pin);
+                return io(()->accounted(scratchBudget,()->readSaved(coverage,keys,recipeHash),false));
+            },io).thenComposeAsync(saved->
                     engine.exclusive(owner.getPos(),()->{
                         active();var marker=owner.getAttached(TerrainMarkers.PRODUCTION);
                         if(marker!=null&&(saved.metadata().isEmpty()||saved.tiles().size()!=keys.size()))
@@ -82,7 +96,9 @@ public final class TerrainSnapshotService implements AutoCloseable {
                         if(saved.metadata().isEmpty()&&owner.getPersistedStatus().isOrAfter(ChunkStatus.FULL))
                             throw failure(FailureCode.EXISTING_WORLD,"cannot first-capture a FULL chunk");
                         return saved;
-                    }),io).thenComposeAsync(saved->io(()->{store.persistCoverageIntent(coverage);return saved;}),io).thenComposeAsync(saved->{
+                    }),io).thenComposeAsync(saved->io(()->accounted(scratchBudget,()->{
+                        store.persistCoverageIntent(coverage);return saved;
+                    },false)),io).thenComposeAsync(saved->{
                         if(saved.metadata().isPresent())return CompletableFuture.completedFuture(
                                 new CapturedTerrain(saved.tiles(),Map.of(coverage.chunk(),saved.metadata().get())));
                         CompletableFuture<Map<TerrainTile.Key,TerrainTile>> pages=CompletableFuture.completedFuture(saved.tiles());
@@ -107,7 +123,7 @@ public final class TerrainSnapshotService implements AutoCloseable {
                                 }
                                 if(owner.hasAnyStructureReferences())structures.add(coverage.readBounds());
                                 return new CaptureMetadata(coverage,summary,structures,entities,Set.of(),"0".repeat(64));
-                            }),io).thenComposeAsync(base->io(()->{
+                            }),io).thenComposeAsync(base->io(()->accounted(scratchBudget,()->{
                                 var immutable=new HashSet<Point3i>();
                                 for(var tile:captured.values())for(int y=tile.key().minY();y<=tile.key().maxY();y++)
                                     for(int z=0;z<16;z++)for(int x=0;x<16;x++)
@@ -117,47 +133,92 @@ public final class TerrainSnapshotService implements AutoCloseable {
                                 for(var page:captured.values())store.persistBeforeApply(page);
                                 store.persistCoverage(metadata);
                                 return new CapturedTerrain(captured,Map.of(coverage.chunk(),metadata));
-                            }),io);
+                            },false)),io);
                         },io);
                     },io).whenComplete((value,error)->{
-                        if(error==null&&!state.containsKey("closed"))promise.complete(value);
-                        else promise.completeExceptionally(error!=null?error:failure(FailureCode.CLOSED,"snapshot service closed"));
+                        scratchBudget.close();finishCapture(coverage,flight,scratch,retained,value,error);
                     });
             return promise.copy();
         }catch(Throwable failure){
-            if(owned!=null)owned.completeExceptionally(failure);
+            scratchBudget.close();
+            if(owned!=null)finishCapture(coverage,owned,scratch,retained,null,failure);
             else if(reserved)releaseAdmission();
             return CompletableFuture.failedFuture(failure);
         }
     }
+    private void finishCapture(Coverage coverage,Flight flight,Map<String,AllocationBudget.Pin> scratch,
+            Map<String,AllocationBudget.Pin> retained,CapturedTerrain value,Throwable error) {
+        // Reentrant consumers may start another capture immediately on publication. Clean scratch first.
+        Throwable outcome=error!=null?error:state.containsKey("closed")?failure(FailureCode.CLOSED,"snapshot service closed"):null;
+        scratch.values().forEach(AllocationBudget.Pin::close);
+        if(outcome!=null)retained.values().forEach(AllocationBudget.Pin::close);
+        if(flights.remove(coverage,flight)) {
+            claims.remove(coverage.chunk(),coverage);releaseAdmission();
+        }
+        if(outcome==null)flight.result().complete(value);else flight.result().completeExceptionally(outcome);
+    }
+    private static CompletableFuture<CapturedTerrain> captureView(Flight flight,AllocationBudget allocations,String recipe) {
+        if(!flight.recipe().equals(recipe))return CompletableFuture.failedFuture(
+                failure(FailureCode.RECIPE_MISMATCH,"capture belongs to another world recipe"));
+        if(flight.allocations()!=allocations)return CompletableFuture.failedFuture(
+                failure(FailureCode.CAPACITY,"capture belongs to another pinned working set; retry after its capture completes"));
+        return flight.result().copy();
+    }
     private void releaseAdmission(){admission.compute("count",(k,n)->{if(n==null||n<=0)throw new IllegalStateException("snapshot admission underflow");return n-1;});}
     public Map<String,Integer> diagnostics(){return Map.of("flights",flights.size(),"claims",claims.size(),"admitted",admission.getOrDefault("count",0));}
-    public CompletableFuture<Void> persistPlan(ChunkWritePlan plan){return io(()->{store.persistPlan(plan);return null;});}
-    public CompletableFuture<Void> persistExitDecision(GroundExitDecision decision){return io(()->{store.persistExitDecision(decision);return null;});}
-    public CompletableFuture<Void> persistPlan(ChunkWritePlan plan,List<GroundExitDecision> decisions) {
+    public CompletableFuture<Void> persistPlan(ChunkWritePlan plan,AllocationBudget allocations){
+        return io(()->accounted(allocations,()->{store.persistPlan(plan);return null;},false));
+    }
+    public CompletableFuture<Void> persistExitDecision(GroundExitDecision decision,AllocationBudget allocations){
+        return io(()->accounted(allocations,()->{store.persistExitDecision(decision);return null;},false));
+    }
+    public CompletableFuture<Void> persistPlan(ChunkWritePlan plan,List<GroundExitDecision> decisions,AllocationBudget allocations) {
         var frozen=List.copyOf(decisions);
-        return io(()->{store.persistExitProof(plan,frozen);store.persistPlan(plan);return null;});
+        return io(()->accounted(allocations,()->{store.persistExitProof(plan,frozen);store.persistPlan(plan);return null;},false));
     }
-    public CompletableFuture<Void> verifyExitProof(ChunkKey owner) {
-        return io(()->{store.verifyExitProof(store.readPlan(owner).orElseThrow(()->failure(FailureCode.T0_MISSING,"exit owner proof missing")));return null;});
+    public CompletableFuture<Void> verifyExitProof(ChunkKey owner,AllocationBudget allocations) {
+        return io(()->accounted(allocations,()->{
+            store.verifyExitProof(store.readPlan(owner).orElseThrow(()->failure(FailureCode.T0_MISSING,"exit owner proof missing")));return null;
+        },false));
     }
-    public CompletableFuture<Optional<ChunkWritePlan>> readPlan(ChunkKey owner){return io(()->store.readPlan(owner));}
-    public CompletableFuture<Void> verifyLoaded(ChunkKey owner,TerrainMarkers.Marker marker,int minY,int maxY) {
+    /** The decoded result remains charged until the caller releases its explicitly supplied arena. */
+    public CompletableFuture<Optional<ChunkWritePlan>> readPlan(ChunkKey owner,AllocationBudget allocations){
+        return io(()->accounted(allocations,()->store.readPlan(owner),true));
+    }
+    public CompletableFuture<Void> verifyLoaded(ChunkKey owner,TerrainMarkers.Marker marker,int minY,int maxY,
+            AllocationBudget terrain,AllocationBudget compiled) {
         return io(()->{
-            var coverage=store.readCoverage(owner).orElseThrow(()->failure(FailureCode.T0_MISSING,"FULL owner coverage missing"));
+          accounted(compiled,()->{
             var proof=store.readPlan(owner).orElseThrow(()->failure(FailureCode.T0_MISSING,"FULL owner proof missing"));
             if(!marker.complete()||!marker.recipe().equals(proof.recipeHash())||!marker.planHash().equals(proof.hash())
-                    ||!marker.coverageHash().equals(coverage.coverage().hash())||!marker.coverageHash().equals(proof.metadata().coverageHash())
+                    ||!marker.coverageHash().equals(proof.metadata().coverageHash())
                     ||marker.gateRevision()!=proof.metadata().gateRevision()||!marker.walkwayFeet().equals(proof.walkwayFeet())
                     ||!marker.gameplay().equals(proof.blockEntities())||!marker.spawnSlots().equals(proof.metadata().spawnSlots())
                     ||!marker.realizedStates().equals(proof.metadata().realizedStates()))
                 throw failure(FailureCode.T0_CORRUPT,"FULL marker mismatch");
-            for(var key:keys(coverage.coverage(),minY,maxY))
-                if(store.read(key,marker.recipe()).isEmpty())throw failure(FailureCode.T0_MISSING,"FULL owner page missing");
+            store.verifyExitProof(proof);
             return null;
+          },false);
+          return accounted(terrain,()->{
+            var coverage=store.readCoverage(owner).orElseThrow(()->failure(FailureCode.T0_MISSING,"FULL owner coverage missing"));
+            if(!marker.coverageHash().equals(coverage.coverage().hash()))throw failure(FailureCode.T0_CORRUPT,"FULL coverage mismatch");
+            for(var key:keys(coverage.coverage(),minY,maxY))
+                accounted(terrain,()->{
+                    if(store.read(key,marker.recipe()).isEmpty())throw failure(FailureCode.T0_MISSING,"FULL owner page missing");
+                    return null;
+                },false);
+            return null;
+          },false);
         });
     }
+    private static <T> T accounted(AllocationBudget budget,IoAction<T> action,boolean retain) {
+        java.util.function.Supplier<T> producer=()->{
+            try{return action.run();}catch(IOException failure){throw new CompletionException(failure);}
+        };
+        return retain?CompiledAllocation.retainAll(budget,producer):CompiledAllocation.run(budget,producer,value->0);
+    }
     private Saved readSaved(Coverage coverage,List<TerrainTile.Key> keys,String recipe)throws IOException {
+        allocationCounts.merge("data",1L,Long::sum);
         var intent=store.readCoverageIntent(coverage.chunk());
         if(intent.isPresent()&&!intent.get().equals(coverage))throw failure(FailureCode.RECIPE_MISMATCH,"capture intent changed");
         var metadata=store.readCoverage(coverage.chunk());
@@ -167,6 +228,44 @@ public final class TerrainSnapshotService implements AutoCloseable {
         if(intent.isEmpty()&&(!tiles.isEmpty()||metadata.isPresent()))throw failure(FailureCode.T0_CORRUPT,"evidence without original capture intent");
         if(metadata.isPresent()&&tiles.size()!=keys.size())throw failure(FailureCode.T0_MISSING,"completed capture lost a page");
         return new Saved(Map.copyOf(tiles),metadata);
+    }
+    private Hints allocationHints(Coverage coverage,List<TerrainTile.Key> keys)throws IOException {
+        var pages=new HashMap<TerrainTile.Key,Long>();
+        for(var key:keys){var hint=store.tileAllocationHint(key);if(hint.isPresent())pages.put(key,hint.getAsLong());}
+        return new Hints(Map.copyOf(pages),store.metadataAllocationHint(coverage.chunk()));
+    }
+    /** Counting pass borrows native states; it does not allocate T0 arrays or decoded palettes. */
+    private long forecast(ChunkAccess owner,List<TerrainTile.Key> keys,Hints hints) {
+        // Includes the later 256 column views, their hashes and all copied index maps.
+        long bytes=256L*512+16384;
+        boolean summarizeProtection=hints.metadata().isEmpty();
+        if(owner.getAttached(TerrainMarkers.PRODUCTION)!=null&&(summarizeProtection||hints.pages().size()!=keys.size()))
+            throw failure(FailureCode.T0_MISSING,"applied owner lacks original allocation evidence");
+        long protectedCount=0;
+        var entities=owner.getBlockEntitiesPos();var pos=new BlockPos.MutableBlockPos();
+        for(var key:keys) {
+            var saved=hints.pages().get(key);
+            if(saved!=null){bytes=Math.addExact(bytes,saved);if(!summarizeProtection)continue;}
+            var plain=new HashMap<net.minecraft.world.level.block.state.BlockState,Boolean>();
+            var blockEntities=new HashMap<net.minecraft.world.level.block.state.BlockState,Boolean>();
+            long paletteBytes=0;
+            for(int y=key.minY();y<=key.maxY();y++)for(int z=0;z<16;z++)for(int x=0;x<16;x++) {
+                pos.set(key.chunkX()*16+x,y,key.chunkZ()*16+z);
+                var block=owner.getBlockState(pos);boolean entity=entities.contains(pos);
+                var states=entity?blockEntities:plain;
+                Boolean protect=states.get(block);
+                if(protect==null) {
+                    String token=BlockCatalog.token(block,entity);
+                    paletteBytes=Math.addExact(paletteBytes,128L+4L*token.length());
+                    protect=catalog.flags(token).protectedBlock();states.put(block,protect);
+                }
+                if(summarizeProtection&&protect)protectedCount++;
+            }
+            if(saved==null)bytes=Math.addExact(bytes,1024L+4L*key.volume()+paletteBytes);
+        }
+        if(hints.metadata().isPresent())bytes=Math.addExact(bytes,hints.metadata().getAsLong());
+        else bytes=Math.addExact(bytes,16384L+128L*(protectedCount+entities.size()+owner.getAllStarts().size()+1));
+        return bytes;
     }
     private TerrainTile capturePage(ChunkAccess owner,TerrainTile.Key key,String recipe) {
         var palette=new ArrayList<String>();var ids=new HashMap<String,Integer>();var tokens=new HashMap<net.minecraft.world.level.block.state.BlockState,String>();
@@ -208,8 +307,8 @@ public final class TerrainSnapshotService implements AutoCloseable {
     private void active(){if(state.containsKey("closed"))throw failure(FailureCode.CLOSED,"snapshot service closed");}
     @Override public void close(){
         if(state.putIfAbsent("closed",true)!=null)return;
-        flights.values().forEach(f->f.completeExceptionally(failure(FailureCode.CLOSED,"snapshot service closed")));
-        flights.clear();claims.clear();
+        // In-flight engine/IO actions still own pages. Their terminal continuations release pins,
+        // then fail the capture; callers must not free the enclosing arena before that point.
     }
     private static WallFailure failure(FailureCode code,String message){return new WallFailure(code,message);}
     @FunctionalInterface private interface IoAction<T>{T run()throws IOException;}

@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import local.plaincraft.greatwall.component.*;
 import local.plaincraft.greatwall.decay.*;
+import local.plaincraft.greatwall.diagnostics.AllocationBudget;
 import local.plaincraft.greatwall.generation.*;
 import local.plaincraft.greatwall.model.PlanLease;
 import local.plaincraft.greatwall.model.WallTypes.*;
@@ -20,6 +21,60 @@ import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 
 public final class ProductionPipelineTests implements FabricGameTest {
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000,batch="pgw-production-memory")
+    public void queuedOwnersMeasureNativePipelineHeapAndReleaseEveryPin(GameTestHelper helper) {
+        var io=Executors.newSingleThreadExecutor(r->{var t=new Thread(r,"pgw-owner-pressure");t.setDaemon(true);return t;});
+        var sampler=Executors.newSingleThreadScheduledExecutor();
+        var memory=java.lang.management.ManagementFactory.getMemoryMXBean();
+        long baseline=memory.getHeapMemoryUsage().getUsed();
+        var peak=new java.util.concurrent.atomic.AtomicLong(baseline);
+        sampler.scheduleAtFixedRate(()->peak.accumulateAndGet(memory.getHeapMemoryUsage().getUsed(),Math::max),0,1,TimeUnit.MILLISECONDS);
+        var chunks=new ConcurrentHashMap<ChunkPos,ChunkAccess>();var failures=new ConcurrentHashMap<String,Throwable>();
+        var recipe=recipe();var window=plans();var decay=new DecayField(3);var palette=palette();
+        var realization=new RealizationPlanner(recipe,new SurfaceProbe(),Map.of(SiteKind.WALL,new WallSection(decay,palette),
+                SiteKind.END_CAP,new EndCap(decay,palette),SiteKind.FORT,new FortPlaceholder(decay,palette)));
+        var store=ChunkEvidenceStore.production(Path.of("build","s1b-game-fixtures",UUID.randomUUID().toString()));
+        var snapshots=new TerrainSnapshotService(store,io,new BlockCatalog(helper.getLevel().registryAccess()));
+        var ports=new ProductionWallPipeline.Ports(
+                (k,m)->new PlanLease<>(UUID.randomUUID(),CompletableFuture.completedFuture(window),()->{}),
+                k->new PlanLease<>(UUID.randomUUID(),CompletableFuture.completedFuture(window),()->{}),
+                positions->{
+                    var ready=new HashMap<ChunkPos,ChunkAccess>();
+                    for(var p:positions)ready.put(p,chunks.computeIfAbsent(p,q->chunk(helper,q)));
+                    return new PlanLease<>(UUID.randomUUID(),CompletableFuture.completedFuture(Map.copyOf(ready)),()->{});
+                },()->{},e->failures.put("failure",e),io);
+        var pipeline=new ProductionWallPipeline(recipe,ports,snapshots,realization,new ChunkPlanCompiler(),new ChunkWallWriter());
+        var engine=new VanillaTerrainEngine(helper.getLevel());var jobs=new ArrayList<CompletableFuture<Void>>();
+        for(int x=1;x<=8;x++) {
+            var pos=new ChunkPos(x,0);var owner=chunks.computeIfAbsent(pos,p->chunk(helper,p));
+            jobs.add(pipeline.beforeLight(new ChunkKey(recipe.dimension(),x,0),owner,engine));
+        }
+        CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).thenComposeAsync(v->{
+            CompletableFuture<Void> replay=CompletableFuture.completedFuture(null);
+            for(int x=8;x>=1;x--){int at=x;replay=replay.thenComposeAsync(ignored->pipeline.beforeLight(
+                    new ChunkKey(recipe.dimension(),at,0),chunks.get(new ChunkPos(at,0)),engine),io);}
+            return replay;
+        },io).orTimeout(240,TimeUnit.SECONDS).whenComplete((v,error)->helper.getLevel().getServer().execute(()->helper.runAfterDelay(1,()->{
+            try {
+                if(error!=null){error.printStackTrace();helper.fail(error.toString());}
+                var d=pipeline.diagnostics();
+                helper.assertTrue(failures.isEmpty(),"no suppressed pressure failure");
+                helper.assertTrue(d.getOrDefault("PRODUCTION_APPLY_ENTER",0L)==8,"eight distinct queued owners applied");
+                helper.assertTrue(d.getOrDefault("PRODUCTION_REPLAY_VERIFIED",0L)==8,"reverse replay does not allocate another realization");
+                helper.assertTrue(d.get("leases")==0&&d.get("flights")==0&&d.get("terrainReserved")==0&&d.get("compiledReserved")==0,"all owner pins released");
+                helper.assertTrue(d.getOrDefault("terrainAllocationPeak",0L)>0&&d.get("terrainAllocationPeak")<=64L<<20,"T0 admission peak within unchanged limit");
+                helper.assertTrue(d.getOrDefault("compiledAllocationPeak",0L)>0&&d.get("compiledAllocationPeak")<=32L<<20,"compiled admission peak within unchanged limit");
+                String json="{\n  \"scope\": \"native ProtoChunk pipeline; analytical plans and prepared FEATURES; whole GameTest JVM heap\",\n"
+                        +"  \"owners\": 8,\n  \"reverseReplays\": 8,\n  \"baselineHeapUsed\": "+baseline
+                        +",\n  \"sampledHeapPeak\": "+peak.get()+",\n  \"jvmMaxHeap\": "+memory.getHeapMemoryUsage().getMax()
+                        +",\n  \"terrainAllocationPeak\": "+d.get("terrainAllocationPeak")+",\n  \"compiledAllocationPeak\": "+d.get("compiledAllocationPeak")+"\n}\n";
+                var report=Path.of("build","reports","s1b-memory","production-pipeline-heap.json");
+                java.nio.file.Files.createDirectories(report.getParent());java.nio.file.Files.writeString(report,json);
+                System.out.println("S1B_PIPELINE_HEAP "+json);helper.succeed();
+            } catch(java.io.IOException e){helper.fail(e.toString());}
+            finally {pipeline.close();sampler.shutdownNow();io.shutdown();}
+        })));
+    }
     private static final String H="a".repeat(64);
     private static WorldRecipe recipe(){
         return recipe(3);
@@ -91,19 +146,22 @@ public final class ProductionPipelineTests implements FabricGameTest {
                     var marker=owner.getAttached(TerrainMarkers.PRODUCTION);
                     var tampered=new TerrainMarkers.Marker(marker.recipe(),marker.coverageHash(),marker.planHash(),marker.gateRevision()+1,
                             true,marker.walkwayFeet(),marker.gameplay(),marker.spawnSlots(),marker.realizedStates());
-                    return snapshots.verifyLoaded(key,tampered,-64,320).handle((ignored,error)->{
+                    var terrainBudget=new AllocationBudget(64L<<20);var proofBudget=new AllocationBudget(32L<<20);
+                    return snapshots.verifyLoaded(key,tampered,-64,320,terrainBudget,proofBudget)
+                            .whenComplete((ignored,error)->{terrainBudget.close();proofBudget.close();}).handle((ignored,error)->{
                         if(error==null)throw new AssertionError("tampered marker revision accepted");
                         return (Void)null;
                     });
                 }).orTimeout(90,TimeUnit.SECONDS).whenComplete((v,error)->helper.getLevel().getServer().execute(()->{
             helper.runAfterDelay(1,()->{
                 try{
-                    if(error!=null)helper.fail(error.toString());
+                    if(error!=null){error.printStackTrace();helper.fail(error.toString());}
                     helper.assertTrue(failures.isEmpty(),"no silently swallowed pipeline failure");
                     var d=pipeline.diagnostics();
                     helper.assertTrue(d.getOrDefault("PRODUCTION_APPLY_ENTER",0L)==1,"apply once after proof persistence");
                     helper.assertTrue(d.getOrDefault("PRODUCTION_PROOF_DURABLE",0L)==1,"owner proof is durable before apply");
                     helper.assertTrue(d.get("leases")==0&&d.get("flights")==0,"all pins released");
+                    helper.assertTrue(d.get("terrainReserved")==0&&d.get("compiledReserved")==0,"allocation reservations released");
                     helper.assertTrue(owner.getBlockState(new BlockPos(50,83,0)).is(Blocks.GOLD_BLOCK),"player change survives replay");
                     helper.succeed();
                 }finally{pipeline.close();io.shutdown();}
@@ -137,11 +195,12 @@ public final class ProductionPipelineTests implements FabricGameTest {
         var a=pipeline.beforeLight(earlyKey,early,engine);var b=pipeline.beforeLight(lateKey,late,engine);
         helper.assertTrue(early.getAttached(TerrainMarkers.PRODUCTION)==null&&late.getAttached(TerrainMarkers.PRODUCTION)==null,
                 "no APPLY while remote ground-exit decision is unresolved");
-        CompletableFuture.allOf(a,b).thenComposeAsync(v->snapshots.readPlan(earlyKey).thenCombine(snapshots.readPlan(lateKey),(p,q)->{
+        var proofBudget=new AllocationBudget(32L<<20);
+        CompletableFuture.allOf(a,b).thenComposeAsync(v->snapshots.readPlan(earlyKey,proofBudget).thenCombine(snapshots.readPlan(lateKey,proofBudget),(p,q)->{
             if(!p.orElseThrow().walkwayFeet().isEmpty()||!q.orElseThrow().walkwayFeet().isEmpty())
                 throw new AssertionError("early or terminal owner kept an ungrounded walkway");
             return (Void)null;
-        }),io).thenComposeAsync(v->engine.exclusive(early.getPos(),()->{
+        }),io).whenComplete((value,error)->proofBudget.close()).thenComposeAsync(v->engine.exclusive(early.getPos(),()->{
             early.setBlockState(new BlockPos(162,83,0),Blocks.GOLD_BLOCK.defaultBlockState(),false);return (Void)null;
         }),io).thenComposeAsync(v->{
             pipeline.close();
@@ -152,12 +211,13 @@ public final class ProductionPipelineTests implements FabricGameTest {
             return cold.beforeLight(lateKey,late,engine).thenComposeAsync(x->cold.beforeLight(earlyKey,early,engine),io);
         },io).orTimeout(150,TimeUnit.SECONDS).whenComplete((v,error)->helper.getLevel().getServer().execute(()->helper.runAfterDelay(1,()->{
             try {
-                if(error!=null)helper.fail(error.toString());
+                if(error!=null){error.printStackTrace();helper.fail(error.toString());}
                 helper.assertTrue(failures.isEmpty(),"no swallowed decision failure");
                 helper.assertTrue(pipeline.diagnostics().getOrDefault("PRODUCTION_APPLY_ENTER",0L)==2,"two owners applied only after certificates");
                 helper.assertTrue(pipelines.get("cold").diagnostics().getOrDefault("PRODUCTION_APPLY_ENTER",0L)==0,"cold replay is read-only");
                 helper.assertTrue(early.getBlockState(new BlockPos(162,83,0)).is(Blocks.GOLD_BLOCK),"player edit survives cold reverse replay");
                 for(var p:pipelines.values())helper.assertTrue(p.diagnostics().get("leases")==0&&p.diagnostics().get("flights")==0,"no owner/FEATURES leases leak");
+                for(var p:pipelines.values())helper.assertTrue(p.diagnostics().get("terrainReserved")==0&&p.diagnostics().get("compiledReserved")==0,"no allocation reservation leak");
                 helper.succeed();
             } finally {pipelines.values().forEach(ProductionWallPipeline::close);io.shutdown();}
         })));
