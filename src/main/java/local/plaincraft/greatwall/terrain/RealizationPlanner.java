@@ -10,6 +10,7 @@ import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.geometry.Rasterizer;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
+import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 
 /** Whole-cell decisions use only immutable contracts/T0, never the owner currently asking for them. */
 public final class RealizationPlanner {
@@ -335,11 +336,13 @@ public final class RealizationPlanner {
     private ComponentVoxels compile(SiteKind kind,ComponentInput candidate,Input input) {
         var template=templates.get(kind);if(template==null)throw new IllegalArgumentException("missing template "+kind);
         try{
+            return CompiledAllocation.component(()->{
             if(template instanceof Gate gate){
                 Integer ground=input.frozenGateY().get(new GateId(candidate.site().id().wallId(),"planned",candidate.site().id().ordinal()));
                 return ground==null?gate.compile(candidate):gate.compileAtGround(candidate,ground);
             }
             return template.compile(candidate);
+            });
         }catch(WallFailure failure){if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT)throw failure;return null;}
     }
     private ComponentInput componentInput(Input input,SiteRecord site,List<Station> stations,DecaySample decay,List<WaterEvidence> waters,

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import local.plaincraft.greatwall.diagnostics.StageTrace;
+import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallFailure;
@@ -26,7 +27,7 @@ public final class ChunkWallWriter {
         StageTrace.assertInsideLock();
         if(mode!=WriteMode.INITIAL)throw new IllegalArgumentException("loaded backfill requires the S2 loaded-owner writer");
         if(owner.getPos().x!=plan.owner().x()||owner.getPos().z!=plan.owner().z())throw failure("foreign owner");
-        if(!plan.hash().equals(DeterministicHash.sha256(CanonicalCodec.writePlan(plan))))throw failure("tampered write plan");
+        if(!plan.hash().equals(CanonicalCodec.writePlanHash(plan)))throw failure("tampered write plan");
         if(plan.metadata().coverageHash().equals("0".repeat(64)))throw failure("missing durable coverage identity");
         var marker=owner.getAttached(TerrainMarkers.PRODUCTION);
         if(marker!=null && (!marker.recipe().equals(plan.recipeHash())||!marker.planHash().equals(plan.hash())
@@ -34,6 +35,7 @@ public final class ChunkWallWriter {
         if(marker!=null&&!marker.equals(marker(plan,marker.complete())))throw failure("marker/proof payload mismatch");
         if(marker!=null&&marker.complete())return new WriteReport(plan.owner(),0,plan.voxels().size(),List.of(),true,plan.hash());
         if(owner.getPersistedStatus().isOrAfter(ChunkStatus.FULL))throw failure("initial write cannot mutate a FULL chunk");
+        CompiledAllocation.charge(Math.addExact(4096L,Math.addExact(256L*plan.voxels().size(),4096L*plan.blockEntities().size())));
         var proofs=new HashMap<Point3i,BlockProof>();var entities=new HashMap<Point3i,BlockEntityIntent>();
         for(var p:plan.proofs())if(proofs.put(p.pos(),p)!=null)throw failure("duplicate proof");
         for(var e:plan.blockEntities())if(entities.put(e.pos(),e)!=null)throw failure("duplicate entity intent");
