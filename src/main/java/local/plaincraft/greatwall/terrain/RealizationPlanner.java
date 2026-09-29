@@ -38,8 +38,9 @@ public final class RealizationPlanner {
         long from=Math.multiplyExact(input.key().arcCell(),64L*256),to=Math.addExact(from,64L*256);
         String t0=hash(input.tiles().values().stream().map(t->t.key().identity()+":"+t.hash()).sorted().toList().toString());
         if(stations.size()<2||from>=stations.getLast().globalSQ8())return result(input,breaks,accepted,t0);
-        if(from<stations.getFirst().globalSQ8()||to>stations.getLast().globalSQ8())
+        if(from<stations.getFirst().globalSQ8())
             throw new WallFailure(FailureCode.MISSING_FEATURES_PLAN,"cell needs complete station ribbon");
+        to=Math.min(to,stations.getLast().globalSQ8());
         var bounds=recipe!=null?recipe.bounds():new DimensionBounds(
                 input.tiles().keySet().stream().mapToInt(TerrainTile.Key::minY).min().orElseThrow(),
                 input.tiles().keySet().stream().mapToInt(k->k.maxY()+1).max().orElseThrow(),29_999_000);
@@ -48,16 +49,16 @@ public final class RealizationPlanner {
         var field=new DecayField(recipe==null?0:recipe.seed());
         var sites=sites(input.plans());var maintained=sites.stream().filter(s->s.state()!=SiteState.SUPPRESSED&&s.state()!=SiteState.ABSORBED)
                 .map(SiteRecord::globalSQ8).toList();
-        var waters=waters(input.plans());long terminal=Long.MAX_VALUE;
+        var waters=waters(input.plans());long terminal=Long.MAX_VALUE;BreakReason terminalReason=BreakReason.RIVER_WIDE;
         for(var p:input.plans().plans()){
             breaks.addAll(p.stations().breaks());
             if(p.geometry().terminal().isPresent()) {
                 var end=p.geometry().terminal().get();
                 long s=p.prefix().lengthBeforeQ8()+end.localSQ8();
-                terminal=Math.min(terminal,s);
+                if(s<terminal){terminal=s;terminalReason=end.kind()==TerminalKind.WORLD_LIMIT?BreakReason.WORLD_LIMIT:BreakReason.RIVER_WIDE;}
             }
         }
-        if(terminal!=Long.MAX_VALUE)breaks.add(new BreakInterval(new ArcInterval(terminal,Long.MAX_VALUE),BreakReason.RIVER_WIDE,BreakScope.PLANNED));
+        if(terminal!=Long.MAX_VALUE)breaks.add(new BreakInterval(new ArcInterval(terminal,Long.MAX_VALUE),terminalReason,BreakScope.PLANNED));
         var supported=new HashMap<Point3i,ProbeResult>();
         var columnEntries=input.columns().entrySet().stream().sorted(Map.Entry.<Point3i,SurfaceProbe.ColumnView>comparingByKey(
                 Comparator.comparingInt(Point3i::z).thenComparingInt(Point3i::x).thenComparingInt(Point3i::y))).toList();
@@ -77,6 +78,11 @@ public final class RealizationPlanner {
             if(site.globalSQ8()<Math.max(0,from-64L*256)||site.globalSQ8()>=to+64L*256||site.state()==SiteState.SUPPRESSED||site.state()==SiteState.ABSORBED)continue;
             long extent=switch(site.id().kind()){case FORT->24L*256;case GATE->30L*256;case ENEMY_TOWER->6L*256;case BEACON->5L*256;default->0;};
             if(extent==0)continue;
+            if(site.globalSQ8()>=terminal)continue;
+            // Hydrology owns crossings. Site ordinals remain unchanged even when their body is suppressed.
+            long siteFrom=Math.max(0,site.globalSQ8()-extent),siteTo=site.globalSQ8()+extent;
+            if(waters.stream().anyMatch(w->w.classification()!=WaterClass.DRY&&w.crossing().fromQ8()-8L*256<siteTo
+                    &&w.crossing().toQ8()+8L*256>siteFrom))continue;
             occupied.add(new ArcInterval(Math.max(0,site.globalSQ8()-extent),site.globalSQ8()+extent));
             // All cells can vote on a site's full footprint; only its center cell publishes it.
             var candidate=componentInput(input,site,stations,field.sample(site.globalSQ8(),PaletteFamily.STONE,maintained),List.of(),bounds,supported);
@@ -98,6 +104,22 @@ public final class RealizationPlanner {
             else if(center>=from&&center<to&&center<terminal)accepted.add(component);
         }
         var merged=merge(breaks);var excluded=new ArrayList<>(occupied);merged.forEach(b->excluded.add(b.range()));
+        var walkBreaks=new ArrayList<>(merged);
+        long decayFrom=Math.max(stations.getFirst().globalSQ8(),Math.max(0,from-160L*256));
+        long decayTo=Math.min(stations.getLast().globalSQ8(),Math.min(terminal,to+160L*256));
+        for(long s=Math.floorDiv(decayFrom,256)*256;s<decayTo;s+=256){
+            var d=field.sample(s,PaletteFamily.STONE,maintained);
+            if(d.state()==DecayState.RUIN||d.state()==DecayState.BURIED)
+                walkBreaks.add(new BreakInterval(new ArcInterval(s,Math.min(s+256,decayTo)),BreakReason.BURIED,BreakScope.REALIZED));
+        }
+        var walkMerged=merge(walkBreaks);
+        var capExclusions=new ArrayList<ArcInterval>();
+        for(var gap:walkMerged){
+            addCap(input,wall,gap.range().fromQ8(),false,from,to,terminal,stations,field,maintained,bounds,supported,accepted,capExclusions);
+            if(gap.range().toQ8()!=Long.MAX_VALUE&&gap.range().toQ8()<terminal&&gap.range().toQ8()<decayTo)
+                addCap(input,wall,gap.range().toQ8(),true,from,to,terminal,stations,field,maintained,bounds,supported,accepted,capExclusions);
+        }
+        excluded.addAll(capExclusions);
         var buildable=subtract(new ArcInterval(from,to),excluded);
         if(!buildable.isEmpty()){
             var site=site(wall,SiteKind.WALL,input.key().arcCell(),from+32L*256,stations);
@@ -105,26 +127,33 @@ public final class RealizationPlanner {
                     PaletteFamily.STONE,false,List.of(),List.of());
             var template=templates.get(SiteKind.WALL);
             if(!(template instanceof WallSection section))throw new IllegalArgumentException("WALL template must support build intervals");
-            var component=section.compileIntervals(candidate,buildable);
+            var walkExcluded=new ArrayList<>(excluded);walkMerged.forEach(b->walkExcluded.add(b.range()));
+            var component=section.compileIntervals(candidate,buildable,subtract(new ArcInterval(from,to),walkExcluded),
+                    s->field.sample(s,PaletteFamily.STONE,maintained));
             if(!component.voxels().isEmpty())accepted.add(component);
         }
-        for(var gap:merged){
-            addCap(input,wall,gap.range().fromQ8(),false,from,to,terminal,stations,field,maintained,bounds,supported,accepted);
-            if(gap.range().toQ8()!=Long.MAX_VALUE&&gap.range().toQ8()<terminal)
-                addCap(input,wall,gap.range().toQ8(),true,from,to,terminal,stations,field,maintained,bounds,supported,accepted);
-        }
-        return result(input,merged,accepted,t0);
+        return result(input,walkMerged,accepted,t0);
     }
     private void addCap(Input input,String wall,long s,boolean reverse,long from,long to,long terminal,List<Station> stations,
-            DecayField field,List<Long> maintained,DimensionBounds bounds,Map<Point3i,ProbeResult> known,List<ComponentVoxels> components){
-        if(s<=0||s<from||s>=to||s>stations.getLast().globalSQ8())return;
+            DecayField field,List<Long> maintained,DimensionBounds bounds,Map<Point3i,ProbeResult> known,List<ComponentVoxels> components,
+            List<ArcInterval> exclusions){
+        if(s<=0||s<Math.max(0,from-160L*256)||s>to+160L*256||s>stations.getLast().globalSQ8())return;
         var site=site(wall,SiteKind.END_CAP,Math.addExact(Math.multiplyExact(s,2),reverse?1:0),s,stations);
         if(reverse){var f=site.frame();site=new SiteRecord(site.id(),s,new Frame(f.center(),-f.txQ30(),-f.tzQ30(),f.walkY(),!f.mirror()),
                 site.bounds(),site.state(),site.absorbedBy(),site.reason());}
-        var candidate=componentInput(input,site,stations,new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,known);
-        var cap=compile(SiteKind.END_CAP,candidate,input);
-        if(cap==null||cap.voxels().isEmpty())throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"no proven ground exit for break at "+s);
-        components.add(cap);
+        if(!(templates.get(SiteKind.END_CAP) instanceof EndCap template))throw new IllegalArgumentException("missing EndCap");
+        for(var attempt:EndCap.candidates(site,stations)){
+            var candidate=componentInput(input,attempt,stations,new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,known);
+            ComponentVoxels cap;
+            try{cap=template.compileAt(candidate);}
+            catch(WallFailure failure){if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT)throw failure;continue;}
+            if(cap.voxels().isEmpty())continue;
+            long actual=attempt.globalSQ8();
+            exclusions.add(reverse?new ArcInterval(s,actual+30L*256):new ArcInterval(Math.max(0,actual-30L*256),s));
+            if(s>=from&&(s<to||s==to&&s==stations.getLast().globalSQ8()))components.add(cap);
+            return;
+        }
+        throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"no proven ground exit for break at "+s);
     }
     private ComponentVoxels compile(SiteKind kind,ComponentInput candidate,Input input) {
         var template=templates.get(kind);if(template==null)throw new IllegalArgumentException("missing template "+kind);
@@ -140,8 +169,6 @@ public final class RealizationPlanner {
         var provisional=new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,List.of());
         var template=templates.get(site.id().kind());if(template==null)throw new IllegalArgumentException("missing template "+site.id().kind());
         Bounds world=Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
-        // EndCap tries up to 128 blocks of retreat, always against the same captured evidence.
-        if(site.id().kind()==SiteKind.END_CAP)world=new Bounds(world.minX()-128,world.minY(),world.minZ()-128,world.maxXExclusive()+128,world.maxYExclusive(),world.maxZExclusive()+128);
         for(var e:input.columns().entrySet()) {
             int x=e.getKey().x(),z=e.getKey().z();
             if(x<world.minX()||x>=world.maxXExclusive()||z<world.minZ()||z>=world.maxZExclusive())continue;
@@ -189,7 +216,9 @@ public final class RealizationPlanner {
         var sorted=values.stream().sorted(Comparator.comparingLong((BreakInterval b)->b.range().fromQ8()).thenComparing(b->b.reason().name())).toList();
         var result=new ArrayList<BreakInterval>();
         for(var b:sorted){if(result.isEmpty()||result.getLast().range().toQ8()<b.range().fromQ8())result.add(b);
-            else{var old=result.removeLast();result.add(new BreakInterval(new ArcInterval(old.range().fromQ8(),Math.max(old.range().toQ8(),b.range().toQ8())),old.reason(),old.scope()));}}
+            else{var old=result.removeLast();boolean terminal=b.range().toQ8()==Long.MAX_VALUE;
+                result.add(new BreakInterval(new ArcInterval(old.range().fromQ8(),Math.max(old.range().toQ8(),b.range().toQ8())),
+                        terminal?b.reason():old.reason(),terminal?b.scope():old.scope()));}}
         return List.copyOf(result);
     }
     private static List<ArcInterval> subtract(ArcInterval span,List<ArcInterval> gaps){

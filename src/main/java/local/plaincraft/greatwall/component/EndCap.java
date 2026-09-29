@@ -49,6 +49,17 @@ public final class EndCap implements ComponentTemplate {
         for(var candidate:candidates(input.site(),input.stations())) {
             var current=ComponentComposer.frame(input,candidate.frame(),candidate.globalSQ8());
             try {
+                last=compileAt(current);
+                if(!last.voxels().isEmpty()) return last;
+            } catch(WallFailure failure) {
+                if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT) throw failure;
+            }
+        }
+        return last==null?ComponentAssembly.empty(input.site().id(),input.site().bounds()):
+                ComponentAssembly.empty(input.site().id(),last.bounds());
+    }
+    /** Compile one already-probed candidate; the realization planner owns retry publication. */
+    public ComponentVoxels compileAt(ComponentInput current) {
                 var a=new ComponentAssembly(current,localBounds(current),decay,palette);
                 a.foundation(-30,-5,0,5,-20);
                 for(int x=-30;x<0;x++) {
@@ -59,13 +70,6 @@ public final class EndCap implements ComponentTemplate {
                 a.floor(-30,-3,-8,3,0,Part.FLOOR,"east");
                 a.floor(-29,3,-26,5,0,Part.FLOOR,"north");
                 a.route(new Point3i(-29,0,0),new Point3i(-9,0,0),new Point3i(-28,0,4));
-                last=ComponentComposer.merge(current,List.of(a.finish(),new Ramp(decay,palette).compile(current)));
-                if(!last.voxels().isEmpty()) return last;
-            } catch(WallFailure failure) {
-                if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT) throw failure;
-            }
-        }
-        return last==null?ComponentAssembly.empty(input.site().id(),input.site().bounds()):
-                ComponentAssembly.empty(input.site().id(),last.bounds());
+                return ComponentComposer.merge(current,List.of(a.finish(),new Ramp(decay,palette).compile(current)));
     }
 }
