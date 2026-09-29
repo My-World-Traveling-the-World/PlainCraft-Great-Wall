@@ -1,0 +1,22 @@
+{
+  "owners": 400,
+  "delays": 0,
+  "counts": {
+    "CAPTURE_EXIT": 400,
+    "T0_REUSED_AFTER_APPLY": 400,
+    "T0_DURABLE": 400,
+    "APPLY_ENTER": 400,
+    "T0_REUSED": 1100,
+    "PREPARE_FEATURES": 3600,
+    "OUTPUT_STABLE_AT_FULL": 400,
+    "CAPTURE_ENTER": 400,
+    "APPLY_EXIT": 400,
+    "T0_CAPTURED": 400,
+    "FEATURE_DELAY_OUTSIDE_LOCK": 400,
+    "CELL_REQUEST": 400
+  },
+  "closed": true,
+  "tiles": 400,
+  "recipe": "78cf252c3aaf359e079b1038cb63a3e1c87e7185fab2f276cc74440bc34fab15",
+  "leases": 0
+}

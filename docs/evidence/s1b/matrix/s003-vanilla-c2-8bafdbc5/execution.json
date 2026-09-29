@@ -1,0 +1,26 @@
+{
+  "id": "s003-vanilla-c2-8bafdbc5",
+  "profile": "vanilla",
+  "workers": 2,
+  "rounds": 100,
+  "skip": false,
+  "exitCode": 0,
+  "seconds": 39.5424683,
+  "arguments": [
+    "--offline",
+    "runServerSmoke",
+    "-PsmokeProfile=vanilla",
+    "-PsmokeRunId=s003-vanilla-c2-8bafdbc5",
+    "-Ps0Probe=true",
+    "-Ps0Terrain=true",
+    "-Ps0TerrainRounds=100",
+    "-Ps0TerrainConcurrency=2",
+    "-Ps0TerrainOrder=209",
+    "-Ps0TerrainSkip=false",
+    "-Ps0TerrainFixedWorkers=true",
+    "-Ps0ExpectedFailure=false",
+    "--dependency-verification=strict",
+    "--no-daemon",
+    "--console=plain"
+  ]
+}

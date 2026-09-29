@@ -3,13 +3,14 @@ param(
     [ValidateSet('vanilla','tectonic-c2me')][string[]]$Profiles = @('vanilla','tectonic-c2me'),
     [ValidateSet(1,2,8,16)][int[]]$Concurrency = @(1,2,8,16),
     [ValidateRange(1,100)][int]$Rounds = 100,
+    [ValidateSet('s0-03','s1b')][string]$EvidenceStage = 's0-03',
     [switch]$SkipFault,
     [switch]$OriginalQos
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $project = Split-Path $PSScriptRoot -Parent
-$evidence = Join-Path $project 'docs\evidence\s0-03\matrix'
+$evidence = Join-Path $project "docs\evidence\$EvidenceStage\matrix"
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 $results = [Collections.Generic.List[object]]::new()
 if (($SkipFault -or $OriginalQos) -and ($Profiles.Count -ne 1 -or $Profiles[0] -ne 'tectonic-c2me')) {
@@ -24,7 +25,7 @@ foreach ($profile in $Profiles) {
         $output = Join-Path $evidence $id
         New-Item -ItemType Directory -Path $output -Force | Out-Null
         if ($profile -ne 'vanilla') {
-            & (Join-Path $PSScriptRoot 'Stage-SmokeProfile.ps1') -SourceInstance $SourceInstance -Profile $profile -RunId $id -EvidenceStage s0-03
+            & (Join-Path $PSScriptRoot 'Stage-SmokeProfile.ps1') -SourceInstance $SourceInstance -Profile $profile -RunId $id -EvidenceStage $EvidenceStage
             if ($fixedWorkers) {
                 $config = Join-Path $root 'config\c2me.toml'
                 $text = Get-Content -LiteralPath $config -Raw

@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory)][string]$SourceInstance,
     [Parameter(Mandatory)][ValidateSet('vanilla', 'tectonic', 'tectonic-c2me', 'pack-opencl')][string]$Profile,
     [Parameter(Mandatory)][ValidatePattern('^[a-zA-Z0-9_-]{1,80}$')][string]$RunId,
-    [ValidateSet('s0-01', 's0-02', 's0-03')][string]$EvidenceStage = 's0-01',
+    [ValidateSet('s0-01', 's0-02', 's0-03', 's1b')][string]$EvidenceStage = 's0-01',
     [switch]$IncludeChunky
 )
 $ErrorActionPreference = 'Stop'
