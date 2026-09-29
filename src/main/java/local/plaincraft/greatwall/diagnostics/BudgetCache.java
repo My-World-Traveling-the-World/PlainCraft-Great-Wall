@@ -29,6 +29,7 @@ public final class BudgetCache<K, V> implements AutoCloseable {
     private final ConcurrentHashMap<UUID, CompletableFuture<PlanLease<V>>> requests = new ConcurrentHashMap<>();
     private final Executor owner;
     private final long byteLimit;
+    private final long metadataBytes;
     private final int entryLimit, waiterLimit;
     private final ToLongFunction<V> retainedBytes;
     private final LinkedHashMap<K, Entry<V>> entries = new LinkedHashMap<>(16, 0.75f, true);
@@ -39,8 +40,10 @@ public final class BudgetCache<K, V> implements AutoCloseable {
     public BudgetCache(long byteLimit, int entryLimit, int waiterLimit, Executor owner, ToLongFunction<V> retainedBytes) {
         if (byteLimit <= 0 || entryLimit <= 0 || waiterLimit <= 0) throw new IllegalArgumentException("positive cache limits required");
         this.byteLimit = byteLimit; this.entryLimit = entryLimit; this.waiterLimit = waiterLimit;
+        this.metadataBytes = Math.addExact(Math.multiplyExact((long) waiterLimit, 4096), Math.multiplyExact((long) entryLimit, 256));
+        if (metadataBytes >= byteLimit) throw new IllegalArgumentException("cache must accommodate bounded request/entry metadata");
         this.owner = Objects.requireNonNull(owner); this.retainedBytes = Objects.requireNonNull(retainedBytes);
-        snapshots.put("stats", new Stats(0, 0, 0, 0, 0, 0, 0));
+        snapshots.put("stats", new Stats(metadataBytes, 0, 0, 0, 0, 0, 0));
     }
 
     public CompletionStage<PlanLease<V>> acquire(K key, long reservationUpperBound, Supplier<CompletionStage<V>> loader) {
@@ -84,7 +87,7 @@ public final class BudgetCache<K, V> implements AutoCloseable {
         if (state.containsKey("closed")) { future.completeExceptionally(failure(FailureCode.CLOSED, "cache closed")); return; }
         var entry = entries.get(key);
         if (entry != null && !entry.invalidated) { deliver(key, entry, future); publish(); return; }
-        if (upper > byteLimit) {
+        if (upper > byteLimit - metadataBytes) {
             rejected++; future.completeExceptionally(failure(FailureCode.CAPACITY, "single reservation exceeds cache limit")); publish(); return;
         }
         var existing = loading.get(key);
@@ -100,13 +103,13 @@ public final class BudgetCache<K, V> implements AutoCloseable {
             var invalidated = entries.get(next.key);
             if (invalidated != null && invalidated.pins > 0) break;
             if (invalidated != null) remove(next.key, invalidated);
-            while (bytes + reserved > byteLimit - next.upper || entries.size() + activeLoads() >= entryLimit) {
+            while (bytes + reserved > byteLimit - metadataBytes - next.upper || entries.size() + activeLoads() >= entryLimit) {
                 K victim = null;
                 for (var candidate : entries.entrySet()) if (candidate.getValue().pins == 0) { victim = candidate.getKey(); break; }
                 if (victim == null) break;
                 remove(victim, entries.get(victim)); evictions++;
             }
-            if (bytes + reserved > byteLimit - next.upper || entries.size() + activeLoads() >= entryLimit) break;
+            if (bytes + reserved > byteLimit - metadataBytes - next.upper || entries.size() + activeLoads() >= entryLimit) break;
             waiting.removeFirst(); next.active = true; reserved += next.upper;
             try {
                 next.loader.get().whenCompleteAsync((value, error) -> finish(next, value, error), owner);
@@ -158,7 +161,8 @@ public final class BudgetCache<K, V> implements AutoCloseable {
 
     private void publish() {
         long pinned = 0; for (var value : entries.values()) if (value.pins > 0) pinned += value.bytes;
-        snapshots.put("stats", new Stats(bytes, reserved, pinned, entries.size(), waiting.size(), evictions, rejected));
+        snapshots.put("stats", new Stats(bytes + (state.containsKey("closed") ? 0 : metadataBytes), reserved,
+                pinned, entries.size(), waiting.size(), evictions, rejected));
     }
 
     @Override public void close() {

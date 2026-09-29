@@ -13,13 +13,14 @@ import org.junit.jupiter.api.Test;
 class BudgetCacheTest {
     @Test void pinnedCacheBackpressuresWithoutStartingLoader() throws Exception {
         try (var owner = Executors.newSingleThreadExecutor();
-             var cache = new BudgetCache<String, String>(100, 2, 4096, owner, value -> 60)) {
-            var first = cache.acquire("a", 60, () -> CompletableFuture.completedFuture("a")).toCompletableFuture().get(5, TimeUnit.SECONDS);
+             var cache = new BudgetCache<String, String>(100000, 2, 8, owner, value -> 60000)) {
+            var first = cache.acquire("a", 60000, () -> CompletableFuture.completedFuture("a")).toCompletableFuture().get(5, TimeUnit.SECONDS);
             var calls = new AtomicInteger();
-            var second = cache.acquire("b", 60, () -> { calls.incrementAndGet(); return CompletableFuture.completedFuture("b"); }).toCompletableFuture();
+            var second = cache.acquire("b", 60000, () -> { calls.incrementAndGet(); return CompletableFuture.completedFuture("b"); }).toCompletableFuture();
             owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
             assertFalse(second.isDone()); assertEquals(0, calls.get());
-            assertEquals(1, cache.stats().waiting()); assertEquals(60, cache.stats().pinnedBytes());
+            assertEquals(1, cache.stats().waiting()); assertEquals(60000, cache.stats().pinnedBytes());
+            assertTrue(cache.stats().bytes() + cache.stats().reservedBytes() <= 100000);
             first.close();
             try (var lease = second.get(5, TimeUnit.SECONDS)) { assertEquals("b", lease.future().get(5, TimeUnit.SECONDS)); }
             assertEquals(1, calls.get()); assertEquals(1, cache.stats().evictions());
@@ -28,10 +29,10 @@ class BudgetCacheTest {
 
     @Test void hundredCallersShareOneComputeAndIndependentPins() throws Exception {
         try (var owner = Executors.newSingleThreadExecutor();
-             var cache = new BudgetCache<String, String>(100, 2, 4096, owner, value -> 60)) {
+             var cache = new BudgetCache<String, String>(2000000, 2, 256, owner, value -> 60000)) {
             var calls = new AtomicInteger(); var source = new CompletableFuture<String>();
             var requests = new ArrayList<CompletableFuture<PlanLease<String>>>();
-            for (int i = 0; i < 100; i++) requests.add(cache.acquire("a", 60, () -> { calls.incrementAndGet(); return source; }).toCompletableFuture());
+            for (int i = 0; i < 100; i++) requests.add(cache.acquire("a", 60000, () -> { calls.incrementAndGet(); return source; }).toCompletableFuture());
             owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
             requests.getFirst().cancel(false);
             source.complete("a");
@@ -44,10 +45,10 @@ class BudgetCacheTest {
 
     @Test void closeTerminatesWaitersAndLateLoaderCannotPublish() throws Exception {
         try (var owner = Executors.newSingleThreadExecutor()) {
-            var cache = new BudgetCache<String, String>(100, 2, 4096, owner, value -> 60);
+            var cache = new BudgetCache<String, String>(100000, 2, 8, owner, value -> 60000);
             var source = new CompletableFuture<String>();
-            var first = cache.acquire("a", 60, () -> source).toCompletableFuture();
-            var second = cache.acquire("b", 60, () -> CompletableFuture.completedFuture("b")).toCompletableFuture();
+            var first = cache.acquire("a", 60000, () -> source).toCompletableFuture();
+            var second = cache.acquire("b", 60000, () -> CompletableFuture.completedFuture("b")).toCompletableFuture();
             owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
             cache.close(); source.complete("a");
             owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
@@ -58,8 +59,8 @@ class BudgetCacheTest {
 
     @Test void retainedSizeUnderestimationFailsExplicitly() throws Exception {
         try (var owner = Executors.newSingleThreadExecutor();
-             var cache = new BudgetCache<String, String>(100, 2, 4096, owner, value -> 61)) {
-            var request = cache.acquire("a", 60, () -> CompletableFuture.completedFuture("a")).toCompletableFuture();
+             var cache = new BudgetCache<String, String>(100000, 2, 8, owner, value -> 60001)) {
+            var request = cache.acquire("a", 60000, () -> CompletableFuture.completedFuture("a")).toCompletableFuture();
             assertThrows(java.util.concurrent.ExecutionException.class, () -> request.get(5, TimeUnit.SECONDS));
             owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
             assertEquals(0, cache.stats().reservedBytes()); assertTrue(cache.peek("a").isEmpty());
