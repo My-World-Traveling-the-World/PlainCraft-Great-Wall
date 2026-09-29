@@ -1,0 +1,18 @@
+{
+  "lifecycleEvent": "STOPPING",
+  "failure": {
+    "bootstrap": "java.util.concurrent.CompletionException: java.lang.IllegalStateException: Injected planner failure"
+  },
+  "state": "CLOSED",
+  "planner": {
+    "computations": 5,
+    "startupPumpSlices": 284
+  },
+  "inFlight": 0,
+  "session": "a8bf2ed3-aca8-45de-96c9-8111cfbd74ee",
+  "counts": {
+    "REQUEST_PLAN": 1,
+    "WAIT_PLAN_NO_LOCK": 1,
+    "BOOTSTRAP_FAILED": 1
+  }
+}

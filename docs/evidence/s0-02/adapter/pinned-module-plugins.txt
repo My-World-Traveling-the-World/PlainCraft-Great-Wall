@@ -1,0 +1,182 @@
+Compiled from "MixinPlugin.java"
+public class com.ishland.c2me.rewrites.chunksystem.MixinPlugin extends com.ishland.c2me.base.common.ModuleMixinPlugin {
+  public com.ishland.c2me.rewrites.chunksystem.MixinPlugin();
+    Code:
+       0: aload_0
+       1: invokespecial #9                  // Method com/ishland/c2me/base/common/ModuleMixinPlugin."<init>":()V
+       4: return
+
+  public boolean shouldApplyMixin(java.lang.String, java.lang.String);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokespecial #17                 // Method com/ishland/c2me/base/common/ModuleMixinPlugin.shouldApplyMixin:(Ljava/lang/String;Ljava/lang/String;)Z
+       6: ifne          11
+       9: iconst_0
+      10: ireturn
+      11: invokestatic  #21                 // Method tryDetectGcFreeSerializer:()Z
+      14: istore_3
+      15: aload_2
+      16: ldc           #23                 // String com.ishland.c2me.rewrites.chunksystem.mixin.serialization_sync.
+      18: invokevirtual #29                 // Method java/lang/String.startsWith:(Ljava/lang/String;)Z
+      21: ifeq          34
+      24: iload_3
+      25: ifne          32
+      28: iconst_1
+      29: goto          33
+      32: iconst_0
+      33: ireturn
+      34: aload_2
+      35: ldc           #31                 // String com.ishland.c2me.rewrites.chunksystem.mixin.fluid_postprocessing
+      37: invokevirtual #29                 // Method java/lang/String.startsWith:(Ljava/lang/String;)Z
+      40: ifeq          47
+      43: getstatic     #37                 // Field com/ishland/c2me/rewrites/chunksystem/common/Config.fluidPostProcessingToScheduledTick:Z
+      46: ireturn
+      47: iconst_1
+      48: ireturn
+
+  private static boolean tryDetectGcFreeSerializer();
+    Code:
+       0: ldc           #45                 // String com.ishland.c2me.rewrites.chunk_serializer.ModuleEntryPoint
+       2: invokestatic  #51                 // Method java/lang/Class.forName:(Ljava/lang/String;)Ljava/lang/Class;
+       5: astore_0
+       6: aload_0
+       7: ldc           #53                 // String enabled
+       9: invokevirtual #57                 // Method java/lang/Class.getField:(Ljava/lang/String;)Ljava/lang/reflect/Field;
+      12: astore_1
+      13: aload_1
+      14: aconst_null
+      15: invokevirtual #63                 // Method java/lang/reflect/Field.get:(Ljava/lang/Object;)Ljava/lang/Object;
+      18: checkcast     #65                 // class java/lang/Boolean
+      21: invokevirtual #68                 // Method java/lang/Boolean.booleanValue:()Z
+      24: ireturn
+      25: astore_0
+      26: iconst_0
+      27: ireturn
+      28: astore_0
+      29: aload_0
+      30: invokevirtual #71                 // Method java/lang/Throwable.printStackTrace:()V
+      33: iconst_0
+      34: ireturn
+    Exception table:
+       from    to  target type
+           0    24    25   Class java/lang/ClassNotFoundException
+           0    24    28   Class java/lang/Throwable
+}
+Compiled from "ModuleMixinPlugin.java"
+public class com.ishland.c2me.base.common.ModuleMixinPlugin implements org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin {
+  static final org.slf4j.Logger LOGGER;
+
+  protected boolean isEnabled;
+
+  public com.ishland.c2me.base.common.ModuleMixinPlugin();
+    Code:
+       0: aload_0
+       1: invokespecial #20                 // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: iconst_1
+       6: putfield      #22                 // Field isEnabled:Z
+       9: return
+
+  public void onLoad(java.lang.String);
+    Code:
+       0: invokestatic  #34                 // Method com/llamalad7/mixinextras/MixinExtrasBootstrap.init:()V
+       3: getstatic     #36                 // Field LOGGER:Lorg/slf4j/Logger;
+       6: ldc           #38                 // String Initializing {}
+       8: aload_1
+       9: invokeinterface #44,  3           // InterfaceMethod org/slf4j/Logger.info:(Ljava/lang/String;Ljava/lang/Object;)V
+      14: aload_1
+      15: ldc           #46                 // String \\.
+      17: invokevirtual #52                 // Method java/lang/String.split:(Ljava/lang/String;)[Ljava/lang/String;
+      20: astore_2
+      21: ldc           #54                 // String .
+      23: aload_2
+      24: aload_2
+      25: arraylength
+      26: iconst_1
+      27: isub
+      28: invokestatic  #60                 // Method java/util/Arrays.copyOf:([Ljava/lang/Object;I)[Ljava/lang/Object;
+      31: checkcast     #62                 // class "[Ljava/lang/CharSequence;"
+      34: invokestatic  #66                 // Method java/lang/String.join:(Ljava/lang/CharSequence;[Ljava/lang/CharSequence;)Ljava/lang/String;
+      37: invokedynamic #78,  0             // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+      42: astore_3
+      43: aload_3
+      44: invokestatic  #84                 // Method java/lang/Class.forName:(Ljava/lang/String;)Ljava/lang/Class;
+      47: astore        4
+      49: aload         4
+      51: ldc           #86                 // String enabled
+      53: invokevirtual #90                 // Method java/lang/Class.getDeclaredField:(Ljava/lang/String;)Ljava/lang/reflect/Field;
+      56: astore        5
+      58: aload         5
+      60: iconst_1
+      61: invokevirtual #96                 // Method java/lang/reflect/Field.setAccessible:(Z)V
+      64: aload_0
+      65: aload         5
+      67: aconst_null
+      68: invokevirtual #100                // Method java/lang/reflect/Field.get:(Ljava/lang/Object;)Ljava/lang/Object;
+      71: checkcast     #102                // class java/lang/Boolean
+      74: invokevirtual #106                // Method java/lang/Boolean.booleanValue:()Z
+      77: putfield      #22                 // Field isEnabled:Z
+      80: goto          98
+      83: astore        5
+      85: getstatic     #36                 // Field LOGGER:Lorg/slf4j/Logger;
+      88: ldc           #110                // String Unable to detect enabled state for module entrypoint: {}
+      90: aload_3
+      91: aload         5
+      93: invokeinterface #114,  4          // InterfaceMethod org/slf4j/Logger.warn:(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
+      98: goto          116
+     101: astore        4
+     103: getstatic     #36                 // Field LOGGER:Lorg/slf4j/Logger;
+     106: ldc           #116                // String Error loading module entrypoint: {}
+     108: aload_3
+     109: aload         4
+     111: invokeinterface #114,  4          // InterfaceMethod org/slf4j/Logger.warn:(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
+     116: aload_0
+     117: getfield      #22                 // Field isEnabled:Z
+     120: ifne          134
+     123: getstatic     #36                 // Field LOGGER:Lorg/slf4j/Logger;
+     126: ldc           #118                // String Disabling {}
+     128: aload_1
+     129: invokeinterface #44,  3           // InterfaceMethod org/slf4j/Logger.info:(Ljava/lang/String;Ljava/lang/Object;)V
+     134: return
+    Exception table:
+       from    to  target type
+          49    80    83   Class java/lang/Throwable
+          43    98   101   Class java/lang/Throwable
+
+  public java.lang.String getRefMapperConfig();
+    Code:
+       0: aconst_null
+       1: areturn
+
+  public boolean shouldApplyMixin(java.lang.String, java.lang.String);
+    Code:
+       0: aload_0
+       1: getfield      #22                 // Field isEnabled:Z
+       4: ireturn
+
+  public void acceptTargets(java.util.Set<java.lang.String>, java.util.Set<java.lang.String>);
+    Code:
+       0: return
+
+  public java.util.List<java.lang.String> getMixins();
+    Code:
+       0: aconst_null
+       1: areturn
+
+  public void preApply(java.lang.String, org.objectweb.asm.tree.ClassNode, java.lang.String, org.spongepowered.asm.mixin.extensibility.IMixinInfo);
+    Code:
+       0: return
+
+  public void postApply(java.lang.String, org.objectweb.asm.tree.ClassNode, java.lang.String, org.spongepowered.asm.mixin.extensibility.IMixinInfo);
+    Code:
+       0: return
+
+  static {};
+    Code:
+       0: ldc           #151                // String C2ME Modules Manager
+       2: invokestatic  #157                // Method org/slf4j/LoggerFactory.getLogger:(Ljava/lang/String;)Lorg/slf4j/Logger;
+       5: putstatic     #36                 // Field LOGGER:Lorg/slf4j/Logger;
+       8: return
+}

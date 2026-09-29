@@ -1,0 +1,50 @@
+[
+  {
+    "event": "REQUEST_PLAN",
+    "session": "14d49ded-01c5-4eed-b592-631f0fad644c",
+    "dimension": "minecraft:overworld",
+    "chunkX": -1,
+    "chunkZ": -1,
+    "stage": "vanilla:features",
+    "threadId": 87,
+    "threadName": "Worker-Main-4",
+    "lockToken": "none",
+    "nanoTime": 451225414975600
+  },
+  {
+    "event": "WAIT_PLAN_NO_LOCK",
+    "session": "14d49ded-01c5-4eed-b592-631f0fad644c",
+    "dimension": "minecraft:overworld",
+    "chunkX": -1,
+    "chunkZ": -1,
+    "stage": "vanilla:features",
+    "threadId": 87,
+    "threadName": "Worker-Main-4",
+    "lockToken": "none",
+    "nanoTime": 451225415009800
+  },
+  {
+    "event": "STARTUP_CANCEL",
+    "session": "14d49ded-01c5-4eed-b592-631f0fad644c",
+    "dimension": "*",
+    "chunkX": 0,
+    "chunkZ": 0,
+    "stage": "bootstrap",
+    "threadId": 102,
+    "threadName": "greatwall-startup-pump-14d49ded-01c5-4eed-b592-631f0fad644c",
+    "lockToken": "none",
+    "nanoTime": 451225651580400
+  },
+  {
+    "event": "BOOTSTRAP_FAILED",
+    "session": "14d49ded-01c5-4eed-b592-631f0fad644c",
+    "dimension": "*",
+    "chunkX": 0,
+    "chunkZ": 0,
+    "stage": "required-plan",
+    "threadId": 102,
+    "threadName": "greatwall-startup-pump-14d49ded-01c5-4eed-b592-631f0fad644c",
+    "lockToken": "none",
+    "nanoTime": 451225651704500
+  }
+]

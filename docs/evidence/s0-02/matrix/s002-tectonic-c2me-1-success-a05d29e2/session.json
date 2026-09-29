@@ -1,0 +1,24 @@
+{
+  "failure": {
+    "reason": "java.lang.IllegalStateException: WORLD_RECIPE_MISMATCH: generation resources changed; create a new world"
+  },
+  "state": "CLOSED",
+  "planner": {
+    "computations": 5,
+    "startupPumpSlices": 10
+  },
+  "inFlight": 0,
+  "session": "a682ba85-02f2-41d6-bb7a-4abafd5fb1a9",
+  "counts": {
+    "REQUEST_PLAN": 81,
+    "WAIT_PLAN_NO_LOCK": 81,
+    "STARTUP_WARMING": 1,
+    "WRITE_LOCK_ACQUIRED": 81,
+    "PLAN_READY": 81,
+    "STAGE_EXIT": 81,
+    "STAGE_ENTER": 81,
+    "RECIPE_REJECTED": 1,
+    "RECIPE_ACCEPTED": 2
+  },
+  "lifecycleEvent": "STOPPED"
+}

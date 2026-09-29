@@ -1,0 +1,19 @@
+{
+  "failure": {
+    "bootstrap": "java.util.concurrent.CancellationException: Operator canceled unresolved startup planning"
+  },
+  "state": "CLOSED",
+  "planner": {
+    "computations": 5,
+    "startupPumpSlices": 12724
+  },
+  "inFlight": 0,
+  "session": "2fe466c6-2e07-413d-b73c-4e9f12a9c442",
+  "counts": {
+    "REQUEST_PLAN": 1,
+    "STARTUP_CANCEL": 1,
+    "WAIT_PLAN_NO_LOCK": 1,
+    "BOOTSTRAP_FAILED": 1
+  },
+  "lifecycleEvent": "STOPPING"
+}

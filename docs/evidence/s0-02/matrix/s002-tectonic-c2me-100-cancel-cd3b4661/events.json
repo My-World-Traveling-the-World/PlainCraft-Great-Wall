@@ -1,0 +1,38 @@
+[
+  {
+    "event": "REQUEST_PLAN",
+    "session": "62234a80-81a9-4f1f-9a06-80807c18abcd",
+    "dimension": "minecraft:overworld",
+    "chunkX": 0,
+    "chunkZ": 0,
+    "stage": "c2me:features",
+    "threadId": 83,
+    "threadName": "c2me-worker-4",
+    "lockToken": "none",
+    "nanoTime": 449038169640000
+  },
+  {
+    "event": "WAIT_PLAN_NO_LOCK",
+    "session": "62234a80-81a9-4f1f-9a06-80807c18abcd",
+    "dimension": "minecraft:overworld",
+    "chunkX": 0,
+    "chunkZ": 0,
+    "stage": "c2me:features",
+    "threadId": 83,
+    "threadName": "c2me-worker-4",
+    "lockToken": "none",
+    "nanoTime": 449038169707800
+  },
+  {
+    "event": "BOOTSTRAP_FAILED",
+    "session": "62234a80-81a9-4f1f-9a06-80807c18abcd",
+    "dimension": "*",
+    "chunkX": 0,
+    "chunkZ": 0,
+    "stage": "bootstrap",
+    "threadId": 81,
+    "threadName": "c2me-worker-2",
+    "lockToken": "none",
+    "nanoTime": 449038272675700
+  }
+]

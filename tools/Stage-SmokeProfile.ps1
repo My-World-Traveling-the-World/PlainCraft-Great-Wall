@@ -1,7 +1,9 @@
 param(
     [Parameter(Mandatory)][string]$SourceInstance,
-    [Parameter(Mandatory)][ValidateSet('tectonic', 'tectonic-c2me', 'pack-opencl')][string]$Profile,
-    [Parameter(Mandatory)][ValidatePattern('^[a-zA-Z0-9_-]{1,80}$')][string]$RunId
+    [Parameter(Mandatory)][ValidateSet('vanilla', 'tectonic', 'tectonic-c2me', 'pack-opencl')][string]$Profile,
+    [Parameter(Mandatory)][ValidatePattern('^[a-zA-Z0-9_-]{1,80}$')][string]$RunId,
+    [ValidateSet('s0-01', 's0-02', 's0-03')][string]$EvidenceStage = 's0-01',
+    [switch]$IncludeChunky
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -14,8 +16,9 @@ if (!$root.StartsWith($allowed, [StringComparison]::OrdinalIgnoreCase) -or (Test
     throw 'Smoke staging requires a new directory inside this project build/run/serverSmoke.'
 }
 $selected = [Collections.Generic.List[object]]::new()
-$wanted = @('tectonic', 'lithostitched')
+$wanted = if ($Profile -eq 'vanilla') { @() } else { @('tectonic', 'lithostitched') }
 if ($Profile -eq 'tectonic-c2me') { $wanted += 'c2me' }
+if ($IncludeChunky) { $wanted += 'chunky' }
 foreach ($file in Get-ChildItem -LiteralPath (Join-Path $source 'mods') -Filter '*.jar' | Sort-Object Name) {
     $zip = [IO.Compression.ZipFile]::OpenRead($file.FullName)
     try {
@@ -75,7 +78,7 @@ if ($Profile -eq 'pack-opencl') {
         $configs.Add([pscustomobject]@{path='config\c2me.toml'; sha256=(Get-FileHash -LiteralPath $from -Algorithm SHA256).Hash.ToLowerInvariant()})
     }
 }
-$evidence = Join-Path $project 'docs\evidence\s0-01\runtime'
+$evidence = Join-Path $project "docs\evidence\$EvidenceStage\runtime"
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 $report = [ordered]@{
     collectedAt=(Get-Date).ToString('o'); source=$source; destination=$root

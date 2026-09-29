@@ -1,0 +1,192 @@
+[
+  {
+    "id": "s002-tectonic-c2me-off-1-success-26596768",
+    "profile": "tectonic-c2me",
+    "delayMs": 1,
+    "outcome": "SUCCESS",
+    "cancel": false,
+    "reload": "none",
+    "entries": false,
+    "postReload": false,
+    "disableRewrite": true,
+    "exitCode": 0,
+    "seconds": 40.768,
+    "counts": {
+      "STARTUP_WARMING": 1,
+      "STAGE_EXIT": 81,
+      "PLAN_READY": 81,
+      "STAGE_ENTER": 81,
+      "WAIT_PLAN_NO_LOCK": 81,
+      "REQUEST_PLAN": 81
+    },
+    "passed": true
+  },
+  {
+    "id": "s002-tectonic-c2me-off-100-success-f86d6711",
+    "profile": "tectonic-c2me",
+    "delayMs": 100,
+    "outcome": "SUCCESS",
+    "cancel": false,
+    "reload": "none",
+    "entries": false,
+    "postReload": false,
+    "disableRewrite": true,
+    "exitCode": 0,
+    "seconds": 40.879,
+    "counts": {
+      "STAGE_EXIT": 81,
+      "STARTUP_WARMING": 1,
+      "REQUEST_PLAN": 81,
+      "WAIT_PLAN_NO_LOCK": 81,
+      "STAGE_ENTER": 81,
+      "PLAN_READY": 81
+    },
+    "passed": true
+  },
+  {
+    "id": "s002-tectonic-c2me-off-2000-success-57dfd135",
+    "profile": "tectonic-c2me",
+    "delayMs": 2000,
+    "outcome": "SUCCESS",
+    "cancel": false,
+    "reload": "none",
+    "entries": false,
+    "postReload": false,
+    "disableRewrite": true,
+    "exitCode": 0,
+    "seconds": 42.077,
+    "counts": {
+      "STARTUP_WARMING": 1,
+      "STAGE_EXIT": 81,
+      "PLAN_READY": 81,
+      "STAGE_ENTER": 81,
+      "WAIT_PLAN_NO_LOCK": 81,
+      "REQUEST_PLAN": 81
+    },
+    "passed": true
+  },
+  {
+    "id": "s002-tectonic-c2me-off-30000-success-ff099b22",
+    "profile": "tectonic-c2me",
+    "delayMs": 30000,
+    "outcome": "SUCCESS",
+    "cancel": false,
+    "reload": "none",
+    "entries": false,
+    "postReload": false,
+    "disableRewrite": true,
+    "exitCode": 0,
+    "seconds": 70.075,
+    "counts": {
+      "STAGE_ENTER": 81,
+      "PLAN_READY": 81,
+      "STAGE_EXIT": 81,
+      "STARTUP_WARMING": 1,
+      "REQUEST_PLAN": 81,
+      "WAIT_PLAN_NO_LOCK": 81
+    },
+    "passed": true
+  },
+  {
+    "id": "s002-tectonic-c2me-off-100-fail-dd5c8601",
+    "profile": "tectonic-c2me",
+    "delayMs": 100,
+    "outcome": "FAIL",
+    "cancel": false,
+    "reload": "none",
+    "entries": false,
+    "postReload": false,
+    "disableRewrite": true,
+    "exitCode": 0,
+    "seconds": 34.729,
+    "counts": {
+      "WAIT_PLAN_NO_LOCK": 9,
+      "REQUEST_PLAN": 9
+    },
+    "passed": true
+  },
+  {
+    "id": "s002-tectonic-c2me-off-100-cancel-830b64e4",
+    "profile": "tectonic-c2me",
+    "delayMs": 100,
+    "outcome": "CANCEL",
+    "cancel": false,
+    "reload": "none",
+    "entries": false,
+    "postReload": false,
+    "disableRewrite": true,
+    "exitCode": 0,
+    "seconds": 34.326,
+    "counts": {
+      "WAIT_PLAN_NO_LOCK": 9,
+      "REQUEST_PLAN": 9
+    },
+    "passed": true
+  },
+  {
+    "id": "s002-tectonic-c2me-off-30000-success-2c97a129",
+    "profile": "tectonic-c2me",
+    "delayMs": 30000,
+    "outcome": "SUCCESS",
+    "cancel": true,
+    "reload": "none",
+    "entries": false,
+    "postReload": false,
+    "disableRewrite": true,
+    "exitCode": 0,
+    "seconds": 34.94,
+    "counts": {
+      "BOOTSTRAP_FAILED": 1,
+      "WAIT_PLAN_NO_LOCK": 1,
+      "STARTUP_CANCEL": 1,
+      "REQUEST_PLAN": 1
+    },
+    "passed": true
+  },
+  {
+    "id": "s002-tectonic-c2me-off-1-success-3a08c3bb",
+    "profile": "tectonic-c2me",
+    "delayMs": 1,
+    "outcome": "SUCCESS",
+    "cancel": false,
+    "reload": "changed",
+    "entries": false,
+    "postReload": false,
+    "disableRewrite": true,
+    "exitCode": 0,
+    "seconds": 41.688,
+    "counts": {
+      "STAGE_EXIT": 81,
+      "RECIPE_REJECTED": 1,
+      "PLAN_READY": 81,
+      "WAIT_PLAN_NO_LOCK": 81,
+      "STARTUP_WARMING": 1,
+      "REQUEST_PLAN": 81,
+      "RECIPE_ACCEPTED": 2,
+      "STAGE_ENTER": 81
+    },
+    "passed": true
+  },
+  {
+    "id": "s002-tectonic-c2me-off-100-success-fc2334c8",
+    "profile": "tectonic-c2me",
+    "delayMs": 100,
+    "outcome": "SUCCESS",
+    "cancel": false,
+    "reload": "none",
+    "entries": true,
+    "postReload": false,
+    "disableRewrite": true,
+    "exitCode": 0,
+    "seconds": 40.475,
+    "counts": {
+      "WAIT_PLAN_NO_LOCK": 124,
+      "STAGE_ENTER": 124,
+      "PLAN_READY": 124,
+      "STAGE_EXIT": 124,
+      "STARTUP_WARMING": 1,
+      "REQUEST_PLAN": 124
+    },
+    "passed": true
+  }
+]

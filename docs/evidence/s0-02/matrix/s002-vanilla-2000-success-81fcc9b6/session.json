@@ -1,0 +1,19 @@
+{
+  "state": "CLOSED",
+  "failure": {},
+  "lifecycleEvent": "STOPPED",
+  "counts": {
+    "WAIT_PLAN_NO_LOCK": 81,
+    "REQUEST_PLAN": 81,
+    "STARTUP_WARMING": 1,
+    "STAGE_EXIT": 81,
+    "PLAN_READY": 81,
+    "STAGE_ENTER": 81
+  },
+  "session": "5be89617-a8f9-48b8-b381-868ef2d5cfc8",
+  "inFlight": 0,
+  "planner": {
+    "computations": 5,
+    "startupPumpSlices": 5463
+  }
+}

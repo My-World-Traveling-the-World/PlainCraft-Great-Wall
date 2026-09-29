@@ -14,6 +14,22 @@ if (!(profile in ['vanilla', 'tectonic', 'tectonic-c2me', 'pack-opencl']) ||
 }
 def directory = layout.buildDirectory.dir("run/serverSmoke/${profile}/${runId}")
 def runtimeJava = providers.gradleProperty('smokeJavaVersion').getOrElse('21').toInteger()
+def disableRewrite = providers.gradleProperty('s0DisableRewrite').getOrElse('false').toBoolean()
+if (disableRewrite && profile != 'tectonic-c2me') {
+    throw new GradleException('Rewrite-disable capability test is isolated to the C2ME CPU profile')
+}
+def probeArgs = [
+    "-Dgreatwall.s0.probe=${providers.gradleProperty('s0Probe').getOrElse('false')}",
+    "-Dgreatwall.s0.delayMs=${providers.gradleProperty('s0DelayMs').getOrElse('1')}",
+    "-Dgreatwall.s0.outcome=${providers.gradleProperty('s0Outcome').getOrElse('SUCCESS')}",
+    "-Dgreatwall.s0.reload=${providers.gradleProperty('s0Reload').getOrElse('none')}",
+    "-Dgreatwall.s0.reloadWorldgen=${providers.gradleProperty('s0ReloadWorldgen').getOrElse('false')}",
+    "-Dgreatwall.s0.entries=${providers.gradleProperty('s0Entries').getOrElse('false')}",
+    "-Dgreatwall.s0.disableRewrite=${disableRewrite}",
+    "-Dgreatwall.s0.expectedFailure=${providers.gradleProperty('s0ExpectedFailure').getOrElse('false')}",
+    "-Dgreatwall.s0.expectedAdapter=${!disableRewrite && (profile == 'tectonic-c2me' || profile == 'pack-opencl') ? 'c2me' : 'vanilla'}"
+]
+if (disableRewrite) probeArgs.add('-Dfabric.debug.disableModIds=c2me-rewrites-chunk-system,c2me-notickvd')
 if (!(runtimeJava in [21, 25]) || (runtimeJava != 21 && profile != 'pack-opencl')) {
     throw new GradleException('Only the existing OpenCL profile may opt into its required Java 25 runtime')
 }
@@ -28,8 +44,10 @@ loom {
             runDir "build/run/serverSmoke/${profile}/${runId}"
             vmArg profile == 'pack-opencl' ? '-Xmx8G' : '-Xmx4G'
             vmArg "-Dgreatwall.smoke.profile=${profile}"
+            vmArg '-Dfabric.noGui=true'
             vmArg '-Dmixin.debug.export=true'
             vmArg '-Dmixin.debug.export.decompile=false'
+            probeArgs.each { vmArg it }
             if (runtimeJava == 25) {
                 vmArg '--enable-native-access=ALL-UNNAMED'
                 vmArg '--add-modules=jdk.incubator.vector'
@@ -61,10 +79,19 @@ simulation-distance=2
 max-tick-time=60000
 sync-chunk-writes=true
 ''', 'UTF-8')
+        if (providers.gradleProperty('s0Reload').getOrElse('none') != 'none') {
+            def fixture = new File(root, 'world/datapacks/greatwall-s0')
+            fixture.mkdirs()
+            new File(fixture, 'pack.mcmeta').setText('{"pack":{"pack_format":48,"description":"S0 reload fixture"}}', 'UTF-8')
+            def noise = new File(fixture, 'data/plaincraft_great_wall/worldgen/noise/probe_noise.json')
+            noise.parentFile.mkdirs()
+            noise.setText('{"firstOctave":-3,"amplitudes":[1.0]}', 'UTF-8')
+        }
         logger.lifecycle("Isolated smoke directory: ${root}")
     }
 }
 tasks.named('runServerSmoke') {
+    timeout = java.time.Duration.ofMinutes(3)
     dependsOn tasks.named('prepareServerSmoke')
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
 }
@@ -119,12 +146,14 @@ def prepareProductionInputs = { runtimeSource, String gameJarName, File smokeFil
     return files(runtimeLibraries, gameJar, intermediary)
 }
 tasks.register('runServerSmokeProduction', JavaExec) {
+    timeout = java.time.Duration.ofMinutes(5)
     dependsOn tasks.named('prepareServerSmoke'), tasks.named('remapJar'), remappedSmoke
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
     workingDir = directory.get().asFile
     mainClass = 'net.fabricmc.loader.impl.launch.knot.KnotServer'
     jvmArgs '-Xmx8G', '-Dfabric.development=false', '-Dfabric.noGui=true', "-Dgreatwall.smoke.profile=${profile}",
             '-Dmixin.debug.export=true', '-Dmixin.debug.export.decompile=false'
+    jvmArgs probeArgs
     if (runtimeJava == 25) {
         jvmArgs '--enable-native-access=ALL-UNNAMED', '--add-modules=jdk.incubator.vector'
     }
@@ -153,6 +182,7 @@ def remappedClientSmoke = tasks.register('remapClientSmokeJar', remapJarType) {
     includesClientOnlyClasses = false
 }
 tasks.register('runClientSmokeProduction', JavaExec) {
+    timeout = java.time.Duration.ofMinutes(5)
     dependsOn tasks.named('prepareServerSmoke'), tasks.named('remapJar'), remappedClientSmoke
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
     workingDir = directory.get().asFile

@@ -1,8 +1,8 @@
 # plaincraft-great-wall
 
-Fabric 1.21.1 万里长城模组工程。当前是 **S0-01 基建原型，尚未验收通过**，不生成城墙，不修改既有存档。
+Fabric 1.21.1 万里长城模组工程。**S0-01、S0-02 已通过；S0-03 尚未签收。** 不生成城墙，不修改用户既有存档。
 
-开工上下文为 `开工交接.md` 和相邻的 `plaincraft-great-wall-终审与实施方案` 五册。当前进度与阻塞详见 [S0-01 实施记录](docs/S0-01.md)。
+开工上下文为 `开工交接.md` 和相邻的 `plaincraft-great-wall-终审与实施方案` 五册。验收依据见 [S0-01 运行签收](docs/S0-01-runtime.md) 与 [S0-02 实施记录](docs/S0-02.md)。早期失败和修复日志保留，不用旧记录覆盖新签收。
 
 ## 已锁版本
 
@@ -23,26 +23,28 @@ Fabric 1.21.1 万里长城模组工程。当前是 **S0-01 基建原型，尚未
 
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
-.\gradlew.bat --offline --no-configuration-cache build
+.\gradlew.bat --offline --dependency-verification=strict --no-configuration-cache build
 ```
 
-**方案 A 后严格离线构建已通过，正式构建无需且不得关闭依赖校验。** 另以 `--dependency-verification=strict --rerun-tasks --no-build-cache` 强制离线执行，18 个任务全部执行、3 项 JUnit 与 1 项服务端 GameTest 通过。临时代理设置已移除，`gradle.properties` 与修复前逐字节一致。
+**方案 A 后严格离线构建已通过，正式构建无需且不得关闭依赖校验。** S0-01 收尾再次强制执行构建，26 个任务全部执行、3 项 JUnit 与 1 项服务端 GameTest 通过；S0-02 最终构建与扩展测试结果见该阶段报告。没有临时代理设置；各阶段 mod 自身版本可递增，依赖版本不变。
 
 不要再次调用初次开工的 `writeLocalVerification` 临时取证任务覆盖现有原生清单；该历史任务不属于正式构建流程。
 
-`build` 经 Loom 测试配置包含 `runGameTest`。独立入口为 `test`、`runGameTest`、`runClientSmoke`。客户端 smoke 仅在隔离目录启动至标题界面、截图并退出，不打开用户存档；当前尚未运行到该界面。
+`build` 经 Loom 测试配置包含 `runGameTest`。独立入口为 `test`、`runGameTest`、`runClientSmoke`、`runServerSmoke`。原版客户端与整包+OpenCL 客户端均已在隔离目录启动到标题界面、截图并正常退出，没有打开用户存档。整包游戏运行使用本机已存在且其 metadata 要求的 Java25；Gradle/Javac 仍为 Java21。菜单加载不等于 GPU 世界生成验证。
 
 ## 目录
 
 | 路径 | 职责 |
 | --- | --- |
-| `src/main` | 公共入口、构建常量、只读运行版本快照；没有生成挂钩 |
+| `src/main` | 公共入口、版本快照、opt-in 的 S0 假规划器、启动/生成诊断门和配方守卫；不放块 |
 | `src/client` | 独立客户端入口；没有客户端类引用进入公共代码 |
 | `src/test` | JVM/JUnit 构建合同测试 |
 | `src/gametest` | 独立服务端测试模组，不进入发布 JAR |
 | `src/clientSmoke` | 独立客户端 smoke 模组，不进入发布 JAR |
+| `src/serverSmoke` | DedicatedServer、reload、Chunky 与远跳测试，不进入发布 JAR |
 | `tools/Collect-Environment.ps1` | 只读实际实例的 JAR 元数据及 SHA-256，报告写回本工程 |
 | `docs/evidence/s0-01` | 版本清单、真实执行日志、测试结果 |
+| `docs/evidence/s0-02` | 启动/失败/取消/重载矩阵、阶段事件、线程栈与实际 Mixin 类导出 |
 
 Windows 中文工程路径的 JUnit 启动问题通过 ASCII manifest classpath 桥解决；桥接 JAR 是 Gradle 用户缓存内的构建临时产物，源码仍在本工程，不改变系统代码页。
 
@@ -50,4 +52,4 @@ Windows 中文工程路径的 JUnit 启动问题通过 ASCII manifest classpath 
 
 ## 下一步
 
-S0-01 的严格离线校验缺口已关闭；客户端资源与运行矩阵仍待完成，然后依次做 S0-02、S0-03。没有任何一项可用“已经编译”替代真实运行验收。
+S0-02 已完成 28 项运行用例、14 项 JUnit 与 1 项 GameTest，严格离线构建通过。接下来实现 S0-03 的 PREPARE/CAPTURE/APPLY 与 T0 原型。三个阻塞阶段不过，不接入正式生成；没有任何一项可用“已经编译”替代真实运行验收。

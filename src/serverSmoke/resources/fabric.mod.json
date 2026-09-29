@@ -7,5 +7,6 @@
   "entrypoints": {
     "main": ["local.plaincraft.greatwall.smoke.ServerSmoke"]
   },
+  "mixins": ["greatwall-server-smoke.mixins.json"],
   "depends": {"plaincraft_great_wall": "*"}
 }

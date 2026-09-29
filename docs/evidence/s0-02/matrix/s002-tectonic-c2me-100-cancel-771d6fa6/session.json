@@ -1,0 +1,18 @@
+{
+  "lifecycleEvent": "STOPPING",
+  "counts": {
+    "WAIT_PLAN_NO_LOCK": 1,
+    "REQUEST_PLAN": 1,
+    "BOOTSTRAP_FAILED": 1
+  },
+  "session": "343c49bb-ccbf-410c-9689-052a8e79fcbb",
+  "inFlight": 0,
+  "planner": {
+    "startupPumpSlices": 274,
+    "computations": 5
+  },
+  "state": "CLOSED",
+  "failure": {
+    "bootstrap": "java.util.concurrent.CompletionException: java.util.concurrent.CancellationException: Injected planner cancellation"
+  }
+}

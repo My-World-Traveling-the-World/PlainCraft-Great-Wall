@@ -1,0 +1,19 @@
+{
+  "inFlight": 0,
+  "session": "7f8522ce-3d50-460e-84b3-a94250679e99",
+  "counts": {
+    "STAGE_ENTER": 124,
+    "PLAN_READY": 124,
+    "STAGE_EXIT": 124,
+    "STARTUP_WARMING": 1,
+    "REQUEST_PLAN": 124,
+    "WAIT_PLAN_NO_LOCK": 124
+  },
+  "lifecycleEvent": "STOPPED",
+  "failure": {},
+  "state": "CLOSED",
+  "planner": {
+    "computations": 8,
+    "startupPumpSlices": 446
+  }
+}

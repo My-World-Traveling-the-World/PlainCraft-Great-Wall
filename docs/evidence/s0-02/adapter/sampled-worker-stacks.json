@@ -1,0 +1,20 @@
+[
+  {
+    "runId": "s002-vanilla-30000-success-4971fcc5",
+    "file": "threads-27432.txt",
+    "workerStacks": 15,
+    "violations": 0
+  },
+  {
+    "runId": "s002-tectonic-c2me-30000-success-931933c5",
+    "file": "threads-13052.txt",
+    "workerStacks": 29,
+    "violations": 0
+  },
+  {
+    "runId": "s002-tectonic-c2me-off-30000-success-ff099b22",
+    "file": "threads-32160.txt",
+    "workerStacks": 29,
+    "violations": 0
+  }
+]

@@ -1,0 +1,45 @@
+{
+  "collectedAt": "2026-09-29T02:43:43.9501972+08:00",
+  "source": "D:\\Minecraft\\Plain Craft Launcher 2\\.minecraft\\versions\\【云游四海】WAYFARING",
+  "destination": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build\\run\\serverSmoke\\tectonic-c2me\\s002-tectonic-c2me-2000-success-cfd0ec16",
+  "profile": "tectonic-c2me",
+  "runId": "s002-tectonic-c2me-2000-success-cfd0ec16",
+  "mods": [
+    {
+      "source": "D:\\minecraft\\Plain Craft Launcher 2\\.minecraft\\versions\\【云游四海】WAYFARING\\mods\\[C^2M 引擎] c2me-fabric-mc1.21.1-0.4.0-alpha.0.27-plaincraft-qos-direct.0.3.6-avx2-isa-clamp.jar",
+      "name": "[C^2M 引擎] c2me-fabric-mc1.21.1-0.4.0-alpha.0.27-plaincraft-qos-direct.0.3.6-avx2-isa-clamp.jar",
+      "id": "c2me",
+      "version": "0.4.0-alpha.0.27+1.21.1",
+      "environment": "*",
+      "java": ">=21",
+      "sha256": "85de278c4acfddbaa748c1e72facaa7e13901f3980e5deb2c65ab7064fc8c460"
+    },
+    {
+      "source": "D:\\minecraft\\Plain Craft Launcher 2\\.minecraft\\versions\\【云游四海】WAYFARING\\mods\\lithostitched-1.8.0+beta6-fabric-21.1.jar",
+      "name": "lithostitched-1.8.0+beta6-fabric-21.1.jar",
+      "id": "lithostitched",
+      "version": "1.8.0+beta6",
+      "environment": "*",
+      "java": null,
+      "sha256": "e32f7b1b36e7ab1955fd4972cc0b992512edbda866798a86096dde0835189274"
+    },
+    {
+      "source": "D:\\minecraft\\Plain Craft Launcher 2\\.minecraft\\versions\\【云游四海】WAYFARING\\mods\\tectonic-3.0.26-fabric-21.1.jar",
+      "name": "tectonic-3.0.26-fabric-21.1.jar",
+      "id": "tectonic",
+      "version": "3.0.26",
+      "environment": "*",
+      "java": null,
+      "sha256": "6653be7cb1574e5973cde0a8cacb9d79d9e55a99bf7378937e0c47979b718b67"
+    }
+  ],
+  "configs": [
+    {
+      "path": "config\\c2me.toml",
+      "sha256": "070398f4258ac299023e9db495af81c46d974f00d3fd5263d3d337c432cd6188"
+    }
+  ],
+  "fabricApiProvidedByLoom": "0.116.14+1.21.1",
+  "networkUsed": false,
+  "sourceModified": false
+}

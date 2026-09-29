@@ -1,0 +1,550 @@
+Compiled from "TheChunkSystem.java"
+public class com.ishland.c2me.rewrites.chunksystem.common.TheChunkSystem extends com.ishland.flowsched.scheduler.StatusAdvancingScheduler<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext, com.ishland.c2me.rewrites.chunksystem.common.NewChunkHolderVanillaInterface> {
+  private final org.slf4j.Logger LOGGER;
+
+  private final it.unimi.dsi.fastutil.longs.Long2IntMap managedTickets;
+
+  private final com.ishland.c2me.base.common.scheduler.SchedulingManager schedulingManager;
+
+  private final net.minecraft.class_3898 tacs;
+
+  static final boolean $assertionsDisabled;
+
+  public com.ishland.c2me.rewrites.chunksystem.common.TheChunkSystem(net.minecraft.class_3898);
+    Code:
+       0: aload_0
+       1: getstatic     #39                 // Field com/ishland/c2me/rewrites/chunksystem/common/TheSpeedyObjectFactory.INSTANCE:Lcom/ishland/flowsched/scheduler/ObjectFactory;
+       4: invokespecial #42                 // Method com/ishland/flowsched/scheduler/StatusAdvancingScheduler."<init>":(Lcom/ishland/flowsched/scheduler/ObjectFactory;)V
+       7: aload_0
+       8: new           #44                 // class it/unimi/dsi/fastutil/longs/Long2IntOpenHashMap
+      11: dup
+      12: invokespecial #47                 // Method it/unimi/dsi/fastutil/longs/Long2IntOpenHashMap."<init>":()V
+      15: invokestatic  #53                 // Method it/unimi/dsi/fastutil/longs/Long2IntMaps.synchronize:(Lit/unimi/dsi/fastutil/longs/Long2IntMap;)Lit/unimi/dsi/fastutil/longs/Long2IntMap;
+      18: putfield      #55                 // Field managedTickets:Lit/unimi/dsi/fastutil/longs/Long2IntMap;
+      21: aload_0
+      22: aload_1
+      23: putfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+      26: aload_0
+      27: aload_1
+      28: checkcast     #59                 // class com/ishland/c2me/base/common/scheduler/IVanillaChunkManager
+      31: invokeinterface #63,  1           // InterfaceMethod com/ishland/c2me/base/common/scheduler/IVanillaChunkManager.c2me$getSchedulingManager:()Lcom/ishland/c2me/base/common/scheduler/SchedulingManager;
+      36: putfield      #65                 // Field schedulingManager:Lcom/ishland/c2me/base/common/scheduler/SchedulingManager;
+      39: aload_0
+      40: ldc           #67                 // String Chunk System of %s
+      42: iconst_1
+      43: anewarray     #69                 // class java/lang/Object
+      46: dup
+      47: iconst_0
+      48: aload_1
+      49: checkcast     #71                 // class com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage
+      52: invokeinterface #75,  1           // InterfaceMethod com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage.getWorld:()Lnet/minecraft/class_3218;
+      57: invokevirtual #81                 // Method net/minecraft/class_3218.method_27983:()Lnet/minecraft/class_5321;
+      60: invokevirtual #87                 // Method net/minecraft/class_5321.method_29177:()Lnet/minecraft/class_2960;
+      63: aastore
+      64: invokevirtual #93                 // Method java/lang/String.formatted:([Ljava/lang/Object;)Ljava/lang/String;
+      67: invokestatic  #99                 // Method org/slf4j/LoggerFactory.getLogger:(Ljava/lang/String;)Lorg/slf4j/Logger;
+      70: putfield      #101                // Field LOGGER:Lorg/slf4j/Logger;
+      73: aload_0
+      74: getfield      #55                 // Field managedTickets:Lit/unimi/dsi/fastutil/longs/Long2IntMap;
+      77: getstatic     #107                // Field com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.vanillaLevelToStatus:[Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;
+      80: arraylength
+      81: iconst_1
+      82: isub
+      83: invokeinterface #113,  2          // InterfaceMethod it/unimi/dsi/fastutil/longs/Long2IntMap.defaultReturnValue:(I)V
+      88: return
+
+  protected java.util.concurrent.Executor getBackgroundExecutor();
+    Code:
+       0: getstatic     #123                // Field com/ishland/c2me/rewrites/chunksystem/common/structs/ChunkSystemExecutors.consolidatingBackgroundExecutor:Ljava/util/concurrent/Executor;
+       3: areturn
+
+  protected io.reactivex.rxjava3.core.Scheduler getSchedulerBackedByBackgroundExecutor();
+    Code:
+       0: getstatic     #129                // Field com/ishland/c2me/rewrites/chunksystem/common/structs/ChunkSystemExecutors.consolidatingBackgroundScheduler:Lio/reactivex/rxjava3/core/Scheduler;
+       3: areturn
+
+  protected com.ishland.flowsched.scheduler.ItemStatus<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext> getUnloadedStatus();
+    Code:
+       0: getstatic     #136                // Field com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.NEW:Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;
+       3: areturn
+
+  protected com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext makeContext(com.ishland.flowsched.scheduler.ItemHolder<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext, com.ishland.c2me.rewrites.chunksystem.common.NewChunkHolderVanillaInterface>, com.ishland.flowsched.scheduler.ItemStatus<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext>, com.ishland.flowsched.scheduler.KeyStatusPair<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext>[], boolean);
+    Code:
+       0: aload_2
+       1: instanceof    #103                // class com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus
+       4: invokestatic  #149                // Method com/ishland/flowsched/util/Assertions.assertTrue:(Z)V
+       7: getstatic     #151                // Field $assertionsDisabled:Z
+      10: ifne          25
+      13: aload_2
+      14: ifnonnull     25
+      17: new           #153                // class java/lang/AssertionError
+      20: dup
+      21: invokespecial #154                // Method java/lang/AssertionError."<init>":()V
+      24: athrow
+      25: aload_2
+      26: checkcast     #103                // class com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus
+      29: astore        5
+      31: new           #156                // class com/ishland/c2me/rewrites/chunksystem/common/ChunkLoadingContext
+      34: dup
+      35: aload_1
+      36: aload_0
+      37: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+      40: aload_0
+      41: getfield      #65                 // Field schedulingManager:Lcom/ishland/c2me/base/common/scheduler/SchedulingManager;
+      44: aload_0
+      45: aload_3
+      46: invokespecial #159                // Method com/ishland/c2me/rewrites/chunksystem/common/ChunkLoadingContext."<init>":(Lcom/ishland/flowsched/scheduler/ItemHolder;Lnet/minecraft/class_3898;Lcom/ishland/c2me/base/common/scheduler/SchedulingManager;Lcom/ishland/c2me/rewrites/chunksystem/common/TheChunkSystem;[Lcom/ishland/flowsched/scheduler/KeyStatusPair;)V
+      49: areturn
+
+  protected com.ishland.flowsched.scheduler.ExceptionHandlingAction handleTransactionException(com.ishland.flowsched.scheduler.ItemHolder<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext, com.ishland.c2me.rewrites.chunksystem.common.NewChunkHolderVanillaInterface>, com.ishland.flowsched.scheduler.ItemStatus<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext>, boolean, java.lang.Throwable);
+    Code:
+       0: iload_3
+       1: ifeq          38
+       4: aload_0
+       5: getfield      #101                // Field LOGGER:Lorg/slf4j/Logger;
+       8: ldc           #172                // String Error upgrading chunk {} to \"{}\"
+      10: iconst_3
+      11: anewarray     #69                 // class java/lang/Object
+      14: dup
+      15: iconst_0
+      16: aload_1
+      17: invokevirtual #178                // Method com/ishland/flowsched/scheduler/ItemHolder.getKey:()Ljava/lang/Object;
+      20: aastore
+      21: dup
+      22: iconst_1
+      23: aload_2
+      24: aastore
+      25: dup
+      26: iconst_2
+      27: aload         4
+      29: aastore
+      30: invokeinterface #184,  3          // InterfaceMethod org/slf4j/Logger.error:(Ljava/lang/String;[Ljava/lang/Object;)V
+      35: goto          69
+      38: aload_0
+      39: getfield      #101                // Field LOGGER:Lorg/slf4j/Logger;
+      42: ldc           #186                // String Error downgrading chunk {} to \"{}\"
+      44: iconst_3
+      45: anewarray     #69                 // class java/lang/Object
+      48: dup
+      49: iconst_0
+      50: aload_1
+      51: invokevirtual #178                // Method com/ishland/flowsched/scheduler/ItemHolder.getKey:()Ljava/lang/Object;
+      54: aastore
+      55: dup
+      56: iconst_1
+      57: aload_2
+      58: aastore
+      59: dup
+      60: iconst_2
+      61: aload         4
+      63: aastore
+      64: invokeinterface #184,  3          // InterfaceMethod org/slf4j/Logger.error:(Ljava/lang/String;[Ljava/lang/Object;)V
+      69: aload_0
+      70: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+      73: checkcast     #71                 // class com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage
+      76: invokeinterface #75,  1           // InterfaceMethod com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage.getWorld:()Lnet/minecraft/class_3218;
+      81: invokevirtual #190                // Method net/minecraft/class_3218.method_8503:()Lnet/minecraft/server/MinecraftServer;
+      84: astore        5
+      86: aload         5
+      88: aload_0
+      89: aload         5
+      91: aload         4
+      93: aload_1
+      94: invokedynamic #207,  0            // InvokeDynamic #0:run:(Lcom/ishland/c2me/rewrites/chunksystem/common/TheChunkSystem;Lnet/minecraft/server/MinecraftServer;Ljava/lang/Throwable;Lcom/ishland/flowsched/scheduler/ItemHolder;)Ljava/lang/Runnable;
+      99: invokevirtual #213                // Method net/minecraft/server/MinecraftServer.execute:(Ljava/lang/Runnable;)V
+     102: getstatic     #219                // Field com/ishland/flowsched/scheduler/ExceptionHandlingAction.MARK_BROKEN:Lcom/ishland/flowsched/scheduler/ExceptionHandlingAction;
+     105: areturn
+
+  protected void onItemConstruct(com.ishland.flowsched.scheduler.ItemHolder<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext, com.ishland.c2me.rewrites.chunksystem.common.NewChunkHolderVanillaInterface>);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokespecial #227                // Method com/ishland/flowsched/scheduler/StatusAdvancingScheduler.onItemConstruct:(Lcom/ishland/flowsched/scheduler/ItemHolder;)V
+       5: aload_1
+       6: invokevirtual #231                // Method com/ishland/flowsched/scheduler/ItemHolder.getUserData:()Ljava/util/concurrent/atomic/AtomicReference;
+       9: new           #233                // class com/ishland/c2me/rewrites/chunksystem/common/NewChunkHolderVanillaInterface
+      12: dup
+      13: aload_0
+      14: aload_1
+      15: aload_0
+      16: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+      19: checkcast     #71                 // class com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage
+      22: invokeinterface #75,  1           // InterfaceMethod com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage.getWorld:()Lnet/minecraft/class_3218;
+      27: aload_0
+      28: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+      31: checkcast     #71                 // class com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage
+      34: invokeinterface #237,  1          // InterfaceMethod com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage.getLightingProvider:()Lnet/minecraft/class_3227;
+      39: aload_0
+      40: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+      43: invokespecial #240                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkHolderVanillaInterface."<init>":(Lcom/ishland/c2me/rewrites/chunksystem/common/TheChunkSystem;Lcom/ishland/flowsched/scheduler/ItemHolder;Lnet/minecraft/class_5539;Lnet/minecraft/class_3568;Lnet/minecraft/class_3193$class_3897;)V
+      46: invokevirtual #246                // Method java/util/concurrent/atomic/AtomicReference.setPlain:(Ljava/lang/Object;)V
+      49: aload_1
+      50: invokevirtual #249                // Method com/ishland/flowsched/scheduler/ItemHolder.getItem:()Ljava/util/concurrent/atomic/AtomicReference;
+      53: new           #251                // class com/ishland/c2me/rewrites/chunksystem/common/ChunkState
+      56: dup
+      57: aconst_null
+      58: aconst_null
+      59: aconst_null
+      60: iconst_1
+      61: invokespecial #254                // Method com/ishland/c2me/rewrites/chunksystem/common/ChunkState."<init>":(Lnet/minecraft/class_2791;Lnet/minecraft/class_2839;Lnet/minecraft/class_2806;Z)V
+      64: invokevirtual #246                // Method java/util/concurrent/atomic/AtomicReference.setPlain:(Ljava/lang/Object;)V
+      67: return
+
+  protected void onItemCreation(com.ishland.flowsched.scheduler.ItemHolder<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext, com.ishland.c2me.rewrites.chunksystem.common.NewChunkHolderVanillaInterface>);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokespecial #257                // Method com/ishland/flowsched/scheduler/StatusAdvancingScheduler.onItemCreation:(Lcom/ishland/flowsched/scheduler/ItemHolder;)V
+       5: return
+
+  protected void onItemRemoval(com.ishland.flowsched.scheduler.ItemHolder<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext, com.ishland.c2me.rewrites.chunksystem.common.NewChunkHolderVanillaInterface>);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokespecial #260                // Method com/ishland/flowsched/scheduler/StatusAdvancingScheduler.onItemRemoval:(Lcom/ishland/flowsched/scheduler/ItemHolder;)V
+       5: return
+
+  protected void onItemUpgrade(com.ishland.flowsched.scheduler.ItemHolder<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext, com.ishland.c2me.rewrites.chunksystem.common.NewChunkHolderVanillaInterface>, com.ishland.flowsched.scheduler.ItemStatus<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext>);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokespecial #266                // Method com/ishland/flowsched/scheduler/StatusAdvancingScheduler.onItemUpgrade:(Lcom/ishland/flowsched/scheduler/ItemHolder;Lcom/ishland/flowsched/scheduler/ItemStatus;)V
+       6: aload_2
+       7: checkcast     #103                // class com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus
+      10: astore_3
+      11: aload_2
+      12: invokeinterface #271,  1          // InterfaceMethod com/ishland/flowsched/scheduler/ItemStatus.getPrev:()Lcom/ishland/flowsched/scheduler/ItemStatus;
+      17: checkcast     #103                // class com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus
+      20: astore        4
+      22: aload_0
+      23: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+      26: checkcast     #71                 // class com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage
+      29: invokeinterface #275,  1          // InterfaceMethod com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage.getWorldGenerationProgressListener:()Lnet/minecraft/class_3949;
+      34: astore        5
+      36: aload         5
+      38: ifnull        71
+      41: aload         4
+      43: invokevirtual #279                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.getEffectiveVanillaStatus:()Lnet/minecraft/class_2806;
+      46: aload_3
+      47: invokevirtual #279                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.getEffectiveVanillaStatus:()Lnet/minecraft/class_2806;
+      50: if_acmpeq     71
+      53: aload         5
+      55: aload_1
+      56: invokevirtual #178                // Method com/ishland/flowsched/scheduler/ItemHolder.getKey:()Ljava/lang/Object;
+      59: checkcast     #281                // class net/minecraft/class_1923
+      62: aload_3
+      63: invokevirtual #279                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.getEffectiveVanillaStatus:()Lnet/minecraft/class_2806;
+      66: invokeinterface #287,  3          // InterfaceMethod net/minecraft/class_3949.method_17670:(Lnet/minecraft/class_1923;Lnet/minecraft/class_2806;)V
+      71: aload         4
+      73: invokevirtual #291                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.toChunkLevelType:()Lnet/minecraft/class_3194;
+      76: aload_3
+      77: invokevirtual #291                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.toChunkLevelType:()Lnet/minecraft/class_3194;
+      80: if_acmpeq     106
+      83: aload_0
+      84: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+      87: checkcast     #71                 // class com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage
+      90: invokeinterface #295,  1          // InterfaceMethod com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage.getMainThreadExecutor:()Lnet/minecraft/class_1255;
+      95: aload_0
+      96: aload_1
+      97: aload_3
+      98: invokedynamic #303,  0            // InvokeDynamic #1:run:(Lcom/ishland/c2me/rewrites/chunksystem/common/TheChunkSystem;Lcom/ishland/flowsched/scheduler/ItemHolder;Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;)Ljava/lang/Runnable;
+     103: invokevirtual #306                // Method net/minecraft/class_1255.execute:(Ljava/lang/Runnable;)V
+     106: return
+
+  protected void onItemDowngrade(com.ishland.flowsched.scheduler.ItemHolder<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext, com.ishland.c2me.rewrites.chunksystem.common.NewChunkHolderVanillaInterface>, com.ishland.flowsched.scheduler.ItemStatus<net.minecraft.class_1923, com.ishland.c2me.rewrites.chunksystem.common.ChunkState, com.ishland.c2me.rewrites.chunksystem.common.ChunkLoadingContext>);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokespecial #313                // Method com/ishland/flowsched/scheduler/StatusAdvancingScheduler.onItemDowngrade:(Lcom/ishland/flowsched/scheduler/ItemHolder;Lcom/ishland/flowsched/scheduler/ItemStatus;)V
+       6: aload_2
+       7: checkcast     #103                // class com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus
+      10: astore_3
+      11: aload_2
+      12: invokeinterface #316,  1          // InterfaceMethod com/ishland/flowsched/scheduler/ItemStatus.getNext:()Lcom/ishland/flowsched/scheduler/ItemStatus;
+      17: checkcast     #103                // class com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus
+      20: astore        4
+      22: aload_0
+      23: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+      26: checkcast     #71                 // class com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage
+      29: invokeinterface #275,  1          // InterfaceMethod com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage.getWorldGenerationProgressListener:()Lnet/minecraft/class_3949;
+      34: astore        5
+      36: aload         5
+      38: ifnull        71
+      41: aload         4
+      43: invokevirtual #279                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.getEffectiveVanillaStatus:()Lnet/minecraft/class_2806;
+      46: aload_3
+      47: invokevirtual #279                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.getEffectiveVanillaStatus:()Lnet/minecraft/class_2806;
+      50: if_acmpeq     71
+      53: aload         5
+      55: aload_1
+      56: invokevirtual #178                // Method com/ishland/flowsched/scheduler/ItemHolder.getKey:()Ljava/lang/Object;
+      59: checkcast     #281                // class net/minecraft/class_1923
+      62: aload_3
+      63: invokevirtual #279                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.getEffectiveVanillaStatus:()Lnet/minecraft/class_2806;
+      66: invokeinterface #287,  3          // InterfaceMethod net/minecraft/class_3949.method_17670:(Lnet/minecraft/class_1923;Lnet/minecraft/class_2806;)V
+      71: aload         4
+      73: invokevirtual #291                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.toChunkLevelType:()Lnet/minecraft/class_3194;
+      76: aload_3
+      77: invokevirtual #291                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.toChunkLevelType:()Lnet/minecraft/class_3194;
+      80: if_acmpeq     106
+      83: aload_0
+      84: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+      87: checkcast     #71                 // class com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage
+      90: invokeinterface #295,  1          // InterfaceMethod com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage.getMainThreadExecutor:()Lnet/minecraft/class_1255;
+      95: aload_0
+      96: aload_1
+      97: aload_3
+      98: invokedynamic #321,  0            // InvokeDynamic #2:run:(Lcom/ishland/c2me/rewrites/chunksystem/common/TheChunkSystem;Lcom/ishland/flowsched/scheduler/ItemHolder;Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;)Ljava/lang/Runnable;
+     103: invokevirtual #306                // Method net/minecraft/class_1255.execute:(Ljava/lang/Runnable;)V
+     106: return
+
+  public net.minecraft.class_3193 vanillaIf$setLevel(long, int);
+    Code:
+       0: getstatic     #151                // Field $assertionsDisabled:Z
+       3: ifne          24
+       6: aload_0
+       7: getfield      #55                 // Field managedTickets:Lit/unimi/dsi/fastutil/longs/Long2IntMap;
+      10: invokestatic  #331                // Method java/lang/Thread.holdsLock:(Ljava/lang/Object;)Z
+      13: ifeq          24
+      16: new           #153                // class java/lang/AssertionError
+      19: dup
+      20: invokespecial #154                // Method java/lang/AssertionError."<init>":()V
+      23: athrow
+      24: aload_0
+      25: getfield      #55                 // Field managedTickets:Lit/unimi/dsi/fastutil/longs/Long2IntMap;
+      28: dup
+      29: astore        4
+      31: monitorenter
+      32: aload_0
+      33: getfield      #55                 // Field managedTickets:Lit/unimi/dsi/fastutil/longs/Long2IntMap;
+      36: lload_1
+      37: iload_3
+      38: invokeinterface #335,  4          // InterfaceMethod it/unimi/dsi/fastutil/longs/Long2IntMap.put:(JI)I
+      43: istore        5
+      45: iload         5
+      47: invokestatic  #339                // Method c2me$getDeferredStatusFromVanillaLevel:(I)Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;
+      50: astore        6
+      52: iload_3
+      53: invokestatic  #339                // Method c2me$getDeferredStatusFromVanillaLevel:(I)Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;
+      56: astore        7
+      58: new           #281                // class net/minecraft/class_1923
+      61: dup
+      62: lload_1
+      63: invokespecial #342                // Method net/minecraft/class_1923."<init>":(J)V
+      66: astore        8
+      68: aload         6
+      70: aload         7
+      72: if_acmpeq     228
+      75: aload         7
+      77: aload_0
+      78: invokevirtual #344                // Method getUnloadedStatus:()Lcom/ishland/flowsched/scheduler/ItemStatus;
+      81: if_acmpeq     106
+      84: aload_0
+      85: aload         8
+      87: getstatic     #350                // Field com/ishland/c2me/rewrites/chunksystem/common/TicketTypeExtension.VANILLA_LEVEL:Lcom/ishland/flowsched/scheduler/ItemTicket$TicketType;
+      90: aload         8
+      92: aload         7
+      94: aconst_null
+      95: invokevirtual #354                // Method addTicket:(Ljava/lang/Object;Lcom/ishland/flowsched/scheduler/ItemTicket$TicketType;Ljava/lang/Object;Lcom/ishland/flowsched/scheduler/ItemStatus;Ljava/lang/Runnable;)Lcom/ishland/flowsched/scheduler/ItemHolder;
+      98: astore        10
+     100: iconst_1
+     101: istore        11
+     103: goto          128
+     106: aload_0
+     107: getfield      #55                 // Field managedTickets:Lit/unimi/dsi/fastutil/longs/Long2IntMap;
+     110: lload_1
+     111: invokeinterface #358,  3          // InterfaceMethod it/unimi/dsi/fastutil/longs/Long2IntMap.remove:(J)I
+     116: pop
+     117: aload_0
+     118: aload         8
+     120: invokevirtual #362                // Method getHolder:(Ljava/lang/Object;)Lcom/ishland/flowsched/scheduler/ItemHolder;
+     123: astore        10
+     125: iconst_0
+     126: istore        11
+     128: aload         10
+     130: ifnull        137
+     133: iconst_1
+     134: goto          138
+     137: iconst_0
+     138: ldc_w         #364                // String Holder should be managed by the vanilla interface
+     141: invokestatic  #367                // Method com/ishland/flowsched/util/Assertions.assertTrue:(ZLjava/lang/String;)V
+     144: getstatic     #151                // Field $assertionsDisabled:Z
+     147: ifne          163
+     150: aload         10
+     152: ifnonnull     163
+     155: new           #153                // class java/lang/AssertionError
+     158: dup
+     159: invokespecial #154                // Method java/lang/AssertionError."<init>":()V
+     162: athrow
+     163: aload         10
+     165: invokevirtual #231                // Method com/ishland/flowsched/scheduler/ItemHolder.getUserData:()Ljava/util/concurrent/atomic/AtomicReference;
+     168: invokevirtual #370                // Method java/util/concurrent/atomic/AtomicReference.get:()Ljava/lang/Object;
+     171: checkcast     #233                // class com/ishland/c2me/rewrites/chunksystem/common/NewChunkHolderVanillaInterface
+     174: astore        9
+     176: getstatic     #375                // Field com/ishland/c2me/rewrites/chunksystem/common/Config.useLegacyScheduling:Z
+     179: ifne          191
+     182: aload         9
+     184: iload_3
+     185: invokestatic  #378                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.fromVanillaLevel:(I)Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;
+     188: invokevirtual #382                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkHolderVanillaInterface.updateDeferredStatus:(Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;)V
+     191: aload         6
+     193: aload_0
+     194: invokevirtual #344                // Method getUnloadedStatus:()Lcom/ishland/flowsched/scheduler/ItemStatus;
+     197: if_acmpeq     213
+     200: aload_0
+     201: aload         8
+     203: getstatic     #350                // Field com/ishland/c2me/rewrites/chunksystem/common/TicketTypeExtension.VANILLA_LEVEL:Lcom/ishland/flowsched/scheduler/ItemTicket$TicketType;
+     206: aload         8
+     208: aload         6
+     210: invokevirtual #386                // Method removeTicket:(Ljava/lang/Object;Lcom/ishland/flowsched/scheduler/ItemTicket$TicketType;Ljava/lang/Object;Lcom/ishland/flowsched/scheduler/ItemStatus;)V
+     213: iload         11
+     215: ifeq          223
+     218: aload         9
+     220: goto          224
+     223: aconst_null
+     224: aload         4
+     226: monitorexit
+     227: areturn
+     228: aload_0
+     229: aload         8
+     231: invokevirtual #362                // Method getHolder:(Ljava/lang/Object;)Lcom/ishland/flowsched/scheduler/ItemHolder;
+     234: astore        9
+     236: aload         9
+     238: ifnull        257
+     241: aload         9
+     243: invokevirtual #231                // Method com/ishland/flowsched/scheduler/ItemHolder.getUserData:()Ljava/util/concurrent/atomic/AtomicReference;
+     246: invokevirtual #370                // Method java/util/concurrent/atomic/AtomicReference.get:()Ljava/lang/Object;
+     249: checkcast     #233                // class com/ishland/c2me/rewrites/chunksystem/common/NewChunkHolderVanillaInterface
+     252: astore        10
+     254: goto          260
+     257: aconst_null
+     258: astore        10
+     260: getstatic     #375                // Field com/ishland/c2me/rewrites/chunksystem/common/Config.useLegacyScheduling:Z
+     263: ifne          280
+     266: aload         10
+     268: ifnull        280
+     271: aload         10
+     273: iload_3
+     274: invokestatic  #378                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.fromVanillaLevel:(I)Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;
+     277: invokevirtual #382                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkHolderVanillaInterface.updateDeferredStatus:(Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;)V
+     280: aload         7
+     282: aload_0
+     283: invokevirtual #344                // Method getUnloadedStatus:()Lcom/ishland/flowsched/scheduler/ItemStatus;
+     286: if_acmpeq     300
+     289: aload         10
+     291: ifnull        300
+     294: aload         10
+     296: aload         4
+     298: monitorexit
+     299: areturn
+     300: aconst_null
+     301: aload         4
+     303: monitorexit
+     304: areturn
+     305: astore        12
+     307: aload         4
+     309: monitorexit
+     310: aload         12
+     312: athrow
+    Exception table:
+       from    to  target type
+          32   227   305   any
+         228   299   305   any
+         300   304   305   any
+         305   310   305   any
+
+  private static com.ishland.c2me.rewrites.chunksystem.common.NewChunkStatus c2me$getDeferredStatusFromVanillaLevel(int);
+    Code:
+       0: iload_0
+       1: invokestatic  #378                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.fromVanillaLevel:(I)Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;
+       4: astore_1
+       5: getstatic     #375                // Field com/ishland/c2me/rewrites/chunksystem/common/Config.useLegacyScheduling:Z
+       8: ifne          39
+      11: aload_1
+      12: getstatic     #136                // Field com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.NEW:Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;
+      15: if_acmpne     20
+      18: aload_1
+      19: areturn
+      20: aload_1
+      21: invokevirtual #402                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.ordinal:()I
+      24: getstatic     #405                // Field com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.SERVER_ACCESSIBLE:Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;
+      27: invokevirtual #402                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.ordinal:()I
+      30: if_icmpge     37
+      33: getstatic     #408                // Field com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.DEFERRED:Lcom/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus;
+      36: areturn
+      37: aload_1
+      38: areturn
+      39: aload_1
+      40: areturn
+
+  public int vanillaIf$getManagedLevel(long);
+    Code:
+       0: aload_0
+       1: getfield      #55                 // Field managedTickets:Lit/unimi/dsi/fastutil/longs/Long2IntMap;
+       4: lload_1
+       5: invokeinterface #412,  3          // InterfaceMethod it/unimi/dsi/fastutil/longs/Long2IntMap.get:(J)I
+      10: ireturn
+
+  protected java.lang.Object makeContext(com.ishland.flowsched.scheduler.ItemHolder, com.ishland.flowsched.scheduler.ItemStatus, com.ishland.flowsched.scheduler.KeyStatusPair[], boolean);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: aload_3
+       4: iload         4
+       6: invokevirtual #415                // Method makeContext:(Lcom/ishland/flowsched/scheduler/ItemHolder;Lcom/ishland/flowsched/scheduler/ItemStatus;[Lcom/ishland/flowsched/scheduler/KeyStatusPair;Z)Lcom/ishland/c2me/rewrites/chunksystem/common/ChunkLoadingContext;
+       9: areturn
+
+  private void lambda$onItemDowngrade$0(com.ishland.flowsched.scheduler.ItemHolder, com.ishland.c2me.rewrites.chunksystem.common.NewChunkStatus);
+    Code:
+       0: aload_0
+       1: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+       4: checkcast     #71                 // class com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage
+       7: aload_1
+       8: invokevirtual #178                // Method com/ishland/flowsched/scheduler/ItemHolder.getKey:()Ljava/lang/Object;
+      11: checkcast     #281                // class net/minecraft/class_1923
+      14: aload_2
+      15: invokevirtual #291                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.toChunkLevelType:()Lnet/minecraft/class_3194;
+      18: invokeinterface #419,  3          // InterfaceMethod com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage.invokeOnChunkStatusChange:(Lnet/minecraft/class_1923;Lnet/minecraft/class_3194;)V
+      23: return
+
+  private void lambda$onItemUpgrade$0(com.ishland.flowsched.scheduler.ItemHolder, com.ishland.c2me.rewrites.chunksystem.common.NewChunkStatus);
+    Code:
+       0: aload_0
+       1: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+       4: checkcast     #71                 // class com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage
+       7: aload_1
+       8: invokevirtual #178                // Method com/ishland/flowsched/scheduler/ItemHolder.getKey:()Ljava/lang/Object;
+      11: checkcast     #281                // class net/minecraft/class_1923
+      14: aload_2
+      15: invokevirtual #291                // Method com/ishland/c2me/rewrites/chunksystem/common/NewChunkStatus.toChunkLevelType:()Lnet/minecraft/class_3194;
+      18: invokeinterface #419,  3          // InterfaceMethod com/ishland/c2me/base/mixin/access/IThreadedAnvilChunkStorage.invokeOnChunkStatusChange:(Lnet/minecraft/class_1923;Lnet/minecraft/class_3194;)V
+      23: return
+
+  private void lambda$handleTransactionException$0(net.minecraft.server.MinecraftServer, java.lang.Throwable, com.ishland.flowsched.scheduler.ItemHolder);
+    Code:
+       0: aload_1
+       1: aload_2
+       2: aload_0
+       3: getfield      #57                 // Field tacs:Lnet/minecraft/class_3898;
+       6: checkcast     #421                // class com/ishland/c2me/base/mixin/access/IVersionedChunkStorage
+       9: invokeinterface #425,  1          // InterfaceMethod com/ishland/c2me/base/mixin/access/IVersionedChunkStorage.invokeGetStorageKey:()Lnet/minecraft/class_9240;
+      14: aload_3
+      15: invokevirtual #178                // Method com/ishland/flowsched/scheduler/ItemHolder.getKey:()Ljava/lang/Object;
+      18: checkcast     #281                // class net/minecraft/class_1923
+      21: invokevirtual #429                // Method net/minecraft/server/MinecraftServer.method_57821:(Ljava/lang/Throwable;Lnet/minecraft/class_9240;Lnet/minecraft/class_1923;)V
+      24: return
+
+  static {};
+    Code:
+       0: ldc           #2                  // class com/ishland/c2me/rewrites/chunksystem/common/TheChunkSystem
+       2: invokevirtual #436                // Method java/lang/Class.desiredAssertionStatus:()Z
+       5: ifne          12
+       8: iconst_1
+       9: goto          13
+      12: iconst_0
+      13: putstatic     #151                // Field $assertionsDisabled:Z
+      16: return
+}

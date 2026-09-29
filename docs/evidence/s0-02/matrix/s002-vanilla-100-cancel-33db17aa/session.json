@@ -1,0 +1,15 @@
+{
+  "lifecycleEvent": "STOPPING",
+  "counts": {
+    "WAIT_PLAN_NO_LOCK": 9,
+    "REQUEST_PLAN": 9
+  },
+  "session": "1eb58933-a1af-4566-abac-6e1a6ab5563c",
+  "inFlight": 0,
+  "planner": {
+    "startupPumpSlices": 374,
+    "computations": 7
+  },
+  "state": "CLOSED",
+  "failure": {}
+}

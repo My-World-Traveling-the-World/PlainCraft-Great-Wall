@@ -1,0 +1,30 @@
+[
+  {
+    "profile": "vanilla",
+    "runId": "s002-vanilla-1-success-d2534489",
+    "class": "net\\minecraft\\server\\level\\ChunkMap.class",
+    "sha256": "bb76b5b147086755338d2a48e8ba47ace346cbe2b5f34e89d37e8a2520c6d3a4",
+    "injection": "greatwall\\$gate"
+  },
+  {
+    "profile": "tectonic-c2me",
+    "runId": "s002-tectonic-c2me-1-success-2ad45d8b",
+    "class": "net\\minecraft\\server\\level\\ChunkMap.class",
+    "sha256": "ad07bf561631ec284bf5ba6b445fc47623912fa1e20f6aa1d53558af43de6bb0",
+    "injection": "greatwall\\$gate"
+  },
+  {
+    "profile": "tectonic-c2me",
+    "runId": "s002-tectonic-c2me-1-success-2ad45d8b",
+    "class": "com\\ishland\\c2me\\rewrites\\chunksystem\\common\\statuses\\VanillaWorldGenerationDelegate.class",
+    "sha256": "cacce4d05b02ecb1c46f11020885e1524fc914f37c86959c4c5143a69320499c",
+    "injection": "greatwall\\$beforeLock"
+  },
+  {
+    "profile": "tectonic-c2me-rewrite-off",
+    "runId": "s002-tectonic-c2me-off-1-success-26596768",
+    "class": "net\\minecraft\\server\\level\\ChunkMap.class",
+    "sha256": "584f024213dc4f0a51fb297f01c0c755c06ab182ce82bdca2a6efea0bacddd56",
+    "injection": "greatwall\\$gate"
+  }
+]

@@ -1,0 +1,29 @@
+// Compile-only Rx API from the already certified, local patched C2ME artifact.
+// No repository resolution, installation or binary modification is involved.
+def rxFiles = providers.provider {
+    def environment = new groovy.json.JsonSlurper().parse(file('docs/evidence/s0-01/environment.json'))
+    def c2me = environment.artifacts.find { it.id == 'c2me' }
+    def source = file(c2me.path)
+    def digest = java.security.MessageDigest.getInstance('SHA-256')
+    source.withInputStream { stream ->
+        byte[] buffer = new byte[65536]
+        for (int count; (count = stream.read(buffer)) != -1;) { digest.update(buffer, 0, count) }
+    }
+    if (digest.digest().encodeHex().toString() != c2me.sha256) {
+        throw new GradleException('Pinned local C2ME bytes changed; refuse to build this adapter')
+    }
+    def result = []
+    new java.util.zip.ZipFile(source).withCloseable { zip ->
+        ['rxjava-3.1.12.jar', 'reactive-streams-1.0.4.jar'].each { name ->
+            def target = layout.buildDirectory.file("locked-api/${name}").get().asFile
+            byte[] bytes = zip.getInputStream(zip.getEntry("META-INF/jars/${name}")).withCloseable { it.readAllBytes() }
+            if (!target.exists() || !java.util.Arrays.equals(target.bytes, bytes)) {
+                target.parentFile.mkdirs()
+                target.bytes = bytes
+            }
+            result.add(target)
+        }
+    }
+    result
+}
+dependencies { compileOnly files(rxFiles) }

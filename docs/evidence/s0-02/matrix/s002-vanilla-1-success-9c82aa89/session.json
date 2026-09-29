@@ -1,0 +1,23 @@
+{
+  "lifecycleEvent": "STOPPED",
+  "counts": {
+    "PLAN_READY": 81,
+    "WAIT_PLAN_NO_LOCK": 81,
+    "STARTUP_WARMING": 1,
+    "REQUEST_PLAN": 81,
+    "RECIPE_ACCEPTED": 2,
+    "STAGE_ENTER": 81,
+    "STAGE_EXIT": 81,
+    "RECIPE_REJECTED": 1
+  },
+  "session": "746034ea-5d18-4e2d-ae03-a6f24695c6db",
+  "inFlight": 0,
+  "planner": {
+    "startupPumpSlices": 6,
+    "computations": 5
+  },
+  "state": "CLOSED",
+  "failure": {
+    "reason": "java.lang.IllegalStateException: WORLD_RECIPE_MISMATCH: generation resources changed; create a new world"
+  }
+}
