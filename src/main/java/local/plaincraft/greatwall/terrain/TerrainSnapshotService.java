@@ -85,7 +85,14 @@ public final class TerrainSnapshotService implements AutoCloseable {
                 active();return forecast(owner,keys,hints);
             }),io).thenComposeAsync(bytes->{
                 active();var pin=allocations.reserve(bytes);retained.put("capture",pin);
-                return io(()->accounted(scratchBudget,()->readSaved(coverage,keys,recipeHash),false));
+                return io(()->{
+                    // This owner has no newly captured payload yet. Cold decoding borrows both
+                    // existing parent pins, then hands retained data back to the forecast pin.
+                    // Later capture/persistence still uses only the fixed 24 MiB scratch arena.
+                    try(var coldBudget=new AllocationBudget(Math.addExact(bytes,24L<<20))) {
+                        return accounted(coldBudget,()->readSaved(coverage,keys,recipeHash),false);
+                    }
+                });
             },io).thenComposeAsync(saved->
                     engine.exclusive(owner.getPos(),()->{
                         active();var marker=owner.getAttached(TerrainMarkers.PRODUCTION);
