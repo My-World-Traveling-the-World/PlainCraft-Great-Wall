@@ -1,0 +1,43 @@
+{
+  "snapshot": "3dc84cbed156d0cf9455488e9732b8e1110dcaa5",
+  "classes": "CurvedSiteMatrixTests",
+  "started": "2026-09-30T14:30:07.1933010+08:00",
+  "finished": "2026-09-30T15:56:41.9428506+08:00",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build\\curved-gate-shards\\regression-20260930-gate-v2\\curved-sites",
+  "javaHome": "C:\\Program Files\\Java\\jdk-21",
+  "arguments": [
+    "--offline",
+    "--dependency-verification=strict",
+    "runGameTest",
+    "-PgreatwallGameTestClasses=CurvedSiteMatrixTests",
+    "-PgreatwallTestHeap=1536m",
+    "--rerun-tasks",
+    "--no-build-cache",
+    "--console=plain",
+    "--no-daemon"
+  ],
+  "exitCode": 0,
+  "wrapperFailure": null,
+  "files": [
+    {
+      "sha256": "C290F27300E4A021A9F44AC08DEF591D45573D966842A30932BC31950E5DD022",
+      "bytes": 367806,
+      "name": "debug.log"
+    },
+    {
+      "sha256": "1384482BE5AEE2CCB589EC246CD129E618082DEA57F95E05084AC3FC47377EDA",
+      "bytes": 39171,
+      "name": "gradle.log"
+    },
+    {
+      "sha256": "CEAAEBD55D74E37F17B93C21B3AD229511C89EB0B03569CB5B978416F4D371A6",
+      "bytes": 37626,
+      "name": "latest.log"
+    },
+    {
+      "sha256": "4877E66479A1472085F4ECE2E280901F6495290D477109EF2CF7977CC7C631C4",
+      "bytes": 312,
+      "name": "results.xml"
+    }
+  ]
+}

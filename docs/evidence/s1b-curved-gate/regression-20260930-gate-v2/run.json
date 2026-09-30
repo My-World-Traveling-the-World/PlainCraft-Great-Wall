@@ -1,0 +1,18 @@
+{
+  "snapshot": "3dc84cbed156d0cf9455488e9732b8e1110dcaa5",
+  "runId": "regression-20260930-gate-v2",
+  "started": "2026-09-30T14:30:09.7888738+08:00",
+  "archiveSha256": "3CC89ACD05EA97A2B514DB20F6CAAAC2F691D99276D8AB6926AEF646644012CF",
+  "shards": [
+    {
+      "evidence": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1b-curved-gate\\regression-20260930-gate-v2\\curved-sites",
+      "name": "curved-sites",
+      "pid": 2520
+    },
+    {
+      "evidence": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\docs\\evidence\\s1b-curved-gate\\regression-20260930-gate-v2\\adjacent",
+      "name": "adjacent",
+      "pid": 7588
+    }
+  ]
+}

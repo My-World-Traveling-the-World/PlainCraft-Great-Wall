@@ -1,0 +1,43 @@
+{
+  "snapshot": "3dc84cbed156d0cf9455488e9732b8e1110dcaa5",
+  "classes": "AdjacentComponentMatrixTests",
+  "started": "2026-09-30T14:30:10.2296670+08:00",
+  "finished": "2026-09-30T16:35:02.4599101+08:00",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build\\curved-gate-shards\\regression-20260930-gate-v2\\adjacent",
+  "javaHome": "C:\\Program Files\\Java\\jdk-21",
+  "arguments": [
+    "--offline",
+    "--dependency-verification=strict",
+    "runGameTest",
+    "-PgreatwallGameTestClasses=AdjacentComponentMatrixTests",
+    "-PgreatwallTestHeap=1536m",
+    "--rerun-tasks",
+    "--no-build-cache",
+    "--console=plain",
+    "--no-daemon"
+  ],
+  "exitCode": 0,
+  "wrapperFailure": null,
+  "files": [
+    {
+      "name": "debug.log",
+      "bytes": 448513,
+      "sha256": "4CFA204CDE8CFCA855C443737D9558D285CA3FA50046BC1BE68BF9F88EFF292C"
+    },
+    {
+      "name": "gradle.log",
+      "bytes": 107802,
+      "sha256": "23E762B9008021087C9C6F3AC3547DD61DA2F9B4DEF2540E3C89C8092096F8B0"
+    },
+    {
+      "name": "latest.log",
+      "bytes": 106255,
+      "sha256": "4BD85FE5E774CCB34D988540CADE35046C9FF2F7F3B1DBF1235D8C1C0924C21B"
+    },
+    {
+      "name": "results.xml",
+      "bytes": 1317,
+      "sha256": "2DB062FF5507F835EE2A04D790ABBAA58B73502FD06A791395A17D3AEFDDE1F3"
+    }
+  ]
+}
