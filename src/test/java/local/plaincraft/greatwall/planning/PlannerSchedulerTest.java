@@ -133,6 +133,33 @@ class PlannerSchedulerTest {
         }
     }
 
+    @Test void prewarmedStartupStillServesNewPlansBeforeFirstTick() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> new AnalyticTerrainOracle(
+                     (x, z) -> AnalyticTerrainOracle.dry(64), true),
+                     new SegmentCacheStore(directory.resolve("cache"), recipe), io)) {
+            scheduler.startupPump();
+            long timeout = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+            while (!scheduler.diagnostics().containsKey("startup-ready") && System.nanoTime() < timeout) {
+                assertFalse(scheduler.diagnostics().containsKey("startup-failed"));
+                Thread.sleep(2);
+            }
+            assertTrue(scheduler.diagnostics().containsKey("startup-ready"), "prewarm must finish before the counterexample");
+            try (var later = scheduler.requirePlan(6, Priority.PLAYER)) {
+                var plan = later.future().get(10, TimeUnit.SECONDS);
+                assertEquals(6, plan.geometry().key().index());
+                assertFalse(plan.stations().stations().isEmpty());
+            }
+            scheduler.tick(new SliceBudget(4096, System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25)));
+            timeout = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (!scheduler.diagnostics().containsKey("startup-handoff") && System.nanoTime() < timeout) {
+                Thread.sleep(2);
+            }
+            assertTrue(scheduler.diagnostics().containsKey("startup-handoff"), "first tick must retire the startup timer");
+        }
+    }
+
     @Test void otherDimensionAndDistantLateralChunksReturnExplicitEmptyWindows() throws Exception {
         var recipe = PlanningFixtures.recipe(0);
         try (var io = Executors.newSingleThreadExecutor();

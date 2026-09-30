@@ -8,3 +8,5 @@ docs/evidence/s1b/runtime/s003-tectonic-c2me-c16-52b66d1f-inputs.json -text whit
 # Raw command logs retain Gradle's trailing spaces and final blank lines.
 docs/evidence/s1b/cross-cell/**/*.txt -whitespace
 docs/evidence/s1b/matrix/cross-cell/**/gradle.txt -whitespace
+docs/evidence/s1c/** -text whitespace=cr-at-eol
+docs/evidence/s1c/**/*.log -whitespace

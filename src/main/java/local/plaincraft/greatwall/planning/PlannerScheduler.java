@@ -186,7 +186,8 @@ public final class PlannerScheduler implements AutoCloseable {
                     .whenCompleteAsync((value, error) -> {
                         prewarm.forEach(PlanLease::close);
                         state.put(error == null ? "startup-ready" : "startup-failed", 1L);
-                        if (startupTimer != null) startupTimer.cancel(false);
+                        // Spawn preparation can require another segment after prewarm, before server ticks exist.
+                        if (error != null && startupTimer != null) startupTimer.cancel(false);
                     }, pump);
         });
     }
@@ -199,6 +200,11 @@ public final class PlannerScheduler implements AutoCloseable {
         if (state.putIfAbsent("tick-enqueued", 1L) != null) return;
         pump.execute(() -> {
             state.remove("tick-enqueued");
+            if (startupTimer != null) {
+                startupTimer.cancel(false);
+                startupTimer = null;
+                state.put("startup-handoff", 1L);
+            }
             credits = Math.toIntExact(Math.min(65536, state.getOrDefault("tick-operations", 0L)));
             deadline = state.getOrDefault("tick-deadline", 0L);
             if (state.containsKey("startup-ready") && !state.containsKey("background-terminal") && backgroundLease == null && safeSegment(background)) {

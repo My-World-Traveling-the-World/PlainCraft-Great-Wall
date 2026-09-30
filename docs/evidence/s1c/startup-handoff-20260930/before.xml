@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.planning.PlannerSchedulerTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-09-30T09:36:29.958Z" hostname="CAIMEO" time="10.914">
+  <properties/>
+  <testcase name="prewarmedStartupStillServesNewPlansBeforeFirstTick()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="10.9">
+    <failure message="java.util.concurrent.TimeoutException" type="java.util.concurrent.TimeoutException">java.util.concurrent.TimeoutException
+	at java.base/java.util.concurrent.CompletableFuture.timedGet(CompletableFuture.java:1960)
+	at java.base/java.util.concurrent.CompletableFuture.get(CompletableFuture.java:2095)
+	at local.plaincraft.greatwall.planning.PlannerSchedulerTest.prewarmedStartupStillServesNewPlansBeforeFirstTick(PlannerSchedulerTest.java:150)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
