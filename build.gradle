@@ -26,6 +26,7 @@ dependencyLocking {
 }
 
 loom {
+    accessWidenerPath = file('src/main/resources/plaincraft_great_wall.accesswidener')
     splitEnvironmentSourceSets()
     mods {
         plaincraft_great_wall {

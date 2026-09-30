@@ -4,6 +4,6 @@
   "compatibilityLevel": "JAVA_21",
   "plugin": "local.plaincraft.greatwall.compat.c2me.ProbeMixinPlugin",
   "mixins": ["ChunkMapAccess", "TerrainChunkAccess", "MinecraftServerProbeMixin", "VanillaGateMixin",
-    "NoiseInterpolatorAccess", "NoiseGeneratorAccess"],
+    "NoiseInterpolatorAccess", "NoiseGeneratorAccess", "NoiseSliceMixin"],
   "injectors": {"defaultRequire": 1}
 }

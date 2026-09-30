@@ -6,6 +6,7 @@
   "description": "Great Wall infrastructure prototype. World generation is not implemented or enabled.",
   "environment": "*",
   "mixins": ["plaincraft_great_wall.mixins.json"],
+  "accessWidener": "plaincraft_great_wall.accesswidener",
   "entrypoints": {
     "main": ["local.plaincraft.greatwall.GreatWallMod"],
     "client": ["local.plaincraft.greatwall.client.GreatWallClient"]
