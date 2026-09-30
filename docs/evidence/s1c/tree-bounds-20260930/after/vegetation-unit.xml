@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.generation.VegetationGuardTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-30T16:00:42.154Z" hostname="CAIMEO" time="0.079">
+  <properties/>
+  <testcase name="originOutsideStillSuppressesIntersectingCompleteCanopy()" classname="local.plaincraft.greatwall.generation.VegetationGuardTest" time="0.05"/>
+  <testcase name="unknownOrReleasedOwnerCannotSilentlyPlaceTrees()" classname="local.plaincraft.greatwall.generation.VegetationGuardTest" time="0.011"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
