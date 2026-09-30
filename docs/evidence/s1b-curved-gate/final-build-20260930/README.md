@@ -1,0 +1,10 @@
+# S1B final-build evidence: separate attempts
+
+- `execution.json` and `gradle.log` at this directory's root describe the first, unexcluded `build` attempt. It unexpectedly scheduled all GameTests and was intentionally interrupted after the user approved sharded acceptance. Its exit code is **1**, not PASS. See `interruption.json`; no assertion failure was observed before the interruption. Root `junit/` files are copied pre-existing output; their `fresh=false` flags mean they must not be counted as this run's JUnit results.
+- `interrupted-gametest/` preserves the native logs of that incomplete attempt. Partial successful methods do not make it a completed GameTest run.
+- `dry-run/` records the mandatory, unfiltered `--offline --dependency-verification=strict --dry-run build` check. It confirms that `:runGameTest` and `:test` are both scheduled. The word `SKIPPED` here is dry-run notation, not an executed test result.
+- `scoped-build/` contains the subsequently authorized `build -x runGameTest` run: **exit 0, 279 JUnit tests in 54 suites, zero failures/errors/skips**, with fresh XML and verified hashes. It ran from 17:06:23 to 17:07:49 +08:00; Gradle reports 1m 25s and 12 executed tasks. This build did not run GameTest. Only the s0.3 jar and sources jar have current build timestamps; old s0.1/s0.2 entries in the receipt are existing files, not new outputs.
+
+`scoped-build/verification-attempt-1.json` records a summary-checker error: OrderedDictionary fields were not aggregated as object properties, yielding empty counts. Explicit accumulation of XML attributes and independent testcase nodes then verified 279 tests. No tests, assertions, raw XML, or Gradle results were changed to fix this evidence-only counting error.
+
+The accepted GameTest evidence is the completed `../regression-20260930-gate-v2/` shards (547 and 64 combinations), plus explicitly inference-based inheritance for 576/960/192. This is **sharded evidence plus inference, not one all-green process**. Source input equivalence to snapshot `3dc84cb` is checked separately. No dependency versions, assertions, production code, or Gradle task wiring are changed.

@@ -1,6 +1,76 @@
 # S1B 验收与剩余工作报告
 
-## 当前增量修复状态（2026-09-30，曲坡城门）
+## 当前签收申请（2026-09-30 17:07，Asia/Shanghai）
+
+**可签收状态：本次授权范围内的 S1B 阶段验收项已达成，提交审查；不是审查者已经签收。生产接线仍关闭，本报告不代替 S1C 接线授权。**
+
+**GameTest 采用已审查的分片证据及【推理】继承，非单进程全绿。** 本轮新通过的是全量 JUnit、547 相邻组合和 64 曲坡站点；576/960/192 的继承依据仍明确为【推理】，不改写成修复后全组实测。
+
+### 当前验收结果
+
+| 验收项 | 预期 | 本次实际结果 / 证据等级 |
+|---|---|---|
+| 全量 JUnit，含 S0/S1A/S1B 的全部已发现纯 JUnit | 不筛选，失败/错误/跳过均为 0 | **279/279 PASS，54 suite，0 failure / 0 error / 0 skipped**；54 份 XML 均为本轮新生成，并核对属性计数、实际 testcase 节点及 SHA-256 |
+| 最终严格离线构建 | JDK21、严格校验、强制重跑、禁用 build cache，退出 0 | **PASS，退出码 0**；经用户授权执行 `build -x runGameTest`；17:06:23 至 17:07:49，Gradle 显示 `BUILD SUCCESSFUL in 1m 25s`，12 个任务全部执行 |
+| 相邻构件主矩阵 | 完整 547 个组合，包括完整 HYDRO | **本次新通过 547/547，HYDRO 72/72，退出码 0**；8 个 GameTest 方法，16:35 完成；有独立 `execution.json` |
+| 曲坡站点矩阵 | 完整 64 个组合，保留原 index58 反例及断言 | **本次新通过 64/64，退出码 0**；1 个 GameTest 方法，15:56 完成；有独立 `execution.json` |
+| 曲坡墙 | 历史 576/576，当前修改不传播到该域 | **本次不以完整重跑签收；【推理】继承历史 576/576**：直接调用 WallSection，旧入口传空 gates；新增替换判定为 false，端点收缩不执行 |
+| 装饰 survival | 历史 960/960，孤立模板及依赖不变 | **NOT_RUN /【推理】继承历史 960/960**：直接编译孤立模板，Gate/Ramp 等未改，WALL 使用空 gates 路径；不认证合并后的装饰 |
+| 马道地面入口 | 历史 192/192，Ramp/Assembly/fixture 不变 | **本次不以完整重跑签收；【推理】继承历史 192/192**：直接调用未修改的 Ramp.compileBetween 及原碰撞 fixture |
+
+547 和 64 合计是 **611 个参数组合 / 9 个 GameTest 方法**，不把组合数当作方法数；279 项全量 JUnit 已包含此前定向 38 项，不重复相加。三个继承域的历史通过是【已验证，仅原运行输入域】；继承到当前源码是【推理：调用路径/差异隔离】。可核调用链、风险和反例见 `S1B-曲坡城门修复.md` 第 4 节。
+
+**继承撤销条件：** 后续修改通用模板、palette、Rasterizer、fixture、相关依赖，或改变空 gates 的控制流，即撤销对应继承并重新界定回归范围；本次通过不覆盖 Gate 混合曲线以外的未知输入域。
+
+### 原命令、dry-run 与获批命令的区别
+
+1. 首次按原命令执行未排除的 `build`。它实际启动了 `:runGameTest`，不是只跑 JUnit。用户批准分片验收后，17:04 主动停止该次重复 GameTest；**该尝试退出 1，为人为中止，不是成功构建**。中止前未观察到断言失败，不据此宣称剩余测试通过；原 13:40 进程消失原因仍未查明，与本次主动停止是两件事。
+2. 按用户追加要求执行未筛选的 `--offline --dependency-verification=strict --dry-run build --console=plain --no-daemon`，退出 0。任务图明确列出 `:runGameTest SKIPPED` 与 `:test SKIPPED`；这里 SKIPPED 是 dry-run 记法，**不代表运行或跳过了某条测试断言**。
+3. 只有确认上述依赖后，才使用用户明确批准的 `build -x runGameTest`。没有修改 Gradle 任务接线，没有 `@Disabled`、断言放宽、JUnit `--tests` 过滤或矩阵域删减。最终命令实际执行 `:test`，没有执行 `:runGameTest`。
+
+首次中止尝试中，日志另外出现曲坡墙 576 项失败 0、马道入口 192/192 等局部完成记录；它们仅保留作旁证，**不把未完整退出的尝试升级为全量 GameTest 通过，不替换本次获批的【推理】继承口径**。该尝试目录内复制的 6 份旧 JUnit XML 均标记 `fresh=false`，不计入 279；计数只来自 `scoped-build/junit/`。
+
+### 证据、源码身份与产物
+
+证据根目录为 `D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b-curved-gate\`：
+
+- `regression-20260930-gate-v2\`：两个完整 GameTest 分片。17 个文件（含被 `*.log` 默认忽略的原始日志）已由 `89d193d`、`2ace778` 正式入库；逐个核对 Git blob 与磁盘原件字节一致，退出凭证所列日志/XML SHA-256 均相符。
+- `final-build-20260930\execution.json`、`interruption.json`、`interrupted-gametest\`：原命令中止记录与原生日志，不能当作成功构建凭证。
+- `final-build-20260930\dry-run\execution.json`、`gradle.log`：未筛选的任务图核验。
+- `final-build-20260930\scoped-build\execution.json`、`verification.json`、`inputs.json`、`gradle.log`、`junit\`：最终获批构建退出码、279 项 JUnit 及其新鲜度/哈希验证。`java-version.log` 记录 JDK **21.0.5**。
+- 分片受测源码 `3dc84cbed156d0cf9455488e9732b8e1110dcaa5`；最终构建 HEAD `2ace778baafb8de748fd7746c7d7a32bec26fbbd`。两者 `src/` tree 均为 `f48ebc5e3263871caf4cc7d7690bd5f3437a548e`；`src`、`gradle`、构建/锁文件及 wrapper 无 diff，186 个输入文件从启动到核验逐项 SHA-256 不变。差异只在文档/证据。
+- 当前新产物为 `D:\云游四海-Mod源码\plaincraft-great-wall\build\libs\plaincraft-great-wall-0.1.0-s0.3.jar` 及同版本 `-sources.jar`；哈希和生成时间见凭证。目录中旧 s0.1/s0.2 jar 未删、未计作本次产物；未部署到真实 mods。
+
+`execution.json.workspace` 已用严格 UTF-8 解码复核，与预期绝对路径逐字一致且目录存在，本次未复现原件乱码，因此不改写已封存凭证。读取 JSON 明确使用 `Get-Content -Encoding utf8 -Raw`。汇总核验的首轮脚本曾因 OrderedDictionary 计数为空报错，保存在 `verification-attempt-1.json`；随后按 XML 节点与属性独立累计得到 279，未修改 XML、未重跑或放宽测试。
+
+### 本轮变更与未验证边界
+
+本次只改文档/证据：`D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1B.md`、`D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1B-曲坡城门修复.md`、证据目录的 `.gitattributes`、v2 原件及最终构建归档。完整绝对路径清单见 `D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1b-curved-gate\final-build-20260930\changed-files.json`。本轮不修改 Java、测试、依赖版本或代理配置。
+
+| 未验证项 | 状态与限制 |
+|---|---|
+| S0 百轮地形矩阵 / Test-TerrainMatrix.ps1 | **本次 NOT_RUN**；历史 8/8 已验证，S0 路径未改，不因本轮签收重跑 |
+| 真实 CPU/Tectonic/C2ME 生产墙、真实地形、退出重进与生命周期实走 | **NOT_RUN，属于 S1C 后续授权**；解析/原生 fixture 不替代实走 |
+| 长时压测、24 小时内存、最终 Java 堆峰值、远跳/Chunky | **NOT_RUN**；短时 allowance/fixture 不等于长期压力验证 |
+| Tan's Huge Trees profile / S5 整包 | **继续 BLOCKED**；不删 mod 冒充通过 |
+| S1C 生产接线 | **未启动，保持关闭**；须本阶段审查通过及后续任务授权 |
+
+### 可复现命令
+
+```powershell
+Set-Location -LiteralPath 'D:\云游四海-Mod源码\plaincraft-great-wall'
+$env:JAVA_HOME='C:\Program Files\Java\jdk-21'
+# 已运行的任务图核验：不排除任何任务。
+.\gradlew.bat --offline --dependency-verification=strict --dry-run build --console=plain --no-daemon
+# 用户授权：只排除已由分片证据承担的 GameTest，完整执行 JUnit 与构建。
+.\gradlew.bat --offline --dependency-verification=strict build -x runGameTest --rerun-tasks --no-build-cache --console=plain --no-daemon
+# 证明分片源码与当前构建输入一致。
+git diff --exit-code 3dc84cb -- src gradle build.gradle settings.gradle gradle.properties gradle.lockfile gradlew gradlew.bat
+```
+
+**以下全部为历史时点记录，保留失败与旧状态；不得用其中旧 PASS、BLOCKED、NOT_RUN 覆盖本节当前、限定范围的签收申请。**
+
+## 历史增量修复状态（2026-09-30，曲坡城门回归完成前）
 
 **仍未整体签收，生产接线关闭。** `253a1d8`的完整签收进程中断：547相邻、576曲坡墙、960孤立survival、192马道入口已输出完整通过汇总；曲坡站点有异常且无最终汇总，未取得全量JUnit/最终构建退出码。进程消失原因未查明，不归因于最后一条PASS或已捕获的WallFailure。
 
@@ -10,7 +80,7 @@
 
 576/960/192三组本次未重跑；历史通过记录是原运行实测，修复后的继承依据明确为【推理：调用路径/差异隔离】，不是【已验证：修复后矩阵等价】。按用户要求退出持续监控，隔离回归继续运行，待后续询问时读取退出凭证。
 
-## 最新交审状态（2026-09-30）
+## 历史交审状态（2026-09-30，HYDRO 定向修复后）
 
 **本轮已整理提交，等待审计；不是最终源码全量测试 PASS 声明。**
 用户明确要求不再额外耗时重测，保留既有结果，在 HYDRO 两个失败组合定向通过后提交审计。
@@ -38,7 +108,7 @@ $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
 
 上述命令是已经成功执行的定向复现命令，不是本次整理再次运行。其余验收范围交由审计明确处理，未验证项不静默标绿。
 
-## 当前结果（2026-09-29，跨cell修复后）
+## 历史结果（2026-09-29，跨cell修复后）
 
 **B-S1B-03已实现并通过验证。S1B整体仍为BLOCKED，未整体签收；生产接线关闭，S1C未启动。**
 

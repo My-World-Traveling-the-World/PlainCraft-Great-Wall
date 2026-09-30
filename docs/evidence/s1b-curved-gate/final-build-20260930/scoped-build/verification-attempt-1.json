@@ -1,0 +1,10 @@
+{
+  "at": "2026-09-30T17:10:09.7086105+08:00",
+  "stage": "evidence-summary-only",
+  "status": "CHECKER_ERROR_NOT_TEST_FAILURE",
+  "error": "JUnit not fully green: tests= failures= errors= skipped=",
+  "cause": "Measure-Object did not aggregate OrderedDictionary keys as object properties",
+  "correction": "Use explicit integer accumulation, cross-check XML attributes against testcase/failure/error/skipped nodes",
+  "gradleRerun": false,
+  "rawXmlChanged": false
+}

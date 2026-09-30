@@ -1,5 +1,11 @@
 # S1B 曲坡城门权限冲突：影响分析与修复记录
 
+## 当前结论（2026-09-30 17:07）
+
+曲坡站点 **64/64** 与相邻矩阵 **547/547（含 HYDRO 72/72）** 的 v2 分片均完整结束，退出码均为 0，证据已提交 `89d193d`、`2ace778`。随后按用户授权、经未筛选 dry-run 确认任务图后，最终 `build -x runGameTest` 严格离线通过：全量 JUnit **279/279、54 suite、0 失败/错误/跳过**，build 退出 0。
+
+**GameTest 采用已审查分片证据及【推理】继承，非单进程全绿。** 第 4 节 576/960/192 的继承等级及撤销条件不变；`src/` 与分片 `3dc84cb` 一致。完整签收申请、原命令中止记录、dry-run 和最终命令见 `S1B.md` 顶部。下面第 0 节的 NOT_RUN 属于修复前决策时点，不是当前全量 JUnit/build 结果；历史失败和根因 B 均保留。
+
 ## 0. 修复前决策（2026-09-30）
 
 本节在生产代码修改前记录。源码基线 `253a1d8`；三份中断日志已先行提交 `23f3d83`，`8f3f8e1` 补充日志的 Git 字节保真规则。不是阶段签收。
@@ -46,7 +52,7 @@ HYDRO：`WaterGate.java:22-23` 的旧 lower floor 在 S=256.5 的49宽河流生�
 
 授权：已完整补读 `S1B-补充合同.md`，第28节附近记录用户允许公开的最小物理公式修订；本次保持需求/尺寸/保护/预算，仅统一生产衔接端面，在该授权内。若必须扩大包络、改变walkY或恢复权限，停下重新询问。
 
-本次全量JUnit/最终build：**NOT_RUN**（将单独列出实际定向与矩阵命令，不能借旧08:44 XML）。S0百轮矩阵NOT_RUN；真实生产墙/真实地形/长时堆峰值NOT_RUN；Tan's Huge Trees继续BLOCKED。
+修复前决策时点的全量JUnit/最终build：**NOT_RUN**（当时不能借旧08:44 XML）。后续实际结果见本报告顶部及第 5 节。S0百轮矩阵本轮仍NOT_RUN；真实生产墙/真实地形/长时堆峰值仍NOT_RUN；Tan's Huge Trees继续BLOCKED。
 
 ## 1. 旧公式
 
@@ -128,7 +134,10 @@ Gate以`Gate.java:31`的x=-30、z=3输出PARAPET；墙以`WallSection.java:101`�
 | 原index58修复后 | PASS，退出0，1方法/1组合，1分41秒；2邻接对连通，0撤回 | target-green-v1.log/xml |
 | 相关JUnit六suite | PASS，38测试，0失败/错误/跳过，退出0，24秒 | target-unit-v1.log、target-unit-v1/六份XML |
 | 独立副本首次回归启动v1 | BLOCKED于编译前依赖验证，两个退出1，矩阵NOT_RUN | regression-20260930-gate-v1/；39个新生成的remapped jar不匹配既有锁值，未关闭校验 |
-| 隔离矩阵v2 | **RUNNING，尚无最终结果** | regression-20260930-gate-v2/；snapshot=3dc84cb，完整64与547分别独立目录/进程/资源/报告 |
+| 隔离矩阵v2 | **PASS：64/64、547/547（HYDRO72/72），两个退出码均0** | regression-20260930-gate-v2/；snapshot=3dc84cb，各有 execution.json、结果XML与哈希；15:56/16:35结束，原件已入库 |
+| 原命令最终build尝试 | **人为中止，退出1；不是PASS** | final-build-20260930/；原命令实际启动全部GameTest，用户批准分片验收后中止；旧JUnit副本fresh=false，不计数 |
+| 未筛选dry-run | **退出0，确认build包含runGameTest及test** | final-build-20260930/dry-run/；SKIPPED仅为dry-run任务图标记 |
+| 获批最终build与全量JUnit | **PASS：退出0，279测试/54suite，0失败/错误/跳过** | final-build-20260930/scoped-build/；JDK21、offline/strict、build -x runGameTest、rerun-tasks/no-build-cache；XML全部新鲜且哈希一致 |
 
 v2仅复制主工程现有`.gradle/loom-cache/remapped_mods`，逐文件SHA相等，清单在各分片`copied-cache.json`；Gradle仍严格校验同一verification-metadata.xml。没有信任首次新生成的39个jar，没有增加checksum或联网。各分片游戏堆1536m，Gradle JVM2G，不据此声称完成长期堆峰值验收。
 
@@ -147,4 +156,4 @@ $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
 
 脚本每分片命令为 `--offline --dependency-verification=strict runGameTest -PgreatwallGameTestClasses=<CurvedSiteMatrixTests或AdjacentComponentMatrixTests> -PgreatwallTestHeap=1536m --rerun-tasks --no-build-cache --console=plain --no-daemon`。`run.json`绑定源码/归档身份，`execution.json`在退出后记录命令、起止时间、退出码、日志/XML哈希；没有退出凭证就不签收。
 
-**本轮全量JUnit / 最终build = NOT_RUN**；S0百轮地形矩阵NOT_RUN（历史8/8、S0路径未改）；真实CPU/Tectonic/C2ME生产墙、真实地形、24小时/最终堆峰值验收NOT_RUN；Tan's Huge Trees profile仍BLOCKED。S1C不启动，不部署真实mods，不打开真实存档。
+**本轮全量JUnit279/279 / 获批最终build（显式排除runGameTest）= PASS，退出0。** GameTest仍采用已审查的分片证据与【推理】继承，非单进程全绿；不能把原中止命令或dry-run算作最终成功构建。S0百轮地形矩阵NOT_RUN（历史8/8、S0路径未改）；真实CPU/Tectonic/C2ME生产墙、真实地形、24小时/最终堆峰值验收NOT_RUN；Tan's Huge Trees profile仍BLOCKED。S1C不启动，不部署真实mods，不打开真实存档。

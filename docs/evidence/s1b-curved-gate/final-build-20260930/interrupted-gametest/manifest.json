@@ -1,0 +1,16 @@
+{
+  "status": "INTERRUPTED_NOT_PASS",
+  "copiedAt": "2026-09-30T17:05:22.2953455+08:00",
+  "files": [
+    {
+      "name": "debug.log",
+      "bytes": 4171552,
+      "sha256": "CAAE9BC1BC1ECE8B8247E3C03CF3311788FABEB3C96875B2CD84E75F725EE8C4"
+    },
+    {
+      "name": "latest.log",
+      "bytes": 2825437,
+      "sha256": "86F4316A063057F277EF67A508E0B641BBEE527E59A5F251124002D0D08B0BCE"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "verifiedAt": "2026-09-30T17:13:54.6518958+08:00",
+  "acceptanceStatus": "S1B_READY_FOR_REVIEW_ONLY",
+  "gameTestEvidenceMode": "sharded-plus-inference-not-single-process-green",
+  "finalBuildExitCode": 0,
+  "fullJUnitTests": 279,
+  "fullJUnitSuites": 54,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "dryRunConfirmsGameTestDependency": true,
+  "interruptedOriginalBuildExitCode": 1,
+  "interruptedAttemptFreshJUnitFiles": 0,
+  "matrixShards": [
+    {
+      "shard": "curved-sites",
+      "snapshot": "3dc84cbed156d0cf9455488e9732b8e1110dcaa5",
+      "exitCode": 0,
+      "uniquePassingCases": 64,
+      "gameTestMethods": 1,
+      "groups": {
+        "CURVED_SITES": 64
+      },
+      "workspaceUtf8Exact": true,
+      "receiptSha256": "12E9119B922033362F2F7AFF13A0BCB07ADEA6F543F4AB57627D8C7B8287AF42"
+    },
+    {
+      "shard": "adjacent",
+      "snapshot": "3dc84cbed156d0cf9455488e9732b8e1110dcaa5",
+      "exitCode": 0,
+      "uniquePassingCases": 547,
+      "gameTestMethods": 8,
+      "groups": {
+        "GAPS": 6,
+        "CONFLICT": 128,
+        "HYDRO": 72,
+        "REJECTION": 8,
+        "DECISION": 32,
+        "CAP": 30,
+        "TERMINAL": 15,
+        "BOUNDARY": 256
+      },
+      "workspaceUtf8Exact": true,
+      "receiptSha256": "017DA0C5607E7409A94ED8482B06B3D0A3AFE1D593FC7078A69F2F9E3C3F4541"
+    }
+  ],
+  "inheritedGroups": [
+    {
+      "name": "CurvedWallMatrixTests",
+      "historicalCases": 576,
+      "basis": "INFERENCE: frozen source plus empty-gates path isolation",
+      "newFullMatrixAcceptance": "NOT_RUN_IN_AUTHORIZED_FINAL_BUILD"
+    },
+    {
+      "name": "ComponentSurvivalMatrixTests",
+      "historicalCases": 960,
+      "basis": "INFERENCE: frozen source plus isolated templates",
+      "newFullMatrixAcceptance": "NOT_RUN"
+    },
+    {
+      "name": "RampGroundPortalTests",
+      "historicalCases": 192,
+      "basis": "INFERENCE: unchanged Ramp.compileBetween dependencies",
+      "newFullMatrixAcceptance": "NOT_RUN_IN_AUTHORIZED_FINAL_BUILD"
+    }
+  ],
+  "notRun": [
+    "S0 hundred-round terrain matrix: historical 8/8, unchanged S0 paths",
+    "real production walls and real terrain",
+    "long-term/24h/final heap stress",
+    "S1C production activation"
+  ],
+  "blockedProfiles": [
+    "Tans Huge Trees"
+  ],
+  "noSingleProcessAllGreenClaim": true
+}

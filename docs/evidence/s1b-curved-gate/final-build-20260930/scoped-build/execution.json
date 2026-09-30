@@ -1,0 +1,402 @@
+{
+  "snapshot": "2ace778baafb8de748fd7746c7d7a32bec26fbbd",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "javaHome": "C:\\Program Files\\Java\\jdk-21",
+  "started": "2026-09-30T17:06:23.7930544+08:00",
+  "finished": "2026-09-30T17:07:49.9191413+08:00",
+  "arguments": [
+    "--offline",
+    "--dependency-verification=strict",
+    "build",
+    "-x",
+    "runGameTest",
+    "--rerun-tasks",
+    "--no-build-cache",
+    "--console=plain",
+    "--no-daemon"
+  ],
+  "gameTestEvidenceMode": "sharded-plus-inference",
+  "exitCode": 0,
+  "wrapperFailure": null,
+  "junitFiles": [
+    {
+      "name": "TEST-local.plaincraft.greatwall.BuildContractTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "338B94CFA21ECBAA032DF868C5A6B4E4FBEC8EA2C0EDE6BD07105AD1CC6226C5"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.CompiledAllocationTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "33B1341DB7EBB143F07B3CD7410F006878C733B534CBFADA44F00CB84A2C6336"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.ComponentAssemblyTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "9013CB31ACFD7CF5B9782003039B5783C7E02B57E923E98F35EF5AA71A6BA0E6"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.CurvedGateBoundaryTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "D6060B6A2A3F880E5733BE80B1A156C722C25C546722B0B598AF3BBE21FEF598"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.GateCapTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "1522133CA064BEFB0C81D37348FA087C32B32392FE840BC42E596FC911D321BE"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.GroundEntranceTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "418CADE3576D682F53932B5C6567930D615550902452CC47646D0BFDCA1CE2FD"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.GroundExitCapVariantsTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "5558152F46AE3EF54701F27788F7F75F41698968000064F6D163551E044A8F57"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.RampSpecificationTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "39B8FFE77B07E6ACD375150DE939D37D99968D8E5E144C17E6CDAF9C578EBFDC"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.ReservationHeapPressureTest.xml",
+      "modified": "2026-09-30T17:07:49.3907555+08:00",
+      "fresh": true,
+      "sha256": "7EF378FE6DF4CFBFC0A3DB61250187E7215596CADBD4D07AEE24F56590D8B5F9"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.TemplateTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "619C600E2D542A3F647EB4B0AD6D4137A112CD95ACAEF1CB1FDA3603673B702E"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.WallContractEquivalenceTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "9F77336522A7B559B356503C8549FBEF831ED9B4277D485F94823E9AFBDA96F5"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.WallDecayTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "FC7BC181D83BC9183D9CB14797C76F048343F87E539D4EACE27424EE01D92F39"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.WallRampTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "836A18789AEE29E5A1F05ED90074FE974834272D7C97C21A63FA15600E6DFD54"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.component.WaterFortTest.xml",
+      "modified": "2026-09-30T17:07:49.3931030+08:00",
+      "fresh": true,
+      "sha256": "520173366835445BF44643128627F011AA4AF077B1FCAE23DCC04E68B451DBA4"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.decay.DecayFieldTest.xml",
+      "modified": "2026-09-30T17:07:49.3936065+08:00",
+      "fresh": true,
+      "sha256": "C110470A38758A90755A8DD8BD4F1B721C3CABBFB590DBC2C263B7F0F2CA3450"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.decay.SupportGraphTest.xml",
+      "modified": "2026-09-30T17:07:49.3931030+08:00",
+      "fresh": true,
+      "sha256": "2ED29C2C8260D9AD2010382D54C165CBE3B4408F4CE24170A4848562F6E7AE4E"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.diagnostics.AllocationBudgetTest.xml",
+      "modified": "2026-09-30T17:07:49.3936065+08:00",
+      "fresh": true,
+      "sha256": "A26ECA697A2A9074F2B274F9D7A28ADC2D66FFE5D47E7F0721D8191806B10A94"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.diagnostics.BoundedByteArrayOutputStreamTest.xml",
+      "modified": "2026-09-30T17:07:49.3936065+08:00",
+      "fresh": true,
+      "sha256": "3032777A2C7AA1ED87A521B355E9BFED65F51F1A593974170FF3C9AC1D92D0ED"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.diagnostics.BudgetCacheTest.xml",
+      "modified": "2026-09-30T17:07:49.3931030+08:00",
+      "fresh": true,
+      "sha256": "1F21F75E930178A185322BCEB0E3CE590DBBE264A666A77D752B02F60EA67231"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.diagnostics.BudgetReservationLifecycleAuditTest.xml",
+      "modified": "2026-09-30T17:07:49.3931030+08:00",
+      "fresh": true,
+      "sha256": "77B8B266655C410F18F6C59B62BC2E81677009E77CFB5C51A843B15217C51574"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.diagnostics.BudgetReservationTest.xml",
+      "modified": "2026-09-30T17:07:49.3931030+08:00",
+      "fresh": true,
+      "sha256": "D6DEBA1B897D1C968A617972F66289E2863701E14A8C8BC80D4D68E81AC81358"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.diagnostics.BufferedCodecTest.xml",
+      "modified": "2026-09-30T17:07:49.3946135+08:00",
+      "fresh": true,
+      "sha256": "CBCEBC11719F1E5148C9F5A7B01DB6A3F0D3C7A74225E1F3FC6424D287B9DF1A"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest.xml",
+      "modified": "2026-09-30T17:07:49.3946135+08:00",
+      "fresh": true,
+      "sha256": "F43E37B744C2DEF00101FD2B2FF1A8AB77F975537EF42B34705EFD76E1F5267D"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.diagnostics.CompiledAllocationScopeAuditTest.xml",
+      "modified": "2026-09-30T17:07:49.3936065+08:00",
+      "fresh": true,
+      "sha256": "D303F6CB8D2FF344A10F981500FEB4D7794B1651233F03511414AC0B539B0B60"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.generation.ChunkPlanCompilerTest.xml",
+      "modified": "2026-09-30T17:07:49.3936065+08:00",
+      "fresh": true,
+      "sha256": "2626B216A2673DDE47401C89F1E7C161688B03E4E5EC75472BF90DFFCB479964"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.generation.CoveragePlannerTest.xml",
+      "modified": "2026-09-30T17:07:49.3936065+08:00",
+      "fresh": true,
+      "sha256": "0C71BD99745DDDEE3AA97D9EB6E5EE220F00B49AE7FD7EA412155A34541A21B9"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.generation.OwnershipGuardTest.xml",
+      "modified": "2026-09-30T17:07:49.3936065+08:00",
+      "fresh": true,
+      "sha256": "44F3DAD9EF299479F5E50D10E1C9EAECFFAFD955D8B59FD6A79D0EA97057D741"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.generation.SurfaceProbeTest.xml",
+      "modified": "2026-09-30T17:07:49.3946135+08:00",
+      "fresh": true,
+      "sha256": "CE25A745A0D4E13E4EDD129015702131CAB78635D18B766F408B446D1F80C20D"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.geometry.ArcLengthTest.xml",
+      "modified": "2026-09-30T17:07:49.3946135+08:00",
+      "fresh": true,
+      "sha256": "A3C8476DAED305579D36F0D0E0B4FBADDD8C979A5F1F7EC25B8F3B483F50CA65"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.geometry.CanonicalCodecTest.xml",
+      "modified": "2026-09-30T17:07:49.3971085+08:00",
+      "fresh": true,
+      "sha256": "DE0F5A5C2ABAA135D8D8EB044B79D6608D2917A5C707D9612B7F4B552E9FE426"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.geometry.FixedMathTest.xml",
+      "modified": "2026-09-30T17:07:49.3971085+08:00",
+      "fresh": true,
+      "sha256": "8ABE4DE3C3FDF7DC44D661F442FCCA4B888DD12A4FF7C24B06562DF2F42B5A8F"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.geometry.MulDivFastPathTest.xml",
+      "modified": "2026-09-30T17:07:49.3971085+08:00",
+      "fresh": true,
+      "sha256": "435334533C126E8C03F8649D0D61FC821076E05D2E5B36FD4854622EAF5AC81D"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.geometry.RasterizerTest.xml",
+      "modified": "2026-09-30T17:07:49.3981148+08:00",
+      "fresh": true,
+      "sha256": "F7A7DB9141736205336E1623AE984E173246B11241D81D3489D50883573047D3"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.model.ModelContractTest.xml",
+      "modified": "2026-09-30T17:07:49.3981148+08:00",
+      "fresh": true,
+      "sha256": "FDD4F8403D5B225B4A9F1F1571D40B5179FB43750AACC038B7F499D26D7F5C6D"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.persistence.EvidenceAllocationBoundaryAuditTest.xml",
+      "modified": "2026-09-30T17:07:49.3971085+08:00",
+      "fresh": true,
+      "sha256": "11A4837D739D47C3FB15ED4FB7DC188262A7B210880308B88B85C2E0B021ABD2"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.persistence.ProductionEvidenceTest.xml",
+      "modified": "2026-09-30T17:07:49.3971085+08:00",
+      "fresh": true,
+      "sha256": "4DCA887ACC9959A871551399CAD466B8A910DAC5C17E1C74A84BE4644DC4172B"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.persistence.SegmentCacheTest.xml",
+      "modified": "2026-09-30T17:07:49.3981148+08:00",
+      "fresh": true,
+      "sha256": "6467D167D2AAD15CFE606A33973C2DFDBBD66E4D7B82A87C9F9E2C01FF56F6B4"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest.xml",
+      "modified": "2026-09-30T17:07:49.3971085+08:00",
+      "fresh": true,
+      "sha256": "A8541951292F1B4A43EE4282554BFDE3F78D5AC50760DBD8DFF838E28FC0816C"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.planning.AnchorProjectionTest.xml",
+      "modified": "2026-09-30T17:07:49.3981148+08:00",
+      "fresh": true,
+      "sha256": "D8AEF1F0AD4248BAD4D06794FBF185ACFA3B0BD07D5BA6A6385B6AFD07F93522"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.planning.ArcPlanProviderTest.xml",
+      "modified": "2026-09-30T17:07:49.3981148+08:00",
+      "fresh": true,
+      "sha256": "CC835A61664DF2557797B89EAB256203D50D18324901A2ECAD0DAAFA747F5A05"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.planning.GeometryDeterminismTest.xml",
+      "modified": "2026-09-30T17:07:49.3991149+08:00",
+      "fresh": true,
+      "sha256": "FEABDFF286F8E5F015987458F1D82B6952DF7FAFF7A42542D45DEE35A44EC138"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.planning.PlannerSchedulerTest.xml",
+      "modified": "2026-09-30T17:07:49.3981148+08:00",
+      "fresh": true,
+      "sha256": "15C649FF4470AD48FBB7DB34F9A3BEED73B38E27B37883C623B719B2F715B8A8"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.planning.PrefixSummaryIndexTest.xml",
+      "modified": "2026-09-30T17:07:49.3991149+08:00",
+      "fresh": true,
+      "sha256": "8ABB8C1EA0B87A30FE9BF576768571E6A47BD13EFEBE0D13518FB4725181EA60"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.planning.RidgePlannerTest.xml",
+      "modified": "2026-09-30T17:07:49.3991149+08:00",
+      "fresh": true,
+      "sha256": "D375E85D635720A3F8EDBD7E9EDC8275CDBABC75F00EE73956547F3A68D8132C"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.planning.ScheduleContractTest.xml",
+      "modified": "2026-09-30T17:07:49.3981148+08:00",
+      "fresh": true,
+      "sha256": "9F7DF7504F66BBC3288C95D5CB45B8A5E86C1EB037437792A9EAF8C780F0B24A"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.ProbePlannerTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "349E6A835921A6B5D662F1FA7CFA0478B439E971045A76868B8337A6513ADABE"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.terrain.GroundExitEvidenceTest.xml",
+      "modified": "2026-09-30T17:07:49.4001150+08:00",
+      "fresh": true,
+      "sha256": "8178943B1BF20BC5185E47A16FEA5D42F96FE487291E5F59BB27C6890A0667B2"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.terrain.GroundExitFallbackTest.xml",
+      "modified": "2026-09-30T17:07:49.4001150+08:00",
+      "fresh": true,
+      "sha256": "AA3431B83CFA5733CA0C338D3FBCE957354BE46F352E03BB33C8A4CDBCE9CAE9"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.terrain.GroundExitReservationTest.xml",
+      "modified": "2026-09-30T17:07:49.4001150+08:00",
+      "fresh": true,
+      "sha256": "94E6D53A6E89241AE4D44F50F8F96F2A63882FF6FFF204BF5207EB964A22B195"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.terrain.GroundExitResolverTest.xml",
+      "modified": "2026-09-30T17:07:49.4001150+08:00",
+      "fresh": true,
+      "sha256": "B9F7FD2169737336BF6421ADCAAFBF43EDE250E3C1E241B397EC0519ADB3558A"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.terrain.HydrologyTest.xml",
+      "modified": "2026-09-30T17:07:49.4001150+08:00",
+      "fresh": true,
+      "sha256": "1C9B0320707EAAA0B883D3D9B1A0554AD9B88ECC7636FF12AD6035545A49BD3C"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.terrain.RealizationPlannerTest.xml",
+      "modified": "2026-09-30T17:07:49.4001150+08:00",
+      "fresh": true,
+      "sha256": "8F60D36101BE4998E3DEDF05FAC7AC42B8A5F6FDF5BD6F3ADB76B6661272E7BF"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.TerrainEvidenceTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "F91413EC04A0581B70A4280C044E9B66E39B3A3F977C84FA5F3E6A0B61DC0C13"
+    },
+    {
+      "name": "TEST-local.plaincraft.greatwall.WorldRecipeGuardTest.xml",
+      "modified": "2026-09-30T17:07:49.3897479+08:00",
+      "fresh": true,
+      "sha256": "167232FAFBDB8FBCCF5DEE5912365514211CF6435BD86B0D425359A6D42740A9"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "build\\libs\\plaincraft-great-wall-0.1.0-s0.1-sources.jar",
+      "bytes": 4375,
+      "modified": "2026-09-29T01:55:31.9424746+08:00",
+      "sha256": "35F3341E66E9B0A3010BA1CFE7EB1C34346EF629268C1730796DB18BDB792CDD"
+    },
+    {
+      "path": "build\\libs\\plaincraft-great-wall-0.1.0-s0.1.jar",
+      "bytes": 7157,
+      "modified": "2026-09-29T01:55:31.9434752+08:00",
+      "sha256": "0C6AA88859FBEA0F3843907347B2439F49E1DCBC3BDF0F881DE973D611AE0EBD"
+    },
+    {
+      "path": "build\\libs\\plaincraft-great-wall-0.1.0-s0.2-sources.jar",
+      "bytes": 21364,
+      "modified": "2026-09-29T03:59:15.6035538+08:00",
+      "sha256": "7A93BBE830A3C7AA041A1A6DE5A7671F36CF87C1B14978113A814FEFEF322311"
+    },
+    {
+      "path": "build\\libs\\plaincraft-great-wall-0.1.0-s0.2.jar",
+      "bytes": 52776,
+      "modified": "2026-09-29T03:59:14.5211409+08:00",
+      "sha256": "EE3D72154D99E273B6153222F0A485B45C31DAFA165E65A5C33293CCCD9E143F"
+    },
+    {
+      "path": "build\\libs\\plaincraft-great-wall-0.1.0-s0.3-sources.jar",
+      "bytes": 196654,
+      "modified": "2026-09-30T17:06:47.2980926+08:00",
+      "sha256": "B02A948A5D68A07C9A7EF9FB8CBBF4CC5941BFEC603FC5BD28E1F4819DE3110B"
+    },
+    {
+      "path": "build\\libs\\plaincraft-great-wall-0.1.0-s0.3.jar",
+      "bytes": 658073,
+      "modified": "2026-09-30T17:06:43.3625114+08:00",
+      "sha256": "8D33A131923C2A84ADFD554680E04776FD613E8C0AABDFD9732BCDC26484DB9D"
+    }
+  ],
+  "files": [
+    {
+      "name": "gradle.log",
+      "bytes": 24557,
+      "sha256": "459E4409633B3749FB40E9F5AD1FDFD122D609169DC12371A3EFD7FD82A99D98"
+    },
+    {
+      "name": "inputs.json",
+      "bytes": 35360,
+      "sha256": "A2517CF458A264DFDA4BB342EB93EDAE9B0BBCC7A28621C9595CBA9A1AF1A01B"
+    },
+    {
+      "name": "java-version.log",
+      "bytes": 177,
+      "sha256": "5BB4777C5A7F3D7DB32286DC841D0611635A82CDD2CA15684BE57C99EEDCA484"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.persistence.SegmentCacheTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-30T09:07:02.683Z" hostname="CAIMEO" time="5.465">
+  <properties/>
+  <testcase name="crcFailureRecomputesCacheOnly()" classname="local.plaincraft.greatwall.persistence.SegmentCacheTest" time="0.062"/>
+  <testcase name="invalidPrefixCannotSkipGap()" classname="local.plaincraft.greatwall.persistence.SegmentCacheTest" time="5.086"/>
+  <testcase name="parallelVolumeWritersCannotLoseBlobs()" classname="local.plaincraft.greatwall.persistence.SegmentCacheTest" time="0.293"/>
+  <testcase name="malformedLengthsRejected()" classname="local.plaincraft.greatwall.persistence.SegmentCacheTest" time="0.024"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
