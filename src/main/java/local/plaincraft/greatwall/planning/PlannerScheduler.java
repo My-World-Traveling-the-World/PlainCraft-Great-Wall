@@ -62,7 +62,17 @@ public final class PlannerScheduler implements AutoCloseable {
     private PlanLease<SegmentPlan> backgroundLease;
 
     public PlannerScheduler(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory, SegmentCacheStore cache, Executor io) {
-        this.recipe = Objects.requireNonNull(recipe); Objects.requireNonNull(oracleFactory);
+        this(recipe, Objects.requireNonNull(oracleFactory), null, cache, io);
+    }
+
+    /** Successful construction transfers both session-owned lanes from bootstrap to this scheduler. */
+    public PlannerScheduler(WorldRecipe recipe, List<OracleLane> bootstrapLanes, SegmentCacheStore cache, Executor io) {
+        this(recipe, null, List.copyOf(bootstrapLanes), cache, io);
+    }
+
+    private PlannerScheduler(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory,
+            List<OracleLane> bootstrapLanes, SegmentCacheStore cache, Executor io) {
+        this.recipe = Objects.requireNonNull(recipe);
         this.cache = Objects.requireNonNull(cache); this.io = Objects.requireNonNull(io);
         if (!"minecraft:overworld".equals(recipe.dimension())) {
             throw new WallFailure(FailureCode.INVALID_RESOURCE, "only the overworld may own a wall planner");
@@ -71,12 +81,24 @@ public final class PlannerScheduler implements AutoCloseable {
             throw new WallFailure(FailureCode.RECIPE_MISMATCH, "recipe semantic hash is not canonical");
         }
         if (!cache.recipeHash().equals(recipe.recipeHash())) throw new IllegalArgumentException("cache recipe mismatch");
+        if (bootstrapLanes != null) {
+            if (bootstrapLanes.size() != 2) throw new IllegalArgumentException("two bootstrap lanes required");
+            for (int index = 0; index < 2; index++) {
+                var lane = bootstrapLanes.get(index);
+                if (lane.index() != index || !lane.session().equals(recipe.instance())
+                        || !lane.fingerprint().equals(recipe.terrainHash())
+                        || lane.diagnostics().containsKey("closed")) {
+                    throw new WallFailure(FailureCode.STALE_SESSION, "bootstrap lane identity/settings/owner mismatch");
+                }
+            }
+        }
         this.anchors = new AnchorField(recipe); this.ridge = new RidgePlanner(recipe, anchors);
         this.heights = new HeightContractPlanner(recipe); this.sites = new SiteScheduler(recipe);
         this.pump = new ScheduledThreadPoolExecutor(1, factory("pgw-planner-" + recipe.instance()));
         pump.setRemoveOnCancelPolicy(true);
-        this.lanes = List.of(new OracleLane(recipe.instance(), 0, recipe.terrainHash(), oracleFactory),
-                new OracleLane(recipe.instance(), 1, recipe.terrainHash(), oracleFactory));
+        this.lanes = bootstrapLanes != null ? bootstrapLanes
+                : List.of(new OracleLane(recipe.instance(), 0, recipe.terrainHash(), oracleFactory),
+                        new OracleLane(recipe.instance(), 1, recipe.terrainHash(), oracleFactory));
         this.memory = new BudgetCache<>(recipe.config().segmentBytes(), 256, 4096, pump, PlannerScheduler::retainedBytes);
         this.prefixes = new PrefixSummaryIndex(i -> requireGeometry(i, Priority.PLAYER_PREFETCH), pump, cache, this::submitIo);
     }

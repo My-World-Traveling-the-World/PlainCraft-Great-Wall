@@ -86,6 +86,7 @@ public final class OracleLane implements AutoCloseable {
 
     public UUID session() { return session; }
     public int index() { return index; }
+    public String fingerprint() { return fingerprint; }
     public Map<String, Long> diagnostics() {
         var result = new java.util.HashMap<>(state);
         trace.counts().forEach((key, value) -> result.put("sentinel-" + key, value));

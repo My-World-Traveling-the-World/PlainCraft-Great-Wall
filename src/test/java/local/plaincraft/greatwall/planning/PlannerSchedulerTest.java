@@ -13,6 +13,7 @@ import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.SegmentCacheStore;
 import local.plaincraft.greatwall.terrain.AnalyticTerrainOracle;
+import local.plaincraft.greatwall.terrain.OracleLane;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -37,6 +38,55 @@ class PlannerSchedulerTest {
             var expected = leases.getFirst().future().get(30, TimeUnit.SECONDS);
             for (var lease : leases) { assertSame(expected, lease.future().get(5, TimeUnit.SECONDS)); lease.close(); }
             assertEquals(2, created.get(), "one oracle per lane, reused by two routes and hydrology");
+        }
+    }
+
+    @Test void rootLanesTransferWithoutReinitializationAndSchedulerOwnsDrain() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        var created = new AtomicInteger();
+        var lanes = List.of(
+                new OracleLane(recipe.instance(), 0, recipe.terrainHash(), () -> {
+                    created.incrementAndGet(); return new AnalyticTerrainOracle((x, z) -> AnalyticTerrainOracle.dry(64), true);
+                }),
+                new OracleLane(recipe.instance(), 1, recipe.terrainHash(), () -> {
+                    created.incrementAndGet(); return new AnalyticTerrainOracle((x, z) -> AnalyticTerrainOracle.dry(64), true);
+                }));
+        try (var io = Executors.newSingleThreadExecutor()) {
+            var identity = lanes.getFirst().submit(oracle -> System.identityHashCode(oracle)).get(5, TimeUnit.SECONDS);
+            var scheduler = new PlannerScheduler(recipe, lanes, new SegmentCacheStore(directory.resolve("cache"), recipe), io);
+            try {
+                scheduler.startupPump();
+                try (var route = scheduler.requireRoute(0, Priority.PLAYER)) {
+                    assertEquals(0, route.future().get(30, TimeUnit.SECONDS).key().index());
+                }
+                assertEquals(identity, lanes.getFirst().submit(System::identityHashCode).get(5, TimeUnit.SECONDS));
+                assertEquals(2, created.get());
+                assertEquals(1L, lanes.getFirst().diagnostics().get("factory-calls"));
+            } finally {
+                scheduler.close(); scheduler.drain().get(10, TimeUnit.SECONDS);
+            }
+            for (var lane : lanes) {
+                assertEquals(1L, lane.diagnostics().get("oracle-closes"));
+                assertTrue(lane.drain().isDone());
+            }
+        } finally { lanes.forEach(OracleLane::close); }
+    }
+
+    @Test void foreignOrClosedBootstrapLanesCannotBeTransferred() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        var factory = (java.util.function.Supplier<local.plaincraft.greatwall.terrain.NaturalTerrainOracle>)
+                () -> new AnalyticTerrainOracle((x, z) -> AnalyticTerrainOracle.dry(64), true);
+        var foreign = new OracleLane(java.util.UUID.randomUUID(), 0, recipe.terrainHash(), factory);
+        var second = new OracleLane(recipe.instance(), 1, recipe.terrainHash(), factory);
+        var first = new OracleLane(recipe.instance(), 0, recipe.terrainHash(), factory);
+        try (var io = Executors.newSingleThreadExecutor()) {
+            var store = new SegmentCacheStore(directory.resolve("cache"), recipe);
+            assertThrows(WallFailure.class, () -> new PlannerScheduler(recipe, List.of(foreign, second), store, io));
+            first.close();
+            assertThrows(WallFailure.class, () -> new PlannerScheduler(recipe, List.of(first, second), store, io));
+            assertEquals(0L, foreign.diagnostics().getOrDefault("factory-calls", 0L));
+        } finally {
+            for (var lane : List.of(first, second, foreign)) { lane.close(); lane.drain().get(5, TimeUnit.SECONDS); }
         }
     }
 
