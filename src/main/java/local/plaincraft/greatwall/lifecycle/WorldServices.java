@@ -6,28 +6,39 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.generation.WallStageCoordinator;
 import local.plaincraft.greatwall.planning.ProbePlanner;
+import local.plaincraft.greatwall.planning.PlannerScheduler;
+import local.plaincraft.greatwall.generation.VegetationGuard;
+import local.plaincraft.greatwall.generation.TreeBoundsCatalog;
+import local.plaincraft.greatwall.generation.TerrainEngine;
+import local.plaincraft.greatwall.model.PlanLease;
+import local.plaincraft.greatwall.model.WallTypes.*;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.storage.LevelResource;
 
-/** S0-only session wiring; opt-in requires a dedicated isolated-world marker. */
+/** The mode is fixed per server: S0 laboratory or separately authorized S1C fixture, never public production. */
 public final class WorldServices {
     private static final ConcurrentHashMap<MinecraftServer, WorldServices> SESSIONS = new ConcurrentHashMap<>();
     private final ProbePlanner planner;
+    private final ProductionSession production;
     private final MinecraftServer server;
     private final Path evidenceDirectory;
     private final boolean authorizedNewWorld;
@@ -39,6 +50,13 @@ public final class WorldServices {
         this.server = server;
         authorizedNewWorld = !server.getWorldData().overworldData().isInitialized();
         evidenceDirectory = server.getWorldPath(LevelResource.ROOT).resolve("greatwall-s0");
+        if (Boolean.getBoolean("greatwall.s1c.productionFixture")) {
+            if (Boolean.getBoolean("greatwall.s0.probe")) throw new IllegalStateException("S0 and S1C modes are mutually exclusive");
+            planner = null;
+            production = new ProductionSession(server, this);
+            return;
+        }
+        production = null;
         planner = new ProbePlanner(server.getWorldData().worldGenOptions().seed(),
                 Duration.ofMillis(Long.getLong("greatwall.s0.delayMs", 1)),
                 ProbePlanner.Outcome.valueOf(System.getProperty("greatwall.s0.outcome", "SUCCESS")));
@@ -59,7 +77,10 @@ public final class WorldServices {
 
     public static void register() {
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
-            if (!Boolean.getBoolean("greatwall.s0.probe")) return;
+            if (Boolean.getBoolean("greatwall.production")) {
+                throw new IllegalStateException("Formal production remains OFF until S1C acceptance");
+            }
+            if (!Boolean.getBoolean("greatwall.s0.probe") && !Boolean.getBoolean("greatwall.s1c.productionFixture")) return;
             if (!Files.isRegularFile(FabricLoader.getInstance().getGameDir().resolve("greatwall_test_world"))) {
                 throw new IllegalStateException("S0 probe is forbidden without an isolated test-world marker");
             }
@@ -76,6 +97,7 @@ public final class WorldServices {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             var services = find(server);
             if (services == null) return;
+            if (services.production != null) { services.production.started(); return; }
             services.planner.transition(BootstrapState.WARMING, BootstrapState.ACTIVE);
             var counts = services.planner.trace().counts();
             if (counts.getOrDefault("STAGE_ENTER", 0L) == 0L
@@ -88,9 +110,14 @@ public final class WorldServices {
             }
             GreatWallMod.LOGGER.info("[GreatWall:S0-02] ACTIVE session={} counts={}", services.planner.session(), counts);
         });
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            var services = find(server);
+            if (services != null && services.production != null) services.production.tick();
+        });
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, successful) -> {
             var services = find(server);
             if (services == null || !successful) return;
+            if (services.production != null) { services.production.validateReload(); return; }
             try {
                 for (var entry : services.recipes.entrySet()) {
                     ServerLevel level = server.getAllLevels().iterator().next();
@@ -111,6 +138,9 @@ public final class WorldServices {
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             var services = find(server);
             if (services != null) {
+                if (services.production != null) {
+                    services.production.close(); services.production.export("STOPPING"); return;
+                }
                 services.planner.close();
                 services.barriers.values().forEach(WallStageCoordinator::close);
                 // Vanilla can fail while saving errored generation; preserve proof before that call.
@@ -120,6 +150,9 @@ public final class WorldServices {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             var services = SESSIONS.remove(server);
             if (services != null) {
+                if (services.production != null) {
+                    services.production.close(); services.production.export("STOPPED"); return;
+                }
                 services.planner.close();
                 services.writeEvidence("STOPPED");
             }
@@ -129,13 +162,15 @@ public final class WorldServices {
                         .then(Commands.literal("status").executes(context -> {
                             var services = find(context.getSource().getServer());
                             context.getSource().sendSuccess(() -> Component.literal(services == null
-                                    ? "S0 probe disabled; wall generation is not implemented"
+                                    ? "Wall production OFF"
+                                    : services.production != null ? "S1C isolated fixture; production OFF " + services.production.diagnostics()
                                     : "S0 " + services.planner.state() + " " + services.failure + " " + services.planner.trace().counts()), false);
                             return 1;
                         }))));
     }
 
     private void openDimension(ServerLevel level) {
+        if (production != null) { production.openDimension(level); return; }
         String dimension = level.dimension().location().toString();
         try {
             Path manifest = evidenceDirectory.resolve("recipes")
@@ -155,20 +190,60 @@ public final class WorldServices {
     }
 
     public static WorldServices find(MinecraftServer server) { return SESSIONS.get(server); }
-    public WallStageCoordinator barrier(ServerLevel level) { return barriers.get(level); }
+    public static Optional<WorldServices> find(UUID session) {
+        return SESSIONS.values().stream().filter(value -> value.production != null
+                && value.production.runtime().equals(session) && !value.production.rejected()).findFirst();
+    }
+    public boolean productionFixture() { return production != null; }
+    public WorldRecipe recipe() { return requireProductionSession().recipe(); }
+    public PlannerScheduler planning() { return requireProductionSession().planning(); }
+    public WorldBootstrap bootstrap() { return requireProductionSession().bootstrap(); }
+    public VegetationGuard vegetation() { return requireProductionSession().vegetation(); }
+    public TreeBoundsCatalog trees() { return requireProductionSession().trees(); }
+    public CompletableFuture<WorldRecipe> recipeReady() { return requireProductionSession().recipeReady(); }
+    public Map<String, Object> productionDiagnostics() { return requireProductionSession().diagnostics(); }
+    public WallStageCoordinator barrier(ServerLevel level) {
+        return production == null ? barriers.get(level) : production.barrier(level);
+    }
+    public PlanLease<Void> featureLease(String dimension, int x, int z) {
+        assertActiveSession();
+        trace("WAIT_PLAN_NO_LOCK", dimension, x, z, "production:features", "none");
+        return requireProductionSession().featureLease(new ChunkKey(dimension, x, z));
+    }
+    public CompletableFuture<Void> requireProduction(String dimension, int x, int z, String stage) {
+        var lease = featureLease(dimension, x, z);
+        return lease.future().whenComplete((value, error) -> lease.close());
+    }
+    public CompletableFuture<Void> beforeProductionLight(ChunkKey owner, ChunkAccess chunk, TerrainEngine engine) {
+        assertActiveSession();
+        return requireProductionSession().beforeLight(owner, chunk, engine);
+    }
+    public CompletableFuture<Void> closeProduction() {
+        var value = requireProductionSession(); value.close(); return value.drain();
+    }
+    private ProductionSession requireProductionSession() {
+        if (production == null) throw new IllegalStateException("S0 laboratory has no production services");
+        return production;
+    }
     public static void warming(MinecraftServer server) {
         var services = find(server);
         if (services != null) {
+            if (services.production != null) { services.production.warming(); return; }
             services.planner.transition(BootstrapState.RECIPE_READY, BootstrapState.WARMING);
             services.trace("STARTUP_WARMING", "*", 0, 0, "prepareLevels", "none");
         }
     }
     public void assertActiveSession() {
+        if (production != null) {
+            if (SESSIONS.get(server) != this) throw new CancellationException("Stale production session");
+            production.active(); return;
+        }
         if (!planner.accepting() || SESSIONS.get(server) != this) {
             throw new CancellationException("Closed or stale world session");
         }
     }
     public CompletableFuture<ProbePlanner.Plan> require(String dimension, int x, int z, String stage) {
+        if (production != null) throw new IllegalStateException("Production cannot use ProbePlanner");
         if (!planner.accepting() || SESSIONS.get(server) != this) {
             return CompletableFuture.failedFuture(new CancellationException("Closed or stale world session"));
         }
@@ -186,16 +261,19 @@ public final class WorldServices {
         });
     }
     public void trace(String event, String dimension, int x, int z, String stage, String token) {
+        if (production != null) { production.trace(event, dimension, x, z, stage, token); return; }
         planner.trace().record(event, dimension, x, z, stage, token);
     }
-    public Map<String, Long> counts() { return planner.trace().counts(); }
+    public Map<String, Long> counts() { return production == null ? planner.trace().counts() : production.counts(); }
     public boolean hasCompletedStage(String dimension, int x, int z) {
+        if (production != null) return production.completedStage(dimension, x, z);
         return planner.trace().snapshot().stream().anyMatch(event -> event.event().equals("STAGE_EXIT")
                 && event.dimension().equals(dimension) && event.chunkX() == x && event.chunkZ() == z);
     }
-    public boolean recipeRejected() { return failure.containsKey("reason"); }
+    public boolean recipeRejected() { return production == null ? failure.containsKey("reason") : production.rejected(); }
 
     public void failBootstrap(Throwable cause) {
+        if (production != null) { production.fail(cause); return; }
         BootstrapState current = planner.state();
         if (current != BootstrapState.BOOTSTRAP && current != BootstrapState.RECIPE_READY
                 && current != BootstrapState.WARMING) return;
@@ -203,6 +281,7 @@ public final class WorldServices {
     }
 
     public void failRequiredPlan(Throwable cause) {
+        if (production != null) { production.fail(cause); return; }
         if (SESSIONS.get(server) != this || !server.isRunning()) return;
         BootstrapState current = planner.state();
         if ((current == BootstrapState.STOPPING || current == BootstrapState.CLOSED) && !recipeRejected()) return;

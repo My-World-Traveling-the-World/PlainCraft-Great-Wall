@@ -93,7 +93,7 @@ public final class GenerationResourceFingerprint {
         return Map.copyOf(inputs);
     }
 
-    private static String sourceHash(ModContainer mod) throws IOException {
+    static String sourceHash(ModContainer mod) throws IOException {
         var origin = mod.getOrigin();
         if (origin.getKind().name().equals("NESTED")) {
             var parent = mod.getContainingMod().orElseThrow(() -> new IOException("nested mod has no parent: " + mod.getMetadata().getId()));
