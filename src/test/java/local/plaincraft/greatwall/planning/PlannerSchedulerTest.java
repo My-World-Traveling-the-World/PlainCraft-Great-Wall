@@ -36,7 +36,56 @@ class PlannerSchedulerTest {
             for (int i = 0; i < 100; i++) leases.add(scheduler.requireGeometry(0, Priority.PLAYER));
             var expected = leases.getFirst().future().get(30, TimeUnit.SECONDS);
             for (var lease : leases) { assertSame(expected, lease.future().get(5, TimeUnit.SECONDS)); lease.close(); }
-            assertEquals(3, created.get(), "two routes and one hydrology cursor");
+            assertEquals(2, created.get(), "one oracle per lane, reused by two routes and hydrology");
+        }
+    }
+
+    @Test void heldNativeInitializationDoesNotStopStartupPumpOrNeedTicks() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        var entered = new CountDownLatch(2); var release = new CountDownLatch(1);
+        var created = new AtomicInteger();
+        try (var io = Executors.newSingleThreadExecutor()) {
+            var scheduler = new PlannerScheduler(recipe, () -> {
+                created.incrementAndGet(); entered.countDown();
+                try { if (!release.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("init not released"); }
+                catch (InterruptedException failure) { throw new IllegalStateException(failure); }
+                return new AnalyticTerrainOracle((x, z) -> AnalyticTerrainOracle.dry(64), true);
+            }, new SegmentCacheStore(directory.resolve("cache"), recipe), io);
+            try {
+                scheduler.startupPump();
+                assertTrue(entered.await(5, TimeUnit.SECONDS));
+                long iterations = scheduler.diagnostics().getOrDefault("startup-pump-iterations", 0L);
+                long timeout = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+                while (scheduler.diagnostics().getOrDefault("startup-pump-iterations", 0L) <= iterations + 5
+                        && System.nanoTime() < timeout) Thread.sleep(2);
+                assertTrue(scheduler.diagnostics().get("startup-pump-iterations") > iterations + 5);
+                assertFalse(scheduler.diagnostics().containsKey("startup-ready"));
+                assertFalse(scheduler.diagnostics().containsKey("tick-enqueued"));
+                try (var route = scheduler.requireRoute(0, Priority.PLAYER)) {
+                    assertFalse(route.future().isDone());
+                    release.countDown();
+                    assertEquals(0, route.future().get(30, TimeUnit.SECONDS).key().index());
+                }
+                assertEquals(2, created.get());
+            } finally {
+                release.countDown(); scheduler.close(); scheduler.drain().get(10, TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    @Test void nativeFactoryFailureTerminatesSchedulerDependenciesAndDrains() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        try (var io = Executors.newSingleThreadExecutor()) {
+            var scheduler = new PlannerScheduler(recipe, () -> { throw new IllegalStateException("init failure"); },
+                    new SegmentCacheStore(directory.resolve("cache"), recipe), io);
+            try (var route = scheduler.requireRoute(0, Priority.PLAYER);
+                 var geometry = scheduler.requireGeometry(0, Priority.PLAYER)) {
+                scheduler.startupPump();
+                assertThrows(ExecutionException.class, () -> route.future().get(5, TimeUnit.SECONDS));
+                assertThrows(ExecutionException.class, () -> geometry.future().get(5, TimeUnit.SECONDS));
+                scheduler.drain().get(5, TimeUnit.SECONDS);
+                assertTrue(scheduler.diagnostics().containsKey("closed"));
+            } finally { scheduler.close(); }
         }
     }
 
@@ -97,7 +146,7 @@ class PlannerSchedulerTest {
             for (long i : new long[] {3, 1, 2, 0}) leases.add(scheduler.requireGeometry(i, Priority.PLAYER));
             for (var lease : leases) {
                 var actual = lease.future().get(30, TimeUnit.SECONDS);
-                var expected = scheduler.computeGeometryNow(actual.key().index());
+                var expected = scheduler.computeGeometryNow(actual.key().index(), AnalyticTerrainOracle.ridge(true));
                 assertArrayEquals(CanonicalCodec.geometry(expected), CanonicalCodec.geometry(actual));
                 lease.close();
             }

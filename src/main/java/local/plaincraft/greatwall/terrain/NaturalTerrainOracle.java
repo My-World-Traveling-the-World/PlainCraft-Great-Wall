@@ -11,5 +11,7 @@ public interface NaturalTerrainOracle extends AutoCloseable {
     WorkState advance(ColumnCursor cursor, int primitiveLimit);
     ColumnSample finish(ColumnCursor cursor);
     String fingerprint();
+    /** Only analytic reference fixtures opt in; native production inputs must use asynchronous lanes. */
+    default boolean supportsSynchronousDiagnostics() { return false; }
     @Override void close();
 }

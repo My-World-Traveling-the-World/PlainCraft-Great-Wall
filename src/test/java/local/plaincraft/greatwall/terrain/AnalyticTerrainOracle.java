@@ -54,6 +54,7 @@ public final class AnalyticTerrainOracle implements NaturalTerrainOracle {
     }
 
     @Override public String fingerprint() { return PlanningFixtures.HASH; }
+    @Override public boolean supportsSynchronousDiagnostics() { return true; }
     @Override public void close() { closed = true; cache.clear(); }
     public int begun() { return begun; }
     private void checkOpen() { if (closed) throw new IllegalStateException("closed oracle"); }

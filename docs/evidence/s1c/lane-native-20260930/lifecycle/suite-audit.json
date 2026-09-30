@@ -1,0 +1,18 @@
+[
+  {
+    "suite": "local.plaincraft.greatwall.planning.PlannerSchedulerTest",
+    "tests": "14",
+    "actualTestcases": 14,
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "suite": "local.plaincraft.greatwall.terrain.OracleLaneTest",
+    "tests": "9",
+    "actualTestcases": 9,
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  }
+]

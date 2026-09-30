@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.planning.PlannerSchedulerTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-09-30T13:52:52.380Z" hostname="CAIMEO" time="0.325">
+  <properties/>
+  <testcase name="hundredCallersShareOneCompute()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.311">
+    <failure message="org.opentest4j.AssertionFailedError: one oracle per lane, reused by two routes and hydrology ==&gt; expected: &lt;2&gt; but was: &lt;3&gt;" type="org.opentest4j.AssertionFailedError">org.opentest4j.AssertionFailedError: one oracle per lane, reused by two routes and hydrology ==&gt; expected: &lt;2&gt; but was: &lt;3&gt;
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:563)
+	at local.plaincraft.greatwall.planning.PlannerSchedulerTest.hundredCallersShareOneCompute(PlannerSchedulerTest.java:39)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

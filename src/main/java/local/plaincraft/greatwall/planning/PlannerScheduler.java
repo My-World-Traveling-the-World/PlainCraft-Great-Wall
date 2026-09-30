@@ -24,6 +24,7 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.SegmentCacheStore;
 import local.plaincraft.greatwall.terrain.HydrologyClassifier;
 import local.plaincraft.greatwall.terrain.NaturalTerrainOracle;
+import local.plaincraft.greatwall.terrain.OracleLane;
 
 /** Pure S1A scheduler. Integration must acquire its futures before any FEATURES region lock. */
 public final class PlannerScheduler implements AutoCloseable {
@@ -38,7 +39,6 @@ public final class PlannerScheduler implements AutoCloseable {
     private final ConcurrentHashMap<String, Long> state = new ConcurrentHashMap<>();
     private final ScheduledThreadPoolExecutor pump;
     private final PrefixSummaryIndex prefixes;
-    private final Supplier<NaturalTerrainOracle> oracleFactory;
     private final SegmentCacheStore cache;
     private final Executor io;
     private final AnchorField anchors;
@@ -47,7 +47,8 @@ public final class PlannerScheduler implements AutoCloseable {
     private final HeightContractPlanner heights;
     private final SiteScheduler sites;
     private final BudgetCache<CacheKey, Object> memory;
-    private final List<ExecutorService> lanes;
+    private final List<OracleLane> lanes;
+    private final CompletableFuture<Void> drained = new CompletableFuture<>();
     private final List<Lane> laneState = List.of(new Lane(), new Lane());
     private final PriorityQueue<Job<?>> pending = new PriorityQueue<>(Comparator.<Job<?>, Priority>comparing(j -> j.priority)
             .thenComparingLong(j -> j.sequence));
@@ -61,7 +62,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private PlanLease<SegmentPlan> backgroundLease;
 
     public PlannerScheduler(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory, SegmentCacheStore cache, Executor io) {
-        this.recipe = Objects.requireNonNull(recipe); this.oracleFactory = Objects.requireNonNull(oracleFactory);
+        this.recipe = Objects.requireNonNull(recipe); Objects.requireNonNull(oracleFactory);
         this.cache = Objects.requireNonNull(cache); this.io = Objects.requireNonNull(io);
         if (!"minecraft:overworld".equals(recipe.dimension())) {
             throw new WallFailure(FailureCode.INVALID_RESOURCE, "only the overworld may own a wall planner");
@@ -74,8 +75,8 @@ public final class PlannerScheduler implements AutoCloseable {
         this.heights = new HeightContractPlanner(recipe); this.sites = new SiteScheduler(recipe);
         this.pump = new ScheduledThreadPoolExecutor(1, factory("pgw-planner-" + recipe.instance()));
         pump.setRemoveOnCancelPolicy(true);
-        this.lanes = List.of(Executors.newSingleThreadExecutor(factory("pgw-oracle-0-" + recipe.instance())),
-                Executors.newSingleThreadExecutor(factory("pgw-oracle-1-" + recipe.instance())));
+        this.lanes = List.of(new OracleLane(recipe.instance(), 0, recipe.terrainHash(), oracleFactory),
+                new OracleLane(recipe.instance(), 1, recipe.terrainHash(), oracleFactory));
         this.memory = new BudgetCache<>(recipe.config().segmentBytes(), 256, 4096, pump, PlannerScheduler::retainedBytes);
         this.prefixes = new PrefixSummaryIndex(i -> requireGeometry(i, Priority.PLAYER_PREFETCH), pump, cache, this::submitIo);
     }
@@ -178,6 +179,7 @@ public final class PlannerScheduler implements AutoCloseable {
         if (state.putIfAbsent("startup", 1L) != null) return;
         pump.execute(() -> {
             startupTimer = pump.scheduleWithFixedDelay(() -> {
+                state.merge("startup-pump-iterations", 1L, Long::sum);
                 credits = 4096; deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25); dispatch();
             }, 0, 1, TimeUnit.MILLISECONDS);
             var prewarm = new ArrayList<PlanLease<SegmentPlan>>();
@@ -220,16 +222,24 @@ public final class PlannerScheduler implements AutoCloseable {
     }
 
     public Map<UUID, JobProgress> progress() { return Map.copyOf(progress); }
-    public Map<String, Long> diagnostics() { return Map.copyOf(state); }
+    public Map<String, Long> diagnostics() {
+        var result = new HashMap<>(state);
+        for (var lane : lanes) lane.diagnostics().forEach((key, value) -> result.put("lane-" + lane.index() + "-" + key, value));
+        return Map.copyOf(result);
+    }
+    public CompletableFuture<Void> drain() { return drained.copy(); }
 
-    public SegmentGeometry computeGeometryNow(long segment) {
+    public SegmentGeometry computeGeometryNow(long segment, NaturalTerrainOracle diagnosticOracle) {
         key(segment);
+        if (!diagnosticOracle.supportsSynchronousDiagnostics()) {
+            throw new IllegalStateException("synchronous geometry is restricted to explicitly supplied analytic fixtures");
+        }
         String thread = Thread.currentThread().getName().toLowerCase(java.util.Locale.ROOT);
         if (thread.contains("worldgen") || thread.contains("c2me")) {
             throw new IllegalStateException("synchronous diagnostic computation is forbidden on worldgen threads");
         }
         long started = System.nanoTime();
-        try (var oracle = oracleFactory.get()) {
+        try (var oracle = diagnosticOracle) {
             var center = computeRoute(segment, oracle);
             var previous = segment == 0 ? Optional.<RouteShape>empty() : Optional.of(computeRoute(segment - 1, oracle));
             var next = safeSegment(segment + 1) ? Optional.of(computeRoute(segment + 1, oracle)) : Optional.<RouteShape>empty();
@@ -350,37 +360,53 @@ public final class PlannerScheduler implements AutoCloseable {
         for (int lane = 0; lane < laneState.size() && credits > 0 && System.nanoTime() < deadline; lane++) {
             var slot = laneState.get(lane);
             if (slot.busy) continue;
+            var nativeLane = lanes.get(lane);
+            if (!slot.ready) {
+                if (!slot.initializing) {
+                    slot.initializing = true;
+                    nativeLane.start().whenCompleteAsync((value, error) -> {
+                        if (error != null) {
+                            state.merge("lane-initialization-failures", 1L, Long::sum);
+                            routeFlights.forEach((key, future) -> future.completeExceptionally(error));
+                            geometryFlights.forEach((key, future) -> future.completeExceptionally(error));
+                            planFlights.forEach((key, future) -> future.completeExceptionally(error));
+                            close();
+                        } else { slot.ready = true; dispatch(); }
+                    }, pump);
+                }
+                continue;
+            }
             if (slot.job == null) slot.job = pending.poll();
             if (slot.job == null) continue;
             int operations = Math.min(64, credits); credits -= operations;
             var job = slot.job; slot.busy = true;
-            lanes.get(lane).execute(() -> {
+            nativeLane.submit(oracle -> {
                 Throwable error = null; boolean done = false; Object value = null;
                 long started = System.nanoTime();
                 try {
                     if (closed()) throw closedFailure();
-                    if (job.oracle == null) {
-                        job.oracle = oracleFactory.get();
-                        if (!job.oracle.fingerprint().equals(recipe.terrainHash())) throw new WallFailure(
-                                FailureCode.RECIPE_MISMATCH, "lane oracle fingerprint mismatch");
-                    }
-                    done = job.advance(operations);
+                    done = job.advance(oracle, operations);
                     if (done) value = job.value();
                 } catch (Throwable failure) { error = failure; done = true; }
                 long duration = System.nanoTime() - started;
                 state.merge("max-batch-nanos", duration, Math::max);
                 if (duration > TimeUnit.MILLISECONDS.toNanos(40)) state.merge("over-40ms-batches", 1L, Long::sum);
-                if (done && job.oracle != null) {
-                    try { job.oracle.close(); } catch (Throwable closeError) { if (error == null) error = closeError; }
-                    finally { job.oracle = null; }
-                }
-                boolean finished = done; Throwable failure = error; Object output = value;
+                return new Batch(done, error, value);
+            }).whenComplete((batch, submitError) -> {
                 try { pump.execute(() -> {
                     slot.busy = false;
                     if (closed()) { job.result.completeExceptionally(closedFailure()); return; }
+                    // A failed job may still own an unfinished native cursor. Never reuse that lane.
+                    Throwable failure = submitError != null ? submitError : batch.failure();
+                    if (failure != null) {
+                        job.result.completeExceptionally(failure);
+                        close();
+                        return;
+                    }
+                    boolean finished = batch.finished();
                     if (finished) {
                         slot.job = null; activeJobs.remove(job.id); progress.remove(job.id);
-                        if (failure != null) job.result.completeExceptionally(failure); else job.complete(output);
+                        job.complete(batch.value());
                     } else {
                         progress.put(job.id, new JobProgress(job.id, job.phase, job.operations, Long.MAX_VALUE, true));
                     }
@@ -575,11 +601,11 @@ public final class PlannerScheduler implements AutoCloseable {
             pending.forEach(job -> job.result.completeExceptionally(closedFailure()));
             pending.clear(); geometryQueue.clear(); ioQueue.clear(); planAdmissions.clear(); geometryAdmissions.clear();
             activeJobs.clear(); progress.clear();
-            for (int lane = 0; lane < lanes.size(); lane++) {
-                var job = laneState.get(lane).job;
-                lanes.get(lane).execute(() -> { if (job != null && job.oracle != null) job.oracle.close(); });
-                lanes.get(lane).shutdown();
-            }
+            lanes.forEach(OracleLane::close);
+            CompletableFuture.allOf(lanes.stream().map(OracleLane::drain).toArray(CompletableFuture[]::new))
+                    .whenComplete((value, error) -> {
+                        if (error == null) drained.complete(null); else drained.completeExceptionally(error);
+                    });
             pump.shutdown();
         });
     }
@@ -587,7 +613,8 @@ public final class PlannerScheduler implements AutoCloseable {
     private record CacheKey(String kind, long segment) {}
     private record Pair(SegmentGeometry geometry, PrefixSummary prefix) {}
     @FunctionalInterface private interface IoRead<T> { Optional<T> read() throws IOException; }
-    private static final class Lane { private Job<?> job; private boolean busy; }
+    private record Batch(boolean finished, Throwable failure, Object value) {}
+    private static final class Lane { private Job<?> job; private boolean busy, initializing, ready; }
 
     private abstract class Job<T> {
         private final UUID id = UUID.randomUUID();
@@ -595,12 +622,11 @@ public final class PlannerScheduler implements AutoCloseable {
         private final long sequence = PlannerScheduler.this.sequence++;
         private final String phase;
         final CompletableFuture<T> result;
-        NaturalTerrainOracle oracle;
         long operations;
         private Job(Priority priority, String phase, CompletableFuture<T> result) {
             this.priority = Objects.requireNonNull(priority); this.phase = phase; this.result = result;
         }
-        abstract boolean advance(int limit);
+        abstract boolean advance(NaturalTerrainOracle oracle, int limit);
         abstract T value();
         @SuppressWarnings("unchecked") private void complete(Object value) { result.complete((T) value); }
     }
@@ -611,7 +637,7 @@ public final class PlannerScheduler implements AutoCloseable {
         private RouteJob(SegmentKey key, Priority priority, CompletableFuture<RouteShape> result) {
             super(priority, "ROUTE", result); this.key = key;
         }
-        @Override boolean advance(int limit) {
+        @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
             if (cursor == null) cursor = ridge.begin(key, oracle);
             operations += limit; return ridge.advance(cursor, limit) == WorkState.DONE;
         }
@@ -625,7 +651,7 @@ public final class PlannerScheduler implements AutoCloseable {
             super(priority, "HYDROLOGY", result); this.routes = routes;
             result.thenAcceptAsync(PlannerScheduler.this::persist, pump);
         }
-        @Override boolean advance(int limit) {
+        @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
             if (cursor == null) cursor = hydrology.begin(routes, oracle, 24000);
             operations += limit; return hydrology.advance(cursor, limit) == WorkState.DONE;
         }
@@ -643,7 +669,7 @@ public final class PlannerScheduler implements AutoCloseable {
             super(priority, "HEIGHT_CONTRACT", result); this.inputs = inputs; this.provisional = provisional; this.points = points;
             result.thenAcceptAsync(PlannerScheduler.this::persist, pump);
         }
-        @Override boolean advance(int limit) {
+        @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
             for (int i = 0; i < limit && index < points.size(); i++) {
                 if (closed()) throw closedFailure();
                 var p = points.get(index); operations++;
