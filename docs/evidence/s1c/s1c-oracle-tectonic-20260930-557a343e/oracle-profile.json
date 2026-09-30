@@ -1,0 +1,335 @@
+{
+  "actualFluidAtMinPlus10": {
+    "id": "minecraft:water",
+    "properties": {
+      "level": "0"
+    }
+  },
+  "actualFluidAtMinPlus9": {
+    "id": "minecraft:lava",
+    "properties": {
+      "level": "0"
+    }
+  },
+  "actualNativeInitializations": 8,
+  "actualScheduler": {
+    "session": "509b794c-7d0f-454b-a9b5-6dbf46f1b235",
+    "firstRouteHash": "8b7f935b428241027f6494cf835bb7404c715df0aa15e9015aba5bed3429ad12",
+    "routes": 2,
+    "diagnostics": {
+      "lane-0-closed": 1,
+      "lane-1-oracle-closes": 1,
+      "closed": 1,
+      "lane-1-queued": 0,
+      "lane-1-factory-calls": 1,
+      "io-pending": 0,
+      "lane-0-ready": 1,
+      "lane-0-initializing": 1,
+      "batch-count": 10203,
+      "leases": 0,
+      "max-batch-nanos": 11909900,
+      "lane-0-queued": 0,
+      "startup-pump-iterations": 5316,
+      "acquisitions": 0,
+      "lane-0-initialization-nanos": 115792200,
+      "startup-failed": 1,
+      "lane-1-drained": 1,
+      "lane-1-initializing": 1,
+      "lane-1-initialization-nanos": 113040700,
+      "lane-0-oracle-closes": 1,
+      "lane-1-closed": 1,
+      "lane-1-ready": 1,
+      "startup": 1,
+      "lane-0-factory-calls": 1,
+      "lane-0-drained": 1
+    },
+    "startupPumpCallNanos": 699100,
+    "purpose": "actual-native-scheduler-only-no-production-wall-writes",
+    "status": "PASS_OBSERVED_BATCHES",
+    "secondRouteHash": "45ba0906ee9ba7f79bafec91c602e7d8e7036616a3c15da83c6361955db9ec3c"
+  },
+  "belowSeaIsWater": true,
+  "columns": 512,
+  "correctness": "PASS",
+  "drainedLanes": [
+    {
+      "factory-calls": 1,
+      "drained": 1,
+      "oracle-closes": 1,
+      "closed": 1,
+      "initializing": 1,
+      "initialization-nanos": 143320600,
+      "ready": 1,
+      "queued": 0
+    },
+    {
+      "factory-calls": 1,
+      "drained": 1,
+      "oracle-closes": 1,
+      "closed": 1,
+      "initializing": 1,
+      "initialization-nanos": 133765500,
+      "ready": 1,
+      "queued": 0
+    },
+    {
+      "factory-calls": 1,
+      "drained": 1,
+      "oracle-closes": 1,
+      "closed": 1,
+      "initializing": 1,
+      "initialization-nanos": 104740800,
+      "ready": 1,
+      "queued": 0
+    },
+    {
+      "factory-calls": 1,
+      "drained": 1,
+      "oracle-closes": 1,
+      "closed": 1,
+      "initializing": 1,
+      "initialization-nanos": 97283900,
+      "ready": 1,
+      "queued": 0
+    },
+    {
+      "factory-calls": 1,
+      "drained": 1,
+      "oracle-closes": 1,
+      "closed": 1,
+      "initializing": 1,
+      "initialization-nanos": 90071200,
+      "ready": 1,
+      "queued": 0
+    },
+    {
+      "factory-calls": 1,
+      "drained": 1,
+      "oracle-closes": 1,
+      "closed": 1,
+      "initializing": 1,
+      "initialization-nanos": 103962200,
+      "ready": 1,
+      "queued": 0
+    },
+    {
+      "factory-calls": 1,
+      "drained": 1,
+      "oracle-closes": 1,
+      "closed": 1,
+      "initializing": 1,
+      "initialization-nanos": 78602000,
+      "ready": 1,
+      "queued": 0
+    },
+    {
+      "factory-calls": 1,
+      "drained": 1,
+      "oracle-closes": 1,
+      "closed": 1,
+      "initializing": 1,
+      "initialization-nanos": 79671400,
+      "ready": 1,
+      "queued": 0
+    }
+  ],
+  "dry": 193,
+  "fingerprint": "86cc191fbb77aaf5a78d945ac05d9af6d3f570bfdbcb19028803ccbfb1954afb",
+  "initializationProtocol": "once-per-session-per-lane-lock-external-future-separate-from-40ms-steady",
+  "laneSessions": [
+    {
+      "seed": 0,
+      "jobsOnLane0": 2,
+      "session": "160cb85c-8b36-4f90-9889-75daf7ecc76c",
+      "lane0Oracle": "0e720795-bc4b-42cd-ade4-65bd4145f481",
+      "lane1Oracle": "572b380e-f0c2-467b-871f-5ddd7db518ac",
+      "lane0BeforeClose": {
+        "ready": 1,
+        "initialization-nanos": 143320600,
+        "factory-calls": 1,
+        "initializing": 1,
+        "queued": 0
+      },
+      "lane1BeforeClose": {
+        "ready": 1,
+        "initialization-nanos": 133765500,
+        "factory-calls": 1,
+        "initializing": 1,
+        "queued": 0
+      }
+    },
+    {
+      "seed": 1,
+      "jobsOnLane0": 2,
+      "session": "6f2c2e47-9923-4f90-a9a6-ce784a4d67be",
+      "lane0Oracle": "e3f4a244-83f8-4cfd-8030-1e800a6ddaa1",
+      "lane1Oracle": "27dc6b3a-c2c4-4cda-ae21-1569b821ba26",
+      "lane0BeforeClose": {
+        "ready": 1,
+        "initialization-nanos": 104740800,
+        "factory-calls": 1,
+        "initializing": 1,
+        "queued": 0
+      },
+      "lane1BeforeClose": {
+        "ready": 1,
+        "initialization-nanos": 97283900,
+        "factory-calls": 1,
+        "initializing": 1,
+        "queued": 0
+      }
+    },
+    {
+      "seed": 9282026,
+      "jobsOnLane0": 2,
+      "session": "7c1d7ed1-6233-4e1d-bbce-dcbfe27ba212",
+      "lane0Oracle": "5fc8e8ac-9b99-44d1-8f03-40d72f5353f7",
+      "lane1Oracle": "a0dd47db-00c8-4cb5-b3a0-8b79ae7d09f2",
+      "lane0BeforeClose": {
+        "ready": 1,
+        "initialization-nanos": 90071200,
+        "factory-calls": 1,
+        "initializing": 1,
+        "queued": 0
+      },
+      "lane1BeforeClose": {
+        "ready": 1,
+        "initialization-nanos": 103962200,
+        "factory-calls": 1,
+        "initializing": 1,
+        "queued": 0
+      }
+    },
+    {
+      "seed": -9223372036854775808,
+      "jobsOnLane0": 2,
+      "session": "435991e3-a803-4909-a3b6-4b1e31bd96ac",
+      "lane0Oracle": "8e82cbd4-b0e5-491a-946b-efddaa1d924d",
+      "lane1Oracle": "01f68952-509a-4a41-84e3-b4d62efe8ddc",
+      "lane0BeforeClose": {
+        "ready": 1,
+        "initialization-nanos": 78602000,
+        "factory-calls": 1,
+        "initializing": 1,
+        "queued": 0
+      },
+      "lane1BeforeClose": {
+        "ready": 1,
+        "initialization-nanos": 79671400,
+        "factory-calls": 1,
+        "initializing": 1,
+        "queued": 0
+      }
+    }
+  ],
+  "maxYExclusive": 320,
+  "minY": -64,
+  "mods": {
+    "fabric-recipe-api-v1": "5.0.16+2475392c19",
+    "fabric-object-builder-api-v1": "15.2.1+40875a9319",
+    "fabric-item-api-v1": "11.2.0+3b3cb2e819",
+    "fabric-gametest-api-v1": "2.0.5+6fc22b9919",
+    "fabric-api-base": "0.4.42+6573ed8c19",
+    "fabric-commands-v0": "0.2.66+df3654b319",
+    "plaincraft_great_wall_server_smoke": "1.0.0",
+    "de_marhali_json5-java": "3.0.0",
+    "java": "21",
+    "fabric-game-rule-api-v1": "1.0.53+6ced4dd919",
+    "fabric-rendering-fluids-v1": "3.1.6+1daea21519",
+    "fabric-transitive-access-wideners-v1": "6.2.0+45b9699719",
+    "fabric-block-view-api-v2": "1.0.11+ebb2264e19",
+    "fabric-lifecycle-events-v1": "2.6.0+0865547519",
+    "minecraft": "1.21.1",
+    "fabric-networking-api-v1": "4.3.1+d30f6a7919",
+    "fabric-command-api-v1": "1.2.49+f71b366f19",
+    "fabric-command-api-v2": "2.2.28+6ced4dd919",
+    "fabric-resource-loader-v0": "1.3.1+5b5275af19",
+    "fabric-tag-api-v1": "1.3.0+1eb36c0719",
+    "mixinextras": "0.5.4",
+    "fabric-events-interaction-v0": "0.7.14+ba9dae0619",
+    "fabric-api": "0.116.14+1.21.1",
+    "fabric-transfer-api-v1": "5.4.4+7b3d111d19",
+    "lithostitched": "1.8.0+beta6",
+    "apollib": "1.2.0",
+    "fabric-particles-v1": "4.0.2+6573ed8c19",
+    "fabric-message-api-v1": "6.0.14+8aaf3aca19",
+    "fabric-registry-sync-v0": "5.3.2+e3eddc2119",
+    "fabric-loot-api-v2": "3.0.15+3f89f5a519",
+    "fabric-loot-api-v3": "1.0.3+3f89f5a519",
+    "fabricloader": "0.19.3",
+    "fabric-data-attachment-api-v1": "1.4.7+5b36e0f719",
+    "plaincraft_great_wall": "0.1.0-s0.3",
+    "fabric-crash-report-info-v1": "0.2.29+0af3f5a719",
+    "fabric-item-group-api-v1": "4.1.7+def88e3a19",
+    "fabric-data-generation-api-v1": "20.3.0+1eb36c0719",
+    "tectonic": "3.0.26",
+    "fabric-dimensions-v1": "4.0.1+65213ef819",
+    "fabric-rendering-data-attachment-v1": "0.3.49+73761d2e19",
+    "fabric-block-api-v1": "1.1.0+0bc3503219",
+    "fabric-content-registries-v0": "8.0.19+b559734419",
+    "fabric-convention-tags-v1": "2.1.7+7f945d5b19",
+    "fabric-convention-tags-v2": "2.12.0+c3656daa19",
+    "fabric-api-lookup-api-v1": "1.6.72+7b3d111d19",
+    "fabric-entity-events-v1": "1.8.0+2b27e0a419",
+    "fabric-resource-conditions-api-v1": "4.3.0+8dc279b119",
+    "fabric-screen-handler-api-v1": "1.3.91+b559734419",
+    "fabric-biome-api-v1": "13.0.31+d527f9fd19"
+  },
+  "nativeInitializationSentinelHits": 0,
+  "nativeSha256": "9a874cbb44033887b5cba8456fbe57b7996ae72f4b63420254e68920297e1b10",
+  "oracleInitializations": [
+    {
+      "oracleConstructorCpuNanos": 140625000,
+      "nativeRandomStateWallNanos": 140817600,
+      "seed": 0,
+      "oracleConstructorWallNanos": 140929100
+    },
+    {
+      "oracleConstructorCpuNanos": 93750000,
+      "nativeRandomStateWallNanos": 104642800,
+      "seed": 1,
+      "oracleConstructorWallNanos": 104678900
+    },
+    {
+      "oracleConstructorCpuNanos": 93750000,
+      "nativeRandomStateWallNanos": 89943900,
+      "seed": 9282026,
+      "oracleConstructorWallNanos": 89982600
+    },
+    {
+      "oracleConstructorCpuNanos": 78125000,
+      "nativeRandomStateWallNanos": 78517900,
+      "seed": -9223372036854775808,
+      "oracleConstructorWallNanos": 78548500
+    }
+  ],
+  "performance": "PASS_OBSERVED_INPUTS",
+  "profile": "tectonic",
+  "purpose": "native-oracle-only-not-production-wall-acceptance",
+  "seeds": [
+    0,
+    1,
+    9282026,
+    -9223372036854775808
+  ],
+  "slicedSha256": "9a874cbb44033887b5cba8456fbe57b7996ae72f4b63420254e68920297e1b10",
+  "states": 196608,
+  "status": "PASS_NATIVE_ORACLE",
+  "steadyPrimitiveLimit": 64,
+  "timing": {
+    "maxOraclePointNanos": 413500,
+    "maxBridgeConstructNanos": 1751500,
+    "maxOracleCellNanos": 167000,
+    "maxOtherLaneAdvance64Nanos": 1660500,
+    "maxOracleAdvance64Nanos": 15415600,
+    "maxOracleRandomStateNanos": 140817600,
+    "maxOracleConstructNanos": 15163300,
+    "maxOracleBiomeNanos": 649000,
+    "maxBridgePointNanos": 13700,
+    "maxOracleBlockNanos": 2504700,
+    "oracleOver40msAdvances": 0,
+    "maxBridgeCellNanos": 6547900,
+    "oracleOver40msPrimitives": 0
+  },
+  "wet": 319
+}

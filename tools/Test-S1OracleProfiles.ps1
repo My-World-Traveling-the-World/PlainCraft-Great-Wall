@@ -93,7 +93,7 @@ foreach ($profile in $Profiles) {
     if ($null -ne $oracle -and $oracle.ContainsKey('laneSessions') -and $oracle.ContainsKey('drainedLanes')) {
         $identities = @($oracle.laneSessions | ForEach-Object { $_.lane0Oracle; $_.lane1Oracle })
         $badLanes = @($oracle.drainedLanes | Where-Object {
-            $_.'factory-calls' -ne 1 -or $_.'oracle-closes' -ne 1 -or $_.drained -ne 1 -or
+            $_.'factory-calls' -ne 1 -or $_.'native-constructions' -ne 1 -or $_.'oracle-closes' -ne 1 -or $_.drained -ne 1 -or
             ($_.ContainsKey('forbidden-init-thread') -and $_.'forbidden-init-thread' -ne 0) -or
             ($_.ContainsKey('sentinel-WAIT_WHILE_LOCKED') -and $_.'sentinel-WAIT_WHILE_LOCKED' -ne 0)
         })

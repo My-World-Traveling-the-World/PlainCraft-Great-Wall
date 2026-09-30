@@ -1,0 +1,9 @@
+PASS: DedicatedServer startup, 1181 ticks and clean shutdown
+serverClass=net.minecraft.server.dedicated.DedicatedServer
+profile=tectonic
+seed=9282026
+minY=-64
+maxYExclusive=320
+generator=net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator
+loadedChunks=841
+mods=49

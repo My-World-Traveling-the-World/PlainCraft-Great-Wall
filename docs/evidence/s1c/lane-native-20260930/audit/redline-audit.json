@@ -1,0 +1,7 @@
+{
+  "sourceCommit": "104f548a63d32fd0398558a6611ca07e37f2cf9c",
+  "scope": "OracleLane/CpuTerrainOracle/PlannerScheduler compiled method references only",
+  "forbiddenMethodReferenceHits": 0,
+  "productionWorldgenSentinel": "NOT_RUN",
+  "notes": "Supplier.get and Map.get are not Future.get; String.join is not Future.join"
+}

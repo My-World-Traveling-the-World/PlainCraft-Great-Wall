@@ -50,6 +50,7 @@ final class NativeSchedulerFixture {
                 for (int lane = 0; lane < 2; lane++) {
                     String prefix = "lane-" + lane + "-";
                     if (d.getOrDefault(prefix + "factory-calls", 0L) != 1
+                            || d.getOrDefault(prefix + "native-constructions", 0L) != 1
                             || d.getOrDefault(prefix + "oracle-closes", 0L) != 1
                             || d.getOrDefault(prefix + "drained", 0L) != 1
                             || d.getOrDefault(prefix + "sentinel-WAIT_WHILE_LOCKED", 0L) != 0

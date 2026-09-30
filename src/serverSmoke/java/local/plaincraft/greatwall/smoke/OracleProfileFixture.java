@@ -226,7 +226,8 @@ public final class OracleProfileFixture implements AutoCloseable {
                 CompletableFuture.allOf(lane0.drain(), lane1.drain()).get(60, java.util.concurrent.TimeUnit.SECONDS);
                 for (var lane : List.of(lane0, lane1)) {
                     var d = lane.diagnostics();
-                    if (d.getOrDefault("factory-calls", 0L) != 1 || d.getOrDefault("oracle-closes", 0L) != 1
+                    if (d.getOrDefault("factory-calls", 0L) != 1 || d.getOrDefault("native-constructions", 0L) != 1
+                            || d.getOrDefault("oracle-closes", 0L) != 1
                             || d.getOrDefault("sentinel-WAIT_WHILE_LOCKED", 0L) != 0
                             || d.getOrDefault("forbidden-init-thread", 0L) != 0 || d.getOrDefault("drained", 0L) != 1) {
                         throw new IllegalStateException("native initialization/drain sentinel failed: " + d);
