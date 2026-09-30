@@ -46,6 +46,13 @@ public final class RealizationPlanner {
     }
     private RealizationCell resolve(Input input,List<GroundExitDecision> decisions,
             java.util.function.Consumer<GroundExitDecision.Slice> inspection) {
+        long temporary=workingBytes(input);
+        CompiledAllocation.charge(temporary);
+        try { return resolveAccounted(input,decisions,inspection); }
+        finally { CompiledAllocation.discard(temporary); }
+    }
+    private RealizationCell resolveAccounted(Input input,List<GroundExitDecision> decisions,
+            java.util.function.Consumer<GroundExitDecision.Slice> inspection) {
         if(input.key().arcCell()<0)throw new IllegalArgumentException("negative arc cell");
         if(recipe!=null&&(!recipe.recipeHash().equals(input.key().recipeHash())||!recipe.dimension().equals(input.key().dimension())))
             throw new WallFailure(FailureCode.RECIPE_MISMATCH,"foreign realization request");
@@ -101,10 +108,13 @@ public final class RealizationPlanner {
             long siteFrom=Math.max(0,site.globalSQ8()-extent),siteTo=site.globalSQ8()+extent;
             if(waters.stream().anyMatch(w->w.classification()!=WaterClass.DRY&&w.crossing().fromQ8()-8L*256<siteTo
                     &&w.crossing().toQ8()+8L*256>siteFrom))continue;
-            occupied.add(new ArcInterval(Math.max(0,site.globalSQ8()-extent),site.globalSQ8()+extent));
+            // An 11-column tower occupies [-5,6), not the symmetric 12-column planning guard.
+            // Preserve that guard for hydrology/exits, but do not remove the connecting wall column.
+            long replacementFrom=site.id().kind()==SiteKind.ENEMY_TOWER?site.globalSQ8()-5L*256:site.globalSQ8()-extent;
+            occupied.add(new ArcInterval(Math.max(0,replacementFrom),site.globalSQ8()+extent));
             // All cells can vote on a site's full footprint; only its center cell publishes it.
-            var candidate=componentInput(input,site,stations,field.sample(site.globalSQ8(),PaletteFamily.STONE,List.of(site.globalSQ8())),List.of(),bounds,supported);
-            ComponentVoxels component=compile(site.id().kind(),candidate,input);
+            ComponentVoxels component=compile(site.id().kind(),()->componentInput(input,site,stations,
+                    field.sample(site.globalSQ8(),PaletteFamily.STONE,List.of(site.globalSQ8())),List.of(),bounds,supported),input);
             if(component==null||component.voxels().isEmpty()){
                 if(site.id().kind()==SiteKind.FORT&&site.id().ordinal()==0)throw new WallFailure(FailureCode.ROOT_NOT_FOUND,"fort0 realization failed");
                 breaks.add(new BreakInterval(new ArcInterval(Math.max(0,site.globalSQ8()-extent-8L*256),site.globalSQ8()+extent+8L*256),BreakReason.CONFLICT,BreakScope.REALIZED));
@@ -123,8 +133,8 @@ public final class RealizationPlanner {
             if(center<Math.max(0,from-128L*256)||center>=to+128L*256)continue;
             occupied.add(new ArcInterval(Math.max(0,water.crossing().fromQ8()-8L*256),water.crossing().toQ8()+8L*256));
             var site=site(wall,SiteKind.WATER_GATE,water.crossing().fromQ8(),center,stations);
-            var candidate=componentInput(input,site,stations,field.sample(center,PaletteFamily.STONE,maintained),List.of(water),bounds,supported);
-            var component=compile(SiteKind.WATER_GATE,candidate,input);
+            var component=compile(SiteKind.WATER_GATE,()->componentInput(input,site,stations,
+                    field.sample(center,PaletteFamily.STONE,maintained),List.of(water),bounds,supported),input);
             if(component==null||component.voxels().isEmpty())breaks.add(new BreakInterval(water.crossing(),BreakReason.NO_SUPPORT,BreakScope.REALIZED));
             else if(center>=from&&center<to&&center<terminal)accepted.add(component);
         }
@@ -164,8 +174,8 @@ public final class RealizationPlanner {
                     var original=capSite(wall,s,cap.edge().reverse(),stations);
                     var attempt=EndCap.candidates(original,stations).stream().filter(a->a.globalSQ8()==cap.actualSQ8()).findFirst()
                             .orElseThrow(()->new WallFailure(FailureCode.T0_CORRUPT,"certified cap left station ribbon"));
-                    var compiled=((EndCap)templates.get(SiteKind.END_CAP)).compileAt(componentInput(input,attempt,stations,
-                            new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,supported),c->c.hash().equals(cap.componentHash()));
+                    var compiled=CompiledAllocation.component(()->((EndCap)templates.get(SiteKind.END_CAP)).compileAt(componentInput(input,attempt,stations,
+                            new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,supported),c->c.hash().equals(cap.componentHash())));
                     if(!compiled.id().equals(cap.site())||!compiled.hash().equals(cap.componentHash()))
                         throw new WallFailure(FailureCode.T0_CORRUPT,"certified cap changed before APPLY");
                     accepted.add(compiled);
@@ -200,6 +210,12 @@ public final class RealizationPlanner {
                 resolved.protectionHash(),hash(resolved.hash()+"\n"+decisions.stream().map(GroundExitDecision::hash).sorted().toList()));
     }
     public GroundExitDecision.CapVote probeCap(Input input,GroundExitDecision.Edge edge) {
+        long temporary=workingBytes(input);
+        CompiledAllocation.charge(temporary);
+        try { return probeCapAccounted(input,edge); }
+        finally { CompiledAllocation.discard(temporary); }
+    }
+    private GroundExitDecision.CapVote probeCapAccounted(Input input,GroundExitDecision.Edge edge) {
         var ribbon=stations(input.plans());
         String wall=recipe==null?sites(input.plans()).getFirst().id().wallId():recipe.wallId();
         var limits=recipe==null?new DimensionBounds(input.tiles().keySet().stream().mapToInt(TerrainTile.Key::minY).min().orElseThrow(),
@@ -211,12 +227,12 @@ public final class RealizationPlanner {
             long b=edge.reverse()?attempt.globalSQ8()+30L*256:attempt.globalSQ8();
             if(a<edge.allowed().fromQ8()||b>edge.allowed().toQ8())continue;
             try {
-                var c=((EndCap)templates.get(SiteKind.END_CAP)).compileAt(componentInput(input,attempt,ribbon,
+                var c=CompiledAllocation.component(()->((EndCap)templates.get(SiteKind.END_CAP)).compileAt(componentInput(input,attempt,ribbon,
                         new DecaySample(DecayState.INTACT,0,20),List.of(),limits,Map.of()),candidate->{
                             var footprint=capFootprint(candidate,ribbon);
                             return footprint.fromQ8()>=edge.allowed().fromQ8()&&footprint.toQ8()<=edge.allowed().toQ8()
                                     &&occupied.stream().noneMatch(r->r.fromQ8()<footprint.toQ8()&&r.toQ8()>footprint.fromQ8());
-                        });
+                        }));
                 if(!c.voxels().isEmpty()) {
                     return new GroundExitDecision.CapVote(Optional.of(new GroundExitDecision.Cap(c.id(),edge,
                             attempt.globalSQ8(),c.hash(),capFootprint(c,ribbon))),evidenceHash(input));
@@ -243,8 +259,8 @@ public final class RealizationPlanner {
             if(extent==0)continue;
             var range=new ArcInterval(Math.max(0,s.globalSQ8()-extent),s.globalSQ8()+extent);
             if(result.stream().anyMatch(r->r.fromQ8()<range.toQ8()&&r.toQ8()>range.fromQ8()))continue;
-            var candidate=componentInput(input,s,ribbon,field.sample(s.globalSQ8(),PaletteFamily.STONE,List.of(s.globalSQ8())),List.of(),limits,Map.of());
-            var c=compile(s.id().kind(),candidate,input);
+            var c=compile(s.id().kind(),()->componentInput(input,s,ribbon,
+                    field.sample(s.globalSQ8(),PaletteFamily.STONE,List.of(s.globalSQ8())),List.of(),limits,Map.of()),input);
             if(c!=null&&!c.voxels().isEmpty())result.add(range);
         }
         return List.copyOf(result);
@@ -262,6 +278,13 @@ public final class RealizationPlanner {
         }).min(Comparator.comparingLong(b->b.range().fromQ8()));
     }
     private static String evidenceHash(Input input) {
+        long temporary=Math.addExact(4096,Math.addExact(Math.multiplyExact(768L,input.columns().size()),
+                Math.multiplyExact(512L,input.tiles().size())));
+        CompiledAllocation.charge(temporary);
+        try { return evidenceHashAccounted(input); }
+        finally { CompiledAllocation.discard(temporary); }
+    }
+    private static String evidenceHashAccounted(Input input) {
         var columns=input.columns().entrySet().stream().sorted(Map.Entry.comparingByKey(Comparator.comparingInt(Point3i::x).thenComparingInt(Point3i::z)))
                 .map(e->e.getKey()+":"+e.getValue().hash()).toList();
         return hash(input.key()+"\n"+input.plans().plans().stream().map(SegmentPlan::hash).sorted().toList()+"\n"
@@ -321,9 +344,9 @@ public final class RealizationPlanner {
                 site.bounds(),site.state(),site.absorbedBy(),site.reason());}
         if(!(templates.get(SiteKind.END_CAP) instanceof EndCap template))throw new IllegalArgumentException("missing EndCap");
         for(var attempt:EndCap.candidates(site,stations)){
-            var candidate=componentInput(input,attempt,stations,new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,known);
             ComponentVoxels cap;
-            try{cap=template.compileAt(candidate);}
+            try{cap=CompiledAllocation.component(()->template.compileAt(componentInput(input,attempt,stations,
+                    new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,known)));}
             catch(WallFailure failure){if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT)throw failure;continue;}
             if(cap.voxels().isEmpty())continue;
             long actual=attempt.globalSQ8();
@@ -333,10 +356,11 @@ public final class RealizationPlanner {
         }
         throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"no proven ground exit for break at "+s);
     }
-    private ComponentVoxels compile(SiteKind kind,ComponentInput candidate,Input input) {
+    private ComponentVoxels compile(SiteKind kind,java.util.function.Supplier<ComponentInput> preparation,Input input) {
         var template=templates.get(kind);if(template==null)throw new IllegalArgumentException("missing template "+kind);
         try{
             return CompiledAllocation.component(()->{
+            var candidate=preparation.get();
             if(template instanceof Gate gate){
                 Integer ground=input.frozenGateY().get(new GateId(candidate.site().id().wallId(),"planned",candidate.site().id().ordinal()));
                 return ground==null?gate.compile(candidate):gate.compileAtGround(candidate,ground);
@@ -347,17 +371,30 @@ public final class RealizationPlanner {
     }
     private ComponentInput componentInput(Input input,SiteRecord site,List<Station> stations,DecaySample decay,List<WaterEvidence> waters,
             DimensionBounds bounds,Map<Point3i,ProbeResult> known) {
-        var supports=new HashMap<Point3i,ProbeResult>(known);
-        var provisional=new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,List.of());
+        var provisional=new ComponentInput(site,stations,Map.of(),decay,PaletteFamily.STONE,false,waters,List.of());
         var template=templates.get(site.id().kind());if(template==null)throw new IllegalArgumentException("missing template "+site.id().kind());
         Bounds world=Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
+        long columns=Math.multiplyExact((long)world.maxXExclusive()-world.minX(),(long)world.maxZExclusive()-world.minZ());
+        CompiledAllocation.charge(Math.addExact(1024,Math.multiplyExact(columns,256)));
+        // Templates only borrow their full authorized footprint, never the unrelated cell support table.
+        var supports=new HashMap<Point3i,ProbeResult>();
         for(int z=world.minZ();z<world.maxZExclusive();z++)for(int x=world.minX();x<world.maxXExclusive();x++) {
             var pos=new Point3i(x,0,z);var column=input.columns().get(pos);
             if(column==null)throw new WallFailure(FailureCode.T0_MISSING,"complete component T0 column missing: "+pos);
             var key=new Point3i(x,site.frame().walkY(),z);
-            supports.computeIfAbsent(key,k->probe.probe(protectedView(column,pos,input.protectedBounds()),k.y(),bounds));
+            var existing=known.get(key);
+            supports.put(key,existing!=null?existing:probe.probe(protectedView(column,pos,input.protectedBounds()),key.y(),bounds));
         }
         return new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,List.of());
+    }
+    private static long workingBytes(Input input) {
+        long bytes=Math.addExact(8192,Math.multiplyExact(256L,input.columns().size()));
+        bytes=Math.addExact(bytes,Math.multiplyExact(512L,input.tiles().size()));
+        for(var plan:input.plans().plans()) {
+            bytes=Math.addExact(bytes,Math.multiplyExact(256L,plan.stations().stations().size()));
+            bytes=Math.addExact(bytes,Math.multiplyExact(512L,plan.sites().size()+plan.geometry().water().size()+plan.stations().breaks().size()));
+        }
+        return bytes;
     }
     private static void requireRibbonColumns(Input input,List<Station> ribbon,long from,long to) {
         for(long s=from;s<to;s+=256) {

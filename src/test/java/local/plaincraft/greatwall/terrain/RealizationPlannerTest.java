@@ -5,10 +5,67 @@ import java.util.*;
 import local.plaincraft.greatwall.component.*;
 import local.plaincraft.greatwall.decay.*;
 import local.plaincraft.greatwall.generation.SurfaceProbe;
+import local.plaincraft.greatwall.diagnostics.AllocationBudget;
+import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
+import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import org.junit.jupiter.api.Test;
 
 class RealizationPlannerTest {
+    @Test void elevenWideTowerKeepsTheWallColumnInsideItsTwelveWidePlanningGuard() {
+        var base=input(false,0);var p=base.plans().plans().getFirst();long center=320*256L;
+        var tower=new SiteRecord(new SiteId("fixture",SiteKind.ENEMY_TOWER,1),center,
+                new Frame(new Point2q(center,0),1<<30,0,84,false),new Bounds(315,51,-5,326,92,6),
+                SiteState.PLANNED,Optional.empty(),Optional.empty());
+        var plans=new PlanWindow(List.of(new SegmentPlan(p.geometry(),p.prefix(),p.stations(),List.of(tower),p.hash())));
+        var request=new RealizationPlanner.Input(new CellKey(H,"minecraft:overworld",4),plans,base.tiles(),base.columns(),List.of(),Map.of(),0,H);
+        var d=new DecayField(0);var planner=new RealizationPlanner(new SurfaceProbe(),Map.of(
+                SiteKind.WALL,new WallSection(d,PALETTE),SiteKind.END_CAP,new EndCap(d,PALETTE),
+                SiteKind.ENEMY_TOWER,new EnemyTower(d,PALETTE)));
+        var result=planner.resolve(request);
+        var connector=new Point3i(314,83,0);
+        assertTrue(result.components().stream().flatMap(c->c.voxels().stream())
+                .anyMatch(v->v.pos().equals(connector)&&v.walkable()),"wall must meet the tower's actual x=315 entry");
+        assertEquals(12,6+6,"independent witness: symmetric planning interval removes twelve columns");
+        assertEquals(11,6-(-5),"frozen tower remains eleven columns; the planning guard is not its masonry");
+        assertEquals(1,(320-5)-(320-6),"old subtraction leaves exactly one unsupported walkway column");
+    }
+    @Test void exhaustedBudgetRejectsInspectionBeforeAnyTerrainColumnIsRead() {
+        var base=input(false,0);int[] reads={0};
+        var columns=new HashMap<Point3i,SurfaceProbe.ColumnView>();
+        base.columns().forEach((p,c)->columns.put(p,new SurfaceProbe.ColumnView(){
+            public String state(int y){reads[0]++;return c.state(y);}
+            public boolean solidSupport(int y){reads[0]++;return c.solidSupport(y);}
+            public boolean protectedAt(int y){reads[0]++;return c.protectedAt(y);}
+            public boolean water(int y){reads[0]++;return c.water(y);}
+            public boolean airOrReplaceablePlant(int y){reads[0]++;return c.airOrReplaceablePlant(y);}
+            public int highestNonPlantFeet(){reads[0]++;return c.highestNonPlantFeet();}
+            public String hash(){reads[0]++;return c.hash();}
+        }));
+        var value=new RealizationPlanner.Input(base.key(),base.plans(),base.tiles(),columns,List.of(),Map.of(),0,H);
+        try(var budget=new AllocationBudget(32L<<20)) {
+            budget.consume(32L<<20);
+            var failure=assertThrows(WallFailure.class,()->CompiledAllocation.run(budget,()->planner().inspect(value),ignored->0));
+            assertEquals(FailureCode.CAPACITY,failure.code());
+            assertEquals(0,reads[0],"reserve support/sort tables before inspecting any actual terrain");
+            assertEquals(32L<<20,budget.stats().used(),"rejection cannot free the caller's reservation");
+        }
+    }
+
+    @Test void inspectionScratchIsReleasedOnSuccessAndMissingColumnFailure() {
+        var base=input(false,0);
+        try(var budget=new AllocationBudget(32L<<20)) {
+            var expected=planner().inspect(base);
+            for(int n=0;n<3;n++) {
+                assertEquals(expected,CompiledAllocation.run(budget,()->planner().inspect(base),ignored->0));
+                assertEquals(0,budget.stats().used());
+            }
+            var columns=new HashMap<>(base.columns());columns.remove(new Point3i(320,0,0));
+            var missing=new RealizationPlanner.Input(base.key(),base.plans(),base.tiles(),columns,List.of(),Map.of(),0,H);
+            var failure=assertThrows(WallFailure.class,()->CompiledAllocation.run(budget,()->planner().inspect(missing),ignored->0));
+            assertEquals(FailureCode.T0_MISSING,failure.code());assertEquals(0,budget.stats().used());
+        }
+    }
     private static final String H="a".repeat(64);
     private static final PaletteBinding PALETTE=(i,p,l,w,s,h)->new BlockSpec(switch(p){
         case FLOOR,SLAB->"minecraft:stone_brick_slab";case STAIR->"minecraft:stone_brick_stairs";
