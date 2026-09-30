@@ -6,6 +6,7 @@ import java.util.Objects;
 import local.plaincraft.greatwall.decay.DecayField;
 import local.plaincraft.greatwall.decay.PaletteBinding;
 import local.plaincraft.greatwall.geometry.FixedMath;
+import local.plaincraft.greatwall.geometry.Rasterizer;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** A 64-block arc cell, rasterized against the station chain rather than its straight chord. */
@@ -44,6 +45,13 @@ public final class WallSection implements ComponentTemplate {
     /** Rendering and walkability are separate: low ruins remain visible without claiming a walkway. */
     public ComponentVoxels compileIntervals(ComponentInput input,List<ArcInterval> intervals,
             List<ArcInterval> walkable,java.util.function.LongFunction<DecaySample> samples) {
+        return compileIntervals(input,intervals,walkable,samples,List.of());
+    }
+
+    /** A rigid gate replaces wall columns between its own end planes, not a curved S proxy. */
+    public ComponentVoxels compileIntervals(ComponentInput input,List<ArcInterval> intervals,
+            List<ArcInterval> walkable,java.util.function.LongFunction<DecaySample> samples,List<Frame> gates) {
+        final List<Frame> replacements=List.copyOf(gates);
         List<Station> stations = input.stations();
         long center = input.site().globalSQ8(), from = Math.max(0,center-32L*256);
         if(stations.size()<2)throw new IllegalArgumentException("wall requires complete station ribbon");
@@ -57,9 +65,12 @@ public final class WallSection implements ComponentTemplate {
         for(var interval:walkable) {
             if(interval.fromQ8()<from||interval.toQ8()>to)throw new IllegalArgumentException("walkable interval outside cell");
             int left=FixedMath.floorBlock(interval.fromQ8()-center)+1,right=FixedMath.floorBlock(interval.toQ8()-center)-2;
+            while(left<=right&&replacedAnchor(input,left,replacements))left++;
+            while(right>=left&&replacedAnchor(input,right,replacements))right--;
             if(right>=left)assembly.route(new Point3i(left,0,0),new Point3i(right,0,0));
         }
         return assembly.finish(bounds,(x,z) -> {
+            if(replaced(x,z,replacements))return null;
             var column=column(stations,x,z,center,from,to,input.site().frame().mirror());
             return column!=null&&intervals.stream().anyMatch(i->column.globalS()>=i.fromQ8()&&column.globalS()<i.toQ8())?column:null;
         },p -> {
@@ -95,6 +106,20 @@ public final class WallSection implements ComponentTemplate {
                 return cell(Part.LAMP,false,false,Map.of("hanging","false","waterlogged","false"));
             return null;
         },samples,p->routeAnchor(input,p));
+    }
+
+    private static boolean replacedAnchor(ComponentInput input,int localX,List<Frame> gates) {
+        if(gates.isEmpty())return false;
+        var p=routeAnchor(input,new Point3i(localX,0,0)).center();
+        return replaced(FixedMath.floorBlock(p.xQ8()),FixedMath.floorBlock(p.zQ8()),gates);
+    }
+
+    private static boolean replaced(int x,int z,List<Frame> gates) {
+        for(var gate:gates) {
+            int along=Rasterizer.localCell(gate,new Point3i(x,gate.walkY(),z)).x();
+            if(along>=-30&&along<30)return true;
+        }
+        return false;
     }
 
     /** Curve routes use the same station ribbon as the rasterizer, not the center's straight tangent. */

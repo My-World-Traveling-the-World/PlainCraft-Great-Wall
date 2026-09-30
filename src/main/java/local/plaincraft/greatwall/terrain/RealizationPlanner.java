@@ -119,6 +119,8 @@ public final class RealizationPlanner {
             }
         }
         var occupied=new ArrayList<ArcInterval>();
+        var gateWalkIntervals=new ArrayList<ArcInterval>();
+        var gateEndPlanes=new ArrayList<Frame>();
         for(var site:sites) {
             if(site.globalSQ8()<Math.max(0,from-64L*256)||site.globalSQ8()>=to+64L*256||site.state()==SiteState.SUPPRESSED||site.state()==SiteState.ABSORBED)continue;
             long extent=switch(site.id().kind()){case FORT->24L*256;case GATE->30L*256;case ENEMY_TOWER->6L*256;case BEACON->5L*256;default->0;};
@@ -131,14 +133,18 @@ public final class RealizationPlanner {
             // An 11-column tower occupies [-5,6), not the symmetric 12-column planning guard.
             // Preserve that guard for hydrology/exits, but do not remove the connecting wall column.
             long replacementFrom=site.id().kind()==SiteKind.ENEMY_TOWER?site.globalSQ8()-5L*256:site.globalSQ8()-extent;
-            occupied.add(new ArcInterval(Math.max(0,replacementFrom),site.globalSQ8()+extent));
+            var replacement=new ArcInterval(Math.max(0,replacementFrom),site.globalSQ8()+extent);
             // All cells can vote on a site's full footprint; only its center cell publishes it.
             ComponentVoxels component=compile(site.id().kind(),()->componentInput(input,site,stations,
                     field.sample(site.globalSQ8(),PaletteFamily.STONE,List.of(site.globalSQ8())),List.of(),bounds,supported),input);
             if(component==null||component.voxels().isEmpty()){
+                occupied.add(replacement);
                 if(site.id().kind()==SiteKind.FORT&&site.id().ordinal()==0)throw new WallFailure(FailureCode.ROOT_NOT_FOUND,"fort0 realization failed");
                 breaks.add(new BreakInterval(new ArcInterval(Math.max(0,site.globalSQ8()-extent-8L*256),site.globalSQ8()+extent+8L*256),BreakReason.CONFLICT,BreakScope.REALIZED));
             }else {
+                if(site.id().kind()==SiteKind.GATE) {
+                    gateEndPlanes.add(site.frame());gateWalkIntervals.add(replacement);
+                }else occupied.add(replacement);
                 maintained.add(site.globalSQ8());
                 if(site.globalSQ8()>=from&&site.globalSQ8()<to&&site.globalSQ8()<terminal) {
                     accepted.add(component);
@@ -220,8 +226,9 @@ public final class RealizationPlanner {
             var template=templates.get(SiteKind.WALL);
             if(!(template instanceof WallSection section))throw new IllegalArgumentException("WALL template must support build intervals");
             var walkExcluded=new ArrayList<>(excluded);walkMerged.forEach(b->walkExcluded.add(b.range()));
+            walkExcluded.addAll(gateWalkIntervals);
             var component=section.compileIntervals(candidate,buildable,subtract(new ArcInterval(from,to),walkExcluded),
-                    s->field.sample(s,PaletteFamily.STONE,maintained));
+                    s->field.sample(s,PaletteFamily.STONE,maintained),gateEndPlanes);
             if(!component.voxels().isEmpty())accepted.add(component);
         }
         var resolved=result(input,walkMerged,accepted,t0);
