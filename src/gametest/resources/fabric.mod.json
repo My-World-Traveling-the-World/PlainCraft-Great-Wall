@@ -12,6 +12,7 @@
       "local.plaincraft.greatwall.gametest.NoiseBridgeGameTests",
       "local.plaincraft.greatwall.gametest.OracleGameTests",
       "local.plaincraft.greatwall.gametest.TreeBoundsGameTests",
+      "local.plaincraft.greatwall.gametest.ProductionInputGameTests",
       "local.plaincraft.greatwall.gametest.WriterGameTests",
       "local.plaincraft.greatwall.gametest.ProductionBarrierTests",
       "local.plaincraft.greatwall.gametest.ProductionPipelineTests",
