@@ -61,6 +61,20 @@ foreach ($spec in $specs) {
     $evidence = Join-Path $archive $spec.name
     New-Item -ItemType Directory -Path $workspace,$evidence | Out-Null
     Expand-Archive -LiteralPath $zip -DestinationPath $workspace
+    # Locked verification covers the existing remapped bytes, not a fresh remap of the same inputs.
+    $cacheSource = Join-Path $root '.gradle\loom-cache\remapped_mods'
+    $cacheParent = Join-Path $workspace '.gradle\loom-cache'
+    if (-not (Test-Path -LiteralPath $cacheSource)) { throw 'Verified local remapped cache is missing' }
+    New-Item -ItemType Directory -Path $cacheParent -Force | Out-Null
+    Copy-Item -LiteralPath $cacheSource -Destination $cacheParent -Recurse
+    $copied = foreach ($file in Get-ChildItem -LiteralPath $cacheSource -Recurse -File) {
+        $relative = [IO.Path]::GetRelativePath($cacheSource,$file.FullName)
+        $target = Join-Path (Join-Path $cacheParent 'remapped_mods') $relative
+        $sourceHash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+        if ($sourceHash -ne (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash) { throw "Cache copy differs: $relative" }
+        @{path=$relative; sha256=$sourceHash}
+    }
+    $copied | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $evidence 'copied-cache.json') -Encoding utf8
     $args = @('-NoProfile','-File',"`"$PSCommandPath`"",'-Worker',
         '-Workspace',"`"$workspace`"",'-Evidence',"`"$evidence`"",'-Classes',$spec.classes,'-Snapshot',$Snapshot)
     $process = Start-Process -FilePath (Join-Path $PSHOME 'pwsh.exe') -ArgumentList $args -WindowStyle Hidden -PassThru `
