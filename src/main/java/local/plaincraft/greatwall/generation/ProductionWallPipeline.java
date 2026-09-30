@@ -53,6 +53,7 @@ public final class ProductionWallPipeline implements AutoCloseable {
     private final BudgetReservation compiledReservations;
     private final ConcurrentHashMap<String,AllocationBudget> compilationAllocations=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,Long> allocationPeaks=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,Long> costs=new ConcurrentHashMap<>();
     public ProductionWallPipeline(WorldRecipe recipe,Ports ports,TerrainSnapshotService snapshots,
             RealizationPlanner realization,ChunkPlanCompiler compiler,ChunkWallWriter writer) {
         this.recipe=Objects.requireNonNull(recipe);this.ports=Objects.requireNonNull(ports);this.snapshots=Objects.requireNonNull(snapshots);
@@ -85,7 +86,12 @@ public final class ProductionWallPipeline implements AutoCloseable {
             promise.whenComplete((v,e)->{flights.remove(key,promise);admitted.compute("count",(k,n)->n-1);});
             var done=new CompletableFuture<Void>();var prior=queue.put("tail",done);
             try{
-            prior.handle((v,e)->null).thenComposeAsync(v->runOwner(key,owner,engine),ports.worker())
+            long requestedAt=System.nanoTime();
+            prior.handle((v,e)->null).thenComposeAsync(v->{
+                long startedAt=System.nanoTime();
+                cost("queue",startedAt-requestedAt);
+                return runOwner(key,owner,engine).whenComplete((value,error)->cost(error==null?"owner":"failed-owner",System.nanoTime()-startedAt));
+            },ports.worker())
                     .thenApplyAsync(v->{active();return v;},ports.worker()).whenComplete((v,error)->{
                 try{
                     if(error==null){active();promise.complete(null);}
@@ -150,7 +156,10 @@ public final class ProductionWallPipeline implements AutoCloseable {
                 active();event("PRODUCTION_PROOF_DURABLE",key,"persist","none");
                 return engine.exclusive(owner.getPos(),()->{
                     active();event("PRODUCTION_APPLY_ENTER",key,"apply",engine.name());
+                    long startedAt=System.nanoTime();
                     var report=CompiledAllocation.run(compilationBudget(),()->writer.apply(owner,plan,WriteMode.INITIAL),value->0);
+                    cost("apply",System.nanoTime()-startedAt);
+                    costs.merge("written-voxels",(long)report.written(),Long::sum);
                     if(!report.complete())throw failure(FailureCode.OWNERSHIP_CONFLICT,"preflight conflicts: "+report.conflicts());
                     event("PRODUCTION_APPLY_EXIT",key,"apply",engine.name());return (Void)null;
                 });
@@ -338,11 +347,17 @@ public final class ProductionWallPipeline implements AutoCloseable {
     private void active(){if(state.containsKey("closed"))throw failure(FailureCode.CLOSED,"production pipeline closed");ports.assertActive().run();}
     private <T> CompletableFuture<T> failed(Throwable error){if(!state.containsKey("closed"))ports.fail().accept(error);return CompletableFuture.failedFuture(error);}
     private void event(String e,ChunkKey key,String stage,String lock){trace.record(e,key.dimension(),key.x(),key.z(),stage,lock);}
+    private void cost(String name,long nanos) {
+        costs.merge("cost-"+name+"-count",1L,Long::sum);
+        costs.merge("cost-"+name+"-total-nanos",nanos,Long::sum);
+        costs.merge("cost-"+name+"-max-nanos",nanos,Math::max);
+    }
     public Map<String,Long> diagnostics(){
         var result=new HashMap<>(trace.counts());result.put("leases",(long)leases.size()+allocationPins.size());result.put("flights",(long)flights.size());
         result.put("terrainReserved",terrainReservations.stats().reserved());
         result.put("compiledReserved",compiledReservations.stats().reserved());
         result.putAll(allocationPeaks);
+        result.putAll(costs);
         result.put("admitted",(long)admitted.getOrDefault("count",0));return Map.copyOf(result);
     }
     @Override public void close(){

@@ -121,10 +121,16 @@ public final class WorldBootstrap implements AutoCloseable {
         if (spawn.putIfAbsent("chosen", Objects.requireNonNull(chosen)) != null) {
             throw new IllegalStateException("initial spawn may only be recorded once");
         }
+        state.put("spawn-chosen", true);
         requestStart();
     }
 
     /** WorldServices freezes actual finalized registries and adapters before calling this method. */
+    public void prepareLevelsEntered(ServerLevel level) {
+        try { prepareLevelsEntered(level, ProductionInputs.freeze(level).bootstrap()); }
+        catch (IOException error) { throw new WallFailure(FailureCode.IO_FAILED, "production input freeze failed", error); }
+    }
+
     public void prepareLevelsEntered(ServerLevel level, Frozen inputs) {
         owner();
         if (server != level.getServer() || !level.dimension().location().toString().equals("minecraft:overworld")) {

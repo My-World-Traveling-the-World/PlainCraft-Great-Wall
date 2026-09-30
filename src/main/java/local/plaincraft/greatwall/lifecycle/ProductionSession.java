@@ -117,7 +117,7 @@ final class ProductionSession implements AutoCloseable {
         try {
             var frozen = ProductionInputs.freeze(level);
             inputs.put("frozen", frozen);
-            if (server.getWorldData().overworldData().isInitialized() && bootstrap.earlyChunks().isEmpty()) {
+            if (server.getWorldData().overworldData().isInitialized() && !bootstrap.diagnostics().containsKey("spawn-chosen")) {
                 // A self-created token can resume before world.json. Already frozen recipes ignore this new spawn.
                 var pos = level.getSharedSpawnPos();
                 bootstrap.spawnChosen(level, new Point3i(pos.getX(), pos.getY(), pos.getZ()));
