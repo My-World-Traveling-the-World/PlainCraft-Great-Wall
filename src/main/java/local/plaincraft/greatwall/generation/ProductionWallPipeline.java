@@ -117,8 +117,14 @@ public final class ProductionWallPipeline implements AutoCloseable {
                                 if(compilationAllocations.putIfAbsent("owner",allocations)!=null)throw new IllegalStateException("overlapping owner compilation");
                                 return CompletableFuture.completedFuture((Void)null)
                                         .thenComposeAsync(v -> compileAndApply(key,owner,engine,plans,cells),ports.worker())
-                                        .whenComplete((v,e) -> {allocationPeaks.merge("compiledAllocationPeak",allocations.stats().peak(),Math::max);
-                                            compilationAllocations.remove("owner",allocations);allocations.close();releasePin(compiledLease);});
+                                        .handle((v,error)->error)
+                                        .thenCompose(error->closeExitResolvers().handle((ignored,drainError)->{
+                                            allocationPeaks.merge("compiledAllocationPeak",allocations.stats().peak(),Math::max);
+                                            compilationAllocations.remove("owner",allocations);allocations.close();releasePin(compiledLease);
+                                            if(error!=null)throw new CompletionException(error);
+                                            if(drainError!=null)throw new CompletionException(drainError);
+                                            return (Void)null;
+                                        }));
                             } catch (Throwable error) {
                                 compilationAllocations.remove("owner",allocations);allocations.close();
                                 releasePin(compiledLease);
@@ -184,7 +190,7 @@ public final class ProductionWallPipeline implements AutoCloseable {
             public CompletableFuture<Void> persist(GroundExitDecision decision) {
                 trace.assertOutsideLock();return snapshots.persistExitDecision(decision,compilationBudget());
             }
-        },ports.worker(),Math.min(8L<<20,recipe.config().compiledBytes()/4)));
+        },ports.worker(),Math.min(8L<<20,recipe.config().compiledBytes()/4),this::compilationBudget));
     }
     private <T> CompletableFuture<T> useCell(CellKey cell,TerrainEngine engine,Function<CellTerrain,T> action) {
         return loadCell(cell,engine).thenCompose(data->{
@@ -306,6 +312,12 @@ public final class ProductionWallPipeline implements AutoCloseable {
     }
     private void releaseTerrain(CellTerrain data){allocationPeaks.merge("terrainAllocationPeak",data.allocations().stats().peak(),Math::max);
         data.allocations().close();releasePin(data.reservation());}
+    private CompletableFuture<Void> closeExitResolvers(){
+        // Certificates remain durable; memory-only summaries cannot outlive their owning arena.
+        var pending=new ArrayList<CompletableFuture<Void>>();
+        exitResolvers.values().forEach(resolver->{resolver.close();pending.add(resolver.drained());});exitResolvers.clear();
+        return CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new));
+    }
     private AllocationBudget compilationBudget(){
         active();var value=compilationAllocations.get("owner");
         if(value==null)throw new IllegalStateException("producer has no prior compiled reservation");return value;
@@ -339,7 +351,7 @@ public final class ProductionWallPipeline implements AutoCloseable {
         leases.values().forEach(l->{try{l.close();}catch(Exception ignored){}});leases.clear();
         // Do not complete internal dependency futures early: they may still own entered captures.
         queue.get("tail").whenComplete((value,error)->{
-            exitResolvers.values().forEach(GroundExitResolver::close);exitResolvers.clear();
+            closeExitResolvers();
         });
         terrainReservations.close();compiledReservations.close();
         // Reservation owners release only after their entered producer/consumer chains quiesce.
