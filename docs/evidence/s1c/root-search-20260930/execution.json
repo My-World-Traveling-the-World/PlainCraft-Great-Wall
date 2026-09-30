@@ -1,0 +1,21 @@
+{
+  "inputs": [
+    {
+      "sha256": "de5874ebe2cee0351d841dad7aa7dfe7e14da3a52348827c46bca6ab8669b221",
+      "path": "src/main/java/local/plaincraft/greatwall/lifecycle/RootSearch.java"
+    },
+    {
+      "sha256": "ae327061c7fdff33089175a780e51a7a9f37ce2099dbf3714c7239c617634911",
+      "path": "src/main/java/local/plaincraft/greatwall/lifecycle/SpawnDomain.java"
+    },
+    {
+      "sha256": "67eb8a008b5ea34524da9ac898d357992a0c162a75fb4b42c2659b7ebb516974",
+      "path": "src/test/java/local/plaincraft/greatwall/lifecycle/RootSearchTest.java"
+    }
+  ],
+  "sourceCommit": "7a4e27f52f851fd22fdb2a94b59e3a832ca81808",
+  "sourceScope": "HEAD plus explicitly hashed uncommitted inputs",
+  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.lifecycle.RootSearchTest --rerun-tasks --no-build-cache --console=plain --no-daemon",
+  "jdk": "C:\\Program Files\\Java\\jdk-21",
+  "exitCode": 0
+}
