@@ -146,10 +146,23 @@ public final class AdjacentComponentMatrixTests implements FabricGameTest {
     }
 
     static void curvedHeightSitePairs(GameTestHelper helper) {
+        curvedHeightSitePairs(helper, curvedSiteCases());
+    }
+
+    private static List<CurvePair> curvedSiteCases() {
         var cases=new ArrayList<CurvePair>();
         for(var left:SITES)for(var right:SITES)for(int bend:new int[]{-1,1})for(int slope:new int[]{-1,1})
             cases.add(new CurvePair(left,right,new Curve(bend,slope)));
         require(cases.size()==64,"4 x 4 ordered sites x 2 bends x 2 changing-height profiles");
+        return List.copyOf(cases);
+    }
+
+    static void curvedGateRegression(GameTestHelper helper) {
+        System.out.println("S1B_CURVED_GATE_ORIGINAL_INDEX=58; assertions and fixture shared with full matrix");
+        curvedHeightSitePairs(helper,List.of(curvedSiteCases().get(58)));
+    }
+
+    private static void curvedHeightSitePairs(GameTestHelper helper,List<CurvePair> cases) {
         matrix(helper,"CURVED_SITES",cases,0,new ArrayList<>(),test->{
             var f=new Fixture(List.of(site(SiteKind.FORT,0,0,false),site(test.left(),100,128,false),
                     site(test.right(),200,256,false)),Optional.empty(),true,480,List.of(),List.of(),(x,z)->null,test.curve());
@@ -157,6 +170,14 @@ public final class AdjacentComponentMatrixTests implements FabricGameTest {
             require(f.stations.stream().map(s->s.point().zQ8()).distinct().count()>2,"ribbon must actually bend");
             var forward=resolve(f,false);var reverse=resolve(f,true);
             assertSameResolution(forward,reverse);assertSiteOutcomes(f,forward);
+            if(test.right()==SiteKind.GATE) {
+                var gate=f.sites.stream().filter(s->s.id().ordinal()==200).findFirst().orElseThrow();
+                var witness=new Point3i(223,84,-3);
+                var local=Rasterizer.localCell(gate.frame(),witness);
+                var contract=WallSection.contract(f.stations,witness.x(),witness.z());
+                System.out.println("S1B_CURVED_GATE_WITNESS case="+test+" frame="+gate.frame()
+                        +" gateLocal="+local+" wallContract="+contract+" scalarFrom="+(gate.globalSQ8()-30L*256));
+            }
             var states=verifyMerged(helper,forward.cells(),f.before(forward.cells()),f.columns,true);
             assertCertifiedConnectivity(f,forward,states);assertNativeGroundExits(f,forward,states);
         });

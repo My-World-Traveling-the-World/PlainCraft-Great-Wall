@@ -14,6 +14,7 @@
       "local.plaincraft.greatwall.gametest.ComponentSurvivalMatrixTests",
       "local.plaincraft.greatwall.gametest.CurvedWallMatrixTests",
       "local.plaincraft.greatwall.gametest.CurvedSiteMatrixTests",
+      "local.plaincraft.greatwall.gametest.CurvedGateRegressionTests",
       "local.plaincraft.greatwall.gametest.SnapshotAllocationBoundaryAuditTests",
       "local.plaincraft.greatwall.gametest.PipelineReservationHandoffAuditTests",
       "local.plaincraft.greatwall.gametest.AdjacentComponentMatrixTests",
