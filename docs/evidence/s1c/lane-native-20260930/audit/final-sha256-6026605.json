@@ -1,0 +1,454 @@
+[
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/.gitattributes",
+    "sha256": "ec10e477ad58f65a9ec99b6f69466fbd0089353fb6fe033d248c3f2369c07c99"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/C2ME-config-after-run-6026605.toml",
+    "sha256": "3d2611f14764da2667ca39c2f6c0a63ae33ba351756f4061ac998b72f94e6114"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/C2ME-config-input-6026605.toml",
+    "sha256": "070398f4258ac299023e9db495af81c46d974f00d3fd5263d3d337c432cd6188"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/C2ME-config-input-vs-post-run.diff",
+    "sha256": "c5bdc40a2f6d9f9fdd5897d5d6885fc52733de2d85ee74aa1c4497e1471deee9"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/C2ME-ConfigSystem-runtime.txt",
+    "sha256": "4ea84f1e0da609dd694ebe9fb3b943642f982c0a1008f934ad46828e5400bd6a"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/config-recheck-before-correction.json",
+    "sha256": "fc4238a2319f2368ea9d24a9570ddf85d50cb96fb2abd8f1971af21ba7d56841"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/final-audit-6026605.json",
+    "sha256": "50f531c9e5f251b4542732f75ae56adc75d334bd383678b7c30e4cca38c45066"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/main-bytecode-6026605.txt",
+    "sha256": "eda96c8a9560b96e3339f9aa1f50decc4e71c1258e4e7834a5e2c6269939c293"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/main-bytecode.txt",
+    "sha256": "6495c613ebbd3570f9737e679c3843ba9505a4d7815f528e55b0d9fbb3aaae89"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/RandomState-runtime-6026605.class",
+    "sha256": "4255c001340c417189b12d5f4d7ac359791ebdeba3b4af05284dc42c111d40af"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/RandomState-runtime-6026605.txt",
+    "sha256": "89b42b6057766188cb15f9109989a77c2a0939388e2be27c26de9a57946482b1"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/redline-audit-6026605.json",
+    "sha256": "4744eb2e6988aa5d1410a500654e5fd053bd77649736b86f1d72223261bfde07"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/redline-audit.json",
+    "sha256": "d8782feaf5629447d1aed8fe00563cfec4b2e07ef277b4082471c229c00112b2"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/timestamp-recheck-before-correction.json",
+    "sha256": "ead91575fcd7f92c40b5cacf2452ae26068123c8edd7322a650c5303d763ed62"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/audit/Verify-FinalEvidence.ps1",
+    "sha256": "00440a26777d004bd0b97c6eadd2b93937ed3ebd66d72ce27f3839db78a1892f"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/execution.json",
+    "sha256": "c89d6a6cd0ba2eee71874ce6be7b48ba19a2e209b6dbf1c0cf277bcf9fc38780"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/gametest/results.xml",
+    "sha256": "0cdc0e38829adcf51c5c23aa0a707256cac7867c34a9b905f1ac9533da78729d"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/gradle.log",
+    "sha256": "0f7d0fcf2ad230f8b643bddfb5a7490d655cb61725bd8b7f732ad7ff705730e0"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.BuildContractTest.xml",
+    "sha256": "a2299a1eb8b6de2a4848d2d480ae2add524f156ca3ef968fea3f54e7c2ae9cca"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.CompiledAllocationTest.xml",
+    "sha256": "c52c80d1d8c7669feb19f2a3c85c4de53e783a81f462289c268ac9a6992c7067"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.ComponentAssemblyTest.xml",
+    "sha256": "e161715b1050d3aa38fe7c949536b99c57a9743f5a04e2cc59d27f339794c8da"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.CurvedGateBoundaryTest.xml",
+    "sha256": "5cb5484aeb9001d723d436668b176f99a0dd5b486d49f30795c9225eea5159f8"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.GateCapTest.xml",
+    "sha256": "a6541ae9e7656bda56d3c9f16d44dc5526dbf9fbfd41449e668e3dc9f2257966"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.GroundEntranceTest.xml",
+    "sha256": "8ef5d228f4a0acdc194b618cec433b08b6d11cad603676a1f2f2ea155ff53c24"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.GroundExitCapVariantsTest.xml",
+    "sha256": "94b08e90b9fe9a2a0585a5b5057a1ea74a9c82e11cda491ef3004705b35e5964"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.RampSpecificationTest.xml",
+    "sha256": "d42d246f438a99a5685cc7a50e4f56924f565f627a0058c525283ef259f2c4ab"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.ReservationHeapPressureTest.xml",
+    "sha256": "28c831579f4fd8eb4deafab37a0e6907d829f5d360f739ea75607a94f0f17a10"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.TemplateTest.xml",
+    "sha256": "48dcf2bbdd3cd0f9c305649e65f2d8e3c7f2b232258e3e820aefddb83dd10b3a"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.WallContractEquivalenceTest.xml",
+    "sha256": "a01fe3da806d30fb9346ab7df86f9d023ba4d51205d253f5fb0cfc4591d214f9"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.WallDecayTest.xml",
+    "sha256": "7625b5bc4c475e704a671fed242497532de9aa4fa317ec6232647aa4369cc122"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.WallRampTest.xml",
+    "sha256": "6a4997ef55b5220a5d80190977f66d8d592fd6ae93e5eaa4545ff0d3cfe73349"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.component.WaterFortTest.xml",
+    "sha256": "3326f45d9fc7442bb1a01256a745ca3bca3b5ced17a942f8de008bdafe3bda92"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.decay.DecayFieldTest.xml",
+    "sha256": "211f529218cbedb7b58bb3911bfb63ac74fc491be5d72a3e498d2320d8cf74c6"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.decay.SupportGraphTest.xml",
+    "sha256": "106840bd4a78593b9da3e700b2e4a1f33c848c22e5307841095cae865b661d20"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.diagnostics.AllocationBudgetTest.xml",
+    "sha256": "10a503ab971192dc888e7ea5d09de2d889025bbead8aa662766faf1395d3155c"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.diagnostics.BoundedByteArrayOutputStreamTest.xml",
+    "sha256": "5dc27d7939b81f92aad69c95ca447f02a44b0b4a6687dc164e433ab26fd8fd3d"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.diagnostics.BudgetCacheTest.xml",
+    "sha256": "e0ee1a0fe7530d220d5b30783bc9bd94a348bb7d4c8701fe28469cdb7e5163ed"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.diagnostics.BudgetReservationLifecycleAuditTest.xml",
+    "sha256": "aea0380a2431cff2c859d55cb83817c0317d8dee45fd433cfac0b80baba886f9"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.diagnostics.BudgetReservationTest.xml",
+    "sha256": "2f6bd23368f39c87466ac24a0fee7fd33656d0b972ea628fa466f869e35a51c3"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.diagnostics.BufferedCodecTest.xml",
+    "sha256": "211b677a0d25b56711eeef358a3e21490333657116cd639a4fee6adb1d4c0ec8"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest.xml",
+    "sha256": "d28d7de81bfe34321bea899767f6d853c6f80a0bf3d60a531c334c4b91294ed6"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.diagnostics.CompiledAllocationScopeAuditTest.xml",
+    "sha256": "cc6312db8d835025bd63e317fb74c1e7a491f9b45901844bb76552e6e75e0d4f"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.generation.ChunkPlanCompilerTest.xml",
+    "sha256": "72bb26f292cbe2d19d616098be9030d238f7f801ca4398966ba84e4d5aabb6e5"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.generation.CoveragePlannerTest.xml",
+    "sha256": "b641655b50cd4d3eaa4086dc2a5cd5638ca15e85a7ed53e71d0459c36d50c17b"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.generation.OwnershipGuardTest.xml",
+    "sha256": "8073aedbda0886706af506a3ad89c96708fcb0fb2daf61b105f13bd13d38636f"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.generation.ProtectionSnapshotTest.xml",
+    "sha256": "75bf9f14fa8249c2e735be06127c7b7d4ed172cf38aac933e31eddfd2ee3dd7e"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.generation.SurfaceProbeTest.xml",
+    "sha256": "e8abf8899f3f441da15bc6bcd619c1281a1d03d0902220007781142aef313578"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.geometry.ArcLengthTest.xml",
+    "sha256": "c32c4373ef4eda8ca6e96eaf036448458c339c93e8b744b1fb61debfd846cf27"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.geometry.CanonicalCodecTest.xml",
+    "sha256": "07f6a4463b0b15f94ad9e9c689eac9271f7342a14e240383e49a38d29d5f2da6"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.geometry.FixedMathTest.xml",
+    "sha256": "faa324faa682b1050b7bcaaaab1d5e5c846345e6d6e0f019c790323fb4c090b8"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.geometry.MulDivFastPathTest.xml",
+    "sha256": "8740a6d1468229a08cfb7f057a068bdd4acb91ce23b9680c180d1a48f3506203"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.geometry.RasterizerTest.xml",
+    "sha256": "65f75b31e153f69930d3360e157ae315cbd43158d0457f9a021c7f01f1d527f4"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.model.ModelContractTest.xml",
+    "sha256": "725339c339bcbb4bd26e401ca4db52a1e31cd82dc7591c75ab68241e65c1b9d6"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.persistence.EvidenceAllocationBoundaryAuditTest.xml",
+    "sha256": "3429627cd5f7dd5e826a5bae08326cdb323434e54f44fbdbf13b453f770f2206"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.persistence.ProductionEvidenceTest.xml",
+    "sha256": "8a998443e4eeb2603094255df48b7c11afe01a7fae70a74564c8c3ee3b017b77"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.persistence.SegmentCacheTest.xml",
+    "sha256": "c25d6fc55ca651b5f0596d716203ffca2215c44532052eb6daa7dd504572167c"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest.xml",
+    "sha256": "be89a6a4a76bf62785af65b251cb9ad74da30a9f30e81feb250ed110113434c5"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.persistence.WorldManifestTest.xml",
+    "sha256": "022475a3f6b5fc703ec2d451f877980684f00487e96597ae3d93ae2e21921983"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.planning.AnchorProjectionTest.xml",
+    "sha256": "2985488c9be34a32978a3e62179ae40d1a3591ffd183e0ef69f2d0d920297d14"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.planning.ArcPlanProviderTest.xml",
+    "sha256": "2fe51550810169ced466674ecccf2ced9c2d95ff75deb8eeb515413ba3757c44"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.planning.GeometryDeterminismTest.xml",
+    "sha256": "1a6b90429ee6c8cd1b23bc6baa718e09cc8d3c28d8edd795e45623bc0eab5a75"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.planning.PlannerSchedulerTest.xml",
+    "sha256": "82243c9dbdaf551166389857714c6c78f6c129520227f7c9f5271796fd26ae62"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.planning.PrefixSummaryIndexTest.xml",
+    "sha256": "ffb78785096352f63941f5c48eea50e155835f9e0f9b6980e22de1854d9913ee"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.planning.RidgePlannerTest.xml",
+    "sha256": "722a2b6effa994adb69bddd4c608cc8b27e98dcac4a5e4b5b79f0f7651c85d28"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.planning.ScheduleContractTest.xml",
+    "sha256": "2def8076e0d532782f8f208ed615112921261ef6d03a72f508ea91bfbdc5f62f"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.ProbePlannerTest.xml",
+    "sha256": "595b1e29a7b9a44080a2561e62eab7c66a60adc0c8fca4f915bac91bb73f3126"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.terrain.GroundExitEvidenceTest.xml",
+    "sha256": "e9be4036f59b8e21d97f62288031f35caf8f2916bdd3b2f38d4018b6a97ad6f1"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.terrain.GroundExitFallbackTest.xml",
+    "sha256": "53b78a7f119007dbc0bf2144db5d9bfae14b319cf5f265ec8b6f2676e2d2a0d6"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.terrain.GroundExitReservationTest.xml",
+    "sha256": "7a684de3390602d5ec2106a5902b7fbb7a96a75e4b1e5bbef15a4cdd3dd3f9ae"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.terrain.GroundExitResolverTest.xml",
+    "sha256": "fb9d6d867df6a24adfdc5e4d6c321e5810b66c2f3993e599383f2a1bbe864f8c"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.terrain.HydrologyTest.xml",
+    "sha256": "f336a168273e86b0467037bfff8411a4c27d77c8e8afe49dabbd5652132c929b"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.terrain.OracleLaneTest.xml",
+    "sha256": "8d1f33e25e10def6680bc215ec70704b18c5acf0e618387519081369d30a1426"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.terrain.RealizationPlannerTest.xml",
+    "sha256": "f62b5535c04193bfbd5c32c00725abb5d48ae5656d6b17ea220a4296d52d4852"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.TerrainEvidenceTest.xml",
+    "sha256": "f5b937dfc0c3cb1fc1ecfd0d85a9c7c7527b15f9296f6b8a484ae63d593d3511"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/junit/TEST-local.plaincraft.greatwall.WorldRecipeGuardTest.xml",
+    "sha256": "64c686afdd22db299fac7976a0d1e2e23a24f12080800b66dbaf94d1bd09774a"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/source-inputs.json",
+    "sha256": "489790b58b320a9f06d2c5a58c67eaba1ae930ce9793b68ea77b4f4959627a49"
+  },
+  {
+    "path": "docs/evidence/s1c/lane-native-20260930/ready-scope-after/suite-audit.json",
+    "sha256": "811b98f2715bb1728e66d75120a5bd5a847158d2b605694a4dd44aa9dbaacbf6"
+  },
+  {
+    "path": "docs/evidence/s1c/runtime/s1c-oracle-tectonic-20260930-93cb5fa6-inputs.json",
+    "sha256": "98e5cad8f28a10f49cf89e1e10dd861c4ec758ad644f1646fd879ba618d4e694"
+  },
+  {
+    "path": "docs/evidence/s1c/runtime/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d-inputs.json",
+    "sha256": "5f6a83636feb8c80b05b05260bb787ea9e958fe850678ef17df7ae70dc1db46a"
+  },
+  {
+    "path": "docs/evidence/s1c/runtime/s1c-oracle-vanilla-20260930-b797f27f-inputs.json",
+    "sha256": "326e473eb436fa72a84c718125348eb281ebe3d8973590d6dc795347f009f3ae"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-20260930-93cb5fa6/debug.log",
+    "sha256": "eb1695936ab5db1a30a7ce39e4297d1c1b33e1777a5014a9c12439970f3c0765"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-20260930-93cb5fa6/execution.json",
+    "sha256": "e5ef3246507b4dabdfe58c25e06c2d0430deb9e6f5e30e4596fa5fa0c6b845c0"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-20260930-93cb5fa6/inputs.json",
+    "sha256": "158f47da44e64ddd7c84888ed3015faef153149bfabee5fcc5f9dda8e31ed17d"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-20260930-93cb5fa6/latest.log",
+    "sha256": "dfdb1c6f2bff39dcb3fe04a1bc2a85d03cf6816c82ba3cbce78e0df5808d2f14"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-20260930-93cb5fa6/oracle-profile.json",
+    "sha256": "f9492c7c26ce60221bd6137fe7b63c9032bc42a8853e560d8ee24945b970fd90"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-20260930-93cb5fa6/oracle-vm.log",
+    "sha256": "2071c17d5ba56ed52d2b73f21ea79be2777939f74f97574ae6ac95d4fcf943e4"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-20260930-93cb5fa6/server-smoke-passed.txt",
+    "sha256": "ede9d52aad35b608faf195c71949dc6fcd92cbdb1dcd89d04657e4fca918ddd9"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-20260930-93cb5fa6/sha256.json",
+    "sha256": "8158a41aac89ec34a286e0fc2ed4c1498c421bf8f91ab50fffc249e8e3ea66dd"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-20260930-93cb5fa6/staged-inputs.json",
+    "sha256": "98e5cad8f28a10f49cf89e1e10dd861c4ec758ad644f1646fd879ba618d4e694"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-20260930-93cb5fa6/stderr.log",
+    "sha256": "c6ad1763635c908ce5a243cacd99a4d59c087c140421108cc58c825769c0e767"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-20260930-93cb5fa6/stdout.log",
+    "sha256": "ad73b2fc96b9479baa1622da84c6eeef742f3bb14e5084f5c60edaf3027bec04"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d/debug.log",
+    "sha256": "a1c42c0671abe4e1f4949b606433257430fd774435b35d353a83922cda7b39be"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d/execution.json",
+    "sha256": "dc72ed6d0df9495d425376be743399834883013260ad0ff05df3fd79f9c34e77"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d/inputs.json",
+    "sha256": "12c08b405dce3a0ed04ce06daa0934129213a102c546d901f5f652d967ee6f28"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d/latest.log",
+    "sha256": "b376a64b037dfe5c08c219951b5d94b9f6823b448b8ba9241c976899f94b96b9"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d/oracle-profile.json",
+    "sha256": "6a9056f00c84b1d74cceb178c8229cff2695f28201c7ff3cd6b9ea0dd1a82758"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d/oracle-vm.log",
+    "sha256": "391a94b2246780059c26807d4e25b4e0b614ae66655399bd08fa3da0dcf659a3"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d/server-smoke-passed.txt",
+    "sha256": "e469b53cf0715b448d1c13892423ac37eb729191ef1bcc4418a795f5ae538b87"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d/sha256.json",
+    "sha256": "abef2fcd1a02d665419e445202396ff08b79cd7fb0a850a9da1a0e35b11c3cf8"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d/staged-inputs.json",
+    "sha256": "5f6a83636feb8c80b05b05260bb787ea9e958fe850678ef17df7ae70dc1db46a"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d/stderr.log",
+    "sha256": "c6ad1763635c908ce5a243cacd99a4d59c087c140421108cc58c825769c0e767"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-tectonic-c2me-20260930-7b2bdc7d/stdout.log",
+    "sha256": "62cf467ef016abbae9b42267696a1b776962cee1d5a7938cc057ac26acc2c34c"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-vanilla-20260930-b797f27f/debug.log",
+    "sha256": "43fbc4248b6dc0c9a90ed575deb065973be446fcf51a2f7b7d52c27c9887cbb6"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-vanilla-20260930-b797f27f/execution.json",
+    "sha256": "332277d284442caf9b37ff3e88e754d3729cfb324159d1c5764ca64da45770ab"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-vanilla-20260930-b797f27f/inputs.json",
+    "sha256": "e63fc794143d25e03eab79c08f3ba76d368189afd0cccb754704ca0091dd12b4"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-vanilla-20260930-b797f27f/latest.log",
+    "sha256": "249f41ea82fa8e0ba660172d60e1f206e48377240745c48780c2e5913e4fec71"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-vanilla-20260930-b797f27f/oracle-profile.json",
+    "sha256": "48f935d359d5213d6405cdff7f540941d57a8600eef23be67fc3a7f233e48224"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-vanilla-20260930-b797f27f/oracle-vm.log",
+    "sha256": "c5c6b0d027475a1858c0257245e23e34461c31695a04da384a80888b4b360879"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-vanilla-20260930-b797f27f/server-smoke-passed.txt",
+    "sha256": "f2aa4a30daf5a2085de33c31fbbdf41866fc10fd89ce9206f4d511e6b3d76614"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-vanilla-20260930-b797f27f/sha256.json",
+    "sha256": "8fa548e3c28acc496a7a8193945e8902f42cdaf40fbcad0a52319c952849ccee"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-vanilla-20260930-b797f27f/staged-inputs.json",
+    "sha256": "326e473eb436fa72a84c718125348eb281ebe3d8973590d6dc795347f009f3ae"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-vanilla-20260930-b797f27f/stderr.log",
+    "sha256": "c6ad1763635c908ce5a243cacd99a4d59c087c140421108cc58c825769c0e767"
+  },
+  {
+    "path": "docs/evidence/s1c/s1c-oracle-vanilla-20260930-b797f27f/stdout.log",
+    "sha256": "51242f04a64d1d5d51d72c5617beba7befc8b5b6d852ba2079c213e5a5689641"
+  }
+]

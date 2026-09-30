@@ -1,0 +1,474 @@
+Compiled from "RandomState.java"
+public final class net.minecraft.world.level.levelgen.RandomState implements dev.worldgen.lithostitched.mixin.common.RandomStateAccessor, dev.worldgen.lithostitched.duck.SeedAccessor {
+  public final net.minecraft.world.level.levelgen.PositionalRandomFactory random;
+
+  private final net.minecraft.core.HolderGetter<net.minecraft.world.level.levelgen.synth.NormalNoise$NoiseParameters> noises;
+
+  private net.minecraft.world.level.levelgen.NoiseRouter router;
+
+  private net.minecraft.world.level.biome.Climate$Sampler sampler;
+
+  private final net.minecraft.world.level.levelgen.SurfaceSystem surfaceSystem;
+
+  private final net.minecraft.world.level.levelgen.PositionalRandomFactory aquiferRandom;
+
+  private final net.minecraft.world.level.levelgen.PositionalRandomFactory oreRandom;
+
+  private final java.util.Map<net.minecraft.resources.ResourceKey<net.minecraft.world.level.levelgen.synth.NormalNoise$NoiseParameters>, net.minecraft.world.level.levelgen.synth.NormalNoise> noiseIntances;
+
+  private final java.util.Map<net.minecraft.resources.ResourceLocation, net.minecraft.world.level.levelgen.PositionalRandomFactory> positionalRandoms;
+
+  private long seed;
+
+  public static net.minecraft.world.level.levelgen.RandomState create(net.minecraft.core.HolderGetter$Provider, net.minecraft.resources.ResourceKey<net.minecraft.world.level.levelgen.NoiseGeneratorSettings>, long);
+    Code:
+       0: aload_0
+       1: getstatic     #91                 // Field net/minecraft/core/registries/Registries.NOISE_SETTINGS:Lnet/minecraft/resources/ResourceKey;
+       4: invokeinterface #95,  2           // InterfaceMethod net/minecraft/core/HolderGetter$Provider.lookupOrThrow:(Lnet/minecraft/resources/ResourceKey;)Lnet/minecraft/core/HolderGetter;
+       9: aload_1
+      10: invokeinterface #99,  2           // InterfaceMethod net/minecraft/core/HolderGetter.getOrThrow:(Lnet/minecraft/resources/ResourceKey;)Lnet/minecraft/core/Holder$Reference;
+      15: invokevirtual #103                // Method net/minecraft/core/Holder$Reference.value:()Ljava/lang/Object;
+      18: checkcast     #105                // class net/minecraft/world/level/levelgen/NoiseGeneratorSettings
+      21: aload_0
+      22: getstatic     #108                // Field net/minecraft/core/registries/Registries.NOISE:Lnet/minecraft/resources/ResourceKey;
+      25: invokeinterface #95,  2           // InterfaceMethod net/minecraft/core/HolderGetter$Provider.lookupOrThrow:(Lnet/minecraft/resources/ResourceKey;)Lnet/minecraft/core/HolderGetter;
+      30: lload_2
+      31: invokestatic  #111                // Method create:(Lnet/minecraft/world/level/levelgen/NoiseGeneratorSettings;Lnet/minecraft/core/HolderGetter;J)Lnet/minecraft/world/level/levelgen/RandomState;
+      34: areturn
+
+  public static net.minecraft.world.level.levelgen.RandomState create(net.minecraft.world.level.levelgen.NoiseGeneratorSettings, net.minecraft.core.HolderGetter<net.minecraft.world.level.levelgen.synth.NormalNoise$NoiseParameters>, long);
+    Code:
+       0: new           #2                  // class net/minecraft/world/level/levelgen/RandomState
+       3: dup
+       4: aload_0
+       5: aload_1
+       6: lload_2
+       7: invokespecial #120                // Method "<init>":(Lnet/minecraft/world/level/levelgen/NoiseGeneratorSettings;Lnet/minecraft/core/HolderGetter;J)V
+      10: areturn
+
+  private net.minecraft.world.level.levelgen.RandomState(net.minecraft.world.level.levelgen.NoiseGeneratorSettings, net.minecraft.core.HolderGetter<net.minecraft.world.level.levelgen.synth.NormalNoise$NoiseParameters>, long);
+    Code:
+       0: aload_0
+       1: invokespecial #125                // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: aload_1
+       6: invokevirtual #129                // Method net/minecraft/world/level/levelgen/NoiseGeneratorSettings.getRandomSource:()Lnet/minecraft/world/level/levelgen/WorldgenRandom$Algorithm;
+       9: lload_3
+      10: invokevirtual #133                // Method net/minecraft/world/level/levelgen/WorldgenRandom$Algorithm.newInstance:(J)Lnet/minecraft/util/RandomSource;
+      13: invokeinterface #139,  1          // InterfaceMethod net/minecraft/util/RandomSource.forkPositional:()Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+      18: putfield      #141                // Field random:Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+      21: aload_0
+      22: aload_2
+      23: putfield      #143                // Field noises:Lnet/minecraft/core/HolderGetter;
+      26: aload_0
+      27: aload_0
+      28: getfield      #141                // Field random:Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+      31: ldc           #145                // String aquifer
+      33: invokestatic  #151                // Method net/minecraft/resources/ResourceLocation.withDefaultNamespace:(Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;
+      36: invokeinterface #157,  2          // InterfaceMethod net/minecraft/world/level/levelgen/PositionalRandomFactory.fromHashOf:(Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/util/RandomSource;
+      41: invokeinterface #139,  1          // InterfaceMethod net/minecraft/util/RandomSource.forkPositional:()Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+      46: putfield      #159                // Field aquiferRandom:Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+      49: aload_0
+      50: aload_0
+      51: getfield      #141                // Field random:Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+      54: ldc           #161                // String ore
+      56: invokestatic  #151                // Method net/minecraft/resources/ResourceLocation.withDefaultNamespace:(Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;
+      59: invokeinterface #157,  2          // InterfaceMethod net/minecraft/world/level/levelgen/PositionalRandomFactory.fromHashOf:(Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/util/RandomSource;
+      64: invokeinterface #139,  1          // InterfaceMethod net/minecraft/util/RandomSource.forkPositional:()Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+      69: putfield      #163                // Field oreRandom:Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+      72: aload_0
+      73: new           #165                // class java/util/concurrent/ConcurrentHashMap
+      76: dup
+      77: invokespecial #166                // Method java/util/concurrent/ConcurrentHashMap."<init>":()V
+      80: putfield      #168                // Field noiseIntances:Ljava/util/Map;
+      83: aload_0
+      84: new           #165                // class java/util/concurrent/ConcurrentHashMap
+      87: dup
+      88: invokespecial #166                // Method java/util/concurrent/ConcurrentHashMap."<init>":()V
+      91: putfield      #170                // Field positionalRandoms:Ljava/util/Map;
+      94: aload_0
+      95: new           #172                // class net/minecraft/world/level/levelgen/SurfaceSystem
+      98: dup
+      99: aload_0
+     100: aload_1
+     101: invokevirtual #176                // Method net/minecraft/world/level/levelgen/NoiseGeneratorSettings.defaultBlock:()Lnet/minecraft/world/level/block/state/BlockState;
+     104: aload_1
+     105: invokevirtual #180                // Method net/minecraft/world/level/levelgen/NoiseGeneratorSettings.seaLevel:()I
+     108: aload_0
+     109: getfield      #141                // Field random:Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+     112: invokespecial #183                // Method net/minecraft/world/level/levelgen/SurfaceSystem."<init>":(Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/block/state/BlockState;ILnet/minecraft/world/level/levelgen/PositionalRandomFactory;)V
+     115: putfield      #185                // Field surfaceSystem:Lnet/minecraft/world/level/levelgen/SurfaceSystem;
+     118: aload_1
+     119: invokevirtual #189                // Method net/minecraft/world/level/levelgen/NoiseGeneratorSettings.useLegacyRandomSource:()Z
+     122: istore        5
+     124: aload_0
+     125: aload_1
+     126: invokevirtual #193                // Method net/minecraft/world/level/levelgen/NoiseGeneratorSettings.noiseRouter:()Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     129: new           #14                 // class net/minecraft/world/level/levelgen/RandomState$1NoiseWiringHelper
+     132: dup
+     133: aload_0
+     134: lload_3
+     135: iload         5
+     137: invokespecial #196                // Method net/minecraft/world/level/levelgen/RandomState$1NoiseWiringHelper."<init>":(Lnet/minecraft/world/level/levelgen/RandomState;JZ)V
+     140: invokevirtual #202                // Method net/minecraft/world/level/levelgen/NoiseRouter.mapAll:(Lnet/minecraft/world/level/levelgen/DensityFunction$Visitor;)Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     143: putfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     146: new           #12                 // class net/minecraft/world/level/levelgen/RandomState$1
+     149: dup
+     150: aload_0
+     151: invokespecial #207                // Method net/minecraft/world/level/levelgen/RandomState$1."<init>":(Lnet/minecraft/world/level/levelgen/RandomState;)V
+     154: astore        6
+     156: aload_0
+     157: new           #37                 // class net/minecraft/world/level/biome/Climate$Sampler
+     160: dup
+     161: aload_0
+     162: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     165: invokevirtual #211                // Method net/minecraft/world/level/levelgen/NoiseRouter.temperature:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     168: aload         6
+     170: invokeinterface #214,  2          // InterfaceMethod net/minecraft/world/level/levelgen/DensityFunction.mapAll:(Lnet/minecraft/world/level/levelgen/DensityFunction$Visitor;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     175: aload_0
+     176: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     179: invokevirtual #217                // Method net/minecraft/world/level/levelgen/NoiseRouter.vegetation:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     182: aload         6
+     184: invokeinterface #214,  2          // InterfaceMethod net/minecraft/world/level/levelgen/DensityFunction.mapAll:(Lnet/minecraft/world/level/levelgen/DensityFunction$Visitor;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     189: aload_0
+     190: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     193: invokevirtual #220                // Method net/minecraft/world/level/levelgen/NoiseRouter.continents:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     196: aload         6
+     198: invokeinterface #214,  2          // InterfaceMethod net/minecraft/world/level/levelgen/DensityFunction.mapAll:(Lnet/minecraft/world/level/levelgen/DensityFunction$Visitor;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     203: aload_0
+     204: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     207: invokevirtual #223                // Method net/minecraft/world/level/levelgen/NoiseRouter.erosion:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     210: aload         6
+     212: invokeinterface #214,  2          // InterfaceMethod net/minecraft/world/level/levelgen/DensityFunction.mapAll:(Lnet/minecraft/world/level/levelgen/DensityFunction$Visitor;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     217: aload_0
+     218: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     221: invokevirtual #226                // Method net/minecraft/world/level/levelgen/NoiseRouter.depth:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     224: aload         6
+     226: invokeinterface #214,  2          // InterfaceMethod net/minecraft/world/level/levelgen/DensityFunction.mapAll:(Lnet/minecraft/world/level/levelgen/DensityFunction$Visitor;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     231: aload_0
+     232: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     235: invokevirtual #229                // Method net/minecraft/world/level/levelgen/NoiseRouter.ridges:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     238: aload         6
+     240: invokeinterface #214,  2          // InterfaceMethod net/minecraft/world/level/levelgen/DensityFunction.mapAll:(Lnet/minecraft/world/level/levelgen/DensityFunction$Visitor;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     245: aload_1
+     246: invokevirtual #233                // Method net/minecraft/world/level/levelgen/NoiseGeneratorSettings.spawnTarget:()Ljava/util/List;
+     249: invokespecial #236                // Method net/minecraft/world/level/biome/Climate$Sampler."<init>":(Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Ljava/util/List;)V
+     252: putfield      #238                // Field sampler:Lnet/minecraft/world/level/biome/Climate$Sampler;
+     255: aload_0
+     256: aload_1
+     257: aload_2
+     258: lload_3
+     259: aconst_null
+     260: invokespecial #242                // Method "handler$zif000$c2me-opts-dfc$postCreate":(Lnet/minecraft/world/level/levelgen/NoiseGeneratorSettings;Lnet/minecraft/core/HolderGetter;JLorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V
+     263: aload_0
+     264: aload_1
+     265: aload_2
+     266: lload_3
+     267: aconst_null
+     268: invokespecial #245                // Method "handler$zze000$fabric-biome-api-v1$init":(Lnet/minecraft/world/level/levelgen/NoiseGeneratorSettings;Lnet/minecraft/core/HolderGetter;JLorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V
+     271: aload_0
+     272: aload_1
+     273: aload_2
+     274: lload_3
+     275: aconst_null
+     276: invokespecial #248                // Method handler$zmb000$lithostitched$saveSeed:(Lnet/minecraft/world/level/levelgen/NoiseGeneratorSettings;Lnet/minecraft/core/HolderGetter;JLorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V
+     279: return
+
+  public net.minecraft.world.level.levelgen.synth.NormalNoise getOrCreateNoise(net.minecraft.resources.ResourceKey<net.minecraft.world.level.levelgen.synth.NormalNoise$NoiseParameters>);
+    Code:
+       0: aload_0
+       1: getfield      #168                // Field noiseIntances:Ljava/util/Map;
+       4: aload_1
+       5: aload_0
+       6: aload_1
+       7: invokedynamic #276,  0            // InvokeDynamic #0:apply:(Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/resources/ResourceKey;)Ljava/util/function/Function;
+      12: invokeinterface #282,  3          // InterfaceMethod java/util/Map.computeIfAbsent:(Ljava/lang/Object;Ljava/util/function/Function;)Ljava/lang/Object;
+      17: checkcast     #44                 // class net/minecraft/world/level/levelgen/synth/NormalNoise
+      20: areturn
+
+  public net.minecraft.world.level.levelgen.PositionalRandomFactory getOrCreateRandomFactory(net.minecraft.resources.ResourceLocation);
+    Code:
+       0: aload_0
+       1: getfield      #170                // Field positionalRandoms:Ljava/util/Map;
+       4: aload_1
+       5: aload_0
+       6: aload_1
+       7: invokedynamic #295,  0            // InvokeDynamic #1:apply:(Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/resources/ResourceLocation;)Ljava/util/function/Function;
+      12: invokeinterface #282,  3          // InterfaceMethod java/util/Map.computeIfAbsent:(Ljava/lang/Object;Ljava/util/function/Function;)Ljava/lang/Object;
+      17: checkcast     #153                // class net/minecraft/world/level/levelgen/PositionalRandomFactory
+      20: areturn
+
+  public net.minecraft.world.level.levelgen.NoiseRouter router();
+    Code:
+       0: aload_0
+       1: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+       4: areturn
+
+  public net.minecraft.world.level.biome.Climate$Sampler sampler();
+    Code:
+       0: aload_0
+       1: getfield      #238                // Field sampler:Lnet/minecraft/world/level/biome/Climate$Sampler;
+       4: areturn
+
+  public net.minecraft.world.level.levelgen.SurfaceSystem surfaceSystem();
+    Code:
+       0: aload_0
+       1: getfield      #185                // Field surfaceSystem:Lnet/minecraft/world/level/levelgen/SurfaceSystem;
+       4: areturn
+
+  public net.minecraft.world.level.levelgen.PositionalRandomFactory aquiferRandom();
+    Code:
+       0: aload_0
+       1: getfield      #159                // Field aquiferRandom:Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+       4: areturn
+
+  public net.minecraft.world.level.levelgen.PositionalRandomFactory oreRandom();
+    Code:
+       0: aload_0
+       1: getfield      #163                // Field oreRandom:Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+       4: areturn
+
+  private net.minecraft.world.level.levelgen.PositionalRandomFactory method_41561(net.minecraft.resources.ResourceLocation, net.minecraft.resources.ResourceLocation);
+    Code:
+       0: aload_0
+       1: getfield      #141                // Field random:Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+       4: aload_1
+       5: invokeinterface #157,  2          // InterfaceMethod net/minecraft/world/level/levelgen/PositionalRandomFactory.fromHashOf:(Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/util/RandomSource;
+      10: invokeinterface #139,  1          // InterfaceMethod net/minecraft/util/RandomSource.forkPositional:()Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+      15: areturn
+
+  private net.minecraft.world.level.levelgen.synth.NormalNoise method_41559(net.minecraft.resources.ResourceKey, net.minecraft.resources.ResourceKey);
+    Code:
+       0: aload_0
+       1: getfield      #143                // Field noises:Lnet/minecraft/core/HolderGetter;
+       4: aload_0
+       5: getfield      #141                // Field random:Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+       8: aload_1
+       9: invokestatic  #306                // Method net/minecraft/world/level/levelgen/Noises.instantiate:(Lnet/minecraft/core/HolderGetter;Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;Lnet/minecraft/resources/ResourceKey;)Lnet/minecraft/world/level/levelgen/synth/NormalNoise;
+      12: areturn
+
+  private void handler$zif000$c2me-opts-dfc$postCreate(net.minecraft.world.level.levelgen.NoiseGeneratorSettings, net.minecraft.core.HolderGetter, long, org.spongepowered.asm.mixin.injection.callback.CallbackInfo);
+    Code:
+       0: invokestatic  #317                // Method com/google/common/base/Stopwatch.createStarted:()Lcom/google/common/base/Stopwatch;
+       3: astore        6
+       5: new           #319                // class it/unimi/dsi/fastutil/objects/Reference2ReferenceOpenHashMap
+       8: dup
+       9: invokespecial #320                // Method it/unimi/dsi/fastutil/objects/Reference2ReferenceOpenHashMap."<init>":()V
+      12: astore        7
+      14: new           #319                // class it/unimi/dsi/fastutil/objects/Reference2ReferenceOpenHashMap
+      17: dup
+      18: invokespecial #320                // Method it/unimi/dsi/fastutil/objects/Reference2ReferenceOpenHashMap."<init>":()V
+      21: astore        8
+      23: aload_0
+      24: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+      27: invokevirtual #323                // Method net/minecraft/world/level/levelgen/NoiseRouter.finalDensity:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+      30: getstatic     #329                // Field net/minecraft/world/level/levelgen/DensityFunctions$BeardifierMarker.INSTANCE:Lnet/minecraft/world/level/levelgen/DensityFunctions$BeardifierMarker;
+      33: invokestatic  #335                // Method net/minecraft/world/level/levelgen/DensityFunctions.add:(Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+      36: astore        9
+      38: aload_0
+      39: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+      42: astore        10
+      44: aload         10
+      46: checkcast     #337                // class com/ishland/c2me/opts/dfc/common/ducks/NoiseRouterExtension
+      49: aload         9
+      51: invokeinterface #341,  2          // InterfaceMethod com/ishland/c2me/opts/dfc/common/ducks/NoiseRouterExtension.c2me$setFinalFinalDensity:(Lnet/minecraft/world/level/levelgen/DensityFunction;)V
+      56: invokestatic  #347                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen.initContext:()Lcom/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context;
+      59: astore        11
+      61: aload_0
+      62: new           #198                // class net/minecraft/world/level/levelgen/NoiseRouter
+      65: dup
+      66: aload         11
+      68: ldc_w         #349                // String barrier
+      71: aload_0
+      72: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+      75: invokevirtual #352                // Method net/minecraft/world/level/levelgen/NoiseRouter.barrierNoise:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+      78: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+      81: aload         11
+      83: ldc_w         #360                // String fluid_level_floodedness
+      86: aload_0
+      87: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+      90: invokevirtual #363                // Method net/minecraft/world/level/levelgen/NoiseRouter.fluidLevelFloodednessNoise:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+      93: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+      96: aload         11
+      98: ldc_w         #365                // String fluid_level_spread
+     101: aload_0
+     102: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     105: invokevirtual #368                // Method net/minecraft/world/level/levelgen/NoiseRouter.fluidLevelSpreadNoise:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     108: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     111: aload         11
+     113: ldc_w         #370                // String lava
+     116: aload_0
+     117: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     120: invokevirtual #373                // Method net/minecraft/world/level/levelgen/NoiseRouter.lavaNoise:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     123: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     126: aload         11
+     128: ldc_w         #374                // String temperature
+     131: aload_0
+     132: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     135: invokevirtual #211                // Method net/minecraft/world/level/levelgen/NoiseRouter.temperature:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     138: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     141: aload         11
+     143: ldc_w         #375                // String vegetation
+     146: aload_0
+     147: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     150: invokevirtual #217                // Method net/minecraft/world/level/levelgen/NoiseRouter.vegetation:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     153: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     156: aload         11
+     158: ldc_w         #376                // String continents
+     161: aload_0
+     162: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     165: invokevirtual #220                // Method net/minecraft/world/level/levelgen/NoiseRouter.continents:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     168: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     171: aload         11
+     173: ldc_w         #377                // String erosion
+     176: aload_0
+     177: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     180: invokevirtual #223                // Method net/minecraft/world/level/levelgen/NoiseRouter.erosion:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     183: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     186: aload         11
+     188: ldc_w         #378                // String depth
+     191: aload_0
+     192: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     195: invokevirtual #226                // Method net/minecraft/world/level/levelgen/NoiseRouter.depth:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     198: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     201: aload         11
+     203: ldc_w         #379                // String ridges
+     206: aload_0
+     207: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     210: invokevirtual #229                // Method net/minecraft/world/level/levelgen/NoiseRouter.ridges:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     213: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     216: aload         11
+     218: ldc_w         #381                // String initial_density_without_jaggedness
+     221: aload_0
+     222: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     225: invokevirtual #384                // Method net/minecraft/world/level/levelgen/NoiseRouter.initialDensityWithoutJaggedness:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     228: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     231: aload         11
+     233: ldc_w         #386                // String final_density
+     236: aload_0
+     237: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     240: invokevirtual #323                // Method net/minecraft/world/level/levelgen/NoiseRouter.finalDensity:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     243: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     246: aload         11
+     248: ldc_w         #388                // String vein_toggle
+     251: aload_0
+     252: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     255: invokevirtual #391                // Method net/minecraft/world/level/levelgen/NoiseRouter.veinToggle:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     258: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     261: aload         11
+     263: ldc_w         #393                // String vein_ridged
+     266: aload_0
+     267: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     270: invokevirtual #396                // Method net/minecraft/world/level/levelgen/NoiseRouter.veinRidged:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     273: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     276: aload         11
+     278: ldc_w         #398                // String vein_gap
+     281: aload_0
+     282: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     285: invokevirtual #401                // Method net/minecraft/world/level/levelgen/NoiseRouter.veinGap:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     288: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     291: invokespecial #404                // Method net/minecraft/world/level/levelgen/NoiseRouter."<init>":(Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;)V
+     294: putfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     297: aload_0
+     298: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     301: checkcast     #337                // class com/ishland/c2me/opts/dfc/common/ducks/NoiseRouterExtension
+     304: aload         11
+     306: ldc_w         #406                // String final_final_density
+     309: aload         9
+     311: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     314: invokeinterface #341,  2          // InterfaceMethod com/ishland/c2me/opts/dfc/common/ducks/NoiseRouterExtension.c2me$setFinalFinalDensity:(Lnet/minecraft/world/level/levelgen/DensityFunction;)V
+     319: aload_0
+     320: getfield      #204                // Field router:Lnet/minecraft/world/level/levelgen/NoiseRouter;
+     323: checkcast     #337                // class com/ishland/c2me/opts/dfc/common/ducks/NoiseRouterExtension
+     326: aload         10
+     328: invokeinterface #410,  2          // InterfaceMethod com/ishland/c2me/opts/dfc/common/ducks/NoiseRouterExtension.c2me$setOriginalNoiseRouter:(Lnet/minecraft/world/level/levelgen/NoiseRouter;)V
+     333: aload_0
+     334: new           #37                 // class net/minecraft/world/level/biome/Climate$Sampler
+     337: dup
+     338: aload         11
+     340: ldc_w         #412                // String multiNoiseSampler_temperature
+     343: aload_0
+     344: getfield      #238                // Field sampler:Lnet/minecraft/world/level/biome/Climate$Sampler;
+     347: invokevirtual #413                // Method net/minecraft/world/level/biome/Climate$Sampler.temperature:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     350: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     353: aload         11
+     355: ldc_w         #415                // String multiNoiseSampler_vegetation
+     358: aload_0
+     359: getfield      #238                // Field sampler:Lnet/minecraft/world/level/biome/Climate$Sampler;
+     362: invokevirtual #418                // Method net/minecraft/world/level/biome/Climate$Sampler.humidity:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     365: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     368: aload         11
+     370: ldc_w         #420                // String multiNoiseSampler_continents
+     373: aload_0
+     374: getfield      #238                // Field sampler:Lnet/minecraft/world/level/biome/Climate$Sampler;
+     377: invokevirtual #423                // Method net/minecraft/world/level/biome/Climate$Sampler.continentalness:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     380: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     383: aload         11
+     385: ldc_w         #425                // String multiNoiseSampler_erosion
+     388: aload_0
+     389: getfield      #238                // Field sampler:Lnet/minecraft/world/level/biome/Climate$Sampler;
+     392: invokevirtual #426                // Method net/minecraft/world/level/biome/Climate$Sampler.erosion:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     395: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     398: aload         11
+     400: ldc_w         #428                // String multiNoiseSampler_depth
+     403: aload_0
+     404: getfield      #238                // Field sampler:Lnet/minecraft/world/level/biome/Climate$Sampler;
+     407: invokevirtual #429                // Method net/minecraft/world/level/biome/Climate$Sampler.depth:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     410: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     413: aload         11
+     415: ldc_w         #431                // String multiNoiseSampler_ridges
+     418: aload_0
+     419: getfield      #238                // Field sampler:Lnet/minecraft/world/level/biome/Climate$Sampler;
+     422: invokevirtual #434                // Method net/minecraft/world/level/biome/Climate$Sampler.weirdness:()Lnet/minecraft/world/level/levelgen/DensityFunction;
+     425: invokevirtual #358                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context.compileDelayed:(Ljava/lang/String;Lnet/minecraft/world/level/levelgen/DensityFunction;)Lnet/minecraft/world/level/levelgen/DensityFunction;
+     428: aload_0
+     429: getfield      #238                // Field sampler:Lnet/minecraft/world/level/biome/Climate$Sampler;
+     432: invokevirtual #435                // Method net/minecraft/world/level/biome/Climate$Sampler.spawnTarget:()Ljava/util/List;
+     435: invokespecial #236                // Method net/minecraft/world/level/biome/Climate$Sampler."<init>":(Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Lnet/minecraft/world/level/levelgen/DensityFunction;Ljava/util/List;)V
+     438: putfield      #238                // Field sampler:Lnet/minecraft/world/level/biome/Climate$Sampler;
+     441: aload         11
+     443: invokestatic  #439                // Method com/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen.finalizeCompilation:(Lcom/ishland/c2me/opts/dfc/common/gen/jvm/BytecodeGen$Context;)Lcom/ishland/c2me/opts/dfc/common/gen/jvm/CompiledEntry;
+     446: pop
+     447: aload         6
+     449: invokevirtual #442                // Method com/google/common/base/Stopwatch.stop:()Lcom/google/common/base/Stopwatch;
+     452: pop
+     453: getstatic     #448                // Field java/lang/System.out:Ljava/io/PrintStream;
+     456: ldc_w         #450                // String Density function compilation finished in %s
+     459: iconst_1
+     460: anewarray     #5                  // class java/lang/Object
+     463: dup
+     464: iconst_0
+     465: aload         6
+     467: aastore
+     468: invokestatic  #456                // Method java/lang/String.format:(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;
+     471: invokevirtual #462                // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+     474: return
+
+  private void handler$zze000$fabric-biome-api-v1$init(net.minecraft.world.level.levelgen.NoiseGeneratorSettings, net.minecraft.core.HolderGetter, long, org.spongepowered.asm.mixin.injection.callback.CallbackInfo);
+    Code:
+       0: aload_0
+       1: getfield      #238                // Field sampler:Lnet/minecraft/world/level/biome/Climate$Sampler;
+       4: checkcast     #477                // class net/fabricmc/fabric/impl/biome/MultiNoiseSamplerHooks
+       7: lload_3
+       8: invokeinterface #481,  3          // InterfaceMethod net/fabricmc/fabric/impl/biome/MultiNoiseSamplerHooks.fabric_setSeed:(J)V
+      13: return
+
+  private void handler$zmb000$lithostitched$saveSeed(net.minecraft.world.level.levelgen.NoiseGeneratorSettings, net.minecraft.core.HolderGetter, long, org.spongepowered.asm.mixin.injection.callback.CallbackInfo);
+    Code:
+       0: aload_0
+       1: lload_3
+       2: putfield      #485                // Field seed:J
+       5: return
+
+  public long getSeed();
+    Code:
+       0: aload_0
+       1: getfield      #485                // Field seed:J
+       4: lreturn
+
+  public net.minecraft.world.level.levelgen.PositionalRandomFactory getRandom();
+    Code:
+       0: aload_0
+       1: getfield      #141                // Field random:Lnet/minecraft/world/level/levelgen/PositionalRandomFactory;
+       4: areturn
+}

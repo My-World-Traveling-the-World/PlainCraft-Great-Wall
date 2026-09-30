@@ -1,0 +1,8 @@
+{
+  "auditedUtc": "2026-09-30T14:57:28.9960236Z",
+  "phase": "archive-recheck-before-correcting-input-vs-post-run-assumption",
+  "command": "Verify-FinalEvidence.ps1 -WorkspaceRoot D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "exitCode": 1,
+  "error": "Staged config changed: config\\c2me.toml",
+  "scope": "Evidence verifier failure; no game/test execution, no production source change"
+}

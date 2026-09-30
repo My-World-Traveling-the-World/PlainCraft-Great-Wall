@@ -1,0 +1,3 @@
+# Raw third-party config snapshots and diffs retain their original whitespace.
+*.toml -text -whitespace
+*.diff -text -whitespace

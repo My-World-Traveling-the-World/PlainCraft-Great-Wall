@@ -1,0 +1,116 @@
+{
+  "auditedUtc": "2026-09-30T15:03:45.2691187Z",
+  "frozenSourceCommit": "6026605204cfc73f5219c13918e6402b34cd5b76",
+  "verification": "archive recheck, not new execution of Gradle/GameTest/profiles",
+  "productionWiring": "OFF",
+  "profiles": [
+    {
+      "runId": "s1c-oracle-vanilla-20260930-b797f27f",
+      "sourceCommit": "6026605204cfc73f5219c13918e6402b34cd5b76",
+      "exitCode": 0,
+      "archiveHashes": 10,
+      "sourceInputHashes": 221,
+      "minY": -64,
+      "maxYExclusive": 320,
+      "columns": 512,
+      "states": 196608,
+      "nativeSha256": "c86a7f534f6e886b65fbe8dd1a09f9f3dc5a1a28236a0283377e93e39113f525",
+      "parityLanes": 8,
+      "schedulerLanes": 2,
+      "nativeInitializationMaxNanos": 23037600.0,
+      "advance64MaxNanos": 6021300,
+      "schedulerBatchMaxNanos": 7814700,
+      "schedulerBatchCount": 12717,
+      "startupPumpCallNanos": 356200,
+      "configurations": [],
+      "actualC2meBaseSha256": null,
+      "scope": "observed native inputs; route 0/1 only; intentional close, not full prewarm or production worldgen"
+    },
+    {
+      "runId": "s1c-oracle-tectonic-20260930-93cb5fa6",
+      "sourceCommit": "6026605204cfc73f5219c13918e6402b34cd5b76",
+      "exitCode": 0,
+      "archiveHashes": 10,
+      "sourceInputHashes": 221,
+      "minY": -64,
+      "maxYExclusive": 320,
+      "columns": 512,
+      "states": 196608,
+      "nativeSha256": "9a874cbb44033887b5cba8456fbe57b7996ae72f4b63420254e68920297e1b10",
+      "parityLanes": 8,
+      "schedulerLanes": 2,
+      "nativeInitializationMaxNanos": 164040000.0,
+      "advance64MaxNanos": 15064200,
+      "schedulerBatchMaxNanos": 24598100,
+      "schedulerBatchCount": 13832,
+      "startupPumpCallNanos": 290600,
+      "configurations": [],
+      "actualC2meBaseSha256": null,
+      "scope": "observed native inputs; route 0/1 only; intentional close, not full prewarm or production worldgen"
+    },
+    {
+      "runId": "s1c-oracle-tectonic-c2me-20260930-7b2bdc7d",
+      "sourceCommit": "6026605204cfc73f5219c13918e6402b34cd5b76",
+      "exitCode": 0,
+      "archiveHashes": 10,
+      "sourceInputHashes": 221,
+      "minY": -64,
+      "maxYExclusive": 320,
+      "columns": 512,
+      "states": 196608,
+      "nativeSha256": "9a874cbb44033887b5cba8456fbe57b7996ae72f4b63420254e68920297e1b10",
+      "parityLanes": 8,
+      "schedulerLanes": 2,
+      "nativeInitializationMaxNanos": 2285986600.0,
+      "advance64MaxNanos": 3293100,
+      "schedulerBatchMaxNanos": 6701500,
+      "schedulerBatchCount": 12232,
+      "startupPumpCallNanos": 530900,
+      "configurations": [
+        {
+          "path": "config\\c2me.toml",
+          "inputSha256": "070398f4258ac299023e9db495af81c46d974f00d3fd5263d3d337c432cd6188",
+          "readOnlySourceSha256": "070398f4258ac299023e9db495af81c46d974f00d3fd5263d3d337c432cd6188",
+          "postRunSha256": "3d2611f14764da2667ca39c2f6c0a63ae33ba351756f4061ac998b72f94e6114",
+          "scope": "input identity and runtime bytes separately archived; not a claim of all-settings equivalence"
+        }
+      ],
+      "actualC2meBaseSha256": "e04c6cbc4f7bed2b514715f48bb725b894f69e1f890866b980aabc9dff0c6efd",
+      "scope": "observed native inputs; route 0/1 only; intentional close, not full prewarm or production worldgen"
+    }
+  ],
+  "junit": {
+    "suites": 57,
+    "tests": 309,
+    "actualNodes": 309,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "gameTests": {
+    "count": 6,
+    "names": [
+      "noisebridgegametests.privatecursorrejectsreentryinvalidlimitsandforeignlane",
+      "oraclegametests.clippedopenwateriscensoredandroofwaterisnotexposed",
+      "oraclegametests.coarseusesalignedfourblockdensityanddoesnotclaimfinalsurface",
+      "oraclegametests.frozenfactoryownsitslaneandrejectsclosedforeignandunfinishedcursors",
+      "oraclegametests.referenceandsupportmatchindependentnativereduction512columns",
+      "noisebridgegametests.slicedfullheightmatchesnativestatesforfourseedsand128columns"
+    ],
+    "scope": "six directed tests, not all GameTest matrices"
+  },
+  "regressionSource": {
+    "executionParent": "104f548a63d32fd0398558a6611ca07e37f2cf9c",
+    "producerFixCommit": "71fbc57",
+    "archivedInputs": "ready-scope-after/source-inputs.json",
+    "diagnosticOnlyChangesAfterRegression": [],
+    "mainClientTestGameTestBuildChangesSinceProducerFix": [],
+    "scope": "all six archived input hashes match; production/JUnit/GameTest unchanged since producer fix; full profile input manifest rerun on frozen source"
+  },
+  "coreForbiddenBytecodeReferences": 0,
+  "productionWorldgenSentinel": "NOT_RUN",
+  "realWallGeneration": "NOT_RUN",
+  "fullPrewarm": "NOT_RUN",
+  "tectonicInitializationInternalBreakdown": "UNRESOLVED",
+  "tansHugeTrees": "BLOCKED"
+}

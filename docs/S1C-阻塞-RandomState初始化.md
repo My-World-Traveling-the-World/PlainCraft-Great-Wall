@@ -1,6 +1,8 @@
 # S1C 阻塞：私有 RandomState 冷初始化
 
-状态：**B-S1C-01 / BLOCKED，生产接线 OFF，等待初始化协议审查决策**。
+历史状态：**B-S1C-01 / 旧合同 BLOCKED，生产接线 OFF**。
+
+**最新状态（2026-09-30）：用户已批准一次性初始化与稳态采样分栏；实现及最终 `6026605` 三 profile 前置复验已通过。** 详见 `D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1C-Lane初始化.md`。这是获批协议拆分，不把本报告里的旧失败证书改成 PASS；正文保持解除前的事实、结论和待授权方案。生产接线仍 OFF，S1C 尚未签收。Tectonic 的内部耗时分解仍未查明。
 
 日期：2026-09-30，Asia/Shanghai。输入 HEAD `e9edcf6` 加证据 `inputs.json` 所列工作区 SHA；本报告所属提交收录最终诊断源码。S1B 签收不撤销，但本报告不是 S1C 签收。
 

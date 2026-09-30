@@ -1,0 +1,10 @@
+{
+  "auditedUtc": "2026-09-30T14:59:11.5737520Z",
+  "exitCode": 1,
+  "error": "Stale JUnit: TEST-local.plaincraft.greatwall.BuildContractTest.xml",
+  "decodedTimestampType": "System.DateTime",
+  "decodedTimestampKind": "Utc",
+  "incorrectStringReparse": "2026-09-30T14:29:21.0000000+08:00",
+  "directTypedConversion": "2026-09-30T14:29:21.5198709+00:00",
+  "scope": "Evidence verifier timestamp conversion failure; original XML unchanged, no new Gradle execution"
+}
