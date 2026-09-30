@@ -47,7 +47,8 @@ public final class BlockCatalog {
             boolean support=natural&&!explicitProtection&&!gravity&&state.getFluidState().isEmpty()
                     &&!state.is(Blocks.POWDER_SNOW)&&!state.is(BlockTags.LOGS)&&!state.is(BlockTags.LEAVES)
                     &&state.isFaceSturdy(EmptyBlockGetter.INSTANCE,BlockPos.ZERO,Direction.UP);
-            boolean protectedBlock=explicitProtection||!natural&&!plant&&!water;
+            // SnapshotColumnView alone authorizes exposed single natural ice; every other ice stays protected there.
+            boolean protectedBlock=explicitProtection||!natural&&!plant&&!water&&!state.is(Blocks.ICE);
             Flags f=new Flags(support,plant,water,gravity,entity,protectedBlock);
             values.put(token(state,false),f);
             values.put(token(state,true),new Flags(false,false,water,gravity,true,true));
