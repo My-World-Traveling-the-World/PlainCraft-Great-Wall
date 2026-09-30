@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.OptionalInt;
+import java.util.UUID;
 import local.plaincraft.greatwall.mixin.NoiseGeneratorAccess;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
@@ -48,13 +49,15 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         public CpuTerrainOracle createOracle() { return new CpuTerrainOracle(this); }
     }
 
-    /** Snapshot, never shared counters. Over-40ms observations prohibit profile performance certification. */
+    /** Native initialization has its own clock; all repeatable sampling clocks retain the 40ms limit. */
     public record TimingSnapshot(long randomStateNanos, long maxConstructNanos, long maxCellNanos,
             long maxSlicePointNanos, long maxBlockNanos, long maxCoarseNanos, long maxBiomeNanos,
-            long over40msPrimitives, long referencePrimitives, long coarsePrimitives) {}
+            long over40msPrimitives, long referencePrimitives, long coarsePrimitives,
+            long maxAdvanceNanos, long over40msAdvances) {}
 
     private static final long FORTY_MS = 40_000_000L;
     private final Thread owner = Thread.currentThread();
+    private final UUID identity = UUID.randomUUID();
     private final RandomState randomState;
     private final NoiseGeneratorSettings settings;
     private final NoiseSettings noise;
@@ -67,10 +70,12 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     private boolean closed;
     private long maxConstructNanos, maxCellNanos, maxSlicePointNanos, maxBlockNanos, maxCoarseNanos, maxBiomeNanos;
     private long over40msPrimitives, referencePrimitives, coarsePrimitives;
+    private long maxAdvanceNanos, over40msAdvances;
 
     public CpuTerrainOracle(ServerLevel level, String fingerprint) { this(freeze(level, fingerprint)); }
 
     public CpuTerrainOracle(FrozenInput frozen) {
+        OracleLane.assertNativeInitialization();
         Objects.requireNonNull(frozen);
         settings = frozen.settings(); fluidPicker = frozen.fluidPicker(); biomeSource = frozen.biomeSource();
         bounds = frozen.bounds(); fingerprint = frozen.fingerprint();
@@ -79,7 +84,6 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         long start = System.nanoTime();
         randomState = RandomState.create(settings, frozen.noises(), frozen.seed());
         randomStateNanos = System.nanoTime() - start;
-        observe(randomStateNanos);
     }
 
     /** Called on server owner after all LOAD callbacks, before publishing a lane factory. */
@@ -114,11 +118,18 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     @Override public WorkState advance(ColumnCursor cursor, int primitiveLimit) {
         var c = own(cursor);
         if (primitiveLimit < 1 || primitiveLimit > 256) throw new IllegalArgumentException("primitive limit 1..256");
-        for (int step = 0; step < primitiveLimit && c.result == null; step++) {
-            if (c.kind == SampleKind.COARSE) { coarse(c); coarsePrimitives++; }
-            else { reference(c); referencePrimitives++; }
+        long started = System.nanoTime();
+        try {
+            for (int step = 0; step < primitiveLimit && c.result == null; step++) {
+                if (c.kind == SampleKind.COARSE) { coarse(c); coarsePrimitives++; }
+                else { reference(c); referencePrimitives++; }
+            }
+            return c.result == null ? WorkState.MORE : WorkState.DONE;
+        } finally {
+            long elapsed = System.nanoTime() - started;
+            maxAdvanceNanos = Math.max(maxAdvanceNanos, elapsed);
+            if (elapsed > FORTY_MS) over40msAdvances++;
         }
-        return c.result == null ? WorkState.MORE : WorkState.DONE;
     }
 
     @Override public ColumnSample finish(ColumnCursor cursor) {
@@ -140,8 +151,11 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     public TimingSnapshot timings() {
         checkOpen();
         return new TimingSnapshot(randomStateNanos, maxConstructNanos, maxCellNanos, maxSlicePointNanos,
-                maxBlockNanos, maxCoarseNanos, maxBiomeNanos, over40msPrimitives, referencePrimitives, coarsePrimitives);
+                maxBlockNanos, maxCoarseNanos, maxBiomeNanos, over40msPrimitives, referencePrimitives, coarsePrimitives,
+                maxAdvanceNanos, over40msAdvances);
     }
+    /** Immutable diagnostic identity, never a RandomState reference. */
+    public UUID identity() { checkOpen(); return identity; }
 
     @Override public String fingerprint() { return fingerprint; }
 

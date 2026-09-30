@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -24,6 +25,7 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.BlockCatalog;
 import local.plaincraft.greatwall.terrain.CpuTerrainOracle;
 import local.plaincraft.greatwall.terrain.NoiseCursorBridge;
+import local.plaincraft.greatwall.terrain.OracleLane;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tags.FluidTags;
@@ -40,6 +42,9 @@ import net.minecraft.world.level.levelgen.blending.Blender;
 /** Test-only actual-mod certification, not wall generation and not the S0 terrain matrix. */
 public final class OracleProfileFixture implements AutoCloseable {
     private record Completion(Map<String, Object> report, String failure) {}
+    private record Samples(UUID identity, List<ColumnSample> columns, CpuTerrainOracle.TimingSnapshot timing) {
+        private Samples { columns = List.copyOf(columns); }
+    }
     private static final List<Long> SEEDS = List.of(0L, 1L, 9282026L, Long.MIN_VALUE);
     private final ConcurrentHashMap<String, Completion> completed = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();
@@ -112,6 +117,9 @@ public final class OracleProfileFixture implements AutoCloseable {
         var tokens = new HashMap<BlockState, byte[]>();
         var timing = new TreeMap<String, Long>();
         var initializations = new ArrayList<Map<String, Long>>();
+        var sessions = new ArrayList<Map<String, Object>>();
+        var initMetrics = new ConcurrentHashMap<UUID, Map<String, Long>>();
+        var drainedLanes = new ArrayList<Map<String, Long>>();
         var threadTiming = ManagementFactory.getThreadMXBean();
         long blocks = 0;
         int columns = 0, wet = 0, dry = 0;
@@ -122,15 +130,36 @@ public final class OracleProfileFixture implements AutoCloseable {
                     base.biomeSource(), base.bounds(), seed, base.fingerprint());
             var reference = RandomState.create(base.settings(), base.noises(), seed);
             var slicedState = RandomState.create(base.settings(), base.noises(), seed);
-            long cpuStart = threadTiming.isCurrentThreadCpuTimeSupported() && threadTiming.isThreadCpuTimeEnabled()
-                    ? threadTiming.getCurrentThreadCpuTime() : -1;
-            long constructStart = System.nanoTime();
-            try (var oracle = frozen.createOracle()) {
-                long constructNanos = System.nanoTime() - constructStart;
+            UUID session = UUID.randomUUID();
+            var lane0 = new OracleLane(session, 0, frozen.fingerprint(), () -> {
+                long cpuStart = threadTiming.isCurrentThreadCpuTimeSupported() && threadTiming.isThreadCpuTimeEnabled()
+                        ? threadTiming.getCurrentThreadCpuTime() : -1;
+                long constructStart = System.nanoTime();
+                var oracle = frozen.createOracle();
                 long cpuEnd = cpuStart >= 0 ? threadTiming.getCurrentThreadCpuTime() : -1;
-                initializations.add(Map.of("seed", seed, "oracleConstructorWallNanos", constructNanos,
+                // The published entry is immutable. It is read only after ready, never concurrently mutated.
+                initMetrics.put(session, Map.of("seed", seed, "oracleConstructorWallNanos", System.nanoTime() - constructStart,
                         "oracleConstructorCpuNanos", cpuStart >= 0 && cpuEnd >= 0 ? cpuEnd - cpuStart : -1L,
                         "nativeRandomStateWallNanos", oracle.timings().randomStateNanos()));
+                return oracle;
+            });
+            var lane1 = new OracleLane(session, 1, frozen.fingerprint(), frozen::createOracle);
+            try {
+                // Only this test-only diagnostic worker waits. The server tick never waits for native initialization.
+                lane0.start().get(60, java.util.concurrent.TimeUnit.SECONDS);
+                lane1.start().get(60, java.util.concurrent.TimeUnit.SECONDS);
+                var firstJob = lane0.submit(value -> sampleJob((CpuTerrainOracle) value, 0, 64)).get(60, java.util.concurrent.TimeUnit.SECONDS);
+                var secondJob = lane0.submit(value -> sampleJob((CpuTerrainOracle) value, 64, 64)).get(60, java.util.concurrent.TimeUnit.SECONDS);
+                var otherLane = lane1.submit(value -> sampleJob((CpuTerrainOracle) value, 0, 1)).get(60, java.util.concurrent.TimeUnit.SECONDS);
+                if (!firstJob.identity().equals(secondJob.identity()) || firstJob.identity().equals(otherLane.identity())
+                        || !firstJob.columns().getFirst().equals(otherLane.columns().getFirst())) {
+                    throw new IllegalStateException("native cross-job reuse or cross-lane isolation failed");
+                }
+                var samples = new ArrayList<>(firstJob.columns()); samples.addAll(secondJob.columns());
+                initializations.add(initMetrics.remove(session));
+                sessions.add(Map.of("session", session.toString(), "seed", seed, "lane0Oracle", firstJob.identity().toString(),
+                        "lane1Oracle", otherLane.identity().toString(), "jobsOnLane0", 2,
+                        "lane0BeforeClose", lane0.diagnostics(), "lane1BeforeClose", lane1.diagnostics()));
                 for (int index = 0; index < 128; index++) {
                     if (Thread.currentThread().isInterrupted()) throw new InterruptedException("native oracle diagnostic stopped");
                     int x, z;
@@ -170,12 +199,7 @@ public final class OracleProfileFixture implements AutoCloseable {
                             }
                         }
                     } finally { chunk.stopInterpolation(); }
-                    var cursor = oracle.begin(x, z, SampleKind.REFERENCE);
-                    while (!cursor.done()) {
-                        if (Thread.currentThread().isInterrupted()) throw new InterruptedException("native oracle sample stopped");
-                        oracle.advance(cursor, 7);
-                    }
-                    var actual = oracle.finish(cursor);
+                    var actual = samples.get(index);
                     var expected = reduce(nativeColumn, frozen, reference, x, z);
                     if (!actual.equals(expected)) throw new IllegalStateException("reduction mismatch seed=" + seed
                             + " index=" + index + " expected=" + expected + " actual=" + actual);
@@ -184,21 +208,40 @@ public final class OracleProfileFixture implements AutoCloseable {
                     if (index % 32 == 31) System.out.println("S1C_ORACLE_PROFILE_PROGRESS seed=" + seed
                             + " columns=" + columns + "/512 states=" + blocks + " minY=" + noise.minY() + " height=" + noise.height());
                 }
-                var t = oracle.timings();
+                var t = secondJob.timing();
                 timing.merge("maxOracleRandomStateNanos", t.randomStateNanos(), Math::max);
                 timing.merge("maxOracleConstructNanos", t.maxConstructNanos(), Math::max);
                 timing.merge("maxOracleCellNanos", t.maxCellNanos(), Math::max);
                 timing.merge("maxOraclePointNanos", t.maxSlicePointNanos(), Math::max);
                 timing.merge("maxOracleBlockNanos", t.maxBlockNanos(), Math::max);
                 timing.merge("maxOracleBiomeNanos", t.maxBiomeNanos(), Math::max);
+                timing.merge("maxOracleAdvance64Nanos", t.maxAdvanceNanos(), Math::max);
+                timing.merge("oracleOver40msAdvances", t.over40msAdvances(), Math::addExact);
                 timing.merge("oracleOver40msPrimitives", t.over40msPrimitives(), Math::addExact);
+                timing.merge("maxOtherLaneAdvance64Nanos", otherLane.timing().maxAdvanceNanos(), Math::max);
+                timing.merge("oracleOver40msPrimitives", otherLane.timing().over40msPrimitives(), Math::addExact);
+                timing.merge("oracleOver40msAdvances", otherLane.timing().over40msAdvances(), Math::addExact);
+            } finally {
+                lane0.close(); lane1.close();
+                CompletableFuture.allOf(lane0.drain(), lane1.drain()).get(60, java.util.concurrent.TimeUnit.SECONDS);
+                for (var lane : List.of(lane0, lane1)) {
+                    var d = lane.diagnostics();
+                    if (d.getOrDefault("factory-calls", 0L) != 1 || d.getOrDefault("oracle-closes", 0L) != 1
+                            || d.getOrDefault("sentinel-WAIT_WHILE_LOCKED", 0L) != 0
+                            || d.getOrDefault("forbidden-init-thread", 0L) != 0 || d.getOrDefault("drained", 0L) != 1) {
+                        throw new IllegalStateException("native initialization/drain sentinel failed: " + d);
+                    }
+                    drainedLanes.add(d);
+                }
             }
         }
         String nativeHash = HexFormat.of().formatHex(expectedDigest.digest()), slicedHash = HexFormat.of().formatHex(actualDigest.digest());
         if (!nativeHash.equals(slicedHash) || columns != 512) throw new IllegalStateException("native oracle aggregate mismatch");
         var report = new TreeMap<String, Object>();
-        boolean performance = timing.entrySet().stream().filter(e -> e.getKey().startsWith("max"))
-                .allMatch(e -> e.getValue() <= 40_000_000L) && timing.get("oracleOver40msPrimitives") == 0;
+        boolean performance = timing.entrySet().stream().filter(e -> e.getKey().startsWith("max")
+                        && !e.getKey().equals("maxOracleRandomStateNanos"))
+                .allMatch(e -> e.getValue() <= 40_000_000L) && timing.get("oracleOver40msPrimitives") == 0
+                && timing.get("oracleOver40msAdvances") == 0;
         report.put("status", performance ? "PASS_NATIVE_ORACLE" : "BLOCKED_PERFORMANCE");
         report.put("correctness", "PASS"); report.put("performance", performance ? "PASS_OBSERVED_INPUTS" : "BLOCKED");
         report.put("purpose", "native-oracle-only-not-production-wall-acceptance");
@@ -208,12 +251,36 @@ public final class OracleProfileFixture implements AutoCloseable {
         report.put("columns", columns); report.put("states", blocks); report.put("wet", wet); report.put("dry", dry);
         report.put("nativeSha256", nativeHash); report.put("slicedSha256", slicedHash); report.put("timing", Map.copyOf(timing));
         report.put("oracleInitializations", List.copyOf(initializations));
+        report.put("initializationProtocol", "once-per-session-per-lane-lock-external-future-separate-from-40ms-steady");
+        report.put("laneSessions", List.copyOf(sessions));
+        report.put("nativeInitializationSentinelHits", 0);
+        report.put("actualNativeInitializations", drainedLanes.stream().mapToLong(d -> d.get("factory-calls")).sum());
+        report.put("drainedLanes", List.copyOf(drainedLanes));
+        report.put("steadyPrimitiveLimit", 64);
         int low = base.bounds().minY();
         report.put("actualFluidAtMinPlus9", BlockCatalog.specification(base.fluidPicker().computeFluid(0, low + 9, 0).at(low + 9)));
         report.put("actualFluidAtMinPlus10", BlockCatalog.specification(base.fluidPicker().computeFluid(0, low + 10, 0).at(low + 10)));
         report.put("belowSeaIsWater", base.fluidPicker().computeFluid(0, base.settings().seaLevel() - 1, 0)
                 .at(base.settings().seaLevel() - 1).is(Blocks.WATER));
         return Map.copyOf(report);
+    }
+
+    private static Samples sampleJob(CpuTerrainOracle oracle, int from, int count) {
+        var samples = new ArrayList<ColumnSample>();
+        for (int index = from; index < from + count; index++) {
+            int x, z;
+            if (index < 8) {
+                int[] edge = {-1000000, -17, -16, -1, 0, 1, 16, 1000000};
+                x = edge[index]; z = edge[7 - index];
+            } else { x = -4096 + Math.floorMod(index * 977, 8192); z = -4096 + Math.floorMod(index * 619, 8192); }
+            var cursor = oracle.begin(x, z, SampleKind.REFERENCE);
+            while (!cursor.done()) {
+                if (Thread.currentThread().isInterrupted()) throw new IllegalStateException("native job interrupted");
+                oracle.advance(cursor, 64);
+            }
+            samples.add(oracle.finish(cursor));
+        }
+        return new Samples(oracle.identity(), samples, oracle.timings());
     }
 
     private static byte[] token(HashMap<BlockState, byte[]> tokens, BlockState state) {

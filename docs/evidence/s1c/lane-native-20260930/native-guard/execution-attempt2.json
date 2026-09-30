@@ -1,0 +1,7 @@
+{
+  "sourceCommit": "8d55761749aa0e229bc4f89b35be3076e3b8a138",
+  "command": "gradlew.bat --offline --dependency-verification=strict runGameTest -PgreatwallGameTestClasses=OracleGameTests,NoiseBridgeGameTests --rerun-tasks --no-build-cache --console=plain --no-daemon",
+  "startedUtc": "2026-09-30T14:07:46.2616529Z",
+  "finishedUtc": "2026-09-30T14:08:23.4153883Z",
+  "exitCode": 0
+}

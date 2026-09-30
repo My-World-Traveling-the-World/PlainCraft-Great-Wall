@@ -1,0 +1,7 @@
+{
+  "sourceCommit": "8d55761749aa0e229bc4f89b35be3076e3b8a138",
+  "command": "test assemble compileServerSmokeJava runGameTest filtered OracleGameTests,NoiseCursorGameTests; --offline --dependency-verification=strict --rerun-tasks --no-build-cache --console=plain --no-daemon",
+  "startedUtc": "2026-09-30T14:04:46.3469675Z",
+  "finishedUtc": "2026-09-30T14:06:33.6165197Z",
+  "exitCode": 1
+}

@@ -51,7 +51,36 @@
 
 证据：`D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1c\lane-native-20260930\before\` 和 `lifecycle\`，包含原始日志、JUnit XML、退出凭证。SOURCE 为本批父提交加收录于同批的源码 diff；不声称父提交未修改代码直接通过。
 
-## 3. 未验证与保持边界
+## 3. 批次二：原生构造守卫与稳态分栏
+
+输入 `8d55761` 加同批收录源码。修改文件根路径仍为 `D:\云游四海-Mod源码\plaincraft-great-wall\`：
+
+- `src/main/java/local/plaincraft/greatwall/terrain/CpuTerrainOracle.java`。
+- `src/gametest/java/local/plaincraft/greatwall/gametest/OracleGameTests.java`。
+- `src/serverSmoke/java/local/plaincraft/greatwall/smoke/OracleProfileFixture.java`。
+- `tools/Test-S1OracleProfiles.ps1`。
+- `docs/S1-S5实施规格/S1-城墙本体.md`，只同步本次获批的初始化/稳态差分。
+
+CPU 构造第一步检查 lane 初始化上下文；sampling action 内也不能再次构造。同步诊断的默认拒绝使 native oracle 无法通过原先 computeGeometryNow 旁路。原生计时 `randomStateNanos` 仍保留，移出稳态 `over40msPrimitives`；NoiseChunk/point/cell/block/coarse/biome 没有移出，新增实际 advance 批次最大值和超限计数。immutable UUID 仅用于诊断，绝不参与规划 hash。
+
+原有 4 个 Oracle GameTest 名称、4 seeds×128 columns、128 列坐标域、三格 support、屋顶水/上溢水、coarse 对齐/阈值与 foreign/closed/未完成拒绝全部保留。执行迁移到 OracleLane，而不是让测试在 server thread 违反新协议。唯一恶意跨 lane cursor 传递是测试拒绝保护，生产 futures 不发布 mutable cursor/oracle。
+
+实际先执行全量 `test assemble compileServerSmokeJava runGameTest`；诊断参数错误使用完整类名和不存在的 NoiseCursorGameTests，`processGametestResources` 拒绝，整体 exit 1，**不能写整体 PASS**。此前 `test` 已完成且 57 份新 XML 核对 **305/305，0 failure/error/skipped**；CPU/profile/GameTest Java 编译、remapJar 已执行。失败日志原样保留。
+
+随后仅修启动参数，没有更改生产代码/测试域：
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Java\jdk-21'
+.\gradlew.bat --offline --dependency-verification=strict runGameTest '-PgreatwallGameTestClasses=OracleGameTests,NoiseBridgeGameTests' --rerun-tasks --no-build-cache --console=plain --no-daemon
+```
+
+实际 exit **0**，36s，GameTest **6/6**（XML 六个实际 testcase、0 failure/error/skips）；独立 196608 状态 hash 与历史原生相同，512 列/248 wet/264 dry/三格 support 全同；当前 vanilla 原生 oracle native init 最大 9.937ms，稳态 advance 最大 7.0516ms，primitive+advance 超限 0。只针对本次 vanilla GameTest 输入域，不是 Tectonic/C2ME 性能签收。
+
+证据：`docs/evidence/s1c/lane-native-20260930/native-guard/`。第一次参数失败与第二次成功分开；完整 JUnit XML 在 `junit/`、原生 XML 在 `gametest/results.xml`。
+
+三 profile runner 已加严格证书校验：4 独立 session/8 独立 oracle 身份、每 lane factory/close=1、实际 drain、零初始化哨兵、同 lane 两个 job 复用、advance(64)≤40ms；旧无该协议字段的证书不能充当新协议认证。**本批真实三个 profile 尚 NOT_RUN，下一批执行。**
+
+## 4. 未验证与保持边界
 
 生产墙生成/重进/不漏段/每 chunk 成本、6000 高度、非默认 minY、Golden、真实玩家实走、S5/24h：**NOT_RUN**。
 

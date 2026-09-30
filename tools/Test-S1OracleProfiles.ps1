@@ -89,12 +89,31 @@ foreach ($profile in $Profiles) {
         $oracle.columns -eq 512 -and $oracle.states -eq (512L * ($oracle.maxYExclusive - $oracle.minY)) -and
         ($oracle.wet + $oracle.dry) -eq 512 -and ($oracle.seeds -join ',') -eq '0,1,9282026,-9223372036854775808' -and
         $oracle.nativeSha256 -eq $oracle.slicedSha256 -and $oracle.nativeSha256 -match '^[0-9a-f]{64}$'
-    $passed = $cleanSmoke -and $correctness -and $oracle.status -eq 'PASS_NATIVE_ORACLE'
+    $protocol = $false
+    if ($null -ne $oracle -and $oracle.ContainsKey('laneSessions') -and $oracle.ContainsKey('drainedLanes')) {
+        $identities = @($oracle.laneSessions | ForEach-Object { $_.lane0Oracle; $_.lane1Oracle })
+        $badLanes = @($oracle.drainedLanes | Where-Object {
+            $_.'factory-calls' -ne 1 -or $_.'oracle-closes' -ne 1 -or $_.drained -ne 1 -or
+            ($_.ContainsKey('forbidden-init-thread') -and $_.'forbidden-init-thread' -ne 0) -or
+            ($_.ContainsKey('sentinel-WAIT_WHILE_LOCKED') -and $_.'sentinel-WAIT_WHILE_LOCKED' -ne 0)
+        })
+        $protocol = $oracle.initializationProtocol -eq 'once-per-session-per-lane-lock-external-future-separate-from-40ms-steady' -and
+            $oracle.actualNativeInitializations -eq 8 -and $oracle.nativeInitializationSentinelHits -eq 0 -and
+            $oracle.steadyPrimitiveLimit -eq 64 -and $oracle.laneSessions.Count -eq 4 -and
+            @($identities | Sort-Object -Unique).Count -eq 8 -and
+            ($oracle.laneSessions.seed -join ',') -eq '0,1,9282026,-9223372036854775808' -and
+            @($oracle.laneSessions | Where-Object { $_.jobsOnLane0 -ne 2 }).Count -eq 0 -and
+            $oracle.drainedLanes.Count -eq 8 -and $badLanes.Count -eq 0 -and
+            $oracle.timing.maxOracleAdvance64Nanos -le 40000000 -and
+            $oracle.timing.oracleOver40msPrimitives -eq 0 -and $oracle.timing.oracleOver40msAdvances -eq 0
+    }
+    $passed = $cleanSmoke -and $correctness -and $protocol -and $oracle.status -eq 'PASS_NATIVE_ORACLE'
     $execution = [ordered]@{
         sourceCommit=$sourceCommit;workspace=$project;runId=$id;profile=$profile
         startedUtc=$started.ToString('o');finishedUtc=[DateTime]::UtcNow.ToString('o')
         seconds=$timer.Elapsed.TotalSeconds;command=$inputs.command;exitCode=$exitCode;timedOut=$timedOut
         cleanSmoke=$cleanSmoke;passed=$passed;productionWiring='OFF'
+        laneProtocolPassed=$protocol
         oracleStatus=$(if ($null -ne $oracle) {$oracle.status} else {'MISSING_CERTIFICATE'})
     }
     [IO.File]::WriteAllText((Join-Path $evidence 'execution.json'), ($execution | ConvertTo-Json -Depth 8), $utf8)
