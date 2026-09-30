@@ -1,0 +1,10 @@
+{
+  "junitSuites": 57,
+  "junitTests": 309.0,
+  "junitActualNodes": 309.0,
+  "junitFailures": 0.0,
+  "junitErrors": 0.0,
+  "junitSkipped": 0.0,
+  "gameTests": 6,
+  "gameTestFailures": 0
+}

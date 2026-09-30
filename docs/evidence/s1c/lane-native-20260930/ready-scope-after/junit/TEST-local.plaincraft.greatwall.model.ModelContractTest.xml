@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.model.ModelContractTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-09-30T14:30:03.779Z" hostname="CAIMEO" time="0.008">
+  <properties/>
+  <testcase name="twiceQ30UnitLengthIsRejected()" classname="local.plaincraft.greatwall.model.ModelContractTest" time="0.0"/>
+  <testcase name="componentRoutesAreDeeplyImmutable()" classname="local.plaincraft.greatwall.model.ModelContractTest" time="0.0"/>
+  <testcase name="q30UnitDirectionsAreAccepted()" classname="local.plaincraft.greatwall.model.ModelContractTest" time="0.0"/>
+  <testcase name="neighborhoodRejectsForeignRecipe()" classname="local.plaincraft.greatwall.model.ModelContractTest" time="0.002"/>
+  <testcase name="routeBoundariesCannotBeNull()" classname="local.plaincraft.greatwall.model.ModelContractTest" time="0.001"/>
+  <testcase name="paletteTableCannotPassByIntegerOverflow()" classname="local.plaincraft.greatwall.model.ModelContractTest" time="0.002"/>
+  <testcase name="failureKeepsCodeAndOriginalCause()" classname="local.plaincraft.greatwall.model.ModelContractTest" time="0.0"/>
+  <testcase name="neighborhoodRejectsNonAdjacentSegment()" classname="local.plaincraft.greatwall.model.ModelContractTest" time="0.0"/>
+  <testcase name="sharedLeaseCancellationIsIsolatedAndReleaseIsOnce()" classname="local.plaincraft.greatwall.model.ModelContractTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -151,6 +151,67 @@ class OracleLaneTest {
         assertFalse(lane.diagnostics().containsKey("drained"));
     }
 
+    @Test void readinessCallbackCannotBorrowTheInitializationGrant() throws Exception {
+        var entered = new CountDownLatch(1); var release = new CountDownLatch(1);
+        var lane = new OracleLane(UUID.randomUUID(), 0, HASH, () -> {
+            entered.countDown(); await(release); return new OwnedOracle(new AtomicInteger(), new AtomicInteger());
+        });
+        try {
+            var ready = lane.start();
+            assertTrue(entered.await(5, TimeUnit.SECONDS));
+            var checked = ready.thenRun(() -> {
+                assertTrue(Thread.currentThread().getName().startsWith("pgw-oracle-"),
+                        "the counterexample must really execute inline on the completing lane");
+                assertThrows(IllegalStateException.class, OracleLane::assertNativeInitialization,
+                        "public ready callback is not part of the private constructor stage");
+            });
+            release.countDown();
+            checked.get(5, TimeUnit.SECONDS);
+        } finally { release.countDown(); lane.close(); lane.drain().get(5, TimeUnit.SECONDS); }
+    }
+
+    @Test void initializationFailureCallbackCannotBorrowTheGrant() throws Exception {
+        var entered = new CountDownLatch(1); var release = new CountDownLatch(1);
+        var lane = new OracleLane(UUID.randomUUID(), 0, HASH, () -> {
+            entered.countDown(); await(release); throw new IllegalStateException("constructor failure");
+        });
+        try {
+            var ready = lane.start(); assertTrue(entered.await(5, TimeUnit.SECONDS));
+            var checked = ready.handle((value, failure) -> {
+                assertNotNull(failure);
+                assertTrue(Thread.currentThread().getName().startsWith("pgw-oracle-"));
+                assertThrows(IllegalStateException.class, OracleLane::assertNativeInitialization);
+                return true;
+            });
+            release.countDown(); assertTrue(checked.get(5, TimeUnit.SECONDS));
+        } finally { release.countDown(); lane.close(); lane.drain().get(5, TimeUnit.SECONDS); }
+    }
+
+    @Test void eachLaneNativeConstructionPermitCanBeConsumedOnlyOnce() throws Exception {
+        var lane = new OracleLane(UUID.randomUUID(), 0, HASH, () -> {
+            OracleLane.claimNativeInitialization();
+            assertThrows(IllegalStateException.class, OracleLane::claimNativeInitialization);
+            return new OwnedOracle(new AtomicInteger(), new AtomicInteger());
+        });
+        try {
+            lane.start().get(5, TimeUnit.SECONDS);
+            assertEquals(1L, lane.diagnostics().get("native-constructions"));
+            assertThrows(ExecutionException.class, () -> lane.submit(o -> {
+                OracleLane.claimNativeInitialization(); return 1;
+            }).get(5, TimeUnit.SECONDS));
+        } finally { lane.close(); lane.drain().get(5, TimeUnit.SECONDS); }
+    }
+
+    @Test void serverAndWorldgenThreadsCannotClaimNativeConstruction() throws Exception {
+        for (String name : java.util.List.of("Server thread", "Worker-Main-worldgen", "c2me-worker")) {
+            try (var worker = Executors.newSingleThreadExecutor(task -> new Thread(task, name))) {
+                assertTrue(worker.submit(() -> {
+                    assertThrows(IllegalStateException.class, OracleLane::claimNativeInitialization); return true;
+                }).get(5, TimeUnit.SECONDS));
+            }
+        }
+    }
+
     private static OracleLane lane(int index, AtomicInteger created, AtomicInteger closed) {
         return new OracleLane(UUID.randomUUID(), index, HASH, () -> new OwnedOracle(created, closed));
     }

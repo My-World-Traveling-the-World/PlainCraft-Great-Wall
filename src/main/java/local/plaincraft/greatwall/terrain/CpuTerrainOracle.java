@@ -75,7 +75,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     public CpuTerrainOracle(ServerLevel level, String fingerprint) { this(freeze(level, fingerprint)); }
 
     public CpuTerrainOracle(FrozenInput frozen) {
-        OracleLane.assertNativeInitialization();
+        OracleLane.claimNativeInitialization();
         Objects.requireNonNull(frozen);
         settings = frozen.settings(); fluidPicker = frozen.fluidPicker(); biomeSource = frozen.biomeSource();
         bounds = frozen.bounds(); fingerprint = frozen.fingerprint();

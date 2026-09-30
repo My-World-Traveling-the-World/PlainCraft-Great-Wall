@@ -105,8 +105,18 @@ public final class OracleLane implements AutoCloseable {
         }
     }
 
+    /** Consumed by the CPU constructor before allocating its private RandomState. Never renewable. */
+    public static void claimNativeInitialization() {
+        assertNativeInitialization();
+        var lane = INITIALIZING.get();
+        if (lane.state.containsKey("closed") || lane.state.putIfAbsent("native-constructions", 1L) != null) {
+            throw new IllegalStateException("native construction permit is closed or already consumed on this lane");
+        }
+    }
+
     private void initialize() {
         long started = System.nanoTime();
+        Throwable failure = null;
         INITIALIZING.set(this);
         try {
             assertNativeInitialization();
@@ -118,15 +128,17 @@ public final class OracleLane implements AutoCloseable {
             }
             if (state.containsKey("closed")) throw closedFailure();
             state.put("ready", 1L);
-            ready.complete(null);
-        } catch (Throwable failure) {
-            producerFailure = failure;
+        } catch (Throwable error) {
+            failure = error;
+            producerFailure = error;
             state.merge("initialization-failures", 1L, Long::sum);
-            ready.completeExceptionally(failure);
         } finally {
             state.put("initialization-nanos", System.nanoTime() - started);
             INITIALIZING.remove();
         }
+        // CompletableFuture completion can execute public continuations inline on this thread.
+        // Publish only AFTER revoking the constructor context, on both success and error paths.
+        if (failure == null) ready.complete(null); else ready.completeExceptionally(failure);
     }
 
     @Override public void close() {

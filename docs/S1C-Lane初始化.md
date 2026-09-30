@@ -99,7 +99,21 @@ $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
 
 三个真正普通 DedicatedServer profile 验证在此批提交之后执行，结果另附；尚未运行时不得预写 PASS。
 
-## 5. 未验证与保持边界
+## 5. 收尾自审反例：ready continuation 不能借初始化权限
+
+在 `104f548` 的第一轮三个真实 profile 均通过后，收尾自查发现一条未被良性采样覆盖的非法路径。第一轮证据保留，不用它证明该回调安全性。
+
+1. 旧行为：`OracleLane.initialize()` 在 `INITIALIZING.remove()` 前 `ready.complete`。CompletableFuture 的同步 continuation 可 inline 执行，因此 public ready 回调短暂仍见私有构造上下文。
+2. 具体反例：`OracleLaneTest.readinessCallbackCannotBorrowTheInitializationGrant` 用 latch 保证 callback 注册在构造返回前，且真实运行在 completing lane；原代码不能拒绝该 callback 的构造上下文查询。定向测试实际 exit 1，1 项失败，日志/XML 在 `ready-scope-before/`。
+3. 最小修订：success/error 两路均先撤销 ThreadLocal 并结束初始化计时，再发布 ready；CPU 构造前消费每 lane 不可续期的唯一 `native-constructions` 许可。ready callback、sampling action、另一线程及第二次 constructor 均不能借用。
+4. 不变项：native 算法/seed/settings/fluidPicker/NoiseChunk、25/40ms 采样合同、lane 数量/队列上限、异步提交、实际 drain、所有几何 hash 与用户需求不变。
+5. 修后验证：全量 JUnit **309/309、57 suites**，定向 GameTest **6/6**，exit 0，2m06s，19 tasks 全执行，0 failure/error/skips。新增 4 项覆盖成功/失败 ready inline callback、单次许可及模拟 server/worldgen/C2ME 线程拒绝。这不是生产 worldgen 锁认证。证据在 `docs/evidence/s1c/lane-native-20260930/ready-scope-after/`。真实三 profile 必须在修后源码上重验，不继承第一轮安全结论。
+
+新增/修改生产文件是 `OracleLane.java`、`CpuTerrainOracle.java`；测试为 `OracleLaneTest.java`。单测命令仅把 BEFORE 的 `--tests` 设为上述一个反例，AFTER 采用 §4 的全量 JUnit/定向 native 命令。
+
+真实 profile fixture 与 runner 同步增加 `native-constructions=1` 的实测校验，另批提交；第一轮 `104f548` 没有此字段，必须标明是 guard 加固前的观测，不充当最终证书。
+
+## 6. 未验证与保持边界
 
 生产墙生成/重进/不漏段/每 chunk 成本、6000 高度、非默认 minY、Golden、真实玩家实走、S5/24h：**NOT_RUN**。
 

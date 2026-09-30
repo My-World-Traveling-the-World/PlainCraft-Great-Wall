@@ -1,0 +1,8 @@
+{
+  "sourceCommit": "104f548a63d32fd0398558a6611ca07e37f2cf9c",
+  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.terrain.OracleLaneTest.readinessCallbackCannotBorrowTheInitializationGrant --rerun-tasks --no-build-cache --console=plain --no-daemon",
+  "startedUtc": "2026-09-30T14:26:47.3067180Z",
+  "finishedUtc": "2026-09-30T14:27:07.6001708Z",
+  "exitCode": 1,
+  "expected": "RED: inline ready continuation borrowed INITIALIZING scope"
+}
