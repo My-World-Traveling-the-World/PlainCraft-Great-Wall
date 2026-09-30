@@ -127,3 +127,14 @@
 反例保留：`RampSpecificationTest.frozenUpperEndRailSealsTheGroundLandingAtHeightTwenty` 独立保留旧式坐标见证；Gate 原版诊断把修复的入口按旧式填回后必须再次断开，当前实现则必须跨全部 requiredRoutes 并达到外部天然地面。`WallRampTest` 逐 H 检查完整三宽地板/净空；`RampGroundPortalTests` 枚举 32 高度 × 六朝向 = 192 条原版碰撞路径，逐条验证墙顶路线到完整包络外天然地面。
 
 本次定向验证：`build/s1b-ground-portal-v1.log` 严格离线 BUILD SUCCESSFUL；3 个 GameTest 方法通过，包含 192/192 条入口矩阵，以及保留旧封闭式的 Gate 反例对照。它不代替尚待重跑的 547 条相邻矩阵和默认完整构建。
+
+## 相切关隘封入口与敌楼西侧接缝的最小修订
+
+1. 原前端入口只开放 `X[-30,-29), Z[5,8)`；完整关隘在相切位置占据前方天然地面后，Gate 仍可在不重叠体素的情况下失去地面出口。修订在原马道 LOCAL 内增加 `X[-29,-26), Z[8,12)` 的侧向平台和三格净空，脚面仍为 lower；自然入口预检覆盖 `X[-30,-26), Z[5,12)`。不改两跑梯、H=1..32、通路宽度、外包络、drop<=12 或 owner 权限。`AdjacentFixtureDiagnosticTests.tangentFortCannotSealGateGroundEntrance` 保留填回旧侧面后封闭的真实原版碰撞对照。
+2. 敌楼规划避让 guard 原为 `[S-6,S+6)`，实体宽 11 列为 `[S-5,S+6)`。把 guard 直接当墙体替换区会删除西侧一列墙地板。修订只令 ENEMY_TOWER 的墙体替换区从 `S-5` 开始；水文避让、地面出口足印和站点日程仍使用原 guard。`RealizationPlannerTest.elevenWideTowerKeepsTheWallColumnInsideItsTwelveWidePlanningGuard` 保留原差列反例；该单测只证明列恢复，完整邻接连通另由实际 resolver/native 矩阵验证。
+
+## 出口工作集关闭与异步排空
+
+`GroundExitResolver.drained(): CompletableFuture<Void>` 新增独立、可取消的观察视图。`close()` 立即拒新并终止公开请求视图，但不因此释放仍由 inspect/cap/persist 或 queued continuation 持有的数据。内部 require/section 执行链分别计数；仅 close 后计数归零才释放缓存、Work pin 和临时 arena。Work 替换期间新旧 pin 同时计量，计数覆盖同步 producer 调用体；不采用公开 promise 的结束作为 producer 排空证明。
+
+`ProductionWallPipeline` 的 owner 完成路径先异步等待所有 resolver.drained，再关闭 compiled arena 和外层预算 pin。没有增加 worldgen 同步 getChunk/join/get；关闭不清永久证书，不把玩家方块作为可回退缓存。`GroundExitReservationTest.closeKeepsPinsWhileEnteredPersistenceStillOwnsTheDecision` 已保存修复前真实失败 XML；仅已结束 require 的 512-byte 控制 pin 可提前回收，持久化生产者仍持有的整个 section 工作集必须保留。补充 pending-vote、drain-view cancellation 和异常排空测试。

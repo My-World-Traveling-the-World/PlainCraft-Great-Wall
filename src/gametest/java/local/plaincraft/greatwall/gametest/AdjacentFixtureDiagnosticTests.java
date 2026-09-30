@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import local.plaincraft.greatwall.component.EnemyTower;
 import local.plaincraft.greatwall.component.Gate;
+import local.plaincraft.greatwall.component.FortPlaceholder;
 import local.plaincraft.greatwall.component.WallSection;
 import local.plaincraft.greatwall.decay.DecayField;
 import local.plaincraft.greatwall.diagnostics.StageTrace;
@@ -43,6 +44,29 @@ public final class AdjacentFixtureDiagnosticTests implements FabricGameTest {
     private static final String AIR = BlockCatalog.token(Blocks.AIR.defaultBlockState(), false);
     private static final String STONE = BlockCatalog.token(Blocks.STONE.defaultBlockState(), false);
     private record Built(ComponentVoxels component, Map<Point3i, SurfaceProbe.ColumnView> columns) {}
+
+    @GameTest(template=EMPTY_STRUCTURE, timeoutTicks=1000000, batch="pgw-adjacency-fixture-diagnostic")
+    public void tangentFortCannotSealGateGroundEntrance(GameTestHelper helper) {
+        var fort=build(SiteKind.FORT,100);var original=build(SiteKind.GATE,200);
+        int edge=fort.component().voxels().stream().mapToInt(v->v.pos().x()+1).max().orElseThrow();
+        int dx=edge-original.component().voxels().stream().mapToInt(v->v.pos().x()).min().orElseThrow();
+        var gate=translate(original,dx);var c=gate.component();
+        var writes=states(plans(List.of(fort,gate)));var all=new HashMap<>(writes);var b=c.bounds();
+        for(int z=b.minZ()-2;z<b.maxZExclusive()+2;z++)for(int x=b.minX()-2;x<b.maxXExclusive()+2;x++)
+            all.putIfAbsent(new Point3i(x,GROUND-1,z),Blocks.STONE.defaultBlockState());
+        var door=c.requiredRoutes().getFirst().getFirst();
+        var top=c.requiredRoutes().get(1).getFirst();
+        var reached=new ComponentFixtures.CollisionView(all).reachable(door,b);
+        for(var route:c.requiredRoutes())for(var point:route)
+            require(reached.contains(foot(point)),"tangent FORT/GATE loses an actual required connection: "+point);
+        var oldFrontOnly=new HashMap<>(all);
+        for(int x=dx-29;x<dx-26;x++)for(int z:new int[]{8,9,10,11,-9,-10,-11,-12})
+            for(int y=GROUND;y<GROUND+3;y++)oldFrontOnly.put(new Point3i(x,y,z),Blocks.STONE_BRICKS.defaultBlockState());
+        require(!new ComponentFixtures.CollisionView(oldFrontOnly).reachable(door,b).contains(foot(top)),
+                "front-only entrance must reproduce BOUNDARY index=140 even on natural ground");
+        System.out.println("S1B_TANGENT_FORT_GATE dx="+dx+" frontOnly=SEALED completeSideExit=CONNECTED");
+        helper.succeed();
+    }
 
     @GameTest(template=EMPTY_STRUCTURE, timeoutTicks=1000000, batch="pgw-adjacency-fixture-diagnostic")
     public void flatGateMustConnectWithCapturedGroundNotAnAirBackground(GameTestHelper helper) {
@@ -99,6 +123,8 @@ public final class AdjacentFixtureDiagnosticTests implements FabricGameTest {
         var legacyClosed=new HashMap<>(withTerrain);
         for(int z:new int[]{5,6,7,-6,-7,-8})for(int y=GROUND;y<GROUND+3;y++)
             legacyClosed.put(new Point3i(dx-30,y,z),Blocks.STONE_BRICKS.defaultBlockState());
+        for(int x=dx-29;x<dx-26;x++)for(int z:new int[]{8,9,10,11,-9,-10,-11,-12})
+            for(int y=GROUND;y<GROUND+3;y++)legacyClosed.put(new Point3i(x,y,z),Blocks.STONE_BRICKS.defaultBlockState());
         var legacyReach=new ComponentFixtures.CollisionView(legacyClosed).reachable(door.getFirst(),bounds);
         require(!legacyReach.contains(foot(upper.getFirst())),"old upper-rail foundation no longer reproduces the sealed ground entrance");
         var topWithTerrain = complete.reachable(upper.getFirst(), bounds);
@@ -174,6 +200,7 @@ public final class AdjacentFixtureDiagnosticTests implements FabricGameTest {
             case WALL -> new Bounds(-32, -32, -5, 32, 3, 5);
             case GATE -> new Bounds(-30, -33, -15, 30, 4, 15);
             case ENEMY_TOWER -> new Bounds(-5, -33, -5, 6, 8, 6);
+            case FORT -> new Bounds(-24,-33,-24,24,8,24);
             default -> throw new IllegalArgumentException("unsupported diagnostic kind");
         };
         var base = ComponentFixtures.input(kind, bounds, 0, 0, 0, DecayState.INTACT);
@@ -193,6 +220,7 @@ public final class AdjacentFixtureDiagnosticTests implements FabricGameTest {
             case WALL -> new WallSection(decay, ComponentFixtures.PALETTE).compile(input);
             case GATE -> new Gate(decay, ComponentFixtures.PALETTE).compile(input);
             case ENEMY_TOWER -> new EnemyTower(decay, ComponentFixtures.PALETTE).compile(input);
+            case FORT -> new FortPlaceholder(decay,ComponentFixtures.PALETTE).compile(input);
             default -> throw new IllegalArgumentException("unsupported diagnostic kind");
         };
         require(!component.voxels().isEmpty(), "diagnostic needs a real complete template");
