@@ -1,0 +1,26 @@
+{
+  "scriptSyntaxErrors": 0,
+  "productionWiring": "OFF",
+  "inputs": [
+    {
+      "sha256": "4d8deb9f81963b026e06bf67023d18dacd74e5bef5292a296e7a199fd503f404",
+      "path": "src/serverSmoke/java/local/plaincraft/greatwall/smoke/RealTerrainFixture.java"
+    },
+    {
+      "sha256": "cfff40b60ccbde23522f31be25dd2609b797d60454cab2cd3abe6f9daa4efd56",
+      "path": "src/serverSmoke/java/local/plaincraft/greatwall/smoke/ServerSmoke.java"
+    },
+    {
+      "sha256": "30e37b0f4cbb7079dc8f72201b2cabc34f1b4ddc7559a9c55f65d785c7d9040a",
+      "path": "gradle/smoke-tests.gradle"
+    },
+    {
+      "sha256": "fbe4b914c2e967d606b8fff19606a75f3ca0864dfb01b06f917904fc8f920429",
+      "path": "tools/Test-S1Terrain.ps1"
+    }
+  ],
+  "sourceCommit": "a8a8df52b83e70d60404d96d88981fea8fa6a1bf",
+  "exitCode": 0,
+  "actualWorld": "NOT_RUN",
+  "command": "gradlew.bat --offline --dependency-verification=strict compileServerSmokeJava --rerun-tasks --no-build-cache --console=plain --no-daemon"
+}

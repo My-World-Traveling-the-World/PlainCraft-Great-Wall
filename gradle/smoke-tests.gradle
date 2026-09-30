@@ -18,6 +18,16 @@ def disableRewrite = providers.gradleProperty('s0DisableRewrite').getOrElse('fal
 def terrainProbe = providers.gradleProperty('s0Terrain').getOrElse('false').toBoolean()
 def terrainResume = providers.gradleProperty('s0TerrainResume').getOrElse('false').toBoolean()
 def oracleOnly = providers.gradleProperty('s1cOracleOnly').getOrElse('false').toBoolean()
+def realWall = providers.gradleProperty('s1cRealWall').getOrElse('false').toBoolean()
+def realReopen = providers.gradleProperty('s1cReopen').getOrElse('false').toBoolean()
+def actualSeed = providers.gradleProperty('s1cSeed').getOrElse('9282026')
+if (!(actualSeed ==~ /-?[0-9]+/) || (realReopen && !realWall)) {
+    throw new GradleException('Real fixture seed/reopen contract')
+}
+if (realWall && (oracleOnly || terrainProbe || disableRewrite || profile == 'pack-opencl' ||
+        providers.gradleProperty('s0Probe').getOrElse('false').toBoolean())) {
+    throw new GradleException('Real wall fixture is separate from S0/oracle and blocked full pack')
+}
 if (oracleOnly && (profile == 'pack-opencl' || terrainProbe ||
         providers.gradleProperty('s0Probe').getOrElse('false').toBoolean())) {
     throw new GradleException('S1C oracle certificate must be isolated from S0 probes and the blocked full pack')
@@ -26,6 +36,8 @@ if (disableRewrite && profile != 'tectonic-c2me') {
     throw new GradleException('Rewrite-disable capability test is isolated to the C2ME CPU profile')
 }
 def probeArgs = [
+    "-Dgreatwall.s1c.productionFixture=${realWall}",
+    "-Dgreatwall.s1c.reopen=${realReopen}",
     "-Dgreatwall.s1c.oracle=${oracleOnly}",
     "-Dgreatwall.s0.probe=${providers.gradleProperty('s0Probe').getOrElse('false')}",
     "-Dgreatwall.s0.delayMs=${providers.gradleProperty('s0DelayMs').getOrElse('1')}",
@@ -90,6 +102,16 @@ loom {
 tasks.register('prepareServerSmoke') {
     doLast {
         def root = directory.get().asFile
+        if (realReopen) {
+            if (!new File(root, 'greatwall_test_world').isFile() || !new File(root, 'greatwall_s1c_fixture').isFile() ||
+                    !new File(root, 'world/greatwall/manifest/creation.json').isFile() ||
+                    !new File(root, 'world/greatwall/manifest/world.json').isFile() ||
+                    !new File(root, 'real-wall-generated.json').isFile()) {
+                throw new GradleException('Reopen requires this isolated authorized production fixture and first traversal certificate')
+            }
+            logger.lifecycle("Reopening only this isolated real-wall fixture: ${root}")
+            return
+        }
         if (terrainResume) {
             if (!terrainProbe || !new File(root, 'greatwall_test_world').isFile() ||
                     !new File(root, 'world/greatwall-s0/recipes').isDirectory()) {
@@ -103,6 +125,7 @@ tasks.register('prepareServerSmoke') {
         }
         root.mkdirs()
         new File(root, 'greatwall_test_world').setText("S0-01 ${profile} ${runId}\n", 'UTF-8')
+        if (realWall) new File(root, 'greatwall_s1c_fixture').setText("S1C isolated real wall ${profile} ${runId}; production OFF\n", 'UTF-8')
         // The user explicitly authorized isolated dedicated-server startup tests.
         new File(root, 'eula.txt').setText('eula=true\n', 'UTF-8')
         new File(root, 'server.properties').setText('''server-ip=127.0.0.1
@@ -122,6 +145,9 @@ sync-chunk-writes=true
 generator-settings={"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"biome":"minecraft:plains","features":true,"lakes":false,"structure_overrides":[]}
 spawn-protection=0
 ''', 'UTF-8')
+        }
+        if (realWall) {
+            new File(root, 'server.properties').append("level-seed=${actualSeed}\nspawn-protection=0\n", 'UTF-8')
         }
         if (providers.gradleProperty('s0Reload').getOrElse('none') != 'none') {
             def fixture = new File(root, 'world/datapacks/greatwall-s0')
@@ -147,7 +173,7 @@ def terrainWorkerAgent = tasks.register('terrainWorkerAgent', Jar) {
     }
 }
 tasks.named('runServerSmoke') {
-    timeout = java.time.Duration.ofMinutes(oracleOnly ? 20 : terrainProbe ? 10 : 3)
+    timeout = java.time.Duration.ofMinutes(realWall ? 40 : oracleOnly ? 20 : terrainProbe ? 10 : 3)
     dependsOn tasks.named('prepareServerSmoke')
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
     if (providers.gradleProperty('s0TerrainFixedWorkers').getOrElse('false').toBoolean() && profile == 'tectonic-c2me') {
@@ -206,7 +232,7 @@ def prepareProductionInputs = { runtimeSource, String gameJarName, File smokeFil
     return files(runtimeLibraries, gameJar, intermediary)
 }
 tasks.register('runServerSmokeProduction', JavaExec) {
-    timeout = java.time.Duration.ofMinutes(5)
+    timeout = java.time.Duration.ofMinutes(realWall ? 40 : 5)
     dependsOn tasks.named('prepareServerSmoke'), tasks.named('remapJar'), remappedSmoke
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
     workingDir = directory.get().asFile
