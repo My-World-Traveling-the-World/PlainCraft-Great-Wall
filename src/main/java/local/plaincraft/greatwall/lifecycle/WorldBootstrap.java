@@ -50,6 +50,7 @@ public final class WorldBootstrap implements AutoCloseable {
     private final ConcurrentHashMap<String, Frozen> frozen = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, List<OracleLane>> laneSnapshot = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, RootSearch.Progress> progress = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, List<RootSearch.Audit>> rootAudit = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, WorldRecipe> recipes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, PlannerScheduler> transferred = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, List<CompletableFuture<?>>> ioFlights = new ConcurrentHashMap<>();
@@ -150,6 +151,7 @@ public final class WorldBootstrap implements AutoCloseable {
     public CompletableFuture<WorldRecipe> ready() { return ready.copy(); }
     public CompletableFuture<Void> drain() { return drained.copy(); }
     public Map<String, RootSearch.Progress> progress() { return Map.copyOf(progress); }
+    public Map<String, List<RootSearch.Audit>> rootAudit() { return Map.copyOf(rootAudit); }
     public List<ChunkKey> earlyChunks() { return earlyDomain.snapshot(); }
     public Map<String, Boolean> diagnostics() { return Map.copyOf(state); }
 
@@ -202,8 +204,13 @@ public final class WorldBootstrap implements AutoCloseable {
     private void advance(RootSearch search, OracleLane lane, WorldManifest.Creation creation, Frozen inputs) {
         active();
         lane.submit(oracle -> {
-            var status = search.advance(oracle, 64);
-            return new RootBatch(status == WorkState.DONE ? Optional.of(search.finish()) : Optional.empty(), search.progress());
+            try {
+                var status = search.advance(oracle, 64);
+                return new RootBatch(status == WorkState.DONE ? Optional.of(search.finish()) : Optional.empty(), search.progress());
+            } finally {
+                progress.put("root", search.progress());
+                rootAudit.put("root", search.audit());
+            }
         }).whenCompleteAsync((batch, error) -> {
             if (state.containsKey("closed") || state.containsKey("failed")) return;
             if (error != null) { fail(error); return; }

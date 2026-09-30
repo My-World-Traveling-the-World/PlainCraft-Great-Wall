@@ -1,0 +1,26 @@
+{
+  "startedUtc": "2026-09-30T16:51:37.8901710Z",
+  "finishedUtc": "2026-09-30T16:51:58.8514388Z",
+  "inputs": [
+    {
+      "path": "src/main/java/local/plaincraft/greatwall/lifecycle/RootSearch.java",
+      "sha256": "5115deba42ed2aa4af359847ab57f88a9c5a1ca43d9303957533fe4558c87190"
+    },
+    {
+      "path": "src/main/java/local/plaincraft/greatwall/lifecycle/WorldBootstrap.java",
+      "sha256": "4117387cae076b26b50f6dea2dcdb112c02b8888500db8e01b5d5b3c86a12c0b"
+    },
+    {
+      "path": "src/main/java/local/plaincraft/greatwall/lifecycle/ProductionSession.java",
+      "sha256": "d5db057c44627ef3ebd8ff2becde7b6d3cb86b0b0731957dee93a859289c514d"
+    },
+    {
+      "path": "src/test/java/local/plaincraft/greatwall/lifecycle/RootSearchTest.java",
+      "sha256": "d10022bfd09cb2d666179812c01e610ca07f274cd1de46e63290e66104611108"
+    }
+  ],
+  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.lifecycle.RootSearchTest --tests local.plaincraft.greatwall.lifecycle.WorldBootstrapTest compileServerSmokeJava --rerun-tasks --no-build-cache --console=plain --no-daemon",
+  "sourceCommit": "a04b8372d7003708668783ec554038eb676fb127",
+  "productionWiring": "OFF",
+  "exitCode": 0
+}

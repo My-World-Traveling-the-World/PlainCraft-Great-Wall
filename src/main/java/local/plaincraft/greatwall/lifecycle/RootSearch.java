@@ -16,6 +16,8 @@ public final class RootSearch {
             int columns, long maxBatchNanos, long over40msBatches) {}
     public record Progress(int phase, int candidate, int shortlisted, int footprintColumn,
             int axisIndex, int columns, long maxBatchNanos, long over40msBatches) {}
+    public record Audit(String stage, Point3i origin, int radiusIndex, int angleIndex, int axisIndex,
+            int wetColumns, int invalidSamples, int failedFoundations, int minY, int maxY, String result) {}
     private record Candidate(Point3i origin, int radius, int angle, int wet, int slope, long ridge) {}
     private static final int[] RADII = {800, 1000, 1250, 1500};
     private static final int[] AXIS_DEGREES = {-40, -20, 0, 20, 40};
@@ -26,11 +28,13 @@ public final class RootSearch {
     private final List<ChunkKey> early;
     private final BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation;
     private final ArrayList<Candidate> candidates = new ArrayList<>();
+    private final ArrayList<Audit> audit = new ArrayList<>();
     private List<Candidate> shortlisted = List.of();
     private NaturalTerrainOracle.ColumnCursor column;
     private Thread owner;
     private int phase, candidateIndex, sampleIndex, selectedIndex, axisIndex, columns;
     private int wet, min = Integer.MAX_VALUE, max = Integer.MIN_VALUE, centerHeight;
+    private int invalidSamples, failedFoundations;
     private long sum, axisScore, maxBatchNanos, over40msBatches;
     private boolean invalid, lastSupport;
     private Axis axis;
@@ -81,6 +85,8 @@ public final class RootSearch {
         return new Progress(phase, candidateIndex, shortlisted.size(), sampleIndex, axisIndex, columns,
                 maxBatchNanos, over40msBatches);
     }
+    /** Diagnostic-only, lane-owned copy. It is never an input to selection or persisted recipe identity. */
+    public List<Audit> audit() { claimOwner(); return List.copyOf(audit); }
 
     private void coarseStep(NaturalTerrainOracle oracle) {
         if (candidateIndex == RADII.length * 36) {
@@ -105,6 +111,8 @@ public final class RootSearch {
             candidates.add(new Candidate(new Point3i(origin.x(), centerHeight, origin.z()), candidateIndex / 36,
                     candidateIndex % 36, wet, max - min, 81L * centerHeight - sum));
         }
+        audit.add(new Audit("coarse", origin, candidateIndex / 36, candidateIndex % 36, -1,
+                wet, invalidSamples, 0, min, max, !invalid && wet * 10 <= 81 && max - min <= 12 ? "SHORTLIST_ELIGIBLE" : "REJECTED"));
         candidateIndex++; resetSamples();
     }
 
@@ -119,8 +127,11 @@ public final class RootSearch {
         ColumnSample value = read(oracle, x, z, true);
         if (value == null) return;
         acceptHeight(value);
+        if (!lastSupport) failedFoundations++;
         if (!lastSupport || value.waterTopY().isPresent()) invalid = true;
         if (++sampleIndex < 48 * 48) return;
+        audit.add(new Audit("footprint", current.origin(), current.radius(), current.angle(), -1,
+                wet, invalidSamples, failedFoundations, min, max, invalid || max - min > 12 ? "REJECTED" : "FOUNDATION_ELIGIBLE"));
         if (invalid || max - min > 12) { selectedIndex++; resetSamples(); return; }
         phase = 2; axisIndex = 0; resetSamples();
     }
@@ -134,6 +145,8 @@ public final class RootSearch {
             axis = axis(current.origin(), axisIndex);
             long dx = (long) current.origin().x() - spawn.x(), dz = (long) current.origin().z() - spawn.z();
             if (dx * axis.exQ30() + dz * axis.ezQ30() <= 0 || !SpawnDomain.disjointFuture(axis, early)) {
+                audit.add(new Audit("axis", current.origin(), current.radius(), current.angle(), axisIndex,
+                        0, 0, 0, 0, 0, "REJECTED_EARLY_DOMAIN_OR_HEADING"));
                 axisIndex++; resetSamples(); return;
             }
         }
@@ -143,13 +156,19 @@ public final class RootSearch {
                 (long) distance * axis.exQ30() - (long) across * axis.ezQ30(), 1L << 30));
         int z = Math.toIntExact(current.origin().z() + FixedMath.roundDiv(
                 (long) distance * axis.ezQ30() + (long) across * axis.exQ30(), 1L << 30));
-        if (!inside(x, z, 0)) { axisIndex++; resetSamples(); return; }
+        if (!inside(x, z, 0)) {
+            audit.add(new Audit("axis", current.origin(), current.radius(), current.angle(), axisIndex, wet,
+                    invalidSamples, 0, min, max, "REJECTED_WORLD_BOUNDS"));
+            axisIndex++; resetSamples(); return;
+        }
         ColumnSample value = read(oracle, x, z, false);
         if (value == null) return;
         acceptHeight(value);
         if (sampleIndex % 3 == 0) centerHeight = value.groundTopY();
         else axisScore += centerHeight - (long) value.groundTopY();
         if (++sampleIndex < 9) return;
+        audit.add(new Audit("axis", current.origin(), current.radius(), current.angle(), axisIndex, wet,
+                invalidSamples, 0, min, max, !invalid && wet == 0 ? "DRY_AXIS_ELIGIBLE" : "REJECTED"));
         if (!invalid && wet == 0 && (best == null || axisScore > best.ridgeScore())) {
             best = new Selection(axis, current.radius(), current.angle(), axisIndex, axisScore, 0, 0, 0);
         }
@@ -170,6 +189,7 @@ public final class RootSearch {
     }
 
     private void acceptHeight(ColumnSample value) {
+        if (value.upperCensored() || value.quality() != Quality.REFERENCE) invalidSamples++;
         invalid |= value.upperCensored() || value.quality() != Quality.REFERENCE;
         if (value.waterTopY().isPresent()) wet++;
         min = Math.min(min, value.groundTopY()); max = Math.max(max, value.groundTopY());
@@ -177,6 +197,7 @@ public final class RootSearch {
     }
 
     private void resetSamples() {
+        invalidSamples = 0; failedFoundations = 0;
         sampleIndex = 0; wet = 0; min = Integer.MAX_VALUE; max = Integer.MIN_VALUE;
         sum = 0; axisScore = 0; invalid = false;
     }

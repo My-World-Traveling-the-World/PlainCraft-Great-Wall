@@ -220,6 +220,7 @@ final class ProductionSession implements AutoCloseable {
         result.put("runtime", runtime); result.put("state", Map.copyOf(state)); result.put("failures", Map.copyOf(failures));
         result.put("productionWiring", "OFF"); result.put("isolatedFixture", true);
         result.put("counts", counts()); result.put("root", bootstrap.progress()); result.put("bootstrap", bootstrap.diagnostics());
+        result.put("rootAudit", bootstrap.rootAudit());
         result.put("featureLeases", featureSlots.size()); result.put("vegetationLeases", vegetation.leases());
         var snapshot = snapshots.get("installed");
         if (snapshot != null) {

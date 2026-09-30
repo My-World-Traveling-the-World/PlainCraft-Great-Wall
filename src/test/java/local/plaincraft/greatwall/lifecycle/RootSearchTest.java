@@ -65,6 +65,8 @@ final class RootSearchTest {
         });
         assertEquals(FailureCode.ROOT_NOT_FOUND, error.code());
         assertTrue(search.progress().columns() <= 4 * 36 * 81);
+        assertTrue(search.audit().stream().allMatch(row -> row.stage().equals("coarse")
+                && row.wetColumns() == 81 && row.invalidSamples() == 0 && row.result().equals("REJECTED")));
     }
 
     @Test void unsupportedFootprintCannotBeReplacedWithAnEmptyFort() {
@@ -74,6 +76,11 @@ final class RootSearchTest {
             while (search.advance(oracle, 64) != WorkState.DONE) {}
         });
         assertEquals(FailureCode.ROOT_NOT_FOUND, error.code());
+        var rejected = search.audit().stream().filter(row -> row.stage().equals("footprint")).toList();
+        assertEquals(8, rejected.size());
+        assertTrue(rejected.stream().allMatch(row -> row.failedFoundations() == 2304
+                && row.wetColumns() == 0 && row.invalidSamples() == 0 && row.result().equals("REJECTED")));
+        assertThrows(UnsupportedOperationException.class, () -> search.audit().clear());
     }
 
     @Test void finishAndForeignLaneCannotReadPartialRoot() throws Exception {
