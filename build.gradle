@@ -52,6 +52,11 @@ fabricApi {
 
 loom.runs.gameTest {
     vmArg '-Dfabric-api.gametest.report-file=../../reports/gametest/results.xml'
+    def testHeap = providers.gradleProperty('greatwallTestHeap').orNull
+    if (testHeap != null) {
+        if (!(testHeap ==~ /[1-9][0-9]*[mMgG]/)) throw new GradleException('greatwallTestHeap must be a size such as 1024m')
+        vmArg "-Xmx${testHeap}"
+    }
 }
 
 sourceSets {
@@ -121,6 +126,25 @@ apply from: 'gradle/smoke-tests.gradle'
 
 tasks.named('runGameTest') {
     doFirst { layout.buildDirectory.dir('reports/gametest').get().asFile.mkdirs() }
+}
+
+// Explicit diagnostic selection changes only generated test resources, never the default suite.
+tasks.named('processGametestResources') {
+    def selection = providers.gradleProperty('greatwallGameTestClasses').orElse('')
+    inputs.property('greatwallGameTestClasses', selection)
+    doLast {
+        def selected = selection.get().split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+        if (!selected.isEmpty()) {
+            def metadataFile = new File(destinationDir, 'fabric.mod.json')
+            def metadata = new groovy.json.JsonSlurper().parse(metadataFile)
+            def available = metadata.entrypoints['fabric-gametest']
+            def unknown = selected.findAll { name -> !available.any { it.endsWith('.' + name) } }
+            if (!unknown.isEmpty()) throw new GradleException("Unknown diagnostic GameTest classes: ${unknown}")
+            metadata.entrypoints['fabric-gametest'] = available.findAll { entry -> selected.any { entry.endsWith('.' + it) } }
+            metadataFile.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(metadata)), 'UTF-8')
+            logger.lifecycle("DIAGNOSTIC SUBSET ONLY: ${selected}; not a full-stage acceptance run")
+        }
+    }
 }
 
 java {

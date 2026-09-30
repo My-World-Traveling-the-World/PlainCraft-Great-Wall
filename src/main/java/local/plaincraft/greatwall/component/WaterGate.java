@@ -18,7 +18,8 @@ public final class WaterGate implements ComponentTemplate {
     public WaterGate(DecayField decay,PaletteBinding palette){this.decay=Objects.requireNonNull(decay);this.palette=Objects.requireNonNull(palette);}
     @Override public Bounds localBounds(ComponentInput input) {
         WaterEvidence w=evidence(input);
-        int from=FixedMath.floorBlock(w.crossing().fromQ8()-input.site().globalSQ8())-8;
+        // A half-block center must not rasterize an extra column before the reserved bank apron.
+        int from=FixedMath.floorBlock(w.crossing().fromQ8()-input.site().globalSQ8()+255)-8;
         int to=FixedMath.floorBlock(w.crossing().toQ8()-input.site().globalSQ8()+255)+8;
         return new Bounds(from,-32,-6,to,3,6);
     }

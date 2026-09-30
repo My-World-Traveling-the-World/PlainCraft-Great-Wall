@@ -113,7 +113,8 @@ public final class ChunkPlanCompiler {
             var empty=a.kind()==IntentKind.OWNED_VOID?a:b;var other=empty==a?b:a;
             if(!empty.component().equals(other.component()) && !(empty.component().wallId().equals(other.component().wallId())
                     && other.component().kind()==SiteKind.WALL)) {
-                if(empty.required())throw failure("void is not authorized to erase this component");
+                if(empty.required())throw failure("void is not authorized to erase this component at "
+                        +empty.pos()+" empty="+empty+" other="+other);
                 return other;
             }
         }

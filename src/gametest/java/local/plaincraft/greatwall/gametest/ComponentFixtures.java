@@ -83,7 +83,7 @@ final class ComponentFixtures {
             states.forEach((p,s)->{var pos=new BlockPos(p.x(),p.y(),p.z());
                 var shape=s.getCollisionShape(view,pos);
                 if(!shape.isEmpty())map.put(p,shape.toAabbs().stream().map(b->b.move(p.x(),p.y(),p.z())).toList());
-            });boxes=Map.copyOf(map);
+            });boxes=Collections.unmodifiableMap(map);
         }
         boolean collision(AABB box){
             for(int y=(int)Math.floor(box.minY);y<=Math.floor(box.maxY);y++)
