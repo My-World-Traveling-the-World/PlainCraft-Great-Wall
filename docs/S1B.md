@@ -1,5 +1,33 @@
 # S1B 验收与剩余工作报告
 
+## 最新交审状态（2026-09-30）
+
+**本轮已整理提交，等待审计；不是最终源码全量测试 PASS 声明。**
+用户明确要求不再额外耗时重测，保留既有结果，在 HYDRO 两个失败组合定向通过后提交审计。
+本节优先于下方历史状态；历史失败、旧检查点与反例全部保留。
+
+- 修复前完整相邻矩阵：CONFLICT 128/128、BOUNDARY 256/256、GAPS 6/6、REJECTION 8/8、TERMINAL 15/15、CAP 30/30、DECISION 32/32；HYDRO 70/72，两项失败。该轮总计 547 个参数，545 PASS、2 FAIL，退出码 1。
+- HYDRO index=1/19 均由奇数河宽的半格中心近岸取整越出一列引起。WaterGate 下界 floor 改 ceil，保持八格预留与 owner 权限。旧公式反例和完整原检查保留。详见 `S1B-HYDRO边界修复.md`。
+- 修复后仅运行 HydroBoundaryRegressionTests：两参数 2/2 PASS、1 个 GameTest PASS，严格离线、严格校验、JDK21，退出码 0，耗时 2分12秒。未把分次检查相加宣称最终全域 547/547 PASS。
+- 收尾代码包括 codec 8 KiB 前置计量缓冲及单 scope 哈希、inspection/cap vote 保留计量；新增矩阵源码与审计材料一并交审。
+- `s1b-final-unit-compile.log` 的既有 `test compileGametestJava` 为 BUILD SUCCESSFUL（1分15秒），发生在最终 HYDRO 修复之前，不当作最终源码全量 build。
+- 最终源码全量 build、完整72项 HYDRO 复跑、960项 survival、64项曲坡站点、576项曲坡墙、最终峰值压力复跑：本次 NOT_RUN。既有压力采样及历史运行见 `S1B-收尾过程.md`，不外推到未测范围。
+- S1C 未实施；生产接线关闭；Tan's Huge Trees profile 继续 BLOCKED。
+
+### 交审入口和复现
+
+文件清单：`docs/evidence/s1b-closeout/review-files.txt`（绝对路径，相对本轮起始 HEAD 3cea506）。
+代码分批提交，最后以单独文档/证据提交封存；使用 `git log --oneline 3cea506..HEAD` 定位。
+本次收尾整理没有启动任何额外测试，没有修改依赖版本或代理配置；本地 gradle.properties 无 proxy 配置。
+关键日志封存在 `docs/evidence/s1b-closeout/review-logs.zip`，包含原相邻矩阵失败、单测编译记录、HYDRO 定向红绿日志。
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Java\jdk-21'
+.\gradlew.bat --offline --dependency-verification=strict runGameTest -PgreatwallGameTestClasses=HydroBoundaryRegressionTests -PgreatwallTestHeap=1024m --console=plain --no-daemon
+```
+
+上述命令是已经成功执行的定向复现命令，不是本次整理再次运行。其余验收范围交由审计明确处理，未验证项不静默标绿。
+
 ## 当前结果（2026-09-29，跨cell修复后）
 
 **B-S1B-03已实现并通过验证。S1B整体仍为BLOCKED，未整体签收；生产接线关闭，S1C未启动。**
