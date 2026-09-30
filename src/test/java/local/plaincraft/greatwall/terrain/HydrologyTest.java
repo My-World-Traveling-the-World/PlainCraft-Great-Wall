@@ -108,6 +108,21 @@ class HydrologyTest {
         assertEquals(FailureCode.ROOT_NOT_FOUND, failure.code());
     }
 
+    @Test void inconsistentWaterLevelReportsTheRejectedProofWithoutChangingClassification() {
+        var failure = assertThrows(WallFailure.class, () -> classify(0, false, 64,
+                (x, z) -> x >= 100 && x < 140
+                        ? AnalyticTerrainOracle.water(x < 120 ? 63 : 66, 58)
+                        : AnalyticTerrainOracle.dry(64)));
+        assertEquals(FailureCode.HYDROLOGY_UNRESOLVED, failure.code());
+        assertTrue(failure.getMessage().contains("segment=0"));
+        assertTrue(failure.getMessage().contains("waterMismatch=true"));
+        assertTrue(failure.getMessage().contains("waterMinY=63 waterMaxY=66"));
+        assertTrue(failure.getMessage().contains("direction=0{"));
+        assertTrue(failure.getMessage().contains("direction=15{"));
+        assertTrue(failure.getMessage().contains("widthQ8="));
+        assertTrue(failure.getMessage().contains("lowerQ8="));
+    }
+
     @Test void missingBedOrCensoredReferenceIsNotCertifiedDry() {
         var failure = assertThrows(WallFailure.class, () -> classify(0, false, 64, (x, z) -> new ColumnSample(
                 64, java.util.OptionalInt.of(70), java.util.OptionalInt.empty(), "minecraft:river", Quality.REFERENCE, false)));

@@ -216,10 +216,41 @@ public final class HydrologyClassifier {
         } else if (allWide) c.classification = WaterClass.WIDE;
         else c.classification = WaterClass.UNRESOLVED;
         if (c.classification == WaterClass.UNRESOLVED) {
-            throw new WallFailure(FailureCode.HYDROLOGY_UNRESOLVED, "no consistent two-bank width proof");
+            throw new WallFailure(FailureCode.HYDROLOGY_UNRESOLVED,
+                    unresolvedDetails(c, bestDirection, allWide));
         }
         c.pierS = c.crossing.fromQ8() + 4L * 256;
         if (c.classification == WaterClass.NARROW) c.phase = 5; else completeEvidence(c);
+    }
+
+    private static String unresolvedDetails(Cursor c, int bestDirection, boolean allWide) {
+        int minWater = c.waterY, maxWater = c.waterY, mismatchedColumns = 0;
+        for (var sample : c.evidence.values()) if (sample.waterTopY().isPresent()) {
+            int y = sample.waterTopY().getAsInt();
+            minWater = Math.min(minWater, y); maxWater = Math.max(maxWater, y);
+            if (Math.abs((long) y - c.waterY) > 1) mismatchedColumns++;
+        }
+        var out = new StringBuilder("no consistent two-bank width proof: segment=")
+                .append(c.routes.center().key().index()).append(" crossing=").append(c.crossing)
+                .append(" waterY=").append(c.waterY).append(" waterMinY=").append(minWater)
+                .append(" waterMaxY=").append(maxWater).append(" waterMismatch=").append(c.waterMismatch)
+                .append(" mismatchedColumns=").append(mismatchedColumns).append(" bestDirection=")
+                .append(bestDirection).append(" allWide=").append(allWide).append(" chargedColumns=")
+                .append(c.charged).append(" centers=").append(c.centers).append(" transects=[");
+        for (int k = 0; k < DIRECTIONS.size(); k++) {
+            long cellWidth = FixedMath.mulDiv(Math.abs(DIRECTIONS.get(k).xQ8())
+                    + Math.abs(DIRECTIONS.get(k).zQ8()), 256, 1L << 30);
+            out.append(" direction=").append(k).append("{");
+            for (int i = 0; i < c.centers.size(); i++) {
+                Side left = c.results[i][k][0], right = c.results[i][k][1];
+                out.append("center=").append(i).append(" left=").append(left)
+                        .append(" right=").append(right).append(" widthQ8=")
+                        .append(left.extent + right.extent + cellWidth).append(" lowerQ8=")
+                        .append(left.lower + right.lower + cellWidth).append(';');
+            }
+            out.append('}');
+        }
+        return out.append(']').toString();
     }
 
     private static void pier(Cursor c) {
