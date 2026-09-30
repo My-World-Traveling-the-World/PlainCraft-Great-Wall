@@ -43,7 +43,8 @@ public final class NoiseBridgeGameTests implements FabricGameTest {
         helper.assertTrue(rejects(()->bridge.greatwall$advanceSlices(0)),"zero points must fail");
         helper.assertTrue(rejects(()->bridge.greatwall$advanceSlices(257)),"limit above 256 must fail");
         CompletableFuture.supplyAsync(()->rejects(()->bridge.greatwall$advanceSlices(1)))
-                .orTimeout(10,TimeUnit.SECONDS).whenComplete((rejected,error)->helper.getLevel().getServer().execute(()->{
+                .orTimeout(10,TimeUnit.SECONDS).whenComplete((rejected,error)->helper.getLevel().getServer().execute(
+                        ()->helper.runAfterDelay(1,()->{
                     try {
                         if(error!=null)helper.fail(error.toString());
                         helper.assertTrue(Boolean.TRUE.equals(rejected),"foreign lane must fail before touching native arrays");
@@ -51,7 +52,7 @@ public final class NoiseBridgeGameTests implements FabricGameTest {
                         chunk.selectCellYZ(settings.noiseSettings().height()/settings.noiseSettings().getCellHeight()-1,0);
                         helper.succeed();
                     } finally {chunk.stopInterpolation();}
-                }));
+                })));
     }
 
     private static boolean rejects(Runnable action) {

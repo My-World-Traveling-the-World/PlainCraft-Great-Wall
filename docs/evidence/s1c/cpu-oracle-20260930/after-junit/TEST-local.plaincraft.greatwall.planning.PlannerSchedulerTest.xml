@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.planning.PlannerSchedulerTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-09-30T12:08:18.103Z" hostname="CAIMEO" time="2.801">
+  <properties/>
+  <testcase name="neighborHydrologyNeverWaitsOnNeighborGeometry()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.253"/>
+  <testcase name="manyDistinctPlansCannotReserveAwayTheirDependencies()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.813"/>
+  <testcase name="hundredCallersShareOneCompute()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.056"/>
+  <testcase name="prewarmedStartupStillServesNewPlansBeforeFirstTick()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="1.242"/>
+  <testcase name="startupPumpProgressesWithoutNormalTicks()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.286"/>
+  <testcase name="rejectedIoExecutorCannotLeaveAnUnfinishedFuture()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.002"/>
+  <testcase name="nonOverworldAndTamperedRecipeCannotCreateSecondPlanner()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.002"/>
+  <testcase name="otherDimensionAndDistantLateralChunksReturnExplicitEmptyWindows()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.001"/>
+  <testcase name="cancelOneLeaseKeepsOthers()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.042"/>
+  <testcase name="closeTerminatesAllFutures()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.002"/>
+  <testcase name="lastSafeSegmentEndsBeforeWorldLimit()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.043"/>
+  <testcase name="lateWorldACallbackCannotPublishWorldB()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.055"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

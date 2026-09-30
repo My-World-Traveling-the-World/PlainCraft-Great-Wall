@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.planning.GeometryDeterminismTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-09-30T11:54:09.023Z" hostname="CAIMEO" time="11.506">
+  <properties/>
+  <testcase name="completeGeometryBlobsMatchAcrossFourSeedsAndThreeOrders()" classname="local.plaincraft.greatwall.planning.GeometryDeterminismTest" time="11.506"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
