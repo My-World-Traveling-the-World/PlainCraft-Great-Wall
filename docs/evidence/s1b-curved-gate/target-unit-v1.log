@@ -1,0 +1,98 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileClientJava UP-TO-DATE
+> Task :processClientResources UP-TO-DATE
+> Task :clientClasses UP-TO-DATE
+> Task :compileTestJava
+> Task :processTestResources NO-SOURCE
+> Task :testClasses
+> Task :testClasspathBridge
+
+> Task :test
+
+CurvedGateBoundaryTest > legacyScalarCutReallyPublishesClearanceInsideTheFirstGateParapetColumn() PASSED
+
+CurvedGateBoundaryTest > gateOrderCannotChangeCanonicalWallBytes() PASSED
+
+CurvedGateBoundaryTest > replacementUsesCompleteEndPlanesNotAConflictCoordinateWhitelist() PASSED
+
+CurvedGateBoundaryTest > emptyReplacementInputAndStraightGatePreserveCanonicalWallBytes() PASSED
+
+WallContractEquivalenceTest > nearestEdgeOptimizationMatchesOriginalScanOnCurvesSlopesAndFarCoordinates() PASSED
+
+WallContractEquivalenceTest > equalDistanceRetainsFirstEdgeAndEndpointsRetainOriginalRounding() PASSED
+
+WallDecayTest > oneCellRendersLowRuinsWithoutKeepingTheirSkyWalkway() PASSED
+
+WallDecayTest > finalPartialCellDoesNotDemandNonexistentFutureStations() PASSED
+
+WallRampTest > outerRailsAreGroundedAndNeverReplaceTheThreeWideRuns() PASSED
+
+WallRampTest > familiesHaveSameOccupancy() PASSED
+
+WallRampTest > wallHas20By10TaperAndSixClearLane() PASSED
+
+WallRampTest > fixedFourCandidateOrderUsesCompleteFootprintsAndNeverLoadedSide() PASSED
+
+WallRampTest > rampHasGroundToWallRouteAndRejectsMissingSupport() PASSED
+
+WallRampTest > defaultRampGroundEntranceTracksActualSupportedGround(int) > [1] 0 PASSED
+
+WallRampTest > defaultRampGroundEntranceTracksActualSupportedGround(int) > [2] 4 PASSED
+
+WallRampTest > defaultRampGroundEntranceTracksActualSupportedGround(int) > [3] 5 PASSED
+
+WallRampTest > defaultRampGroundEntranceTracksActualSupportedGround(int) > [4] 12 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [1] 1 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [2] 2 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [3] 3 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [4] 4 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [5] 20 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [6] 31 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [7] 32 PASSED
+
+WallRampTest > rotatedWallRetainsContinuousSixWidePath() PASSED
+
+WallRampTest > allThirtyTwoHeightsKeepTheirRequiredLandingsAndHeadroom() PASSED
+
+ChunkPlanCompilerTest > negativeSpaceNeverCarvesForeignVoxelsAndMissingEvidenceFails() PASSED
+
+ChunkPlanCompilerTest > componentOrderAndDuplicatesDoNotChangePlan() PASSED
+
+ChunkPlanCompilerTest > clipsAfterWholeComponentAndRoundTripsMetadata() PASSED
+
+ChunkPlanCompilerTest > gateRevisionAndCoverageChangeCompileKey() PASSED
+
+RealizationPlannerTest > immutableInspectionHandoffRemainsChargedUntilItsOwnerCloses() PASSED
+
+RealizationPlannerTest > partialTerminalCellKeepsOneNearSideCapAndOriginalReason() PASSED
+
+RealizationPlannerTest > orderIndependentCellKeepsStationContractImmutable() PASSED
+
+RealizationPlannerTest > capVotesCannotOverwriteAnAcceptedWholeGateFootprint() PASSED
+
+RealizationPlannerTest > elevenWideTowerKeepsTheWallColumnInsideItsTwelveWidePlanningGuard() PASSED
+
+RealizationPlannerTest > exhaustedBudgetRejectsInspectionBeforeAnyTerrainColumnIsRead() PASSED
+
+RealizationPlannerTest > inspectionScratchIsReleasedOnSuccessAndMissingColumnFailure() PASSED
+
+RealizationPlannerTest > frozenGateRevisionChangesCellHashWithoutChangingGeometry() PASSED
+
+BUILD SUCCESSFUL in 24s
+7 actionable tasks: 4 executed, 3 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html
