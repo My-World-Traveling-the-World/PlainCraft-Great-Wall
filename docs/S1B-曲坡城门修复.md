@@ -108,11 +108,17 @@ Gate以`Gate.java:31`的x=-30、z=3输出PARAPET；墙以`WallSection.java:101`�
 |---|---|---|
 | 相邻547 | **受影响，完整重跑** | `AdjacentComponentMatrixTests`调用RealizationPlanner并合并owner；不以部分平地样本字节等价外推全组 |
 | 曲坡站点64 | **受影响，完整重跑** | 原64项枚举/fixture/断言未删；定向入口只是从同一列表取index58 |
-| 曲坡墙576 | **NOT_RUN / 继承历史576/576** | `CurvedWallMatrixTests.java:34`直接WallSection.compile；旧入口最终传空gates（WallSection:28,40-48），新增mask必返回false、锚点while不进入，原列/材料/路径运算不变；不继承Gate混合曲线结论 |
-| 装饰survival960 | **NOT_RUN / 继承历史960/960** | `ComponentSurvivalMatrixTests.java:41-42,64-72`直接孤立模板；Gate/Ramp等模板及依赖未改；WALL走上述空gates等价路径。仅认证原孤立输入域，不代替合并装饰检查 |
-| 马道地面入口192 | **NOT_RUN / 继承历史192/192** | `RampGroundPortalTests.java:29-33`直接Ramp.compileBetween，原Ramp/Assembly/碰撞fixture无diff；不认证Gate与邻墙结合后的入口 |
+| 曲坡墙576 | **NOT_RUN / 继承历史576/576；依据【推理】** | 【推理，非本组修复后实测】`CurvedWallMatrixTests.java:34`直接WallSection.compile；旧入口最终传空gates（WallSection:28,40-48），新增mask必返回false、锚点while不进入，原列/材料/路径运算不变；不继承Gate混合曲线结论 |
+| 装饰survival960 | **NOT_RUN / 继承历史960/960；依据【推理】** | 【推理，非本组修复后实测】`ComponentSurvivalMatrixTests.java:41-42,64-72`直接孤立模板；Gate/Ramp等模板及依赖未改；WALL走上述空gates等价路径。仅继承原孤立输入域，不代替合并装饰检查 |
+| 马道地面入口192 | **NOT_RUN / 继承历史192/192；依据【推理】** | 【推理，非本组修复后实测】`RampGroundPortalTests.java:29-33`直接Ramp.compileBetween，原Ramp/Assembly/碰撞fixture无diff；不认证Gate与邻墙结合后的入口 |
 
 继承风险明确：这些是253a1d8中断运行内**已经完整输出成功汇总的分片**，不是一次完整进程退出0，也不是修复后新运行。继承依赖本次差异隔离；后续若改通用模板、palette、Rasterizer、fixture或依赖，即撤销该继承。旧证据对应原日志第178/24516/25204行；原文件哈希已封存。
+
+证据等级分开：历史三组通过属于【已验证，仅原运行输入域】；将历史结论继承到修复后源码属于【推理】，来自调用路径与差异隔离，不是三组的后修复运行结果。新增JUnit中的空gates/直线门字节检查虽已运行，只覆盖其有限fixture，不能升级为这三组的实测等价证明。本次不追加三组代表case，其状态仍为NOT_RUN。
+
+### 2026-09-30 14:55 监控交接
+
+用户已确认本轮修复与影响分析质量合格，并要求退出持续监控。两份隔离测试继续运行，不发送停止信号、不重复启动；后续按用户询问读取各分片`execution.json`、`results.xml`及原日志。退出监控不是测试结束或通过声明；若进程异常消失且无退出凭证，仍明确写未完成/原因待查。
 
 ## 5. 修复前后验证与残余范围
 
