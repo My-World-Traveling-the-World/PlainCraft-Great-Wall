@@ -48,6 +48,97 @@ HYDRO：`WaterGate.java:22-23` 的旧 lower floor 在 S=256.5 的49宽河流生�
 
 本次全量JUnit/最终build：**NOT_RUN**（将单独列出实际定向与矩阵命令，不能借旧08:44 XML）。S0百轮矩阵NOT_RUN；真实生产墙/真实地形/长时堆峰值NOT_RUN；Tan's Huge Trees继续BLOCKED。
 
-## 1. 旧公式、具体反例、最小修订、不变项、验证
+## 1. 旧公式
 
-待定向红绿与最终差异核验后填入；本节尚未签收。
+旧墙体替换式：`S_column ∉ [S_gate-30*256,S_gate+30*256)` 时允许生成墙。`S_column` 来自最近曲线边投影。
+完整 Gate 则按刚性 frame 逆栅格，局部 X[-30,30) 建墙身/马道；两者在弯道不等价。这里不是 floor 应改 ceil：改一个取整方向不能把曲线投影变成刚性端面。
+
+## 2. 具体反例（已实测）
+
+原 CURVED_SITES **index=58**：`FORT -> GATE, bend=+1, slope=-1`，保持原 fixture 和所有原断言。
+
+| 量 | 原始红态运行值 |
+|---|---|
+| Gate SiteId | adjacency / GATE / 200 |
+| Gate global S | 65536 Q8，即256格 |
+| Gate frame | center=(64923,-120) Q8，tangent=(1053829736,205826120) Q30，W=84，mirror=false |
+| 冲突坐标 | (223,84,-3) |
+| Gate局部格 | (-30,0,3)，主体沿向第1列的上护栏 |
+| 墙合同 | globalSQ8=57754（225.6015625格），lateralCell=1，walkY=84 |
+| 旧排除起点 | 57856 Q8（226格），所以57754仍在旧墙生成区 |
+| 墙身份/局部沿向 | WALL ordinal=3，cell S=[192,256)，中心224；floor((57754-57344)/256)=1，即该cell局部第34列（-32起算） |
+
+Gate以`Gate.java:31`的x=-30、z=3输出PARAPET；墙以`WallSection.java:101`的横向1、局部y=0输出必需AIR。`ComponentAssembly.java:180-182,291-295`分别赋900与700，`ChunkPlanCompiler.java:116`拒绝正确。
+
+红态：`evidence/s1b-curved-gate/target-red.log`及`target-red.xml`，测试入口提交`4d5b608`，生产代码仍等于253a1d8；退出1、1方法/1组合失败，47秒。不是根据旧日志猜测复现。
+永久反例：`CurvedGateBoundaryTest.legacyScalarCutReallyPublishesClearanceInsideTheFirstGateParapetColumn`（第26行）主动调用旧标量路径，验证同一坐标确实同时属于墙必需净空和Gate实体；修复后该反例仍成立。该JUnit使用原空间曲线与恒定W84，只证明该空间边界矛盾；完整混合坡面由原GameTest验证。
+
+## 3. 最小修订
+
+生产提交：`21c6177`。只修改两个生产文件：
+
+- `D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\terrain\RealizationPlanner.java:121-147,229-231`：对成功编译的完整Gate，传不可变frame集合给墙生成；旧标量区间仍作为路线锚点区间，不再冒充墙体替换端面。失败Gate维持原切断处理；水门、敌楼、烽火台、关隘的原标量规则不变。
+- `D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\component\WallSection.java:46-75,111-123`：新增重载，在体素生成前按Gate同一逆栅格算法，局部沿向列落在[-30,30)则由完整Gate替换该墙列。不是取planning guard/AABB，也不是列出冲突坐标后过滤。原标量锚点落进刚性端面时，从当前有限区间两端逐格向内找到实际墙端点；不改变W或搜索预算。
+
+恢复的列也同样重要：从buildable中移除错误标量排除，保留Gate端面外的原墙列；不能只多删几列遮掩冲突。`replacementUsesCompleteEndPlanesNotAConflictCoordinateWhitelist`（第44行）检查结果等于完整原墙在端面外的全部体素，涵盖地板、实体与净空，不止检查“没抛异常”。
+
+### 同类计算盘点（当前行号）
+
+| 位置 | 语义 | 本次处理 |
+|---|---|---|
+| Gate.java:15,26-31 | 60格刚性主体端面 | 原样保留 |
+| SiteScheduler.java:114 | Gate规划足印/高度采样范围 | 原样保留，不拿guard当擦写权 |
+| HeightContractPlanner.java:55-75 | 平台高度硬契约 | 原样保留，不改变W |
+| RealizationPlanner.java:126,131-132 | 站点水文避让 | 原样保留 |
+| RealizationPlanner.java:136,146,229 | Gate墙替换与路线 | 刚性端面替换；标量范围仍约束路线 |
+| RealizationPlanner.java:285 | cap对完整站点的预检 | 原样保留；完整相邻CAP/TERMINAL矩阵重跑 |
+| WaterGate.java:22-23、RealizationPlanner.java:160 | 水门8格岸侧范围 | 原HYDRO修复原样保留，72组合随547全跑 |
+| RealizationPlanner.java:253-254,380 | 收头候选/旧局部收头边界 | 另一用途的30格，不机械批量替换 |
+
+因此关系判定为 **B**。共享的是基础栅格工具与权限保护，不共享导致错误的近岸公式；没有漏改WaterGate的另一个调用点。
+
+## 4. 明确不变项及继承判定
+
+- Gate、Ramp、WaterGate、ComponentAssembly、ChunkPlanCompiler、ChunkWallWriter源码未改；所有部件尺寸、20×10墙截面、H=1..32、drop≤12、128/4退让、[W-32,W+6]探测保持。
+- 不改SiteId/ordinal、优先级、schema、owner裁剪、玩家保护、已有永久证书；不做旧存档回填。改变的是WALL端部内容以及由内容派生的hash，不保证新旧墙字节相同。
+- 不改锁前依赖、任何future、pin/lease/drain协议或S0路径；新增列表为请求内数据，传入墙时复制成不可变集合，没有新共享可变状态。
+- 无代码/资源/依赖升级。`git diff --name-only 253a1d8 -- src/main src/client gradle build.gradle gradle.properties settings.gradle`只返回以上两个Java文件。源码snapshot改变后不能直接加载旧构建证书；S1C接线时仍须冻结生产配方指纹，本次没有提前实现这项。
+
+| 测试组 | 本次处理 | 可核依据与限制 |
+|---|---|---|
+| 相邻547 | **受影响，完整重跑** | `AdjacentComponentMatrixTests`调用RealizationPlanner并合并owner；不以部分平地样本字节等价外推全组 |
+| 曲坡站点64 | **受影响，完整重跑** | 原64项枚举/fixture/断言未删；定向入口只是从同一列表取index58 |
+| 曲坡墙576 | **NOT_RUN / 继承历史576/576** | `CurvedWallMatrixTests.java:34`直接WallSection.compile；旧入口最终传空gates（WallSection:28,40-48），新增mask必返回false、锚点while不进入，原列/材料/路径运算不变；不继承Gate混合曲线结论 |
+| 装饰survival960 | **NOT_RUN / 继承历史960/960** | `ComponentSurvivalMatrixTests.java:41-42,64-72`直接孤立模板；Gate/Ramp等模板及依赖未改；WALL走上述空gates等价路径。仅认证原孤立输入域，不代替合并装饰检查 |
+| 马道地面入口192 | **NOT_RUN / 继承历史192/192** | `RampGroundPortalTests.java:29-33`直接Ramp.compileBetween，原Ramp/Assembly/碰撞fixture无diff；不认证Gate与邻墙结合后的入口 |
+
+继承风险明确：这些是253a1d8中断运行内**已经完整输出成功汇总的分片**，不是一次完整进程退出0，也不是修复后新运行。继承依赖本次差异隔离；后续若改通用模板、palette、Rasterizer、fixture或依赖，即撤销该继承。旧证据对应原日志第178/24516/25204行；原文件哈希已封存。
+
+## 5. 修复前后验证与残余范围
+
+| 本次运行 | 结果 | 证据 |
+|---|---|---|
+| 原index58修复前 | FAIL，退出1，1方法/1组合 | target-red.log/xml |
+| 原index58修复后 | PASS，退出0，1方法/1组合，1分41秒；2邻接对连通，0撤回 | target-green-v1.log/xml |
+| 相关JUnit六suite | PASS，38测试，0失败/错误/跳过，退出0，24秒 | target-unit-v1.log、target-unit-v1/六份XML |
+| 独立副本首次回归启动v1 | BLOCKED于编译前依赖验证，两个退出1，矩阵NOT_RUN | regression-20260930-gate-v1/；39个新生成的remapped jar不匹配既有锁值，未关闭校验 |
+| 隔离矩阵v2 | **RUNNING，尚无最终结果** | regression-20260930-gate-v2/；snapshot=3dc84cb，完整64与547分别独立目录/进程/资源/报告 |
+
+v2仅复制主工程现有`.gradle/loom-cache/remapped_mods`，逐文件SHA相等，清单在各分片`copied-cache.json`；Gradle仍严格校验同一verification-metadata.xml。没有信任首次新生成的39个jar，没有增加checksum或联网。各分片游戏堆1536m，Gradle JVM2G，不据此声称完成长期堆峰值验收。
+
+### 可复现命令
+
+```powershell
+Set-Location -LiteralPath 'D:\云游四海-Mod源码\plaincraft-great-wall'
+$env:JAVA_HOME='C:\Program Files\Java\jdk-21'
+# 单个原反例；不包含全矩阵。
+.\gradlew.bat --offline --dependency-verification=strict runGameTest -PgreatwallGameTestClasses=CurvedGateRegressionTests -PgreatwallTestHeap=1024m --console=plain --no-daemon
+# 仅相关JUnit；不称全量JUnit。
+.\gradlew.bat --offline --dependency-verification=strict test --tests '*CurvedGateBoundaryTest' --tests '*RealizationPlannerTest' --tests '*WallContractEquivalenceTest' --tests '*WallRampTest' --tests '*WallDecayTest' --tests '*ChunkPlanCompilerTest' --console=plain --no-daemon
+# 冻结干净HEAD后，两份独立源码快照，已有RunId拒绝覆盖。
+.\tools\Test-CurvedGateRegression.ps1 -RunId regression-<unique-id>
+```
+
+脚本每分片命令为 `--offline --dependency-verification=strict runGameTest -PgreatwallGameTestClasses=<CurvedSiteMatrixTests或AdjacentComponentMatrixTests> -PgreatwallTestHeap=1536m --rerun-tasks --no-build-cache --console=plain --no-daemon`。`run.json`绑定源码/归档身份，`execution.json`在退出后记录命令、起止时间、退出码、日志/XML哈希；没有退出凭证就不签收。
+
+**本轮全量JUnit / 最终build = NOT_RUN**；S0百轮地形矩阵NOT_RUN（历史8/8、S0路径未改）；真实CPU/Tectonic/C2ME生产墙、真实地形、24小时/最终堆峰值验收NOT_RUN；Tan's Huge Trees profile仍BLOCKED。S1C不启动，不部署真实mods，不打开真实存档。

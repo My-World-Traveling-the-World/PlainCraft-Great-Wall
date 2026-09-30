@@ -138,3 +138,11 @@
 `GroundExitResolver.drained(): CompletableFuture<Void>` 新增独立、可取消的观察视图。`close()` 立即拒新并终止公开请求视图，但不因此释放仍由 inspect/cap/persist 或 queued continuation 持有的数据。内部 require/section 执行链分别计数；仅 close 后计数归零才释放缓存、Work pin 和临时 arena。Work 替换期间新旧 pin 同时计量，计数覆盖同步 producer 调用体；不采用公开 promise 的结束作为 producer 排空证明。
 
 `ProductionWallPipeline` 的 owner 完成路径先异步等待所有 resolver.drained，再关闭 compiled arena 和外层预算 pin。没有增加 worldgen 同步 getChunk/join/get；关闭不清永久证书，不把玩家方块作为可回退缓存。`GroundExitReservationTest.closeKeepsPinsWhileEnteredPersistenceStillOwnsTheDecision` 已保存修复前真实失败 XML；仅已结束 require 的 512-byte 控制 pin 可提前回收，持久化生产者仍持有的整个 section 工作集必须保留。补充 pending-vote、drain-view cancellation 和异常排空测试。
+
+## 曲坡城门端面的最小修订（2026-09-30）
+
+原墙体替换公式把Gate局部X[-30,30)直接等同于曲线弧长区间[S-30,S+30)。原生CURVED_SITES index58证明二者不等价：世界(223,84,-3)在Gate局部(-30,0,3)为护栏，但墙的投影S=57754/256小于旧起点226，仍输出必需净空。该问题与HYDRO半格中心近岸floor的反例独立；不靠改保护层解决。
+
+最小修订只影响墙体生产：已完整接受的Gate按其同一frame逆栅格后的局部沿向[-30,30)替换墙列；完整Gate保持原样。体素生成前作端面判定，端面外的原墙列保留，不事后按冲突坐标删块。原标量区间继续约束路线锚点，落在刚性端面内的端点只在该有限路线区间内收缩至实际墙上。不改变站点日程、W、尺寸、马道、128/4退让、drop12、owner权限、优先级或永久证书协议。
+
+`CurvedGateBoundaryTest.legacyScalarCutReallyPublishesClearanceInsideTheFirstGateParapetColumn`保留旧公式真反例；`CurvedGateRegressionTests`复用完整原生矩阵index58，不改fixture/断言，已实测红1→绿0。完整64和547回归状态、合法继承边界见`S1B-曲坡城门修复.md`，不能把定向绿宣称阶段全绿。生产接线仍关闭。
