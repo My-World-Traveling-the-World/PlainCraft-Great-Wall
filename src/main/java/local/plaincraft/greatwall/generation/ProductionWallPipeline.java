@@ -180,12 +180,12 @@ public final class ProductionWallPipeline implements AutoCloseable {
         return exitResolvers.computeIfAbsent(engine.name(),name->new GroundExitResolver(new GroundExitResolver.Source(){
             public CompletableFuture<GroundExitDecision.Slice> inspect(CellKey cell) {
                 trace.assertOutsideLock();return useCell(cell,engine,
-                        data->CompiledAllocation.run(compilationBudget(),()->realization.inspect(data.input()),value->0));
+                        data->CompiledAllocation.run(compilationBudget(),()->realization.inspect(data.input()),RealizationPlanner::inspectionBytes));
             }
             public CompletableFuture<GroundExitDecision.CapVote> cap(GroundExitDecision.Key key,GroundExitDecision.Edge edge) {
                 trace.assertOutsideLock();var cell=new CellKey(key.recipeHash(),key.dimension(),Math.floorDiv(edge.sQ8(),64L*256));
                 return useCell(cell,engine,
-                        data->CompiledAllocation.run(compilationBudget(),()->realization.probeCap(data.input(),edge),value->0));
+                        data->CompiledAllocation.run(compilationBudget(),()->realization.probeCap(data.input(),edge),RealizationPlanner::capVoteBytes));
             }
             public CompletableFuture<Void> persist(GroundExitDecision decision) {
                 trace.assertOutsideLock();return snapshots.persistExitDecision(decision,compilationBudget());

@@ -44,6 +44,26 @@ public final class RealizationPlanner {
         resolve(input,null,s->result[0]=s);
         return Objects.requireNonNull(result[0],"missing exit slice");
     }
+    public static long inspectionBytes(GroundExitDecision.Slice value){
+        return inspectionBytes(value.cell(),value.exits(),value.breaks());
+    }
+    private static long inspectionBytes(CellKey cell,List<GroundExitDecision.Exit> exits,List<BreakInterval> breaks){
+        long bytes=2048L+1024L*exits.size()+256L*(breaks.size()+1L)+16L*cell.dimension().length();
+        for(var exit:exits)bytes=Math.addExact(bytes,16L*exit.site().wallId().length());
+        return bytes;
+    }
+    public static long capVoteBytes(GroundExitDecision.CapVote value){
+        return 2048L+value.cap().map(c->16L*c.site().wallId().length()).orElse(0L);
+    }
+    private static GroundExitDecision.Slice inspection(CellKey cell,List<GroundExitDecision.Exit> exits,
+            List<BreakInterval> breaks,Optional<BreakInterval> terminal,String t0){
+        CompiledAllocation.charge(inspectionBytes(cell,exits,breaks));
+        return new GroundExitDecision.Slice(cell,exits,breaks,terminal,t0);
+    }
+    private static GroundExitDecision.CapVote capVote(Optional<GroundExitDecision.Cap> cap,String t0){
+        CompiledAllocation.charge(2048L+cap.map(c->16L*c.site().wallId().length()).orElse(0L));
+        return new GroundExitDecision.CapVote(cap,t0);
+    }
     private RealizationCell resolve(Input input,List<GroundExitDecision> decisions,
             java.util.function.Consumer<GroundExitDecision.Slice> inspection) {
         long temporary=workingBytes(input);
@@ -60,7 +80,7 @@ public final class RealizationPlanner {
         long from=Math.multiplyExact(input.key().arcCell(),64L*256),to=Math.addExact(from,64L*256);
         String t0=hash(input.tiles().values().stream().map(t->t.key().identity()+":"+t.hash()).sorted().toList().toString());
         if(stations.size()<2||from>=stations.getLast().globalSQ8()) {
-            if(inspection!=null)inspection.accept(new GroundExitDecision.Slice(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHash(input)));
+            if(inspection!=null)inspection.accept(inspection(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHash(input)));
             return result(input,breaks,accepted,t0);
         }
         if(from<stations.getFirst().globalSQ8())
@@ -154,7 +174,7 @@ public final class RealizationPlanner {
                 long a=Math.max(from,gap.range().fromQ8()),b=Math.min(to,gap.range().toQ8());
                 if(a<b)core.add(new BreakInterval(new ArcInterval(a,b),gap.reason(),gap.scope()));
             }
-            inspection.accept(new GroundExitDecision.Slice(input.key(),exits,core,terminal(input.plans()),evidenceHash(input)));
+            inspection.accept(inspection(input.key(),exits,core,terminal(input.plans()),evidenceHash(input)));
             return result(input,walkMerged,accepted,t0);
         }
         var capExclusions=new ArrayList<ArcInterval>();
@@ -234,12 +254,12 @@ public final class RealizationPlanner {
                                     &&occupied.stream().noneMatch(r->r.fromQ8()<footprint.toQ8()&&r.toQ8()>footprint.fromQ8());
                         }));
                 if(!c.voxels().isEmpty()) {
-                    return new GroundExitDecision.CapVote(Optional.of(new GroundExitDecision.Cap(c.id(),edge,
+                    return capVote(Optional.of(new GroundExitDecision.Cap(c.id(),edge,
                             attempt.globalSQ8(),c.hash(),capFootprint(c,ribbon))),evidenceHash(input));
                 }
             }catch(WallFailure e){if(e.code()!=FailureCode.OWNERSHIP_CONFLICT)throw e;}
         }
-        return new GroundExitDecision.CapVote(Optional.empty(),evidenceHash(input));
+        return capVote(Optional.empty(),evidenceHash(input));
     }
     private static ArcInterval capFootprint(ComponentVoxels component,List<Station> ribbon) {
         long min=Long.MAX_VALUE,max=Long.MIN_VALUE;

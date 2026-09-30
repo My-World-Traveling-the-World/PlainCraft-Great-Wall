@@ -12,6 +12,17 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 import org.junit.jupiter.api.Test;
 
 class RealizationPlannerTest {
+    @Test void immutableInspectionHandoffRemainsChargedUntilItsOwnerCloses(){
+        var base=input(false,0);
+        var beyond=new RealizationPlanner.Input(new CellKey(H,"minecraft:overworld",100),base.plans(),base.tiles(),
+                base.columns(),List.of(),Map.of(),0,H);
+        try(var budget=new AllocationBudget(32L<<20)){
+            var summary=CompiledAllocation.run(budget,()->planner().inspect(beyond),RealizationPlanner::inspectionBytes);
+            assertEquals(RealizationPlanner.inspectionBytes(summary),budget.stats().used());
+            assertTrue(budget.stats().used()>0,"an empty but published summary is not zero-owned after its callback returns");
+            budget.close();assertEquals(0,budget.stats().used());
+        }
+    }
     @Test void elevenWideTowerKeepsTheWallColumnInsideItsTwelveWidePlanningGuard() {
         var base=input(false,0);var p=base.plans().plans().getFirst();long center=320*256L;
         var tower=new SiteRecord(new SiteId("fixture",SiteKind.ENEMY_TOWER,1),center,

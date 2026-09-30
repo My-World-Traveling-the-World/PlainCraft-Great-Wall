@@ -41,22 +41,20 @@ public final class CodecIO {
     }
 
     public static Summary summarize(int limit, Writer writer) throws IOException {
-        return writeAndSummarize(null, limit, writer);
+        try (var memory = CodecMemory.open()) {
+            return writeAndSummarizeInScope(null, limit, writer, memory);
+        }
     }
 
     public static Summary writeAndSummarize(OutputStream target, int limit, Writer writer) throws IOException {
         try (var memory = CodecMemory.open()) {
-            var sink = new Sink(limit, target, true);
-            writer.write(new DataOutputStream(sink));
-            CodecMemory.charge(128 + CodecMemory.stringBytes(64));
-            var result = new Summary(sink.count, sink.crc.getValue(), HexFormat.of().formatHex(sink.digest.digest()));
-            return memory.keep(result, 128 + CodecMemory.stringBytes(64));
+            return writeAndSummarizeInScope(target, limit, writer, memory);
         }
     }
 
     public static String hash(int limit, Writer writer) {
         try (var memory = CodecMemory.open()) {
-            var summary = summarize(limit, writer);
+            var summary = writeAndSummarizeInScope(null, limit, writer, memory);
             return memory.keep(summary.sha256(), CodecMemory.stringBytes(64));
         } catch (IOException invalid) { throw new IllegalArgumentException("invalid canonical value", invalid); }
     }
@@ -71,8 +69,21 @@ public final class CodecIO {
 
     public static void write(OutputStream target, int limit, Writer writer) throws IOException {
         try (var memory = CodecMemory.open()) {
-            writer.write(new DataOutputStream(new Sink(limit, target, false)));
+            var sink = new Sink(limit, target, false);
+            writer.write(new DataOutputStream(sink));
+            sink.flush();
         }
+    }
+
+    private static Summary writeAndSummarizeInScope(OutputStream target, int limit, Writer writer,
+            CodecMemory memory) throws IOException {
+        var sink = new Sink(limit, target, true);
+        writer.write(new DataOutputStream(sink));
+        sink.flush();
+        long retained = 128 + CodecMemory.stringBytes(64);
+        CodecMemory.charge(retained);
+        var result = new Summary(sink.count, sink.crc.getValue(), HexFormat.of().formatHex(sink.digest.digest()));
+        return memory.keep(result, retained);
     }
 
     public static <T> T decode(byte[] payload, int limit, Reader<T> reader) throws IOException {
@@ -113,10 +124,16 @@ public final class CodecIO {
         private final OutputStream target;
         private final MessageDigest digest;
         private final CRC32C crc;
+        private final byte[] buffer;
+        private int buffered;
         private int count;
         Sink(int limit, OutputStream target, boolean hash) {
             if (limit <= 0) throw new IllegalArgumentException("positive byte limit required");
             this.limit = limit; this.target = target;
+            if(hash||target!=null){
+                CodecMemory.charge(CodecMemory.arrayBytes(8192));
+                this.buffer=new byte[8192];
+            }else this.buffer=null;
             this.digest = hash ? digest() : null; this.crc = hash ? new CRC32C() : null;
         }
         private void admit(int bytes) throws IOException {
@@ -125,12 +142,27 @@ public final class CodecIO {
         }
         @Override public void write(int value) throws IOException {
             admit(1);
-            if (digest != null) { digest.update((byte) value); crc.update(value); }
-            if (target != null) target.write(value);
+            if(buffer==null)return;
+            buffer[buffered++]=(byte)value;
+            if(buffered==buffer.length)flush();
         }
         @Override public void write(byte[] bytes, int offset, int length) throws IOException {
             java.util.Objects.checkFromIndexSize(offset, length, bytes.length);
             admit(length);
+            if(buffer==null)return;
+            while(length>0){
+                if(buffered==0&&length>=buffer.length){direct(bytes,offset,length);return;}
+                int n=Math.min(length,buffer.length-buffered);
+                System.arraycopy(bytes,offset,buffer,buffered,n);
+                offset+=n;length-=n;buffered+=n;
+                if(buffered==buffer.length)flush();
+            }
+        }
+        @Override public void flush() throws IOException {
+            if(buffered==0)return;
+            direct(buffer,0,buffered);buffered=0;
+        }
+        private void direct(byte[] bytes,int offset,int length)throws IOException{
             if (digest != null) { digest.update(bytes, offset, length); crc.update(bytes, offset, length); }
             if (target != null) target.write(bytes, offset, length);
         }
