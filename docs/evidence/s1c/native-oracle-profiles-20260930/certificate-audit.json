@@ -1,0 +1,42 @@
+{
+  "checkedAt": "2026-09-30T13:15:48.4634712Z",
+  "sourceCommit": "e9edcf6684269c1ea3406db53544e866d2d285b9",
+  "results": [
+    {
+      "runId": "s1c-oracle-vanilla-20260930-a1485c7f",
+      "sha256Unchanged": true,
+      "correctness": true,
+      "fullCounts": true,
+      "nativeExitCode": 0,
+      "certified": true,
+      "status": "PASS_NATIVE_ORACLE",
+      "expectedStates": 196608
+    },
+    {
+      "runId": "s1c-oracle-tectonic-20260930-b7119571",
+      "sha256Unchanged": true,
+      "correctness": true,
+      "fullCounts": true,
+      "nativeExitCode": 0,
+      "certified": false,
+      "status": "BLOCKED_PERFORMANCE",
+      "expectedStates": 196608
+    },
+    {
+      "runId": "s1c-oracle-tectonic-c2me-20260930-60497bbb",
+      "sha256Unchanged": true,
+      "correctness": true,
+      "fullCounts": true,
+      "nativeExitCode": 0,
+      "certified": false,
+      "status": "BLOCKED_PERFORMANCE",
+      "expectedStates": 196608
+    }
+  ],
+  "jar": "build\\libs\\plaincraft-great-wall-0.1.0-s0.3.jar",
+  "jarSha256": "b6928c26e2b69ffd2a20cd1723232abcdd92f4071a220a899d16066645fd2cf5",
+  "diagnosticClassesInProduction": false,
+  "productionJavaDiff": [],
+  "fullBuild": "NOT_RUN",
+  "production": "OFF"
+}

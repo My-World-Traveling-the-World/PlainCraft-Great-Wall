@@ -1,0 +1,38 @@
+[
+  {
+    "file": "debug.log",
+    "sha256": "8d84a7cae790d6b63333aa83ccf4abca0dc316265f93fa3abd7a492616a83489"
+  },
+  {
+    "file": "execution.json",
+    "sha256": "5b48a9c99b79a2aeaa631e358c5fec5a97489410bea494364350f2ab8b8ae1d4"
+  },
+  {
+    "file": "inputs.json",
+    "sha256": "2652d04aa51d982b99823e289a7bae69ee6fecd447117755b094793ba0af2090"
+  },
+  {
+    "file": "latest.log",
+    "sha256": "afa9b5679acb5c326e40a984c2558ebf09f369a0bf23cc0515cae33f7050e463"
+  },
+  {
+    "file": "oracle-profile.json",
+    "sha256": "e2ddf46935efc4875c929709ca355138aea85c847516e10e1a6f511715d14286"
+  },
+  {
+    "file": "server-smoke-passed.txt",
+    "sha256": "683a67bcf71b8aa638f62e4df4d1b731f2e4b85d755878457082c139c2993b55"
+  },
+  {
+    "file": "staged-inputs.json",
+    "sha256": "706812a2455d1bba366bc4174aa68b0fd746654d3fe19718b91fa2f45f49696f"
+  },
+  {
+    "file": "stderr.log",
+    "sha256": "c6ad1763635c908ce5a243cacd99a4d59c087c140421108cc58c825769c0e767"
+  },
+  {
+    "file": "stdout.log",
+    "sha256": "a5951e42b326353e5f97cd1be11be5468ccc5dd9a19e104ba4aa669ad954b7c0"
+  }
+]

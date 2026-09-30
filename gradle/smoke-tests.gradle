@@ -17,10 +17,16 @@ def runtimeJava = providers.gradleProperty('smokeJavaVersion').getOrElse('21').t
 def disableRewrite = providers.gradleProperty('s0DisableRewrite').getOrElse('false').toBoolean()
 def terrainProbe = providers.gradleProperty('s0Terrain').getOrElse('false').toBoolean()
 def terrainResume = providers.gradleProperty('s0TerrainResume').getOrElse('false').toBoolean()
+def oracleOnly = providers.gradleProperty('s1cOracleOnly').getOrElse('false').toBoolean()
+if (oracleOnly && (profile == 'pack-opencl' || terrainProbe ||
+        providers.gradleProperty('s0Probe').getOrElse('false').toBoolean())) {
+    throw new GradleException('S1C oracle certificate must be isolated from S0 probes and the blocked full pack')
+}
 if (disableRewrite && profile != 'tectonic-c2me') {
     throw new GradleException('Rewrite-disable capability test is isolated to the C2ME CPU profile')
 }
 def probeArgs = [
+    "-Dgreatwall.s1c.oracle=${oracleOnly}",
     "-Dgreatwall.s0.probe=${providers.gradleProperty('s0Probe').getOrElse('false')}",
     "-Dgreatwall.s0.delayMs=${providers.gradleProperty('s0DelayMs').getOrElse('1')}",
     "-Dgreatwall.s0.outcome=${providers.gradleProperty('s0Outcome').getOrElse('SUCCESS')}",
@@ -41,6 +47,11 @@ def probeArgs = [
     "-Dgreatwall.s0.expectedFailure=${providers.gradleProperty('s0ExpectedFailure').getOrElse('false')}",
     "-Dgreatwall.s0.expectedAdapter=${!disableRewrite && (profile == 'tectonic-c2me' || profile == 'pack-opencl') ? 'c2me' : 'vanilla'}"
 ]
+def oracleMaxY = providers.gradleProperty('s1cExpectedMaxY').orNull
+if (oracleMaxY != null) {
+    if (!oracleOnly || !(oracleMaxY ==~ /[1-9][0-9]*/)) throw new GradleException('S1C expected maxY requires oracle diagnostic mode')
+    probeArgs.add("-Dgreatwall.s1c.expectedMaxY=${oracleMaxY}")
+}
 if (terrainProbe) probeArgs.add("-Dmax.bg.threads=${providers.gradleProperty('s0TerrainConcurrency').getOrElse('1')}")
 if (providers.gradleProperty('s0TerrainFixedWorkers').getOrElse('false').toBoolean()) {
     if (!terrainProbe) throw new GradleException('Fixed workers are only permitted in the isolated terrain fixture')
@@ -65,6 +76,7 @@ loom {
             vmArg '-Dfabric.noGui=true'
             vmArg '-Dmixin.debug.export=true'
             vmArg '-Dmixin.debug.export.decompile=false'
+            if (oracleOnly) vmArg '-Xlog:gc,safepoint:file=oracle-vm.log:time,uptime,level,tags'
             probeArgs.each { vmArg it }
             if (runtimeJava == 25) {
                 vmArg '--enable-native-access=ALL-UNNAMED'
@@ -135,7 +147,7 @@ def terrainWorkerAgent = tasks.register('terrainWorkerAgent', Jar) {
     }
 }
 tasks.named('runServerSmoke') {
-    timeout = java.time.Duration.ofMinutes(terrainProbe ? 10 : 3)
+    timeout = java.time.Duration.ofMinutes(oracleOnly ? 20 : terrainProbe ? 10 : 3)
     dependsOn tasks.named('prepareServerSmoke')
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
     if (providers.gradleProperty('s0TerrainFixedWorkers').getOrElse('false').toBoolean() && profile == 'tectonic-c2me') {

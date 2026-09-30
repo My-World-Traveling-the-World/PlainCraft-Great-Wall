@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.terrain.HydrologyTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-30T13:09:23.866Z" hostname="CAIMEO" time="0.21">
+  <properties/>
+  <testcase name="width49IsNarrow50And51Terminate()" classname="local.plaincraft.greatwall.terrain.HydrologyTest" time="0.067"/>
+  <testcase name="wetRootFailsExplicitly()" classname="local.plaincraft.greatwall.terrain.HydrologyTest" time="0.005"/>
+  <testcase name="deepNarrowRiverMakesSupportGap()" classname="local.plaincraft.greatwall.terrain.HydrologyTest" time="0.019"/>
+  <testcase name="seamRiverHasSameBanksAndOneGlobalCrossing()" classname="local.plaincraft.greatwall.terrain.HydrologyTest" time="0.034"/>
+  <testcase name="sliceAndCacheTemperatureDoNotAffectWaterEvidence()" classname="local.plaincraft.greatwall.terrain.HydrologyTest" time="0.053"/>
+  <testcase name="roofedAquiferIsNotRiver()" classname="local.plaincraft.greatwall.terrain.HydrologyTest" time="0.004"/>
+  <testcase name="oneBlockRiverBetweenCoarseSamplesIsFound()" classname="local.plaincraft.greatwall.terrain.HydrologyTest" time="0.005"/>
+  <testcase name="budgetExhaustionIsNotOcean()" classname="local.plaincraft.greatwall.terrain.HydrologyTest" time="0.001"/>
+  <testcase name="diagonalSpanIsNotChannelWidth()" classname="local.plaincraft.greatwall.terrain.HydrologyTest" time="0.016"/>
+  <testcase name="missingBedOrCensoredReferenceIsNotCertifiedDry()" classname="local.plaincraft.greatwall.terrain.HydrologyTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

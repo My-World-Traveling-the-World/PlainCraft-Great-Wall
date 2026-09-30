@@ -1,0 +1,19 @@
+{
+  "kind": "DERIVED_EXACT_BYTE_RECONSTRUCTION",
+  "method": "Remove only the later CPU/initialization observation additions; accept only if both earlier raw input SHA match",
+  "checks": [
+    {
+      "runId": "s1c-oracle-vanilla-20260930-a1485c7f",
+      "recordedSha256": "a8ca9118ab35a7e21410b91bc8b25781f931b795c47fc4646bb2fb3f2a82b485",
+      "recoveredSha256": "a8ca9118ab35a7e21410b91bc8b25781f931b795c47fc4646bb2fb3f2a82b485",
+      "matched": true
+    },
+    {
+      "runId": "s1c-oracle-tectonic-20260930-b7119571",
+      "recordedSha256": "a8ca9118ab35a7e21410b91bc8b25781f931b795c47fc4646bb2fb3f2a82b485",
+      "recoveredSha256": "a8ca9118ab35a7e21410b91bc8b25781f931b795c47fc4646bb2fb3f2a82b485",
+      "matched": true
+    }
+  ],
+  "artifact": "docs\\evidence\\s1c\\native-oracle-profiles-20260930\\abi\\OracleProfileFixture.before-cpu-metrics.java.txt"
+}

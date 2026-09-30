@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "e9edcf6684269c1ea3406db53544e866d2d285b9",
+  "command": "gradlew.bat --offline --dependency-verification=strict test assemble compileServerSmokeJava --rerun-tasks --no-build-cache --console=plain --no-daemon",
+  "startedUtc": "2026-09-30T13:08:01.9869451Z",
+  "finishedUtc": "2026-09-30T13:09:43.8040382Z",
+  "exitCode": 0,
+  "productionWiring": "OFF",
+  "s1cStatus": "BLOCKED_PERFORMANCE",
+  "GameTest": "NOT_RUN",
+  "fullBuild": "NOT_RUN",
+  "s0TerrainMatrix": "NOT_RUN"
+}
