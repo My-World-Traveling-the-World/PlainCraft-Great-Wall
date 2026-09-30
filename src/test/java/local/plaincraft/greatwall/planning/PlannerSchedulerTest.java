@@ -20,6 +20,28 @@ import org.junit.jupiter.api.io.TempDir;
 class PlannerSchedulerTest {
     @TempDir Path directory;
 
+    @Test void samplingFailureIsNotReplacedByGenericClosedInParentPlan() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> new AnalyticTerrainOracle((x, z) -> {
+                 throw new WallFailure(FailureCode.INVALID_RESOURCE, "sampling-sentinel-original");
+             }, true), new SegmentCacheStore(directory.resolve("failure/cache"), recipe), io);
+             var plan = scheduler.requirePlan(0, Priority.PLAYER)) {
+            scheduler.startupPump();
+            var failure = assertThrows(ExecutionException.class, () -> plan.future().get(5, TimeUnit.SECONDS));
+            Throwable root = failure;
+            while (root.getCause() != null) root = root.getCause();
+            assertInstanceOf(WallFailure.class, root);
+            assertEquals(FailureCode.INVALID_RESOURCE, ((WallFailure) root).code());
+            assertTrue(root.getMessage().contains("sampling-sentinel-original"), root.toString());
+            var first = scheduler.failures().get("first");
+            assertNotNull(first);
+            assertEquals("ROUTE", first.phase());
+            assertTrue(first.originalStack().contains("sampling-sentinel-original"));
+            assertThrows(UnsupportedOperationException.class, () -> scheduler.failures().clear());
+        }
+    }
+
     private static ScheduledExecutorService ticks(PlannerScheduler scheduler) {
         var timer = Executors.newSingleThreadScheduledExecutor();
         timer.scheduleAtFixedRate(() -> scheduler.tick(new SliceBudget(65536, System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(100))), 0, 5, TimeUnit.MILLISECONDS);
@@ -278,6 +300,8 @@ class PlannerSchedulerTest {
             var lease = scheduler.requireGeometry(0, Priority.PLAYER);
             assertThrows(Exception.class, () -> lease.future().get(5, TimeUnit.SECONDS));
             assertTrue(lease.future().isCompletedExceptionally());
+            assertEquals(FailureCode.IO_FAILED, scheduler.failures().get("first").code());
+            assertTrue(scheduler.failures().get("first").originalStack().contains("fixture"));
             lease.close();
         }
     }

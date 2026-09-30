@@ -225,6 +225,8 @@ final class ProductionSession implements AutoCloseable {
         var snapshot = snapshots.get("installed");
         if (snapshot != null) {
             result.put("recipe", snapshot.recipe()); result.put("planner", snapshot.planner().diagnostics());
+            result.put("plannerFailures", snapshot.planner().failures());
+            result.put("plannerProgress", snapshot.planner().progress());
             result.put("barrier", snapshot.barrier().counts());
         }
         return Map.copyOf(result);

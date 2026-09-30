@@ -28,6 +28,8 @@ import local.plaincraft.greatwall.terrain.OracleLane;
 
 /** Pure S1A scheduler. Integration must acquire its futures before any FEATURES region lock. */
 public final class PlannerScheduler implements AutoCloseable {
+    public record FailureEvidence(String phase, long segment, long operations, FailureCode code,
+            String exceptionType, String message, String originalStack) {}
     private static final long MIB = 1024L * 1024;
     private final WorldRecipe recipe;
     private final ConcurrentHashMap<SegmentKey, CompletableFuture<RouteShape>> routeFlights = new ConcurrentHashMap<>();
@@ -37,6 +39,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private final ConcurrentHashMap<UUID, PlanLease<?>> callerLeases = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, CompletableFuture<PlanLease<Object>>> acquisitions = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> state = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, FailureEvidence> failures = new ConcurrentHashMap<>();
     private final ScheduledThreadPoolExecutor pump;
     private final PrefixSummaryIndex prefixes;
     private final SegmentCacheStore cache;
@@ -244,6 +247,7 @@ public final class PlannerScheduler implements AutoCloseable {
     }
 
     public Map<UUID, JobProgress> progress() { return Map.copyOf(progress); }
+    public Map<String, FailureEvidence> failures() { return Map.copyOf(failures); }
     public Map<String, Long> diagnostics() {
         var result = new HashMap<>(state);
         for (var lane : lanes) lane.diagnostics().forEach((key, value) -> result.put("lane-" + lane.index() + "-" + key, value));
@@ -389,6 +393,7 @@ public final class PlannerScheduler implements AutoCloseable {
                     nativeLane.start().whenCompleteAsync((value, error) -> {
                         if (error != null) {
                             state.merge("lane-initialization-failures", 1L, Long::sum);
+                            recordFailure(error, "NATIVE_INITIALIZATION", -1, 0);
                             routeFlights.forEach((key, future) -> future.completeExceptionally(error));
                             geometryFlights.forEach((key, future) -> future.completeExceptionally(error));
                             planFlights.forEach((key, future) -> future.completeExceptionally(error));
@@ -427,6 +432,7 @@ public final class PlannerScheduler implements AutoCloseable {
                     // A failed job may still own an unfinished native cursor. Never reuse that lane.
                     Throwable failure = submitError != null ? submitError : batch.failure();
                     if (failure != null) {
+                        recordFailure(failure, job.phase, segmentOf(job), job.operations);
                         job.result.completeExceptionally(failure);
                         close();
                         return;
@@ -581,6 +587,7 @@ public final class PlannerScheduler implements AutoCloseable {
         }); } catch (RuntimeException rejected) {
             activeIo = 0; state.put("cache-disabled", 1L);
             var failure = new WallFailure(FailureCode.IO_FAILED, "IO executor rejected a required continuation", rejected);
+            recordFailure(failure, "CACHE_IO", -1, 0);
             routeFlights.forEach((key, future) -> future.completeExceptionally(failure));
             geometryFlights.forEach((key, future) -> future.completeExceptionally(failure));
             planFlights.forEach((key, future) -> future.completeExceptionally(failure));
@@ -612,7 +619,34 @@ public final class PlannerScheduler implements AutoCloseable {
     }
 
     private boolean closed() { return state.containsKey("closed"); }
-    private static WallFailure closedFailure() { return new WallFailure(FailureCode.CLOSED, "planner session closed"); }
+    private void recordFailure(Throwable error, String phase, long segment, long operations) {
+        Throwable root = error;
+        FailureCode code = null;
+        while (true) {
+            if (code == null && root instanceof WallFailure failure) code = failure.code();
+            if (root.getCause() == null) break;
+            root = root.getCause();
+        }
+        var text = new java.io.StringWriter();
+        error.printStackTrace(new java.io.PrintWriter(text));
+        failures.putIfAbsent("first", new FailureEvidence(phase, segment, operations,
+                code == null ? FailureCode.INVALID_RESOURCE : code,
+                root.getClass().getName(), String.valueOf(root.getMessage()), text.toString()));
+    }
+    private static long segmentOf(Job<?> job) {
+        return switch (job) {
+            case PlannerScheduler.RouteJob route -> route.key.index();
+            case PlannerScheduler.HydroJob hydro -> hydro.routes.center().key().index();
+            case PlannerScheduler.ContractJob contract -> contract.inputs.geometry.key().index();
+            default -> throw new IllegalStateException("unknown job");
+        };
+    }
+    private WallFailure closedFailure() {
+        var first = failures.get("first");
+        return first == null ? new WallFailure(FailureCode.CLOSED, "planner session closed")
+                : new WallFailure(first.code(), "planner failed in " + first.phase() + " segment="
+                        + first.segment() + ": " + first.exceptionType() + ": " + first.message());
+    }
     private static ThreadFactory factory(String name) {
         return runnable -> { Thread thread = new Thread(runnable, name); thread.setDaemon(true); return thread; };
     }
