@@ -1,0 +1,30 @@
+{
+  "sourceCommit": "2b30d05f1bf57f95a5b6fd5594e9725859416f0f",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "runId": "s1c-wall-vanilla-20261001-a08fef16",
+  "profile": "vanilla",
+  "seed": 0,
+  "phase": "generated",
+  "command": "gradlew.bat --offline --dependency-verification=strict runServerSmoke -PsmokeProfile=vanilla -PsmokeRunId=s1c-wall-vanilla-20261001-a08fef16 -Ps1cRealWall=true -Ps1cSeed=0 --console=plain --no-daemon",
+  "startedUtc": "2026-09-30T16:58:12.6411208Z",
+  "finishedUtc": "2026-09-30T17:06:50.7854920Z",
+  "seconds": 518.136686,
+  "exitCode": 1,
+  "timedOut": false,
+  "passed": false,
+  "freshCertificate": false,
+  "cleanShutdown": false,
+  "sourceInputsUnchanged": true,
+  "productionWiring": "OFF",
+  "NOT_RUN": [
+    "S0 hundred-round terrain matrix",
+    "human walking",
+    "Golden",
+    "height6000",
+    "S5 24h"
+  ],
+  "BLOCKED": [
+    "Tan's Huge Trees",
+    "TYG write-set"
+  ]
+}

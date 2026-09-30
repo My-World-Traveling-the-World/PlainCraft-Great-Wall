@@ -1,0 +1,58 @@
+[
+  {
+    "path": "crash-reports\\crash-2026-10-01_01.05.49-server.txt",
+    "sha256": "a760808cf6fc46b49a88bd43d5350ca3789ec8144bad88b39a15bc8432afaaf6"
+  },
+  {
+    "path": "crash-reports\\crash-2026-10-01_01.06.49-server.txt",
+    "sha256": "fdd224cb9d43e17b05a2dd5c840343936e24da8267562d940bf720ba86a72174"
+  },
+  {
+    "path": "execution.json",
+    "sha256": "67f468b2568443e2b93ce30642365250a166241b5b15cecf72e8308af7b6d2cb"
+  },
+  {
+    "path": "inputs.json",
+    "sha256": "c99430e936d65ce3c9e00c59bb306582cf864365e4988110741de4ed2ea14c9e"
+  },
+  {
+    "path": "logs\\debug.log",
+    "sha256": "69167c34c5f1f7bfdf64c66d5a67c2908e7d856c81b24228c8ce03b9651c24aa"
+  },
+  {
+    "path": "logs\\latest.log",
+    "sha256": "613124eb4f43382c50ff9d2134d026d06df220e2d24eb0ae57f97bc844e32f38"
+  },
+  {
+    "path": "real-wall-progress.json",
+    "sha256": "f6d1001bca5ec9b9707850e4b50e79d109eb0ffaea155a6b39b140744be89893"
+  },
+  {
+    "path": "stderr.log",
+    "sha256": "630c597e9e36d7dceaee972824c603fefd006bd8b20ccf95f3e2aa54b14be055"
+  },
+  {
+    "path": "stdout.log",
+    "sha256": "b7be96cca38e81fdb09dac56162508d4571495c0ce920dbf588e77f0a764ffb6"
+  },
+  {
+    "path": "threads-planning.txt",
+    "sha256": "0ac2c8bd74e263d35ddc6f2baf54521fdc2e9b56801ce0bb42e9f437dab50360"
+  },
+  {
+    "path": "world\\greatwall\\diagnostics\\events-STOPPING.json",
+    "sha256": "0858b8d4694f3abf1b1642bb620bbf35e8a770cb8e8c15c1edf14443ade10de0"
+  },
+  {
+    "path": "world\\greatwall\\diagnostics\\session-STOPPING.json",
+    "sha256": "58b4dfda138b3a70a19be0a09e27ebb814fb1dcc26588c1d10a9fddb09ef96c5"
+  },
+  {
+    "path": "world\\greatwall\\manifest\\creation.json",
+    "sha256": "c658d5cd77648ada4f7ed69e9201f976cbdc6fde50ee0916714fa52f7c940c9f"
+  },
+  {
+    "path": "world\\greatwall\\manifest\\world.json",
+    "sha256": "c5de137b0623a6eaba60a7ed17bb5662fa9a93bc7b0e8dce5e8603bbd811b845"
+  }
+]
