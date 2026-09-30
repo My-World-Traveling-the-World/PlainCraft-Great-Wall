@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Dependency verification report</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="css/uikit.min.css" />
+        <script src="js/uikit.min.js"></script>
+        <script src="js/uikit-icons.min.js"></script>
+    </head>
+    <body>
+<nav class="uk-navbar-container" uk-navbar>
+    <div class="uk-navbar-left">
+        <a href="" class="uk-navbar-item uk-logo"><img src="img/gradle-logo.png" width="120"></a>
+        <ul class="uk-navbar-nav">
+<li class="uk-active"><a href="#">Dependency verification report</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="uk-container uk-container-expand">
+        <ul uk-accordion>
+            <li class="uk-open">
+<a class="uk-accordion-title" href="#"><span uk-icon="chevron-right"></span>configuration ':compileClasspath'&nbsp;<span class="uk-badge">39 errors</span></a><div class="uk-accordion-content"><table class="uk-table uk-table-hover uk-table-divider uk-table-middle uk-table-small">
+    <thead>
+        <tr>
+            <th class="uk-table-shrink uk-width-auto uk-text-nowrap">Module</th>
+            <th class="uk-table-shrink uk-width-auto uk-text-nowrap">Artifact</th>
+            <th class="uk-table-shrink uk-width-expand">Problem(s)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-api-37f46004-common:0.116.14+1.21.1</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-api-37f46004-common/0.116.14+1.21.1/fabric-api-37f46004-common-0.116.14+1.21.1.jar">fabric-api-37f46004-common-0.116.14+1.21.1.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">11f57c00c25ef2d73daff5d4592a4566ef944c2004498258054df0c1e6097edc</span> but was <span style="font-weight:bold; color: #ee442f">759520ac788d85dfc090090d5d5b2caad71e6a71f95d854a3631aa42d78ba694</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-api-base-37f46004-common:0.4.42+6573ed8c19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-api-base-37f46004-common/0.4.42+6573ed8c19/fabric-api-base-37f46004-common-0.4.42+6573ed8c19.jar">fabric-api-base-37f46004-common-0.4.42+6573ed8c19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">e1caabca47c07766d1bfbddd05fb4656a27a6a1a3686b489f3b8abf966a634db</span> but was <span style="font-weight:bold; color: #ee442f">faadfe6ece1c2bb03b204d1950128016d32cfeb9e7931dfd4db4daa90d1cd482</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-api-lookup-api-v1-37f46004-common:1.6.72+7b3d111d19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-api-lookup-api-v1-37f46004-common/1.6.72+7b3d111d19/fabric-api-lookup-api-v1-37f46004-common-1.6.72+7b3d111d19.jar">fabric-api-lookup-api-v1-37f46004-common-1.6.72+7b3d111d19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">52057d738c15284ed37a17e8eed87dfdd7cdb8add237563507bbd374e76819a0</span> but was <span style="font-weight:bold; color: #ee442f">97cd48ddcbbd17267d0303aeafe70406f71b74263b5d6bca7b425b0fddfe4b76</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-biome-api-v1-37f46004-common:13.0.31+d527f9fd19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-biome-api-v1-37f46004-common/13.0.31+d527f9fd19/fabric-biome-api-v1-37f46004-common-13.0.31+d527f9fd19.jar">fabric-biome-api-v1-37f46004-common-13.0.31+d527f9fd19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">86789538894017a1eb0550d4fbbbea791a1cfa0a068e988abd264634639efb6c</span> but was <span style="font-weight:bold; color: #ee442f">7d3b474ec27ed9a4975f0ed9a9ae56a0c197baabdac8be4ad5a1d47c6c178f65</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-block-api-v1-37f46004-common:1.1.0+0bc3503219</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-block-api-v1-37f46004-common/1.1.0+0bc3503219/fabric-block-api-v1-37f46004-common-1.1.0+0bc3503219.jar">fabric-block-api-v1-37f46004-common-1.1.0+0bc3503219.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">33cae7d67b5a20028ed4c444e3353b62767c8e66ee09b42b565fafec9c91d345</span> but was <span style="font-weight:bold; color: #ee442f">ba960e558910c479c373a0717f3ec8184ce5de734f73ac0ee5810d56b2f626cb</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-block-view-api-v2-37f46004-common:1.0.11+ebb2264e19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-block-view-api-v2-37f46004-common/1.0.11+ebb2264e19/fabric-block-view-api-v2-37f46004-common-1.0.11+ebb2264e19.jar">fabric-block-view-api-v2-37f46004-common-1.0.11+ebb2264e19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">7dae68c0d57294d58f6d84dfa9f87578c1576299003999d4c2852e74a92940d7</span> but was <span style="font-weight:bold; color: #ee442f">58cd4188db997db8521ae17ec705c93a4347b326067e38650ec36a8cb328047c</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-command-api-v1-37f46004-common:1.2.49+f71b366f19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-command-api-v1-37f46004-common/1.2.49+f71b366f19/fabric-command-api-v1-37f46004-common-1.2.49+f71b366f19.jar">fabric-command-api-v1-37f46004-common-1.2.49+f71b366f19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">7e37589caa11941ed25b60c6ca1e996cff2cbcf2263312716e4aa3e9269b55ca</span> but was <span style="font-weight:bold; color: #ee442f">740e7c853e19bf72d747fabff651544c13df6729b8f3f83d49ada3a40ac083a9</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-command-api-v2-37f46004-common:2.2.28+6ced4dd919</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-command-api-v2-37f46004-common/2.2.28+6ced4dd919/fabric-command-api-v2-37f46004-common-2.2.28+6ced4dd919.jar">fabric-command-api-v2-37f46004-common-2.2.28+6ced4dd919.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">4ec97c99456d2cc7214a211c4e6ba1279702e5e3f312dd95447268bc77852cef</span> but was <span style="font-weight:bold; color: #ee442f">d3e0eb970c786ed4ba6af4a4ed119f402dafc5156c78cd00eb12972744aa84c0</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-commands-v0-37f46004-common:0.2.66+df3654b319</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-commands-v0-37f46004-common/0.2.66+df3654b319/fabric-commands-v0-37f46004-common-0.2.66+df3654b319.jar">fabric-commands-v0-37f46004-common-0.2.66+df3654b319.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">ec34b8018985e7f7ca30ffd790f4723b1044f0e36c72ab74c7d99d9d6a7b95e7</span> but was <span style="font-weight:bold; color: #ee442f">e4f86ea8cd162d3ced44db5bd2245854c41340004680dd5d0157664cb941d7d9</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-content-registries-v0-37f46004-common:8.0.19+b559734419</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-content-registries-v0-37f46004-common/8.0.19+b559734419/fabric-content-registries-v0-37f46004-common-8.0.19+b559734419.jar">fabric-content-registries-v0-37f46004-common-8.0.19+b559734419.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">519e4751a01da9bb0eafd95d17be05f05ff8afa938841087f2b6eaef8034a589</span> but was <span style="font-weight:bold; color: #ee442f">4695dc5010f56e4f07cc72825a86299e89d5a63fb05b09415b332ca7ee52784c</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-convention-tags-v1-37f46004-common:2.1.7+7f945d5b19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-convention-tags-v1-37f46004-common/2.1.7+7f945d5b19/fabric-convention-tags-v1-37f46004-common-2.1.7+7f945d5b19.jar">fabric-convention-tags-v1-37f46004-common-2.1.7+7f945d5b19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">b8000460fb37f7bbf4ef19770dbd61ab3e6ce1ca75f53320b2c917fe23feb940</span> but was <span style="font-weight:bold; color: #ee442f">9fe2e42d6dd601073e897bf4834a61fe4b3708f4be34bb105f00ef3df18cd606</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-convention-tags-v2-37f46004-common:2.12.0+c3656daa19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-convention-tags-v2-37f46004-common/2.12.0+c3656daa19/fabric-convention-tags-v2-37f46004-common-2.12.0+c3656daa19.jar">fabric-convention-tags-v2-37f46004-common-2.12.0+c3656daa19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">571f709c04ffdbabdc7ae690c136df12fcf3fe723dc7c150bd391a2c4eeacf39</span> but was <span style="font-weight:bold; color: #ee442f">bbd7ae08af7871ee47f1911adea2bd93c3d2f208457fd644be4a20f8765bb4fc</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-crash-report-info-v1-37f46004-common:0.2.29+0af3f5a719</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-crash-report-info-v1-37f46004-common/0.2.29+0af3f5a719/fabric-crash-report-info-v1-37f46004-common-0.2.29+0af3f5a719.jar">fabric-crash-report-info-v1-37f46004-common-0.2.29+0af3f5a719.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">8a07e21a3925bf79707257f799082cee7c74daa16954a222ce50497ea456c369</span> but was <span style="font-weight:bold; color: #ee442f">06773072a92fe5beb5940f33d73d455999fa93be122a4bb63bd40dc03a27b616</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-data-attachment-api-v1-37f46004-common:1.4.7+5b36e0f719</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-data-attachment-api-v1-37f46004-common/1.4.7+5b36e0f719/fabric-data-attachment-api-v1-37f46004-common-1.4.7+5b36e0f719.jar">fabric-data-attachment-api-v1-37f46004-common-1.4.7+5b36e0f719.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">ba57daa32443861df743dc86eeda9df0dad18eaa6107d789b55a3e96fd4bac74</span> but was <span style="font-weight:bold; color: #ee442f">51f8cb224fb08d82a241e2d60b33121e6bc89e861c9bd8311b8d1728672eb7fd</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-data-generation-api-v1-37f46004-common:20.3.0+1eb36c0719</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-data-generation-api-v1-37f46004-common/20.3.0+1eb36c0719/fabric-data-generation-api-v1-37f46004-common-20.3.0+1eb36c0719.jar">fabric-data-generation-api-v1-37f46004-common-20.3.0+1eb36c0719.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">d831d390fab0d66ccda23ea98608ee91194a43fd5270b9dce4ccaf8cfca53ddd</span> but was <span style="font-weight:bold; color: #ee442f">151f5d0e43418e885b93345f62810d52baa5d29b7b474c96ef30957d3f4496a3</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-dimensions-v1-37f46004-common:4.0.1+65213ef819</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-dimensions-v1-37f46004-common/4.0.1+65213ef819/fabric-dimensions-v1-37f46004-common-4.0.1+65213ef819.jar">fabric-dimensions-v1-37f46004-common-4.0.1+65213ef819.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">27515b42505e99cdde5a78f5ed707438db2aacb4d8469fd8041e94500491c911</span> but was <span style="font-weight:bold; color: #ee442f">e8d876a473b000f3f34aa97ff694a287681bbed9bae653770442acf83d8507d0</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-entity-events-v1-37f46004-common:1.8.0+2b27e0a419</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-entity-events-v1-37f46004-common/1.8.0+2b27e0a419/fabric-entity-events-v1-37f46004-common-1.8.0+2b27e0a419.jar">fabric-entity-events-v1-37f46004-common-1.8.0+2b27e0a419.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">23073ff60c2eed9916ffae3f33d01b456b8b50c8ad4367b398b23eeab5a57402</span> but was <span style="font-weight:bold; color: #ee442f">067145ba9bfa7adb286c0546cfbbc0960f9b8f276ebd9f87ec44c9aeb8e2e305</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-events-interaction-v0-37f46004-common:0.7.14+ba9dae0619</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-events-interaction-v0-37f46004-common/0.7.14+ba9dae0619/fabric-events-interaction-v0-37f46004-common-0.7.14+ba9dae0619.jar">fabric-events-interaction-v0-37f46004-common-0.7.14+ba9dae0619.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">3d7d78f5347b04d9a7080697aca31d1c95f4dc352e29b14cc2cb531dc3a5051c</span> but was <span style="font-weight:bold; color: #ee442f">d54be6aaa3bd185671fa200b419e58d208beabcf1137736c7e29e8a39d1c8240</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-game-rule-api-v1-37f46004-common:1.0.53+6ced4dd919</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-game-rule-api-v1-37f46004-common/1.0.53+6ced4dd919/fabric-game-rule-api-v1-37f46004-common-1.0.53+6ced4dd919.jar">fabric-game-rule-api-v1-37f46004-common-1.0.53+6ced4dd919.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">c00394274ae3296edfa8f9cf7bf0b38fb269d466311bee6871101c2a09045f45</span> but was <span style="font-weight:bold; color: #ee442f">434fba2124c4d4f3e11c25b915fa92cfcee60cf0b43bafa815b5a763f7a21a92</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-gametest-api-v1-37f46004-common:2.0.5+6fc22b9919</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-gametest-api-v1-37f46004-common/2.0.5+6fc22b9919/fabric-gametest-api-v1-37f46004-common-2.0.5+6fc22b9919.jar">fabric-gametest-api-v1-37f46004-common-2.0.5+6fc22b9919.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">1af708d07df4225ec8618d75c4c6c9eed17f9ebcf2ff40b430fd2adbab6e808c</span> but was <span style="font-weight:bold; color: #ee442f">cd796d2e33ef879c08b72ead00d2f28665cd0f8ca8fcafd63f8090cc2ca2b239</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-item-api-v1-37f46004-common:11.2.0+3b3cb2e819</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-item-api-v1-37f46004-common/11.2.0+3b3cb2e819/fabric-item-api-v1-37f46004-common-11.2.0+3b3cb2e819.jar">fabric-item-api-v1-37f46004-common-11.2.0+3b3cb2e819.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">c579dbb18d909b1feaee16f19cef77c22aba5e9d8bfea627a0da4bbebdf48bee</span> but was <span style="font-weight:bold; color: #ee442f">bb7a38ed210886a56f84d5a873b20aa3581136a1dff33d3be2636a9621e38aa1</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-item-group-api-v1-37f46004-common:4.1.7+def88e3a19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-item-group-api-v1-37f46004-common/4.1.7+def88e3a19/fabric-item-group-api-v1-37f46004-common-4.1.7+def88e3a19.jar">fabric-item-group-api-v1-37f46004-common-4.1.7+def88e3a19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">c3865b61bf26aabbef1fc9828c3edb4bae549d08d3b3f3411cfa13150a8f50d5</span> but was <span style="font-weight:bold; color: #ee442f">9d8faa726924c43902458ff378d7cd875045aadac8a9ed351dc1484e07d6d9df</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-lifecycle-events-v1-37f46004-common:2.6.0+0865547519</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-lifecycle-events-v1-37f46004-common/2.6.0+0865547519/fabric-lifecycle-events-v1-37f46004-common-2.6.0+0865547519.jar">fabric-lifecycle-events-v1-37f46004-common-2.6.0+0865547519.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">36bf6fed6b435a7142c54e1150e2f6d7314b76da1315834d6eb9f23bf63376b1</span> but was <span style="font-weight:bold; color: #ee442f">abb621988a5b02d9e0606df92f4320b248a92a8810f48c8e15140045f0c0901e</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-loot-api-v2-37f46004-common:3.0.15+3f89f5a519</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-loot-api-v2-37f46004-common/3.0.15+3f89f5a519/fabric-loot-api-v2-37f46004-common-3.0.15+3f89f5a519.jar">fabric-loot-api-v2-37f46004-common-3.0.15+3f89f5a519.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">d5107ccd9c8998fa10a5cc4ebd465c1da783212a5e30497a889ddcc8339bfdce</span> but was <span style="font-weight:bold; color: #ee442f">81a5e5aeee78c4751e66c14872b553bb7d4f70953aeace535520f2b2ae107b5c</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-loot-api-v3-37f46004-common:1.0.3+3f89f5a519</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-loot-api-v3-37f46004-common/1.0.3+3f89f5a519/fabric-loot-api-v3-37f46004-common-1.0.3+3f89f5a519.jar">fabric-loot-api-v3-37f46004-common-1.0.3+3f89f5a519.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">3bba1b2cfd6463ca75112f2485b22f1f1a5fcaeafd44846bb24c654dd6a41941</span> but was <span style="font-weight:bold; color: #ee442f">461a55883e780af8c4a246e6e93408a3aa329749d41cf4fdc83223f84ea385f2</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-message-api-v1-37f46004-common:6.0.14+8aaf3aca19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-message-api-v1-37f46004-common/6.0.14+8aaf3aca19/fabric-message-api-v1-37f46004-common-6.0.14+8aaf3aca19.jar">fabric-message-api-v1-37f46004-common-6.0.14+8aaf3aca19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">9446d8fe0647a01984e0447d1f5b5737ca1d6e0edf4af982332e2066b8fbfe3d</span> but was <span style="font-weight:bold; color: #ee442f">6015592ed97993db8cf1553d32c60e4eff19c2f85ad6ae9ce2538f781c99776d</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-networking-api-v1-37f46004-common:4.3.1+d30f6a7919</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-networking-api-v1-37f46004-common/4.3.1+d30f6a7919/fabric-networking-api-v1-37f46004-common-4.3.1+d30f6a7919.jar">fabric-networking-api-v1-37f46004-common-4.3.1+d30f6a7919.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">a63fd8ec949b894aefb7591efe96706792b1fcf1d8499ff26b67b660bbda6774</span> but was <span style="font-weight:bold; color: #ee442f">747d021a6a6eb9a20e1fc5ccb96973da5f260765eb0469882c25c15d9d5595e4</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-object-builder-api-v1-37f46004-common:15.2.1+40875a9319</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-object-builder-api-v1-37f46004-common/15.2.1+40875a9319/fabric-object-builder-api-v1-37f46004-common-15.2.1+40875a9319.jar">fabric-object-builder-api-v1-37f46004-common-15.2.1+40875a9319.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">489178a2798dc05b570c3a8641900b3f58127c3ddac56c5f62802ff2e5e8af2b</span> but was <span style="font-weight:bold; color: #ee442f">c974078195130e0025ecadb11800a294b21c860896d3034c4511a3dc0d9f65e2</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-particles-v1-37f46004-common:4.0.2+6573ed8c19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-particles-v1-37f46004-common/4.0.2+6573ed8c19/fabric-particles-v1-37f46004-common-4.0.2+6573ed8c19.jar">fabric-particles-v1-37f46004-common-4.0.2+6573ed8c19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">ea20e16dbdedd5b88faf129ea47a4d7c8fe122837c487b881d1dd9b43d1f4fc7</span> but was <span style="font-weight:bold; color: #ee442f">53dfc48cd61dfd19e77d1eba1402f8013ccb94dd1af1370b40a53d47b6b9764a</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-recipe-api-v1-37f46004-common:5.0.16+2475392c19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-recipe-api-v1-37f46004-common/5.0.16+2475392c19/fabric-recipe-api-v1-37f46004-common-5.0.16+2475392c19.jar">fabric-recipe-api-v1-37f46004-common-5.0.16+2475392c19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">040e822bb32fe152d0f1af1243fed04e0128401ce6d12bf390cc7270ebb2fde8</span> but was <span style="font-weight:bold; color: #ee442f">7b16b86c8041881447f4bbd97bcf2c5fbc8cad61c97710528b19a93738c8990e</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-registry-sync-v0-37f46004-common:5.3.2+e3eddc2119</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-registry-sync-v0-37f46004-common/5.3.2+e3eddc2119/fabric-registry-sync-v0-37f46004-common-5.3.2+e3eddc2119.jar">fabric-registry-sync-v0-37f46004-common-5.3.2+e3eddc2119.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">960be4fcb37e167fe01e5603c882ec38bc240c80bf9e3311b7db25f9743ce184</span> but was <span style="font-weight:bold; color: #ee442f">9e0fa605e94009ad0e25b67d9e2735080cff6677bf47ab51c5c56c36b52f212b</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-rendering-data-attachment-v1-37f46004-common:0.3.49+73761d2e19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-rendering-data-attachment-v1-37f46004-common/0.3.49+73761d2e19/fabric-rendering-data-attachment-v1-37f46004-common-0.3.49+73761d2e19.jar">fabric-rendering-data-attachment-v1-37f46004-common-0.3.49+73761d2e19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">61061c706f3963f14e0b8c1095aeb03dcf8e9132c5e39a10cdfb89fcd3d2e602</span> but was <span style="font-weight:bold; color: #ee442f">aff1a137b758b41a890e1d3a87cb8df7b8681f9b3c0993adcf1a86d433f1c06a</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-rendering-fluids-v1-37f46004-common:3.1.6+1daea21519</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-rendering-fluids-v1-37f46004-common/3.1.6+1daea21519/fabric-rendering-fluids-v1-37f46004-common-3.1.6+1daea21519.jar">fabric-rendering-fluids-v1-37f46004-common-3.1.6+1daea21519.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">aac206890eb77569dbdc1e2c967d871f37ee012198035860e78e91458a23b410</span> but was <span style="font-weight:bold; color: #ee442f">49a980df6d00b41c6d4e7649b84c3de3d036fb2f4f6392e6ab2046f2a306de46</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-resource-conditions-api-v1-37f46004-common:4.3.0+8dc279b119</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-resource-conditions-api-v1-37f46004-common/4.3.0+8dc279b119/fabric-resource-conditions-api-v1-37f46004-common-4.3.0+8dc279b119.jar">fabric-resource-conditions-api-v1-37f46004-common-4.3.0+8dc279b119.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">456ee31c9b05facf18377e7ad25eca2fd2570c304a4fb8267137420b12bf9dad</span> but was <span style="font-weight:bold; color: #ee442f">026dedce0f5e7cf5500a11f7845c82f82906419b6a2d1e7c8764d2f1ae9d12d9</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-resource-loader-v0-37f46004-common:1.3.1+5b5275af19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-resource-loader-v0-37f46004-common/1.3.1+5b5275af19/fabric-resource-loader-v0-37f46004-common-1.3.1+5b5275af19.jar">fabric-resource-loader-v0-37f46004-common-1.3.1+5b5275af19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">1781b19af490d7bd91f9a879f906779de6461fca4716d55923ff5fb1fab78610</span> but was <span style="font-weight:bold; color: #ee442f">1a048b39590100fc1fb7afb40d838b09562a57cec718a2117689b5cd4ce81426</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-screen-handler-api-v1-37f46004-common:1.3.91+b559734419</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-screen-handler-api-v1-37f46004-common/1.3.91+b559734419/fabric-screen-handler-api-v1-37f46004-common-1.3.91+b559734419.jar">fabric-screen-handler-api-v1-37f46004-common-1.3.91+b559734419.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">a9ffbbec3952260cb0cf8a65ead36e01f09bb7cf25dba6c349a01365bfb04d1b</span> but was <span style="font-weight:bold; color: #ee442f">fcd3b518f10dde9b26645d8865d2efb5b3ff789cb1b4c916279bb53f832d3a42</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-tag-api-v1-37f46004-common:1.3.0+1eb36c0719</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-tag-api-v1-37f46004-common/1.3.0+1eb36c0719/fabric-tag-api-v1-37f46004-common-1.3.0+1eb36c0719.jar">fabric-tag-api-v1-37f46004-common-1.3.0+1eb36c0719.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">0bd4b729396a2a522a4c515a2bc88b0b58c8377739371a3346fbc982a6a42e4c</span> but was <span style="font-weight:bold; color: #ee442f">1247edc6fb9c35016191f069cbc2f62edd470e3fdaf5eb06745da7361a6da011</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-transfer-api-v1-37f46004-common:5.4.4+7b3d111d19</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-transfer-api-v1-37f46004-common/5.4.4+7b3d111d19/fabric-transfer-api-v1-37f46004-common-5.4.4+7b3d111d19.jar">fabric-transfer-api-v1-37f46004-common-5.4.4+7b3d111d19.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">8c288c38a38c358506b6637f6c21d6ba764aa2b0cefe4f64550c4d8c9c4ccc5c</span> but was <span style="font-weight:bold; color: #ee442f">08f764346c9b6547ed5b64221b57a781c5da75262be192462ffe3b01e815fc2b</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+        <tr>
+            <td class="uk-text-nowrap">remapped.net.fabricmc.fabric-api:fabric-transitive-access-wideners-v1-37f46004-common:6.2.0+45b9699719</td>
+            <td class="uk-text-nowrap"><div uk-tooltip="title: From repository 'LoomLocalRemappedMods'"><a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api/fabric-transitive-access-wideners-v1-37f46004-common/6.2.0+45b9699719/fabric-transitive-access-wideners-v1-37f46004-common-6.2.0+45b9699719.jar">fabric-transitive-access-wideners-v1-37f46004-common-6.2.0+45b9699719.jar</a></div></td>
+            <td>
+            <p>Expected a sha256 checksum of <span style="font-weight:bold; color: blue">6fbf894982f818c8bfcf60ac284d36365880470274834c02f862f88a85f8c9c9</span> but was <span style="font-weight:bold; color: #ee442f">a824e753a509d32ee2656d934c4d02b308a6c60c475def6d9255afaa0a8fd3e2</span>&nbsp;<a uk-toggle="target: #checksum-mismatch" uk-icon="icon: warning"></a></p>
+            </td>
+        </tr>
+    </tbody>
+</table></div>            </li>
+         </ul>
+        </div>
+<div id="verified-not-trusted" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">Key isn't trusted</h2>
+        <p>This indicates that a dependency was <i>verified</i>, that the signature matched, but that you don't <i>trust</i> this signature.</p>
+
+        <p>If you trust the author of the signature, you need to add the key to the trusted keys.</p>
+        <p>See the <a href="https://docs.gradle.org/9.4.1/userguide/dependency_verification.html#sec:^" target="_blank">documentation</a> to get more information.</p>
+        <button class="uk-button uk-button-primary uk-modal-close" type="button">Ok</button>
+    </div>
+</div>
+<div id="signature-didnt-match" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">Signature didn't match</h2>
+        <p>This indicates that a dependency was <i>signed</i> but that the signature verification <b>failed</b>.</p>
+        <p>This happens when a dependency was compromised or that the signature was made for a different artifact than the one you got.</p>
+        <p>It's important that you <b>carefully review this problem</b>.</p>
+        <p>See the <a href="https://docs.gradle.org/9.4.1/userguide/dependency_verification.html#sec:^" target="_blank">documentation</a> to get more information.</p>
+        <button class="uk-button uk-button-primary uk-modal-close" type="button">Ok</button>
+    </div>
+</div>
+<div id="ignored-key" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">A key was ignored</h2>
+        <p>This indicates that a dependency was <i>signed with an ignored key</i>.</p>
+        <p>You must provide at least one checksum so that verification can pass.</p>
+        <p>See the <a href="https://docs.gradle.org/9.4.1/userguide/dependency_verification.html#sec:^" target="_blank">documentation</a> to get more information.</p>
+        <button class="uk-button uk-button-primary uk-modal-close" type="button">Ok</button>
+    </div>
+</div>
+<div id="missing-key" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">Public key couldn't be found</h2>
+        <p>This indicates that a dependency was <i>signed</i> but that Gradle couldn't download the public key to verify the signature.</p>
+        <p>You should check if the key is valid, and if so, provide a key server where to download it.</p>
+        <p>See the <a href="https://docs.gradle.org/9.4.1/userguide/dependency_verification.html#sec:^" target="_blank">documentation</a> to get more information.</p>
+        <button class="uk-button uk-button-primary uk-modal-close" type="button">Ok</button>
+    </div>
+</div>
+<div id="missing-checksums" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">Checksums are missing</h2>
+        <p>This indicates that the dependency verification file doesn't contain at least one checksum for this artifact.</p>
+        <p>You must provide at least one checksum for artifact verification to pass.</p>
+        <p>See the <a href="https://docs.gradle.org/9.4.1/userguide/dependency_verification.html#sec:^" target="_blank">documentation</a> to get more information.</p>
+        <button class="uk-button uk-button-primary uk-modal-close" type="button">Ok</button>
+    </div>
+</div>
+<div id="checksum-mismatch" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">Incorrect checksum</h2>
+        <p>This indicates that the dependency verification file <b>failed</b> because the actual checksum of the dependency artifact didn't match the expected checksum declared in the verification metadata.</p>
+        <p>This happens when a dependency was compromised or that downloaded artifact isn't the one that you expected.</p>
+        <p>It's important that you <b>carefully review this problem</b>.</p>
+        <p>See the <a href="https://docs.gradle.org/9.4.1/userguide/dependency_verification.html#sec:^" target="_blank">documentation</a> to get more information.</p>
+        <button class="uk-button uk-button-primary uk-modal-close" type="button">Ok</button>
+    </div>
+</div>
+<div id="deleted-artifact" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">Deleted artifact</h2>
+        <p>This error usually indicated that the local dependency cache was tampered with.</p>
+        <p>This happens when someone manually deletes an artifact from the Gradle dependency cache, which is now corrupt.</p>
+        <p>See the <a href="https://docs.gradle.org/9.4.1/userguide/dependency_verification.html#sec:^" target="_blank">documentation</a> to get more information.</p>
+        <button class="uk-button uk-button-primary uk-modal-close" type="button">Ok</button>
+    </div>
+</div>
+<div id="signature-file-missing" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">Missing signature file</h2>
+        <p>The signature file for this artifact wasn't found.</p>
+        <p>Usually it indicates that the signature doesn't exist in the repository the artifact was downloaded from.</p>
+        <p>In general this is not a problem but you should then declare at least one checksum for verification to pass.</p>
+        <p>See the <a href="https://docs.gradle.org/9.4.1/userguide/dependency_verification.html#sec:^" target="_blank">documentation</a> to get more information.</p>
+        <button class="uk-button uk-button-primary uk-modal-close" type="button">Ok</button>
+    </div>
+</div>
+    <div class="uk-container uk-padding">
+        <div class="uk-card uk-card-default uk-card-body" style="z-index: 980;" uk-sticky="bottom: true">
+            <h2 class="uk-modal-title">Troubleshooting</h2>
+            <p>Please review the errors reported above carefully.            Click on the icons near to the error descriptions for information about how to fix a particular problem.            It is recommended that you edit the <a href="file:/D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/curved-gate-shards/regression-20260930-gate-v1/curved-sites/gradle/verification-metadata.xml">verification file</a> manually.             However, if you are confident that those are false positives, Gradle can help you by generating the missing verification metadata.            In this case, you can run with the following command-line:</p>            <pre>./gradlew --write-verification-metadata sha256 help</pre>            <p>In any case you <b>must review the result</b> of this operation.            <p>Please refer to the <a href="https://docs.gradle.org/9.4.1/userguide/dependency_verification.html" target="_blank">documentation</a> for more information.</p>
+        </div>
+    </div>
+    </body>
+</html>
+
