@@ -13,8 +13,17 @@ final class VegetationGuardTest {
         var guard = new VegetationGuard();
         guard.publish(OWNER, plans());
         assertTrue(guard.intersects(OWNER, new Bounds(1000, 0, 40, 1010, 100, 100)));
-        assertFalse(guard.intersects(OWNER, new Bounds(1000, 0, 45, 1010, 100, 100)));
+        assertFalse(guard.intersects(OWNER, new Bounds(1000, 0, 69, 1010, 100, 100)));
         assertEquals(1, guard.leases());
+    }
+    @Test void prospectiveGroundExitOutsideOrdinaryWallMarginStillHasItsFull32Margin() {
+        var guard = new VegetationGuard();
+        guard.publish(OWNER, plans());
+        assertTrue(guard.intersects(OWNER, new Bounds(1000, 0, 60, 1001, 100, 61)),
+                "a potential rotated cap/ramp can occupy beyond the basic wall+32 corridor");
+        assertFalse(guard.intersects(OWNER, new Bounds(1000, 0, 69, 1001, 100, 70)));
+        assertEquals(new Bounds(-30, -33, -15, 30, 3, 15),
+                local.plaincraft.greatwall.component.EndCap.potentialLocalBounds());
     }
     @Test void unknownOrReleasedOwnerCannotSilentlyPlaceTrees() {
         var guard = new VegetationGuard();

@@ -17,6 +17,8 @@ public final class EndCap implements ComponentTemplate {
     private final DecayField decay;
     private final PaletteBinding palette;
     public EndCap(DecayField decay,PaletteBinding palette) {this.decay=Objects.requireNonNull(decay);this.palette=Objects.requireNonNull(palette);}
+    /** Shared envelope also covers both directions and every compound ramp orientation. */
+    public static Bounds potentialLocalBounds() { return ENVELOPE; }
     @Override public Bounds localBounds(ComponentInput input) {Objects.requireNonNull(input);return ENVELOPE;}
     /** Every retry samples the immutable station ribbon, including reverse-side caps. */
     public static List<SiteRecord> candidates(SiteRecord site,List<Station> stations) {
