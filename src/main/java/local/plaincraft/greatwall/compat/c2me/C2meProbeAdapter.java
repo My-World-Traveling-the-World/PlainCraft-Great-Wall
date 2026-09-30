@@ -5,15 +5,23 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import local.plaincraft.greatwall.diagnostics.StageTrace;
 import local.plaincraft.greatwall.lifecycle.WorldServices;
 import local.plaincraft.greatwall.mixin.ChunkMapAccess;
+import local.plaincraft.greatwall.model.PlanLease;
+import local.plaincraft.greatwall.model.WallTypes.ChunkKey;
 import net.minecraft.world.level.ChunkPos;
 
 /** Only C2ME's un-obfuscated adapter API is reflective; no Minecraft names are strings. */
 public final class C2meProbeAdapter {
-    private record Request(WorldServices service, String dimension, int x, int z) {}
+    private record Request(WorldServices service, String dimension, int x, int z,
+            PlanLease<Void> lease, ConcurrentHashMap<String, Boolean> state) {
+        void finishedSubscription() {
+            if (lease != null && !state.containsKey("native-submitted")) lease.close();
+        }
+    }
     private static final ThreadLocal<Request> SUBSCRIBING = new ThreadLocal<>();
 
     private C2meProbeAdapter() {}
@@ -38,11 +46,28 @@ public final class C2meProbeAdapter {
         String dimension = level.dimension().location().toString();
         var barrier = service.barrier(level);
         if (status.equals("minecraft:initialize_light")) {
-            if (barrier == null || !barrier.layout().owns(pos)) return original;
+            if (!service.productionFixture() && (barrier == null || !barrier.layout().owns(pos))) return original;
             var state = ((java.util.concurrent.atomic.AtomicReference<?>) invoke(holder, "getItem")).get();
             var chunk = (net.minecraft.world.level.chunk.ChunkAccess) invoke(state, "chunk");
-            return Completable.fromCompletionStage(barrier.beforeLight(pos, chunk, new C2meTerrainEngine(manager)))
+            var pending = service.productionFixture()
+                    ? service.beforeProductionLight(new ChunkKey(dimension, pos.x, pos.z), chunk, new C2meTerrainEngine(manager))
+                    : barrier.beforeLight(pos, chunk, new C2meTerrainEngine(manager));
+            return Completable.fromCompletionStage(pending)
                     .observeOn(Schedulers.from(executor)).andThen(original).doOnError(service::failRequiredPlan);
+        }
+        if (service.productionFixture()) {
+            return Completable.defer(() -> {
+                var owned = service.featureLease(dimension, pos.x, pos.z);
+                var request = new Request(service, dimension, pos.x, pos.z, owned, new ConcurrentHashMap<>());
+                return Completable.fromCompletionStage(owned.future()).observeOn(Schedulers.from(executor))
+                        .andThen(Completable.create(emitter -> {
+                            service.assertActiveSession();
+                            SUBSCRIBING.set(request);
+                            try {
+                                emitter.setDisposable(original.subscribe(emitter::onComplete, emitter::tryOnError));
+                            } finally { SUBSCRIBING.remove(); }
+                        })).doOnError(service::failRequiredPlan).doFinally(request::finishedSubscription);
+            });
         }
         var lease = service.require(dimension, pos.x, pos.z, "c2me:features").thenCompose(plan -> barrier == null
                 ? CompletableFuture.completedFuture(null) : barrier.delayFeatures(pos));
@@ -50,7 +75,7 @@ public final class C2meProbeAdapter {
                 .andThen(Completable.create(emitter -> {
                     service.assertActiveSession();
                     // Set context before subscribing: defer's supplier precedes doOnSubscribe.
-                    SUBSCRIBING.set(new Request(service, dimension, pos.x, pos.z));
+                    SUBSCRIBING.set(new Request(service, dimension, pos.x, pos.z, null, new ConcurrentHashMap<>()));
                     try {
                         emitter.setDisposable(original.subscribe(emitter::onComplete,
                                 failure -> emitter.tryOnError(failure)));
@@ -59,6 +84,15 @@ public final class C2meProbeAdapter {
                     }
                 })).doOnError(service::failRequiredPlan)
                 .doOnDispose(() -> lease.cancel(false));
+    }
+
+    /** Disposal of an Rx view must not release a still-entered/queued native FEATURES producer. */
+    public static <T> CompletableFuture<T> schedule(Supplier<CompletableFuture<T>> submit) {
+        var request = SUBSCRIBING.get();
+        if (request == null || request.lease() == null) return submit.get();
+        request.state().put("native-submitted", true);
+        try { return submit.get().whenComplete((value, error) -> request.lease().close()); }
+        catch (Throwable error) { request.lease().close(); throw error; }
     }
 
     public static <T> Supplier<CompletableFuture<T>> instrument(Supplier<CompletableFuture<T>> action,

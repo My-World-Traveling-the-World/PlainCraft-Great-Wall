@@ -27,7 +27,7 @@ public abstract class C2meGateMixin {
     private static <T> CompletableFuture<T> greatwall$lockWitness(int x, int z, int sizeX, int sizeZ,
             @Coerce Object manager, Supplier<CompletableFuture<T>> action,
             Operation<CompletableFuture<T>> original) {
-        return original.call(x, z, sizeX, sizeZ, manager,
-                C2meProbeAdapter.instrument(action, x + "," + z + ":" + sizeX + "x" + sizeZ));
+        return C2meProbeAdapter.schedule(() -> original.call(x, z, sizeX, sizeZ, manager,
+                C2meProbeAdapter.instrument(action, x + "," + z + ":" + sizeX + "x" + sizeZ)));
     }
 }

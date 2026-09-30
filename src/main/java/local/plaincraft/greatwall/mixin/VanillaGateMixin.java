@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import java.util.concurrent.CompletableFuture;
 import local.plaincraft.greatwall.lifecycle.WorldServices;
 import local.plaincraft.greatwall.generation.VanillaTerrainEngine;
+import local.plaincraft.greatwall.model.WallTypes.ChunkKey;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
 import net.minecraft.server.level.GenerationChunkHolder;
@@ -29,6 +30,30 @@ public abstract class VanillaGateMixin {
         var barrier = services.barrier(access.greatwall$level());
         java.util.concurrent.Executor executor = command -> access.greatwall$worldgenMailbox()
                 .tell(ChunkTaskPriorityQueueSorter.message(holder, command));
+        if (services.productionFixture()) {
+            if (step.targetStatus() == ChunkStatus.INITIALIZE_LIGHT) {
+                return services.beforeProductionLight(new ChunkKey(dimension, pos.x, pos.z),
+                        holder.getChunkIfPresentUnchecked(ChunkStatus.FEATURES),
+                        new VanillaTerrainEngine(access.greatwall$level())).thenComposeAsync(ignored ->
+                        original.call(holder, step, chunks), executor);
+            }
+            if (step.targetStatus() != ChunkStatus.FEATURES) return original.call(holder, step, chunks);
+            var lease = services.featureLease(dimension, pos.x, pos.z);
+            return lease.future().<CompletableFuture<ChunkAccess>>handleAsync((ignored, error) -> {
+                if (error != null) { lease.close(); return CompletableFuture.failedFuture(error); }
+                try {
+                    services.assertActiveSession();
+                    services.trace("STAGE_ENTER", dimension, pos.x, pos.z, "vanilla:features", "vanilla-mailbox");
+                    return original.call(holder, step, chunks).whenComplete((chunk, failure) -> {
+                        services.trace("STAGE_EXIT", dimension, pos.x, pos.z, "vanilla:features", "vanilla-mailbox");
+                        lease.close();
+                    });
+                } catch (Throwable failure) {
+                    lease.close(); services.failRequiredPlan(failure);
+                    return CompletableFuture.failedFuture(failure);
+                }
+            }, executor).thenCompose(result -> result);
+        }
         if (barrier != null && step.targetStatus() == ChunkStatus.INITIALIZE_LIGHT && barrier.layout().owns(pos)) {
             return barrier.beforeLight(pos, holder.getChunkIfPresentUnchecked(ChunkStatus.FEATURES),
                     new VanillaTerrainEngine(access.greatwall$level())).thenComposeAsync(ignored ->
