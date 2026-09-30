@@ -7,6 +7,7 @@
   "entrypoints": {
     "fabric-gametest": [
       "local.plaincraft.greatwall.gametest.SkeletonGameTests",
+      "local.plaincraft.greatwall.gametest.CatalogGameTests",
       "local.plaincraft.greatwall.gametest.WriterGameTests",
       "local.plaincraft.greatwall.gametest.ProductionBarrierTests",
       "local.plaincraft.greatwall.gametest.ProductionPipelineTests",

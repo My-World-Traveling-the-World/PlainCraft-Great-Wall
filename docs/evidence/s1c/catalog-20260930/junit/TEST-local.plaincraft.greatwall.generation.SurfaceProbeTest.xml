@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.generation.SurfaceProbeTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-09-30T09:50:08.510Z" hostname="CAIMEO" time="0.007">
+  <properties/>
+  <testcase name="onlyExposedSingleNaturalIceLayerIsRecordedWithoutWideningWindow()" classname="local.plaincraft.greatwall.generation.SurfaceProbeTest" time="0.002"/>
+  <testcase name="[1] 0" classname="local.plaincraft.greatwall.generation.SurfaceProbeTest" time="0.0"/>
+  <testcase name="[2] 4" classname="local.plaincraft.greatwall.generation.SurfaceProbeTest" time="0.0"/>
+  <testcase name="[3] 5" classname="local.plaincraft.greatwall.generation.SurfaceProbeTest" time="0.0"/>
+  <testcase name="[4] 12" classname="local.plaincraft.greatwall.generation.SurfaceProbeTest" time="0.001"/>
+  <testcase name="[5] 13" classname="local.plaincraft.greatwall.generation.SurfaceProbeTest" time="0.0"/>
+  <testcase name="leavesPowderSnowAndCaveRoofNotFoundation()" classname="local.plaincraft.greatwall.generation.SurfaceProbeTest" time="0.0"/>
+  <testcase name="upperSentinelDoesNotInventAir()" classname="local.plaincraft.greatwall.generation.SurfaceProbeTest" time="0.001"/>
+  <testcase name="protectedLowerLayerRejectsWholeColumnAndWaterReportsBed()" classname="local.plaincraft.greatwall.generation.SurfaceProbeTest" time="0.0"/>
+  <testcase name="lowerGuardReadsWMinus35()" classname="local.plaincraft.greatwall.generation.SurfaceProbeTest" time="0.0"/>
+  <testcase name="dimensionBottomRequiresThreeLayersAndTopIsCensored()" classname="local.plaincraft.greatwall.generation.SurfaceProbeTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

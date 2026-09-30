@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.diagnostics.BudgetReservationTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-30T09:50:08.375Z" hostname="CAIMEO" time="0.076">
+  <properties/>
+  <testcase name="concurrentOwnerDoesNotRequireASingleThreadExecutor()" classname="local.plaincraft.greatwall.diagnostics.BudgetReservationTest" time="0.071"/>
+  <testcase name="reservationIsGrantedBeforeProducerAndReleasedAfterPinClose()" classname="local.plaincraft.greatwall.diagnostics.BudgetReservationTest" time="0.001"/>
+  <testcase name="rejectedExecutorFailsPendingAdmissionWithoutRetainingBytes()" classname="local.plaincraft.greatwall.diagnostics.BudgetReservationTest" time="0.0"/>
+  <testcase name="overLimitIsRejectedBeforeAnyAllocationCanStart()" classname="local.plaincraft.greatwall.diagnostics.BudgetReservationTest" time="0.0"/>
+  <testcase name="closeKeepsDeliveredPinsAccountedUntilTheirActualRelease()" classname="local.plaincraft.greatwall.diagnostics.BudgetReservationTest" time="0.001"/>
+  <testcase name="cancelledWaiterDoesNotConsumeCapacity()" classname="local.plaincraft.greatwall.diagnostics.BudgetReservationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

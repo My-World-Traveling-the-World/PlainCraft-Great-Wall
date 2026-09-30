@@ -1,7 +1,6 @@
 package local.plaincraft.greatwall.terrain;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -12,16 +11,23 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.FallingBlock;
+import net.minecraft.world.level.block.SnowLayerBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 
 /** Registry-owner frozen classification. Unknown states fail closed; no neighbor/chunk lookup. */
 public final class BlockCatalog {
+    private static final TagKey<Block> SUPPORT=tag("foundation_support");
+    private static final TagKey<Block> VEGETATION=tag("replaceable_vegetation");
+    private static final TagKey<Block> PROTECTED=tag("protected");
     public record Flags(boolean support,boolean replaceablePlant,boolean water,boolean gravity,boolean blockEntity,boolean protectedBlock) {}
     private final Map<String,Flags> flags;
     private final String hash;
@@ -31,14 +37,17 @@ public final class BlockCatalog {
         for(var block:BuiltInRegistries.BLOCK) for(var state:block.getStateDefinition().getPossibleStates()) {
             String id=BuiltInRegistries.BLOCK.getKey(block).toString();
             boolean entity=state.hasBlockEntity(),gravity=block instanceof FallingBlock;
-            boolean plant=state.isAir() || state.canBeReplaced()&&!entity&&state.getFluidState().isEmpty()
-                    &&!state.is(Blocks.POWDER_SNOW)&&!state.is(BlockTags.LEAVES);
+            boolean explicitProtection=state.is(PROTECTED)||entity||!id.startsWith("minecraft:")
+                    ||state.getFluidState().is(net.minecraft.tags.FluidTags.LAVA);
+            boolean plant=!explicitProtection&&(state.isAir() || state.is(VEGETATION)&&state.getFluidState().isEmpty()
+                    &&!gravity&&!state.is(Blocks.POWDER_SNOW)&&!state.is(BlockTags.LEAVES)&&!state.is(BlockTags.LOGS)
+                    &&(!state.is(Blocks.SNOW)||state.getValue(SnowLayerBlock.LAYERS)<8));
             boolean water=state.getFluidState().is(net.minecraft.tags.FluidTags.WATER);
-            boolean natural=natural(id);
-            boolean support=natural&&!gravity&&!state.is(BlockTags.LOGS)&&!state.is(BlockTags.LEAVES)
+            boolean natural=state.is(SUPPORT);
+            boolean support=natural&&!explicitProtection&&!gravity&&state.getFluidState().isEmpty()
+                    &&!state.is(Blocks.POWDER_SNOW)&&!state.is(BlockTags.LOGS)&&!state.is(BlockTags.LEAVES)
                     &&state.isFaceSturdy(EmptyBlockGetter.INSTANCE,BlockPos.ZERO,Direction.UP);
-            boolean protectedBlock=entity||!id.startsWith("minecraft:")||state.is(Blocks.BEDROCK)
-                    ||state.getFluidState().is(net.minecraft.tags.FluidTags.LAVA)||!natural&&!plant&&!water&&!state.is(Blocks.ICE);
+            boolean protectedBlock=explicitProtection||!natural&&!plant&&!water;
             Flags f=new Flags(support,plant,water,gravity,entity,protectedBlock);
             values.put(token(state,false),f);
             values.put(token(state,true),new Flags(false,false,water,gravity,true,true));
@@ -80,14 +89,7 @@ public final class BlockCatalog {
     private static <T extends Comparable<T>> String serialized(BlockState state,Property<T> property) {
         return property.getName(state.getValue(property));
     }
-    private static boolean natural(String id) {
-        return switch(id) {
-            case "minecraft:stone","minecraft:granite","minecraft:diorite","minecraft:andesite","minecraft:deepslate",
-                    "minecraft:tuff","minecraft:calcite","minecraft:dripstone_block","minecraft:dirt","minecraft:grass_block",
-                    "minecraft:coarse_dirt","minecraft:rooted_dirt","minecraft:podzol","minecraft:mycelium","minecraft:moss_block",
-                    "minecraft:sandstone","minecraft:red_sandstone","minecraft:terracotta","minecraft:clay","minecraft:mud",
-                    "minecraft:packed_mud","minecraft:snow_block","minecraft:sand","minecraft:red_sand","minecraft:gravel"->true;
-            default->id.startsWith("minecraft:")&&id.endsWith("_terracotta")&&!id.endsWith("_glazed_terracotta");
-        };
+    private static TagKey<Block> tag(String path) {
+        return TagKey.create(Registries.BLOCK,ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall",path));
     }
 }

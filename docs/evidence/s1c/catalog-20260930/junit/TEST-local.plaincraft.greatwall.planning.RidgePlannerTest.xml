@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.planning.RidgePlannerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-30T09:50:30.218Z" hostname="CAIMEO" time="10.163">
+  <properties/>
+  <testcase name="unfinishedAndClosedOracleFailRatherThanPublishingPartialRoute()" classname="local.plaincraft.greatwall.planning.RidgePlannerTest" time="0.0"/>
+  <testcase name="negativeProjectionDoesNotCreateSecondWall()" classname="local.plaincraft.greatwall.planning.RidgePlannerTest" time="0.001"/>
+  <testcase name="forwardReverseRandomProduceSameBytes()" classname="local.plaincraft.greatwall.planning.RidgePlannerTest" time="10.021"/>
+  <testcase name="sliceSizesDoNotChangePlan()" classname="local.plaincraft.greatwall.planning.RidgePlannerTest" time="0.071"/>
+  <testcase name="cacheTemperatureDoesNotChangeBudget()" classname="local.plaincraft.greatwall.planning.RidgePlannerTest" time="0.024"/>
+  <testcase name="budgetNeverExceeds150000()" classname="local.plaincraft.greatwall.planning.RidgePlannerTest" time="0.015"/>
+  <testcase name="adjacentAnchorsAndTangentsMatch()" classname="local.plaincraft.greatwall.planning.RidgePlannerTest" time="0.03"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
