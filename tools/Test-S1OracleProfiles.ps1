@@ -105,7 +105,12 @@ foreach ($profile in $Profiles) {
             @($oracle.laneSessions | Where-Object { $_.jobsOnLane0 -ne 2 }).Count -eq 0 -and
             $oracle.drainedLanes.Count -eq 8 -and $badLanes.Count -eq 0 -and
             $oracle.timing.maxOracleAdvance64Nanos -le 40000000 -and
-            $oracle.timing.oracleOver40msPrimitives -eq 0 -and $oracle.timing.oracleOver40msAdvances -eq 0
+            $oracle.timing.oracleOver40msPrimitives -eq 0 -and $oracle.timing.oracleOver40msAdvances -eq 0 -and
+            $oracle.actualScheduler.status -eq 'PASS_OBSERVED_BATCHES' -and
+            $oracle.actualScheduler.routes -eq 2 -and $oracle.actualScheduler.diagnostics.'batch-count' -gt 0 -and
+            $oracle.actualScheduler.diagnostics.'max-batch-nanos' -le 40000000 -and
+            (!$oracle.actualScheduler.diagnostics.ContainsKey('over-40ms-batches') -or
+                $oracle.actualScheduler.diagnostics.'over-40ms-batches' -eq 0)
     }
     $passed = $cleanSmoke -and $correctness -and $protocol -and $oracle.status -eq 'PASS_NATIVE_ORACLE'
     $execution = [ordered]@{

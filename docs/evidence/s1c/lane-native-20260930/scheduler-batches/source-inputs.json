@@ -1,0 +1,18 @@
+[
+  {
+    "path": "src/main/java/local/plaincraft/greatwall/planning/PlannerScheduler.java",
+    "sha256": "cdaf90e420442fb691c4477249fa30bbe1ea1ca8b926651e629eeee7adb7f39f"
+  },
+  {
+    "path": "src/serverSmoke/java/local/plaincraft/greatwall/smoke/NativeSchedulerFixture.java",
+    "sha256": "3773887cc4e84a74cf9b3cac9ca68ea53e4a25d10d09481fe2e637b187aeae86"
+  },
+  {
+    "path": "src/serverSmoke/java/local/plaincraft/greatwall/smoke/OracleProfileFixture.java",
+    "sha256": "fbb709845e8f578761963f83078ee006a706ef045670d6bdd206ccc777651a74"
+  },
+  {
+    "path": "tools/Test-S1OracleProfiles.ps1",
+    "sha256": "79dcbe70aa07612c2ac665da5e7cc24849c6f2a28e952ba33842b3ba6d5cc3be"
+  }
+]

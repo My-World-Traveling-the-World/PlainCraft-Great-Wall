@@ -238,10 +238,12 @@ public final class OracleProfileFixture implements AutoCloseable {
         String nativeHash = HexFormat.of().formatHex(expectedDigest.digest()), slicedHash = HexFormat.of().formatHex(actualDigest.digest());
         if (!nativeHash.equals(slicedHash) || columns != 512) throw new IllegalStateException("native oracle aggregate mismatch");
         var report = new TreeMap<String, Object>();
+        var scheduler = NativeSchedulerFixture.verify(base,
+                FabricLoader.getInstance().getGameDir().resolve("oracle-scheduler-cache"));
         boolean performance = timing.entrySet().stream().filter(e -> e.getKey().startsWith("max")
                         && !e.getKey().equals("maxOracleRandomStateNanos"))
                 .allMatch(e -> e.getValue() <= 40_000_000L) && timing.get("oracleOver40msPrimitives") == 0
-                && timing.get("oracleOver40msAdvances") == 0;
+                && timing.get("oracleOver40msAdvances") == 0 && scheduler.get("status").equals("PASS_OBSERVED_BATCHES");
         report.put("status", performance ? "PASS_NATIVE_ORACLE" : "BLOCKED_PERFORMANCE");
         report.put("correctness", "PASS"); report.put("performance", performance ? "PASS_OBSERVED_INPUTS" : "BLOCKED");
         report.put("purpose", "native-oracle-only-not-production-wall-acceptance");
@@ -257,6 +259,7 @@ public final class OracleProfileFixture implements AutoCloseable {
         report.put("actualNativeInitializations", drainedLanes.stream().mapToLong(d -> d.get("factory-calls")).sum());
         report.put("drainedLanes", List.copyOf(drainedLanes));
         report.put("steadyPrimitiveLimit", 64);
+        report.put("actualScheduler", scheduler);
         int low = base.bounds().minY();
         report.put("actualFluidAtMinPlus9", BlockCatalog.specification(base.fluidPicker().computeFluid(0, low + 9, 0).at(low + 9)));
         report.put("actualFluidAtMinPlus10", BlockCatalog.specification(base.fluidPicker().computeFluid(0, low + 10, 0).at(low + 10)));

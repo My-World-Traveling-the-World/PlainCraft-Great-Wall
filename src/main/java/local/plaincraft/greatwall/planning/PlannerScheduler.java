@@ -385,11 +385,17 @@ public final class PlannerScheduler implements AutoCloseable {
                 long started = System.nanoTime();
                 try {
                     if (closed()) throw closedFailure();
-                    done = job.advance(oracle, operations);
+                    // A batch has at most 64 logical primitives and yields after the 25ms target.
+                    // A single slow primitive cannot be hidden by this deadline; the full batch is still measured.
+                    for (int op = 0; op < operations; op++) {
+                        done = job.advance(oracle, 1);
+                        if (done || System.nanoTime() - started >= TimeUnit.MILLISECONDS.toNanos(25)) break;
+                    }
                     if (done) value = job.value();
                 } catch (Throwable failure) { error = failure; done = true; }
                 long duration = System.nanoTime() - started;
                 state.merge("max-batch-nanos", duration, Math::max);
+                state.merge("batch-count", 1L, Long::sum);
                 if (duration > TimeUnit.MILLISECONDS.toNanos(40)) state.merge("over-40ms-batches", 1L, Long::sum);
                 return new Batch(done, error, value);
             }).whenComplete((batch, submitError) -> {

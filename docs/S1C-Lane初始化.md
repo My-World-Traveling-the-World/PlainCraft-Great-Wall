@@ -80,7 +80,26 @@ $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
 
 三 profile runner 已加严格证书校验：4 独立 session/8 独立 oracle 身份、每 lane factory/close=1、实际 drain、零初始化哨兵、同 lane 两个 job 复用、advance(64)≤40ms；旧无该协议字段的证书不能充当新协议认证。**本批真实三个 profile 尚 NOT_RUN，下一批执行。**
 
-## 4. 未验证与保持边界
+## 4. 批次三：实际 scheduler 批次与真实 profile 验证入口
+
+输入 `cd5a354` 加本批源码；新增
+`D:\云游四海-Mod源码\plaincraft-great-wall\src\serverSmoke\java\local\plaincraft\greatwall\smoke\NativeSchedulerFixture.java`，
+修改 `PlannerScheduler.java`、`OracleProfileFixture.java` 和 `tools/Test-S1OracleProfiles.ps1`。
+
+真实 profile 前置诊断现在包含实际 PlannerScheduler、实际 CpuTerrainOracle 两条 lane、实际 startupPump、至少 route 0/1 的接缝与 hash；固定 150000 列预算、2048 段长、原实际维度 bounds。测试 recipe 的 spawn/axis 是明确的独立诊断输入，不冒充实际新世界出生选址授权。使用隔离 cache，不写世界墙体/owner/T0；没有打开生产 worldgen 接线。
+
+稳态批次仍最多 64 个逻辑原语，达到 25ms 目标后在原语边界 yield；时间只控制暂停，不影响候选顺序、预算降级或返回几何。完整批次包括 value/publish 的成本，单个慢原语不能被 deadline 检查隐藏，仍记录 >40ms。初始化永远在 ready future 阶段，不落入采样计时。实际 native fixture 将检查完整 scheduler 的最大批次和超限计数，不能仅用原语计时替代。
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Java\jdk-21'
+.\gradlew.bat --offline --dependency-verification=strict test assemble compileServerSmokeJava runGameTest '-PgreatwallGameTestClasses=OracleGameTests,NoiseBridgeGameTests' --rerun-tasks --no-build-cache --console=plain --no-daemon
+```
+
+实际 exit **0**，2m03s，19 tasks 全执行。全量 JUnit **305/305，57 suites**；定向 GameTest **6/6**，XML 对应六个实际名字；无 failure/error/skipped。这是全量 JUnit + 定向 native GameTest + assemble，**不是全量 build / 全 S1B GameTest 矩阵**。证据 `docs/evidence/s1c/lane-native-20260930/scheduler-batches/`。
+
+三个真正普通 DedicatedServer profile 验证在此批提交之后执行，结果另附；尚未运行时不得预写 PASS。
+
+## 5. 未验证与保持边界
 
 生产墙生成/重进/不漏段/每 chunk 成本、6000 高度、非默认 minY、Golden、真实玩家实走、S5/24h：**NOT_RUN**。
 
