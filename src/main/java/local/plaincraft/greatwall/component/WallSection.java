@@ -146,8 +146,15 @@ public final class WallSection implements ComponentTemplate {
             long vx = b.point().xQ8()-a.point().xQ8(), vz = b.point().zQ8()-a.point().zQ8();
             long wx = px-a.point().xQ8(), wz = pz-a.point().zQ8(), den = vx*vx+vz*vz;
             if (den == 0) throw new IllegalArgumentException("zero station edge");
+            // The rounded projection stays inside the integer endpoint AABB. Equal-distance edges lose.
+            long boxX=Math.max(0,Math.max(Math.min(a.point().xQ8(),b.point().xQ8())-px,
+                    px-Math.max(a.point().xQ8(),b.point().xQ8())));
+            long boxZ=Math.max(0,Math.max(Math.min(a.point().zQ8(),b.point().zQ8())-pz,
+                    pz-Math.max(a.point().zQ8(),b.point().zQ8())));
+            if(boxX<=Integer.MAX_VALUE&&boxZ<=Integer.MAX_VALUE&&boxX*boxX+boxZ*boxZ>=best)continue;
             long num = Math.clamp(wx*vx+wz*vz,0,den);
-            long nx = a.point().xQ8()+FixedMath.mulDiv(vx,num,den), nz = a.point().zQ8()+FixedMath.mulDiv(vz,num,den);
+            long nx = num==0?a.point().xQ8():num==den?b.point().xQ8():a.point().xQ8()+FixedMath.mulDiv(vx,num,den);
+            long nz = num==0?a.point().zQ8():num==den?b.point().zQ8():a.point().zQ8()+FixedMath.mulDiv(vz,num,den);
             long dx = px-nx, dz = pz-nz, dist = dx*dx+dz*dz;
             if (dist >= best) continue;
             best = dist;

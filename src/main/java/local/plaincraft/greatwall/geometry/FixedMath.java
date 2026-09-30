@@ -13,6 +13,8 @@ public final class FixedMath {
 
     public static long mulDiv(long a, long b, long positiveDivisor) {
         requirePositive(positiveDivisor);
+        try { return Math.floorDiv(Math.multiplyExact(a,b),positiveDivisor); }
+        catch (ArithmeticException overflow) { /* Only overflowing products need the wide path. */ }
         BigInteger[] result = BigInteger.valueOf(a).multiply(BigInteger.valueOf(b))
             .divideAndRemainder(BigInteger.valueOf(positiveDivisor));
         if (result[1].signum() < 0) result[0] = result[0].subtract(BigInteger.ONE);
