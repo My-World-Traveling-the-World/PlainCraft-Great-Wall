@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import local.plaincraft.greatwall.generation.TerrainEngine;
 import local.plaincraft.greatwall.generation.TerrainMarkers;
+import local.plaincraft.greatwall.generation.ProtectionSnapshot;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
@@ -37,9 +38,14 @@ public final class TerrainSnapshotService implements AutoCloseable {
     private final ChunkEvidenceStore store;
     private final Executor io;
     private final BlockCatalog catalog;
+    private final List<Bounds> predictedStructures;
     public TerrainSnapshotService(ChunkEvidenceStore store,Executor io) {this(store,io,new BlockCatalog(RegistryAccess.EMPTY));}
     public TerrainSnapshotService(ChunkEvidenceStore store,Executor io,BlockCatalog catalog) {
+        this(store,io,catalog,List.of());
+    }
+    public TerrainSnapshotService(ChunkEvidenceStore store,Executor io,BlockCatalog catalog,List<Bounds> predictedStructures) {
         this.store=Objects.requireNonNull(store);this.io=Objects.requireNonNull(io);this.catalog=Objects.requireNonNull(catalog);
+        this.predictedStructures=List.copyOf(predictedStructures);
     }
     public BlockCatalog catalog(){return catalog;}
     public long dataProductions(){return allocationCounts.getOrDefault("data",0L);}
@@ -52,6 +58,7 @@ public final class TerrainSnapshotService implements AutoCloseable {
         try {
             active();
             if(allocations.stats().closed())throw failure(FailureCode.CLOSED,"capture allocation owner closed");
+            if(featuresChunks.size()>81)throw failure(FailureCode.CAPACITY,"capture prepared map exceeds finite FEATURES lease");
             if(!coverage.hash().equals(DeterministicHash.sha256(EvidenceCodec.coverage(coverage))))throw failure(FailureCode.RECIPE_MISMATCH,"coverage hash mismatch");
             ChunkAccess owner=featuresChunks.get(coverage.chunk());
             if(owner==null)throw failure(FailureCode.T0_MISSING,"owner not prepared");
@@ -80,9 +87,16 @@ public final class TerrainSnapshotService implements AutoCloseable {
             owned=flight;
             reserved=false;
             var scratchPin=allocations.reserve(24L<<20);scratch.put("working",scratchPin);
+            var prepared=new HashMap<ChunkPos,ChunkAccess>();
+            featuresChunks.forEach((key,value)->{
+                if(!key.dimension().equals(coverage.chunk().dimension())||value.getPos().x!=key.x()||value.getPos().z!=key.z())
+                    throw failure(FailureCode.RECIPE_MISMATCH,"prepared structure owner mismatch");
+                prepared.put(new ChunkPos(key.x(),key.z()),value);
+            });
+            var frozenPrepared=Map.copyOf(prepared);
             active();
             io(()->allocationHints(coverage,keys)).thenComposeAsync(hints->engine.exclusive(owner.getPos(),()->{
-                active();return forecast(owner,keys,hints);
+                active();return forecast(owner,keys,hints,frozenPrepared);
             }),io).thenComposeAsync(bytes->{
                 active();var pin=allocations.reserve(bytes);retained.put("capture",pin);
                 return io(()->{
@@ -123,12 +137,9 @@ public final class TerrainSnapshotService implements AutoCloseable {
                                 }),io);
                             }
                             return columns.thenComposeAsync(summary->engine.exclusive(owner.getPos(),()->{
-                                active();var entities=new HashSet<Point3i>();var structures=new ArrayList<Bounds>();
+                                active();var entities=new HashSet<Point3i>();
                                 for(var p:owner.getBlockEntitiesPos())entities.add(new Point3i(p.getX(),p.getY(),p.getZ()));
-                                for(var start:owner.getAllStarts().values())if(start.isValid()){
-                                    var b=start.getBoundingBox();structures.add(new Bounds(b.minX(),b.minY(),b.minZ(),b.maxX()+1,b.maxY()+1,b.maxZ()+1));
-                                }
-                                if(owner.hasAnyStructureReferences())structures.add(coverage.readBounds());
+                                var structures=ProtectionSnapshot.structureBounds(owner,predictedStructures,frozenPrepared,coverage.readBounds());
                                 return new CaptureMetadata(coverage,summary,structures,entities,Set.of(),"0".repeat(64));
                             }),io).thenComposeAsync(base->io(()->accounted(scratchBudget,()->{
                                 var immutable=new HashSet<Point3i>();
@@ -242,7 +253,7 @@ public final class TerrainSnapshotService implements AutoCloseable {
         return new Hints(Map.copyOf(pages),store.metadataAllocationHint(coverage.chunk()));
     }
     /** Counting pass borrows native states; it does not allocate T0 arrays or decoded palettes. */
-    private long forecast(ChunkAccess owner,List<TerrainTile.Key> keys,Hints hints) {
+    private long forecast(ChunkAccess owner,List<TerrainTile.Key> keys,Hints hints,Map<ChunkPos,ChunkAccess> prepared) {
         // Includes the later 256 column views, their hashes and all copied index maps.
         long bytes=256L*512+16384;
         boolean summarizeProtection=hints.metadata().isEmpty();
@@ -271,7 +282,8 @@ public final class TerrainSnapshotService implements AutoCloseable {
             if(saved==null)bytes=Math.addExact(bytes,1024L+4L*key.volume()+paletteBytes);
         }
         if(hints.metadata().isPresent())bytes=Math.addExact(bytes,hints.metadata().getAsLong());
-        else bytes=Math.addExact(bytes,16384L+128L*(protectedCount+entities.size()+owner.getAllStarts().size()+1));
+        else bytes=Math.addExact(bytes,16384L+128L*(protectedCount+entities.size()
+                +ProtectionSnapshot.structureBoxUpperBound(owner,predictedStructures.size(),prepared)+1));
         return bytes;
     }
     private TerrainTile capturePage(ChunkAccess owner,TerrainTile.Key key,String recipe) {
