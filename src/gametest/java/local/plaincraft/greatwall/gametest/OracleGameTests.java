@@ -34,8 +34,33 @@ import net.minecraft.world.level.levelgen.RandomState;
 public final class OracleGameTests implements FabricGameTest {
     private static final String HASH = "0".repeat(64);
     private static final List<Long> SEEDS = List.of(0L, 1L, 9282026L, Long.MIN_VALUE);
-
     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=20000)
+    public void threeLayerRoofHasFoundationWithoutInventingAFourthSupportLayer(GameTestHelper helper) {
+        var base=generator(helper);
+        int min=base.generatorSettings().value().noiseSettings().minY();
+        int max=min+base.generatorSettings().value().noiseSettings().height();
+        var y=DensityFunctions.yClampedGradient(min,max,min,max);
+        var roof=input(helper,withDensity(base,DensityFunctions.rangeChoice(y,62,65,
+                DensityFunctions.constant(1),DensityFunctions.constant(-1)),min),1);
+        var catalog=new BlockCatalog(helper.getLevel().registryAccess());
+        finish(helper,onLane(roof,oracle->{
+            var cursor=oracle.begin(0,0,SampleKind.REFERENCE);
+            while(!cursor.done())oracle.advance(cursor,64);
+            var column=oracle.finish(cursor);
+            require(column.groundTopY()==65,"the physical three-layer roof witness must remain exact");
+            var legacy=oracle.supportEvidence(cursor);
+            require(legacy.size()==3&&legacy.get(2).id().equals("minecraft:air"),
+                    "the original extra-read view includes h-4, preserving the rejected counterexample");
+            require(!legacy.stream().allMatch(s->catalog.flags(BlockCatalog.token(BlockCatalog.resolveState(s),false)).support()),
+                    "the old root call site rejects a roof with three real foundation layers");
+            var actual=oracle.foundationEvidence(cursor);
+            require(actual.size()==3&&actual.stream().allMatch(s->
+                            catalog.flags(BlockCatalog.token(BlockCatalog.resolveState(s),false)).support()),
+                    "root must match SurfaceProbe's h-1,h-2,h-3 without treating air as support");
+        }));
+    }
+
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=20000000)
     public void referenceAndSupportMatchIndependentNativeReduction512Columns(GameTestHelper helper) {
         var generator = generator(helper);
         var inputs = SEEDS.stream().map(seed -> input(helper, generator, seed)).toList();
@@ -200,6 +225,11 @@ public final class OracleGameTests implements FabricGameTest {
         require(expected.equals(actual), "native reduction mismatch seed=" + frozen.seed() + " xz=" + x + "," + z
                 + " expected=" + expected + " actual=" + actual);
         require(support.equals(oracle.supportEvidence(cursor)), "three support states differ");
+        if(solidY>=frozen.bounds().minY()+2){
+            var foundation=List.of(BlockCatalog.specification(nativeColumn.getBlock(top-1)),
+                    BlockCatalog.specification(nativeColumn.getBlock(top-2)),BlockCatalog.specification(nativeColumn.getBlock(top-3)));
+            require(foundation.equals(oracle.foundationEvidence(cursor)),"foundation must use h-1,h-2,h-3 exactly");
+        }
         return actual;
     }
     private static int[] point(int index) {

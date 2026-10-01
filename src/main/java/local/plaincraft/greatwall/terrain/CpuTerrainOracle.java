@@ -147,6 +147,14 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         for (int i = 0; i < c.supportCount; i++) result.add(BlockCatalog.specification(c.support[i]));
         return List.copyOf(result);
     }
+    /** Actual foundation layers h-1,h-2,h-3, distinct from the legacy three additional read states. */
+    public List<BlockSpec> foundationEvidence(ColumnCursor cursor) {
+        var c=own(cursor);
+        if(c.result==null)throw new IllegalStateException("foundation evidence is unfinished");
+        if(c.firstSolid==null||c.supportCount<2)return List.of();
+        return List.of(BlockCatalog.specification(c.firstSolid),BlockCatalog.specification(c.support[0]),
+                BlockCatalog.specification(c.support[1]));
+    }
 
     public TimingSnapshot timings() {
         checkOpen();
@@ -224,6 +232,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
             if (c.waterTop.isEmpty()) c.waterTop = OptionalInt.of(c.y + 1);
             if (c.y == bounds.maxYExclusive() - 1) c.censored = true;
         } else if (!state.isAir() && state.getFluidState().isEmpty()) {
+            c.firstSolid=state;
             c.solidFound = true; c.skyOpen = false; c.groundTop = c.y + 1;
             if (c.waterTop.isPresent()) c.bedTop = OptionalInt.of(c.groundTop);
             if (c.y == bounds.maxYExclusive() - 1) c.censored = true;
@@ -269,6 +278,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         private final int x, z;
         private final SampleKind kind;
         private final BlockState[] support = new BlockState[3];
+        private BlockState firstSolid;
         private int y = bounds.maxYExclusive() - 1, groundTop = bounds.minY(), supportCount;
         private int cellY = noise.height() / noise.getCellHeight() - 1, innerY = noise.getCellHeight() - 1;
         private int selectedCell = -1;
