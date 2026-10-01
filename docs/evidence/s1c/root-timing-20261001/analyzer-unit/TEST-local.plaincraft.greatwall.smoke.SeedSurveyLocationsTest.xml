@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.smoke.SeedSurveyLocationsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-01T03:49:34.812Z" hostname="CAIMEO" time="0.021">
+  <properties/>
+  <testcase name="signedHaloEvidenceRetainsRawRangeAndClipsOnlyForDistribution()" classname="local.plaincraft.greatwall.smoke.SeedSurveyLocationsTest" time="0.011"/>
+  <testcase name="curvedArcPast1024CanStillHaveAxisUInside1024()" classname="local.plaincraft.greatwall.smoke.SeedSurveyLocationsTest" time="0.001"/>
+  <testcase name="straightIntervalKeepsArcAndAxisBucketsEqual()" classname="local.plaincraft.greatwall.smoke.SeedSurveyLocationsTest" time="0.001"/>
+  <testcase name="actualSegmentArcCanExceed2048WithoutLeavingSegmentZero()" classname="local.plaincraft.greatwall.smoke.SeedSurveyLocationsTest" time="0.001"/>
+  <testcase name="straddlingIntervalsAreNotForcedIntoEitherHalf()" classname="local.plaincraft.greatwall.smoke.SeedSurveyLocationsTest" time="0.001"/>
+  <testcase name="endBandIsAnOverlappingTagNotAThirdExclusiveBucket()" classname="local.plaincraft.greatwall.smoke.SeedSurveyLocationsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

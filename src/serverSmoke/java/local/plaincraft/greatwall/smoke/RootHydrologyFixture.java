@@ -152,15 +152,23 @@ public final class RootHydrologyFixture implements AutoCloseable {
         try {
             RootResult root = lane.submit(oracle -> {
                 var search = new RootSearch(spawn, inputs.bounds(), early, inputs.foundation());
+                var ledger = Boolean.getBoolean("greatwall.s1c.rootTiming") ? new RootBatchLedger(path(".")) : null;
                 try {
-                    while (search.advance(oracle, 64) != WorkState.DONE) checkRunning();
+                    while ((ledger == null ? search.advance(oracle, 64) : ledger.advance(search, oracle)) != WorkState.DONE) checkRunning();
                     return new RootResult(search.finish(), search.progress(), search.audit(), ((CpuTerrainOracle) oracle).timings());
                 } finally {
                     snapshots.put("rootProgress", search.progress());
                     snapshots.put("rootAudit", search.audit());
+                    if (ledger != null) try { ledger.persist(search.progress(), ((CpuTerrainOracle) oracle).timings()); }
+                    catch (Exception error) { snapshots.put("rootTimingWriteFailure", stack(error)); }
                 }
             }).get(18, TimeUnit.MINUTES);
             row.put("root", root); row.put("rootSucceeded", true);
+            if (Boolean.getBoolean("greatwall.s1c.rootTiming")) {
+                row.put("category", "ROOT_TIMING_COMPLETE");
+                row.put("rootOnly", true);
+                phase = "ROOT_TIMING_DONE";
+            } else {
             var config = WorldBootstrap.defaultConfig();
             String zero = "0".repeat(64);
             var raw = new WorldRecipe(session, zero, seed, "minecraft:overworld", spawn, root.selection().axis(),
@@ -201,6 +209,7 @@ public final class RootHydrologyFixture implements AutoCloseable {
             row.put("oceanBefore1200", terminal.isPresent() && terminal.getAsLong() < 1200L * 256);
             row.put("category", "3_SEGMENT0_HYDROLOGY_FINISHED");
             phase = "DONE";
+            }
         } catch (Throwable error) {
             FailureCode code = code(error);
             row.put("failurePhase", phase); row.put("failureCode", code == null ? "NON_WALL_FAILURE" : code.name());

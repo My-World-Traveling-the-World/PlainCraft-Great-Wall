@@ -1,0 +1,8 @@
+{
+  "sourceCommit": "f3b2baab018bd7cc9cbc5e87edb58a9380cdf2d4",
+  "exitCode": 0,
+  "finishedUtc": "2026-10-01T03:49:35.2526873Z",
+  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.smoke.RootBatchLedgerTest --tests local.plaincraft.greatwall.smoke.RootTimingAnalyzerTest --tests local.plaincraft.greatwall.smoke.SeedSurveyLocationsTest compileServerSmokeJava --rerun-tasks --no-build-cache --console=plain --no-daemon",
+  "scope": "timing recorder and JFR alignment tests only",
+  "productionWiring": "OFF"
+}

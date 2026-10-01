@@ -1,0 +1,61 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava
+注: D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\mixin\TreeFeatureMixin.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources
+> Task :classes
+> Task :compileClientJava
+> Task :processClientResources
+> Task :clientClasses
+
+> Task :compileServerSmokeJava
+注: D:\云游四海-Mod源码\plaincraft-great-wall\src\serverSmoke\java\local\plaincraft\greatwall\smoke\RootBatchLedger.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processServerSmokeResources
+> Task :serverSmokeClasses
+> Task :compileTestJava
+> Task :processTestResources NO-SOURCE
+> Task :testClasses
+> Task :testClasspathBridge
+
+> Task :test
+
+RootBatchLedgerTest > exhaustionAndInvalidTimesAreVisibleRatherThanDroppingBatches() PASSED
+
+RootBatchLedgerTest > everyBatchRetainsItsExactPrimitiveTimesAndDoesNotOverwrite() PASSED
+
+RootTimingAnalyzerTest > actualJfrClockAnchorJoinsExactBatchLedgerWithoutDroppingRows() PASSED
+
+RootTimingAnalyzerTest > overlappingNestedPausesAreCountedOnceAndClippedToBatch() PASSED
+
+RootTimingAnalyzerTest > absentOrMerelyTouchingPausesDoNotExplainSlowNativeCpu() PASSED
+
+SeedSurveyLocationsTest > signedHaloEvidenceRetainsRawRangeAndClipsOnlyForDistribution() PASSED
+
+SeedSurveyLocationsTest > curvedArcPast1024CanStillHaveAxisUInside1024() PASSED
+
+SeedSurveyLocationsTest > straightIntervalKeepsArcAndAxisBucketsEqual() PASSED
+
+SeedSurveyLocationsTest > actualSegmentArcCanExceed2048WithoutLeavingSegmentZero() PASSED
+
+SeedSurveyLocationsTest > straddlingIntervalsAreNotForcedIntoEitherHalf() PASSED
+
+SeedSurveyLocationsTest > endBandIsAnOverlappingTagNotAThirdExclusiveBucket() PASSED
+
+[Incubating] Problems report is available at: file:///D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 22s
+9 actionable tasks: 9 executed
