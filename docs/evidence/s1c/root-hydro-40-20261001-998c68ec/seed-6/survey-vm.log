@@ -1,0 +1,817 @@
+[2026-10-01T09:57:01.159+0800][0.011s][info][gc] Using G1
+[2026-10-01T09:57:01.663+0800][0.514s][info][gc] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 30M->12M(512M) 3.682ms
+[2026-10-01T09:57:01.663+0800][0.515s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 488514100 ns, Reaching safepoint: 6900 ns, Cleanup: 79900 ns, At safepoint: 3811400 ns, Total: 3898200 ns
+[2026-10-01T09:57:01.723+0800][0.575s][info][gc       ] GC(1) Pause Young (Normal) (G1 Evacuation Pause) 36M->33M(512M) 7.141ms
+[2026-10-01T09:57:01.723+0800][0.575s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 53144100 ns, Reaching safepoint: 3200 ns, Cleanup: 23700 ns, At safepoint: 7256800 ns, Total: 7283700 ns
+[2026-10-01T09:57:01.922+0800][0.774s][info][gc       ] GC(2) Pause Young (Normal) (G1 Evacuation Pause) 61M->46M(512M) 3.636ms
+[2026-10-01T09:57:01.922+0800][0.774s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 195492500 ns, Reaching safepoint: 2700 ns, Cleanup: 51300 ns, At safepoint: 3680800 ns, Total: 3734800 ns
+[2026-10-01T09:57:02.141+0800][0.992s][info][gc       ] GC(3) Pause Young (Normal) (G1 Evacuation Pause) 82M->48M(512M) 1.502ms
+[2026-10-01T09:57:02.141+0800][0.992s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 216434300 ns, Reaching safepoint: 3700 ns, Cleanup: 30900 ns, At safepoint: 1545100 ns, Total: 1579700 ns
+[2026-10-01T09:57:03.150+0800][2.001s][info][safepoint] Safepoint "Cleanup", Time since last: 1008865800 ns, Reaching safepoint: 15600 ns, Cleanup: 64600 ns, At safepoint: 6600 ns, Total: 86800 ns
+[2026-10-01T09:57:03.589+0800][2.440s][info][gc       ] GC(4) Pause Young (Normal) (G1 Evacuation Pause) 354M->82M(512M) 9.673ms
+[2026-10-01T09:57:03.589+0800][2.440s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 429325100 ns, Reaching safepoint: 4200 ns, Cleanup: 58400 ns, At safepoint: 9748800 ns, Total: 9811400 ns
+[2026-10-01T09:57:03.948+0800][2.800s][info][gc       ] GC(5) Pause Young (Normal) (G1 Evacuation Pause) 254M->116M(512M) 15.209ms
+[2026-10-01T09:57:03.948+0800][2.800s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 344018000 ns, Reaching safepoint: 3600 ns, Cleanup: 42600 ns, At safepoint: 15293700 ns, Total: 15339900 ns
+[2026-10-01T09:57:04.111+0800][2.963s][info][gc       ] GC(6) Pause Young (Normal) (G1 Evacuation Pause) 158M->124M(512M) 6.904ms
+[2026-10-01T09:57:04.111+0800][2.963s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 156014300 ns, Reaching safepoint: 5300 ns, Cleanup: 30700 ns, At safepoint: 6962600 ns, Total: 6998600 ns
+[2026-10-01T09:57:04.241+0800][3.093s][info][safepoint] Safepoint "ICBufferFull", Time since last: 107176500 ns, Reaching safepoint: 134400 ns, Cleanup: 154300 ns, At safepoint: 22724000 ns, Total: 23012700 ns
+[2026-10-01T09:57:04.332+0800][3.183s][info][gc       ] GC(7) Pause Young (Normal) (G1 Evacuation Pause) 376M->133M(512M) 5.068ms
+[2026-10-01T09:57:04.332+0800][3.184s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 84941200 ns, Reaching safepoint: 229100 ns, Cleanup: 99200 ns, At safepoint: 5729000 ns, Total: 6057300 ns
+[2026-10-01T09:57:04.464+0800][3.316s][info][gc       ] GC(8) Pause Young (Normal) (G1 Evacuation Pause) 407M->141M(756M) 6.918ms
+[2026-10-01T09:57:04.465+0800][3.317s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 125456500 ns, Reaching safepoint: 62400 ns, Cleanup: 50500 ns, At safepoint: 7185900 ns, Total: 7298800 ns
+[2026-10-01T09:57:04.677+0800][3.529s][info][gc       ] GC(9) Pause Young (Normal) (G1 Evacuation Pause) 569M->156M(756M) 8.889ms
+[2026-10-01T09:57:04.679+0800][3.531s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 203244400 ns, Reaching safepoint: 64400 ns, Cleanup: 58900 ns, At safepoint: 10599200 ns, Total: 10722500 ns
+[2026-10-01T09:57:05.707+0800][4.558s][info][safepoint] Safepoint "ICBufferFull", Time since last: 1027670700 ns, Reaching safepoint: 3500 ns, Cleanup: 90100 ns, At safepoint: 1800 ns, Total: 95400 ns
+[2026-10-01T09:57:06.085+0800][4.936s][info][safepoint] Safepoint "ICBufferFull", Time since last: 378042700 ns, Reaching safepoint: 2800 ns, Cleanup: 99900 ns, At safepoint: 1300 ns, Total: 104000 ns
+[2026-10-01T09:57:06.248+0800][5.100s][info][safepoint] Safepoint "ICBufferFull", Time since last: 162845500 ns, Reaching safepoint: 14900 ns, Cleanup: 147400 ns, At safepoint: 14800 ns, Total: 177100 ns
+[2026-10-01T09:57:06.248+0800][5.100s][info][safepoint] Safepoint "ICBufferFull", Time since last: 60200 ns, Reaching safepoint: 53500 ns, Cleanup: 2400 ns, At safepoint: 9900 ns, Total: 65800 ns
+[2026-10-01T09:57:07.357+0800][6.208s][info][safepoint] Safepoint "Cleanup", Time since last: 1108745200 ns, Reaching safepoint: 15200 ns, Cleanup: 74800 ns, At safepoint: 9400 ns, Total: 99400 ns
+[2026-10-01T09:57:08.430+0800][7.281s][info][safepoint] Safepoint "Cleanup", Time since last: 1072663400 ns, Reaching safepoint: 5800 ns, Cleanup: 115300 ns, At safepoint: 13800 ns, Total: 134900 ns
+[2026-10-01T09:57:09.084+0800][7.936s][info][safepoint] Safepoint "ICBufferFull", Time since last: 654960500 ns, Reaching safepoint: 5400 ns, Cleanup: 160400 ns, At safepoint: 7900 ns, Total: 173700 ns
+[2026-10-01T09:57:09.311+0800][8.164s][info][gc       ] GC(10) Pause Young (Concurrent Start) (Metadata GC Threshold) 497M->155M(756M) 11.013ms
+[2026-10-01T09:57:09.312+0800][8.164s][info][gc       ] GC(11) Concurrent Mark Cycle
+[2026-10-01T09:57:09.312+0800][8.164s][info][safepoint] Safepoint "CollectForMetadataAllocation", Time since last: 215995300 ns, Reaching safepoint: 16500 ns, Cleanup: 76300 ns, At safepoint: 11213200 ns, Total: 11306000 ns
+[2026-10-01T09:57:09.366+0800][8.218s][info][gc       ] GC(11) Pause Remark 159M->155M(528M) 3.982ms
+[2026-10-01T09:57:09.366+0800][8.218s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 50165800 ns, Reaching safepoint: 5000 ns, Cleanup: 18000 ns, At safepoint: 4071700 ns, Total: 4094700 ns
+[2026-10-01T09:57:09.383+0800][8.235s][info][gc       ] GC(11) Pause Cleanup 155M->155M(528M) 0.124ms
+[2026-10-01T09:57:09.383+0800][8.235s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 16755700 ns, Reaching safepoint: 15600 ns, Cleanup: 19300 ns, At safepoint: 190500 ns, Total: 225400 ns
+[2026-10-01T09:57:09.385+0800][8.236s][info][gc       ] GC(11) Concurrent Mark Cycle 72.639ms
+[2026-10-01T09:57:10.042+0800][8.894s][info][safepoint] Safepoint "ICBufferFull", Time since last: 659054900 ns, Reaching safepoint: 4000 ns, Cleanup: 133600 ns, At safepoint: 6100 ns, Total: 143700 ns
+[2026-10-01T09:57:10.749+0800][9.601s][info][safepoint] Safepoint "ICBufferFull", Time since last: 706416100 ns, Reaching safepoint: 5000 ns, Cleanup: 127900 ns, At safepoint: 7000 ns, Total: 139900 ns
+[2026-10-01T09:57:11.055+0800][9.907s][info][safepoint] Safepoint "ICBufferFull", Time since last: 306341700 ns, Reaching safepoint: 7000 ns, Cleanup: 148300 ns, At safepoint: 2600 ns, Total: 157900 ns
+[2026-10-01T09:57:11.530+0800][10.382s][info][safepoint] Safepoint "ICBufferFull", Time since last: 474311700 ns, Reaching safepoint: 4100 ns, Cleanup: 116000 ns, At safepoint: 5900 ns, Total: 126000 ns
+[2026-10-01T09:57:11.593+0800][10.445s][info][gc       ] GC(12) Pause Young (Prepare Mixed) (Metadata GC Threshold) 339M->169M(528M) 8.610ms
+[2026-10-01T09:57:11.593+0800][10.445s][info][safepoint] Safepoint "CollectForMetadataAllocation", Time since last: 54710900 ns, Reaching safepoint: 2900 ns, Cleanup: 10700 ns, At safepoint: 8706300 ns, Total: 8719900 ns
+[2026-10-01T09:57:11.619+0800][10.471s][info][gc       ] GC(13) Pause Young (Mixed) (Metadata GC Threshold) 174M->152M(528M) 4.257ms
+[2026-10-01T09:57:11.619+0800][10.471s][info][safepoint] Safepoint "CollectForMetadataAllocation", Time since last: 21405900 ns, Reaching safepoint: 4200 ns, Cleanup: 16700 ns, At safepoint: 4321000 ns, Total: 4341900 ns
+[2026-10-01T09:57:11.645+0800][10.496s][info][gc       ] GC(14) Pause Young (Concurrent Start) (Metadata GC Threshold) 156M->151M(528M) 2.308ms
+[2026-10-01T09:57:11.645+0800][10.496s][info][gc       ] GC(15) Concurrent Mark Cycle
+[2026-10-01T09:57:11.645+0800][10.496s][info][safepoint] Safepoint "CollectForMetadataAllocation", Time since last: 23288700 ns, Reaching safepoint: 4300 ns, Cleanup: 7600 ns, At safepoint: 2374800 ns, Total: 2386700 ns
+[2026-10-01T09:57:11.668+0800][10.520s][info][safepoint] Safepoint "CollectForMetadataAllocation", Time since last: 23156700 ns, Reaching safepoint: 23200 ns, Cleanup: 19600 ns, At safepoint: 17700 ns, Total: 60500 ns
+[2026-10-01T09:57:11.675+0800][10.526s][info][gc       ] GC(15) Pause Remark 155M->115M(388M) 4.187ms
+[2026-10-01T09:57:11.675+0800][10.526s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 2416800 ns, Reaching safepoint: 3200 ns, Cleanup: 3200 ns, At safepoint: 4248300 ns, Total: 4254700 ns
+[2026-10-01T09:57:11.682+0800][10.534s][info][gc       ] GC(15) Pause Cleanup 115M->115M(388M) 0.062ms
+[2026-10-01T09:57:11.682+0800][10.534s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 7742500 ns, Reaching safepoint: 13700 ns, Cleanup: 20000 ns, At safepoint: 107200 ns, Total: 140900 ns
+[2026-10-01T09:57:11.683+0800][10.535s][info][gc       ] GC(15) Concurrent Mark Cycle 38.324ms
+[2026-10-01T09:57:11.835+0800][10.687s][info][safepoint] Safepoint "ICBufferFull", Time since last: 152292000 ns, Reaching safepoint: 16700 ns, Cleanup: 97100 ns, At safepoint: 11000 ns, Total: 124800 ns
+[2026-10-01T09:57:11.992+0800][10.843s][info][safepoint] Safepoint "ICBufferFull", Time since last: 156390500 ns, Reaching safepoint: 3200 ns, Cleanup: 109400 ns, At safepoint: 1300 ns, Total: 113900 ns
+[2026-10-01T09:57:12.287+0800][11.139s][info][safepoint] Safepoint "ICBufferFull", Time since last: 295470100 ns, Reaching safepoint: 4700 ns, Cleanup: 199700 ns, At safepoint: 10200 ns, Total: 214600 ns
+[2026-10-01T09:57:12.580+0800][11.432s][info][gc       ] GC(16) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 337M->136M(388M) 17.621ms
+[2026-10-01T09:57:12.581+0800][11.432s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 275237700 ns, Reaching safepoint: 5900 ns, Cleanup: 90600 ns, At safepoint: 17734500 ns, Total: 17831000 ns
+[2026-10-01T09:57:12.899+0800][11.751s][info][safepoint] Safepoint "ICBufferFull", Time since last: 319070000 ns, Reaching safepoint: 4400 ns, Cleanup: 136600 ns, At safepoint: 8000 ns, Total: 149000 ns
+[2026-10-01T09:57:13.053+0800][11.905s][info][safepoint] Safepoint "ICBufferFull", Time since last: 153424600 ns, Reaching safepoint: 7400 ns, Cleanup: 158900 ns, At safepoint: 13600 ns, Total: 179900 ns
+[2026-10-01T09:57:13.241+0800][12.093s][info][gc       ] GC(17) Pause Young (Mixed) (G1 Evacuation Pause) 334M->133M(662M) 18.418ms
+[2026-10-01T09:57:13.241+0800][12.093s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 169281100 ns, Reaching safepoint: 4400 ns, Cleanup: 66100 ns, At safepoint: 18490900 ns, Total: 18561400 ns
+[2026-10-01T09:57:13.821+0800][12.673s][info][safepoint] Safepoint "ICBufferFull", Time since last: 580605700 ns, Reaching safepoint: 24400 ns, Cleanup: 126900 ns, At safepoint: 9800 ns, Total: 161100 ns
+[2026-10-01T09:57:13.990+0800][12.842s][info][safepoint] Safepoint "ICBufferFull", Time since last: 168114100 ns, Reaching safepoint: 4100 ns, Cleanup: 113000 ns, At safepoint: 10100 ns, Total: 127200 ns
+[2026-10-01T09:57:14.128+0800][12.980s][info][safepoint] Safepoint "ICBufferFull", Time since last: 138662300 ns, Reaching safepoint: 2800 ns, Cleanup: 91300 ns, At safepoint: 4700 ns, Total: 98800 ns
+[2026-10-01T09:57:14.501+0800][13.353s][info][safepoint] Safepoint "ICBufferFull", Time since last: 372907800 ns, Reaching safepoint: 3500 ns, Cleanup: 114500 ns, At safepoint: 6600 ns, Total: 124600 ns
+[2026-10-01T09:57:15.155+0800][14.007s][info][gc       ] GC(18) Pause Young (Concurrent Start) (Metadata GC Threshold) 488M->167M(662M) 17.183ms
+[2026-10-01T09:57:15.155+0800][14.007s][info][gc       ] GC(19) Concurrent Mark Cycle
+[2026-10-01T09:57:15.155+0800][14.007s][info][safepoint] Safepoint "CollectForMetadataAllocation", Time since last: 636648300 ns, Reaching safepoint: 2900 ns, Cleanup: 123000 ns, At safepoint: 17306300 ns, Total: 17432200 ns
+[2026-10-01T09:57:15.184+0800][14.037s][info][safepoint] Safepoint "CollectForMetadataAllocation", Time since last: 29086400 ns, Reaching safepoint: 37600 ns, Cleanup: 9600 ns, At safepoint: 20500 ns, Total: 67700 ns
+[2026-10-01T09:57:15.204+0800][14.056s][info][safepoint] Safepoint "CollectForMetadataAllocation", Time since last: 19004200 ns, Reaching safepoint: 50900 ns, Cleanup: 4600 ns, At safepoint: 26300 ns, Total: 81800 ns
+[2026-10-01T09:57:15.217+0800][14.069s][info][gc       ] GC(19) Pause Remark 173M->173M(580M) 2.762ms
+[2026-10-01T09:57:15.217+0800][14.069s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 9983500 ns, Reaching safepoint: 124900 ns, Cleanup: 6800 ns, At safepoint: 2805700 ns, Total: 2937400 ns
+[2026-10-01T09:57:15.231+0800][14.083s][info][gc       ] GC(19) Pause Cleanup 175M->175M(580M) 0.067ms
+[2026-10-01T09:57:15.231+0800][14.083s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 14419900 ns, Reaching safepoint: 2200 ns, Cleanup: 7600 ns, At safepoint: 116200 ns, Total: 126000 ns
+[2026-10-01T09:57:15.233+0800][14.084s][info][gc       ] GC(19) Concurrent Mark Cycle 76.680ms
+[2026-10-01T09:57:15.920+0800][14.772s][info][safepoint] Safepoint "ICBufferFull", Time since last: 688308300 ns, Reaching safepoint: 6300 ns, Cleanup: 175700 ns, At safepoint: 9900 ns, Total: 191900 ns
+[2026-10-01T09:57:16.332+0800][15.183s][info][safepoint] Safepoint "ICBufferFull", Time since last: 411302500 ns, Reaching safepoint: 47400 ns, Cleanup: 140500 ns, At safepoint: 12700 ns, Total: 200600 ns
+[2026-10-01T09:57:16.409+0800][15.260s][info][safepoint] Safepoint "ICBufferFull", Time since last: 76936500 ns, Reaching safepoint: 246600 ns, Cleanup: 82500 ns, At safepoint: 6700 ns, Total: 335800 ns
+[2026-10-01T09:57:16.611+0800][15.463s][info][safepoint] Safepoint "ICBufferFull", Time since last: 202219500 ns, Reaching safepoint: 3800 ns, Cleanup: 107400 ns, At safepoint: 6600 ns, Total: 117800 ns
+[2026-10-01T09:57:16.737+0800][15.589s][info][safepoint] Safepoint "ICBufferFull", Time since last: 125797400 ns, Reaching safepoint: 5700 ns, Cleanup: 87300 ns, At safepoint: 6000 ns, Total: 99000 ns
+[2026-10-01T09:57:17.020+0800][15.871s][info][gc       ] GC(20) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 467M->192M(580M) 20.937ms
+[2026-10-01T09:57:17.020+0800][15.871s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 261367600 ns, Reaching safepoint: 6100 ns, Cleanup: 143500 ns, At safepoint: 21027000 ns, Total: 21176600 ns
+[2026-10-01T09:57:17.382+0800][16.233s][info][safepoint] Safepoint "ICBufferFull", Time since last: 361579200 ns, Reaching safepoint: 13100 ns, Cleanup: 178200 ns, At safepoint: 8100 ns, Total: 199400 ns
+[2026-10-01T09:57:17.672+0800][16.524s][info][safepoint] Safepoint "ICBufferFull", Time since last: 290932400 ns, Reaching safepoint: 7900 ns, Cleanup: 133000 ns, At safepoint: 7600 ns, Total: 148500 ns
+[2026-10-01T09:57:17.817+0800][16.669s][info][safepoint] Safepoint "ICBufferFull", Time since last: 144230400 ns, Reaching safepoint: 12300 ns, Cleanup: 198900 ns, At safepoint: 6500 ns, Total: 217700 ns
+[2026-10-01T09:57:17.965+0800][16.817s][info][gc       ] GC(21) Pause Young (Mixed) (G1 Evacuation Pause) 504M->195M(580M) 9.340ms
+[2026-10-01T09:57:17.965+0800][16.817s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 139394300 ns, Reaching safepoint: 6000 ns, Cleanup: 75500 ns, At safepoint: 9408000 ns, Total: 9489500 ns
+[2026-10-01T09:57:18.740+0800][17.592s][info][safepoint] Safepoint "ICBufferFull", Time since last: 774764500 ns, Reaching safepoint: 6100 ns, Cleanup: 122500 ns, At safepoint: 7000 ns, Total: 135600 ns
+[2026-10-01T09:57:19.350+0800][18.201s][info][safepoint] Safepoint "ICBufferFull", Time since last: 606665100 ns, Reaching safepoint: 2351300 ns, Cleanup: 99500 ns, At safepoint: 19600 ns, Total: 2470400 ns
+[2026-10-01T09:57:19.453+0800][18.304s][info][safepoint] Safepoint "ICBufferFull", Time since last: 102360900 ns, Reaching safepoint: 7100 ns, Cleanup: 116600 ns, At safepoint: 12200 ns, Total: 135900 ns
+[2026-10-01T09:57:19.529+0800][18.380s][info][gc       ] GC(22) Pause Young (Normal) (G1 Evacuation Pause) 515M->215M(580M) 15.409ms
+[2026-10-01T09:57:19.529+0800][18.381s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 61022800 ns, Reaching safepoint: 6000 ns, Cleanup: 69700 ns, At safepoint: 15497500 ns, Total: 15573200 ns
+[2026-10-01T09:57:19.822+0800][18.674s][info][safepoint] Safepoint "ICBufferFull", Time since last: 292790500 ns, Reaching safepoint: 17400 ns, Cleanup: 118500 ns, At safepoint: 9800 ns, Total: 145700 ns
+[2026-10-01T09:57:19.822+0800][18.674s][info][safepoint] Safepoint "ICBufferFull", Time since last: 70800 ns, Reaching safepoint: 13800 ns, Cleanup: 2600 ns, At safepoint: 9500 ns, Total: 25900 ns
+[2026-10-01T09:57:19.822+0800][18.674s][info][safepoint] Safepoint "ICBufferFull", Time since last: 29000 ns, Reaching safepoint: 11900 ns, Cleanup: 3200 ns, At safepoint: 9600 ns, Total: 24700 ns
+[2026-10-01T09:57:19.823+0800][18.674s][info][safepoint] Safepoint "ICBufferFull", Time since last: 24200 ns, Reaching safepoint: 52600 ns, Cleanup: 1400 ns, At safepoint: 61700 ns, Total: 115700 ns
+[2026-10-01T09:57:19.823+0800][18.674s][info][safepoint] Safepoint "ICBufferFull", Time since last: 70800 ns, Reaching safepoint: 43400 ns, Cleanup: 900 ns, At safepoint: 44500 ns, Total: 88800 ns
+[2026-10-01T09:57:20.176+0800][19.028s][info][gc       ] GC(23) Pause Young (Concurrent Start) (G1 Evacuation Pause) 515M->223M(580M) 9.659ms
+[2026-10-01T09:57:20.176+0800][19.028s][info][gc       ] GC(24) Concurrent Mark Cycle
+[2026-10-01T09:57:20.176+0800][19.028s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 343932300 ns, Reaching safepoint: 6500 ns, Cleanup: 113400 ns, At safepoint: 9766300 ns, Total: 9886200 ns
+[2026-10-01T09:57:20.272+0800][19.124s][info][gc       ] GC(24) Pause Remark 252M->252M(580M) 5.940ms
+[2026-10-01T09:57:20.272+0800][19.124s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 90596600 ns, Reaching safepoint: 11800 ns, Cleanup: 43900 ns, At safepoint: 6019100 ns, Total: 6074800 ns
+[2026-10-01T09:57:20.306+0800][19.158s][info][gc       ] GC(24) Pause Cleanup 253M->253M(580M) 0.126ms
+[2026-10-01T09:57:20.306+0800][19.158s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 33687300 ns, Reaching safepoint: 9000 ns, Cleanup: 50600 ns, At safepoint: 202600 ns, Total: 262200 ns
+[2026-10-01T09:57:20.307+0800][19.159s][info][gc       ] GC(24) Concurrent Mark Cycle 131.619ms
+[2026-10-01T09:57:20.516+0800][19.367s][info][safepoint] Safepoint "ICBufferFull", Time since last: 208989800 ns, Reaching safepoint: 6300 ns, Cleanup: 95400 ns, At safepoint: 1500 ns, Total: 103200 ns
+[2026-10-01T09:57:20.630+0800][19.482s][info][safepoint] Safepoint "ICBufferFull", Time since last: 114867700 ns, Reaching safepoint: 7000 ns, Cleanup: 118000 ns, At safepoint: 11800 ns, Total: 136800 ns
+[2026-10-01T09:57:20.807+0800][19.658s][info][safepoint] Safepoint "ICBufferFull", Time since last: 175656400 ns, Reaching safepoint: 7000 ns, Cleanup: 110000 ns, At safepoint: 5500 ns, Total: 122500 ns
+[2026-10-01T09:57:20.972+0800][19.824s][info][safepoint] Safepoint "ICBufferFull", Time since last: 165608200 ns, Reaching safepoint: 25600 ns, Cleanup: 104300 ns, At safepoint: 6700 ns, Total: 136600 ns
+[2026-10-01T09:57:21.212+0800][20.064s][info][gc       ] GC(25) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 519M->237M(580M) 11.353ms
+[2026-10-01T09:57:21.213+0800][20.064s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 228689100 ns, Reaching safepoint: 19800 ns, Cleanup: 86500 ns, At safepoint: 11673300 ns, Total: 11779600 ns
+[2026-10-01T09:57:21.446+0800][20.299s][info][safepoint] Safepoint "ICBufferFull", Time since last: 233957500 ns, Reaching safepoint: 5800 ns, Cleanup: 78500 ns, At safepoint: 7300 ns, Total: 91600 ns
+[2026-10-01T09:57:21.874+0800][20.726s][info][safepoint] Safepoint "ICBufferFull", Time since last: 425901400 ns, Reaching safepoint: 100500 ns, Cleanup: 184200 ns, At safepoint: 823600 ns, Total: 1108300 ns
+[2026-10-01T09:57:21.936+0800][20.788s][info][gc       ] GC(26) Pause Young (Mixed) (G1 Evacuation Pause) 525M->237M(580M) 7.101ms
+[2026-10-01T09:57:21.937+0800][20.789s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 54812400 ns, Reaching safepoint: 297000 ns, Cleanup: 34600 ns, At safepoint: 8262700 ns, Total: 8594300 ns
+[2026-10-01T09:57:22.494+0800][21.346s][info][gc       ] GC(27) Pause Young (Concurrent Start) (G1 Evacuation Pause) 517M->240M(580M) 5.908ms
+[2026-10-01T09:57:22.495+0800][21.346s][info][gc       ] GC(28) Concurrent Mark Cycle
+[2026-10-01T09:57:22.495+0800][21.346s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 551118200 ns, Reaching safepoint: 8100 ns, Cleanup: 109100 ns, At safepoint: 5977500 ns, Total: 6094700 ns
+[2026-10-01T09:57:22.611+0800][21.462s][info][gc       ] GC(28) Pause Remark 273M->273M(580M) 11.764ms
+[2026-10-01T09:57:22.611+0800][21.462s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 104392000 ns, Reaching safepoint: 7200 ns, Cleanup: 37900 ns, At safepoint: 11877300 ns, Total: 11922400 ns
+[2026-10-01T09:57:22.646+0800][21.498s][info][gc       ] GC(28) Pause Cleanup 293M->293M(580M) 0.111ms
+[2026-10-01T09:57:22.646+0800][21.498s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 35031900 ns, Reaching safepoint: 6100 ns, Cleanup: 49600 ns, At safepoint: 160900 ns, Total: 216600 ns
+[2026-10-01T09:57:22.647+0800][21.498s][info][gc       ] GC(28) Concurrent Mark Cycle 152.313ms
+[2026-10-01T09:57:23.003+0800][21.855s][info][gc       ] GC(29) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 520M->255M(580M) 7.360ms
+[2026-10-01T09:57:23.004+0800][21.855s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 349487500 ns, Reaching safepoint: 59600 ns, Cleanup: 68900 ns, At safepoint: 7680400 ns, Total: 7808900 ns
+[2026-10-01T09:57:23.314+0800][22.166s][info][gc       ] GC(30) Pause Young (Mixed) (G1 Evacuation Pause) 523M->254M(580M) 7.478ms
+[2026-10-01T09:57:23.314+0800][22.166s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 303037900 ns, Reaching safepoint: 5300 ns, Cleanup: 45700 ns, At safepoint: 7549200 ns, Total: 7600200 ns
+[2026-10-01T09:57:23.604+0800][22.456s][info][gc       ] GC(31) Pause Young (Concurrent Start) (G1 Evacuation Pause) 524M->258M(580M) 5.070ms
+[2026-10-01T09:57:23.604+0800][22.456s][info][gc       ] GC(32) Concurrent Mark Cycle
+[2026-10-01T09:57:23.604+0800][22.456s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 284877700 ns, Reaching safepoint: 5400 ns, Cleanup: 37800 ns, At safepoint: 5148600 ns, Total: 5191800 ns
+[2026-10-01T09:57:23.728+0800][22.580s][info][gc       ] GC(32) Pause Remark 308M->308M(580M) 9.861ms
+[2026-10-01T09:57:23.728+0800][22.580s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 113950300 ns, Reaching safepoint: 13000 ns, Cleanup: 59700 ns, At safepoint: 9936100 ns, Total: 10008800 ns
+[2026-10-01T09:57:23.765+0800][22.616s][info][gc       ] GC(32) Pause Cleanup 326M->326M(580M) 0.109ms
+[2026-10-01T09:57:23.765+0800][22.616s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 36502900 ns, Reaching safepoint: 7500 ns, Cleanup: 26900 ns, At safepoint: 174800 ns, Total: 209200 ns
+[2026-10-01T09:57:23.766+0800][22.617s][info][gc       ] GC(32) Concurrent Mark Cycle 161.333ms
+[2026-10-01T09:57:24.277+0800][23.129s][info][gc       ] GC(33) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 524M->269M(580M) 7.771ms
+[2026-10-01T09:57:24.277+0800][23.129s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 504283500 ns, Reaching safepoint: 8100 ns, Cleanup: 114500 ns, At safepoint: 7857800 ns, Total: 7980400 ns
+[2026-10-01T09:57:24.649+0800][23.501s][info][safepoint] Safepoint "ICBufferFull", Time since last: 372501800 ns, Reaching safepoint: 12200 ns, Cleanup: 167500 ns, At safepoint: 16100 ns, Total: 195800 ns
+[2026-10-01T09:57:24.840+0800][23.692s][info][safepoint] Safepoint "ICBufferFull", Time since last: 165778800 ns, Reaching safepoint: 16907500 ns, Cleanup: 199900 ns, At safepoint: 8001100 ns, Total: 25108500 ns
+[2026-10-01T09:57:24.995+0800][23.847s][info][gc       ] GC(34) Pause Young (Mixed) (G1 Evacuation Pause) 579M->270M(614M) 12.223ms
+[2026-10-01T09:57:24.997+0800][23.849s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 142109200 ns, Reaching safepoint: 291100 ns, Cleanup: 98600 ns, At safepoint: 14082100 ns, Total: 14471800 ns
+[2026-10-01T09:57:25.793+0800][24.646s][info][gc       ] GC(35) Pause Young (Concurrent Start) (G1 Evacuation Pause) 554M->270M(614M) 6.054ms
+[2026-10-01T09:57:25.793+0800][24.646s][info][gc       ] GC(36) Concurrent Mark Cycle
+[2026-10-01T09:57:25.793+0800][24.646s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 790823700 ns, Reaching safepoint: 8500 ns, Cleanup: 116900 ns, At safepoint: 6126800 ns, Total: 6252200 ns
+[2026-10-01T09:57:25.906+0800][24.758s][info][gc       ] GC(36) Pause Remark 311M->311M(614M) 3.436ms
+[2026-10-01T09:57:25.907+0800][24.758s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 108402900 ns, Reaching safepoint: 18800 ns, Cleanup: 15400 ns, At safepoint: 3502700 ns, Total: 3536900 ns
+[2026-10-01T09:57:25.949+0800][24.800s][info][gc       ] GC(36) Pause Cleanup 326M->326M(614M) 0.162ms
+[2026-10-01T09:57:25.949+0800][24.800s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 42364700 ns, Reaching safepoint: 9300 ns, Cleanup: 25400 ns, At safepoint: 226500 ns, Total: 261200 ns
+[2026-10-01T09:57:25.950+0800][24.802s][info][gc       ] GC(36) Concurrent Mark Cycle 155.659ms
+[2026-10-01T09:57:26.422+0800][25.273s][info][gc       ] GC(37) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 560M->270M(614M) 5.438ms
+[2026-10-01T09:57:26.422+0800][25.274s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 467491200 ns, Reaching safepoint: 8000 ns, Cleanup: 30100 ns, At safepoint: 5516700 ns, Total: 5554800 ns
+[2026-10-01T09:57:27.010+0800][25.862s][info][gc       ] GC(38) Pause Young (Mixed) (G1 Evacuation Pause) 560M->264M(614M) 6.721ms
+[2026-10-01T09:57:27.010+0800][25.862s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 581231400 ns, Reaching safepoint: 7900 ns, Cleanup: 17200 ns, At safepoint: 6812000 ns, Total: 6837100 ns
+[2026-10-01T09:57:27.557+0800][26.409s][info][gc       ] GC(39) Pause Young (Concurrent Start) (G1 Evacuation Pause) 562M->264M(614M) 4.479ms
+[2026-10-01T09:57:27.557+0800][26.409s][info][gc       ] GC(40) Concurrent Mark Cycle
+[2026-10-01T09:57:27.557+0800][26.409s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 542864100 ns, Reaching safepoint: 5200 ns, Cleanup: 27300 ns, At safepoint: 4538900 ns, Total: 4571400 ns
+[2026-10-01T09:57:27.674+0800][26.525s][info][gc       ] GC(40) Pause Remark 312M->312M(614M) 4.667ms
+[2026-10-01T09:57:27.674+0800][26.526s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 111753900 ns, Reaching safepoint: 17500 ns, Cleanup: 4900 ns, At safepoint: 4721800 ns, Total: 4744200 ns
+[2026-10-01T09:57:27.709+0800][26.561s][info][gc       ] GC(40) Pause Cleanup 326M->326M(614M) 0.106ms
+[2026-10-01T09:57:27.709+0800][26.561s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 35062300 ns, Reaching safepoint: 16000 ns, Cleanup: 17600 ns, At safepoint: 153300 ns, Total: 186900 ns
+[2026-10-01T09:57:27.710+0800][26.561s][info][gc       ] GC(40) Concurrent Mark Cycle 152.346ms
+[2026-10-01T09:57:28.170+0800][27.021s][info][gc       ] GC(41) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 562M->264M(614M) 5.346ms
+[2026-10-01T09:57:28.170+0800][27.021s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 455240700 ns, Reaching safepoint: 5400 ns, Cleanup: 8900 ns, At safepoint: 5426400 ns, Total: 5440700 ns
+[2026-10-01T09:57:28.777+0800][27.629s][info][gc       ] GC(42) Pause Young (Mixed) (G1 Evacuation Pause) 558M->260M(614M) 6.472ms
+[2026-10-01T09:57:28.777+0800][27.629s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 600708300 ns, Reaching safepoint: 5700 ns, Cleanup: 32700 ns, At safepoint: 6565500 ns, Total: 6603900 ns
+[2026-10-01T09:57:29.376+0800][28.228s][info][gc       ] GC(43) Pause Young (Concurrent Start) (G1 Evacuation Pause) 562M->261M(614M) 4.856ms
+[2026-10-01T09:57:29.376+0800][28.228s][info][gc       ] GC(44) Concurrent Mark Cycle
+[2026-10-01T09:57:29.376+0800][28.228s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 594103800 ns, Reaching safepoint: 10700 ns, Cleanup: 18800 ns, At safepoint: 4912500 ns, Total: 4942000 ns
+[2026-10-01T09:57:29.492+0800][28.344s][info][gc       ] GC(44) Pause Remark 309M->309M(614M) 4.097ms
+[2026-10-01T09:57:29.492+0800][28.344s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 111606200 ns, Reaching safepoint: 17100 ns, Cleanup: 4200 ns, At safepoint: 4152700 ns, Total: 4174000 ns
+[2026-10-01T09:57:29.529+0800][28.382s][info][gc       ] GC(44) Pause Cleanup 327M->327M(614M) 0.130ms
+[2026-10-01T09:57:29.529+0800][28.382s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 37851400 ns, Reaching safepoint: 16300 ns, Cleanup: 5400 ns, At safepoint: 189900 ns, Total: 211600 ns
+[2026-10-01T09:57:29.531+0800][28.383s][info][gc       ] GC(44) Concurrent Mark Cycle 154.877ms
+[2026-10-01T09:57:30.048+0800][28.900s][info][gc       ] GC(45) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 559M->260M(614M) 6.301ms
+[2026-10-01T09:57:30.048+0800][28.900s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 511715200 ns, Reaching safepoint: 8500 ns, Cleanup: 9800 ns, At safepoint: 6413400 ns, Total: 6431700 ns
+[2026-10-01T09:57:30.845+0800][29.697s][info][gc       ] GC(46) Pause Young (Mixed) (G1 Evacuation Pause) 562M->256M(614M) 10.044ms
+[2026-10-01T09:57:30.845+0800][29.697s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 786660800 ns, Reaching safepoint: 10000 ns, Cleanup: 45100 ns, At safepoint: 10162600 ns, Total: 10217700 ns
+[2026-10-01T09:57:31.778+0800][30.630s][info][gc       ] GC(47) Pause Young (Concurrent Start) (G1 Evacuation Pause) 558M->256M(614M) 5.770ms
+[2026-10-01T09:57:31.778+0800][30.630s][info][gc       ] GC(48) Concurrent Mark Cycle
+[2026-10-01T09:57:31.778+0800][30.630s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 927104000 ns, Reaching safepoint: 8100 ns, Cleanup: 17700 ns, At safepoint: 5906000 ns, Total: 5931800 ns
+[2026-10-01T09:57:31.909+0800][30.761s][info][gc       ] GC(48) Pause Remark 309M->309M(614M) 3.695ms
+[2026-10-01T09:57:31.909+0800][30.761s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 127301200 ns, Reaching safepoint: 17100 ns, Cleanup: 10400 ns, At safepoint: 3762900 ns, Total: 3790400 ns
+[2026-10-01T09:57:31.951+0800][30.803s][info][gc       ] GC(48) Pause Cleanup 326M->326M(614M) 0.142ms
+[2026-10-01T09:57:31.951+0800][30.803s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 41761300 ns, Reaching safepoint: 19800 ns, Cleanup: 6500 ns, At safepoint: 207500 ns, Total: 233800 ns
+[2026-10-01T09:57:31.952+0800][30.804s][info][gc       ] GC(48) Concurrent Mark Cycle 174.102ms
+[2026-10-01T09:57:32.551+0800][31.402s][info][gc       ] GC(49) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 558M->256M(614M) 6.356ms
+[2026-10-01T09:57:32.551+0800][31.403s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 593275800 ns, Reaching safepoint: 12300 ns, Cleanup: 14400 ns, At safepoint: 6437200 ns, Total: 6463900 ns
+[2026-10-01T09:57:33.353+0800][32.204s][info][gc       ] GC(50) Pause Young (Mixed) (G1 Evacuation Pause) 558M->254M(614M) 7.086ms
+[2026-10-01T09:57:33.353+0800][32.204s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 794279700 ns, Reaching safepoint: 13500 ns, Cleanup: 34300 ns, At safepoint: 7191500 ns, Total: 7239300 ns
+[2026-10-01T09:57:34.012+0800][32.864s][info][gc       ] GC(51) Pause Young (Concurrent Start) (G1 Evacuation Pause) 562M->255M(614M) 5.995ms
+[2026-10-01T09:57:34.013+0800][32.865s][info][gc       ] GC(52) Concurrent Mark Cycle
+[2026-10-01T09:57:34.013+0800][32.865s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 654341800 ns, Reaching safepoint: 9100 ns, Cleanup: 7000 ns, At safepoint: 6262400 ns, Total: 6278500 ns
+[2026-10-01T09:57:34.137+0800][32.989s][info][gc       ] GC(52) Pause Remark 306M->306M(614M) 4.106ms
+[2026-10-01T09:57:34.137+0800][32.989s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 120020100 ns, Reaching safepoint: 16400 ns, Cleanup: 8600 ns, At safepoint: 4178800 ns, Total: 4203800 ns
+[2026-10-01T09:57:34.175+0800][33.026s][info][gc       ] GC(52) Pause Cleanup 324M->324M(614M) 0.104ms
+[2026-10-01T09:57:34.175+0800][33.026s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 37355600 ns, Reaching safepoint: 15400 ns, Cleanup: 2800 ns, At safepoint: 164700 ns, Total: 182900 ns
+[2026-10-01T09:57:34.175+0800][33.027s][info][gc       ] GC(52) Concurrent Mark Cycle 162.430ms
+[2026-10-01T09:57:34.668+0800][33.519s][info][gc       ] GC(53) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 561M->254M(614M) 5.339ms
+[2026-10-01T09:57:34.668+0800][33.519s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 487568200 ns, Reaching safepoint: 9600 ns, Cleanup: 26200 ns, At safepoint: 5409700 ns, Total: 5445500 ns
+[2026-10-01T09:57:35.313+0800][34.165s][info][gc       ] GC(54) Pause Young (Mixed) (G1 Evacuation Pause) 572M->255M(614M) 3.759ms
+[2026-10-01T09:57:35.313+0800][34.165s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 641750900 ns, Reaching safepoint: 34500 ns, Cleanup: 49200 ns, At safepoint: 3824200 ns, Total: 3907900 ns
+[2026-10-01T09:57:35.947+0800][34.799s][info][gc       ] GC(55) Pause Young (Concurrent Start) (G1 Evacuation Pause) 579M->255M(614M) 1.220ms
+[2026-10-01T09:57:35.947+0800][34.799s][info][gc       ] GC(56) Concurrent Mark Cycle
+[2026-10-01T09:57:35.947+0800][34.799s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 632235400 ns, Reaching safepoint: 7100 ns, Cleanup: 9100 ns, At safepoint: 1305300 ns, Total: 1321500 ns
+[2026-10-01T09:57:36.082+0800][34.934s][info][gc       ] GC(56) Pause Remark 305M->305M(614M) 4.983ms
+[2026-10-01T09:57:36.082+0800][34.934s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 130092900 ns, Reaching safepoint: 7000 ns, Cleanup: 3600 ns, At safepoint: 5059200 ns, Total: 5069800 ns
+[2026-10-01T09:57:36.127+0800][34.979s][info][gc       ] GC(56) Pause Cleanup 321M->321M(614M) 0.127ms
+[2026-10-01T09:57:36.127+0800][34.979s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 44522400 ns, Reaching safepoint: 16600 ns, Cleanup: 5300 ns, At safepoint: 189200 ns, Total: 211100 ns
+[2026-10-01T09:57:36.127+0800][34.979s][info][gc       ] GC(56) Concurrent Mark Cycle 180.442ms
+[2026-10-01T09:57:36.908+0800][35.759s][info][gc       ] GC(57) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 577M->255M(614M) 2.056ms
+[2026-10-01T09:57:36.908+0800][35.760s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 778777400 ns, Reaching safepoint: 16100 ns, Cleanup: 20700 ns, At safepoint: 2147500 ns, Total: 2184300 ns
+[2026-10-01T09:57:37.744+0800][36.597s][info][gc       ] GC(58) Pause Young (Mixed) (G1 Evacuation Pause) 577M->252M(614M) 2.185ms
+[2026-10-01T09:57:37.744+0800][36.597s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 834965400 ns, Reaching safepoint: 5700 ns, Cleanup: 13600 ns, At safepoint: 2241500 ns, Total: 2260800 ns
+[2026-10-01T09:57:38.587+0800][37.439s][info][gc       ] GC(59) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->252M(614M) 2.258ms
+[2026-10-01T09:57:38.587+0800][37.439s][info][gc       ] GC(60) Concurrent Mark Cycle
+[2026-10-01T09:57:38.587+0800][37.439s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 840220000 ns, Reaching safepoint: 10900 ns, Cleanup: 13200 ns, At safepoint: 2354600 ns, Total: 2378700 ns
+[2026-10-01T09:57:38.736+0800][37.588s][info][gc       ] GC(60) Pause Remark 302M->302M(614M) 5.775ms
+[2026-10-01T09:57:38.736+0800][37.588s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 142763800 ns, Reaching safepoint: 21300 ns, Cleanup: 7100 ns, At safepoint: 5863100 ns, Total: 5891500 ns
+[2026-10-01T09:57:38.780+0800][37.632s][info][gc       ] GC(60) Pause Cleanup 317M->317M(614M) 0.120ms
+[2026-10-01T09:57:38.780+0800][37.632s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 43674600 ns, Reaching safepoint: 17000 ns, Cleanup: 6100 ns, At safepoint: 196700 ns, Total: 219800 ns
+[2026-10-01T09:57:38.781+0800][37.633s][info][gc       ] GC(60) Concurrent Mark Cycle 193.445ms
+[2026-10-01T09:57:39.434+0800][38.286s][info][gc       ] GC(61) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 576M->252M(614M) 1.383ms
+[2026-10-01T09:57:39.434+0800][38.286s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 652533500 ns, Reaching safepoint: 9200 ns, Cleanup: 11300 ns, At safepoint: 1483500 ns, Total: 1504000 ns
+[2026-10-01T09:57:40.332+0800][39.183s][info][gc       ] GC(62) Pause Young (Mixed) (G1 Evacuation Pause) 576M->250M(614M) 3.267ms
+[2026-10-01T09:57:40.332+0800][39.183s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 893924900 ns, Reaching safepoint: 10700 ns, Cleanup: 5800 ns, At safepoint: 3394100 ns, Total: 3410600 ns
+[2026-10-01T09:57:41.234+0800][40.085s][info][gc       ] GC(63) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->250M(614M) 1.952ms
+[2026-10-01T09:57:41.234+0800][40.086s][info][gc       ] GC(64) Concurrent Mark Cycle
+[2026-10-01T09:57:41.234+0800][40.086s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 900200900 ns, Reaching safepoint: 9800 ns, Cleanup: 12600 ns, At safepoint: 2024100 ns, Total: 2046500 ns
+[2026-10-01T09:57:41.360+0800][40.211s][info][gc       ] GC(64) Pause Remark 300M->300M(614M) 4.627ms
+[2026-10-01T09:57:41.360+0800][40.212s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 121303200 ns, Reaching safepoint: 17200 ns, Cleanup: 4300 ns, At safepoint: 4699700 ns, Total: 4721200 ns
+[2026-10-01T09:57:41.404+0800][40.255s][info][gc       ] GC(64) Pause Cleanup 316M->316M(614M) 0.123ms
+[2026-10-01T09:57:41.404+0800][40.255s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 43499500 ns, Reaching safepoint: 18800 ns, Cleanup: 3400 ns, At safepoint: 180700 ns, Total: 202900 ns
+[2026-10-01T09:57:41.405+0800][40.256s][info][gc       ] GC(64) Concurrent Mark Cycle 170.557ms
+[2026-10-01T09:57:42.070+0800][40.921s][info][gc       ] GC(65) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 576M->250M(614M) 1.144ms
+[2026-10-01T09:57:42.070+0800][40.921s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 664954800 ns, Reaching safepoint: 7700 ns, Cleanup: 6400 ns, At safepoint: 1217800 ns, Total: 1231900 ns
+[2026-10-01T09:57:42.924+0800][41.776s][info][gc       ] GC(66) Pause Young (Mixed) (G1 Evacuation Pause) 576M->249M(614M) 2.712ms
+[2026-10-01T09:57:42.924+0800][41.776s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 851802500 ns, Reaching safepoint: 16100 ns, Cleanup: 21900 ns, At safepoint: 2802100 ns, Total: 2840100 ns
+[2026-10-01T09:57:43.757+0800][42.609s][info][gc       ] GC(67) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->250M(614M) 1.177ms
+[2026-10-01T09:57:43.757+0800][42.609s][info][gc       ] GC(68) Concurrent Mark Cycle
+[2026-10-01T09:57:43.757+0800][42.609s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 831776000 ns, Reaching safepoint: 7300 ns, Cleanup: 10700 ns, At safepoint: 1226900 ns, Total: 1244900 ns
+[2026-10-01T09:57:43.888+0800][42.740s][info][gc       ] GC(68) Pause Remark 301M->301M(614M) 4.135ms
+[2026-10-01T09:57:43.888+0800][42.740s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 126664400 ns, Reaching safepoint: 27800 ns, Cleanup: 5200 ns, At safepoint: 4197100 ns, Total: 4230100 ns
+[2026-10-01T09:57:43.931+0800][42.783s][info][gc       ] GC(68) Pause Cleanup 318M->318M(614M) 0.119ms
+[2026-10-01T09:57:43.931+0800][42.783s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 42510300 ns, Reaching safepoint: 16800 ns, Cleanup: 2900 ns, At safepoint: 179500 ns, Total: 199200 ns
+[2026-10-01T09:57:43.931+0800][42.783s][info][gc       ] GC(68) Concurrent Mark Cycle 174.225ms
+[2026-10-01T09:57:44.611+0800][43.462s][info][gc       ] GC(69) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 578M->250M(614M) 1.050ms
+[2026-10-01T09:57:44.611+0800][43.462s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 678493000 ns, Reaching safepoint: 16400 ns, Cleanup: 14000 ns, At safepoint: 1121900 ns, Total: 1152300 ns
+[2026-10-01T09:57:45.506+0800][44.357s][info][gc       ] GC(70) Pause Young (Mixed) (G1 Evacuation Pause) 578M->249M(614M) 2.317ms
+[2026-10-01T09:57:45.506+0800][44.357s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 892714800 ns, Reaching safepoint: 8200 ns, Cleanup: 13800 ns, At safepoint: 2377300 ns, Total: 2399300 ns
+[2026-10-01T09:57:46.268+0800][45.120s][info][gc       ] GC(71) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->249M(614M) 1.254ms
+[2026-10-01T09:57:46.268+0800][45.120s][info][gc       ] GC(72) Concurrent Mark Cycle
+[2026-10-01T09:57:46.268+0800][45.120s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 761363400 ns, Reaching safepoint: 7400 ns, Cleanup: 4700 ns, At safepoint: 1315300 ns, Total: 1327400 ns
+[2026-10-01T09:57:46.391+0800][45.242s][info][gc       ] GC(72) Pause Remark 299M->299M(614M) 3.698ms
+[2026-10-01T09:57:46.391+0800][45.242s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 118520100 ns, Reaching safepoint: 17100 ns, Cleanup: 3300 ns, At safepoint: 3758000 ns, Total: 3778400 ns
+[2026-10-01T09:57:46.431+0800][45.283s][info][gc       ] GC(72) Pause Cleanup 316M->316M(614M) 0.109ms
+[2026-10-01T09:57:46.431+0800][45.283s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 40607800 ns, Reaching safepoint: 16700 ns, Cleanup: 2700 ns, At safepoint: 154800 ns, Total: 174200 ns
+[2026-10-01T09:57:46.432+0800][45.284s][info][gc       ] GC(72) Concurrent Mark Cycle 163.684ms
+[2026-10-01T09:57:47.171+0800][46.023s][info][gc       ] GC(73) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 577M->249M(614M) 1.119ms
+[2026-10-01T09:57:47.171+0800][46.023s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 738768000 ns, Reaching safepoint: 7600 ns, Cleanup: 9200 ns, At safepoint: 1193000 ns, Total: 1209800 ns
+[2026-10-01T09:57:48.049+0800][46.901s][info][gc       ] GC(74) Pause Young (Mixed) (G1 Evacuation Pause) 577M->247M(614M) 2.440ms
+[2026-10-01T09:57:48.049+0800][46.901s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 875037600 ns, Reaching safepoint: 7900 ns, Cleanup: 11600 ns, At safepoint: 2514800 ns, Total: 2534300 ns
+[2026-10-01T09:57:48.979+0800][47.831s][info][gc       ] GC(75) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->247M(614M) 1.463ms
+[2026-10-01T09:57:48.979+0800][47.831s][info][gc       ] GC(76) Concurrent Mark Cycle
+[2026-10-01T09:57:48.979+0800][47.831s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 928456200 ns, Reaching safepoint: 7400 ns, Cleanup: 4200 ns, At safepoint: 1537500 ns, Total: 1549100 ns
+[2026-10-01T09:57:49.126+0800][47.978s][info][gc       ] GC(76) Pause Remark 289M->289M(614M) 7.539ms
+[2026-10-01T09:57:49.126+0800][47.978s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 139204600 ns, Reaching safepoint: 33100 ns, Cleanup: 5500 ns, At safepoint: 7620400 ns, Total: 7659000 ns
+[2026-10-01T09:57:49.174+0800][48.026s][info][gc       ] GC(76) Pause Cleanup 305M->305M(614M) 0.115ms
+[2026-10-01T09:57:49.174+0800][48.026s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 48095500 ns, Reaching safepoint: 16400 ns, Cleanup: 3300 ns, At safepoint: 183300 ns, Total: 203000 ns
+[2026-10-01T09:57:49.175+0800][48.027s][info][gc       ] GC(76) Concurrent Mark Cycle 195.804ms
+[2026-10-01T09:57:49.916+0800][48.767s][info][gc       ] GC(77) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 577M->248M(614M) 1.310ms
+[2026-10-01T09:57:49.916+0800][48.767s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 739509900 ns, Reaching safepoint: 8900 ns, Cleanup: 5100 ns, At safepoint: 1407500 ns, Total: 1421500 ns
+[2026-10-01T09:57:50.705+0800][49.556s][info][gc       ] GC(78) Pause Young (Mixed) (G1 Evacuation Pause) 578M->246M(614M) 2.847ms
+[2026-10-01T09:57:50.705+0800][49.556s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 786259500 ns, Reaching safepoint: 5200 ns, Cleanup: 4700 ns, At safepoint: 2938200 ns, Total: 2948100 ns
+[2026-10-01T09:57:51.629+0800][50.480s][info][gc       ] GC(79) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->246M(614M) 2.053ms
+[2026-10-01T09:57:51.629+0800][50.480s][info][gc       ] GC(80) Concurrent Mark Cycle
+[2026-10-01T09:57:51.629+0800][50.480s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 922083700 ns, Reaching safepoint: 11000 ns, Cleanup: 6000 ns, At safepoint: 2184700 ns, Total: 2201700 ns
+[2026-10-01T09:57:51.767+0800][50.618s][info][gc       ] GC(80) Pause Remark 298M->298M(614M) 4.274ms
+[2026-10-01T09:57:51.767+0800][50.618s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 133576500 ns, Reaching safepoint: 12900 ns, Cleanup: 7100 ns, At safepoint: 4383500 ns, Total: 4403500 ns
+[2026-10-01T09:57:51.808+0800][50.660s][info][gc       ] GC(80) Pause Cleanup 313M->313M(614M) 0.137ms
+[2026-10-01T09:57:51.808+0800][50.660s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 41558400 ns, Reaching safepoint: 18100 ns, Cleanup: 5100 ns, At safepoint: 234400 ns, Total: 257600 ns
+[2026-10-01T09:57:51.809+0800][50.661s][info][gc       ] GC(80) Concurrent Mark Cycle 180.936ms
+[2026-10-01T09:57:52.556+0800][51.408s][info][gc       ] GC(81) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 576M->246M(614M) 1.149ms
+[2026-10-01T09:57:52.556+0800][51.408s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 746345700 ns, Reaching safepoint: 6200 ns, Cleanup: 4700 ns, At safepoint: 1223900 ns, Total: 1234800 ns
+[2026-10-01T09:57:53.359+0800][52.210s][info][gc       ] GC(82) Pause Young (Mixed) (G1 Evacuation Pause) 576M->246M(614M) 2.747ms
+[2026-10-01T09:57:53.359+0800][52.210s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 799353200 ns, Reaching safepoint: 8800 ns, Cleanup: 3900 ns, At safepoint: 2849700 ns, Total: 2862400 ns
+[2026-10-01T09:57:54.091+0800][52.942s][info][gc       ] GC(83) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->246M(614M) 1.405ms
+[2026-10-01T09:57:54.091+0800][52.942s][info][gc       ] GC(84) Concurrent Mark Cycle
+[2026-10-01T09:57:54.091+0800][52.942s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 730725800 ns, Reaching safepoint: 6200 ns, Cleanup: 5200 ns, At safepoint: 1465200 ns, Total: 1476600 ns
+[2026-10-01T09:57:54.211+0800][53.063s][info][gc       ] GC(84) Pause Remark 295M->295M(614M) 3.627ms
+[2026-10-01T09:57:54.211+0800][53.063s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 116971800 ns, Reaching safepoint: 16700 ns, Cleanup: 4500 ns, At safepoint: 3721500 ns, Total: 3742700 ns
+[2026-10-01T09:57:54.250+0800][53.102s][info][gc       ] GC(84) Pause Cleanup 310M->310M(614M) 0.097ms
+[2026-10-01T09:57:54.250+0800][53.102s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 38882000 ns, Reaching safepoint: 16300 ns, Cleanup: 3300 ns, At safepoint: 163100 ns, Total: 182700 ns
+[2026-10-01T09:57:54.251+0800][53.103s][info][gc       ] GC(84) Concurrent Mark Cycle 160.490ms
+[2026-10-01T09:57:54.830+0800][53.682s][info][gc       ] GC(85) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 576M->246M(614M) 1.342ms
+[2026-10-01T09:57:54.830+0800][53.682s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 578418300 ns, Reaching safepoint: 8700 ns, Cleanup: 5900 ns, At safepoint: 1411700 ns, Total: 1426300 ns
+[2026-10-01T09:57:55.581+0800][54.432s][info][gc       ] GC(86) Pause Young (Mixed) (G1 Evacuation Pause) 576M->245M(614M) 2.371ms
+[2026-10-01T09:57:55.581+0800][54.433s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 748283200 ns, Reaching safepoint: 5700 ns, Cleanup: 3400 ns, At safepoint: 2463800 ns, Total: 2472900 ns
+[2026-10-01T09:57:56.342+0800][55.193s][info][gc       ] GC(87) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->245M(614M) 1.330ms
+[2026-10-01T09:57:56.342+0800][55.193s][info][gc       ] GC(88) Concurrent Mark Cycle
+[2026-10-01T09:57:56.342+0800][55.193s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 759534200 ns, Reaching safepoint: 8400 ns, Cleanup: 4700 ns, At safepoint: 1393800 ns, Total: 1406900 ns
+[2026-10-01T09:57:56.460+0800][55.312s][info][gc       ] GC(88) Pause Remark 290M->290M(614M) 3.952ms
+[2026-10-01T09:57:56.461+0800][55.312s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 114854500 ns, Reaching safepoint: 16100 ns, Cleanup: 4700 ns, At safepoint: 4030700 ns, Total: 4051500 ns
+[2026-10-01T09:57:56.499+0800][55.351s][info][gc       ] GC(88) Pause Cleanup 305M->305M(614M) 0.110ms
+[2026-10-01T09:57:56.499+0800][55.351s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 38721900 ns, Reaching safepoint: 17200 ns, Cleanup: 3100 ns, At safepoint: 175700 ns, Total: 196000 ns
+[2026-10-01T09:57:56.500+0800][55.352s][info][gc       ] GC(88) Concurrent Mark Cycle 158.446ms
+[2026-10-01T09:57:57.106+0800][55.958s][info][gc       ] GC(89) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 577M->245M(614M) 0.998ms
+[2026-10-01T09:57:57.106+0800][55.958s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 605633400 ns, Reaching safepoint: 6100 ns, Cleanup: 4700 ns, At safepoint: 1063000 ns, Total: 1073800 ns
+[2026-10-01T09:57:57.910+0800][56.761s][info][gc       ] GC(90) Pause Young (Mixed) (G1 Evacuation Pause) 577M->243M(614M) 3.555ms
+[2026-10-01T09:57:57.910+0800][56.762s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 799876700 ns, Reaching safepoint: 6600 ns, Cleanup: 5800 ns, At safepoint: 3617000 ns, Total: 3629400 ns
+[2026-10-01T09:57:58.689+0800][57.542s][info][gc       ] GC(91) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->243M(614M) 1.405ms
+[2026-10-01T09:57:58.689+0800][57.542s][info][gc       ] GC(92) Concurrent Mark Cycle
+[2026-10-01T09:57:58.689+0800][57.542s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 778655300 ns, Reaching safepoint: 7900 ns, Cleanup: 5800 ns, At safepoint: 1469300 ns, Total: 1483000 ns
+[2026-10-01T09:57:58.813+0800][57.665s][info][gc       ] GC(92) Pause Remark 289M->289M(614M) 3.900ms
+[2026-10-01T09:57:58.814+0800][57.665s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 119134900 ns, Reaching safepoint: 21400 ns, Cleanup: 7100 ns, At safepoint: 3985200 ns, Total: 4013700 ns
+[2026-10-01T09:57:58.852+0800][57.704s][info][gc       ] GC(92) Pause Cleanup 306M->306M(614M) 0.109ms
+[2026-10-01T09:57:58.852+0800][57.704s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 38678000 ns, Reaching safepoint: 17700 ns, Cleanup: 3500 ns, At safepoint: 170600 ns, Total: 191800 ns
+[2026-10-01T09:57:58.853+0800][57.704s][info][gc       ] GC(92) Concurrent Mark Cycle 162.814ms
+[2026-10-01T09:57:59.504+0800][58.356s][info][gc       ] GC(93) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 577M->243M(614M) 1.239ms
+[2026-10-01T09:57:59.504+0800][58.356s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 651010300 ns, Reaching safepoint: 11000 ns, Cleanup: 6900 ns, At safepoint: 1310900 ns, Total: 1328800 ns
+[2026-10-01T09:58:00.383+0800][59.235s][info][gc       ] GC(94) Pause Young (Mixed) (G1 Evacuation Pause) 577M->242M(614M) 2.171ms
+[2026-10-01T09:58:00.383+0800][59.235s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 876376100 ns, Reaching safepoint: 5500 ns, Cleanup: 16400 ns, At safepoint: 2244900 ns, Total: 2266800 ns
+[2026-10-01T09:58:01.221+0800][60.072s][info][gc       ] GC(95) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->243M(614M) 1.236ms
+[2026-10-01T09:58:01.221+0800][60.072s][info][gc       ] GC(96) Concurrent Mark Cycle
+[2026-10-01T09:58:01.221+0800][60.072s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 836357600 ns, Reaching safepoint: 5900 ns, Cleanup: 13900 ns, At safepoint: 1309200 ns, Total: 1329000 ns
+[2026-10-01T09:58:01.334+0800][60.186s][info][gc       ] GC(96) Pause Remark 289M->289M(614M) 3.039ms
+[2026-10-01T09:58:01.334+0800][60.186s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 110552900 ns, Reaching safepoint: 27800 ns, Cleanup: 8800 ns, At safepoint: 3106200 ns, Total: 3142800 ns
+[2026-10-01T09:58:01.372+0800][60.223s][info][gc       ] GC(96) Pause Cleanup 303M->303M(614M) 0.101ms
+[2026-10-01T09:58:01.372+0800][60.223s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 36866100 ns, Reaching safepoint: 14700 ns, Cleanup: 3200 ns, At safepoint: 173300 ns, Total: 191200 ns
+[2026-10-01T09:58:01.373+0800][60.224s][info][gc       ] GC(96) Concurrent Mark Cycle 151.408ms
+[2026-10-01T09:58:02.041+0800][60.893s][info][gc       ] GC(97) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 577M->243M(614M) 1.131ms
+[2026-10-01T09:58:02.041+0800][60.893s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 668317300 ns, Reaching safepoint: 7100 ns, Cleanup: 5200 ns, At safepoint: 1201700 ns, Total: 1214000 ns
+[2026-10-01T09:58:02.929+0800][61.780s][info][gc       ] GC(98) Pause Young (Mixed) (G1 Evacuation Pause) 577M->242M(614M) 2.869ms
+[2026-10-01T09:58:02.929+0800][61.780s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 884497400 ns, Reaching safepoint: 6100 ns, Cleanup: 8900 ns, At safepoint: 2935800 ns, Total: 2950800 ns
+[2026-10-01T09:58:03.804+0800][62.656s][info][gc       ] GC(99) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->242M(614M) 1.223ms
+[2026-10-01T09:58:03.804+0800][62.656s][info][gc       ] GC(100) Concurrent Mark Cycle
+[2026-10-01T09:58:03.804+0800][62.656s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 874774500 ns, Reaching safepoint: 6000 ns, Cleanup: 4600 ns, At safepoint: 1286900 ns, Total: 1297500 ns
+[2026-10-01T09:58:03.925+0800][62.778s][info][gc       ] GC(100) Pause Remark 284M->284M(614M) 3.927ms
+[2026-10-01T09:58:03.925+0800][62.778s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 117394300 ns, Reaching safepoint: 37500 ns, Cleanup: 4200 ns, At safepoint: 4008600 ns, Total: 4050300 ns
+[2026-10-01T09:58:03.962+0800][62.814s][info][gc       ] GC(100) Pause Cleanup 297M->297M(614M) 0.086ms
+[2026-10-01T09:58:03.962+0800][62.814s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 36019200 ns, Reaching safepoint: 16600 ns, Cleanup: 2800 ns, At safepoint: 140100 ns, Total: 159500 ns
+[2026-10-01T09:58:03.963+0800][62.814s][info][gc       ] GC(100) Concurrent Mark Cycle 158.257ms
+[2026-10-01T09:58:04.729+0800][63.581s][info][gc       ] GC(101) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 576M->242M(614M) 1.061ms
+[2026-10-01T09:58:04.729+0800][63.581s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 766301700 ns, Reaching safepoint: 7400 ns, Cleanup: 5200 ns, At safepoint: 1128200 ns, Total: 1140800 ns
+[2026-10-01T09:58:05.588+0800][64.439s][info][gc       ] GC(102) Pause Young (Mixed) (G1 Evacuation Pause) 576M->242M(614M) 1.531ms
+[2026-10-01T09:58:05.588+0800][64.439s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 856397100 ns, Reaching safepoint: 9800 ns, Cleanup: 7800 ns, At safepoint: 1594200 ns, Total: 1611800 ns
+[2026-10-01T09:58:06.425+0800][65.276s][info][gc       ] GC(103) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->242M(614M) 1.240ms
+[2026-10-01T09:58:06.425+0800][65.276s][info][gc       ] GC(104) Concurrent Mark Cycle
+[2026-10-01T09:58:06.425+0800][65.276s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 835867600 ns, Reaching safepoint: 5100 ns, Cleanup: 10600 ns, At safepoint: 1304700 ns, Total: 1320400 ns
+[2026-10-01T09:58:06.543+0800][65.395s][info][gc       ] GC(104) Pause Remark 285M->285M(614M) 3.137ms
+[2026-10-01T09:58:06.543+0800][65.395s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 115706100 ns, Reaching safepoint: 15300 ns, Cleanup: 4000 ns, At safepoint: 3210800 ns, Total: 3230100 ns
+[2026-10-01T09:58:06.582+0800][65.434s][info][gc       ] GC(104) Pause Cleanup 300M->300M(614M) 0.095ms
+[2026-10-01T09:58:06.582+0800][65.434s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 38035200 ns, Reaching safepoint: 15800 ns, Cleanup: 3800 ns, At safepoint: 165200 ns, Total: 184800 ns
+[2026-10-01T09:58:06.582+0800][65.434s][info][gc       ] GC(104) Concurrent Mark Cycle 157.921ms
+[2026-10-01T09:58:07.267+0800][66.119s][info][gc       ] GC(105) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 576M->242M(614M) 1.098ms
+[2026-10-01T09:58:07.267+0800][66.119s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 684313300 ns, Reaching safepoint: 8600 ns, Cleanup: 7100 ns, At safepoint: 1159600 ns, Total: 1175300 ns
+[2026-10-01T09:58:08.126+0800][66.978s][info][gc       ] GC(106) Pause Young (Mixed) (G1 Evacuation Pause) 576M->242M(614M) 1.523ms
+[2026-10-01T09:58:08.126+0800][66.978s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 857061200 ns, Reaching safepoint: 7800 ns, Cleanup: 10800 ns, At safepoint: 1587400 ns, Total: 1606000 ns
+[2026-10-01T09:58:09.005+0800][67.857s][info][gc       ] GC(107) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->242M(614M) 1.266ms
+[2026-10-01T09:58:09.005+0800][67.857s][info][gc       ] GC(108) Concurrent Mark Cycle
+[2026-10-01T09:58:09.005+0800][67.857s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 877747900 ns, Reaching safepoint: 5900 ns, Cleanup: 4400 ns, At safepoint: 1329100 ns, Total: 1339400 ns
+[2026-10-01T09:58:09.125+0800][67.977s][info][gc       ] GC(108) Pause Remark 283M->283M(614M) 3.211ms
+[2026-10-01T09:58:09.125+0800][67.977s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 116588800 ns, Reaching safepoint: 17200 ns, Cleanup: 4700 ns, At safepoint: 3270600 ns, Total: 3292500 ns
+[2026-10-01T09:58:09.160+0800][68.012s][info][gc       ] GC(108) Pause Cleanup 295M->295M(614M) 0.107ms
+[2026-10-01T09:58:09.160+0800][68.012s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 35101300 ns, Reaching safepoint: 17500 ns, Cleanup: 4000 ns, At safepoint: 173100 ns, Total: 194600 ns
+[2026-10-01T09:58:09.161+0800][68.013s][info][gc       ] GC(108) Concurrent Mark Cycle 155.966ms
+[2026-10-01T09:58:09.941+0800][68.793s][info][gc       ] GC(109) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 576M->242M(614M) 1.285ms
+[2026-10-01T09:58:09.941+0800][68.793s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 779582300 ns, Reaching safepoint: 10600 ns, Cleanup: 6900 ns, At safepoint: 1367200 ns, Total: 1384700 ns
+[2026-10-01T09:58:10.841+0800][69.693s][info][gc       ] GC(110) Pause Young (Mixed) (G1 Evacuation Pause) 576M->241M(614M) 1.458ms
+[2026-10-01T09:58:10.841+0800][69.693s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 898393900 ns, Reaching safepoint: 5800 ns, Cleanup: 4200 ns, At safepoint: 1522000 ns, Total: 1532000 ns
+[2026-10-01T09:58:11.781+0800][70.634s][info][gc       ] GC(111) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->242M(614M) 1.302ms
+[2026-10-01T09:58:11.781+0800][70.634s][info][gc       ] GC(112) Concurrent Mark Cycle
+[2026-10-01T09:58:11.781+0800][70.634s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 939325300 ns, Reaching safepoint: 9800 ns, Cleanup: 6400 ns, At safepoint: 1370800 ns, Total: 1387000 ns
+[2026-10-01T09:58:11.901+0800][70.753s][info][gc       ] GC(112) Pause Remark 287M->287M(614M) 4.371ms
+[2026-10-01T09:58:11.901+0800][70.753s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 114911000 ns, Reaching safepoint: 26800 ns, Cleanup: 5100 ns, At safepoint: 4445000 ns, Total: 4476900 ns
+[2026-10-01T09:58:11.935+0800][70.786s][info][gc       ] GC(112) Pause Cleanup 301M->301M(614M) 0.107ms
+[2026-10-01T09:58:11.935+0800][70.786s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 32911700 ns, Reaching safepoint: 16300 ns, Cleanup: 4200 ns, At safepoint: 189000 ns, Total: 209500 ns
+[2026-10-01T09:58:11.936+0800][70.787s][info][gc       ] GC(112) Concurrent Mark Cycle 153.355ms
+[2026-10-01T09:58:12.627+0800][71.479s][info][gc       ] GC(113) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 578M->242M(614M) 1.127ms
+[2026-10-01T09:58:12.627+0800][71.479s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 691389200 ns, Reaching safepoint: 8800 ns, Cleanup: 6200 ns, At safepoint: 1187100 ns, Total: 1202100 ns
+[2026-10-01T09:58:13.517+0800][72.368s][info][gc       ] GC(114) Pause Young (Mixed) (G1 Evacuation Pause) 578M->241M(614M) 2.019ms
+[2026-10-01T09:58:13.517+0800][72.369s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 887723500 ns, Reaching safepoint: 6100 ns, Cleanup: 4100 ns, At safepoint: 2092700 ns, Total: 2102900 ns
+[2026-10-01T09:58:14.431+0800][73.282s][info][gc       ] GC(115) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->241M(614M) 1.185ms
+[2026-10-01T09:58:14.431+0800][73.282s][info][gc       ] GC(116) Concurrent Mark Cycle
+[2026-10-01T09:58:14.431+0800][73.282s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 912093100 ns, Reaching safepoint: 16300 ns, Cleanup: 3200 ns, At safepoint: 1259600 ns, Total: 1279100 ns
+[2026-10-01T09:58:14.539+0800][73.391s][info][gc       ] GC(116) Pause Remark 282M->282M(614M) 3.237ms
+[2026-10-01T09:58:14.539+0800][73.391s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 105803700 ns, Reaching safepoint: 16600 ns, Cleanup: 4800 ns, At safepoint: 3305800 ns, Total: 3327200 ns
+[2026-10-01T09:58:14.576+0800][73.427s][info][gc       ] GC(116) Pause Cleanup 295M->295M(614M) 0.099ms
+[2026-10-01T09:58:14.576+0800][73.428s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 36285500 ns, Reaching safepoint: 17000 ns, Cleanup: 3500 ns, At safepoint: 165700 ns, Total: 186200 ns
+[2026-10-01T09:58:14.577+0800][73.428s][info][gc       ] GC(116) Concurrent Mark Cycle 146.291ms
+[2026-10-01T09:58:15.306+0800][74.157s][info][gc       ] GC(117) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 577M->241M(614M) 1.086ms
+[2026-10-01T09:58:15.306+0800][74.157s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 728559600 ns, Reaching safepoint: 6600 ns, Cleanup: 4200 ns, At safepoint: 1151700 ns, Total: 1162500 ns
+[2026-10-01T09:58:16.206+0800][75.057s][info][gc       ] GC(118) Pause Young (Mixed) (G1 Evacuation Pause) 577M->241M(614M) 1.928ms
+[2026-10-01T09:58:16.206+0800][75.058s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 898253800 ns, Reaching safepoint: 10300 ns, Cleanup: 9000 ns, At safepoint: 2013000 ns, Total: 2032300 ns
+[2026-10-01T09:58:17.108+0800][75.959s][info][gc       ] GC(119) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->241M(614M) 1.566ms
+[2026-10-01T09:58:17.108+0800][75.960s][info][gc       ] GC(120) Concurrent Mark Cycle
+[2026-10-01T09:58:17.108+0800][75.960s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 900347100 ns, Reaching safepoint: 5900 ns, Cleanup: 4800 ns, At safepoint: 1632400 ns, Total: 1643100 ns
+[2026-10-01T09:58:17.223+0800][76.075s][info][gc       ] GC(120) Pause Remark 282M->282M(614M) 3.009ms
+[2026-10-01T09:58:17.223+0800][76.075s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 112472100 ns, Reaching safepoint: 6900 ns, Cleanup: 4200 ns, At safepoint: 3065400 ns, Total: 3076500 ns
+[2026-10-01T09:58:17.258+0800][76.111s][info][gc       ] GC(120) Pause Cleanup 295M->295M(614M) 0.087ms
+[2026-10-01T09:58:17.258+0800][76.111s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 35754500 ns, Reaching safepoint: 16400 ns, Cleanup: 3800 ns, At safepoint: 149800 ns, Total: 170000 ns
+[2026-10-01T09:58:17.260+0800][76.112s][info][gc       ] GC(120) Concurrent Mark Cycle 152.468ms
+[2026-10-01T09:58:18.001+0800][76.854s][info][gc       ] GC(121) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 577M->241M(614M) 1.038ms
+[2026-10-01T09:58:18.003+0800][76.854s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 741811200 ns, Reaching safepoint: 5800 ns, Cleanup: 10000 ns, At safepoint: 1107400 ns, Total: 1123200 ns
+[2026-10-01T09:58:18.888+0800][77.740s][info][gc       ] GC(122) Pause Young (Mixed) (G1 Evacuation Pause) 577M->240M(614M) 2.043ms
+[2026-10-01T09:58:18.888+0800][77.740s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 883903400 ns, Reaching safepoint: 7800 ns, Cleanup: 6200 ns, At safepoint: 2102900 ns, Total: 2116900 ns
+[2026-10-01T09:58:19.728+0800][78.579s][info][gc       ] GC(123) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.486ms
+[2026-10-01T09:58:19.728+0800][78.579s][info][gc       ] GC(124) Concurrent Mark Cycle
+[2026-10-01T09:58:19.728+0800][78.579s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 837584300 ns, Reaching safepoint: 8700 ns, Cleanup: 7300 ns, At safepoint: 1548000 ns, Total: 1564000 ns
+[2026-10-01T09:58:19.856+0800][78.708s][info][gc       ] GC(124) Pause Remark 282M->282M(614M) 4.513ms
+[2026-10-01T09:58:19.857+0800][78.708s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 124499400 ns, Reaching safepoint: 24400 ns, Cleanup: 9100 ns, At safepoint: 4586000 ns, Total: 4619500 ns
+[2026-10-01T09:58:19.895+0800][78.746s][info][gc       ] GC(124) Pause Cleanup 294M->294M(614M) 0.115ms
+[2026-10-01T09:58:19.895+0800][78.746s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 37566900 ns, Reaching safepoint: 16600 ns, Cleanup: 4200 ns, At safepoint: 184200 ns, Total: 205000 ns
+[2026-10-01T09:58:19.895+0800][78.747s][info][gc       ] GC(124) Concurrent Mark Cycle 167.562ms
+[2026-10-01T09:58:20.697+0800][79.548s][info][gc       ] GC(125) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 576M->240M(614M) 1.142ms
+[2026-10-01T09:58:20.697+0800][79.548s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 801189100 ns, Reaching safepoint: 7900 ns, Cleanup: 6300 ns, At safepoint: 1237300 ns, Total: 1251500 ns
+[2026-10-01T09:58:21.648+0800][80.500s][info][gc       ] GC(126) Pause Young (Mixed) (G1 Evacuation Pause) 576M->240M(614M) 2.633ms
+[2026-10-01T09:58:21.648+0800][80.500s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 948980000 ns, Reaching safepoint: 5300 ns, Cleanup: 11300 ns, At safepoint: 2723000 ns, Total: 2739600 ns
+[2026-10-01T09:58:22.550+0800][81.401s][info][gc       ] GC(127) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.198ms
+[2026-10-01T09:58:22.550+0800][81.401s][info][gc       ] GC(128) Concurrent Mark Cycle
+[2026-10-01T09:58:22.550+0800][81.401s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 899999200 ns, Reaching safepoint: 6400 ns, Cleanup: 5400 ns, At safepoint: 1268900 ns, Total: 1280700 ns
+[2026-10-01T09:58:22.674+0800][81.526s][info][gc       ] GC(128) Pause Remark 281M->281M(614M) 3.890ms
+[2026-10-01T09:58:22.674+0800][81.526s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 120212800 ns, Reaching safepoint: 22700 ns, Cleanup: 11200 ns, At safepoint: 3962400 ns, Total: 3996300 ns
+[2026-10-01T09:58:22.708+0800][81.560s][info][gc       ] GC(128) Pause Cleanup 292M->292M(614M) 0.092ms
+[2026-10-01T09:58:22.708+0800][81.560s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 34274300 ns, Reaching safepoint: 16700 ns, Cleanup: 3100 ns, At safepoint: 158500 ns, Total: 178300 ns
+[2026-10-01T09:58:22.709+0800][81.561s][info][gc       ] GC(128) Concurrent Mark Cycle 159.365ms
+[2026-10-01T09:58:23.484+0800][82.336s][info][gc       ] GC(129) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 576M->240M(614M) 1.087ms
+[2026-10-01T09:58:23.484+0800][82.336s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 775003700 ns, Reaching safepoint: 12700 ns, Cleanup: 12700 ns, At safepoint: 1167000 ns, Total: 1192400 ns
+[2026-10-01T09:58:24.341+0800][83.192s][info][gc       ] GC(130) Pause Young (Mixed) (G1 Evacuation Pause) 576M->240M(614M) 3.186ms
+[2026-10-01T09:58:24.341+0800][83.192s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 852596300 ns, Reaching safepoint: 9800 ns, Cleanup: 19400 ns, At safepoint: 3280300 ns, Total: 3309500 ns
+[2026-10-01T09:58:25.204+0800][84.056s][info][gc       ] GC(131) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.518ms
+[2026-10-01T09:58:25.204+0800][84.056s][info][gc       ] GC(132) Concurrent Mark Cycle
+[2026-10-01T09:58:25.204+0800][84.056s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 862273100 ns, Reaching safepoint: 6200 ns, Cleanup: 4700 ns, At safepoint: 1617200 ns, Total: 1628100 ns
+[2026-10-01T09:58:25.328+0800][84.180s][info][gc       ] GC(132) Pause Remark 282M->282M(614M) 3.546ms
+[2026-10-01T09:58:25.328+0800][84.180s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 120443500 ns, Reaching safepoint: 18600 ns, Cleanup: 6700 ns, At safepoint: 3618300 ns, Total: 3643600 ns
+[2026-10-01T09:58:25.363+0800][84.214s][info][gc       ] GC(132) Pause Cleanup 293M->293M(614M) 0.109ms
+[2026-10-01T09:58:25.363+0800][84.214s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 33766100 ns, Reaching safepoint: 28000 ns, Cleanup: 5300 ns, At safepoint: 182300 ns, Total: 215600 ns
+[2026-10-01T09:58:25.363+0800][84.215s][info][gc       ] GC(132) Concurrent Mark Cycle 158.911ms
+[2026-10-01T09:58:26.103+0800][84.955s][info][gc       ] GC(133) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 576M->240M(614M) 0.994ms
+[2026-10-01T09:58:26.103+0800][84.955s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 740068000 ns, Reaching safepoint: 9700 ns, Cleanup: 6200 ns, At safepoint: 1071400 ns, Total: 1087300 ns
+[2026-10-01T09:58:27.007+0800][85.858s][info][gc       ] GC(134) Pause Young (Mixed) (G1 Evacuation Pause) 576M->240M(614M) 3.718ms
+[2026-10-01T09:58:27.007+0800][85.859s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 899422100 ns, Reaching safepoint: 10500 ns, Cleanup: 8700 ns, At safepoint: 3801400 ns, Total: 3820600 ns
+[2026-10-01T09:58:27.911+0800][86.762s][info][gc       ] GC(135) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.257ms
+[2026-10-01T09:58:27.911+0800][86.762s][info][gc       ] GC(136) Concurrent Mark Cycle
+[2026-10-01T09:58:27.911+0800][86.762s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 902335400 ns, Reaching safepoint: 15900 ns, Cleanup: 4400 ns, At safepoint: 1330900 ns, Total: 1351200 ns
+[2026-10-01T09:58:28.036+0800][86.887s][info][gc       ] GC(136) Pause Remark 281M->281M(614M) 4.489ms
+[2026-10-01T09:58:28.036+0800][86.887s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 120347400 ns, Reaching safepoint: 23600 ns, Cleanup: 7800 ns, At safepoint: 4557300 ns, Total: 4588700 ns
+[2026-10-01T09:58:28.067+0800][86.919s][info][gc       ] GC(136) Pause Cleanup 292M->292M(614M) 0.094ms
+[2026-10-01T09:58:28.067+0800][86.919s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31977100 ns, Reaching safepoint: 17200 ns, Cleanup: 5400 ns, At safepoint: 160800 ns, Total: 183400 ns
+[2026-10-01T09:58:28.068+0800][86.920s][info][gc       ] GC(136) Concurrent Mark Cycle 157.866ms
+[2026-10-01T09:58:28.788+0800][87.640s][info][gc       ] GC(137) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 1.216ms
+[2026-10-01T09:58:28.788+0800][87.640s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 719194200 ns, Reaching safepoint: 5600 ns, Cleanup: 5400 ns, At safepoint: 1302900 ns, Total: 1313900 ns
+[2026-10-01T09:58:29.690+0800][88.542s][info][gc       ] GC(138) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.876ms
+[2026-10-01T09:58:29.690+0800][88.542s][info][gc       ] GC(139) Concurrent Mark Cycle
+[2026-10-01T09:58:29.690+0800][88.542s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 900471000 ns, Reaching safepoint: 13000 ns, Cleanup: 8500 ns, At safepoint: 1964500 ns, Total: 1986000 ns
+[2026-10-01T09:58:29.818+0800][88.670s][info][gc       ] GC(139) Pause Remark 283M->283M(614M) 4.926ms
+[2026-10-01T09:58:29.818+0800][88.670s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 122733400 ns, Reaching safepoint: 40000 ns, Cleanup: 8800 ns, At safepoint: 5021900 ns, Total: 5070700 ns
+[2026-10-01T09:58:29.851+0800][88.703s][info][gc       ] GC(139) Pause Cleanup 293M->293M(614M) 0.141ms
+[2026-10-01T09:58:29.851+0800][88.703s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 32683300 ns, Reaching safepoint: 24500 ns, Cleanup: 7900 ns, At safepoint: 245400 ns, Total: 277800 ns
+[2026-10-01T09:58:29.853+0800][88.704s][info][gc       ] GC(139) Concurrent Mark Cycle 162.009ms
+[2026-10-01T09:58:30.626+0800][89.478s][info][gc       ] GC(140) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 0.893ms
+[2026-10-01T09:58:30.626+0800][89.478s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 774273900 ns, Reaching safepoint: 6500 ns, Cleanup: 4800 ns, At safepoint: 961000 ns, Total: 972300 ns
+[2026-10-01T09:58:31.533+0800][90.384s][info][gc       ] GC(141) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.392ms
+[2026-10-01T09:58:31.533+0800][90.384s][info][gc       ] GC(142) Concurrent Mark Cycle
+[2026-10-01T09:58:31.533+0800][90.384s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 904336500 ns, Reaching safepoint: 10000 ns, Cleanup: 6100 ns, At safepoint: 1472200 ns, Total: 1488300 ns
+[2026-10-01T09:58:31.661+0800][90.512s][info][gc       ] GC(142) Pause Remark 283M->283M(614M) 3.391ms
+[2026-10-01T09:58:31.661+0800][90.512s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 124842600 ns, Reaching safepoint: 30200 ns, Cleanup: 6100 ns, At safepoint: 3451200 ns, Total: 3487500 ns
+[2026-10-01T09:58:31.691+0800][90.542s][info][gc       ] GC(142) Pause Cleanup 293M->293M(614M) 0.138ms
+[2026-10-01T09:58:31.691+0800][90.542s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 29729500 ns, Reaching safepoint: 22900 ns, Cleanup: 6500 ns, At safepoint: 225400 ns, Total: 254800 ns
+[2026-10-01T09:58:31.692+0800][90.543s][info][gc       ] GC(142) Concurrent Mark Cycle 159.310ms
+[2026-10-01T09:58:32.439+0800][91.291s][info][gc       ] GC(143) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 0.867ms
+[2026-10-01T09:58:32.439+0800][91.291s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 747479400 ns, Reaching safepoint: 5400 ns, Cleanup: 5300 ns, At safepoint: 940400 ns, Total: 951100 ns
+[2026-10-01T09:58:33.308+0800][92.160s][info][gc       ] GC(144) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.406ms
+[2026-10-01T09:58:33.308+0800][92.160s][info][gc       ] GC(145) Concurrent Mark Cycle
+[2026-10-01T09:58:33.308+0800][92.160s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 867574700 ns, Reaching safepoint: 7200 ns, Cleanup: 5600 ns, At safepoint: 1507300 ns, Total: 1520100 ns
+[2026-10-01T09:58:33.429+0800][92.280s][info][gc       ] GC(145) Pause Remark 283M->283M(614M) 4.321ms
+[2026-10-01T09:58:33.429+0800][92.280s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 115544200 ns, Reaching safepoint: 20500 ns, Cleanup: 7000 ns, At safepoint: 4405600 ns, Total: 4433100 ns
+[2026-10-01T09:58:33.459+0800][92.310s][info][gc       ] GC(145) Pause Cleanup 294M->294M(614M) 0.083ms
+[2026-10-01T09:58:33.459+0800][92.310s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 30263100 ns, Reaching safepoint: 16200 ns, Cleanup: 3500 ns, At safepoint: 165400 ns, Total: 185100 ns
+[2026-10-01T09:58:33.459+0800][92.311s][info][gc       ] GC(145) Concurrent Mark Cycle 150.961ms
+[2026-10-01T09:58:34.187+0800][93.038s][info][gc       ] GC(146) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 1.014ms
+[2026-10-01T09:58:34.187+0800][93.038s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 726961700 ns, Reaching safepoint: 9500 ns, Cleanup: 4900 ns, At safepoint: 1080000 ns, Total: 1094400 ns
+[2026-10-01T09:58:35.056+0800][93.908s][info][gc       ] GC(147) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.273ms
+[2026-10-01T09:58:35.056+0800][93.908s][info][gc       ] GC(148) Concurrent Mark Cycle
+[2026-10-01T09:58:35.056+0800][93.908s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 867916500 ns, Reaching safepoint: 7900 ns, Cleanup: 5200 ns, At safepoint: 1354400 ns, Total: 1367500 ns
+[2026-10-01T09:58:35.179+0800][94.031s][info][gc       ] GC(148) Pause Remark 286M->286M(614M) 4.161ms
+[2026-10-01T09:58:35.180+0800][94.031s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 119435600 ns, Reaching safepoint: 17100 ns, Cleanup: 4900 ns, At safepoint: 4227200 ns, Total: 4249200 ns
+[2026-10-01T09:58:35.210+0800][94.062s][info][gc       ] GC(148) Pause Cleanup 296M->296M(614M) 0.106ms
+[2026-10-01T09:58:35.210+0800][94.062s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 30278900 ns, Reaching safepoint: 18100 ns, Cleanup: 5900 ns, At safepoint: 179000 ns, Total: 203000 ns
+[2026-10-01T09:58:35.211+0800][94.063s][info][gc       ] GC(148) Concurrent Mark Cycle 155.055ms
+[2026-10-01T09:58:35.949+0800][94.800s][info][gc       ] GC(149) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 1.407ms
+[2026-10-01T09:58:35.949+0800][94.800s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 736648500 ns, Reaching safepoint: 8800 ns, Cleanup: 6500 ns, At safepoint: 1470700 ns, Total: 1486000 ns
+[2026-10-01T09:58:36.844+0800][95.696s][info][gc       ] GC(150) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.603ms
+[2026-10-01T09:58:36.844+0800][95.696s][info][gc       ] GC(151) Concurrent Mark Cycle
+[2026-10-01T09:58:36.844+0800][95.696s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 894460400 ns, Reaching safepoint: 11400 ns, Cleanup: 11300 ns, At safepoint: 1690200 ns, Total: 1712900 ns
+[2026-10-01T09:58:36.966+0800][95.818s][info][gc       ] GC(151) Pause Remark 281M->281M(614M) 3.876ms
+[2026-10-01T09:58:36.966+0800][95.818s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 117810200 ns, Reaching safepoint: 24700 ns, Cleanup: 8900 ns, At safepoint: 3947100 ns, Total: 3980700 ns
+[2026-10-01T09:58:36.998+0800][95.850s][info][gc       ] GC(151) Pause Cleanup 293M->293M(614M) 0.106ms
+[2026-10-01T09:58:36.998+0800][95.850s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31709400 ns, Reaching safepoint: 18100 ns, Cleanup: 5100 ns, At safepoint: 184500 ns, Total: 207700 ns
+[2026-10-01T09:58:36.999+0800][95.851s][info][gc       ] GC(151) Concurrent Mark Cycle 154.471ms
+[2026-10-01T09:58:37.787+0800][96.638s][info][gc       ] GC(152) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 0.995ms
+[2026-10-01T09:58:37.787+0800][96.638s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 787489300 ns, Reaching safepoint: 9500 ns, Cleanup: 6600 ns, At safepoint: 1061000 ns, Total: 1077100 ns
+[2026-10-01T09:58:38.653+0800][97.505s][info][gc       ] GC(153) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.317ms
+[2026-10-01T09:58:38.653+0800][97.505s][info][gc       ] GC(154) Concurrent Mark Cycle
+[2026-10-01T09:58:38.653+0800][97.505s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 865164000 ns, Reaching safepoint: 8300 ns, Cleanup: 6500 ns, At safepoint: 1409000 ns, Total: 1423800 ns
+[2026-10-01T09:58:38.776+0800][97.628s][info][gc       ] GC(154) Pause Remark 285M->285M(614M) 4.389ms
+[2026-10-01T09:58:38.776+0800][97.628s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 118214000 ns, Reaching safepoint: 18500 ns, Cleanup: 5700 ns, At safepoint: 4452400 ns, Total: 4476600 ns
+[2026-10-01T09:58:38.807+0800][97.659s][info][gc       ] GC(154) Pause Cleanup 296M->296M(614M) 0.105ms
+[2026-10-01T09:58:38.808+0800][97.660s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31511000 ns, Reaching safepoint: 19500 ns, Cleanup: 3700 ns, At safepoint: 206000 ns, Total: 229200 ns
+[2026-10-01T09:58:38.809+0800][97.661s][info][gc       ] GC(154) Concurrent Mark Cycle 155.642ms
+[2026-10-01T09:58:39.501+0800][98.352s][info][gc       ] GC(155) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 0.830ms
+[2026-10-01T09:58:39.501+0800][98.352s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 691494400 ns, Reaching safepoint: 6300 ns, Cleanup: 5000 ns, At safepoint: 889000 ns, Total: 900300 ns
+[2026-10-01T09:58:40.357+0800][99.208s][info][gc       ] GC(156) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.132ms
+[2026-10-01T09:58:40.357+0800][99.208s][info][gc       ] GC(157) Concurrent Mark Cycle
+[2026-10-01T09:58:40.357+0800][99.208s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 855105900 ns, Reaching safepoint: 5700 ns, Cleanup: 10000 ns, At safepoint: 1234000 ns, Total: 1249700 ns
+[2026-10-01T09:58:40.475+0800][99.326s][info][gc       ] GC(157) Pause Remark 280M->280M(614M) 3.071ms
+[2026-10-01T09:58:40.475+0800][99.326s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 114904500 ns, Reaching safepoint: 16100 ns, Cleanup: 4600 ns, At safepoint: 3141100 ns, Total: 3161800 ns
+[2026-10-01T09:58:40.502+0800][99.353s][info][gc       ] GC(157) Pause Cleanup 290M->290M(614M) 0.081ms
+[2026-10-01T09:58:40.502+0800][99.353s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 26635800 ns, Reaching safepoint: 16900 ns, Cleanup: 4100 ns, At safepoint: 142300 ns, Total: 163300 ns
+[2026-10-01T09:58:40.502+0800][99.354s][info][gc       ] GC(157) Concurrent Mark Cycle 145.505ms
+[2026-10-01T09:58:41.248+0800][100.100s][info][gc       ] GC(158) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 0.901ms
+[2026-10-01T09:58:41.248+0800][100.100s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 745665400 ns, Reaching safepoint: 8100 ns, Cleanup: 12400 ns, At safepoint: 978700 ns, Total: 999200 ns
+[2026-10-01T09:58:42.119+0800][100.971s][info][gc       ] GC(159) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.242ms
+[2026-10-01T09:58:42.119+0800][100.971s][info][gc       ] GC(160) Concurrent Mark Cycle
+[2026-10-01T09:58:42.119+0800][100.971s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 869708900 ns, Reaching safepoint: 5900 ns, Cleanup: 5200 ns, At safepoint: 1316700 ns, Total: 1327800 ns
+[2026-10-01T09:58:42.237+0800][101.089s][info][gc       ] GC(160) Pause Remark 281M->281M(614M) 3.370ms
+[2026-10-01T09:58:42.237+0800][101.089s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 114475200 ns, Reaching safepoint: 8300 ns, Cleanup: 5200 ns, At safepoint: 3438800 ns, Total: 3452300 ns
+[2026-10-01T09:58:42.263+0800][101.114s][info][gc       ] GC(160) Pause Cleanup 290M->290M(614M) 0.084ms
+[2026-10-01T09:58:42.263+0800][101.114s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 25303200 ns, Reaching safepoint: 16700 ns, Cleanup: 4000 ns, At safepoint: 164000 ns, Total: 184700 ns
+[2026-10-01T09:58:42.263+0800][101.115s][info][gc       ] GC(160) Concurrent Mark Cycle 144.089ms
+[2026-10-01T09:58:42.986+0800][101.838s][info][gc       ] GC(161) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 0.889ms
+[2026-10-01T09:58:42.986+0800][101.838s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 722411800 ns, Reaching safepoint: 4900 ns, Cleanup: 5300 ns, At safepoint: 957600 ns, Total: 967800 ns
+[2026-10-01T09:58:43.826+0800][102.678s][info][gc       ] GC(162) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.225ms
+[2026-10-01T09:58:43.826+0800][102.678s][info][gc       ] GC(163) Concurrent Mark Cycle
+[2026-10-01T09:58:43.826+0800][102.678s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 839235300 ns, Reaching safepoint: 4900 ns, Cleanup: 5100 ns, At safepoint: 1308000 ns, Total: 1318000 ns
+[2026-10-01T09:58:43.947+0800][102.799s][info][gc       ] GC(163) Pause Remark 285M->285M(614M) 3.237ms
+[2026-10-01T09:58:43.947+0800][102.799s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 117392400 ns, Reaching safepoint: 17200 ns, Cleanup: 4800 ns, At safepoint: 3324900 ns, Total: 3346900 ns
+[2026-10-01T09:58:43.979+0800][102.831s][info][gc       ] GC(163) Pause Cleanup 299M->299M(614M) 0.083ms
+[2026-10-01T09:58:43.979+0800][102.831s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 32275800 ns, Reaching safepoint: 16600 ns, Cleanup: 3700 ns, At safepoint: 145300 ns, Total: 165600 ns
+[2026-10-01T09:58:43.980+0800][102.832s][info][gc       ] GC(163) Concurrent Mark Cycle 153.819ms
+[2026-10-01T09:58:44.726+0800][103.577s][info][gc       ] GC(164) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 1.028ms
+[2026-10-01T09:58:44.726+0800][103.577s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 744634700 ns, Reaching safepoint: 5100 ns, Cleanup: 4400 ns, At safepoint: 1107800 ns, Total: 1117300 ns
+[2026-10-01T09:58:45.603+0800][104.454s][info][gc       ] GC(165) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 2.941ms
+[2026-10-01T09:58:45.603+0800][104.454s][info][gc       ] GC(166) Concurrent Mark Cycle
+[2026-10-01T09:58:45.603+0800][104.454s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 874022700 ns, Reaching safepoint: 20900 ns, Cleanup: 31300 ns, At safepoint: 3096100 ns, Total: 3148300 ns
+[2026-10-01T09:58:45.723+0800][104.575s][info][gc       ] GC(166) Pause Remark 285M->285M(614M) 3.065ms
+[2026-10-01T09:58:45.723+0800][104.575s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 117776500 ns, Reaching safepoint: 16700 ns, Cleanup: 4000 ns, At safepoint: 3116300 ns, Total: 3137000 ns
+[2026-10-01T09:58:45.754+0800][104.606s][info][gc       ] GC(166) Pause Cleanup 296M->296M(614M) 0.089ms
+[2026-10-01T09:58:45.754+0800][104.606s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 30431500 ns, Reaching safepoint: 18100 ns, Cleanup: 4400 ns, At safepoint: 134500 ns, Total: 157000 ns
+[2026-10-01T09:58:45.755+0800][104.607s][info][gc       ] GC(166) Concurrent Mark Cycle 152.381ms
+[2026-10-01T09:58:46.771+0800][105.622s][info][safepoint] Safepoint "Cleanup", Time since last: 1016511000 ns, Reaching safepoint: 24000 ns, Cleanup: 39400 ns, At safepoint: 11300 ns, Total: 74700 ns
+[2026-10-01T09:58:48.772+0800][107.623s][info][safepoint] Safepoint "Cleanup", Time since last: 2001018900 ns, Reaching safepoint: 18600 ns, Cleanup: 27700 ns, At safepoint: 7900 ns, Total: 54200 ns
+[2026-10-01T09:58:51.448+0800][110.300s][info][gc       ] GC(167) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 1.612ms
+[2026-10-01T09:58:51.448+0800][110.300s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 2674973700 ns, Reaching safepoint: 9300 ns, Cleanup: 15700 ns, At safepoint: 1681200 ns, Total: 1706200 ns
+[2026-10-01T09:58:52.318+0800][111.170s][info][gc       ] GC(168) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.410ms
+[2026-10-01T09:58:52.318+0800][111.170s][info][gc       ] GC(169) Concurrent Mark Cycle
+[2026-10-01T09:58:52.318+0800][111.170s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 868247000 ns, Reaching safepoint: 6700 ns, Cleanup: 4200 ns, At safepoint: 1482200 ns, Total: 1493100 ns
+[2026-10-01T09:58:52.435+0800][111.286s][info][gc       ] GC(169) Pause Remark 284M->284M(614M) 3.549ms
+[2026-10-01T09:58:52.435+0800][111.286s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 112659500 ns, Reaching safepoint: 17900 ns, Cleanup: 5400 ns, At safepoint: 3608000 ns, Total: 3631300 ns
+[2026-10-01T09:58:52.465+0800][111.316s][info][gc       ] GC(169) Pause Cleanup 295M->295M(614M) 0.093ms
+[2026-10-01T09:58:52.465+0800][111.316s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 30159700 ns, Reaching safepoint: 19600 ns, Cleanup: 3700 ns, At safepoint: 167300 ns, Total: 190600 ns
+[2026-10-01T09:58:52.465+0800][111.317s][info][gc       ] GC(169) Concurrent Mark Cycle 147.452ms
+[2026-10-01T09:58:53.189+0800][112.041s][info][gc       ] GC(170) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 1.333ms
+[2026-10-01T09:58:53.189+0800][112.041s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 723147900 ns, Reaching safepoint: 7800 ns, Cleanup: 5500 ns, At safepoint: 1449900 ns, Total: 1463200 ns
+[2026-10-01T09:58:54.160+0800][113.011s][info][gc       ] GC(171) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.447ms
+[2026-10-01T09:58:54.160+0800][113.011s][info][gc       ] GC(172) Concurrent Mark Cycle
+[2026-10-01T09:58:54.160+0800][113.011s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 968543500 ns, Reaching safepoint: 8900 ns, Cleanup: 6100 ns, At safepoint: 1535700 ns, Total: 1550700 ns
+[2026-10-01T09:58:54.271+0800][113.123s][info][gc       ] GC(172) Pause Remark 282M->282M(614M) 3.201ms
+[2026-10-01T09:58:54.271+0800][113.123s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 108668800 ns, Reaching safepoint: 18400 ns, Cleanup: 5500 ns, At safepoint: 3268500 ns, Total: 3292400 ns
+[2026-10-01T09:58:54.304+0800][113.155s][info][gc       ] GC(172) Pause Cleanup 293M->293M(614M) 0.089ms
+[2026-10-01T09:58:54.304+0800][113.155s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31819000 ns, Reaching safepoint: 17400 ns, Cleanup: 4800 ns, At safepoint: 157500 ns, Total: 179700 ns
+[2026-10-01T09:58:54.304+0800][113.156s][info][gc       ] GC(172) Concurrent Mark Cycle 144.691ms
+[2026-10-01T09:58:55.067+0800][113.919s][info][gc       ] GC(173) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 1.302ms
+[2026-10-01T09:58:55.067+0800][113.919s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 762479500 ns, Reaching safepoint: 7500 ns, Cleanup: 6400 ns, At safepoint: 1370600 ns, Total: 1384500 ns
+[2026-10-01T09:58:55.964+0800][114.816s][info][gc       ] GC(174) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->240M(614M) 1.373ms
+[2026-10-01T09:58:55.964+0800][114.816s][info][gc       ] GC(175) Concurrent Mark Cycle
+[2026-10-01T09:58:55.964+0800][114.816s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 895806200 ns, Reaching safepoint: 6800 ns, Cleanup: 5100 ns, At safepoint: 1448300 ns, Total: 1460200 ns
+[2026-10-01T09:58:56.092+0800][114.944s][info][gc       ] GC(175) Pause Remark 283M->283M(614M) 3.852ms
+[2026-10-01T09:58:56.092+0800][114.944s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 124118200 ns, Reaching safepoint: 17700 ns, Cleanup: 4900 ns, At safepoint: 3918400 ns, Total: 3941000 ns
+[2026-10-01T09:58:56.126+0800][114.977s][info][gc       ] GC(175) Pause Cleanup 294M->294M(614M) 0.117ms
+[2026-10-01T09:58:56.126+0800][114.977s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 32878300 ns, Reaching safepoint: 22400 ns, Cleanup: 5800 ns, At safepoint: 195500 ns, Total: 223700 ns
+[2026-10-01T09:58:56.127+0800][114.978s][info][gc       ] GC(175) Concurrent Mark Cycle 162.087ms
+[2026-10-01T09:58:56.835+0800][115.687s][info][gc       ] GC(176) Pause Young (Normal) (G1 Evacuation Pause) 576M->240M(614M) 1.239ms
+[2026-10-01T09:58:56.835+0800][115.687s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 708534100 ns, Reaching safepoint: 5600 ns, Cleanup: 4700 ns, At safepoint: 1311300 ns, Total: 1321600 ns
+[2026-10-01T09:58:57.680+0800][116.531s][info][gc       ] GC(177) Pause Young (Concurrent Start) (G1 Evacuation Pause) 576M->241M(614M) 1.355ms
+[2026-10-01T09:58:57.680+0800][116.531s][info][gc       ] GC(178) Concurrent Mark Cycle
+[2026-10-01T09:58:57.680+0800][116.531s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 842458900 ns, Reaching safepoint: 6400 ns, Cleanup: 4700 ns, At safepoint: 1425700 ns, Total: 1436800 ns
+[2026-10-01T09:58:57.797+0800][116.648s][info][gc       ] GC(178) Pause Remark 284M->284M(614M) 3.846ms
+[2026-10-01T09:58:57.797+0800][116.648s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 113238400 ns, Reaching safepoint: 18100 ns, Cleanup: 5100 ns, At safepoint: 3927900 ns, Total: 3951100 ns
+[2026-10-01T09:58:57.828+0800][116.680s][info][gc       ] GC(178) Pause Cleanup 295M->295M(614M) 0.085ms
+[2026-10-01T09:58:57.828+0800][116.680s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31209400 ns, Reaching safepoint: 16300 ns, Cleanup: 3300 ns, At safepoint: 152200 ns, Total: 171800 ns
+[2026-10-01T09:58:57.829+0800][116.680s][info][gc       ] GC(178) Concurrent Mark Cycle 149.244ms
+[2026-10-01T09:58:58.526+0800][117.378s][info][gc       ] GC(179) Pause Young (Normal) (G1 Evacuation Pause) 577M->241M(614M) 1.301ms
+[2026-10-01T09:58:58.526+0800][117.378s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 696511700 ns, Reaching safepoint: 4800 ns, Cleanup: 5200 ns, At safepoint: 1368100 ns, Total: 1378100 ns
+[2026-10-01T09:58:59.345+0800][118.197s][info][gc       ] GC(180) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->241M(614M) 1.940ms
+[2026-10-01T09:58:59.345+0800][118.197s][info][gc       ] GC(181) Concurrent Mark Cycle
+[2026-10-01T09:58:59.345+0800][118.197s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 817036900 ns, Reaching safepoint: 9800 ns, Cleanup: 6900 ns, At safepoint: 2010700 ns, Total: 2027400 ns
+[2026-10-01T09:58:59.465+0800][118.316s][info][gc       ] GC(181) Pause Remark 281M->281M(614M) 3.118ms
+[2026-10-01T09:58:59.465+0800][118.316s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 116436600 ns, Reaching safepoint: 18100 ns, Cleanup: 5400 ns, At safepoint: 3190500 ns, Total: 3214000 ns
+[2026-10-01T09:58:59.497+0800][118.349s][info][gc       ] GC(181) Pause Cleanup 291M->291M(614M) 0.122ms
+[2026-10-01T09:58:59.498+0800][118.349s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 32124100 ns, Reaching safepoint: 18200 ns, Cleanup: 5100 ns, At safepoint: 200700 ns, Total: 224000 ns
+[2026-10-01T09:58:59.498+0800][118.350s][info][gc       ] GC(181) Concurrent Mark Cycle 152.901ms
+[2026-10-01T09:59:00.244+0800][119.096s][info][gc       ] GC(182) Pause Young (Normal) (G1 Evacuation Pause) 577M->241M(614M) 1.196ms
+[2026-10-01T09:59:00.244+0800][119.096s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 745753400 ns, Reaching safepoint: 5200 ns, Cleanup: 17700 ns, At safepoint: 1265800 ns, Total: 1288700 ns
+[2026-10-01T09:59:01.139+0800][119.990s][info][gc       ] GC(183) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->241M(614M) 1.322ms
+[2026-10-01T09:59:01.139+0800][119.990s][info][gc       ] GC(184) Concurrent Mark Cycle
+[2026-10-01T09:59:01.139+0800][119.990s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 893236500 ns, Reaching safepoint: 5800 ns, Cleanup: 11800 ns, At safepoint: 1388900 ns, Total: 1406500 ns
+[2026-10-01T09:59:01.255+0800][120.107s][info][gc       ] GC(184) Pause Remark 282M->282M(614M) 3.759ms
+[2026-10-01T09:59:01.255+0800][120.107s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 112490200 ns, Reaching safepoint: 16100 ns, Cleanup: 4200 ns, At safepoint: 3818700 ns, Total: 3839000 ns
+[2026-10-01T09:59:01.284+0800][120.136s][info][gc       ] GC(184) Pause Cleanup 292M->292M(614M) 0.087ms
+[2026-10-01T09:59:01.285+0800][120.136s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 28817300 ns, Reaching safepoint: 16100 ns, Cleanup: 3900 ns, At safepoint: 143300 ns, Total: 163300 ns
+[2026-10-01T09:59:01.285+0800][120.136s][info][gc       ] GC(184) Concurrent Mark Cycle 145.974ms
+[2026-10-01T09:59:01.955+0800][120.806s][info][gc       ] GC(185) Pause Young (Normal) (G1 Evacuation Pause) 577M->241M(614M) 1.487ms
+[2026-10-01T09:59:01.955+0800][120.806s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 669135900 ns, Reaching safepoint: 6600 ns, Cleanup: 5200 ns, At safepoint: 1559600 ns, Total: 1571400 ns
+[2026-10-01T09:59:02.826+0800][121.678s][info][gc       ] GC(186) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->241M(614M) 2.245ms
+[2026-10-01T09:59:02.826+0800][121.678s][info][gc       ] GC(187) Concurrent Mark Cycle
+[2026-10-01T09:59:02.826+0800][121.678s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 869426800 ns, Reaching safepoint: 20000 ns, Cleanup: 32900 ns, At safepoint: 2337900 ns, Total: 2390800 ns
+[2026-10-01T09:59:02.976+0800][121.827s][info][gc       ] GC(187) Pause Remark 285M->285M(614M) 5.162ms
+[2026-10-01T09:59:02.976+0800][121.828s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 144004400 ns, Reaching safepoint: 22300 ns, Cleanup: 7500 ns, At safepoint: 5249700 ns, Total: 5279500 ns
+[2026-10-01T09:59:03.013+0800][121.864s][info][gc       ] GC(187) Pause Cleanup 296M->296M(614M) 0.123ms
+[2026-10-01T09:59:03.013+0800][121.864s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 36387600 ns, Reaching safepoint: 11600 ns, Cleanup: 7300 ns, At safepoint: 212900 ns, Total: 231800 ns
+[2026-10-01T09:59:03.014+0800][121.865s][info][gc       ] GC(187) Concurrent Mark Cycle 186.970ms
+[2026-10-01T09:59:03.742+0800][122.594s][info][gc       ] GC(188) Pause Young (Normal) (G1 Evacuation Pause) 577M->241M(614M) 1.284ms
+[2026-10-01T09:59:03.742+0800][122.594s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 728084300 ns, Reaching safepoint: 6700 ns, Cleanup: 5800 ns, At safepoint: 1352700 ns, Total: 1365200 ns
+[2026-10-01T09:59:04.633+0800][123.484s][info][gc       ] GC(189) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->241M(614M) 1.306ms
+[2026-10-01T09:59:04.633+0800][123.484s][info][gc       ] GC(190) Concurrent Mark Cycle
+[2026-10-01T09:59:04.633+0800][123.484s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 889061200 ns, Reaching safepoint: 5700 ns, Cleanup: 13900 ns, At safepoint: 1376600 ns, Total: 1396200 ns
+[2026-10-01T09:59:04.753+0800][123.605s][info][gc       ] GC(190) Pause Remark 283M->283M(614M) 3.601ms
+[2026-10-01T09:59:04.753+0800][123.605s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 116998200 ns, Reaching safepoint: 25200 ns, Cleanup: 7400 ns, At safepoint: 3674200 ns, Total: 3706800 ns
+[2026-10-01T09:59:04.782+0800][123.634s][info][gc       ] GC(190) Pause Cleanup 293M->293M(614M) 0.072ms
+[2026-10-01T09:59:04.782+0800][123.634s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 29065100 ns, Reaching safepoint: 16700 ns, Cleanup: 3800 ns, At safepoint: 141800 ns, Total: 162300 ns
+[2026-10-01T09:59:04.783+0800][123.635s][info][gc       ] GC(190) Concurrent Mark Cycle 150.646ms
+[2026-10-01T09:59:05.475+0800][124.327s][info][gc       ] GC(191) Pause Young (Normal) (G1 Evacuation Pause) 577M->241M(614M) 1.298ms
+[2026-10-01T09:59:05.475+0800][124.327s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 691735400 ns, Reaching safepoint: 6400 ns, Cleanup: 10200 ns, At safepoint: 1398300 ns, Total: 1414900 ns
+[2026-10-01T09:59:06.251+0800][125.103s][info][gc       ] GC(192) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->241M(614M) 1.338ms
+[2026-10-01T09:59:06.251+0800][125.103s][info][gc       ] GC(193) Concurrent Mark Cycle
+[2026-10-01T09:59:06.251+0800][125.103s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 774201200 ns, Reaching safepoint: 6900 ns, Cleanup: 5300 ns, At safepoint: 1416400 ns, Total: 1428600 ns
+[2026-10-01T09:59:06.369+0800][125.222s][info][gc       ] GC(193) Pause Remark 286M->286M(614M) 3.179ms
+[2026-10-01T09:59:06.369+0800][125.222s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 115848300 ns, Reaching safepoint: 16800 ns, Cleanup: 8900 ns, At safepoint: 3242100 ns, Total: 3267800 ns
+[2026-10-01T09:59:06.404+0800][125.255s][info][gc       ] GC(193) Pause Cleanup 298M->298M(614M) 0.086ms
+[2026-10-01T09:59:06.404+0800][125.255s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 33160600 ns, Reaching safepoint: 17500 ns, Cleanup: 3800 ns, At safepoint: 158000 ns, Total: 179300 ns
+[2026-10-01T09:59:06.405+0800][125.256s][info][gc       ] GC(193) Concurrent Mark Cycle 153.173ms
+[2026-10-01T09:59:07.134+0800][125.985s][info][gc       ] GC(194) Pause Young (Normal) (G1 Evacuation Pause) 577M->241M(614M) 1.192ms
+[2026-10-01T09:59:07.134+0800][125.985s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 728911700 ns, Reaching safepoint: 6800 ns, Cleanup: 5800 ns, At safepoint: 1258300 ns, Total: 1270900 ns
+[2026-10-01T09:59:07.974+0800][126.825s][info][gc       ] GC(195) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->241M(614M) 1.508ms
+[2026-10-01T09:59:07.974+0800][126.825s][info][gc       ] GC(196) Concurrent Mark Cycle
+[2026-10-01T09:59:07.974+0800][126.825s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 838094600 ns, Reaching safepoint: 5400 ns, Cleanup: 4200 ns, At safepoint: 1601600 ns, Total: 1611200 ns
+[2026-10-01T09:59:08.105+0800][126.957s][info][gc       ] GC(196) Pause Remark 287M->287M(614M) 3.294ms
+[2026-10-01T09:59:08.105+0800][126.957s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 128767400 ns, Reaching safepoint: 15900 ns, Cleanup: 4300 ns, At safepoint: 3350200 ns, Total: 3370400 ns
+[2026-10-01T09:59:08.138+0800][126.990s][info][gc       ] GC(196) Pause Cleanup 299M->299M(614M) 0.094ms
+[2026-10-01T09:59:08.138+0800][126.990s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 32802800 ns, Reaching safepoint: 26800 ns, Cleanup: 4800 ns, At safepoint: 164100 ns, Total: 195700 ns
+[2026-10-01T09:59:08.139+0800][126.991s][info][gc       ] GC(196) Concurrent Mark Cycle 165.824ms
+[2026-10-01T09:59:08.838+0800][127.689s][info][gc       ] GC(197) Pause Young (Normal) (G1 Evacuation Pause) 577M->242M(614M) 1.567ms
+[2026-10-01T09:59:08.838+0800][127.689s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 697010300 ns, Reaching safepoint: 4400 ns, Cleanup: 5500 ns, At safepoint: 1654500 ns, Total: 1664400 ns
+[2026-10-01T09:59:09.690+0800][128.542s][info][gc       ] GC(198) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->242M(614M) 1.474ms
+[2026-10-01T09:59:09.690+0800][128.542s][info][gc       ] GC(199) Concurrent Mark Cycle
+[2026-10-01T09:59:09.690+0800][128.542s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 851397300 ns, Reaching safepoint: 6700 ns, Cleanup: 4400 ns, At safepoint: 1580000 ns, Total: 1591100 ns
+[2026-10-01T09:59:09.807+0800][128.659s][info][gc       ] GC(199) Pause Remark 286M->286M(614M) 3.673ms
+[2026-10-01T09:59:09.807+0800][128.659s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 113755100 ns, Reaching safepoint: 18600 ns, Cleanup: 6100 ns, At safepoint: 3746900 ns, Total: 3771600 ns
+[2026-10-01T09:59:09.841+0800][128.693s][info][gc       ] GC(199) Pause Cleanup 297M->297M(614M) 0.094ms
+[2026-10-01T09:59:09.841+0800][128.693s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 33075900 ns, Reaching safepoint: 15900 ns, Cleanup: 3500 ns, At safepoint: 162600 ns, Total: 182000 ns
+[2026-10-01T09:59:09.842+0800][128.693s][info][gc       ] GC(199) Concurrent Mark Cycle 151.417ms
+[2026-10-01T09:59:10.590+0800][129.441s][info][gc       ] GC(200) Pause Young (Normal) (G1 Evacuation Pause) 578M->242M(614M) 1.135ms
+[2026-10-01T09:59:10.590+0800][129.441s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 747544700 ns, Reaching safepoint: 7600 ns, Cleanup: 4400 ns, At safepoint: 1225400 ns, Total: 1237400 ns
+[2026-10-01T09:59:11.488+0800][130.340s][info][gc       ] GC(201) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->242M(614M) 1.800ms
+[2026-10-01T09:59:11.488+0800][130.340s][info][gc       ] GC(202) Concurrent Mark Cycle
+[2026-10-01T09:59:11.488+0800][130.340s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 896527300 ns, Reaching safepoint: 6400 ns, Cleanup: 18000 ns, At safepoint: 1892300 ns, Total: 1916700 ns
+[2026-10-01T09:59:11.627+0800][130.479s][info][gc       ] GC(202) Pause Remark 287M->287M(614M) 4.102ms
+[2026-10-01T09:59:11.627+0800][130.479s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 134552300 ns, Reaching safepoint: 20700 ns, Cleanup: 13700 ns, At safepoint: 4172000 ns, Total: 4206400 ns
+[2026-10-01T09:59:11.661+0800][130.513s][info][gc       ] GC(202) Pause Cleanup 299M->299M(614M) 0.091ms
+[2026-10-01T09:59:11.661+0800][130.513s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 33781400 ns, Reaching safepoint: 16800 ns, Cleanup: 3900 ns, At safepoint: 155000 ns, Total: 175700 ns
+[2026-10-01T09:59:11.661+0800][130.513s][info][gc       ] GC(202) Concurrent Mark Cycle 173.372ms
+[2026-10-01T09:59:12.411+0800][131.262s][info][gc       ] GC(203) Pause Young (Normal) (G1 Evacuation Pause) 578M->242M(614M) 1.206ms
+[2026-10-01T09:59:12.411+0800][131.262s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 748518600 ns, Reaching safepoint: 19000 ns, Cleanup: 6800 ns, At safepoint: 1270000 ns, Total: 1295800 ns
+[2026-10-01T09:59:13.281+0800][132.134s][info][gc       ] GC(204) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->242M(614M) 1.619ms
+[2026-10-01T09:59:13.281+0800][132.134s][info][gc       ] GC(205) Concurrent Mark Cycle
+[2026-10-01T09:59:13.281+0800][132.134s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 869421100 ns, Reaching safepoint: 11100 ns, Cleanup: 7800 ns, At safepoint: 1691900 ns, Total: 1710800 ns
+[2026-10-01T09:59:13.401+0800][132.253s][info][gc       ] GC(205) Pause Remark 284M->284M(614M) 4.221ms
+[2026-10-01T09:59:13.401+0800][132.253s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 115379800 ns, Reaching safepoint: 18600 ns, Cleanup: 5000 ns, At safepoint: 4293300 ns, Total: 4316900 ns
+[2026-10-01T09:59:13.431+0800][132.283s][info][gc       ] GC(205) Pause Cleanup 295M->295M(614M) 0.092ms
+[2026-10-01T09:59:13.431+0800][132.283s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 29456300 ns, Reaching safepoint: 16900 ns, Cleanup: 4200 ns, At safepoint: 167400 ns, Total: 188500 ns
+[2026-10-01T09:59:13.432+0800][132.284s][info][gc       ] GC(205) Concurrent Mark Cycle 150.135ms
+[2026-10-01T09:59:14.161+0800][133.012s][info][gc       ] GC(206) Pause Young (Normal) (G1 Evacuation Pause) 578M->242M(614M) 1.100ms
+[2026-10-01T09:59:14.161+0800][133.012s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 727866300 ns, Reaching safepoint: 16600 ns, Cleanup: 5400 ns, At safepoint: 1160400 ns, Total: 1182400 ns
+[2026-10-01T09:59:15.012+0800][133.863s][info][gc       ] GC(207) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->242M(614M) 2.146ms
+[2026-10-01T09:59:15.012+0800][133.863s][info][gc       ] GC(208) Concurrent Mark Cycle
+[2026-10-01T09:59:15.012+0800][133.863s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 849089800 ns, Reaching safepoint: 23600 ns, Cleanup: 11400 ns, At safepoint: 2231300 ns, Total: 2266300 ns
+[2026-10-01T09:59:15.135+0800][133.987s][info][gc       ] GC(208) Pause Remark 285M->285M(614M) 3.223ms
+[2026-10-01T09:59:15.135+0800][133.987s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 119923000 ns, Reaching safepoint: 16000 ns, Cleanup: 4300 ns, At safepoint: 3327000 ns, Total: 3347300 ns
+[2026-10-01T09:59:15.166+0800][134.018s][info][gc       ] GC(208) Pause Cleanup 297M->297M(614M) 0.092ms
+[2026-10-01T09:59:15.166+0800][134.018s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31003600 ns, Reaching safepoint: 17100 ns, Cleanup: 4000 ns, At safepoint: 170900 ns, Total: 192000 ns
+[2026-10-01T09:59:15.167+0800][134.019s][info][gc       ] GC(208) Concurrent Mark Cycle 155.297ms
+[2026-10-01T09:59:15.896+0800][134.747s][info][gc       ] GC(209) Pause Young (Normal) (G1 Evacuation Pause) 578M->242M(614M) 1.287ms
+[2026-10-01T09:59:15.896+0800][134.747s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 727834600 ns, Reaching safepoint: 5700 ns, Cleanup: 5100 ns, At safepoint: 1355300 ns, Total: 1366100 ns
+[2026-10-01T09:59:16.759+0800][135.611s][info][gc       ] GC(210) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->242M(614M) 1.360ms
+[2026-10-01T09:59:16.760+0800][135.611s][info][gc       ] GC(211) Concurrent Mark Cycle
+[2026-10-01T09:59:16.760+0800][135.611s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 862541400 ns, Reaching safepoint: 7100 ns, Cleanup: 5400 ns, At safepoint: 1449100 ns, Total: 1461600 ns
+[2026-10-01T09:59:16.885+0800][135.737s][info][gc       ] GC(211) Pause Remark 285M->285M(614M) 3.687ms
+[2026-10-01T09:59:16.885+0800][135.737s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 122045400 ns, Reaching safepoint: 19800 ns, Cleanup: 5500 ns, At safepoint: 3790000 ns, Total: 3815300 ns
+[2026-10-01T09:59:16.917+0800][135.768s][info][gc       ] GC(211) Pause Cleanup 296M->296M(614M) 0.093ms
+[2026-10-01T09:59:16.917+0800][135.768s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31378400 ns, Reaching safepoint: 16200 ns, Cleanup: 3700 ns, At safepoint: 156600 ns, Total: 176500 ns
+[2026-10-01T09:59:16.918+0800][135.769s][info][gc       ] GC(211) Concurrent Mark Cycle 158.172ms
+[2026-10-01T09:59:17.605+0800][136.456s][info][gc       ] GC(212) Pause Young (Normal) (G1 Evacuation Pause) 578M->242M(614M) 1.072ms
+[2026-10-01T09:59:17.605+0800][136.456s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 686688800 ns, Reaching safepoint: 5200 ns, Cleanup: 5000 ns, At safepoint: 1126500 ns, Total: 1136700 ns
+[2026-10-01T09:59:18.461+0800][137.313s][info][gc       ] GC(213) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->242M(614M) 1.618ms
+[2026-10-01T09:59:18.461+0800][137.313s][info][gc       ] GC(214) Concurrent Mark Cycle
+[2026-10-01T09:59:18.461+0800][137.313s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 854984800 ns, Reaching safepoint: 16300 ns, Cleanup: 5600 ns, At safepoint: 1711000 ns, Total: 1732900 ns
+[2026-10-01T09:59:18.596+0800][137.448s][info][gc       ] GC(214) Pause Remark 286M->286M(614M) 4.716ms
+[2026-10-01T09:59:18.596+0800][137.448s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 130100800 ns, Reaching safepoint: 20700 ns, Cleanup: 5800 ns, At safepoint: 4776000 ns, Total: 4802500 ns
+[2026-10-01T09:59:18.628+0800][137.479s][info][gc       ] GC(214) Pause Cleanup 297M->297M(614M) 0.098ms
+[2026-10-01T09:59:18.628+0800][137.479s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31196100 ns, Reaching safepoint: 20700 ns, Cleanup: 6100 ns, At safepoint: 176900 ns, Total: 203700 ns
+[2026-10-01T09:59:18.628+0800][137.480s][info][gc       ] GC(214) Concurrent Mark Cycle 167.354ms
+[2026-10-01T09:59:19.375+0800][138.227s][info][gc       ] GC(215) Pause Young (Normal) (G1 Evacuation Pause) 578M->242M(614M) 1.256ms
+[2026-10-01T09:59:19.375+0800][138.227s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 746777800 ns, Reaching safepoint: 8100 ns, Cleanup: 5500 ns, At safepoint: 1331500 ns, Total: 1345100 ns
+[2026-10-01T09:59:20.226+0800][139.078s][info][gc       ] GC(216) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->243M(614M) 2.122ms
+[2026-10-01T09:59:20.226+0800][139.078s][info][gc       ] GC(217) Concurrent Mark Cycle
+[2026-10-01T09:59:20.226+0800][139.078s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 848333800 ns, Reaching safepoint: 5300 ns, Cleanup: 4800 ns, At safepoint: 2221300 ns, Total: 2231400 ns
+[2026-10-01T09:59:20.353+0800][139.205s][info][gc       ] GC(217) Pause Remark 287M->287M(614M) 4.215ms
+[2026-10-01T09:59:20.353+0800][139.205s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 122684900 ns, Reaching safepoint: 38300 ns, Cleanup: 7800 ns, At safepoint: 4286200 ns, Total: 4332300 ns
+[2026-10-01T09:59:20.385+0800][139.236s][info][gc       ] GC(217) Pause Cleanup 300M->300M(614M) 0.133ms
+[2026-10-01T09:59:20.385+0800][139.236s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31111200 ns, Reaching safepoint: 22700 ns, Cleanup: 5800 ns, At safepoint: 238000 ns, Total: 266500 ns
+[2026-10-01T09:59:20.386+0800][139.237s][info][gc       ] GC(217) Concurrent Mark Cycle 159.541ms
+[2026-10-01T09:59:21.110+0800][139.962s][info][gc       ] GC(218) Pause Young (Normal) (G1 Evacuation Pause) 579M->242M(614M) 1.159ms
+[2026-10-01T09:59:21.110+0800][139.962s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 724168500 ns, Reaching safepoint: 20300 ns, Cleanup: 6000 ns, At safepoint: 1239100 ns, Total: 1265400 ns
+[2026-10-01T09:59:21.997+0800][140.849s][info][gc       ] GC(219) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->243M(614M) 2.053ms
+[2026-10-01T09:59:21.997+0800][140.849s][info][gc       ] GC(220) Concurrent Mark Cycle
+[2026-10-01T09:59:21.997+0800][140.849s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 885179500 ns, Reaching safepoint: 5800 ns, Cleanup: 4000 ns, At safepoint: 2129800 ns, Total: 2139600 ns
+[2026-10-01T09:59:22.124+0800][140.975s][info][gc       ] GC(220) Pause Remark 288M->288M(614M) 4.061ms
+[2026-10-01T09:59:22.124+0800][140.975s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 121918400 ns, Reaching safepoint: 14900 ns, Cleanup: 4000 ns, At safepoint: 4122300 ns, Total: 4141200 ns
+[2026-10-01T09:59:22.156+0800][141.008s][info][gc       ] GC(220) Pause Cleanup 300M->300M(614M) 0.095ms
+[2026-10-01T09:59:22.156+0800][141.008s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 32834400 ns, Reaching safepoint: 17700 ns, Cleanup: 5600 ns, At safepoint: 186600 ns, Total: 209900 ns
+[2026-10-01T09:59:22.157+0800][141.009s][info][gc       ] GC(220) Concurrent Mark Cycle 160.237ms
+[2026-10-01T09:59:22.854+0800][141.706s][info][gc       ] GC(221) Pause Young (Normal) (G1 Evacuation Pause) 579M->243M(614M) 1.411ms
+[2026-10-01T09:59:22.854+0800][141.706s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 696266400 ns, Reaching safepoint: 11100 ns, Cleanup: 7500 ns, At safepoint: 1494300 ns, Total: 1512900 ns
+[2026-10-01T09:59:23.704+0800][142.556s][info][gc       ] GC(222) Pause Young (Concurrent Start) (G1 Evacuation Pause) 579M->243M(614M) 1.321ms
+[2026-10-01T09:59:23.704+0800][142.556s][info][gc       ] GC(223) Concurrent Mark Cycle
+[2026-10-01T09:59:23.704+0800][142.556s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 848280800 ns, Reaching safepoint: 5400 ns, Cleanup: 4800 ns, At safepoint: 1441900 ns, Total: 1452100 ns
+[2026-10-01T09:59:23.826+0800][142.678s][info][gc       ] GC(223) Pause Remark 285M->285M(614M) 3.946ms
+[2026-10-01T09:59:23.827+0800][142.678s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 118297800 ns, Reaching safepoint: 22300 ns, Cleanup: 9000 ns, At safepoint: 4019800 ns, Total: 4051100 ns
+[2026-10-01T09:59:23.858+0800][142.710s][info][gc       ] GC(223) Pause Cleanup 297M->297M(614M) 0.083ms
+[2026-10-01T09:59:23.858+0800][142.710s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31667800 ns, Reaching safepoint: 15800 ns, Cleanup: 3500 ns, At safepoint: 151300 ns, Total: 170600 ns
+[2026-10-01T09:59:23.858+0800][142.711s][info][gc       ] GC(223) Concurrent Mark Cycle 154.914ms
+[2026-10-01T09:59:24.552+0800][143.404s][info][gc       ] GC(224) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 577M->243M(614M) 1.478ms
+[2026-10-01T09:59:24.552+0800][143.404s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 692448600 ns, Reaching safepoint: 5200 ns, Cleanup: 4700 ns, At safepoint: 1561600 ns, Total: 1571500 ns
+[2026-10-01T09:59:25.387+0800][144.238s][info][gc       ] GC(225) Pause Young (Mixed) (G1 Evacuation Pause) 577M->243M(614M) 1.368ms
+[2026-10-01T09:59:25.387+0800][144.239s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 833152400 ns, Reaching safepoint: 8100 ns, Cleanup: 6600 ns, At safepoint: 1428900 ns, Total: 1443600 ns
+[2026-10-01T09:59:26.271+0800][145.123s][info][gc       ] GC(226) Pause Young (Concurrent Start) (G1 Evacuation Pause) 579M->243M(614M) 1.647ms
+[2026-10-01T09:59:26.271+0800][145.123s][info][gc       ] GC(227) Concurrent Mark Cycle
+[2026-10-01T09:59:26.271+0800][145.123s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 882356500 ns, Reaching safepoint: 7200 ns, Cleanup: 5800 ns, At safepoint: 1716200 ns, Total: 1729200 ns
+[2026-10-01T09:59:26.402+0800][145.253s][info][gc       ] GC(227) Pause Remark 289M->289M(614M) 4.111ms
+[2026-10-01T09:59:26.402+0800][145.253s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 126253100 ns, Reaching safepoint: 15900 ns, Cleanup: 4600 ns, At safepoint: 4185600 ns, Total: 4206100 ns
+[2026-10-01T09:59:26.433+0800][145.285s][info][gc       ] GC(227) Pause Cleanup 300M->300M(614M) 0.134ms
+[2026-10-01T09:59:26.433+0800][145.285s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31862200 ns, Reaching safepoint: 20700 ns, Cleanup: 6900 ns, At safepoint: 236600 ns, Total: 264200 ns
+[2026-10-01T09:59:26.434+0800][145.286s][info][gc       ] GC(227) Concurrent Mark Cycle 163.530ms
+[2026-10-01T09:59:27.145+0800][145.998s][info][gc       ] GC(228) Pause Young (Normal) (G1 Evacuation Pause) 577M->243M(614M) 1.189ms
+[2026-10-01T09:59:27.146+0800][145.998s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 711185800 ns, Reaching safepoint: 9500 ns, Cleanup: 6700 ns, At safepoint: 1273500 ns, Total: 1289700 ns
+[2026-10-01T09:59:28.007+0800][146.859s][info][gc       ] GC(229) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->243M(614M) 1.265ms
+[2026-10-01T09:59:28.007+0800][146.859s][info][gc       ] GC(230) Concurrent Mark Cycle
+[2026-10-01T09:59:28.007+0800][146.859s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 860160600 ns, Reaching safepoint: 5700 ns, Cleanup: 4800 ns, At safepoint: 1327500 ns, Total: 1338000 ns
+[2026-10-01T09:59:28.129+0800][146.981s][info][gc       ] GC(230) Pause Remark 288M->288M(614M) 3.964ms
+[2026-10-01T09:59:28.129+0800][146.981s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 117611500 ns, Reaching safepoint: 15000 ns, Cleanup: 3800 ns, At safepoint: 4037000 ns, Total: 4055800 ns
+[2026-10-01T09:59:28.162+0800][147.014s][info][gc       ] GC(230) Pause Cleanup 300M->300M(614M) 0.246ms
+[2026-10-01T09:59:28.162+0800][147.014s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 32977500 ns, Reaching safepoint: 13400 ns, Cleanup: 8100 ns, At safepoint: 335700 ns, Total: 357200 ns
+[2026-10-01T09:59:28.163+0800][147.015s][info][gc       ] GC(230) Concurrent Mark Cycle 156.167ms
+[2026-10-01T09:59:28.883+0800][147.736s][info][gc       ] GC(231) Pause Young (Normal) (G1 Evacuation Pause) 577M->243M(614M) 1.085ms
+[2026-10-01T09:59:28.883+0800][147.736s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 720685700 ns, Reaching safepoint: 5600 ns, Cleanup: 4200 ns, At safepoint: 1148200 ns, Total: 1158000 ns
+[2026-10-01T09:59:29.675+0800][148.528s][info][gc       ] GC(232) Pause Young (Concurrent Start) (G1 Evacuation Pause) 577M->243M(614M) 1.334ms
+[2026-10-01T09:59:29.675+0800][148.528s][info][gc       ] GC(233) Concurrent Mark Cycle
+[2026-10-01T09:59:29.675+0800][148.528s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 790446100 ns, Reaching safepoint: 5600 ns, Cleanup: 5100 ns, At safepoint: 1395200 ns, Total: 1405900 ns
+[2026-10-01T09:59:29.804+0800][148.656s][info][gc       ] GC(233) Pause Remark 282M->282M(614M) 5.302ms
+[2026-10-01T09:59:29.804+0800][148.656s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 122431700 ns, Reaching safepoint: 21000 ns, Cleanup: 7600 ns, At safepoint: 5379200 ns, Total: 5407800 ns
+[2026-10-01T09:59:29.837+0800][148.689s][info][gc       ] GC(233) Pause Cleanup 294M->294M(614M) 0.107ms
+[2026-10-01T09:59:29.837+0800][148.689s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 33226400 ns, Reaching safepoint: 21600 ns, Cleanup: 6200 ns, At safepoint: 180700 ns, Total: 208500 ns
+[2026-10-01T09:59:29.838+0800][148.690s][info][gc       ] GC(233) Concurrent Mark Cycle 162.247ms
+[2026-10-01T09:59:30.582+0800][149.433s][info][gc       ] GC(234) Pause Young (Normal) (G1 Evacuation Pause) 577M->244M(614M) 1.216ms
+[2026-10-01T09:59:30.582+0800][149.434s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 743129100 ns, Reaching safepoint: 5600 ns, Cleanup: 4400 ns, At safepoint: 1299700 ns, Total: 1309700 ns
+[2026-10-01T09:59:31.394+0800][150.246s][info][gc       ] GC(235) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->244M(614M) 2.346ms
+[2026-10-01T09:59:31.394+0800][150.246s][info][gc       ] GC(236) Concurrent Mark Cycle
+[2026-10-01T09:59:31.394+0800][150.246s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 809568400 ns, Reaching safepoint: 5300 ns, Cleanup: 4000 ns, At safepoint: 2413800 ns, Total: 2423100 ns
+[2026-10-01T09:59:31.529+0800][150.381s][info][gc       ] GC(236) Pause Remark 289M->289M(614M) 3.543ms
+[2026-10-01T09:59:31.529+0800][150.381s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 131420600 ns, Reaching safepoint: 19000 ns, Cleanup: 5200 ns, At safepoint: 3612700 ns, Total: 3636900 ns
+[2026-10-01T09:59:31.561+0800][150.413s][info][gc       ] GC(236) Pause Cleanup 300M->300M(614M) 0.089ms
+[2026-10-01T09:59:31.561+0800][150.413s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31865900 ns, Reaching safepoint: 17100 ns, Cleanup: 4600 ns, At safepoint: 157200 ns, Total: 178900 ns
+[2026-10-01T09:59:31.561+0800][150.413s][info][gc       ] GC(236) Concurrent Mark Cycle 167.772ms
+[2026-10-01T09:59:32.277+0800][151.128s][info][gc       ] GC(237) Pause Young (Normal) (G1 Evacuation Pause) 578M->244M(614M) 1.128ms
+[2026-10-01T09:59:32.277+0800][151.128s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 714597800 ns, Reaching safepoint: 10000 ns, Cleanup: 5300 ns, At safepoint: 1192600 ns, Total: 1207900 ns
+[2026-10-01T09:59:33.100+0800][151.951s][info][gc       ] GC(238) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->244M(614M) 1.540ms
+[2026-10-01T09:59:33.100+0800][151.951s][info][gc       ] GC(239) Concurrent Mark Cycle
+[2026-10-01T09:59:33.100+0800][151.951s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 821194100 ns, Reaching safepoint: 8100 ns, Cleanup: 6300 ns, At safepoint: 1645600 ns, Total: 1660000 ns
+[2026-10-01T09:59:33.229+0800][152.080s][info][gc       ] GC(239) Pause Remark 290M->290M(614M) 4.608ms
+[2026-10-01T09:59:33.229+0800][152.081s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 124520500 ns, Reaching safepoint: 17800 ns, Cleanup: 3900 ns, At safepoint: 4684700 ns, Total: 4706400 ns
+[2026-10-01T09:59:33.261+0800][152.113s][info][gc       ] GC(239) Pause Cleanup 301M->301M(614M) 0.090ms
+[2026-10-01T09:59:33.261+0800][152.113s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 32505100 ns, Reaching safepoint: 7000 ns, Cleanup: 4200 ns, At safepoint: 154600 ns, Total: 165800 ns
+[2026-10-01T09:59:33.261+0800][152.114s][info][gc       ] GC(239) Concurrent Mark Cycle 162.615ms
+[2026-10-01T09:59:33.978+0800][152.830s][info][gc       ] GC(240) Pause Young (Normal) (G1 Evacuation Pause) 578M->244M(614M) 1.378ms
+[2026-10-01T09:59:33.978+0800][152.830s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 714942100 ns, Reaching safepoint: 7000 ns, Cleanup: 8000 ns, At safepoint: 1453600 ns, Total: 1468600 ns
+[2026-10-01T09:59:34.811+0800][153.663s][info][gc       ] GC(241) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->244M(614M) 1.469ms
+[2026-10-01T09:59:34.811+0800][153.663s][info][gc       ] GC(242) Concurrent Mark Cycle
+[2026-10-01T09:59:34.811+0800][153.663s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 831490400 ns, Reaching safepoint: 20500 ns, Cleanup: 7300 ns, At safepoint: 1714900 ns, Total: 1742700 ns
+[2026-10-01T09:59:34.932+0800][153.784s][info][gc       ] GC(242) Pause Remark 288M->288M(614M) 3.313ms
+[2026-10-01T09:59:34.932+0800][153.784s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 118175300 ns, Reaching safepoint: 6700 ns, Cleanup: 4800 ns, At safepoint: 3379600 ns, Total: 3391100 ns
+[2026-10-01T09:59:34.964+0800][153.816s][info][gc       ] GC(242) Pause Cleanup 298M->298M(614M) 0.087ms
+[2026-10-01T09:59:34.964+0800][153.816s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 31250200 ns, Reaching safepoint: 17200 ns, Cleanup: 3700 ns, At safepoint: 163500 ns, Total: 184400 ns
+[2026-10-01T09:59:34.965+0800][153.816s][info][gc       ] GC(242) Concurrent Mark Cycle 153.780ms
+[2026-10-01T09:59:35.667+0800][154.519s][info][gc       ] GC(243) Pause Young (Normal) (G1 Evacuation Pause) 578M->244M(614M) 1.268ms
+[2026-10-01T09:59:35.667+0800][154.519s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 701345800 ns, Reaching safepoint: 10000 ns, Cleanup: 6700 ns, At safepoint: 1350000 ns, Total: 1366700 ns
+[2026-10-01T09:59:36.110+0800][154.961s][info][safepoint] Safepoint "ICBufferFull", Time since last: 442295700 ns, Reaching safepoint: 6400 ns, Cleanup: 141700 ns, At safepoint: 9400 ns, Total: 157500 ns
+[2026-10-01T09:59:36.203+0800][155.055s][info][gc       ] GC(244) Pause Young (Concurrent Start) (G1 Evacuation Pause) 578M->254M(614M) 6.844ms
+[2026-10-01T09:59:36.203+0800][155.055s][info][gc       ] GC(245) Concurrent Mark Cycle
+[2026-10-01T09:59:36.203+0800][155.055s][info][safepoint] Safepoint "G1CollectForAllocation", Time since last: 87047000 ns, Reaching safepoint: 10200 ns, Cleanup: 67000 ns, At safepoint: 6967200 ns, Total: 7044400 ns
+[2026-10-01T09:59:36.348+0800][155.200s][info][gc       ] GC(245) Pause Remark 453M->451M(758M) 4.362ms
+[2026-10-01T09:59:36.348+0800][155.200s][info][safepoint] Safepoint "G1PauseRemark", Time since last: 140246100 ns, Reaching safepoint: 11400 ns, Cleanup: 66000 ns, At safepoint: 4445000 ns, Total: 4522400 ns
+[2026-10-01T09:59:36.382+0800][155.234s][info][gc       ] GC(245) Pause Cleanup 452M->452M(758M) 0.119ms
+[2026-10-01T09:59:36.382+0800][155.234s][info][safepoint] Safepoint "G1PauseCleanup", Time since last: 34101500 ns, Reaching safepoint: 7400 ns, Cleanup: 4600 ns, At safepoint: 170900 ns, Total: 182900 ns
+[2026-10-01T09:59:36.383+0800][155.235s][info][gc       ] GC(245) Concurrent Mark Cycle 180.280ms

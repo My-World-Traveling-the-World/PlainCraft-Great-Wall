@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "cf961168101ccb7564cc7e64108f7413d985bbb5",
+  "seed": 17,
+  "startedUtc": "2026-10-01T02:09:04.2827383Z",
+  "finishedUtc": "2026-10-01T02:11:36.9529964Z",
+  "seconds": 152.6702632,
+  "exitCode": 0,
+  "timedOut": false,
+  "fresh": true,
+  "observationValid": true,
+  "cleanShutdown": true,
+  "sourceInputsUnchanged": true,
+  "category": "3_SEGMENT0_HYDROLOGY_FINISHED",
+  "productionWiring": "OFF",
+  "fullWallAcceptance": "NOT_RUN"
+}

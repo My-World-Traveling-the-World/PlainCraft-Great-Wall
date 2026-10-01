@@ -1,0 +1,42 @@
+[
+  {
+    "path": "execution.json",
+    "sha256": "f1c9297436951dcddac8b111f00129d1a6c10e4de2d30103d8dcb5db05872d8e"
+  },
+  {
+    "path": "inputs.json",
+    "sha256": "71f1e6f57f3792d4a64e193dd0990e35b85ef5a69e4eef4aacd01c4913f038ed"
+  },
+  {
+    "path": "logs\\latest.log",
+    "sha256": "8b0d47e473bf1d373ad55ce52fbfd197d914f84afa075b25a3733bcc3c11272a"
+  },
+  {
+    "path": "seed-survey-result.json",
+    "sha256": "30eac3195e1f55b3492190d5414b9f505f5fbc4974d894e8700052b45bd5edfe"
+  },
+  {
+    "path": "server-smoke-passed.txt",
+    "sha256": "b7faab2d4b1e24e114ac5c6f56184a968a8101e78f2aac496d1d00679df02032"
+  },
+  {
+    "path": "stderr.log",
+    "sha256": "c6ad1763635c908ce5a243cacd99a4d59c087c140421108cc58c825769c0e767"
+  },
+  {
+    "path": "stdout.log",
+    "sha256": "8b0d47e473bf1d373ad55ce52fbfd197d914f84afa075b25a3733bcc3c11272a"
+  },
+  {
+    "path": "survey-route0.bin",
+    "sha256": "0f7a85a6e3b997df6a4b648fbab7b0c433a5d7ca431bbe86534f24d196e799ef"
+  },
+  {
+    "path": "survey-route1.bin",
+    "sha256": "f57a7dfb4fae47d28fd7e29b0a1597d4b46aab18d36bb26cb66ed74606d3d2fd"
+  },
+  {
+    "path": "survey-vm.log",
+    "sha256": "eb991c0a22bab780dfa1dcec3912e8b4e8658f2176e093d1f0b114f6ce2ce7cd"
+  }
+]

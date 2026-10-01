@@ -1,0 +1,7 @@
+{
+  "command": "gradlew.bat --offline --dependency-verification=strict prepareSeedSurveyRuntime -PsmokeProfile=vanilla -PsmokeRunId=root-hydro-40-20261001-998c68ec-runtime -Ps1cSeedSurvey=true -Ps1cSeed=0 --console=plain --no-daemon",
+  "exitCode": 0,
+  "sourceCommit": "cf961168101ccb7564cc7e64108f7413d985bbb5",
+  "finishedUtc": "2026-10-01T01:49:48.7584335Z",
+  "productionWiring": "OFF"
+}

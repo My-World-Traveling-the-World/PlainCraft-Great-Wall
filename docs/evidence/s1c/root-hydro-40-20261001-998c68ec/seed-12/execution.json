@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "cf961168101ccb7564cc7e64108f7413d985bbb5",
+  "seed": 12,
+  "startedUtc": "2026-10-01T02:03:52.5093125Z",
+  "finishedUtc": "2026-10-01T02:05:43.8130990Z",
+  "seconds": 111.3037909,
+  "exitCode": 0,
+  "timedOut": false,
+  "fresh": true,
+  "observationValid": true,
+  "cleanShutdown": true,
+  "sourceInputsUnchanged": true,
+  "category": "1_ROOT_NOT_FOUND",
+  "productionWiring": "OFF",
+  "fullWallAcceptance": "NOT_RUN"
+}

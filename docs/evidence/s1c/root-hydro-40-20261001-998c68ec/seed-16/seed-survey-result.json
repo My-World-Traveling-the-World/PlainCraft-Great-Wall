@@ -1,0 +1,6182 @@
+{
+  "category": "1_ROOT_NOT_FOUND",
+  "dimensionBounds": {
+    "minY": -64,
+    "maxYExclusive": 320,
+    "horizontalLimit": 30000000
+  },
+  "seed": 16,
+  "earlyDomain": [
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -24,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -23,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -22,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -21,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -20,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -19,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -18,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -17,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -16,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -15,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -14,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -13,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -12,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -11,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -10,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -9,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -8,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -7,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -6,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -5,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -4,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -3,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -2,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": -1,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 0,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 1,
+      "z": -6
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -32
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -31
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -30
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -29
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -28
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -27
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -26
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -25
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -24
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -23
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -22
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -21
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -20
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -19
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -18
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -17
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -16
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -15
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -14
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -13
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -12
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -11
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -10
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -9
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -8
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -7
+    },
+    {
+      "dimension": "minecraft:overworld",
+      "x": 2,
+      "z": -6
+    }
+  ],
+  "route1Purpose": "original 128-block next-route halo",
+  "profile": "vanilla",
+  "failurePhase": "ROOT",
+  "noWallWrites": true,
+  "terrainHash": "33c9c27109e7755fe3cd1eee2be1fa2f61475cf52aa55302748da1d53445247c",
+  "spawn": {
+    "x": -176,
+    "y": 72,
+    "z": -304
+  },
+  "elapsedSeconds": 94.7312484,
+  "failure": "java.util.concurrent.ExecutionException: local.plaincraft.greatwall.model.WallFailure: all frozen 800..1500 ring/footprint/axis candidates rejected\r\n\tat java.base/java.util.concurrent.CompletableFuture.reportGet(CompletableFuture.java:396)\r\n\tat java.base/java.util.concurrent.CompletableFuture.get(CompletableFuture.java:2096)\r\n\tat knot//local.plaincraft.greatwall.smoke.RootHydrologyFixture.run(RootHydrologyFixture.java:162)\r\n\tat knot//local.plaincraft.greatwall.smoke.RootHydrologyFixture.lambda$tick$3(RootHydrologyFixture.java:111)\r\n\tat java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)\r\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\r\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\r\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\r\nCaused by: local.plaincraft.greatwall.model.WallFailure: all frozen 800..1500 ring/footprint/axis candidates rejected\r\n\tat knot//local.plaincraft.greatwall.lifecycle.RootSearch.notFound(RootSearch.java:239)\r\n\tat knot//local.plaincraft.greatwall.lifecycle.RootSearch.footprintStep(RootSearch.java:125)\r\n\tat knot//local.plaincraft.greatwall.lifecycle.RootSearch.advance(RootSearch.java:65)\r\n\tat knot//local.plaincraft.greatwall.smoke.RootHydrologyFixture.lambda$run$5(RootHydrologyFixture.java:156)\r\n\tat knot//local.plaincraft.greatwall.terrain.OracleLane.lambda$submit$2(OracleLane.java:75)\r\n\t... 3 more\r\n",
+  "oracleDrained": true,
+  "purpose": "root-and-segment0-hydrology-survey-not-wall-acceptance",
+  "phaseSnapshots": {
+    "rootAudit": [
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 624,
+          "y": 72,
+          "z": -304
+        },
+        "radiusIndex": 0,
+        "angleIndex": 0,
+        "axisIndex": -1,
+        "wetColumns": 36,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 44,
+        "maxY": 73,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 612,
+          "y": 72,
+          "z": -165
+        },
+        "radiusIndex": 0,
+        "angleIndex": 1,
+        "axisIndex": -1,
+        "wetColumns": 45,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 76,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 576,
+          "y": 72,
+          "z": -30
+        },
+        "radiusIndex": 0,
+        "angleIndex": 2,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 56,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 517,
+          "y": 72,
+          "z": 96
+        },
+        "radiusIndex": 0,
+        "angleIndex": 3,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 23,
+        "maxY": 51,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 224,
+          "y": 72,
+          "z": 389
+        },
+        "radiusIndex": 0,
+        "angleIndex": 6,
+        "axisIndex": -1,
+        "wetColumns": 4,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 52,
+        "maxY": 76,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 98,
+          "y": 72,
+          "z": 448
+        },
+        "radiusIndex": 0,
+        "angleIndex": 7,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 56,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -37,
+          "y": 72,
+          "z": 484
+        },
+        "radiusIndex": 0,
+        "angleIndex": 8,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 54,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -176,
+          "y": 72,
+          "z": 496
+        },
+        "radiusIndex": 0,
+        "angleIndex": 9,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 45,
+        "maxY": 61,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -315,
+          "y": 72,
+          "z": 484
+        },
+        "radiusIndex": 0,
+        "angleIndex": 10,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 57,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -450,
+          "y": 72,
+          "z": 448
+        },
+        "radiusIndex": 0,
+        "angleIndex": 11,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 25,
+        "maxY": 62,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -576,
+          "y": 72,
+          "z": 389
+        },
+        "radiusIndex": 0,
+        "angleIndex": 12,
+        "axisIndex": -1,
+        "wetColumns": 62,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 65,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -869,
+          "y": 72,
+          "z": 96
+        },
+        "radiusIndex": 0,
+        "angleIndex": 15,
+        "axisIndex": -1,
+        "wetColumns": 10,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 56,
+        "maxY": 89,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -928,
+          "y": 72,
+          "z": -30
+        },
+        "radiusIndex": 0,
+        "angleIndex": 16,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 88,
+        "maxY": 125,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -964,
+          "y": 72,
+          "z": -165
+        },
+        "radiusIndex": 0,
+        "angleIndex": 17,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 64,
+        "maxY": 110,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -976,
+          "y": 72,
+          "z": -304
+        },
+        "radiusIndex": 0,
+        "angleIndex": 18,
+        "axisIndex": -1,
+        "wetColumns": 54,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 42,
+        "maxY": 87,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -964,
+          "y": 72,
+          "z": -443
+        },
+        "radiusIndex": 0,
+        "angleIndex": 19,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 72,
+        "maxY": 88,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -928,
+          "y": 72,
+          "z": -578
+        },
+        "radiusIndex": 0,
+        "angleIndex": 20,
+        "axisIndex": -1,
+        "wetColumns": 16,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 37,
+        "maxY": 101,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -869,
+          "y": 72,
+          "z": -704
+        },
+        "radiusIndex": 0,
+        "angleIndex": 21,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 110,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -576,
+          "y": 72,
+          "z": -997
+        },
+        "radiusIndex": 0,
+        "angleIndex": 24,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 68,
+        "maxY": 77,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -450,
+          "y": 72,
+          "z": -1056
+        },
+        "radiusIndex": 0,
+        "angleIndex": 25,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 64,
+        "maxY": 74,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -315,
+          "y": 72,
+          "z": -1092
+        },
+        "radiusIndex": 0,
+        "angleIndex": 26,
+        "axisIndex": -1,
+        "wetColumns": 10,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 53,
+        "maxY": 86,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -176,
+          "y": 72,
+          "z": -1104
+        },
+        "radiusIndex": 0,
+        "angleIndex": 27,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 88,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -37,
+          "y": 72,
+          "z": -1092
+        },
+        "radiusIndex": 0,
+        "angleIndex": 28,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 78,
+        "maxY": 105,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 98,
+          "y": 72,
+          "z": -1056
+        },
+        "radiusIndex": 0,
+        "angleIndex": 29,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 7,
+        "maxY": 82,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 224,
+          "y": 72,
+          "z": -997
+        },
+        "radiusIndex": 0,
+        "angleIndex": 30,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 89,
+        "maxY": 109,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 517,
+          "y": 72,
+          "z": -704
+        },
+        "radiusIndex": 0,
+        "angleIndex": 33,
+        "axisIndex": -1,
+        "wetColumns": 5,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 49,
+        "maxY": 79,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 576,
+          "y": 72,
+          "z": -578
+        },
+        "radiusIndex": 0,
+        "angleIndex": 34,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 68,
+        "maxY": 105,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 612,
+          "y": 72,
+          "z": -443
+        },
+        "radiusIndex": 0,
+        "angleIndex": 35,
+        "axisIndex": -1,
+        "wetColumns": 13,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 16,
+        "maxY": 85,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 824,
+          "y": 72,
+          "z": -304
+        },
+        "radiusIndex": 1,
+        "angleIndex": 0,
+        "axisIndex": -1,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 61,
+        "maxY": 78,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 809,
+          "y": 72,
+          "z": -130
+        },
+        "radiusIndex": 1,
+        "angleIndex": 1,
+        "axisIndex": -1,
+        "wetColumns": 16,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 60,
+        "maxY": 80,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 764,
+          "y": 72,
+          "z": 38
+        },
+        "radiusIndex": 1,
+        "angleIndex": 2,
+        "axisIndex": -1,
+        "wetColumns": 31,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 27,
+        "maxY": 76,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 690,
+          "y": 72,
+          "z": 196
+        },
+        "radiusIndex": 1,
+        "angleIndex": 3,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 56,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 590,
+          "y": 72,
+          "z": 339
+        },
+        "radiusIndex": 1,
+        "angleIndex": 4,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 37,
+        "maxY": 51,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 467,
+          "y": 72,
+          "z": 462
+        },
+        "radiusIndex": 1,
+        "angleIndex": 5,
+        "axisIndex": -1,
+        "wetColumns": 44,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 76,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 324,
+          "y": 72,
+          "z": 562
+        },
+        "radiusIndex": 1,
+        "angleIndex": 6,
+        "axisIndex": -1,
+        "wetColumns": 7,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 76,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 166,
+          "y": 72,
+          "z": 636
+        },
+        "radiusIndex": 1,
+        "angleIndex": 7,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 31,
+        "maxY": 54,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -2,
+          "y": 72,
+          "z": 681
+        },
+        "radiusIndex": 1,
+        "angleIndex": 8,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 45,
+        "maxY": 55,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -176,
+          "y": 72,
+          "z": 696
+        },
+        "radiusIndex": 1,
+        "angleIndex": 9,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 44,
+        "maxY": 55,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -350,
+          "y": 72,
+          "z": 681
+        },
+        "radiusIndex": 1,
+        "angleIndex": 10,
+        "axisIndex": -1,
+        "wetColumns": 71,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 44,
+        "maxY": 72,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -518,
+          "y": 72,
+          "z": 636
+        },
+        "radiusIndex": 1,
+        "angleIndex": 11,
+        "axisIndex": -1,
+        "wetColumns": 2,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 53,
+        "maxY": 128,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -676,
+          "y": 72,
+          "z": 562
+        },
+        "radiusIndex": 1,
+        "angleIndex": 12,
+        "axisIndex": -1,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 77,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -819,
+          "y": 72,
+          "z": 462
+        },
+        "radiusIndex": 1,
+        "angleIndex": 13,
+        "axisIndex": -1,
+        "wetColumns": 20,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 43,
+        "maxY": 118,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -942,
+          "y": 72,
+          "z": 339
+        },
+        "radiusIndex": 1,
+        "angleIndex": 14,
+        "axisIndex": -1,
+        "wetColumns": 48,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 37,
+        "maxY": 128,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1042,
+          "y": 72,
+          "z": 196
+        },
+        "radiusIndex": 1,
+        "angleIndex": 15,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 39,
+        "maxY": 58,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1116,
+          "y": 72,
+          "z": 38
+        },
+        "radiusIndex": 1,
+        "angleIndex": 16,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 48,
+        "maxY": 89,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1161,
+          "y": 72,
+          "z": -130
+        },
+        "radiusIndex": 1,
+        "angleIndex": 17,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 88,
+        "maxY": 95,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1176,
+          "y": 72,
+          "z": -304
+        },
+        "radiusIndex": 1,
+        "angleIndex": 18,
+        "axisIndex": -1,
+        "wetColumns": 31,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 87,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1161,
+          "y": 72,
+          "z": -478
+        },
+        "radiusIndex": 1,
+        "angleIndex": 19,
+        "axisIndex": -1,
+        "wetColumns": 11,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 90,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1116,
+          "y": 72,
+          "z": -646
+        },
+        "radiusIndex": 1,
+        "angleIndex": 20,
+        "axisIndex": -1,
+        "wetColumns": 64,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 25,
+        "maxY": 90,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1042,
+          "y": 72,
+          "z": -804
+        },
+        "radiusIndex": 1,
+        "angleIndex": 21,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 70,
+        "maxY": 86,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -942,
+          "y": 72,
+          "z": -947
+        },
+        "radiusIndex": 1,
+        "angleIndex": 22,
+        "axisIndex": -1,
+        "wetColumns": 21,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 60,
+        "maxY": 76,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -819,
+          "y": 72,
+          "z": -1070
+        },
+        "radiusIndex": 1,
+        "angleIndex": 23,
+        "axisIndex": -1,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 62,
+        "maxY": 78,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -676,
+          "y": 72,
+          "z": -1170
+        },
+        "radiusIndex": 1,
+        "angleIndex": 24,
+        "axisIndex": -1,
+        "wetColumns": 33,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 52,
+        "maxY": 74,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -518,
+          "y": 72,
+          "z": -1244
+        },
+        "radiusIndex": 1,
+        "angleIndex": 25,
+        "axisIndex": -1,
+        "wetColumns": 76,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 51,
+        "maxY": 65,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -350,
+          "y": 72,
+          "z": -1289
+        },
+        "radiusIndex": 1,
+        "angleIndex": 26,
+        "axisIndex": -1,
+        "wetColumns": 52,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 64,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -176,
+          "y": 72,
+          "z": -1304
+        },
+        "radiusIndex": 1,
+        "angleIndex": 27,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 62,
+        "maxY": 75,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -2,
+          "y": 72,
+          "z": -1289
+        },
+        "radiusIndex": 1,
+        "angleIndex": 28,
+        "axisIndex": -1,
+        "wetColumns": 11,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 58,
+        "maxY": 80,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 166,
+          "y": 72,
+          "z": -1244
+        },
+        "radiusIndex": 1,
+        "angleIndex": 29,
+        "axisIndex": -1,
+        "wetColumns": 15,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 72,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 324,
+          "y": 72,
+          "z": -1170
+        },
+        "radiusIndex": 1,
+        "angleIndex": 30,
+        "axisIndex": -1,
+        "wetColumns": 36,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 73,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 467,
+          "y": 72,
+          "z": -1070
+        },
+        "radiusIndex": 1,
+        "angleIndex": 31,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 64,
+        "maxY": 110,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 590,
+          "y": 72,
+          "z": -947
+        },
+        "radiusIndex": 1,
+        "angleIndex": 32,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 84,
+        "maxY": 116,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 690,
+          "y": 72,
+          "z": -804
+        },
+        "radiusIndex": 1,
+        "angleIndex": 33,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 56,
+        "maxY": 87,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 764,
+          "y": 72,
+          "z": -646
+        },
+        "radiusIndex": 1,
+        "angleIndex": 34,
+        "axisIndex": -1,
+        "wetColumns": 24,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 37,
+        "maxY": 73,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 809,
+          "y": 72,
+          "z": -478
+        },
+        "radiusIndex": 1,
+        "angleIndex": 35,
+        "axisIndex": -1,
+        "wetColumns": 73,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 23,
+        "maxY": 65,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1074,
+          "y": 72,
+          "z": -304
+        },
+        "radiusIndex": 2,
+        "angleIndex": 0,
+        "axisIndex": -1,
+        "wetColumns": 26,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 54,
+        "maxY": 69,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1055,
+          "y": 72,
+          "z": -87
+        },
+        "radiusIndex": 2,
+        "angleIndex": 1,
+        "axisIndex": -1,
+        "wetColumns": 20,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 39,
+        "maxY": 70,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 999,
+          "y": 72,
+          "z": 124
+        },
+        "radiusIndex": 2,
+        "angleIndex": 2,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 64,
+        "maxY": 93,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 907,
+          "y": 72,
+          "z": 321
+        },
+        "radiusIndex": 2,
+        "angleIndex": 3,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 45,
+        "maxY": 55,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 782,
+          "y": 72,
+          "z": 499
+        },
+        "radiusIndex": 2,
+        "angleIndex": 4,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 41,
+        "maxY": 56,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 627,
+          "y": 72,
+          "z": 654
+        },
+        "radiusIndex": 2,
+        "angleIndex": 5,
+        "axisIndex": -1,
+        "wetColumns": 26,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 59,
+        "maxY": 70,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 449,
+          "y": 72,
+          "z": 779
+        },
+        "radiusIndex": 2,
+        "angleIndex": 6,
+        "axisIndex": -1,
+        "wetColumns": 69,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 64,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 252,
+          "y": 72,
+          "z": 871
+        },
+        "radiusIndex": 2,
+        "angleIndex": 7,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 43,
+        "maxY": 53,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 41,
+          "y": 72,
+          "z": 927
+        },
+        "radiusIndex": 2,
+        "angleIndex": 8,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 69,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -176,
+          "y": 72,
+          "z": 946
+        },
+        "radiusIndex": 2,
+        "angleIndex": 9,
+        "axisIndex": -1,
+        "wetColumns": 70,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 33,
+        "maxY": 63,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -393,
+          "y": 72,
+          "z": 927
+        },
+        "radiusIndex": 2,
+        "angleIndex": 10,
+        "axisIndex": -1,
+        "wetColumns": 33,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 40,
+        "maxY": 90,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -604,
+          "y": 72,
+          "z": 871
+        },
+        "radiusIndex": 2,
+        "angleIndex": 11,
+        "axisIndex": -1,
+        "wetColumns": 24,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 32,
+        "maxY": 87,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -801,
+          "y": 72,
+          "z": 779
+        },
+        "radiusIndex": 2,
+        "angleIndex": 12,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 80,
+        "maxY": 100,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -979,
+          "y": 72,
+          "z": 654
+        },
+        "radiusIndex": 2,
+        "angleIndex": 13,
+        "axisIndex": -1,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 62,
+        "maxY": 104,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1134,
+          "y": 72,
+          "z": 499
+        },
+        "radiusIndex": 2,
+        "angleIndex": 14,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 69,
+        "maxY": 96,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1259,
+          "y": 72,
+          "z": 321
+        },
+        "radiusIndex": 2,
+        "angleIndex": 15,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 72,
+        "maxY": 107,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1351,
+          "y": 72,
+          "z": 124
+        },
+        "radiusIndex": 2,
+        "angleIndex": 16,
+        "axisIndex": -1,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 61,
+        "maxY": 78,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1407,
+          "y": 72,
+          "z": -87
+        },
+        "radiusIndex": 2,
+        "angleIndex": 17,
+        "axisIndex": -1,
+        "wetColumns": 39,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 32,
+        "maxY": 75,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1426,
+          "y": 72,
+          "z": -304
+        },
+        "radiusIndex": 2,
+        "angleIndex": 18,
+        "axisIndex": -1,
+        "wetColumns": 17,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 48,
+        "maxY": 73,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1407,
+          "y": 72,
+          "z": -521
+        },
+        "radiusIndex": 2,
+        "angleIndex": 19,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 34,
+        "maxY": 59,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1351,
+          "y": 72,
+          "z": -732
+        },
+        "radiusIndex": 2,
+        "angleIndex": 20,
+        "axisIndex": -1,
+        "wetColumns": 31,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 45,
+        "maxY": 80,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1259,
+          "y": 72,
+          "z": -929
+        },
+        "radiusIndex": 2,
+        "angleIndex": 21,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 45,
+        "maxY": 48,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1134,
+          "y": 72,
+          "z": -1107
+        },
+        "radiusIndex": 2,
+        "angleIndex": 22,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 24,
+        "maxY": 60,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -979,
+          "y": 72,
+          "z": -1262
+        },
+        "radiusIndex": 2,
+        "angleIndex": 23,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 28,
+        "maxY": 52,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -801,
+          "y": 72,
+          "z": -1387
+        },
+        "radiusIndex": 2,
+        "angleIndex": 24,
+        "axisIndex": -1,
+        "wetColumns": 76,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 64,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -604,
+          "y": 72,
+          "z": -1479
+        },
+        "radiusIndex": 2,
+        "angleIndex": 25,
+        "axisIndex": -1,
+        "wetColumns": 76,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 42,
+        "maxY": 65,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -393,
+          "y": 72,
+          "z": -1535
+        },
+        "radiusIndex": 2,
+        "angleIndex": 26,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 54,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -176,
+          "y": 72,
+          "z": -1554
+        },
+        "radiusIndex": 2,
+        "angleIndex": 27,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 45,
+        "maxY": 59,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 41,
+          "y": 72,
+          "z": -1535
+        },
+        "radiusIndex": 2,
+        "angleIndex": 28,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 73,
+        "maxY": 105,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 252,
+          "y": 72,
+          "z": -1479
+        },
+        "radiusIndex": 2,
+        "angleIndex": 29,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 72,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 449,
+          "y": 72,
+          "z": -1387
+        },
+        "radiusIndex": 2,
+        "angleIndex": 30,
+        "axisIndex": -1,
+        "wetColumns": 7,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 60,
+        "maxY": 73,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 627,
+          "y": 72,
+          "z": -1262
+        },
+        "radiusIndex": 2,
+        "angleIndex": 31,
+        "axisIndex": -1,
+        "wetColumns": 49,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 37,
+        "maxY": 69,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 782,
+          "y": 72,
+          "z": -1107
+        },
+        "radiusIndex": 2,
+        "angleIndex": 32,
+        "axisIndex": -1,
+        "wetColumns": 19,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 51,
+        "maxY": 71,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 907,
+          "y": 72,
+          "z": -929
+        },
+        "radiusIndex": 2,
+        "angleIndex": 33,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 77,
+        "maxY": 105,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 999,
+          "y": 72,
+          "z": -732
+        },
+        "radiusIndex": 2,
+        "angleIndex": 34,
+        "axisIndex": -1,
+        "wetColumns": 75,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 34,
+        "maxY": 65,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1055,
+          "y": 72,
+          "z": -521
+        },
+        "radiusIndex": 2,
+        "angleIndex": 35,
+        "axisIndex": -1,
+        "wetColumns": 12,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 34,
+        "maxY": 78,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1324,
+          "y": 72,
+          "z": -304
+        },
+        "radiusIndex": 3,
+        "angleIndex": 0,
+        "axisIndex": -1,
+        "wetColumns": 52,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 42,
+        "maxY": 69,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1301,
+          "y": 72,
+          "z": -44
+        },
+        "radiusIndex": 3,
+        "angleIndex": 1,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 60,
+        "maxY": 72,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1123,
+          "y": 72,
+          "z": 446
+        },
+        "radiusIndex": 3,
+        "angleIndex": 3,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 44,
+        "maxY": 56,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 973,
+          "y": 72,
+          "z": 660
+        },
+        "radiusIndex": 3,
+        "angleIndex": 4,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 66,
+        "maxY": 74,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 788,
+          "y": 72,
+          "z": 845
+        },
+        "radiusIndex": 3,
+        "angleIndex": 5,
+        "axisIndex": -1,
+        "wetColumns": 65,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 48,
+        "maxY": 108,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 574,
+          "y": 72,
+          "z": 995
+        },
+        "radiusIndex": 3,
+        "angleIndex": 6,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 78,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 84,
+          "y": 72,
+          "z": 1173
+        },
+        "radiusIndex": 3,
+        "angleIndex": 8,
+        "axisIndex": -1,
+        "wetColumns": 66,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 52,
+        "maxY": 69,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -176,
+          "y": 72,
+          "z": 1196
+        },
+        "radiusIndex": 3,
+        "angleIndex": 9,
+        "axisIndex": -1,
+        "wetColumns": 17,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 49,
+        "maxY": 69,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -436,
+          "y": 72,
+          "z": 1173
+        },
+        "radiusIndex": 3,
+        "angleIndex": 10,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 88,
+        "maxY": 116,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -926,
+          "y": 72,
+          "z": 995
+        },
+        "radiusIndex": 3,
+        "angleIndex": 12,
+        "axisIndex": -1,
+        "wetColumns": 7,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 38,
+        "maxY": 117,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1140,
+          "y": 72,
+          "z": 845
+        },
+        "radiusIndex": 3,
+        "angleIndex": 13,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 98,
+        "maxY": 110,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1325,
+          "y": 72,
+          "z": 660
+        },
+        "radiusIndex": 3,
+        "angleIndex": 14,
+        "axisIndex": -1,
+        "wetColumns": 21,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 32,
+        "maxY": 98,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1475,
+          "y": 72,
+          "z": 446
+        },
+        "radiusIndex": 3,
+        "angleIndex": 15,
+        "axisIndex": -1,
+        "wetColumns": 80,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 31,
+        "maxY": 66,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1653,
+          "y": 72,
+          "z": -44
+        },
+        "radiusIndex": 3,
+        "angleIndex": 17,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 19,
+        "maxY": 50,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1676,
+          "y": 72,
+          "z": -304
+        },
+        "radiusIndex": 3,
+        "angleIndex": 18,
+        "axisIndex": -1,
+        "wetColumns": 44,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 39,
+        "maxY": 76,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1653,
+          "y": 72,
+          "z": -564
+        },
+        "radiusIndex": 3,
+        "angleIndex": 19,
+        "axisIndex": -1,
+        "wetColumns": 35,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 38,
+        "maxY": 91,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1475,
+          "y": 72,
+          "z": -1054
+        },
+        "radiusIndex": 3,
+        "angleIndex": 21,
+        "axisIndex": -1,
+        "wetColumns": 77,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 45,
+        "maxY": 66,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1325,
+          "y": 72,
+          "z": -1268
+        },
+        "radiusIndex": 3,
+        "angleIndex": 22,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 35,
+        "maxY": 44,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1140,
+          "y": 72,
+          "z": -1453
+        },
+        "radiusIndex": 3,
+        "angleIndex": 23,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 35,
+        "maxY": 47,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -926,
+          "y": 72,
+          "z": -1603
+        },
+        "radiusIndex": 3,
+        "angleIndex": 24,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 59,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -436,
+          "y": 72,
+          "z": -1781
+        },
+        "radiusIndex": 3,
+        "angleIndex": 26,
+        "axisIndex": -1,
+        "wetColumns": 75,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 64,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -176,
+          "y": 72,
+          "z": -1804
+        },
+        "radiusIndex": 3,
+        "angleIndex": 27,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 57,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 84,
+          "y": 72,
+          "z": -1781
+        },
+        "radiusIndex": 3,
+        "angleIndex": 28,
+        "axisIndex": -1,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 57,
+        "maxY": 107,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 574,
+          "y": 72,
+          "z": -1603
+        },
+        "radiusIndex": 3,
+        "angleIndex": 30,
+        "axisIndex": -1,
+        "wetColumns": 44,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 71,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 788,
+          "y": 72,
+          "z": -1453
+        },
+        "radiusIndex": 3,
+        "angleIndex": 31,
+        "axisIndex": -1,
+        "wetColumns": 77,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 30,
+        "maxY": 68,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 973,
+          "y": 72,
+          "z": -1268
+        },
+        "radiusIndex": 3,
+        "angleIndex": 32,
+        "axisIndex": -1,
+        "wetColumns": 43,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 28,
+        "maxY": 71,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1123,
+          "y": 72,
+          "z": -1054
+        },
+        "radiusIndex": 3,
+        "angleIndex": 33,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 58,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1301,
+          "y": 72,
+          "z": -564
+        },
+        "radiusIndex": 3,
+        "angleIndex": 35,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 33,
+        "maxY": 74,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": 41,
+          "y": 69,
+          "z": 927
+        },
+        "radiusIndex": 2,
+        "angleIndex": 8,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 10,
+        "minY": 14,
+        "maxY": 69,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": -1161,
+          "y": 89,
+          "z": -130
+        },
+        "radiusIndex": 1,
+        "angleIndex": 17,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 20,
+        "minY": 88,
+        "maxY": 94,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": 973,
+          "y": 70,
+          "z": 660
+        },
+        "radiusIndex": 3,
+        "angleIndex": 4,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 66,
+        "maxY": 73,
+        "result": "FOUNDATION_ELIGIBLE"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 973,
+          "y": 70,
+          "z": 660
+        },
+        "radiusIndex": 3,
+        "angleIndex": 4,
+        "axisIndex": 0,
+        "wetColumns": 5,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 67,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 973,
+          "y": 70,
+          "z": 660
+        },
+        "radiusIndex": 3,
+        "angleIndex": 4,
+        "axisIndex": 1,
+        "wetColumns": 6,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 42,
+        "maxY": 120,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 973,
+          "y": 70,
+          "z": 660
+        },
+        "radiusIndex": 3,
+        "angleIndex": 4,
+        "axisIndex": 2,
+        "wetColumns": 7,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 44,
+        "maxY": 80,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 973,
+          "y": 70,
+          "z": 660
+        },
+        "radiusIndex": 3,
+        "angleIndex": 4,
+        "axisIndex": 3,
+        "wetColumns": 2,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 57,
+        "maxY": 96,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 973,
+          "y": 70,
+          "z": 660
+        },
+        "radiusIndex": 3,
+        "angleIndex": 4,
+        "axisIndex": 4,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 56,
+        "maxY": 112,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": -576,
+          "y": 74,
+          "z": -997
+        },
+        "radiusIndex": 0,
+        "angleIndex": 24,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 56,
+        "minY": 67,
+        "maxY": 77,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": 252,
+          "y": 67,
+          "z": -1479
+        },
+        "radiusIndex": 2,
+        "angleIndex": 29,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 64,
+        "maxY": 71,
+        "result": "FOUNDATION_ELIGIBLE"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 252,
+          "y": 67,
+          "z": -1479
+        },
+        "radiusIndex": 2,
+        "angleIndex": 29,
+        "axisIndex": 0,
+        "wetColumns": 5,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 80,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 252,
+          "y": 67,
+          "z": -1479
+        },
+        "radiusIndex": 2,
+        "angleIndex": 29,
+        "axisIndex": 1,
+        "wetColumns": 4,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 49,
+        "maxY": 93,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 252,
+          "y": 67,
+          "z": -1479
+        },
+        "radiusIndex": 2,
+        "angleIndex": 29,
+        "axisIndex": 2,
+        "wetColumns": 4,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 52,
+        "maxY": 79,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 252,
+          "y": 67,
+          "z": -1479
+        },
+        "radiusIndex": 2,
+        "angleIndex": 29,
+        "axisIndex": 3,
+        "wetColumns": 7,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 80,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 252,
+          "y": 67,
+          "z": -1479
+        },
+        "radiusIndex": 2,
+        "angleIndex": 29,
+        "axisIndex": 4,
+        "wetColumns": 3,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 73,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": -450,
+          "y": 67,
+          "z": -1056
+        },
+        "radiusIndex": 0,
+        "angleIndex": 25,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 27,
+        "minY": 48,
+        "maxY": 71,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": -1140,
+          "y": 110,
+          "z": 845
+        },
+        "radiusIndex": 3,
+        "angleIndex": 13,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 53,
+        "minY": 100,
+        "maxY": 110,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": 1301,
+          "y": 67,
+          "z": -44
+        },
+        "radiusIndex": 3,
+        "angleIndex": 1,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 27,
+        "minY": 57,
+        "maxY": 72,
+        "result": "REJECTED"
+      }
+    ],
+    "rootProgress": {
+      "phase": 1,
+      "candidate": 144,
+      "shortlisted": 8,
+      "footprintColumn": 0,
+      "axisIndex": 5,
+      "columns": 28890,
+      "maxBatchNanos": 39777700,
+      "over40msBatches": 0
+    }
+  },
+  "lane": {
+    "drained": 1,
+    "oracle-closes": 1,
+    "closed": 1,
+    "native-constructions": 1,
+    "initializing": 1,
+    "queued": 0,
+    "ready": 1,
+    "action-failures": 1,
+    "factory-calls": 1,
+    "initialization-nanos": 34266100
+  },
+  "productionWiring": "OFF",
+  "onlyHydrologySegment": 0,
+  "failureCode": "ROOT_NOT_FOUND",
+  "observationStatus": "OBSERVATION_COMPLETE"
+}

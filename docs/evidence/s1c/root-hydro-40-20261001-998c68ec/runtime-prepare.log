@@ -1,0 +1,24 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileClientJava UP-TO-DATE
+> Task :processClientResources UP-TO-DATE
+> Task :jar UP-TO-DATE
+> Task :processIncludeJars UP-TO-DATE
+> Task :remapJar UP-TO-DATE
+> Task :compileServerSmokeJava UP-TO-DATE
+> Task :processServerSmokeResources UP-TO-DATE
+> Task :serverSmokeClasses UP-TO-DATE
+> Task :serverSmokeJar UP-TO-DATE
+> Task :remapServerSmokeJar UP-TO-DATE
+> Task :prepareSeedSurveyRuntime
+
+BUILD SUCCESSFUL in 10s
+12 actionable tasks: 1 executed, 11 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html

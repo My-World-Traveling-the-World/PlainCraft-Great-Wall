@@ -1,0 +1,9 @@
+PASS: DedicatedServer startup, 2684 ticks and clean shutdown
+serverClass=net.minecraft.class_3176
+profile=vanilla
+seed=3
+minY=-64
+maxYExclusive=320
+generator=net.minecraft.class_3754
+loadedChunks=841
+mods=44
