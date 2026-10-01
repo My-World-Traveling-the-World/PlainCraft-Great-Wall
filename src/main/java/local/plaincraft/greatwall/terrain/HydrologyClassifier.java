@@ -84,6 +84,10 @@ public final class HydrologyClassifier {
         Objects.requireNonNull(c, "cursor");
         c.claimOwner();
         if (c.done) return;
+        // A column that was mid-sample must be finished before the cursor is
+        // abandoned, otherwise the oracle still owns an open column and the
+        // next begin() refuses with "finish the current natural column".
+        drainOpenColumn(c);
         if (c.phase == 0) {
             // Coarse scan had not finished; there is nothing certified yet.
             c.completed.clear();
@@ -141,6 +145,24 @@ public final class HydrologyClassifier {
             }
         }
         return evidence;
+    }
+
+    /**
+     * Finishes an in-flight oracle column so the cursor leaves no open
+     * natural column behind. Sampling errors are swallowed here because the
+     * whole point of a forced completion is to stop spending work; the
+     * evidence already certified stays authoritative.
+     */
+    private static void drainOpenColumn(Cursor c) {
+        if (c.column == null) return;
+        try {
+            while (!c.column.done()) c.oracle.advance(c.column, 1);
+            c.oracle.finish(c.column);
+        } catch (RuntimeException ignored) {
+            // A forced completion accepts a partially sampled last column.
+        } finally {
+            c.column = null;
+        }
     }
 
     private static void appendNodes(List<Node> result, RouteShape route, int from, int to, long base) {
