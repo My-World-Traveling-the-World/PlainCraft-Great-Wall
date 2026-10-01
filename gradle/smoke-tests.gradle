@@ -5,6 +5,9 @@ sourceSets {
         runtimeClasspath += output + sourceSets.main.runtimeClasspath
     }
 }
+// Pure diagnostic coordinate tests consume the test-only source set, never the production jar.
+sourceSets.test.compileClasspath += sourceSets.serverSmoke.output
+sourceSets.test.runtimeClasspath += sourceSets.serverSmoke.output
 
 def profile = providers.gradleProperty('smokeProfile').getOrElse('vanilla')
 def runId = providers.gradleProperty('smokeRunId').getOrElse(UUID.randomUUID().toString())
