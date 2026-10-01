@@ -131,6 +131,39 @@ public final class GameplayTypes {
         }
     }
 
+    /** Frozen inputs for the pure garrison spawn policy. */
+    public record PolicyInput(boolean peaceful, boolean mobSpawning, boolean playerNear,
+            long nearestPlayerDistanceSquared, long dayTime, local.plaincraft.greatwall.model.WallTypes.DecayState decay) {
+        public PolicyInput {
+            Objects.requireNonNull(decay, "decay");
+            if (nearestPlayerDistanceSquared < 0) {
+                throw new IllegalArgumentException("distanceSquared >= 0 required");
+            }
+        }
+    }
+
+    public record OwnedMob(SiteId site, int ordinal, UUID entity, long sequence) {
+        public OwnedMob {
+            Objects.requireNonNull(site, "site");
+            Objects.requireNonNull(entity, "entity");
+            if (ordinal < 0 || sequence < 0) throw new IllegalArgumentException("ordinal/sequence >= 0 required");
+        }
+    }
+
+    public record SpawnPermit(SiteId site, int localSlot, int ordinal, Point3i feet, String entityType,
+            UUID entity, long sequence, UUID session) {
+        public SpawnPermit {
+            Objects.requireNonNull(site, "site");
+            Objects.requireNonNull(feet, "feet");
+            Objects.requireNonNull(entityType, "entityType");
+            Objects.requireNonNull(entity, "entity");
+            Objects.requireNonNull(session, "session");
+            if (localSlot < 0 || ordinal < 0 || sequence < 0) {
+                throw new IllegalArgumentException("slot/ordinal/sequence >= 0 required");
+            }
+        }
+    }
+
     public record Approval(boolean allowed, String reason, Optional<UUID> entity) {
         public Approval {
             Objects.requireNonNull(reason, "reason");
