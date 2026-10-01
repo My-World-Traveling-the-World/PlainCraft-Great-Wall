@@ -412,6 +412,16 @@ public final class RealizationPlanner {
             var existing=known.get(key);
             supports.put(key,existing!=null?existing:probe.probe(protectedView(column,pos,input.protectedBounds()),key.y(),bounds));
         }
+        if(Boolean.getBoolean("greatwall.s1c.protectionTrace")&&site.id().kind()==SiteKind.FORT&&site.id().ordinal()==0) {
+            var counts=new EnumMap<ProbeKind,Integer>(ProbeKind.class);
+            supports.values().forEach(v->counts.merge(v.kind(),1,Integer::sum));
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:protection-source] fort0 cell={} bounds={} supportKinds={} intersectingBoxes={}",
+                    input.key(),world,counts,input.protectedBounds().stream().filter(b->
+                            b.minX()<world.maxXExclusive()&&b.maxXExclusive()>world.minX()
+                            &&b.minZ()<world.maxZExclusive()&&b.maxZExclusive()>world.minZ()
+                            &&b.minY()<world.maxYExclusive()&&b.maxYExclusive()>world.minY()).distinct().toList());
+        }
         return new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,List.of());
     }
     private static long workingBytes(Input input) {

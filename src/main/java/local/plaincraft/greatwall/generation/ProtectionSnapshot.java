@@ -12,6 +12,7 @@ import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.BlockCatalog;
+import local.plaincraft.greatwall.GreatWallMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -106,15 +107,32 @@ public record ProtectionSnapshot(List<Bounds> structures,Set<Point3i> blockEntit
         requireFeatures(owner);Objects.requireNonNull(predicted);Objects.requireNonNull(prepared);
         CompiledAllocation.charge(512L+128L*structureBoxUpperBound(owner,predicted.size(),prepared));
         var boxes=new ArrayList<>(predicted);
-        for(var start:owner.getAllStarts().values())append(start,boxes);
+        for(var entry:owner.getAllStarts().entrySet()) {
+            var start=entry.getValue();
+            traceOrigin(owner,"OWNER_START",entry.getKey().getClass().getSimpleName(),owner.getPos(),start,conservativeReadBounds);
+            append(start,boxes);
+        }
         for(var entry:owner.getAllReferences().entrySet()) {
             for(long reference:entry.getValue()) {
                 var chunk=prepared.get(new ChunkPos(reference));
                 var start=chunk==null?null:chunk.getStartForStructure(entry.getKey());
+                traceOrigin(owner,chunk==null?"MISSING_PREPARED":start==null?"MISSING_START":!start.isValid()?"INVALID_START":"RESOLVED_REFERENCE",
+                        entry.getKey().getClass().getSimpleName(),new ChunkPos(reference),start,conservativeReadBounds);
                 if(start==null||!start.isValid())boxes.add(conservativeReadBounds);else append(start,boxes);
             }
         }
         return boxes.stream().distinct().sorted(BOX_ORDER).toList();
+    }
+
+    private static void traceOrigin(ChunkAccess owner,String source,String structure,ChunkPos reference,
+            StructureStart start,Bounds fallback) {
+        if(!Boolean.getBoolean("greatwall.s1c.protectionTrace"))return;
+        if(start!=null&&start.isValid())
+            GreatWallMod.LOGGER.info("[GreatWall:protection-source] owner={} source={} structure={} reference={} actual={} pieces={}",
+                    owner.getPos(),source,structure,reference,bounds(start.getBoundingBox()),start.getPieces().size());
+        else if(!source.equals("OWNER_START"))
+            GreatWallMod.LOGGER.info("[GreatWall:protection-source] owner={} source={} structure={} reference={} fallback={}",
+                    owner.getPos(),source,structure,reference,fallback);
     }
 
     /** Count native piece views before the T0 allocation reservation; do not construct evidence here. */

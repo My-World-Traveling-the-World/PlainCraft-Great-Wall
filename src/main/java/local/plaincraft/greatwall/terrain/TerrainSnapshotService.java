@@ -14,6 +14,7 @@ import local.plaincraft.greatwall.persistence.ChunkEvidenceStore;
 import local.plaincraft.greatwall.persistence.EvidenceCodec;
 import local.plaincraft.greatwall.diagnostics.AllocationBudget;
 import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
+import local.plaincraft.greatwall.GreatWallMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.level.ChunkPos;
@@ -119,8 +120,11 @@ public final class TerrainSnapshotService implements AutoCloseable {
                     }),io).thenComposeAsync(saved->io(()->accounted(scratchBudget,()->{
                         store.persistCoverageIntent(coverage);return saved;
                     },false)),io).thenComposeAsync(saved->{
-                        if(saved.metadata().isPresent())return CompletableFuture.completedFuture(
+                        if(saved.metadata().isPresent()) {
+                            traceProtection("DURABLE_READ",saved.metadata().get());
+                            return CompletableFuture.completedFuture(
                                 new CapturedTerrain(saved.tiles(),Map.of(coverage.chunk(),saved.metadata().get())));
+                        }
                         CompletableFuture<Map<TerrainTile.Key,TerrainTile>> pages=CompletableFuture.completedFuture(saved.tiles());
                         for(var key:keys)if(!saved.tiles().containsKey(key)) {
                             pages=pages.thenComposeAsync(prior->engine.exclusive(owner.getPos(),()->{
@@ -149,6 +153,7 @@ public final class TerrainSnapshotService implements AutoCloseable {
                                         base.protectedStructures(),base.blockEntities(),immutable,"0".repeat(64)));
                                 for(var page:captured.values())store.persistBeforeApply(page);
                                 store.persistCoverage(metadata);
+                                traceProtection("NEW_CAPTURE",metadata);
                                 return new CapturedTerrain(captured,Map.of(coverage.chunk(),metadata));
                             },false)),io);
                         },io);
@@ -162,6 +167,11 @@ public final class TerrainSnapshotService implements AutoCloseable {
             else if(reserved)releaseAdmission();
             return CompletableFuture.failedFuture(failure);
         }
+    }
+    private static void traceProtection(String source,CaptureMetadata metadata) {
+        if(Boolean.getBoolean("greatwall.s1c.protectionTrace"))
+            GreatWallMod.LOGGER.info("[GreatWall:protection-source] metadataSource={} owner={} hash={} read={} boxes={}",
+                    source,metadata.coverage().chunk(),metadata.hash(),metadata.coverage().readBounds(),metadata.protectedStructures());
     }
     private void finishCapture(Coverage coverage,Flight flight,Map<String,AllocationBudget.Pin> scratch,
             Map<String,AllocationBudget.Pin> retained,CapturedTerrain value,Throwable error) {
