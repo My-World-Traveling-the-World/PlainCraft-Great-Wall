@@ -18,6 +18,39 @@ final class WorldBootstrapTest {
     private static final ChunkKey EARLY = new ChunkKey("minecraft:overworld", -63, -63);
     private static final ChunkKey REMOTE = new ChunkKey("minecraft:overworld", 500, 500);
     private static final DimensionBounds BOUNDS = new DimensionBounds(-64, 320, 30000000);
+    @Test void heldStructureScreenDoesNotFreezeRecipeOrWaitForFeaturesOrNormalTicks() throws Exception {
+        var screen=new HeldScreen();
+        var manifest=new WorldManifest(directory.resolve("held-screen"));
+        try(var io=Executors.newSingleThreadExecutor()){
+            var bootstrap=new WorldBootstrap(manifest,io,17,false);
+            try {
+                bootstrap.authorizeSpawnProbe(EARLY,11);
+                bootstrap.spawnChosen(new Point3i(-1000,64,-1000));
+                var inputs=frozen(new AtomicInteger());
+                bootstrap.prepareFrozen(new WorldBootstrap.Frozen(inputs.bounds(),inputs.terrainHash(),inputs.paletteHash(),
+                        inputs.templatesHash(),inputs.factory(),inputs.foundation(),screen));
+                var candidates=screen.requested.get(30,TimeUnit.SECONDS);
+                assertFalse(bootstrap.ready().isDone());
+                assertTrue(manifest.read().isEmpty(),"no recipe is persisted before complete structure proof");
+                assertEquals(4,bootstrap.progress().get("root").phase());
+                screen.votes.complete(candidates.stream().map(c->new RootStructureScreen.Vote(c.radiusIndex(),c.angleIndex(),
+                        java.util.List.of(0,1,2,3,4),java.util.Collections.nCopies(5,"CLEAR"))).toList());
+                var recipe=bootstrap.ready().get(30,TimeUnit.SECONDS);
+                assertEquals(17,recipe.seed());assertEquals(recipe,manifest.read().orElseThrow());
+                assertTrue(bootstrap.diagnostics().containsKey("structure-screen-complete"));
+            }finally{bootstrap.close();bootstrap.drain().get(10,TimeUnit.SECONDS);}
+        }
+    }
+    private static final class HeldScreen implements RootStructureScreen {
+        final CompletableFuture<java.util.List<Candidate>> requested=new CompletableFuture<>();
+        final CompletableFuture<java.util.List<Vote>> votes=new CompletableFuture<>();
+        final CompletableFuture<Void> drained=new CompletableFuture<>();
+        public CompletableFuture<java.util.List<Vote>> inspect(java.util.List<Candidate> candidates){
+            requested.complete(java.util.List.copyOf(candidates));return votes.copy();
+        }
+        public CompletableFuture<Void> drained(){return drained.copy();}
+        public void close(){votes.completeExceptionally(new IllegalStateException("closed"));drained.complete(null);}
+    }
 
     @Test void earlySpawnWaitsOnlyForAuthorizationAndRemoteDoesNotPass() throws Exception {
         var queued = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();

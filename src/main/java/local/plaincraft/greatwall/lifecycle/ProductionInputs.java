@@ -42,7 +42,7 @@ public record ProductionInputs(WorldBootstrap.Frozen bootstrap, BlockCatalog blo
                     var evidence = cpu.supportEvidence(cursor);
                     return evidence.size() == 3 && evidence.stream()
                             .allMatch(spec -> blocks.flags(BlockCatalog.token(BlockCatalog.resolveState(spec), false)).support());
-                });
+                },new local.plaincraft.greatwall.generation.NativeRootStructureScreen(level));
         return new ProductionInputs(root, blocks, trees);
     }
 }

@@ -11,6 +11,44 @@ import org.junit.jupiter.api.Test;
 
 final class RootSearchTest {
     private static final DimensionBounds BOUNDS = new DimensionBounds(-64, 320, 30_000_000);
+    @Test void structureScreenPausesWithoutReadingMoreColumnsAndAllConflictsFailClosed() {
+        var domain=new SpawnDomain();domain.authorize(new ChunkKey("minecraft:overworld",-63,-63),11);
+        var root=new RootSearch(new Point3i(-1000,64,-1000),BOUNDS,domain.snapshot(),(o,c)->true,true);
+        var oracle=new Fixture(false);
+        while(!root.needsStructureScreen())root.advance(oracle,64);
+        var pending=root.pendingStructureCandidates();
+        int columns=root.progress().columns();
+        for(int n=0;n<10;n++)assertEquals(WorkState.MORE,root.advance(oracle,64));
+        assertEquals(columns,root.progress().columns(),"no oracle or normal tick work while structure votes are unresolved");
+        assertTrue(pending.size()>8&&pending.size()<=144);
+        var denied=pending.stream().map(c->new RootStructureScreen.Vote(c.radiusIndex(),c.angleIndex(),List.of(),
+                java.util.Collections.nCopies(5,"STRUCTURE_CONFLICT:test:registered"))).toList();
+        var failure=assertThrows(WallFailure.class,()->root.acceptStructureVotes(denied));
+        assertEquals(FailureCode.ROOT_NOT_FOUND,failure.code());
+        assertEquals(columns,root.progress().columns());
+    }
+    @Test void filteringPrecedesFrozenEightCandidateLimitAndPreservesOrder() {
+        var domain=new SpawnDomain();domain.authorize(new ChunkKey("minecraft:overworld",-63,-63),11);
+        var root=new RootSearch(new Point3i(-1000,64,-1000),BOUNDS,domain.snapshot(),(o,c)->true,true);
+        var oracle=new Fixture(false);
+        while(!root.needsStructureScreen())root.advance(oracle,64);
+        var pending=root.pendingStructureCandidates();
+        var votes=new java.util.ArrayList<RootStructureScreen.Vote>();
+        for(int i=0;i<pending.size();i++){
+            var c=pending.get(i);
+            votes.add(new RootStructureScreen.Vote(c.radiusIndex(),c.angleIndex(),i<8?List.of():List.of(0,1,2,3,4),
+                    java.util.Collections.nCopies(5,i<8?"STRUCTURE_CONFLICT:test:registered":"CLEAR")));
+        }
+        root.acceptStructureVotes(votes);
+        assertEquals(8,root.progress().shortlisted());
+        while(root.advance(oracle,64)!=WorkState.DONE){}
+        var selected=root.finish();
+        assertEquals(pending.get(8).radiusIndex(),selected.radiusIndex());
+        assertEquals(pending.get(8).angleIndex(),selected.angleIndex());
+        assertTrue(root.progress().columns()<=150000);
+        assertEquals(40,root.audit().stream().filter(a->a.stage().equals("structure")
+                &&a.result().startsWith("STRUCTURE_CONFLICT")).count());
+    }
 
     @Test void nativeDomainIncludesAccumulatedRadiusAndTwoChunksOnly() {
         var domain = new SpawnDomain();

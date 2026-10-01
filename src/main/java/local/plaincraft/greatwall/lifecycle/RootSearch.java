@@ -3,6 +3,7 @@ package local.plaincraft.greatwall.lifecycle;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 import local.plaincraft.greatwall.geometry.FixedMath;
@@ -49,6 +50,9 @@ public final class RootSearch {
     private final ArrayList<Candidate> candidates = new ArrayList<>();
     private final ArrayList<Audit> audit = new ArrayList<>();
     private List<Candidate> shortlisted = List.of();
+    private List<Candidate> structureCandidates = List.of();
+    private Map<Integer,List<Integer>> allowedAxes = Map.of();
+    private final boolean screenStructures;
     private NaturalTerrainOracle.ColumnCursor column;
     private Thread owner;
     private int phase, candidateIndex, sampleIndex, selectedIndex, axisIndex, columns;
@@ -61,10 +65,15 @@ public final class RootSearch {
 
     public RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
             BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation) {
+        this(spawn,bounds,early,foundation,false);
+    }
+    public RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
+            BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation,boolean screenStructures) {
         this.spawn = Objects.requireNonNull(spawn);
         this.bounds = Objects.requireNonNull(bounds);
         this.early = List.copyOf(early);
         this.foundation = Objects.requireNonNull(foundation);
+        this.screenStructures=screenStructures;
         if (early.isEmpty()) throw new IllegalArgumentException("native spawn domain must be recorded");
     }
 
@@ -73,7 +82,7 @@ public final class RootSearch {
         if (primitiveLimit < 1 || primitiveLimit > 64) throw new IllegalArgumentException("root batch limit 1..64");
         long started = System.nanoTime(), deadline = started + 25_000_000L;
         try {
-            for (int operation = 0; operation < primitiveLimit && phase != 3; operation++) {
+            for (int operation = 0; operation < primitiveLimit && phase != 3 && phase != 4; operation++) {
                 if (Thread.currentThread().isInterrupted()) throw new WallFailure(FailureCode.CLOSED, "root search interrupted");
                 // Yield before the next primitive in the guard window; completed batches
                 // still include the full duration of any individually slow primitive.
@@ -109,12 +118,43 @@ public final class RootSearch {
     }
     /** Diagnostic-only, lane-owned copy. It is never an input to selection or persisted recipe identity. */
     public List<Audit> audit() { claimOwner(); return List.copyOf(audit); }
+    public boolean needsStructureScreen(){claimOwner();return phase==4;}
+    public List<RootStructureScreen.Candidate> pendingStructureCandidates(){
+        claimOwner();
+        if(phase!=4)throw new IllegalStateException("root is not waiting for structure votes");
+        return structureCandidates.stream().map(c->new RootStructureScreen.Candidate(c.origin(),c.radius(),c.angle(),
+                java.util.stream.IntStream.range(0,5).mapToObj(i->axis(c.origin(),i)).toList())).toList();
+    }
+    public void acceptStructureVotes(List<RootStructureScreen.Vote> votes){
+        claimOwner();
+        if(phase!=4||votes.size()!=structureCandidates.size())throw new IllegalArgumentException("complete pending root votes required");
+        var map=new java.util.HashMap<Integer,List<Integer>>();
+        for(int n=0;n<votes.size();n++){
+            var candidate=structureCandidates.get(n);var vote=votes.get(n);
+            if(vote.radiusIndex()!=candidate.radius()||vote.angleIndex()!=candidate.angle())
+                throw new IllegalArgumentException("structure votes must preserve deterministic candidate order");
+            map.put(candidate.radius()*36+candidate.angle(),vote.allowedAxes());
+            for(int i=0;i<5;i++)audit.add(new Audit("structure",candidate.origin(),candidate.radius(),candidate.angle(),i,
+                    0,0,0,candidate.origin().y(),candidate.origin().y(),
+                    vote.allowedAxes().contains(i)?"STRUCTURE_CLEAR":vote.reasons().get(i)));
+        }
+        allowedAxes=Map.copyOf(map);
+        shortlisted=structureCandidates.stream().filter(c->!allowedAxes.get(c.radius()*36+c.angle()).isEmpty()).limit(8).toList();
+        structureCandidates=List.of();
+        if(shortlisted.isEmpty())throw notFound();
+        phase=1;resetSamples();
+    }
 
     private void coarseStep(NaturalTerrainOracle oracle) {
         if (candidateIndex == RADII.length * 36) {
-            shortlisted = candidates.stream().sorted(Comparator.comparingInt(Candidate::wet)
+            var ordered = candidates.stream().sorted(Comparator.comparingInt(Candidate::wet)
                     .thenComparingInt(Candidate::slope).thenComparing(Comparator.comparingLong(Candidate::ridge).reversed())
-                    .thenComparingInt(Candidate::radius).thenComparingInt(Candidate::angle)).limit(8).toList();
+                    .thenComparingInt(Candidate::radius).thenComparingInt(Candidate::angle)).toList();
+            if(screenStructures){
+                if(ordered.isEmpty())throw notFound();
+                structureCandidates=ordered;phase=4;return;
+            }
+            shortlisted=ordered.stream().limit(8).toList();
             if (shortlisted.isEmpty()) throw notFound();
             phase = 1; resetSamples(); return;
         }
@@ -169,6 +209,9 @@ public final class RootSearch {
             selectedIndex++; phase = 1; resetSamples(); return;
         }
         if (sampleIndex == 0 && column == null) {
+            if(screenStructures&&!allowedAxes.get(current.radius()*36+current.angle()).contains(axisIndex)){
+                axisIndex++;resetSamples();return;
+            }
             axis = axis(current.origin(), axisIndex);
             long dx = (long) current.origin().x() - spawn.x(), dz = (long) current.origin().z() - spawn.z();
             if (dx * axis.exQ30() + dz * axis.ezQ30() <= 0 || !SpawnDomain.disjointFuture(axis, early)) {

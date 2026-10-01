@@ -28,7 +28,11 @@ import net.minecraft.server.level.ServerLevel;
 public final class WorldBootstrap implements AutoCloseable {
     public record Frozen(DimensionBounds bounds, String terrainHash, String paletteHash, String templatesHash,
             Supplier<NaturalTerrainOracle> factory,
-            BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation) {
+            BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation,RootStructureScreen structures) {
+        public Frozen(DimensionBounds bounds,String terrainHash,String paletteHash,String templatesHash,
+                Supplier<NaturalTerrainOracle> factory,BiPredicate<NaturalTerrainOracle,NaturalTerrainOracle.ColumnCursor> foundation){
+            this(bounds,terrainHash,paletteHash,templatesHash,factory,foundation,null);
+        }
         public Frozen {
             Objects.requireNonNull(bounds); Objects.requireNonNull(factory); Objects.requireNonNull(foundation);
             local.plaincraft.greatwall.model.WallTypes.requireHash(terrainHash);
@@ -37,7 +41,8 @@ public final class WorldBootstrap implements AutoCloseable {
         }
     }
     private record Authorized(WorldManifest.Creation creation, Optional<WorldRecipe> saved) {}
-    private record RootBatch(Optional<RootSearch.Selection> selected, RootSearch.Progress progress) {}
+    private record RootBatch(Optional<RootSearch.Selection> selected, RootSearch.Progress progress,
+            List<RootStructureScreen.Candidate> screen) {}
     private final MinecraftServer server;
     private final WorldManifest manifest;
     private final Executor io;
@@ -200,7 +205,8 @@ public final class WorldBootstrap implements AutoCloseable {
                         validateSaved(recipe, inputs);
                         publish(recipe);
                     } else {
-                        var search = new RootSearch(spawn.get("chosen"), inputs.bounds(), earlyDomain.snapshot(), inputs.foundation());
+                        if(server!=null&&inputs.structures()==null)throw new IllegalStateException("native bootstrap requires a structure screen");
+                        var search = new RootSearch(spawn.get("chosen"), inputs.bounds(), earlyDomain.snapshot(), inputs.foundation(),inputs.structures()!=null);
                         advance(search, lanes.getFirst(), authorization.creation(), inputs);
                     }
                 } catch (Throwable failure) { fail(failure); }
@@ -215,7 +221,8 @@ public final class WorldBootstrap implements AutoCloseable {
         lane.submit(oracle -> {
             try {
                 var status = search.advance(oracle, 64);
-                return new RootBatch(status == WorkState.DONE ? Optional.of(search.finish()) : Optional.empty(), search.progress());
+                return new RootBatch(status == WorkState.DONE ? Optional.of(search.finish()) : Optional.empty(), search.progress(),
+                        search.needsStructureScreen()?search.pendingStructureCandidates():List.of());
             } finally {
                 progress.put("root", search.progress());
                 rootAudit.put("root", search.audit());
@@ -224,6 +231,20 @@ public final class WorldBootstrap implements AutoCloseable {
             if (state.containsKey("closed") || state.containsKey("failed")) return;
             if (error != null) { fail(error); return; }
             progress.put("root", batch.progress());
+            if(!batch.screen().isEmpty()){
+                state.put("structure-screen-entered",true);
+                try {
+                    inputs.structures().inspect(batch.screen()).thenCompose(votes->lane.submit(oracle->{
+                        active();search.acceptStructureVotes(votes);
+                        progress.put("root",search.progress());rootAudit.put("root",search.audit());return (Void)null;
+                    })).whenCompleteAsync((ignored,failure)->{
+                        if(state.containsKey("closed")||state.containsKey("failed"))return;
+                        if(failure!=null){fail(failure);return;}
+                        state.put("structure-screen-complete",true);advance(search,lane,creation,inputs);
+                    },rootPump);
+                }catch(Throwable failure){fail(failure);}
+                return;
+            }
             if (batch.selected().isEmpty()) { advance(search, lane, creation, inputs); return; }
             var selection = batch.selected().get();
             var provisional = new WorldRecipe(creation.instance(), "0".repeat(64), seed, "minecraft:overworld",
@@ -293,6 +314,8 @@ public final class WorldBootstrap implements AutoCloseable {
         ready.completeExceptionally(new WallFailure(FailureCode.CLOSED, "bootstrap closed"));
         var planner = transferred.computeIfPresent("planner", (key, value) -> { value.close(); return value; });
         rootPump.shutdown();
+        var inputs=frozen.get("inputs");
+        if(inputs!=null&&inputs.structures()!=null)inputs.structures().close();
         var captured = new java.util.concurrent.atomic.AtomicReference<List<OracleLane>>(List.of());
         laneSnapshot.computeIfPresent("lanes", (key, lanes) -> {
             captured.set(lanes);
@@ -306,7 +329,8 @@ public final class WorldBootstrap implements AutoCloseable {
         ioFlights.computeIfPresent("admitted", (key, pending) -> { ioSnapshot.set(pending); return pending; });
         var pendingIo = CompletableFuture.allOf(ioSnapshot.get().stream()
                 .map(value -> value.handle((result, error) -> null)).toArray(CompletableFuture[]::new));
-        CompletableFuture.allOf(done, pendingIo).whenComplete((value, error) -> {
+        var structures=inputs==null||inputs.structures()==null?CompletableFuture.<Void>completedFuture(null):inputs.structures().drained();
+        CompletableFuture.allOf(done, pendingIo,structures).whenComplete((value, error) -> {
             if (error == null) drained.complete(null); else drained.completeExceptionally(error);
         });
     }
