@@ -51,6 +51,8 @@ public final class RootSearch {
     private final ArrayList<Audit> audit = new ArrayList<>();
     private List<Candidate> shortlisted = List.of();
     private List<Candidate> structureCandidates = List.of();
+    private List<Candidate> remainingScreened = List.of();
+    private int screenedOffset;
     private Map<Integer,List<Integer>> allowedAxes = Map.of();
     private final boolean screenStructures;
     private NaturalTerrainOracle.ColumnCursor column;
@@ -139,7 +141,8 @@ public final class RootSearch {
                     vote.allowedAxes().contains(i)?"STRUCTURE_CLEAR":vote.reasons().get(i)));
         }
         allowedAxes=Map.copyOf(map);
-        shortlisted=structureCandidates.stream().filter(c->!allowedAxes.get(c.radius()*36+c.angle()).isEmpty()).limit(8).toList();
+        remainingScreened=structureCandidates.stream().filter(c->!allowedAxes.get(c.radius()*36+c.angle()).isEmpty()).toList();
+        shortlisted=remainingScreened.stream().limit(8).toList();screenedOffset=shortlisted.size();
         structureCandidates=List.of();
         if(shortlisted.isEmpty())throw notFound();
         phase=1;resetSamples();
@@ -180,6 +183,11 @@ public final class RootSearch {
 
     private void footprintStep(NaturalTerrainOracle oracle) {
         if (selectedIndex == shortlisted.size()) {
+            if(best==null&&screenStructures&&screenedOffset<remainingScreened.size()){
+                int end=Math.min(remainingScreened.size(),screenedOffset+8);
+                shortlisted=List.copyOf(remainingScreened.subList(screenedOffset,end));
+                screenedOffset=end;selectedIndex=0;resetSamples();return;
+            }
             if (best == null) throw notFound();
             phase = 3; return;
         }

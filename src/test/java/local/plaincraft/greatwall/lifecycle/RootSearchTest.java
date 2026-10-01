@@ -11,6 +11,25 @@ import org.junit.jupiter.api.Test;
 
 final class RootSearchTest {
     private static final DimensionBounds BOUNDS = new DimensionBounds(-64, 320, 30_000_000);
+    @Test void screenedCandidatesContinueInOriginalOrderAfterFirstEightFailSupport() {
+        var domain=new SpawnDomain();domain.authorize(new ChunkKey("minecraft:overworld",-63,-63),11);
+        int[] foundations={0};
+        var root=new RootSearch(new Point3i(-1000,64,-1000),BOUNDS,domain.snapshot(),
+                (o,c)->foundations[0]++>=8*2304,true);
+        var oracle=new Fixture(false);
+        while(!root.needsStructureScreen())root.advance(oracle,64);
+        var pending=root.pendingStructureCandidates();
+        root.acceptStructureVotes(pending.stream().map(c->new RootStructureScreen.Vote(c.radiusIndex(),c.angleIndex(),
+                List.of(0,1,2,3,4),java.util.Collections.nCopies(5,"CLEAR"))).toList());
+        while(root.advance(oracle,64)!=WorkState.DONE){}
+        var result=root.finish();
+        assertEquals(pending.get(8).radiusIndex(),result.radiusIndex());
+        assertEquals(pending.get(8).angleIndex(),result.angleIndex());
+        assertTrue(root.progress().shortlisted()<=8);
+        assertTrue(root.progress().columns()<=150000);
+        assertEquals(8,root.audit().stream().filter(a->a.stage().equals("footprint")
+                &&a.failedFoundations()==2304&&a.result().equals("REJECTED")).count());
+    }
     @Test void structureScreenPausesWithoutReadingMoreColumnsAndAllConflictsFailClosed() {
         var domain=new SpawnDomain();domain.authorize(new ChunkKey("minecraft:overworld",-63,-63),11);
         var root=new RootSearch(new Point3i(-1000,64,-1000),BOUNDS,domain.snapshot(),(o,c)->true,true);
