@@ -3,7 +3,6 @@ package local.plaincraft.greatwall.generation;
 import java.util.*;
 import java.util.concurrent.*;
 import local.plaincraft.greatwall.GreatWallMod;
-import local.plaincraft.greatwall.geometry.Rasterizer;
 import local.plaincraft.greatwall.lifecycle.RootStructureScreen;
 import local.plaincraft.greatwall.mixin.ChunkMapAccess;
 import local.plaincraft.greatwall.model.WallFailure;
@@ -38,9 +37,11 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
         nativeOwner=((ChunkMapAccess)level.getChunkSource().chunkMap).greatwall$chunkMainExecutor();
     }
     public static Bounds footprint(Axis axis) {
-        return Rasterizer.worldBounds(new Frame(new Point2q(axis.origin().x()*256L,axis.origin().z()*256L),
-                axis.exQ30(),axis.ezQ30(),Math.addExact(axis.origin().y(),20),false),
-                new Bounds(-24,-33,-24,24,8,24));
+        // Planning may rotate the first wall tangent away from the projection axis.
+        // 24*sqrt(2)<34; two extra columns cover raster and entrance guards at every heading.
+        int x=axis.origin().x(),z=axis.origin().z(),w=Math.addExact(axis.origin().y(),20);
+        return new Bounds(Math.subtractExact(x,36),w-35,Math.subtractExact(z,36),
+                Math.addExact(x,37),w+8,Math.addExact(z,37));
     }
     private static boolean intersects(Bounds a,Bounds b) {
         return a.minX()<b.maxXExclusive()&&a.maxXExclusive()>b.minX()
