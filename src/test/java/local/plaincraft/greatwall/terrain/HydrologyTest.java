@@ -118,15 +118,18 @@ class HydrologyTest {
         assertEquals(WaterClass.WIDE, water.getFirst().classification());
     }
 
-    @Test void formerUnequalLevelWitnessKeepsMeasuredWidthButCannotBuildAWaterGate() {
+    @Test void formerUnequalLevelWitnessTerminatesWithoutFabricatedWidth() {
+        // 三分法最终规则：水位不一致（碎岛）直接按宽水域收头入海。
+        // 收头的水域不测横断宽度（宽度不影响收头结果），width=0 表示"未测"，
+        // 不是伪造成 40/50。piers 必须为空（不收窄河 pier）。
         var evidence = classify(0, false, 1,
                 (x, z) -> x >= 100 && x < 140
                         ? AnalyticTerrainOracle.water(x < 120 ? 63 : 66, 58)
                         : AnalyticTerrainOracle.dry(64)).getFirst();
-        assertEquals(40 * 256L, evidence.channelWidthQ8());
+        assertEquals(0L, evidence.channelWidthQ8(), "terminal crossing leaves width unmeasured, never fabricated");
         assertEquals(3, 66 - 63, "the original waterMismatch > 1 witness remains true");
         assertEquals(WaterClass.WIDE, evidence.classification(),
-                "WIDE is the authorized termination policy, not a fabricated measured width");
+                "WIDE is the authorized termination policy for inconsistent water levels");
         assertTrue(evidence.piers().isEmpty(), "a terminal crossing must never reach narrow-river pier construction");
     }
 

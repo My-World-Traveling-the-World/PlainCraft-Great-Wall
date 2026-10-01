@@ -132,7 +132,11 @@ public final class RootSearch {
         if (value == null) return;
         acceptHeight(value);
         if (!lastSupport) failedFoundations++;
-        if (!lastSupport || value.waterTopY().isPresent()) invalid = true;
+        // 三分法放宽：允许少量格子无天然三层支撑（fort0 施工期 foundation 会填平），
+        // 但水保持严格零容忍（有水不能填平，走水门/收头）。
+        // 48×48=2304 格，允许 5%≈115 格支撑缺失。
+        if (value.waterTopY().isPresent()) invalid = true;
+        if (failedFoundations > 115) invalid = true;
         if (++sampleIndex < 48 * 48) return;
         audit.add(new Audit("footprint", current.origin(), current.radius(), current.angle(), -1,
                 wet, invalidSamples, failedFoundations, min, max, invalid || max - min > 12 ? "REJECTED" : "FOUNDATION_ELIGIBLE"));

@@ -135,6 +135,15 @@ public final class HydrologyClassifier {
             c.evidence.put(columnKey(c.trace.get(i)), s);
             if (Math.abs((long) s.waterTopY().orElseThrow() - c.waterY) > 1) c.waterMismatch = true;
         }
+        // 水位不一致（碎岛典型特征）按宽水域收头。收头的水域无需 96 条横断射线
+        // 认证宽度（宽度不影响收头结果），直接判 WIDE 跳过 transect，避免多段
+        // 水域累加耗尽 per-segment 24000 列预算。width 记 0 表示"未测"，不伪造。
+        if (c.waterMismatch) {
+            c.width = 0L;
+            c.classification = WaterClass.WIDE;
+            completeEvidence(c);
+            return;
+        }
         c.results = new Side[c.centers.size()][16][2];
         c.centerIndex = 0; c.transect = 0; c.side = 0; c.ray = null; c.phase = 3;
     }
