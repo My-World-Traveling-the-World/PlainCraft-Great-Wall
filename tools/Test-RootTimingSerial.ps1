@@ -87,6 +87,7 @@ foreach ($seed in $seeds) {
     if (!$root.StartsWith($allowed,[StringComparison]::OrdinalIgnoreCase) -or (Test-Path -LiteralPath $root)) { throw 'New isolated directory required' }
     $out=Join-Path $evidence "seed-$seed"
     New-Item -ItemType Directory -Path (Join-Path $root 'mods'),$out | Out-Null
+    Copy-Item -LiteralPath $jfcFile -Destination (Join-Path $root 'root-timing.jfc')
     foreach ($jar in $jarHashes) {
         $dest=Join-Path $root ('mods\'+[IO.Path]::GetFileName($jar.path));Copy-Item -LiteralPath $jar.path -Destination $dest
         if ((Get-FileHash -LiteralPath $dest).Hash.ToLowerInvariant() -ne $jar.sha256) { throw 'Staged JAR mismatch' }
@@ -112,7 +113,7 @@ spawn-protection=0
         '-Dgreatwall.s1c.rootTiming=true','-Dgreatwall.production=false','-Dgreatwall.s1c.productionFixture=false',
         '-Dgreatwall.s0.probe=false','-Dgreatwall.s1c.oracle=false',
         '-Xlog:gc,safepoint:file=root-vm.log:time,uptimenanos,level,tags',
-        "-XX:StartFlightRecording=filename=root.jfr,settings=$jfcFile,dumponexit=true,disk=true,maxsize=256m",
+        '-XX:StartFlightRecording=filename=root.jfr,settings=root-timing.jfc,dumponexit=true,disk=true,maxsize=256m',
         '-cp',($runtime.classpath -join ';'),'net.fabricmc.loader.impl.launch.knot.KnotServer','--nogui','--port','0','--world','world')
     $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$java;$info.WorkingDirectory=$root
     $info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.RedirectStandardOutput=$true;$info.RedirectStandardError=$true

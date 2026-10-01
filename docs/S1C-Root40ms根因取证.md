@@ -61,3 +61,15 @@ $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
 仅严格离线/校验准备本地runtime，此后四次独立JDK21进程按固定顺序串行；
 每个测试退出后才启动离线关联器，再进入下一个seed。
 不重摸40seed，不调堆/节奏、不更改40ms、不修生产。
+
+## 启动层失败原件
+
+测试源码9645053的第一套`root-timing-serial-20261001-ccf04afd`，
+四个固定seed均exit1、MISSING_ANALYSIS；未启动游戏、未进行root采样。
+JFR启动原错为中文绝对settings路径被原生参数解析乱码，
+`Could not find file 'D:\...root-timing.jfc'`，配置文件真实存在。
+原输入/启动参数/退出码/stdout/stderr/SHA全部保留，不将这一轮计入A/B/C或改成seed失败。
+
+最小工具修复仅将同一JFC逐字节复制至每个新runDir，参数改ASCII相对
+`settings=root-timing.jfc`；不改JFC事件、seed、Xmx8G、规则、生产代码或仓库路径。
+随后按同一四seed再跑一套独立新目录；原件不覆盖。

@@ -1,0 +1,26 @@
+[
+  {
+    "path": "environment.jsonl",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "execution.json",
+    "sha256": "4d23c4b686e69cd6f436093308b5f28c0e5d4178279449738ee22ead1c5604c1"
+  },
+  {
+    "path": "inputs.json",
+    "sha256": "6ec1bedcac38f4a50e73d1089cbfda6050a771cb7f5a85b7a6f3ff8d774be6e4"
+  },
+  {
+    "path": "root-vm.log",
+    "sha256": "7cec02bcd387e6260d50c4983c11432b873d4f948f880028e7fc93b09d9f082b"
+  },
+  {
+    "path": "stderr.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "stdout.log",
+    "sha256": "0afb2533c06f640b19ab7ce6fa1fb2fdbac1839681e3e6344e9d3e277dc7d18e"
+  }
+]
