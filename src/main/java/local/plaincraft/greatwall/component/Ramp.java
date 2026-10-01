@@ -41,15 +41,26 @@ public final class Ramp implements ComponentTemplate {
     static int ground(ComponentInput input,int x0,int z0,int x1,int z1) {
         var frame=input.site().frame();
         var bounds=Rasterizer.worldBounds(frame,new Bounds(x0,-33,z0,x1,3,z1));
-        int min=Integer.MAX_VALUE,max=Integer.MIN_VALUE,count=0;
+        int min=Integer.MAX_VALUE,max=Integer.MIN_VALUE,count=0,unsupported=0,total=0;
         for(int z=bounds.minZ();z<bounds.maxZExclusive();z++)for(int x=bounds.minX();x<bounds.maxXExclusive();x++){
             var local=Rasterizer.localCell(frame,new Point3i(x,frame.walkY(),z));
             if(local.x()<x0||local.x()>=x1||local.z()<z0||local.z()>=z1)continue;
+            total++;
             var support=input.supports().get(new Point3i(x,frame.walkY(),z));
-            if(support==null||support.kind()!=ProbeKind.SUPPORTED)return Integer.MIN_VALUE;
+            if(support==null||support.kind()!=ProbeKind.SUPPORTED){
+                // Root search already admits a footprint where a small fraction of
+                // columns lack natural support, because the fort foundation backfills
+                // them anyway. The entrance uses the same tolerance so an accepted
+                // root is never rejected here; heights are sampled only from
+                // genuinely supported columns, and the ratio is judged after the
+                // whole entrance has been scanned.
+                unsupported++;
+                continue;
+            }
             min=Math.min(min,support.groundTopY());max=Math.max(max,support.groundTopY());count++;
         }
-        return count==0||max-min>1||max<frame.walkY()-32||max>=frame.walkY()?Integer.MIN_VALUE:max;
+        if(count==0||unsupported*20>total)return Integer.MIN_VALUE;
+        return max-min>1||max<frame.walkY()-32||max>=frame.walkY()?Integer.MIN_VALUE:max;
     }
     public ComponentVoxels compileBetween(ComponentInput input, int lowerFeetY, int upperFeetY) {
         int w = input.site().frame().walkY();
