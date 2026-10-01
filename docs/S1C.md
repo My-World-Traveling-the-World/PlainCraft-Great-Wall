@@ -1,5 +1,17 @@
 # S1C 当前状态
 
+## 2026-10-01 接手792f967后的来源取证
+
+**BLOCKED_PENDING_AUTHORIZATION，未签收，生产OFF，Tan's BLOCKED。**
+最新结论以`S1C-fort0保护来源诊断.md`为准；以下旧阶段记录保留其原证据范围。
+固定vanilla/17新隔离运行实测：87次首次T0捕获、108条已解析引用、未解析0、
+旧metadata读回0。fort0根点(-185,65,1199)在真实103-piece Jigsaw结构保护范围内；
+不是本轮仍插入conservativeReadBounds，也不是误走S0 snapshot。
+编译及2项JUnit/8项定向native通过，但真实运行exit1、未进入APPLY，随后关服watchdog。
+BlockCatalog/资源标签未改；用户要求先批准分类修订。
+需确认recipe冻结前拒绝结构冲突候选及自然可替换/承重分类分离，
+批准后才能实修；S1C仍无voxels>0证书，S2～S5骨架不代替生产集成。
+
 **PAUSED_FOR_AUDIT / 未签收 / 正式生产接线 OFF。** 2026-10-01用户要求先梳理交审计，暂停代码/编译/测试。WIDE新策略已承接入库：全量JUnit343/343、新增后定向41/41；完整build因追加结构要求主动中止exit1，不能写通过。结构草稿未编译/测试，当前全高度投影不符合“只地表”新范围；COARSE水提示尚未实施。真实墙/重进/成本仍NOT_RUN。
 
 **接手先读 `S1C-暂停审计交接.md`。** 它列出已提交代码715428f、三文件未提交草稿、

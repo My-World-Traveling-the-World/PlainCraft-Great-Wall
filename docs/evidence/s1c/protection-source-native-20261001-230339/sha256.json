@@ -1,0 +1,34 @@
+[
+  {
+    "path": "execution.json",
+    "sha256": "2dd342972731cb31bf01af79d3f544668db48db6ff9163b701429f5cf843d0c2"
+  },
+  {
+    "path": "gametest-results.xml",
+    "sha256": "d344de2478dd8528cf6bb6638003633a582bc8447bd4f6ca7ab4daf6fd263d05"
+  },
+  {
+    "path": "junit\\binary\\output-events.bin",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "junit\\binary\\results-generic.bin",
+    "sha256": "de14d2d1d532a0c038b0b43a3bec65be2086a113898a94af24a6b6c991823f32"
+  },
+  {
+    "path": "junit\\TEST-local.plaincraft.greatwall.generation.ProtectionSnapshotTest.xml",
+    "sha256": "d16232c3701a858cf32ea048d045ba6fd54ea4d95212b8a795b6568403689512"
+  },
+  {
+    "path": "latest.log",
+    "sha256": "2e16465542e3054ac84ae788f0114b47d31bbb6337beadb8bd910974285f87ca"
+  },
+  {
+    "path": "native.log",
+    "sha256": "f95cc449aca7f21a103ffc2b2dd423ec1b24508fa8fb2e31f9baecc0c64a4079"
+  },
+  {
+    "path": "post-run-source.diff",
+    "sha256": "40b3eb650c210993fbdd7ab1659fc1c83e181d095aa71681dd761c31647e59b3"
+  }
+]

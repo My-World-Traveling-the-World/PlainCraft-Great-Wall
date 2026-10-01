@@ -1,0 +1,62 @@
+[
+  {
+    "path": "crash-reports\\crash-2026-10-01_22.55.01-server.txt",
+    "sha256": "13845ca72fe04fb007585c40c0d1c93936448185670ef393f3a1f477e831a0cb"
+  },
+  {
+    "path": "crash-reports\\crash-2026-10-01_22.56.02-server.txt",
+    "sha256": "ece41eb704872ef3b87436cd618b917e45127e7e258f983d1fb3b34d788f6b6c"
+  },
+  {
+    "path": "execution.json",
+    "sha256": "2893d7afae97516954e4b80e51932c975948eba6788aca707189f846f85be620"
+  },
+  {
+    "path": "independent-audit.json",
+    "sha256": "8fbe6e508b518fdde9fc2974de277ab68bd970efccfda1af0c3d56a4ea495625"
+  },
+  {
+    "path": "inputs.json",
+    "sha256": "fa90f984e1b729782e5839ac4976d50a8ff887937445627e5f24ec09970956aa"
+  },
+  {
+    "path": "logs\\debug.log",
+    "sha256": "d18fbe94ff3edd39b7d9f3b2737c3a7470e91b16abf4ac5b101ad6edb99818ad"
+  },
+  {
+    "path": "logs\\latest.log",
+    "sha256": "e31d0b5c6a33e6ee9424579f3bf79e0cebda0fd5ebadb5b77306ba9a11023ac3"
+  },
+  {
+    "path": "prior-isolated-runs\\wallj221344\\logs\\latest.log",
+    "sha256": "b221adb8018fa807ae4f0ee81a2ecaf362a1c2a025713a80b85193cb311c2407"
+  },
+  {
+    "path": "prior-isolated-runs\\wallj221344\\world\\greatwall\\diagnostics\\session-STOPPING.json",
+    "sha256": "ab434dc2955705740725d079bfb8f35c51127886ba79c44c946e6c1c94c1d2e9"
+  },
+  {
+    "path": "prior-isolated-runs\\wallk222400\\logs\\latest.log",
+    "sha256": "2a400865c736a5a24a54ddd92d4edc3905d5b5a69ec75771de480c6d807ec6e2"
+  },
+  {
+    "path": "prior-isolated-runs\\wallk222400\\world\\greatwall\\diagnostics\\session-STOPPING.json",
+    "sha256": "5db188072f24d7a8ddd6e62a5dd87a592c89a8b95646d4caed0821811038f68f"
+  },
+  {
+    "path": "run.log",
+    "sha256": "21471dd62cdefafd951e11595deee9529d389198bee232a73d8b9af70ebad076"
+  },
+  {
+    "path": "world\\greatwall\\diagnostics\\events-STOPPING.json",
+    "sha256": "4dfb8b07e1aa5a77d3fc005c7b649619e841778654200d3f3487e1601715ed69"
+  },
+  {
+    "path": "world\\greatwall\\diagnostics\\session-STOPPING.json",
+    "sha256": "7b8652b29355ae2d8a8e602e52b4304fbcf300a053c3abc1b882f14db271b54f"
+  },
+  {
+    "path": "world\\greatwall\\manifest\\world.json",
+    "sha256": "12337abac17055df63c096373256a1fe88294fb72346b95127f3dbd350282e95"
+  }
+]

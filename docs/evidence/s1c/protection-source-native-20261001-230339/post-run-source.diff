@@ -1,0 +1,193 @@
+diff --git a/gradle/smoke-tests.gradle b/gradle/smoke-tests.gradle
+index ceaf720..7cbcefb 100644
+--- a/gradle/smoke-tests.gradle
++++ b/gradle/smoke-tests.gradle
+@@ -77,6 +77,10 @@ if (oracleMaxY != null) {
+ // Diagnostic only: the representative-sample floor stays 1200 blocks unless a
+ // run explicitly lowers it, and any lowered run reports what it used.
+ def representativeBlocks = providers.gradleProperty('s1cRepresentativeBlocks').orNull
++if (providers.gradleProperty('s1cProtectionTrace').getOrElse('false').toBoolean()) {
++    if (!realWall) throw new GradleException('Protection tracing requires the isolated real wall fixture')
++    probeArgs.add('-Dgreatwall.s1c.protectionTrace=true')
++}
+ if (representativeBlocks != null) {
+     if (!realWall || !(representativeBlocks ==~ /[1-9][0-9]*/)) {
+         throw new GradleException('s1cRepresentativeBlocks requires the real wall fixture')
+diff --git a/src/gametest/java/local/plaincraft/greatwall/gametest/CatalogGameTests.java b/src/gametest/java/local/plaincraft/greatwall/gametest/CatalogGameTests.java
+index 4164627..c10f46f 100644
+--- a/src/gametest/java/local/plaincraft/greatwall/gametest/CatalogGameTests.java
++++ b/src/gametest/java/local/plaincraft/greatwall/gametest/CatalogGameTests.java
+@@ -14,6 +14,17 @@ import net.minecraft.world.level.block.SnowLayerBlock;
+ import net.minecraft.world.level.block.state.BlockState;
+ 
+ public final class CatalogGameTests implements FabricGameTest {
++    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=40)
++    public void currentOreAndGravelProtectionBlocksNaturalColumnsWithoutAnyStructure(GameTestHelper helper) {
++        var catalog=new BlockCatalog(helper.getLevel().registryAccess());
++        for(var block:new net.minecraft.world.level.block.Block[]{Blocks.COAL_ORE,Blocks.DEEPSLATE_COAL_ORE,Blocks.GRAVEL}) {
++            var captured=flags(catalog,block.defaultBlockState());
++            helper.assertTrue(!captured.support()&&captured.protectedBlock(),
++                    "diagnostic baseline: current policy rejects this natural state without a structure");
++        }
++        helper.succeed();
++    }
++
+     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=40)
+     public void supportTagsRejectGravitySnowAndMud(GameTestHelper helper) {
+         var catalog=new BlockCatalog(helper.getLevel().registryAccess());
+diff --git a/src/gametest/java/local/plaincraft/greatwall/gametest/ProtectionGameTests.java b/src/gametest/java/local/plaincraft/greatwall/gametest/ProtectionGameTests.java
+index a4ae10d..bf35be2 100644
+--- a/src/gametest/java/local/plaincraft/greatwall/gametest/ProtectionGameTests.java
++++ b/src/gametest/java/local/plaincraft/greatwall/gametest/ProtectionGameTests.java
+@@ -24,6 +24,37 @@ import net.minecraft.world.level.levelgen.structure.pieces.PiecesContainer;
+ import net.minecraft.world.level.levelgen.structure.structures.BuriedTreasurePieces;
+ 
+ public final class ProtectionGameTests implements FabricGameTest {
++    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=100)
++    public void resolvedSurfaceJigsawUsesRealBoundsRatherThanAReadWindowFallback(GameTestHelper helper) {
++        var owner=chunk(helper,new ChunkPos(-14,72));
++        var referenced=chunk(helper,new ChunkPos(-14,76));
++        var structure=helper.getLevel().registryAccess().registryOrThrow(Registries.STRUCTURE)
++                .get(ResourceLocation.parse("minecraft:village_plains"));
++        helper.assertTrue(structure instanceof net.minecraft.world.level.levelgen.structure.structures.JigsawStructure,
++                "this fixture must use an actual registered surface jigsaw type");
++        // Detached native pieces enclose the measured root; native terrain adjustment remains active.
++        var start=new StructureStart(structure,referenced.getPos(),0,new PiecesContainer(List.of(
++                new BuriedTreasurePieces.BuriedTreasurePiece(new BlockPos(-289,51,1141)),
++                new BuriedTreasurePieces.BuriedTreasurePiece(new BlockPos(-158,100,1270)))));
++        referenced.setStartForStructure(structure,start);
++        owner.addReferenceForStructure(structure,referenced.getPos().toLong());
++        var read=new Bounds(-224,43,1152,-208,113,1168);
++        var prepared=Map.<ChunkPos,net.minecraft.world.level.chunk.ChunkAccess>of(
++                owner.getPos(),owner,referenced.getPos(),referenced);
++        var boxes=ProtectionSnapshot.structureBounds(owner,List.of(),prepared,read);
++        var nativeBox=start.getBoundingBox();
++        var actual=new Bounds(nativeBox.minX(),nativeBox.minY(),nativeBox.minZ(),
++                nativeBox.maxX()+1,nativeBox.maxY()+1,nativeBox.maxZ()+1);
++        helper.assertTrue(boxes.contains(actual),"resolved structure must retain its actual aggregate box");
++        helper.assertTrue(!boxes.contains(read),"the read window is not inserted when the reference resolves");
++        helper.assertTrue(ProtectionSnapshot.freeze(boxes,Set.of(),Set.of()).protectedAt(new Point3i(-185,65,1199)),
++                "the measured fort root remains protected by real structure evidence");
++        var unresolved=ProtectionSnapshot.structureBounds(owner,List.of(),Map.of(owner.getPos(),owner),read);
++        helper.assertTrue(unresolved.contains(read)&&!unresolved.contains(actual),
++                "missing and resolved references are different proven paths, not interchangeable explanations");
++        helper.succeed();
++    }
++
+     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=100)
+     public void knownReferenceUsesOnlyThePreparedStartAndHalfOpenPiece(GameTestHelper helper) {
+         var owner=chunk(helper,new ChunkPos(0,0));
+diff --git a/src/main/java/local/plaincraft/greatwall/generation/ProtectionSnapshot.java b/src/main/java/local/plaincraft/greatwall/generation/ProtectionSnapshot.java
+index 0c0892a..43d2ae6 100644
+--- a/src/main/java/local/plaincraft/greatwall/generation/ProtectionSnapshot.java
++++ b/src/main/java/local/plaincraft/greatwall/generation/ProtectionSnapshot.java
+@@ -12,6 +12,7 @@ import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
+ import local.plaincraft.greatwall.model.WallFailure;
+ import local.plaincraft.greatwall.model.WallTypes.*;
+ import local.plaincraft.greatwall.terrain.BlockCatalog;
++import local.plaincraft.greatwall.GreatWallMod;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.world.level.ChunkPos;
+ import net.minecraft.world.level.chunk.ChunkAccess;
+@@ -106,17 +107,34 @@ public record ProtectionSnapshot(List<Bounds> structures,Set<Point3i> blockEntit
+         requireFeatures(owner);Objects.requireNonNull(predicted);Objects.requireNonNull(prepared);
+         CompiledAllocation.charge(512L+128L*structureBoxUpperBound(owner,predicted.size(),prepared));
+         var boxes=new ArrayList<>(predicted);
+-        for(var start:owner.getAllStarts().values())append(start,boxes);
++        for(var entry:owner.getAllStarts().entrySet()) {
++            var start=entry.getValue();
++            traceOrigin(owner,"OWNER_START",entry.getKey().getClass().getSimpleName(),owner.getPos(),start,conservativeReadBounds);
++            append(start,boxes);
++        }
+         for(var entry:owner.getAllReferences().entrySet()) {
+             for(long reference:entry.getValue()) {
+                 var chunk=prepared.get(new ChunkPos(reference));
+                 var start=chunk==null?null:chunk.getStartForStructure(entry.getKey());
++                traceOrigin(owner,chunk==null?"MISSING_PREPARED":start==null?"MISSING_START":!start.isValid()?"INVALID_START":"RESOLVED_REFERENCE",
++                        entry.getKey().getClass().getSimpleName(),new ChunkPos(reference),start,conservativeReadBounds);
+                 if(start==null||!start.isValid())boxes.add(conservativeReadBounds);else append(start,boxes);
+             }
+         }
+         return boxes.stream().distinct().sorted(BOX_ORDER).toList();
+     }
+ 
++    private static void traceOrigin(ChunkAccess owner,String source,String structure,ChunkPos reference,
++            StructureStart start,Bounds fallback) {
++        if(!Boolean.getBoolean("greatwall.s1c.protectionTrace"))return;
++        if(start!=null&&start.isValid())
++            GreatWallMod.LOGGER.info("[GreatWall:protection-source] owner={} source={} structure={} reference={} actual={} pieces={}",
++                    owner.getPos(),source,structure,reference,bounds(start.getBoundingBox()),start.getPieces().size());
++        else if(!source.equals("OWNER_START"))
++            GreatWallMod.LOGGER.info("[GreatWall:protection-source] owner={} source={} structure={} reference={} fallback={}",
++                    owner.getPos(),source,structure,reference,fallback);
++    }
++
+     /** Count native piece views before the T0 allocation reservation; do not construct evidence here. */
+     public static long structureBoxUpperBound(ChunkAccess owner,int predictedCount,Map<ChunkPos,ChunkAccess> prepared) {
+         if(predictedCount<0)throw new IllegalArgumentException("negative predicted count");
+diff --git a/src/main/java/local/plaincraft/greatwall/terrain/RealizationPlanner.java b/src/main/java/local/plaincraft/greatwall/terrain/RealizationPlanner.java
+index 289070f..eeb4e37 100644
+--- a/src/main/java/local/plaincraft/greatwall/terrain/RealizationPlanner.java
++++ b/src/main/java/local/plaincraft/greatwall/terrain/RealizationPlanner.java
+@@ -412,6 +412,16 @@ public final class RealizationPlanner {
+             var existing=known.get(key);
+             supports.put(key,existing!=null?existing:probe.probe(protectedView(column,pos,input.protectedBounds()),key.y(),bounds));
+         }
++        if(Boolean.getBoolean("greatwall.s1c.protectionTrace")&&site.id().kind()==SiteKind.FORT&&site.id().ordinal()==0) {
++            var counts=new EnumMap<ProbeKind,Integer>(ProbeKind.class);
++            supports.values().forEach(v->counts.merge(v.kind(),1,Integer::sum));
++            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
++                    "[GreatWall:protection-source] fort0 cell={} bounds={} supportKinds={} intersectingBoxes={}",
++                    input.key(),world,counts,input.protectedBounds().stream().filter(b->
++                            b.minX()<world.maxXExclusive()&&b.maxXExclusive()>world.minX()
++                            &&b.minZ()<world.maxZExclusive()&&b.maxZExclusive()>world.minZ()
++                            &&b.minY()<world.maxYExclusive()&&b.maxYExclusive()>world.minY()).distinct().toList());
++        }
+         return new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,List.of());
+     }
+     private static long workingBytes(Input input) {
+diff --git a/src/main/java/local/plaincraft/greatwall/terrain/TerrainSnapshotService.java b/src/main/java/local/plaincraft/greatwall/terrain/TerrainSnapshotService.java
+index 1da8e78..a3915ed 100644
+--- a/src/main/java/local/plaincraft/greatwall/terrain/TerrainSnapshotService.java
++++ b/src/main/java/local/plaincraft/greatwall/terrain/TerrainSnapshotService.java
+@@ -14,6 +14,7 @@ import local.plaincraft.greatwall.persistence.ChunkEvidenceStore;
+ import local.plaincraft.greatwall.persistence.EvidenceCodec;
+ import local.plaincraft.greatwall.diagnostics.AllocationBudget;
+ import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
++import local.plaincraft.greatwall.GreatWallMod;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.RegistryAccess;
+ import net.minecraft.world.level.ChunkPos;
+@@ -119,8 +120,11 @@ public final class TerrainSnapshotService implements AutoCloseable {
+                     }),io).thenComposeAsync(saved->io(()->accounted(scratchBudget,()->{
+                         store.persistCoverageIntent(coverage);return saved;
+                     },false)),io).thenComposeAsync(saved->{
+-                        if(saved.metadata().isPresent())return CompletableFuture.completedFuture(
++                        if(saved.metadata().isPresent()) {
++                            traceProtection("DURABLE_READ",saved.metadata().get());
++                            return CompletableFuture.completedFuture(
+                                 new CapturedTerrain(saved.tiles(),Map.of(coverage.chunk(),saved.metadata().get())));
++                        }
+                         CompletableFuture<Map<TerrainTile.Key,TerrainTile>> pages=CompletableFuture.completedFuture(saved.tiles());
+                         for(var key:keys)if(!saved.tiles().containsKey(key)) {
+                             pages=pages.thenComposeAsync(prior->engine.exclusive(owner.getPos(),()->{
+@@ -149,6 +153,7 @@ public final class TerrainSnapshotService implements AutoCloseable {
+                                         base.protectedStructures(),base.blockEntities(),immutable,"0".repeat(64)));
+                                 for(var page:captured.values())store.persistBeforeApply(page);
+                                 store.persistCoverage(metadata);
++                                traceProtection("NEW_CAPTURE",metadata);
+                                 return new CapturedTerrain(captured,Map.of(coverage.chunk(),metadata));
+                             },false)),io);
+                         },io);
+@@ -163,6 +168,11 @@ public final class TerrainSnapshotService implements AutoCloseable {
+             return CompletableFuture.failedFuture(failure);
+         }
+     }
++    private static void traceProtection(String source,CaptureMetadata metadata) {
++        if(Boolean.getBoolean("greatwall.s1c.protectionTrace"))
++            GreatWallMod.LOGGER.info("[GreatWall:protection-source] metadataSource={} owner={} hash={} read={} boxes={}",
++                    source,metadata.coverage().chunk(),metadata.hash(),metadata.coverage().readBounds(),metadata.protectedStructures());
++    }
+     private void finishCapture(Coverage coverage,Flight flight,Map<String,AllocationBudget.Pin> scratch,
+             Map<String,AllocationBudget.Pin> retained,CapturedTerrain value,Throwable error) {
+         // Reentrant consumers may start another capture immediately on publication. Clean scratch first.
