@@ -12,6 +12,7 @@ import local.plaincraft.greatwall.terrain.NaturalTerrainOracle;
 
 /** Pure, lane-owned root continuation. Native initialization occurs before the first advance. */
 public final class RootSearch {
+    private static final long BATCH_GUARD_NANOS = 5_000_000L;
     public record Selection(Axis axis, int radiusIndex, int angleIndex, int axisIndex, long ridgeScore,
             int columns, long maxBatchNanos, long over40msBatches) {}
     public record Progress(int phase, int candidate, int shortlisted, int footprintColumn,
@@ -56,6 +57,10 @@ public final class RootSearch {
         try {
             for (int operation = 0; operation < primitiveLimit && phase != 3; operation++) {
                 if (Thread.currentThread().isInterrupted()) throw new WallFailure(FailureCode.CLOSED, "root search interrupted");
+                // Do not start a fresh native primitive inside the final guard window.
+                // A single NoiseChunk/cell operation is allowed to be slow; the guard keeps
+                // the surrounding steady batch from stacking another slow operation on it.
+                if (System.nanoTime() >= deadline - BATCH_GUARD_NANOS) break;
                 switch (phase) {
                     case 0 -> coarseStep(oracle);
                     case 1 -> footprintStep(oracle);

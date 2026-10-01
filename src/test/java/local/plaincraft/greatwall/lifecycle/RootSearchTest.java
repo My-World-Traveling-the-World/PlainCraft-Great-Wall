@@ -94,6 +94,17 @@ final class RootSearchTest {
         }
     }
 
+    @Test void batchGuardStopsBeforeStackingAnotherSlowNativePrimitive() {
+        var search = search((o, c) -> true);
+        var oracle = new Fixture(false, 21);
+        for (int i = 0; i < 200 && search.progress().phase() != 3; i++) {
+            search.advance(oracle, 64);
+        }
+        assertEquals(0, search.progress().over40msBatches());
+        assertTrue(search.progress().maxBatchNanos() < 40_000_000L,
+                () -> "max batch nanos=" + search.progress().maxBatchNanos());
+    }
+
     private static RootSearch.Selection run(Fixture oracle, int batch) {
         var search = search((o, c) -> true);
         while (search.advance(oracle, batch) != WorkState.DONE) {}
@@ -108,10 +119,16 @@ final class RootSearchTest {
 
     private static final class Fixture implements NaturalTerrainOracle {
         private final boolean wet;
-        private Fixture(boolean wet) { this.wet = wet; }
+        private final long delayMillis;
+        private Fixture(boolean wet) { this(wet, 0); }
+        private Fixture(boolean wet, long delayMillis) { this.wet = wet; this.delayMillis = delayMillis; }
         private static final class Cursor implements ColumnCursor { private boolean done; public boolean done() { return done; } }
         @Override public ColumnCursor begin(int x, int z, SampleKind kind) { assertEquals(SampleKind.REFERENCE, kind); return new Cursor(); }
-        @Override public WorkState advance(ColumnCursor cursor, int limit) { ((Cursor) cursor).done = true; return WorkState.DONE; }
+        @Override public WorkState advance(ColumnCursor cursor, int limit) {
+            if (delayMillis > 0) try { Thread.sleep(delayMillis); }
+            catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); throw new IllegalStateException(interrupted); }
+            ((Cursor) cursor).done = true; return WorkState.DONE;
+        }
         @Override public ColumnSample finish(ColumnCursor cursor) {
             assertTrue(cursor.done());
             return new ColumnSample(64, wet ? OptionalInt.of(65) : OptionalInt.empty(), wet ? OptionalInt.of(64) : OptionalInt.empty(),

@@ -1,0 +1,8 @@
+{
+  "sourceCommit": "090dc933dc971301753c852bafcbdde61b22841b",
+  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.lifecycle.RootSearchTest --rerun-tasks --no-build-cache --console=plain --no-daemon",
+  "startedUtc": "2026-10-01T00:02:58.9592022Z",
+  "finishedUtc": "2026-10-01T00:03:23.8839024Z",
+  "exitCode": 0,
+  "productionWiring": "OFF"
+}
