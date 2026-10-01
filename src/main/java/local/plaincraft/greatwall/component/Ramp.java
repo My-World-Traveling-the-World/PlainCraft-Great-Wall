@@ -43,21 +43,29 @@ public final class Ramp implements ComponentTemplate {
      *
      * <p>The entrance corridor is narrow (4 wide) but long (48 deep), so
      * unsupported columns concentrate here far more than across the whole
-     * 48x48 root footprint. Measured on real terrain: 163 of 196 columns
-     * supported (83%) with the unsupported ones clustered along the strip,
-     * while root search had admitted the same start with a 5% overall
-     * tolerance. The fort foundation backfills every column of its footprint
-     * to {@code lower-1} and then lays a floor across it, so an unsupported
-     * entrance column becomes solid masonry rather than a hole.
+     * 48x48 root footprint. Measured on real terrain (seed 17, walkY 116):
+     * 163 of 196 columns supported with the other 33 clustered along the
+     * strip, and the supported columns spanning 2 blocks (94..96). Root
+     * search had already admitted the same start, and the fort foundation
+     * backfills every footprint column down from {@code lower-1}, so an
+     * unsupported column becomes masonry rather than a hole.
      *
-     * <p>This therefore accepts a corridor where most columns carry natural
-     * support, and still requires: at least one genuinely supported column
-     * (so the sampled height is real), the supported columns within one block
-     * of each other (a walkable grade), and the result inside the
-     * {@code [walkY-32, walkY)} window. A corridor that is mostly unsupported
-     * is still rejected rather than bridged on a guess.
+     * <p>Acceptance therefore mirrors the fort's own frozen contract, which
+     * admits a footprint column whose drop is at most 12 blocks:
+     * <ul>
+     *   <li>at most {@value #MAX_UNSUPPORTED_PERCENT}% of corridor columns may
+     *       lack natural support (the foundation fills them),</li>
+     *   <li>at least one column must carry real support, so the chosen height
+     *       is measured rather than assumed,</li>
+     *   <li>the supported span must stay within {@link #MAX_ENTRANCE_DROP}
+     *       blocks of fill, which the foundation absorbs, and</li>
+     *   <li>the result must sit inside the {@code [walkY-32, walkY)} window.</li>
+     * </ul>
+     * The previous span-of-1 rule was stricter than the fort contract itself
+     * and rejected this terrain.
      */
     private static final int MAX_UNSUPPORTED_PERCENT = 25;
+    private static final int MAX_ENTRANCE_DROP = 12;
 
     static int ground(ComponentInput input,int x0,int z0,int x1,int z1) {
         var frame=input.site().frame();
@@ -72,7 +80,7 @@ public final class Ramp implements ComponentTemplate {
             min=Math.min(min,support.groundTopY());max=Math.max(max,support.groundTopY());count++;
         }
         if(count==0||unsupported*100>total*MAX_UNSUPPORTED_PERCENT)return Integer.MIN_VALUE;
-        if(max-min>1||max<frame.walkY()-32||max>=frame.walkY())return Integer.MIN_VALUE;
+        if(max-min>MAX_ENTRANCE_DROP||max<frame.walkY()-32||max>=frame.walkY())return Integer.MIN_VALUE;
         return max;
     }
     public ComponentVoxels compileBetween(ComponentInput input, int lowerFeetY, int upperFeetY) {
