@@ -39,7 +39,7 @@ public record ProductionInputs(WorldBootstrap.Frozen bootstrap, BlockCatalog blo
         var root = new WorldBootstrap.Frozen(frozen.bounds(), terrainHash, paletteHash, templatesHash, frozen::createOracle,
                 (oracle, cursor) -> {
                     if (!(oracle instanceof CpuTerrainOracle cpu)) throw new IllegalStateException("production foundation requires its private CPU oracle");
-                    var evidence = cpu.supportEvidence(cursor);
+                    var evidence = cpu.foundationEvidence(cursor);
                     return evidence.size() == 3 && evidence.stream()
                             .allMatch(spec -> blocks.flags(BlockCatalog.token(BlockCatalog.resolveState(spec), false)).support());
                 },new local.plaincraft.greatwall.generation.NativeRootStructureScreen(level));

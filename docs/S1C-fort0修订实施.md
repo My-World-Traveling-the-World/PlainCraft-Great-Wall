@@ -11,7 +11,7 @@ creation授权 + 实际spawn + prepareLevels已进入 + 独立lane ready
   -> 锁外STRUCTURE_REFERENCES租约（完整潜在旋转fort足印）
   -> 读取不可变引用清单 -> 锁外补STRUCTURE_STARTS租约（实际被引用starts）
   -> 从已准备chunk提取注册ID及原生bbox/piece -> 不可变结构投票
-  -> 剔除冲突候选/朝向 -> 原最多8候选精查/五朝向/原根评分
+  -> 剔除冲突候选/朝向 -> 每批最多8候选精查/五朝向/原根评分
   -> world.json force -> recipe.ready
   -> 原规划future -> FEATURES -> CAPTURE -> 耐久T0 -> APPLY -> LIGHT
 ```
@@ -20,11 +20,25 @@ creation授权 + 实际spawn + prepareLevels已进入 + 独立lane ready
 原STRUCTURE_STARTS/REFERENCES阶段不受墙FEATURES门控，保持原vanilla/C2ME任务调度。
 有向图无反向边；不授权worldgen同步getChunk/join/get。
 
-仍是800/1000/1250/1500四半径×36角度、原coarse排序和最多8精查预算。
+仍是800/1000/1250/1500四半径×36角度、原coarse排序、每批最多8精查槽和150000列预算。
 在截取8名之前过滤已批准的结构冲突，不能过滤后继续只困在原冲突的8名里。
 每个候选五朝向逐一使用完整48×48 fort及一格外接入口guard的旋转包络，
 不按中心点或reference start chunk地址代替实际相交。
 所有候选/朝向被否决则ROOT_NOT_FOUND；结构引用未知否决候选，不假称无结构。
+
+首轮真实运行06fc94b已拒绝旧村庄root，但首批8个清晰结构候选都没通过承重。
+这是候选消费的实现缺口：不能还有本域已筛出的候选却提前称“全部候选失败”。
+修正为当前批全部承重/轴失败时按原排序取下一批≤8，列预算硬限不增、
+不新增环带点、不放宽三层/drop/坡度。若任一批产生合法轴，按原该批评分归约；
+耗尽候选或达到原预算明确失败。无结构筛选的旧纯fixture入口仍保留原首批语义。
+该变化公开记录，不将“8个驻留精查槽”解释成可以跳过剩余已授权候选。
+
+另核实根点承重端口错位：旧supportEvidence是最高固体之后额外读取的三格，
+实际为[h-2,h-3,h-4]，与SurfaceProbe的[h-1,h-2,h-3]不相同。
+保留旧supportEvidence/REFERENCE的完整采样顺序和ColumnSample语义，新增
+foundationEvidence返回最高固体及其下两层，只修改生产根点回调消费此精确视图。
+仍三层天然support，每层矿石/砾石都不支持；不删第四格原生读取，也不靠矿石授权消红。
+OracleGameTests独立nativeColumn同时检查旧额外读取和新承重三格，不能改旧对照断言。
 
 地表判据在本前筛中使用自然REFERENCE候选地面脚面及原生结构bbox：
 只把与该候选自然地表层[h-1,h+1)相交的注册结构作为地表排除，

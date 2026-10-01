@@ -70,6 +70,7 @@ public final class GenerationResourceFingerprint {
         inputs.put("rootAlgorithm", new JsonPrimitive(2));
         inputs.put("rootStructureScreen",new JsonPrimitive("pre-recipe-native-references-v1"));
         inputs.put("naturalReplacementPolicy",new JsonPrimitive("explicit-ores-gravel-v1"));
+        inputs.put("rootFoundationPolicy",new JsonPrimitive("surface-h-minus-1-2-3-v1"));
         BuiltInRegistries.BLOCK.getTags().forEach(pair -> {
             var values = new com.google.gson.JsonArray();
             pair.getSecond().stream().map(holder -> BuiltInRegistries.BLOCK.getKey(holder.value()).toString())
