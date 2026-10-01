@@ -1,0 +1,14 @@
+{
+  "updatedUtc": "2026-10-01T02:41:25.8446321Z",
+  "completed": 40,
+  "total": 40,
+  "active": [],
+  "counts": {
+    "rootNotFound": 3,
+    "hydrologyRejected": 9,
+    "hydrologyFinished": 2,
+    "other": 26
+  },
+  "productionWiring": "OFF",
+  "fullWallAcceptance": "NOT_RUN"
+}

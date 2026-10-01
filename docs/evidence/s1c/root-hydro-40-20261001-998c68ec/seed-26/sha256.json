@@ -1,0 +1,34 @@
+[
+  {
+    "path": "execution.json",
+    "sha256": "4fb734d0d50b27a7d1b6093c54e2f1bd2d569539be64db427af2f25b7af7eca0"
+  },
+  {
+    "path": "inputs.json",
+    "sha256": "1e38e40eb1dbfb4b199484b54f4f975a441ddee78dcad19f260f5ec24c810010"
+  },
+  {
+    "path": "logs\\latest.log",
+    "sha256": "c207e8a6bc88128621102991e51429441b7af9291869315c4ce0d547e176cfcd"
+  },
+  {
+    "path": "seed-survey-result.json",
+    "sha256": "b4f32cdd946e84a969feb7f3639ca72041c52737241b4acf8e6b6da5d87b57a9"
+  },
+  {
+    "path": "server-smoke-passed.txt",
+    "sha256": "b112a4e9d4bef73717fddce4559fa2af6493dde952ebdf990bebd110dfb7a471"
+  },
+  {
+    "path": "stderr.log",
+    "sha256": "c6ad1763635c908ce5a243cacd99a4d59c087c140421108cc58c825769c0e767"
+  },
+  {
+    "path": "stdout.log",
+    "sha256": "c207e8a6bc88128621102991e51429441b7af9291869315c4ce0d547e176cfcd"
+  },
+  {
+    "path": "survey-vm.log",
+    "sha256": "78913c6e44815d6ec523838acfacde7505fef9755fffb283670a15a8c7b6e20f"
+  }
+]
