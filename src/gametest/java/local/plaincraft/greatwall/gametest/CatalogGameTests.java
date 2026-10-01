@@ -15,6 +15,17 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public final class CatalogGameTests implements FabricGameTest {
     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=40)
+    public void currentOreAndGravelProtectionBlocksNaturalColumnsWithoutAnyStructure(GameTestHelper helper) {
+        var catalog=new BlockCatalog(helper.getLevel().registryAccess());
+        for(var block:new net.minecraft.world.level.block.Block[]{Blocks.COAL_ORE,Blocks.DEEPSLATE_COAL_ORE,Blocks.GRAVEL}) {
+            var captured=flags(catalog,block.defaultBlockState());
+            helper.assertTrue(!captured.support()&&captured.protectedBlock(),
+                    "diagnostic baseline: current policy rejects this natural state without a structure");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=40)
     public void supportTagsRejectGravitySnowAndMud(GameTestHelper helper) {
         var catalog=new BlockCatalog(helper.getLevel().registryAccess());
         for(var block:new net.minecraft.world.level.block.Block[]{Blocks.STONE,Blocks.DEEPSLATE,Blocks.DIRT,

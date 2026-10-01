@@ -25,6 +25,37 @@ import net.minecraft.world.level.levelgen.structure.structures.BuriedTreasurePie
 
 public final class ProtectionGameTests implements FabricGameTest {
     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=100)
+    public void resolvedSurfaceJigsawUsesRealBoundsRatherThanAReadWindowFallback(GameTestHelper helper) {
+        var owner=chunk(helper,new ChunkPos(-14,72));
+        var referenced=chunk(helper,new ChunkPos(-14,76));
+        var structure=helper.getLevel().registryAccess().registryOrThrow(Registries.STRUCTURE)
+                .get(ResourceLocation.parse("minecraft:village_plains"));
+        helper.assertTrue(structure instanceof net.minecraft.world.level.levelgen.structure.structures.JigsawStructure,
+                "this fixture must use an actual registered surface jigsaw type");
+        // Detached native pieces enclose the measured root; native terrain adjustment remains active.
+        var start=new StructureStart(structure,referenced.getPos(),0,new PiecesContainer(List.of(
+                new BuriedTreasurePieces.BuriedTreasurePiece(new BlockPos(-289,51,1141)),
+                new BuriedTreasurePieces.BuriedTreasurePiece(new BlockPos(-158,100,1270)))));
+        referenced.setStartForStructure(structure,start);
+        owner.addReferenceForStructure(structure,referenced.getPos().toLong());
+        var read=new Bounds(-224,43,1152,-208,113,1168);
+        var prepared=Map.<ChunkPos,net.minecraft.world.level.chunk.ChunkAccess>of(
+                owner.getPos(),owner,referenced.getPos(),referenced);
+        var boxes=ProtectionSnapshot.structureBounds(owner,List.of(),prepared,read);
+        var nativeBox=start.getBoundingBox();
+        var actual=new Bounds(nativeBox.minX(),nativeBox.minY(),nativeBox.minZ(),
+                nativeBox.maxX()+1,nativeBox.maxY()+1,nativeBox.maxZ()+1);
+        helper.assertTrue(boxes.contains(actual),"resolved structure must retain its actual aggregate box");
+        helper.assertTrue(!boxes.contains(read),"the read window is not inserted when the reference resolves");
+        helper.assertTrue(ProtectionSnapshot.freeze(boxes,Set.of(),Set.of()).protectedAt(new Point3i(-185,65,1199)),
+                "the measured fort root remains protected by real structure evidence");
+        var unresolved=ProtectionSnapshot.structureBounds(owner,List.of(),Map.of(owner.getPos(),owner),read);
+        helper.assertTrue(unresolved.contains(read)&&!unresolved.contains(actual),
+                "missing and resolved references are different proven paths, not interchangeable explanations");
+        helper.succeed();
+    }
+
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=100)
     public void knownReferenceUsesOnlyThePreparedStartAndHalfOpenPiece(GameTestHelper helper) {
         var owner=chunk(helper,new ChunkPos(0,0));
         var neighbor=chunk(helper,new ChunkPos(1,0));
