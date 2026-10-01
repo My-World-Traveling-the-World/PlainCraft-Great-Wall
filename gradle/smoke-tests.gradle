@@ -210,7 +210,7 @@ def remappedSmoke = tasks.register('remapServerSmokeJar', remapJarType) {
 
 // Use already cached artifacts directly. Loom's installer-based production task
 // can download outside Gradle's resolver, which is forbidden for this workflow.
-def prepareProductionInputs = { runtimeSource, String gameJarName, File smokeFile ->
+def prepareProductionInputs = { runtimeSource, String gameJarName, File smokeFile, File stagingRoot = directory.get().asFile ->
     def gameJar = new File(gradle.gradleUserHomeDir, "caches/fabric-loom/1.21.1/${gameJarName}")
     def intermediary = fileTree(new File(gradle.gradleUserHomeDir,
             'caches/modules-2/files-2.1/net.fabricmc/intermediary/1.21.1')).matching {
@@ -235,9 +235,11 @@ def prepareProductionInputs = { runtimeSource, String gameJarName, File smokeFil
     if (digest.digest().encodeHex().toString() != api.sha256) {
         throw new GradleException('Local Fabric API differs from recorded locked artifact')
     }
+    def artifacts = [apiFile, tasks.named('remapJar').get().archiveFile.get().asFile]
+    if (smokeFile != null) artifacts.add(smokeFile)
     copy {
-        from apiFile, tasks.named('remapJar').get().archiveFile.get().asFile, smokeFile
-        into new File(directory.get().asFile, 'mods')
+        from artifacts
+        into new File(stagingRoot, 'mods')
     }
     return files(runtimeLibraries, gameJar, intermediary)
 }
@@ -319,5 +321,68 @@ tasks.register('runClientSmokeProduction', JavaExec) {
         new File(root, 'production-client-classpath.txt').setText(
                 classpath.files.collect { it.absolutePath }.sort().join('\n') + '\n', 'UTF-8')
         logger.lifecycle("Production client runtime: ${javaLauncher.get().metadata.installationPath}")
+    }
+}
+
+// Manual isolated client: no smoke entrypoint that would automatically close the game.
+def previewDirectory = layout.buildDirectory.dir('run/wallPreview')
+def preparePreview = tasks.register('prepareWallPreview') {
+    dependsOn tasks.named('remapJar')
+    doLast {
+        def root = previewDirectory.get().asFile
+        def allowed = layout.buildDirectory.dir('run').get().asFile.canonicalFile
+        if (!root.canonicalFile.toPath().startsWith(allowed.toPath())) {
+            throw new GradleException('Preview must remain inside this project build/run directory')
+        }
+        def assetRoot = new File(gradle.gradleUserHomeDir, 'caches/fabric-loom/assets')
+        def index = new File(assetRoot, 'indexes/1.21.1-17.json')
+        if (!index.isFile()) throw new GradleException('Local asset index missing; network downloads are forbidden')
+        def manifest = new groovy.json.JsonSlurper().parse(index)
+        manifest.objects.values().each { value ->
+            def hash = value.hash
+            if (!(hash ==~ /[0-9a-f]{40}/)) throw new GradleException('Invalid local asset object identity')
+            def object = new File(assetRoot, "objects/${hash.substring(0, 2)}/${hash}")
+            if (!object.isFile() || object.length() != value.size) {
+                throw new GradleException("Local asset object missing: ${hash}; do not download")
+            }
+        }
+        if (root.isDirectory() && !new File(root, 'greatwall_test_world').isFile()) {
+            throw new GradleException('Refusing an existing unmarked preview directory')
+        }
+        root.mkdirs()
+        new File(root, 'greatwall_test_world').setText('S1C manual isolated client; no real saves\n', 'UTF-8')
+        new File(root, 'greatwall_s1c_fixture').setText('S1C isolated fixture authorization; production OFF\n', 'UTF-8')
+        def runtime = prepareProductionInputs(sourceSets.client, 'minecraft-client.jar', null, root)
+        def jar = tasks.named('remapJar').get().archiveFile.get().asFile
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        jar.withInputStream { input ->
+            byte[] buffer = new byte[65536]
+            for (int count; (count = input.read(buffer)) != -1;) digest.update(buffer, 0, count)
+        }
+        def description = [javaHome: javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+                .get().metadata.installationPath.asFile.absolutePath,
+                classpath: runtime.files.collect { it.absolutePath }, artifact: jar.name,
+                artifactSha256: digest.digest().encodeHex().toString(),
+                production: false, isolatedFixture: true, networkUsed: false,
+                purpose: 'manual-client-preview-not-acceptance']
+        new File(root, 'preview-runtime.json').setText(
+                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(description)), 'UTF-8')
+        logger.lifecycle("PREVIEW PREPARED ONLY: ${root}; production OFF; no game started")
+    }
+}
+
+tasks.register('runWallPreview', JavaExec) {
+    dependsOn preparePreview
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    workingDir = previewDirectory.get().asFile
+    mainClass = 'net.fabricmc.loader.impl.launch.knot.KnotClient'
+    jvmArgs '-Xmx8G', '-Dfabric.development=false', '-Dgreatwall.production=false',
+            '-Dgreatwall.s1c.productionFixture=true', '-Dgreatwall.s0.probe=false'
+    args '--version', '1.21.1', '--username', 'GreatWallPreview', '--accessToken', '0',
+            '--gameDir', previewDirectory.get().asFile.absolutePath, '--assetIndex', '1.21.1-17',
+            '--assetsDir', new File(gradle.gradleUserHomeDir, 'caches/fabric-loom/assets').absolutePath
+    doFirst {
+        def description = new groovy.json.JsonSlurper().parse(new File(workingDir, 'preview-runtime.json'))
+        classpath = files(description.classpath)
     }
 }
