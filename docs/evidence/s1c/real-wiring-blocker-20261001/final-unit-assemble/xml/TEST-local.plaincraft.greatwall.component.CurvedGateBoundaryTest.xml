@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.component.CurvedGateBoundaryTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-01T00:37:55.634Z" hostname="CAIMEO" time="1.386">
+  <properties/>
+  <testcase name="legacyScalarCutReallyPublishesClearanceInsideTheFirstGateParapetColumn()" classname="local.plaincraft.greatwall.component.CurvedGateBoundaryTest" time="0.562"/>
+  <testcase name="gateOrderCannotChangeCanonicalWallBytes()" classname="local.plaincraft.greatwall.component.CurvedGateBoundaryTest" time="0.284"/>
+  <testcase name="replacementUsesCompleteEndPlanesNotAConflictCoordinateWhitelist()" classname="local.plaincraft.greatwall.component.CurvedGateBoundaryTest" time="0.262"/>
+  <testcase name="emptyReplacementInputAndStraightGatePreserveCanonicalWallBytes()" classname="local.plaincraft.greatwall.component.CurvedGateBoundaryTest" time="0.273"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

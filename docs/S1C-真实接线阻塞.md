@@ -123,3 +123,70 @@ Tectonic与Lithostitched的JAR SHA和历史native oracle认证完全相同，未
 额外固定代表seed的选择，或改变UNRESOLVED的生产政策，均须明确记录范围；
 不能私自把水文错误改为空段、SUPPORT_GAP、WIDE或“无墙成功”。
 此时不能宣称1C-1/S1C完成；所有未进入阶段保持NOT_RUN。
+
+## 6. 本轮文件与最终离线检查
+
+本轮修复/诊断生产文件（绝对路径）：
+
+- `D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\planning\PlannerScheduler.java`
+- `D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\lifecycle\ProductionSession.java`
+- `D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\terrain\HydrologyClassifier.java`
+- `D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\lifecycle\RootSearch.java`
+
+测试文件：
+
+- `D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\planning\PlannerSchedulerTest.java`
+- `D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\terrain\HydrologyTest.java`
+- `D:\云游四海-Mod源码\plaincraft-great-wall\src\test\java\local\plaincraft\greatwall\lifecycle\RootSearchTest.java`
+
+报告文件：
+
+- `D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1C-1C-1.md`
+- `D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1C.md`
+- `D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1C-真实接线阻塞.md`
+
+原生接线此前各批文件及证据见1C-1报告§16～24；本轮没有重写已签收S1A/S1B构件，
+没有修改依赖版本、永久历史、T0/owner权限或C2ME区域锁规则。
+
+最终输入 `be43628`（生产源自`f04b793`未变），所有实际源码/Gradle/工具输入SHA相同：
+
+```powershell
+Set-Location -LiteralPath 'D:\云游四海-Mod源码\plaincraft-great-wall'
+$env:JAVA_HOME='C:\Program Files\Java\jdk-21'
+.\gradlew.bat --offline --dependency-verification=strict test assemble compileServerSmokeJava --rerun-tasks --no-build-cache --console=plain --no-daemon
+```
+
+【已验证】exit0，`BUILD SUCCESSFUL in 2m 5s`，
+**332/332 JUnit、61套件、failures=errors=skipped=0**。
+61份XML全为本轮新鲜文件，sourceInputsUnchanged=true。
+证据绝对目录：
+`D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1c\real-wiring-blocker-20261001\final-unit-assemble\`。
+含输入SHA、命令/退出凭证、完整stdout、原XML及artifact/archive审计。
+
+本轮新打包为 `build/libs/plaincraft-great-wall-0.1.0-s0.3.jar`，
+SHA256=`dfe146262610ccb7bb4974c500f3cb5e37b43428fe6302e4b5d63d7caabe6a42`，
+class major=65（Java21）；sources Jar也为本轮新生成。
+两个新Jar均无serverSmoke/GameTest目录条目。旧s0.1/s0.2 Jar只是目录库存，
+已在审计中标freshThisRun=false，不能作为本轮产物。没有部署或发布。
+
+【范围】这是全量纯JUnit+assemble+编译，不是完整build或全GameTest。
+S0百轮、S1B慢矩阵、真实C2ME施工、真实owner峰值、真实墙APPLY/reopen/每chunk成本、
+Golden/6000/人工实走/S5/24h本轮NOT_RUN。JUnit中解析fixture/资源预留压力的PASS
+不替代真实生产内存或地形验收。
+五轮本批真实失败归档共65个SHA清单条目全部匹配并被Git收录；
+历史两轮9282026另已归档，本项审计不把它们混算成本批五轮。
+
+## 7. 可复现的拒绝输入
+
+以下命令会创建新的隔离世界并保留失败，不用于“重跑到绿”：
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Java\jdk-21'
+.\tools\Test-S1Terrain.ps1 -Profiles vanilla -Seeds 1 -Reopen
+.\tools\Test-S1Terrain.ps1 -Profiles tectonic -Seeds 0 -Reopen
+```
+
+实际已观察的拒绝分别见表中e7f2c3f6和ddbb1181；完整配置/来源/时间戳在原inputs.json。
+性能时长不能预承诺复跑相同，未取得新执行凭证不得沿用旧exitCode。
+调度与诊断修订提交：`592dbf9`、`e2bfa82`、`098fe04`、`f04b793`；
+旧失败与新证据分开留存，不删除或静默改绿。

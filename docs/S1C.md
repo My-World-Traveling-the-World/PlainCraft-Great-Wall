@@ -15,8 +15,13 @@
 本批最近定向回归：RootSearch/WorldBootstrap/PlannerScheduler/Hydrology四套
 **43/43 JUnit、exit0、30秒**，compileServerSmokeJava通过（JDK21/offline/strict）。
 保留原异常及旧批次超时的before红例；证据 `docs/evidence/s1c/planner-failure-20261001/`
-与`root-batch-guard-20261001/after-final/`。当前源码全量JUnit、完整build、
-真实墙/reopen/成本仍没有完成凭证；不继承历史309项为当前源码全量PASS。
+与`root-batch-guard-20261001/after-final/`。
+
+本批最终离线回归：`test assemble compileServerSmokeJava --rerun-tasks --no-build-cache --console=plain --no-daemon`
+（同JDK21/offline/strict），**332/332 JUnit、61套件、exit0、2m5s**，无失败/错误/跳过，
+所有源输入SHA未变。证据 `docs/evidence/s1c/real-wiring-blocker-20261001/final-unit-assemble/`。
+这不是完整build/全GameTest；真实墙/reopen/成本仍无PASS凭证，
+不继承历史309项或S1B矩阵替代S1C。
 
 最终源码 `6026605` 上三个普通 DedicatedServer 独立新世界诊断均正常退出、exit 0、laneProtocolPassed=true，各有512列、196608个逐状态对照。每 lane 一次锁外异步初始化单列，跨 job 复用并实际关闭排空；稳态仍 25ms目标/40ms检测。实际 scheduler 批次最大 vanilla 7.8147ms、Tectonic 24.5981ms、C2ME 6.7015ms，超限 0，仅观测输入域。C2ME 初始化仍有约 2.286s，未删除成本或关闭 DFC。Tectonic 约122ms的旧观察及本轮冷阶段的内部原因仍未查明。
 

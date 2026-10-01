@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.lifecycle.RootSearchTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-01T00:38:13.509Z" hostname="CAIMEO" time="4.549">
+  <properties/>
+  <testcase name="singleOver40msPrimitiveStillRejectsTheCompletedSearch()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.104"/>
+  <testcase name="finishAndForeignLaneCannotReadPartialRoot()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.005"/>
+  <testcase name="flatLandSelectsFrozenRingAndIsStableAcrossBatchSizes()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.071"/>
+  <testcase name="nativeDomainIncludesAccumulatedRadiusAndTwoChunksOnly()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.001"/>
+  <testcase name="batchGuardStopsBeforeStackingAnotherSlowNativePrimitive()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="4.314"/>
+  <testcase name="unsupportedFootprintCannotBeReplacedWithAnEmptyFort()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.031"/>
+  <testcase name="allWetCandidatesFailVisiblyWithoutExpandingRing()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.017"/>
+  <testcase name="futureSeparationIncludesWholeChunkCornersTemplatesAndMargin()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.001"/>
+  <testcase name="oversizedSpawnDomainFailsInsteadOfGrantingAllChunks()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.component.WallRampTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-01T00:38:08.111Z" hostname="CAIMEO" time="1.448">
+  <properties/>
+  <testcase name="outerRailsAreGroundedAndNeverReplaceTheThreeWideRuns()" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.017"/>
+  <testcase name="familiesHaveSameOccupancy()" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.229"/>
+  <testcase name="wallHas20By10TaperAndSixClearLane()" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.078"/>
+  <testcase name="fixedFourCandidateOrderUsesCompleteFootprintsAndNeverLoadedSide()" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.049"/>
+  <testcase name="rampHasGroundToWallRouteAndRejectsMissingSupport()" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.012"/>
+  <testcase name="[1] 0" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.009"/>
+  <testcase name="[2] 4" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.032"/>
+  <testcase name="[3] 5" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.036"/>
+  <testcase name="[4] 12" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.059"/>
+  <testcase name="[1] 1" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.009"/>
+  <testcase name="[2] 2" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.01"/>
+  <testcase name="[3] 3" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.012"/>
+  <testcase name="[4] 4" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.013"/>
+  <testcase name="[5] 20" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.014"/>
+  <testcase name="[6] 31" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.021"/>
+  <testcase name="[7] 32" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.021"/>
+  <testcase name="rotatedWallRetainsContinuousSixWidePath()" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.392"/>
+  <testcase name="allThirtyTwoHeightsKeepTheirRequiredLandingsAndHeadroom()" classname="local.plaincraft.greatwall.component.WallRampTest" time="0.418"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
