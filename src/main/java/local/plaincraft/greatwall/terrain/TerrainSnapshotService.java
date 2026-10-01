@@ -62,8 +62,7 @@ public final class TerrainSnapshotService implements AutoCloseable {
             if(!coverage.hash().equals(DeterministicHash.sha256(EvidenceCodec.coverage(coverage))))throw failure(FailureCode.RECIPE_MISMATCH,"coverage hash mismatch");
             ChunkAccess owner=featuresChunks.get(coverage.chunk());
             if(owner==null)throw failure(FailureCode.T0_MISSING,"owner not prepared");
-            int radius=ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES).blockStateWriteRadius();
-            if(radius<0||radius>4)throw failure(FailureCode.UNSUPPORTED_ADAPTER,"unsupported FEATURES halo");
+            int radius=ProtectionSnapshot.leaseRadiusChunks();
             for(int x=-radius;x<=radius;x++)for(int z=-radius;z<=radius;z++) {
                 var key=new ChunkKey(coverage.chunk().dimension(),coverage.chunk().x()+x,coverage.chunk().z()+z);
                 var chunk=featuresChunks.get(key);

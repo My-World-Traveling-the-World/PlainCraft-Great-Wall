@@ -16,9 +16,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
-import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
-import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 
 /** Immutable protection evidence. Native reads require the caller's completed FEATURES/owner lease. */
@@ -65,21 +63,43 @@ public record ProtectionSnapshot(List<Bounds> structures,Set<Point3i> blockEntit
     }
 
     /**
+     * Radius, in chunks, that the FEATURES lease must cover so every structure
+     * reference can be resolved from lease content alone.
+     *
+     * <p>The S1 contract requires a cross-chunk reference to be resolved from the
+     * finite STRUCTURE_STARTS/FEATURES lease content that PREPARE already
+     * provided, never a synchronous getChunk. A reference points at the chunk
+     * where a structure <em>starts</em>, which can be several chunks away from the
+     * chunk it reaches into, so the lease must span at least the
+     * STRUCTURE_REFERENCES write radius and not merely the FEATURES one. Measured
+     * on seed 17: owner [-14,72] held references to [-14,76] (+4) and [-14,70]
+     * (-2) while a FEATURES-only halo prepared just the 3x3 neighbourhood, so
+     * every reference went unresolved and the whole read window was protected -
+     * making the fort0 entrance 188/188 columns protected with zero terrain
+     * faults. The design already permits radius 4 (9x9 = the 81-chunk lease cap),
+     * so this stays inside the frozen bound.
+     */
+    public static int leaseRadiusChunks() {
+        int features=net.minecraft.world.level.chunk.status.ChunkPyramid.GENERATION_PYRAMID
+                .getStepTo(net.minecraft.world.level.chunk.status.ChunkStatus.FEATURES).blockStateWriteRadius();
+        int references=net.minecraft.world.level.chunk.status.ChunkPyramid.GENERATION_PYRAMID
+                .getStepTo(net.minecraft.world.level.chunk.status.ChunkStatus.STRUCTURE_REFERENCES)
+                .blockStateWriteRadius();
+        int radius=Math.max(features,references);
+        if(radius<0||radius>4)throw new WallFailure(FailureCode.UNSUPPORTED_ADAPTER,
+                "structure-reference halo outside the frozen 9x9 lease bound: "+radius);
+        return radius;
+    }
+
+    /**
      * Structure bounding boxes to protect, resolved from already-prepared chunks.
      *
-     * <p>Resolved starts yield their exact boxes, which are Y-precise: an
-     * underground structure whose box sits below the wall's probe window never
-     * collides with it.
-     *
-     * <p>An <b>unresolved</b> reference (its start chunk is outside the finite
-     * FEATURES halo) has no known extent, so the fail-closed answer is to protect
-     * the whole read window. That is correct for a surface structure, but wrong
-     * for an underground one: the read window spans the whole column, so a
-     * mineshaft reference would block surface masonry that it can never touch.
-     * Measured on seed 17 this made the fort0 entrance 188/188 columns protected
-     * with zero terrain faults. The structure's own generation step is the
-     * authoritative classifier here, so an unresolved reference only protects the
-     * read window when its step actually places blocks at the surface.
+     * <p>The S1 contract requires a cross-chunk reference to be resolved from the
+     * finite STRUCTURE_STARTS/FEATURES lease content that PREPARE already
+     * provided (never a synchronous getChunk), so the lease must cover the
+     * reference distance as well as the FEATURES write radius. When a reference
+     * still cannot be resolved the fail-closed answer stays "protect the read
+     * window": an unknown structure extent must never be written through.
      */
     public static List<Bounds> structureBounds(ChunkAccess owner,List<Bounds> predicted,
             Map<ChunkPos,ChunkAccess> prepared,Bounds conservativeReadBounds) {
@@ -91,28 +111,10 @@ public record ProtectionSnapshot(List<Bounds> structures,Set<Point3i> blockEntit
             for(long reference:entry.getValue()) {
                 var chunk=prepared.get(new ChunkPos(reference));
                 var start=chunk==null?null:chunk.getStartForStructure(entry.getKey());
-                if(start==null||!start.isValid()){
-                    // Unresolved: only a structure that generates at the surface can
-                    // conflict with the wall, so an underground step is not protected.
-                    if(surfaceStep(entry.getKey()))boxes.add(conservativeReadBounds);
-                }else append(start,boxes);
+                if(start==null||!start.isValid())boxes.add(conservativeReadBounds);else append(start,boxes);
             }
         }
         return boxes.stream().distinct().sorted(BOX_ORDER).toList();
-    }
-
-    /**
-     * True when the structure's generation step can place blocks at the surface.
-     *
-     * <p>Constants taken from the mapped enum (1.21.1): the surface-bearing steps
-     * are {@code SURFACE_STRUCTURES} and {@code TOP_LAYER_MODIFICATION}.
-     * {@code UNDERGROUND_STRUCTURES} (mineshafts, strongholds) and the deeper
-     * steps cannot reach the wall's surface probe window.
-     */
-    private static boolean surfaceStep(Structure structure) {
-        GenerationStep.Decoration step=structure.step();
-        return step==GenerationStep.Decoration.SURFACE_STRUCTURES
-                ||step==GenerationStep.Decoration.TOP_LAYER_MODIFICATION;
     }
 
     /** Count native piece views before the T0 allocation reservation; do not construct evidence here. */

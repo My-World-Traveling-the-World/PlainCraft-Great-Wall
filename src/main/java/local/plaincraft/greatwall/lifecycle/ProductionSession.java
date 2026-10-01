@@ -89,6 +89,8 @@ final class ProductionSession implements AutoCloseable {
                 installed.complete(snapshot);
                 GreatWallMod.LOGGER.info("[GreatWall:S1C] FIXTURE_RECIPE_READY runtime={} wall={} spawn={} axis={} production=OFF",
                         runtime, recipe.wallId(), recipe.frozenSpawn(), recipe.axis());
+                GreatWallMod.LOGGER.info("[GreatWall:S1C] LEASE_HALO_RADIUS={} (structure-reference aware, 9x9 lease bound)",
+                        local.plaincraft.greatwall.generation.ProtectionSnapshot.leaseRadiusChunks());
             } catch (Throwable failure) { fail(failure); }
         }));
     }

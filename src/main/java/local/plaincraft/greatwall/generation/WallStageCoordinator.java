@@ -203,11 +203,7 @@ public final class WallStageCoordinator implements AutoCloseable {
         if (previous != null) { event("T0_REUSED", pos, "capture", "none"); return previous.copy(); }
         try { active(); }
         catch (RuntimeException closed) { candidate.completeExceptionally(closed); return candidate.copy(); }
-        int radius = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES).blockStateWriteRadius();
-        if (radius < 0 || radius > 4) {
-            candidate.completeExceptionally(new IllegalStateException("Unsupported feature write halo: " + radius));
-            return candidate.copy();
-        }
+        int radius = ProtectionSnapshot.leaseRadiusChunks();
         var halo = new ArrayList<ChunkPos>();
         for (int x = -radius; x <= radius; x++) for (int z = -radius; z <= radius; z++) halo.add(new ChunkPos(pos.x + x, pos.z + z));
         UUID leaseId = UUID.randomUUID();
