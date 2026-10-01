@@ -21,7 +21,8 @@ public final class AllocationBudget implements AutoCloseable {
         state.compute("budget",(k,s)->{
             if(s.closed())throw new WallFailure(FailureCode.CLOSED,"allocation budget closed");
             if(bytes>s.limit()-s.used())throw new WallFailure(FailureCode.CAPACITY,
-                    "allocation rejected before producer: requested="+bytes+" available="+(s.limit()-s.used()));
+                    "allocation rejected before producer: requested="+bytes+" available="+(s.limit()-s.used())
+                            +" limit="+s.limit()+" used="+s.used()+" peak="+s.peak());
             long next=s.used()+bytes;
             return new Stats(s.limit(),next,Math.max(next,s.peak()),false);
         });

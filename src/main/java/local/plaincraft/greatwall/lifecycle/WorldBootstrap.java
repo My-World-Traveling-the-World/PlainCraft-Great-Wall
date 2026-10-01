@@ -85,13 +85,16 @@ public final class WorldBootstrap implements AutoCloseable {
     }
 
     public static GenerationConfig defaultConfig() {
-        // Real-terrain traversal measures ~1 MiB of retained compiled data per
-        // cell (componentBytes charges 256 bytes per voxel), and a single chunk
-        // owner can hold many cells. Both the original 32 MiB and an interim
-        // 128 MiB budget were consumed to ~99% before failing, so the ceiling is
-        // set to 256 MiB to let a full traversal complete. Segment and terrain
-        // budgets are unchanged.
-        return new GenerationConfig(1, 1, 2048, 4, 150000, 384, 192, 4, 64L << 20, 64L << 20, 256L << 20);
+        // Measured on real terrain: loadCell() captures every owner of a cell
+        // into one shared arena, and each successful capture keeps its pin
+        // (finishCapture only closes retained pins on failure) while also
+        // holding a 24 MiB scratch reservation. The 64 MiB terrain budget was
+        // consumed to ~99% at roughly 130 owners per cell, so it is raised to
+        // 256 MiB to cover a full 2048-block cell. The compiled budget is
+        // raised for the same reason: componentBytes charges 256 bytes per
+        // voxel and one chunk owner retains many cells. Segment stays at 64 MiB.
+        return new GenerationConfig(1, 1, 2048, 4, 150000, 384, 192, 4,
+                64L << 20, 256L << 20, 256L << 20);
     }
 
     public void authorizeSpawnProbe(ChunkKey candidate, int nativeDependencyRadius) {

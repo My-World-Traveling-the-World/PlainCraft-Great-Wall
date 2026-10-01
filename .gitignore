@@ -6,3 +6,8 @@ out/
 *.iml
 *.log
 
+# Machine-local compile-only inputs (never bundled into the release jar).
+# libs/roadweaver-interop-compile-only.jar provides the RoadWeaver interop ABI
+# for S2; regenerate it from the roadweaver checkout, see gradle/README-local-inputs.md.
+libs/
+
