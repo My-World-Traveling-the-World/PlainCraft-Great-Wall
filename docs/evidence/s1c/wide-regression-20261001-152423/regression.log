@@ -1,0 +1,114 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileClientJava UP-TO-DATE
+> Task :processClientResources UP-TO-DATE
+> Task :jar
+> Task :sourcesJar
+> Task :clientClasses UP-TO-DATE
+> Task :compileServerSmokeJava UP-TO-DATE
+> Task :processServerSmokeResources UP-TO-DATE
+> Task :serverSmokeClasses UP-TO-DATE
+> Task :compileTestJava
+> Task :processTestResources NO-SOURCE
+> Task :testClasses
+> Task :testClasspathBridge
+
+> Task :test
+
+PlannerSchedulerTest > neighborHydrologyNeverWaitsOnNeighborGeometry() PASSED
+
+PlannerSchedulerTest > manyDistinctPlansCannotReserveAwayTheirDependencies() PASSED
+
+PlannerSchedulerTest > hundredCallersShareOneCompute() PASSED
+
+PlannerSchedulerTest > prewarmedStartupStillServesNewPlansBeforeFirstTick() PASSED
+
+PlannerSchedulerTest > foreignOrClosedBootstrapLanesCannotBeTransferred() PASSED
+
+PlannerSchedulerTest > startupPumpProgressesWithoutNormalTicks() PASSED
+
+PlannerSchedulerTest > fragmentedWaterTerminatesGeometryAndPermanentPrefixWithoutChangingSamplingFailures() PASSED
+
+PlannerSchedulerTest > rejectedIoExecutorCannotLeaveAnUnfinishedFuture() PASSED
+
+PlannerSchedulerTest > heldNativeInitializationDoesNotStopStartupPumpOrNeedTicks() PASSED
+
+PlannerSchedulerTest > nonOverworldAndTamperedRecipeCannotCreateSecondPlanner() PASSED
+
+PlannerSchedulerTest > otherDimensionAndDistantLateralChunksReturnExplicitEmptyWindows() PASSED
+
+PlannerSchedulerTest > samplingFailureIsNotReplacedByGenericClosedInParentPlan() PASSED
+
+PlannerSchedulerTest > cancelOneLeaseKeepsOthers() PASSED
+
+PlannerSchedulerTest > closeTerminatesAllFutures() PASSED
+
+PlannerSchedulerTest > nativeFactoryFailureTerminatesSchedulerDependenciesAndDrains() PASSED
+
+PlannerSchedulerTest > lastSafeSegmentEndsBeforeWorldLimit() PASSED
+
+PlannerSchedulerTest > lateWorldACallbackCannotPublishWorldB() PASSED
+
+PlannerSchedulerTest > rootLanesTransferWithoutReinitializationAndSchedulerOwnsDrain() PASSED
+
+PrefixSummaryIndexTest > callerCancellationAndCloseAreIsolated() PASSED
+
+PrefixSummaryIndexTest > earliestOceanWinsAllOrders() PASSED
+
+PrefixSummaryIndexTest > coldPrefixDoesNotClaimConstantTime() PASSED
+
+HydrologyTest > width49IsNarrow50And51Terminate() PASSED
+
+HydrologyTest > wetRootFailsExplicitly() PASSED
+
+HydrologyTest > deepNarrowRiverMakesSupportGap() PASSED
+
+HydrologyTest > seamRiverHasSameBanksAndOneGlobalCrossing() PASSED
+
+HydrologyTest > sliceAndCacheTemperatureDoNotAffectWaterEvidence() PASSED
+
+HydrologyTest > roofedAquiferIsNotRiver() PASSED
+
+HydrologyTest > oneBlockRiverBetweenCoarseSamplesIsFound() PASSED
+
+HydrologyTest > formerUnequalLevelWitnessKeepsMeasuredWidthButCannotBuildAWaterGate() PASSED
+
+HydrologyTest > budgetExhaustionIsNotOcean() PASSED
+
+HydrologyTest > inconsistentWaterLevelTerminatesAsWide() PASSED
+
+HydrologyTest > diagonalSpanIsNotChannelWidth() PASSED
+
+HydrologyTest > missingBedOrCensoredReferenceIsNotCertifiedDry() PASSED
+
+RealizationPlannerTest > immutableInspectionHandoffRemainsChargedUntilItsOwnerCloses() PASSED
+
+RealizationPlannerTest > partialTerminalCellKeepsOneNearSideCapAndOriginalReason() PASSED
+
+RealizationPlannerTest > orderIndependentCellKeepsStationContractImmutable() PASSED
+
+RealizationPlannerTest > capVotesCannotOverwriteAnAcceptedWholeGateFootprint() PASSED
+
+RealizationPlannerTest > elevenWideTowerKeepsTheWallColumnInsideItsTwelveWidePlanningGuard() PASSED
+
+RealizationPlannerTest > exhaustedBudgetRejectsInspectionBeforeAnyTerrainColumnIsRead() PASSED
+
+RealizationPlannerTest > inspectionScratchIsReleasedOnSuccessAndMissingColumnFailure() PASSED
+
+RealizationPlannerTest > frozenGateRevisionChangesCellHashWithoutChangingGeometry() PASSED
+
+> Task :processIncludeJars UP-TO-DATE
+> Task :remapJar
+> Task :remapSourcesJar
+> Task :assemble
+
+BUILD SUCCESSFUL in 34s
+14 actionable tasks: 7 executed, 7 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html

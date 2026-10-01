@@ -1,0 +1,9 @@
+{
+  "sourceCommit": "37ca4febfe1e25c9488d031d19bad508c75feb43",
+  "dirty": true,
+  "startedUtc": "2026-10-01T07:24:23.0468178Z",
+  "finishedUtc": "2026-10-01T07:24:57.4695196Z",
+  "exitCode": 0,
+  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.terrain.HydrologyTest --tests local.plaincraft.greatwall.planning.PlannerSchedulerTest --tests local.plaincraft.greatwall.planning.PrefixSummaryIndexTest --tests local.plaincraft.greatwall.terrain.RealizationPlannerTest assemble --console=plain --no-daemon",
+  "production": "OFF"
+}

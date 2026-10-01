@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.component.GateCapTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-01T07:19:37.259Z" hostname="CAIMEO" time="0.996">
+  <properties/>
+  <testcase name="capRetreatFollowsBendAndHeightInsteadOfOriginalTangent()" classname="local.plaincraft.greatwall.component.GateCapTest" time="0.002"/>
+  <testcase name="filledFoundationsDoNotPretendTheirTopIsNaturalGround()" classname="local.plaincraft.greatwall.component.GateCapTest" time="0.651"/>
+  <testcase name="capHasGroundEgressAndDoesNotKeepAnIsolatedTip()" classname="local.plaincraft.greatwall.component.GateCapTest" time="0.043"/>
+  <testcase name="nonWalkableCapStatesRetainRuinsWithoutReadingANonexistentRoute()" classname="local.plaincraft.greatwall.component.GateCapTest" time="0.044"/>
+  <testcase name="rampsNeverBlockGateApproach()" classname="local.plaincraft.greatwall.component.GateCapTest" time="0.254"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

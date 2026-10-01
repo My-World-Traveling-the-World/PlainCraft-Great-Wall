@@ -108,19 +108,26 @@ class HydrologyTest {
         assertEquals(FailureCode.ROOT_NOT_FOUND, failure.code());
     }
 
-    @Test void inconsistentWaterLevelReportsTheRejectedProofWithoutChangingClassification() {
-        var failure = assertThrows(WallFailure.class, () -> classify(0, false, 64,
+    @Test void inconsistentWaterLevelTerminatesAsWide() {
+        // 三分法：证不出宽窄（含水位不一致的碎岛）按宽水域收头入海，不再前置抛异常。
+        var water = classify(0, false, 64,
                 (x, z) -> x >= 100 && x < 140
                         ? AnalyticTerrainOracle.water(x < 120 ? 63 : 66, 58)
-                        : AnalyticTerrainOracle.dry(64)));
-        assertEquals(FailureCode.HYDROLOGY_UNRESOLVED, failure.code());
-        assertTrue(failure.getMessage().contains("segment=0"));
-        assertTrue(failure.getMessage().contains("waterMismatch=true"));
-        assertTrue(failure.getMessage().contains("waterMinY=63 waterMaxY=66"));
-        assertTrue(failure.getMessage().contains("direction=0{"));
-        assertTrue(failure.getMessage().contains("direction=15{"));
-        assertTrue(failure.getMessage().contains("widthQ8="));
-        assertTrue(failure.getMessage().contains("lowerQ8="));
+                        : AnalyticTerrainOracle.dry(64));
+        assertEquals(1, water.size());
+        assertEquals(WaterClass.WIDE, water.getFirst().classification());
+    }
+
+    @Test void formerUnequalLevelWitnessKeepsMeasuredWidthButCannotBuildAWaterGate() {
+        var evidence = classify(0, false, 1,
+                (x, z) -> x >= 100 && x < 140
+                        ? AnalyticTerrainOracle.water(x < 120 ? 63 : 66, 58)
+                        : AnalyticTerrainOracle.dry(64)).getFirst();
+        assertEquals(40 * 256L, evidence.channelWidthQ8());
+        assertEquals(3, 66 - 63, "the original waterMismatch > 1 witness remains true");
+        assertEquals(WaterClass.WIDE, evidence.classification(),
+                "WIDE is the authorized termination policy, not a fabricated measured width");
+        assertTrue(evidence.piers().isEmpty(), "a terminal crossing must never reach narrow-river pier construction");
     }
 
     @Test void missingBedOrCensoredReferenceIsNotCertifiedDry() {

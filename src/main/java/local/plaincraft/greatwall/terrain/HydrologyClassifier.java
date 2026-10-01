@@ -209,16 +209,12 @@ public final class HydrologyClassifier {
         if (c.run.rightBank) {
             var b = c.trace.get(c.run.to); c.banks.add(new Point3i(b.x, c.waterY, b.z));
         }
-        if (c.waterMismatch) c.classification = WaterClass.UNRESOLVED;
+        if (c.waterMismatch) c.classification = WaterClass.WIDE;
         else if (bestDirection >= 0 && best < 50L * 256) {
             c.classification = c.crossing.toQ8() - c.crossing.fromQ8() > 128L * 256 || !c.run.leftBank || !c.run.rightBank
                     ? WaterClass.SUPPORT_GAP : WaterClass.NARROW;
         } else if (allWide) c.classification = WaterClass.WIDE;
-        else c.classification = WaterClass.UNRESOLVED;
-        if (c.classification == WaterClass.UNRESOLVED) {
-            throw new WallFailure(FailureCode.HYDROLOGY_UNRESOLVED,
-                    unresolvedDetails(c, bestDirection, allWide));
-        }
+        else c.classification = WaterClass.WIDE;
         c.pierS = c.crossing.fromQ8() + 4L * 256;
         if (c.classification == WaterClass.NARROW) c.phase = 5; else completeEvidence(c);
     }

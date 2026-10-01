@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.component.ReservationHeapPressureTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-01T07:19:42.229Z" hostname="CAIMEO" time="1.058">
+  <properties/>
+  <testcase name="fullBudgetPinsBackpressureWhileRealPayloadsStayLive()" classname="local.plaincraft.greatwall.component.ReservationHeapPressureTest" time="1.058"/>
+  <system-out><![CDATA[{
+  "scope": "reservation primitive; real TerrainTile and EnemyTower payloads; NOT production closure",
+  "rounds": 24,
+  "concurrentPins": 8,
+  "terrainPages": 1536,
+  "compiledComponents": 192,
+  "baselineHeapUsed": 93772688,
+  "sampledHeapPeak": 328675024,
+  "heapPoolPeakSumNonSimultaneous": 355084512,
+  "jvmMaxHeap": 536870912,
+  "terrainReservedPeak": 67108864,
+  "compiledReservedPeak": 33554432,
+  "heapPools": {
+    "G1 Eden Space": 318767104,
+    "G1 Old Gen": 17946896,
+    "G1 Survivor Space": 18370512
+  }
+}
+
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -42,6 +42,30 @@ class PlannerSchedulerTest {
         }
     }
 
+    @Test void fragmentedWaterTerminatesGeometryAndPermanentPrefixWithoutChangingSamplingFailures() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> new AnalyticTerrainOracle((x, z) ->
+                     x >= 1100 && x < 1140
+                             ? AnalyticTerrainOracle.water(x < 1120 ? 63 : 66, 58)
+                             : AnalyticTerrainOracle.dry(64), true),
+                     new SegmentCacheStore(directory.resolve("fragmented/cache"), recipe), io);
+             var geometry = scheduler.requireGeometry(0, Priority.PLAYER)) {
+            scheduler.startupPump();
+            var actual = geometry.future().get(30, TimeUnit.SECONDS);
+            var water = actual.water().stream().filter(w -> w.classification() == WaterClass.WIDE)
+                    .findFirst().orElseThrow();
+            var terminal = actual.terminal().orElseThrow();
+            assertEquals(TerminalKind.OCEAN, terminal.kind());
+            assertEquals(0, terminal.segment());
+            assertEquals(water.crossing().fromQ8(), terminal.localSQ8());
+            var reduced = PrefixSummaryIndex.reduce(PrefixSummaryIndex.origin(), actual);
+            assertEquals(terminal, reduced.terminal().orElseThrow());
+            assertThrows(IllegalArgumentException.class, () -> PrefixSummaryIndex.reduce(reduced,
+                    PlanningFixtures.geometry(recipe, 1, java.util.Optional.empty())));
+        }
+    }
+
     private static ScheduledExecutorService ticks(PlannerScheduler scheduler) {
         var timer = Executors.newSingleThreadScheduledExecutor();
         timer.scheduleAtFixedRate(() -> scheduler.tick(new SliceBudget(65536, System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(100))), 0, 5, TimeUnit.MILLISECONDS);
