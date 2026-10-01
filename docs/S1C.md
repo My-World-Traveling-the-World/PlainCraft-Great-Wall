@@ -6,7 +6,7 @@
 
 | 子项 | 状态 | 当前边界 |
 |---|---|---|
-| 1C-1 真实地形接线 | 进行中 / 隔离接线已实现，真实墙未通过 | 新世界永久授权、实际出生/根点、Vanilla/C2ME gates、生产barrier与真实遍历运行器已接隔离fixture；正式production=true仍拒绝。vanilla/9282026根点拒绝两轮，vanilla/0规划失败一轮，尚无墙体APPLY证书 |
+| 1C-1 真实地形接线 | 进行中 / 隔离接线已实现，真实墙未通过 | 新世界永久授权、实际出生/根点、Vanilla/C2ME gates、生产barrier与真实遍历运行器已接隔离fixture；正式production=true仍拒绝。vanilla/9282026根点拒绝两轮，vanilla/0与vanilla/1在水文认证拒绝，尚无墙体APPLY证书 |
 | 1C-2 生命周期复位 | NOT_RUN / 未进入 | native lane drain 的单测/诊断不等于实际 SERVER_STOPPING、同 JVM A→B→A 或生产 replay |
 | 1C-3 植被抑制 | 前置guard/原版Tree钩已实现，未签收 | margin32含潜在收头/马道足印；原生31配置CODEC边界可解析，但31×100实际写集、真菌/巨菇家族及真实抑树尚NOT_RUN；不能把ABI/包络单测当抑制通过 |
 
@@ -23,4 +23,4 @@
 3. `D:\云游四海-Mod源码\plaincraft-great-wall\docs\S1C-阻塞-RandomState初始化.md`：保留旧合同和旧失败；顶部说明新授权已实现，不改旧证书状态。
 4. `D:\云游四海-Mod源码\plaincraft-great-wall\docs\evidence\s1c\lane-native-20260930\` 及三个最终 b797f27f/93cb5fa6/7b2bdc7d run：当前前置验证。
 
-真实运行详情与各批输入见1C-1报告§16～26。正式生产启用、真实墙通过、退出重进、人工实走、6000profile、Golden、S5/24h均不能写PASS。S0百轮矩阵本轮NOT_RUN；Tan's Huge Trees继续BLOCKED，不删mod冒充整包通过。
+真实运行详情与各批输入见1C-1报告§16～30。正式生产启用、真实墙通过、退出重进、人工实走、6000profile、Golden、S5/24h均不能写PASS。S0百轮矩阵本轮NOT_RUN；Tan's Huge Trees继续BLOCKED，不删mod冒充整包通过。

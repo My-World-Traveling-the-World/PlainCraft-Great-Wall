@@ -57,9 +57,8 @@ public final class RootSearch {
         try {
             for (int operation = 0; operation < primitiveLimit && phase != 3; operation++) {
                 if (Thread.currentThread().isInterrupted()) throw new WallFailure(FailureCode.CLOSED, "root search interrupted");
-                // Do not start a fresh native primitive inside the final guard window.
-                // A single NoiseChunk/cell operation is allowed to be slow; the guard keeps
-                // the surrounding steady batch from stacking another slow operation on it.
+                // Yield before the next primitive in the guard window; completed batches
+                // still include the full duration of any individually slow primitive.
                 if (System.nanoTime() >= deadline - BATCH_GUARD_NANOS) break;
                 switch (phase) {
                     case 0 -> coarseStep(oracle);

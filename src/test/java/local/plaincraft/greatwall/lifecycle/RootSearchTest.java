@@ -105,6 +105,17 @@ final class RootSearchTest {
                 () -> "max batch nanos=" + search.progress().maxBatchNanos());
     }
 
+    @Test void singleOver40msPrimitiveStillRejectsTheCompletedSearch() {
+        var search = search((o, c) -> true);
+        var oracle = new Fixture(false, 45, 1);
+        while (search.advance(oracle, 64) != WorkState.DONE) {}
+        assertTrue(search.progress().over40msBatches() >= 1);
+        assertTrue(search.progress().maxBatchNanos() > 40_000_000L);
+        var failure = assertThrows(WallFailure.class, search::finish);
+        assertEquals(FailureCode.UNSUPPORTED_ADAPTER, failure.code());
+        assertTrue(failure.getMessage().contains("steady sampling exceeded 40ms"));
+    }
+
     private static RootSearch.Selection run(Fixture oracle, int batch) {
         var search = search((o, c) -> true);
         while (search.advance(oracle, batch) != WorkState.DONE) {}
@@ -120,13 +131,20 @@ final class RootSearchTest {
     private static final class Fixture implements NaturalTerrainOracle {
         private final boolean wet;
         private final long delayMillis;
+        private int delayedCalls;
         private Fixture(boolean wet) { this(wet, 0); }
-        private Fixture(boolean wet, long delayMillis) { this.wet = wet; this.delayMillis = delayMillis; }
+        private Fixture(boolean wet, long delayMillis) { this(wet, delayMillis, -1); }
+        private Fixture(boolean wet, long delayMillis, int delayedCalls) {
+            this.wet = wet; this.delayMillis = delayMillis; this.delayedCalls = delayedCalls;
+        }
         private static final class Cursor implements ColumnCursor { private boolean done; public boolean done() { return done; } }
         @Override public ColumnCursor begin(int x, int z, SampleKind kind) { assertEquals(SampleKind.REFERENCE, kind); return new Cursor(); }
         @Override public WorkState advance(ColumnCursor cursor, int limit) {
-            if (delayMillis > 0) try { Thread.sleep(delayMillis); }
-            catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); throw new IllegalStateException(interrupted); }
+            if (delayMillis > 0 && delayedCalls != 0) {
+                if (delayedCalls > 0) delayedCalls--;
+                try { Thread.sleep(delayMillis); }
+                catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); throw new IllegalStateException(interrupted); }
+            }
             ((Cursor) cursor).done = true; return WorkState.DONE;
         }
         @Override public ColumnSample finish(ColumnCursor cursor) {
