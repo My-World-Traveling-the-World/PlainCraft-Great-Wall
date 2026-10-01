@@ -41,46 +41,37 @@ public final class Ramp implements ComponentTemplate {
     /**
      * Ground-entrance height solver.
      *
-     * <p>The entrance corridor is narrow (4 wide) but long (48 deep), so
-     * unsupported columns concentrate here far more than across the whole
-     * 48x48 root footprint. Measured on real terrain (seed 17, walkY 116):
-     * 163 of 196 columns supported with the other 33 clustered along the
-     * strip, and the supported columns spanning 2 blocks (94..96). Root
-     * search had already admitted the same start, and the fort foundation
-     * backfills every footprint column down from {@code lower-1}, so an
-     * unsupported column becomes masonry rather than a hole.
+     * <p>Column acceptance is deliberately identical to
+     * {@code ComponentAssembly}'s per-column rule: a column must carry a
+     * natural {@link ProbeKind#SUPPORTED} probe inside the
+     * {@code [walkY-32, walkY)} window. Root search enforces the same rule
+     * across the whole 48x48 footprint, so a start that root selected always
+     * satisfies this; relaxing it here (as an earlier revision did, allowing a
+     * fraction of unsupported columns) merely moved the rejection later, to
+     * "fort0 footprint is not fully supported".
      *
-     * <p>Acceptance therefore mirrors the fort's own frozen contract, which
-     * admits a footprint column whose drop is at most 12 blocks:
-     * <ul>
-     *   <li>at most {@value #MAX_UNSUPPORTED_PERCENT}% of corridor columns may
-     *       lack natural support (the foundation fills them),</li>
-     *   <li>at least one column must carry real support, so the chosen height
-     *       is measured rather than assumed,</li>
-     *   <li>the supported span must stay within {@link #MAX_ENTRANCE_DROP}
-     *       blocks of fill, which the foundation absorbs, and</li>
-     *   <li>the result must sit inside the {@code [walkY-32, walkY)} window.</li>
-     * </ul>
-     * The previous span-of-1 rule was stricter than the fort contract itself
-     * and rejected this terrain.
+     * <p>The only deliberately different rule is flatness. Measured on real
+     * terrain (seed 17, walkY 116) the supported columns spanned 2 blocks
+     * (94..96) across a 48-block corridor, a 1:24 grade. The previous
+     * span-of-1 rule was stricter than the fort's own frozen contract, which
+     * admits a column whose drop is up to 12 blocks, so the corridor tolerates
+     * the same {@link #MAX_ENTRANCE_DROP}.
      */
-    private static final int MAX_UNSUPPORTED_PERCENT = 25;
     private static final int MAX_ENTRANCE_DROP = 12;
 
     static int ground(ComponentInput input,int x0,int z0,int x1,int z1) {
         var frame=input.site().frame();
         var bounds=Rasterizer.worldBounds(frame,new Bounds(x0,-33,z0,x1,3,z1));
-        int min=Integer.MAX_VALUE,max=Integer.MIN_VALUE,count=0,unsupported=0,total=0;
+        int min=Integer.MAX_VALUE,max=Integer.MIN_VALUE,count=0,total=0;
         for(int z=bounds.minZ();z<bounds.maxZExclusive();z++)for(int x=bounds.minX();x<bounds.maxXExclusive();x++){
             var local=Rasterizer.localCell(frame,new Point3i(x,frame.walkY(),z));
             if(local.x()<x0||local.x()>=x1||local.z()<z0||local.z()>=z1)continue;
             total++;
             var support=input.supports().get(new Point3i(x,frame.walkY(),z));
-            if(support==null||support.kind()!=ProbeKind.SUPPORTED){unsupported++;continue;}
+            if(support==null||support.kind()!=ProbeKind.SUPPORTED)return Integer.MIN_VALUE;
             min=Math.min(min,support.groundTopY());max=Math.max(max,support.groundTopY());count++;
         }
-        if(count==0||unsupported*100>total*MAX_UNSUPPORTED_PERCENT)return Integer.MIN_VALUE;
-        if(max-min>MAX_ENTRANCE_DROP||max<frame.walkY()-32||max>=frame.walkY())return Integer.MIN_VALUE;
+        if(count==0||max-min>MAX_ENTRANCE_DROP||max<frame.walkY()-32||max>=frame.walkY())return Integer.MIN_VALUE;
         return max;
     }
     public ComponentVoxels compileBetween(ComponentInput input, int lowerFeetY, int upperFeetY) {

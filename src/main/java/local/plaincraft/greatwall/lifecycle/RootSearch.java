@@ -13,6 +13,24 @@ import local.plaincraft.greatwall.terrain.NaturalTerrainOracle;
 /** Pure, lane-owned root continuation. Native initialization occurs before the first advance. */
 public final class RootSearch {
     private static final long BATCH_GUARD_NANOS = 5_000_000L;
+    /**
+     * Footprint support tolerance: <b>zero</b>.
+     *
+     * <p>An earlier revision admitted up to 115 of 2304 columns without natural
+     * support, on the theory that the fort foundation backfills them. That was
+     * wrong: {@code ComponentAssembly} rejects an entire footprint the moment
+     * one column lacks support (its drop/kind check), so a tolerated root could
+     * never actually be built and construction failed later with "fort0
+     * footprint is not fully supported".
+     *
+     * <p>The measured seed-17 audit shows why zero still finds a start: the
+     * shortlist is scanned in preference order and contains a candidate with
+     * {@code failedFoundations=0} (radius 2, angle 29) carrying two
+     * {@code DRY_AXIS_ELIGIBLE} axes. Strictness makes the loop skip the
+     * partially supported candidates ahead of it and select that one, so root
+     * and the artifact templates now agree on the same contract.
+     */
+    private static final int MAX_UNSUPPORTED_FOOTPRINT_CELLS = 0;
     public record Selection(Axis axis, int radiusIndex, int angleIndex, int axisIndex, long ridgeScore,
             int columns, long maxBatchNanos, long over40msBatches) {}
     public record Progress(int phase, int candidate, int shortlisted, int footprintColumn,
@@ -132,14 +150,15 @@ public final class RootSearch {
         if (value == null) return;
         acceptHeight(value);
         if (!lastSupport) failedFoundations++;
-        // 三分法放宽：允许少量格子无天然三层支撑（fort0 施工期 foundation 会填平），
-        // 但水保持严格零容忍（有水不能填平，走水门/收头）。
-        // 48×48=2304 格，允许 5%≈115 格支撑缺失。
+        // Bounded tolerated support, and the SAME bound is honoured by
+        // ComponentAssembly so an accepted root is always buildable. Water stays
+        // zero-tolerance: a wet column terminates or gets a water gate instead.
         if (value.waterTopY().isPresent()) invalid = true;
-        if (failedFoundations > 115) invalid = true;
+        if (failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS) invalid = true;
         if (++sampleIndex < 48 * 48) return;
         audit.add(new Audit("footprint", current.origin(), current.radius(), current.angle(), -1,
-                wet, invalidSamples, failedFoundations, min, max, invalid || max - min > 12 ? "REJECTED" : "FOUNDATION_ELIGIBLE"));
+                wet, invalidSamples, failedFoundations, min, max,
+                invalid || max - min > 12 ? "REJECTED" : "FOUNDATION_ELIGIBLE"));
         if (invalid || max - min > 12) { selectedIndex++; resetSamples(); return; }
         phase = 2; axisIndex = 0; resetSamples();
     }
