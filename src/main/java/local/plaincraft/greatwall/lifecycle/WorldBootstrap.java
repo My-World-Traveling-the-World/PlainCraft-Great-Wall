@@ -85,7 +85,10 @@ public final class WorldBootstrap implements AutoCloseable {
     }
 
     public static GenerationConfig defaultConfig() {
-        return new GenerationConfig(1, 1, 2048, 4, 150000, 384, 192, 4, 64L << 20, 64L << 20, 32L << 20);
+        // Real-terrain traversal needs more compiled headroom than the original
+        // 32 MiB: a 603-owner wall can exhaust it part-way through a single
+        // owner's cell compilation. Segment and terrain budgets are unchanged.
+        return new GenerationConfig(1, 1, 2048, 4, 150000, 384, 192, 4, 64L << 20, 64L << 20, 128L << 20);
     }
 
     public void authorizeSpawnProbe(ChunkKey candidate, int nativeDependencyRadius) {

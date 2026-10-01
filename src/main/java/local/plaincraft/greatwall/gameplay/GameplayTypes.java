@@ -121,6 +121,16 @@ public final class GameplayTypes {
         }
     }
 
+    public record Firepit(BeaconId beacon, SiteId owner, int ordinal, Point3i feet, boolean lit,
+            boolean waterlogged, boolean credited) {
+        public Firepit {
+            Objects.requireNonNull(beacon, "beacon");
+            Objects.requireNonNull(owner, "owner");
+            Objects.requireNonNull(feet, "feet");
+            if (ordinal < 0) throw new IllegalArgumentException("ordinal >= 0 required");
+        }
+    }
+
     public record Approval(boolean allowed, String reason, Optional<UUID> entity) {
         public Approval {
             Objects.requireNonNull(reason, "reason");
