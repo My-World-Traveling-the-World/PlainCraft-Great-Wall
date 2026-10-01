@@ -15,13 +15,35 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public final class CatalogGameTests implements FabricGameTest {
     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=40)
-    public void currentOreAndGravelProtectionBlocksNaturalColumnsWithoutAnyStructure(GameTestHelper helper) {
+    public void approvedOreAndGravelReplacementDoesNotGrantFoundationOrVoidPermissions(GameTestHelper helper) {
         var catalog=new BlockCatalog(helper.getLevel().registryAccess());
         for(var block:new net.minecraft.world.level.block.Block[]{Blocks.COAL_ORE,Blocks.DEEPSLATE_COAL_ORE,Blocks.GRAVEL}) {
             var captured=flags(catalog,block.defaultBlockState());
-            helper.assertTrue(!captured.support()&&captured.protectedBlock(),
-                    "diagnostic baseline: current policy rejects this natural state without a structure");
+            helper.assertTrue(!captured.support()&&!captured.protectedBlock()&&!captured.replaceablePlant(),
+                    "approved natural replacement must not become foundation or air/vegetation");
+            boolean legacyProtected=!captured.support()&&!captured.replaceablePlant()&&!captured.water();
+            helper.assertTrue(legacyProtected,"the old support-only formula's false protection witness is preserved");
+            helper.assertTrue(catalog.flags(BlockCatalog.token(block.defaultBlockState(),true)).protectedBlock(),
+                    "captured block entity authorization remains dominant");
         }
+        helper.assertTrue(flags(catalog,Blocks.GRAVEL.defaultBlockState()).gravity(),"gravel remains gravity-bound");
+        helper.assertTrue(flags(catalog,Blocks.DIAMOND_BLOCK.defaultBlockState()).protectedBlock(),"ore blocks are not ore");
+        helper.assertTrue(flags(catalog,Blocks.SAND.defaultBlockState()).protectedBlock(),"the approved table does not silently open sand");
+        var site=new SiteId("fixture",SiteKind.WALL,0);
+        var p=new Point3i(0,64,0);
+        var intent=new VoxelIntent(p,IntentKind.OWNED_VOID,Part.AIR,new BlockSpec("minecraft:air",java.util.Map.of()),site,900,true,false);
+        var component=new ComponentVoxels(site,new Bounds(0,64,0,1,65,1),java.util.List.of(intent),
+                java.util.List.of(),java.util.List.of(),java.util.List.of(),"0".repeat(64));
+        component=new ComponentVoxels(component.id(),component.bounds(),component.voxels(),component.blockEntities(),
+                component.spawnSlots(),component.requiredRoutes(),local.plaincraft.greatwall.geometry.CanonicalCodec.componentHash(component));
+        var cell=new RealizationCell(new CellKey("a".repeat(64),"minecraft:overworld",0),java.util.List.of(),
+                java.util.List.of(component),"a".repeat(64),0,"a".repeat(64),"a".repeat(64));
+        boolean rejected=false;
+        try {new local.plaincraft.greatwall.generation.ChunkPlanCompiler().compile(
+                new ChunkKey("minecraft:overworld",0,0),"a".repeat(64),java.util.List.of(cell),
+                java.util.Map.of(p,BlockCatalog.token(Blocks.COAL_ORE.defaultBlockState(),false)));}
+        catch(WallFailure expected){rejected=expected.code()==FailureCode.OWNERSHIP_CONFLICT;}
+        helper.assertTrue(rejected,"OWNED_VOID cannot carve ore under the new natural replacement policy");
         helper.succeed();
     }
 

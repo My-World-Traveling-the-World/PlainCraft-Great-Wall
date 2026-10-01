@@ -67,7 +67,9 @@ public final class GenerationResourceFingerprint {
         var inputs = new TreeMap<>(capture(level, resources));
         inputs.remove("probeAlgorithm");
         inputs.put("wallAlgorithm", new JsonPrimitive(1));
-        inputs.put("rootAlgorithm", new JsonPrimitive(1));
+        inputs.put("rootAlgorithm", new JsonPrimitive(2));
+        inputs.put("rootStructureScreen",new JsonPrimitive("pre-recipe-native-references-v1"));
+        inputs.put("naturalReplacementPolicy",new JsonPrimitive("explicit-ores-gravel-v1"));
         BuiltInRegistries.BLOCK.getTags().forEach(pair -> {
             var values = new com.google.gson.JsonArray();
             pair.getSecond().stream().map(holder -> BuiltInRegistries.BLOCK.getKey(holder.value()).toString())

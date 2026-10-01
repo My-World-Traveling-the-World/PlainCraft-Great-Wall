@@ -28,6 +28,7 @@ public final class BlockCatalog {
     private static final TagKey<Block> SUPPORT=tag("foundation_support");
     private static final TagKey<Block> VEGETATION=tag("replaceable_vegetation");
     private static final TagKey<Block> PROTECTED=tag("protected");
+    private static final TagKey<Block> NATURAL_REPLACEABLE=tag("natural_replaceable");
     public record Flags(boolean support,boolean replaceablePlant,boolean water,boolean gravity,boolean blockEntity,boolean protectedBlock) {}
     private final Map<String,Flags> flags;
     private final String hash;
@@ -44,11 +45,12 @@ public final class BlockCatalog {
                     &&(!state.is(Blocks.SNOW)||state.getValue(SnowLayerBlock.LAYERS)<8));
             boolean water=state.getFluidState().is(net.minecraft.tags.FluidTags.WATER);
             boolean natural=state.is(SUPPORT);
+            boolean naturalReplaceable=state.is(NATURAL_REPLACEABLE);
             boolean support=natural&&!explicitProtection&&!gravity&&state.getFluidState().isEmpty()
                     &&!state.is(Blocks.POWDER_SNOW)&&!state.is(BlockTags.LOGS)&&!state.is(BlockTags.LEAVES)
                     &&state.isFaceSturdy(EmptyBlockGetter.INSTANCE,BlockPos.ZERO,Direction.UP);
             // SnapshotColumnView alone authorizes exposed single natural ice; every other ice stays protected there.
-            boolean protectedBlock=explicitProtection||!natural&&!plant&&!water&&!state.is(Blocks.ICE);
+            boolean protectedBlock=explicitProtection||!natural&&!naturalReplaceable&&!plant&&!water&&!state.is(Blocks.ICE);
             Flags f=new Flags(support,plant,water,gravity,entity,protectedBlock);
             values.put(token(state,false),f);
             values.put(token(state,true),new Flags(false,false,water,gravity,true,true));
