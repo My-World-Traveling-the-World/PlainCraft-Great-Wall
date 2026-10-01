@@ -1,0 +1,14 @@
+{
+  "sourceCommit": "28ff57940fecd06616c8c902ecabff57ccd2578c",
+  "seed": 4,
+  "startedUtc": "2026-10-01T04:02:13.8626873Z",
+  "finishedUtc": "2026-10-01T04:03:45.5669619Z",
+  "exitCode": 0,
+  "analysisExitCode": 0,
+  "timedOut": false,
+  "otherActiveJvmObserved": false,
+  "sourceInputsUnchanged": true,
+  "verdict": "A_OBSERVED_NO_ROOT_OVERRUN",
+  "productionWiring": "OFF",
+  "fullWallAcceptance": "NOT_RUN"
+}

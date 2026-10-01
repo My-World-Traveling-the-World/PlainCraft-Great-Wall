@@ -1,0 +1,14 @@
+[
+  {
+    "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build\\run\\serverSmoke\\vanilla\\root-timing-serial-20261001-233c8614-runtime\\mods\\fabric-api-0.116.14+1.21.1.jar",
+    "sha256": "333f15bceb117a0ac41e3396eac9873fa6c325c31e746d679809f9a7a0228196"
+  },
+  {
+    "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build\\run\\serverSmoke\\vanilla\\root-timing-serial-20261001-233c8614-runtime\\mods\\plaincraft-great-wall-0.1.0-s0.3-server-smoke.jar",
+    "sha256": "3c745634026a6b74e6818e6762cb63f81f617e5b8036b20ff56080e0e4846cc2"
+  },
+  {
+    "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build\\run\\serverSmoke\\vanilla\\root-timing-serial-20261001-233c8614-runtime\\mods\\plaincraft-great-wall-0.1.0-s0.3.jar",
+    "sha256": "dfe146262610ccb7bb4974c500f3cb5e37b43428fe6302e4b5d63d7caabe6a42"
+  }
+]

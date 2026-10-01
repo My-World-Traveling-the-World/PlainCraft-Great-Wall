@@ -1,0 +1,72 @@
+{
+  "sourceCommit": "28ff57940fecd06616c8c902ecabff57ccd2578c",
+  "seeds": [
+    4,
+    8,
+    9,
+    21
+  ],
+  "maxParallel": 1,
+  "heap": "8G",
+  "results": [
+    {
+      "sourceCommit": "28ff57940fecd06616c8c902ecabff57ccd2578c",
+      "seed": 4,
+      "startedUtc": "2026-10-01T04:02:13.8626873Z",
+      "finishedUtc": "2026-10-01T04:03:45.5669619Z",
+      "exitCode": 0,
+      "analysisExitCode": 0,
+      "timedOut": false,
+      "otherActiveJvmObserved": false,
+      "sourceInputsUnchanged": true,
+      "verdict": "A_OBSERVED_NO_ROOT_OVERRUN",
+      "productionWiring": "OFF",
+      "fullWallAcceptance": "NOT_RUN"
+    },
+    {
+      "sourceCommit": "28ff57940fecd06616c8c902ecabff57ccd2578c",
+      "seed": 8,
+      "startedUtc": "2026-10-01T04:03:45.8474685Z",
+      "finishedUtc": "2026-10-01T04:05:17.2969276Z",
+      "exitCode": 0,
+      "analysisExitCode": 0,
+      "timedOut": false,
+      "otherActiveJvmObserved": false,
+      "sourceInputsUnchanged": true,
+      "verdict": "A_OBSERVED_NO_ROOT_OVERRUN",
+      "productionWiring": "OFF",
+      "fullWallAcceptance": "NOT_RUN"
+    },
+    {
+      "sourceCommit": "28ff57940fecd06616c8c902ecabff57ccd2578c",
+      "seed": 9,
+      "startedUtc": "2026-10-01T04:05:17.5658508Z",
+      "finishedUtc": "2026-10-01T04:06:37.7116895Z",
+      "exitCode": 0,
+      "analysisExitCode": 0,
+      "timedOut": false,
+      "otherActiveJvmObserved": false,
+      "sourceInputsUnchanged": true,
+      "verdict": "A_OBSERVED_NO_ROOT_OVERRUN",
+      "productionWiring": "OFF",
+      "fullWallAcceptance": "NOT_RUN"
+    },
+    {
+      "sourceCommit": "28ff57940fecd06616c8c902ecabff57ccd2578c",
+      "seed": 21,
+      "startedUtc": "2026-10-01T04:06:37.9727398Z",
+      "finishedUtc": "2026-10-01T04:08:11.9271527Z",
+      "exitCode": 0,
+      "analysisExitCode": 0,
+      "timedOut": false,
+      "otherActiveJvmObserved": false,
+      "sourceInputsUnchanged": true,
+      "verdict": "A_OBSERVED_NO_ROOT_OVERRUN",
+      "productionWiring": "OFF",
+      "fullWallAcceptance": "NOT_RUN"
+    }
+  ],
+  "productionWiring": "OFF",
+  "finishedUtc": "2026-10-01T04:08:12.0631931Z",
+  "scope": "A/B/C attribution only, no production changes"
+}

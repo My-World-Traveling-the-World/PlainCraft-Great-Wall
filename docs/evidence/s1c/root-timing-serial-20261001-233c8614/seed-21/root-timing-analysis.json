@@ -1,0 +1,31 @@
+{
+  "batches": 841325,
+  "clockAnchorUncertaintyNanos": 8500,
+  "clockAnchors": [
+    {
+      "offset": 1790174232308076250,
+      "uncertainty": 8500,
+      "thread": 111,
+      "label": "ROOT_START"
+    },
+    {
+      "offset": 1790174232308077500,
+      "uncertainty": 4400,
+      "thread": 111,
+      "label": "ROOT_END"
+    }
+  ],
+  "garbageCollectionEventsNotUsedAsPause": 155,
+  "gcPauseEvents": 195,
+  "maximumBatchCpuNanos": 15625000,
+  "maximumOuterNanos": 12530000,
+  "outerOver40": 0,
+  "overrunBatches": [],
+  "productionWiring": "OFF",
+  "rootExecutionSamples": 3667,
+  "rootOwnOver40": 0,
+  "safepointEvents": 249,
+  "scope": "per-run observational attribution, not a production fix or population estimate",
+  "unpairedSafepoints": 1,
+  "verdict": "A_OBSERVED_NO_ROOT_OVERRUN"
+}

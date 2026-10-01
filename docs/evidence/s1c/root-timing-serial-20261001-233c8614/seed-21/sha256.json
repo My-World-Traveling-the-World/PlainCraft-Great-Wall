@@ -1,0 +1,62 @@
+[
+  {
+    "path": "analysis-stdout.log",
+    "sha256": "58ce0272d16097033977e23f2d17b7f60e8f3f17a8abfaf2f7480eecd0f352fb"
+  },
+  {
+    "path": "environment.jsonl",
+    "sha256": "ff2c9c021f82af45cc6f10eddb9733987927a428f671cf44eafe31ceff772199"
+  },
+  {
+    "path": "execution.json",
+    "sha256": "c88c023cc04553aca00fb029c10229985b76c3200f543ee1ce95ae38e6a04fb7"
+  },
+  {
+    "path": "inputs.json",
+    "sha256": "c2cebbd1f30f4435aae8d2f98a80a66cfce0ba38c0b8e690e9bb9c604755a14a"
+  },
+  {
+    "path": "logs\\latest.log",
+    "sha256": "7edccd061c5ead4a48f01d9ededde9008338d8f23e06c25fe107dbc5cf32f268"
+  },
+  {
+    "path": "root-batches.bin.gz",
+    "sha256": "b0ed2a1db18052621cec058d69b26e9c5dfb6611e78c0a0afaa50341a70b0d18"
+  },
+  {
+    "path": "root-batches.csv.gz",
+    "sha256": "1a328d3959242bdbc75c379f9650dfae0ae697cbab09be6ad1304ef0f2b43d20"
+  },
+  {
+    "path": "root-timing-analysis.json",
+    "sha256": "b3a53c1b39249861caa8951c5639629c515331e8f1f6f5db94b6efdd99709e03"
+  },
+  {
+    "path": "root-timing.json",
+    "sha256": "d81900dc6511ced62cfe6f16aa9724871692111e944c501eec20ab58bc16ff91"
+  },
+  {
+    "path": "root-vm.log",
+    "sha256": "34fe009a97c644533b660313965647782d4b1acd9cb757d2f9447da39a399583"
+  },
+  {
+    "path": "root.jfr",
+    "sha256": "c813656c5e53732b9db8ffc85e57436e76eea7330ac840cac2831bb06a7efeac"
+  },
+  {
+    "path": "seed-survey-result.json",
+    "sha256": "501d1389f28704ad9d352725f1c324ec5aa0df9f963cccad6dc0672e4f6bfa8b"
+  },
+  {
+    "path": "server-smoke-passed.txt",
+    "sha256": "addcc2e611168f1dbc37ed66f0a6dedbf393b9bbdaa9c6fc2c7f5919e1bb218e"
+  },
+  {
+    "path": "stderr.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "stdout.log",
+    "sha256": "917624654e8641ffd98fe9669d953f41291bf545e149e81f533643a036a93c79"
+  }
+]

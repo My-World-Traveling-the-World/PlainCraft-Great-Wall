@@ -1,0 +1,54 @@
+{
+  "clocks": [
+    {
+      "label": "ROOT_START",
+      "monotonicBefore": 653384990307200,
+      "monotonicAfter": 653384990315700,
+      "uptimeMillis": 19187,
+      "epochMillis": 1790827617299,
+      "threadId": 111
+    },
+    {
+      "label": "ROOT_END",
+      "monotonicBefore": 653455172257200,
+      "monotonicAfter": 653455172261600,
+      "uptimeMillis": 89368,
+      "epochMillis": 1790827687480,
+      "threadId": 111
+    }
+  ],
+  "count": 841325,
+  "logging": "preallocated primitive array; file encoding only after root loop",
+  "maximumOuterNanos": 12530000,
+  "nativeTiming": {
+    "randomStateNanos": 14820400,
+    "maxConstructNanos": 9393300,
+    "maxCellNanos": 3908800,
+    "maxSlicePointNanos": 4014200,
+    "maxBlockNanos": 3238800,
+    "maxCoarseNanos": 0,
+    "maxBiomeNanos": 321100,
+    "over40msPrimitives": 0,
+    "referencePrimitives": 53787000,
+    "coarsePrimitives": 0,
+    "maxAdvanceNanos": 9394500,
+    "over40msAdvances": 0
+  },
+  "productionWiring": "OFF",
+  "records": "big-endian startNano,endNano,cpuNanos,ownOver40Delta; initialization excluded",
+  "rootProgress": {
+    "phase": 3,
+    "candidate": 144,
+    "shortlisted": 8,
+    "footprintColumn": 0,
+    "axisIndex": 5,
+    "columns": 28890,
+    "maxBatchNanos": 12471100,
+    "over40msBatches": 0
+  },
+  "schema": 1,
+  "scope": "outer envelope around original root.advance64; original own counter is authoritative",
+  "slowBatches": [],
+  "threadId": 111,
+  "threadName": "pgw-oracle-0-3763b769-28cb-4a32-9c1b-d8b2ed380e43"
+}
