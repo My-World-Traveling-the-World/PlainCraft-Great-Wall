@@ -1,0 +1,2705 @@
+{
+  "state": {
+    "failed": true,
+    "server-started": true,
+    "closed": true
+  },
+  "planner": {
+    "lane-1-queued": 0,
+    "lane-1-oracle-closes": 1,
+    "acquisitions": 0,
+    "tick-deadline": 639205879728600,
+    "tick-operations": 4096,
+    "lane-0-native-constructions": 1,
+    "lane-1-initialization-nanos": 13100800,
+    "lane-1-closed": 1,
+    "lane-0-oracle-closes": 1,
+    "lane-0-initializing": 1,
+    "leases": 0,
+    "lane-0-drained": 1,
+    "startup-handoff": 1,
+    "lane-1-initializing": 1,
+    "lane-1-drained": 1,
+    "startup-failed": 1,
+    "io-pending": 0,
+    "startup-pump-iterations": 1,
+    "batch-count": 380814,
+    "lane-1-factory-calls": 1,
+    "lane-1-native-constructions": 1,
+    "startup": 1,
+    "lane-0-initialization-nanos": 18596300,
+    "max-batch-nanos": 12448900,
+    "lane-1-ready": 1,
+    "lane-0-ready": 1,
+    "closed": 1,
+    "lane-0-factory-calls": 1,
+    "lane-0-closed": 1,
+    "lane-0-queued": 0
+  },
+  "recipe": {
+    "instance": "0acf3e76-6caa-4d9c-8224-8412cfdcb01f",
+    "wallId": "6f29a7eae762ce23839d52ef1548d47b0e9e4923fa32a2fdd5a73a3f0a6c6dfb",
+    "seed": 1,
+    "dimension": "minecraft:overworld",
+    "frozenSpawn": {
+      "x": 112,
+      "y": 67,
+      "z": 176
+    },
+    "axis": {
+      "origin": {
+        "x": -971,
+        "y": 63,
+        "z": -449
+      },
+      "exQ30": -929988203,
+      "ezQ30": -536696793
+    },
+    "bounds": {
+      "minY": -64,
+      "maxYExclusive": 320,
+      "horizontalLimit": 30000000
+    },
+    "config": {
+      "algorithmVersion": 1,
+      "templateVersion": 1,
+      "segmentBlocks": 2048,
+      "stationBlocks": 4,
+      "columnBudget": 150000,
+      "carrierAmplitude": 384,
+      "corridorHalfWidth": 192,
+      "maxGeometryInflight": 4,
+      "segmentBytes": 67108864,
+      "terrainBytes": 67108864,
+      "compiledBytes": 33554432
+    },
+    "terrainHash": "17f611e242080ed905d16e068e939cd8b2b954ee008d2e65437a7513728ce23a",
+    "paletteHash": "ad3adf65e49c4f5024c074ee6a1113f1347cb68349b561093c22290fb5ccba1b",
+    "templatesHash": "a3c6b97f6ddd3a498040f2518b88b6c205d5bafe8948c83dea6d20f48eb4f1a1",
+    "recipeHash": "6f29a7eae762ce23839d52ef1548d47b0e9e4923fa32a2fdd5a73a3f0a6c6dfb"
+  },
+  "isolatedFixture": true,
+  "featureLeases": 0,
+  "bootstrap": {
+    "spawn-chosen": true,
+    "durable-ready": true,
+    "root-started": true,
+    "closed": true
+  },
+  "failures": {
+    "required": "java.util.concurrent.CompletionException: local.plaincraft.greatwall.model.WallFailure: planner failed in HYDROLOGY segment\u003d0: local.plaincraft.greatwall.model.WallFailure: no consistent two-bank width proof: segment\u003d0 crossing\u003dArcInterval[fromQ8\u003d26172, toQ8\u003d43232] waterY\u003d63 waterMinY\u003d63 waterMaxY\u003d63 waterMismatch\u003dfalse mismatchedColumns\u003d0 bestDirection\u003d-1 allWide\u003dfalse chargedColumns\u003d8458 centers\u003d[Cell[x\u003d-1066, z\u003d-497, s\u003d27088, error\u003d25490], Cell[x\u003d-1093, z\u003d-509, s\u003d34644, error\u003d19972], Cell[x\u003d-1119, z\u003d-523, s\u003d42200, error\u003d17881]] transects\u003d[ direction\u003d0{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1124, z\u003d-497, s\u003d14848, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d1280, lower\u003d1280, bankCell\u003dCell[x\u003d-1060, z\u003d-497, s\u003d1536, error\u003d0]] widthQ8\u003d16384 lowerQ8\u003d16384;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d9728, lower\u003d9728, bankCell\u003dCell[x\u003d-1132, z\u003d-509, s\u003d9984, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d8704, lower\u003d8704, bankCell\u003dCell[x\u003d-1058, z\u003d-509, s\u003d8960, error\u003d0]] widthQ8\u003d18688 lowerQ8\u003d18688;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d768, lower\u003d768, bankCell\u003dCell[x\u003d-1123, z\u003d-523, s\u003d1024, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1061, z\u003d-523, s\u003d14848, error\u003d0]] widthQ8\u003d15872 lowerQ8\u003d15872;} direction\u003d1{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1123, z\u003d-508, s\u003d14848, error\u003d7402]] right\u003dSide[bank\u003dtrue, extent\u003d1054, lower\u003d1054, bankCell\u003dCell[x\u003d-1061, z\u003d-496, s\u003d1305, error\u003d1]] widthQ8\u003d16215 lowerQ8\u003d16215;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8886, lower\u003d8886, bankCell\u003dCell[x\u003d-1128, z\u003d-516, s\u003d9137, error\u003d85]] right\u003dSide[bank\u003dtrue, extent\u003d9137, lower\u003d9137, bankCell\u003dCell[x\u003d-1057, z\u003d-502, s\u003d9389, error\u003d1585]] widthQ8\u003d18324 lowerQ8\u003d18324;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d803, lower\u003d803, bankCell\u003dCell[x\u003d-1123, z\u003d-524, s\u003d1054, error\u003d2600]] right\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1062, z\u003d-512, s\u003d14848, error\u003d7300]] widthQ8\u003d15964 lowerQ8\u003d15964;} direction\u003d2{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1120, z\u003d-519, s\u003d14848, error\u003d13837]] right\u003dSide[bank\u003dtrue, extent\u003d1044, lower\u003d1044, bankCell\u003dCell[x\u003d-1062, z\u003d-495, s\u003d1142, error\u003d6586]] widthQ8\u003d16304 lowerQ8\u003d16304;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8368, lower\u003d8368, bankCell\u003dCell[x\u003d-1124, z\u003d-522, s\u003d8605, error\u003d1352]] right\u003dSide[bank\u003dtrue, extent\u003d8605, lower\u003d8605, bankCell\u003dCell[x\u003d-1061, z\u003d-496, s\u003d8842, error\u003d3665]] widthQ8\u003d17307 lowerQ8\u003d17307;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d807, lower\u003d807, bankCell\u003dCell[x\u003d-1123, z\u003d-524, s\u003d1044, error\u003d24217]] right\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1065, z\u003d-501, s\u003d14848, error\u003d13949]] widthQ8\u003d16067 lowerQ8\u003d16067;} direction\u003d3{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1114, z\u003d-529, s\u003d14768, error\u003d250]] right\u003dSide[bank\u003dtrue, extent\u003d923, lower\u003d923, bankCell\u003dCell[x\u003d-1062, z\u003d-495, s\u003d1136, error\u003d20561]] widthQ8\u003d16046 lowerQ8\u003d16046;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8662, lower\u003d8662, bankCell\u003dCell[x\u003d-1122, z\u003d-528, s\u003d8875, error\u003d6514]] right\u003dSide[bank\u003dtrue, extent\u003d7597, lower\u003d7597, bankCell\u003dCell[x\u003d-1068, z\u003d-492, s\u003d7740, error\u003d3929]] widthQ8\u003d16614 lowerQ8\u003d16614;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d923, lower\u003d923, bankCell\u003dCell[x\u003d-1123, z\u003d-525, s\u003d1136, error\u003d20561]] right\u003dSide[bank\u003dfalse, extent\u003d14555, lower\u003d14555, bankCell\u003dCell[x\u003d-1071, z\u003d-491, s\u003d14769, error\u003d250]] widthQ8\u003d15833 lowerQ8\u003d15833;} direction\u003d4{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14843, lower\u003d14843, bankCell\u003dCell[x\u003d-1107, z\u003d-538, s\u003d14842, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d905, lower\u003d905, bankCell\u003dCell[x\u003d-1063, z\u003d-494, s\u003d1086, error\u003d0]] widthQ8\u003d16110 lowerQ8\u003d16110;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8507, lower\u003d8507, bankCell\u003dCell[x\u003d-1117, z\u003d-533, s\u003d8688, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d7059, lower\u003d6878, bankCell\u003dCell[x\u003d-1073, z\u003d-489, s\u003d7241, error\u003d0]] widthQ8\u003d15928 lowerQ8\u003d15747;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1267, lower\u003d1086, bankCell\u003dCell[x\u003d-1123, z\u003d-527, s\u003d1448, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d13576, lower\u003d13576, bankCell\u003dCell[x\u003d-1081, z\u003d-485, s\u003d13758, error\u003d0]] widthQ8\u003d15205 lowerQ8\u003d15024;} direction\u003d5{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1098, z\u003d-545, s\u003d14768, error\u003d250]] right\u003dSide[bank\u003dtrue, extent\u003d923, lower\u003d923, bankCell\u003dCell[x\u003d-1064, z\u003d-493, s\u003d1136, error\u003d20561]] widthQ8\u003d16046 lowerQ8\u003d16046;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d9017, lower\u003d9017, bankCell\u003dCell[x\u003d-1113, z\u003d-539, s\u003d9230, error\u003d100]] right\u003dSide[bank\u003dtrue, extent\u003d6674, lower\u003d6674, bankCell\u003dCell[x\u003d-1078, z\u003d-487, s\u003d6817, error\u003d4034]] widthQ8\u003d16046 lowerQ8\u003d16046;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1278, lower\u003d1278, bankCell\u003dCell[x\u003d-1122, z\u003d-528, s\u003d1491, error\u003d5200]] right\u003dSide[bank\u003dfalse, extent\u003d13632, lower\u003d13632, bankCell\u003dCell[x\u003d-1089, z\u003d-478, s\u003d13846, error\u003d208]] widthQ8\u003d15265 lowerQ8\u003d15265;} direction\u003d6{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1088, z\u003d-551, s\u003d14848, error\u003d13837]] right\u003dSide[bank\u003dtrue, extent\u003d807, lower\u003d807, bankCell\u003dCell[x\u003d-1065, z\u003d-493, s\u003d1044, error\u003d24217]] widthQ8\u003d16067 lowerQ8\u003d16067;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10318, lower\u003d10318, bankCell\u003dCell[x\u003d-1109, z\u003d-547, s\u003d10555, error\u003d3665]] right\u003dSide[bank\u003dtrue, extent\u003d6655, lower\u003d6655, bankCell\u003dCell[x\u003d-1083, z\u003d-484, s\u003d6893, error\u003d7108]] widthQ8\u003d17307 lowerQ8\u003d17307;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1378, lower\u003d1378, bankCell\u003dCell[x\u003d-1121, z\u003d-529, s\u003d1615, error\u003d13172]] right\u003dSide[bank\u003dfalse, extent\u003d14355, lower\u003d14355, bankCell\u003dCell[x\u003d-1097, z\u003d-471, s\u003d14455, error\u003d11965]] widthQ8\u003d16067 lowerQ8\u003d16067;} direction\u003d7{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1077, z\u003d-554, s\u003d14848, error\u003d7402]] right\u003dSide[bank\u003dtrue, extent\u003d803, lower\u003d803, bankCell\u003dCell[x\u003d-1065, z\u003d-493, s\u003d1054, error\u003d2600]] widthQ8\u003d15964 lowerQ8\u003d15964;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10442, lower\u003d10442, bankCell\u003dCell[x\u003d-1101, z\u003d-550, s\u003d10694, error\u003d1508]] right\u003dSide[bank\u003dtrue, extent\u003d7329, lower\u003d7329, bankCell\u003dCell[x\u003d-1087, z\u003d-480, s\u003d7581, error\u003d3370]] widthQ8\u003d18072 lowerQ8\u003d18072;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1556, lower\u003d1556, bankCell\u003dCell[x\u003d-1120, z\u003d-530, s\u003d1807, error\u003d9770]] right\u003dSide[bank\u003dfalse, extent\u003d14358, lower\u003d14358, bankCell\u003dCell[x\u003d-1108, z\u003d-467, s\u003d14611, error\u003d1205]] widthQ8\u003d16215 lowerQ8\u003d16215;} direction\u003d8{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1066, z\u003d-555, s\u003d14848, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d768, lower\u003d768, bankCell\u003dCell[x\u003d-1066, z\u003d-493, s\u003d1024, error\u003d0]] widthQ8\u003d15872 lowerQ8\u003d15872;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10496, lower\u003d10496, bankCell\u003dCell[x\u003d-1093, z\u003d-551, s\u003d10752, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d8192, lower\u003d8192, bankCell\u003dCell[x\u003d-1093, z\u003d-476, s\u003d8448, error\u003d0]] widthQ8\u003d18944 lowerQ8\u003d18944;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1792, lower\u003d1792, bankCell\u003dCell[x\u003d-1119, z\u003d-531, s\u003d2048, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1119, z\u003d-465, s\u003d14848, error\u003d0]] widthQ8\u003d16896 lowerQ8\u003d16896;} direction\u003d9{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1055, z\u003d-554, s\u003d14848, error\u003d7241]] right\u003dSide[bank\u003dtrue, extent\u003d1054, lower\u003d1054, bankCell\u003dCell[x\u003d-1067, z\u003d-492, s\u003d1305, error\u003d1]] widthQ8\u003d16215 lowerQ8\u003d16215;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10944, lower\u003d10944, bankCell\u003dCell[x\u003d-1085, z\u003d-552, s\u003d11196, error\u003d19225]] right\u003dSide[bank\u003dtrue, extent\u003d10191, lower\u003d10191, bankCell\u003dCell[x\u003d-1101, z\u003d-469, s\u003d10443, error\u003d104]] widthQ8\u003d21436 lowerQ8\u003d21436;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d2359, lower\u003d2359, bankCell\u003dCell[x\u003d-1117, z\u003d-533, s\u003d2611, error\u003d10]] right\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1130, z\u003d-466, s\u003d14848, error\u003d7461]] widthQ8\u003d17520 lowerQ8\u003d17520;} direction\u003d10{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d4372, lower\u003d4372, bankCell\u003dCell[x\u003d-1059, z\u003d-513, s\u003d4470, error\u003d7717]] right\u003dSide[bank\u003dtrue, extent\u003d1141, lower\u003d1141, bankCell\u003dCell[x\u003d-1068, z\u003d-492, s\u003d1379, error\u003d292]] widthQ8\u003d5847 lowerQ8\u003d5847;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14690, lower\u003d14690, bankCell\u003dCell[x\u003d-1071, z\u003d-563, s\u003d14848, error\u003d13736]] right\u003dSide[bank\u003dtrue, extent\u003d11696, lower\u003d11696, bankCell\u003dCell[x\u003d-1111, z\u003d-466, s\u003d11934, error\u003d1889]] widthQ8\u003d26720 lowerQ8\u003d26720;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d6419, lower\u003d3327, bankCell\u003dCell[x\u003d-1109, z\u003d-547, s\u003d6656, error\u003d194]] right\u003dSide[bank\u003dtrue, extent\u003d11027, lower\u003d11027, bankCell\u003dCell[x\u003d-1136, z\u003d-483, s\u003d11126, error\u003d10170]] widthQ8\u003d17780 lowerQ8\u003d14688;} direction\u003d11{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d3479, lower\u003d3479, bankCell\u003dCell[x\u003d-1058, z\u003d-509, s\u003d3692, error\u003d13]] right\u003dSide[bank\u003dtrue, extent\u003d1633, lower\u003d1278, bankCell\u003dCell[x\u003d-1070, z\u003d-491, s\u003d1846, error\u003d5]] widthQ8\u003d5467 lowerQ8\u003d5112;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1061, z\u003d-557, s\u003d14768, error\u003d233]] right\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1125, z\u003d-461, s\u003d14768, error\u003d277]] widthQ8\u003d29891 lowerQ8\u003d29891;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d8094, lower\u003d8094, bankCell\u003dCell[x\u003d-1101, z\u003d-550, s\u003d8307, error\u003d74]] right\u003dSide[bank\u003dtrue, extent\u003d5750, lower\u003d5750, bankCell\u003dCell[x\u003d-1132, z\u003d-504, s\u003d5893, error\u003d4212]] widthQ8\u003d14199 lowerQ8\u003d14199;} direction\u003d12{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d3258, lower\u003d3258, bankCell\u003dCell[x\u003d-1057, z\u003d-507, s\u003d3439, error\u003d32768]] right\u003dSide[bank\u003dtrue, extent\u003d2715, lower\u003d2715, bankCell\u003dCell[x\u003d-1074, z\u003d-489, s\u003d2896, error\u003d0]] widthQ8\u003d6335 lowerQ8\u003d6335;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14843, lower\u003d14843, bankCell\u003dCell[x\u003d-1052, z\u003d-550, s\u003d14843, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d14843, lower\u003d14843, bankCell\u003dCell[x\u003d-1134, z\u003d-468, s\u003d14843, error\u003d0]] widthQ8\u003d30048 lowerQ8\u003d30048;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d10137, lower\u003d9775, bankCell\u003dCell[x\u003d-1091, z\u003d-552, s\u003d10318, error\u003d32768]] right\u003dSide[bank\u003dtrue, extent\u003d4344, lower\u003d4344, bankCell\u003dCell[x\u003d-1132, z\u003d-511, s\u003d4525, error\u003d32768]] widthQ8\u003d14843 lowerQ8\u003d14481;} direction\u003d13{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d3124, lower\u003d2769, bankCell\u003dCell[x\u003d-1055, z\u003d-504, s\u003d3337, error\u003d5608]] right\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1114, z\u003d-465, s\u003d14768, error\u003d233]] widthQ8\u003d18247 lowerQ8\u003d17892;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14200, lower\u003d13845, bankCell\u003dCell[x\u003d-1046, z\u003d-540, s\u003d14413, error\u003d7488]] right\u003dSide[bank\u003dfalse, extent\u003d12922, lower\u003d12922, bankCell\u003dCell[x\u003d-1136, z\u003d-481, s\u003d13135, error\u003d24037]] widthQ8\u003d27477 lowerQ8\u003d27122;center\u003d2 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1071, z\u003d-555, s\u003d14768, error\u003d277]] right\u003dSide[bank\u003dtrue, extent\u003d1633, lower\u003d1278, bankCell\u003dCell[x\u003d-1125, z\u003d-519, s\u003d1846, error\u003d5]] widthQ8\u003d16756 lowerQ8\u003d16401;} direction\u003d14{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d2283, lower\u003d1949, bankCell\u003dCell[x\u003d-1057, z\u003d-501, s\u003d2521, error\u003d4106]] right\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1120, z\u003d-475, s\u003d14848, error\u003d13736]] widthQ8\u003d17543 lowerQ8\u003d17209;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d9176, lower\u003d9176, bankCell\u003dCell[x\u003d-1059, z\u003d-523, s\u003d9413, error\u003d425]] right\u003dSide[bank\u003dtrue, extent\u003d11362, lower\u003d11362, bankCell\u003dCell[x\u003d-1135, z\u003d-492, s\u003d11599, error\u003d8865]] widthQ8\u003d20872 lowerQ8\u003d20872;center\u003d2 left\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1065, z\u003d-545, s\u003d14848, error\u003d14050]] right\u003dSide[bank\u003dtrue, extent\u003d1141, lower\u003d1141, bankCell\u003dCell[x\u003d-1124, z\u003d-521, s\u003d1378, error\u003d292]] widthQ8\u003d16401 lowerQ8\u003d16401;} direction\u003d15{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d1305, lower\u003d1305, bankCell\u003dCell[x\u003d-1060, z\u003d-498, s\u003d1556, error\u003d2385]] right\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1123, z\u003d-486, s\u003d14848, error\u003d7241]] widthQ8\u003d16466 lowerQ8\u003d16466;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8585, lower\u003d8585, bankCell\u003dCell[x\u003d-1060, z\u003d-516, s\u003d8636, error\u003d11890]] right\u003dSide[bank\u003dtrue, extent\u003d9639, lower\u003d9639, bankCell\u003dCell[x\u003d-1131, z\u003d-502, s\u003d9891, error\u003d19498]] widthQ8\u003d18525 lowerQ8\u003d18525;center\u003d2 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1062, z\u003d-534, s\u003d14848, error\u003d7461]] right\u003dSide[bank\u003dtrue, extent\u003d1054, lower\u003d1054, bankCell\u003dCell[x\u003d-1124, z\u003d-522, s\u003d1305, error\u003d1]] widthQ8\u003d16215 lowerQ8\u003d16215;}]"
+  },
+  "vegetationLeases": 0,
+  "counts": {
+    "STAGE_ENTER": 81,
+    "WAIT_PLAN_NO_LOCK": 81,
+    "PRODUCTION_RECIPE_INSTALLED": 1,
+    "PRODUCTION_PREPARE_LEVELS": 1,
+    "STAGE_EXIT": 81,
+    "PRODUCTION_FAILED": 1
+  },
+  "root": {
+    "root": {
+      "phase": 3,
+      "candidate": 144,
+      "shortlisted": 8,
+      "footprintColumn": 0,
+      "axisIndex": 5,
+      "columns": 28935,
+      "maxBatchNanos": 21359500,
+      "over40msBatches": 0
+    }
+  },
+  "plannerProgress": {},
+  "productionWiring": "OFF",
+  "plannerFailures": {
+    "first": {
+      "phase": "HYDROLOGY",
+      "segment": 0,
+      "operations": 11796184,
+      "code": "HYDROLOGY_UNRESOLVED",
+      "exceptionType": "local.plaincraft.greatwall.model.WallFailure",
+      "message": "no consistent two-bank width proof: segment\u003d0 crossing\u003dArcInterval[fromQ8\u003d26172, toQ8\u003d43232] waterY\u003d63 waterMinY\u003d63 waterMaxY\u003d63 waterMismatch\u003dfalse mismatchedColumns\u003d0 bestDirection\u003d-1 allWide\u003dfalse chargedColumns\u003d8458 centers\u003d[Cell[x\u003d-1066, z\u003d-497, s\u003d27088, error\u003d25490], Cell[x\u003d-1093, z\u003d-509, s\u003d34644, error\u003d19972], Cell[x\u003d-1119, z\u003d-523, s\u003d42200, error\u003d17881]] transects\u003d[ direction\u003d0{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1124, z\u003d-497, s\u003d14848, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d1280, lower\u003d1280, bankCell\u003dCell[x\u003d-1060, z\u003d-497, s\u003d1536, error\u003d0]] widthQ8\u003d16384 lowerQ8\u003d16384;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d9728, lower\u003d9728, bankCell\u003dCell[x\u003d-1132, z\u003d-509, s\u003d9984, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d8704, lower\u003d8704, bankCell\u003dCell[x\u003d-1058, z\u003d-509, s\u003d8960, error\u003d0]] widthQ8\u003d18688 lowerQ8\u003d18688;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d768, lower\u003d768, bankCell\u003dCell[x\u003d-1123, z\u003d-523, s\u003d1024, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1061, z\u003d-523, s\u003d14848, error\u003d0]] widthQ8\u003d15872 lowerQ8\u003d15872;} direction\u003d1{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1123, z\u003d-508, s\u003d14848, error\u003d7402]] right\u003dSide[bank\u003dtrue, extent\u003d1054, lower\u003d1054, bankCell\u003dCell[x\u003d-1061, z\u003d-496, s\u003d1305, error\u003d1]] widthQ8\u003d16215 lowerQ8\u003d16215;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8886, lower\u003d8886, bankCell\u003dCell[x\u003d-1128, z\u003d-516, s\u003d9137, error\u003d85]] right\u003dSide[bank\u003dtrue, extent\u003d9137, lower\u003d9137, bankCell\u003dCell[x\u003d-1057, z\u003d-502, s\u003d9389, error\u003d1585]] widthQ8\u003d18324 lowerQ8\u003d18324;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d803, lower\u003d803, bankCell\u003dCell[x\u003d-1123, z\u003d-524, s\u003d1054, error\u003d2600]] right\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1062, z\u003d-512, s\u003d14848, error\u003d7300]] widthQ8\u003d15964 lowerQ8\u003d15964;} direction\u003d2{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1120, z\u003d-519, s\u003d14848, error\u003d13837]] right\u003dSide[bank\u003dtrue, extent\u003d1044, lower\u003d1044, bankCell\u003dCell[x\u003d-1062, z\u003d-495, s\u003d1142, error\u003d6586]] widthQ8\u003d16304 lowerQ8\u003d16304;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8368, lower\u003d8368, bankCell\u003dCell[x\u003d-1124, z\u003d-522, s\u003d8605, error\u003d1352]] right\u003dSide[bank\u003dtrue, extent\u003d8605, lower\u003d8605, bankCell\u003dCell[x\u003d-1061, z\u003d-496, s\u003d8842, error\u003d3665]] widthQ8\u003d17307 lowerQ8\u003d17307;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d807, lower\u003d807, bankCell\u003dCell[x\u003d-1123, z\u003d-524, s\u003d1044, error\u003d24217]] right\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1065, z\u003d-501, s\u003d14848, error\u003d13949]] widthQ8\u003d16067 lowerQ8\u003d16067;} direction\u003d3{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1114, z\u003d-529, s\u003d14768, error\u003d250]] right\u003dSide[bank\u003dtrue, extent\u003d923, lower\u003d923, bankCell\u003dCell[x\u003d-1062, z\u003d-495, s\u003d1136, error\u003d20561]] widthQ8\u003d16046 lowerQ8\u003d16046;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8662, lower\u003d8662, bankCell\u003dCell[x\u003d-1122, z\u003d-528, s\u003d8875, error\u003d6514]] right\u003dSide[bank\u003dtrue, extent\u003d7597, lower\u003d7597, bankCell\u003dCell[x\u003d-1068, z\u003d-492, s\u003d7740, error\u003d3929]] widthQ8\u003d16614 lowerQ8\u003d16614;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d923, lower\u003d923, bankCell\u003dCell[x\u003d-1123, z\u003d-525, s\u003d1136, error\u003d20561]] right\u003dSide[bank\u003dfalse, extent\u003d14555, lower\u003d14555, bankCell\u003dCell[x\u003d-1071, z\u003d-491, s\u003d14769, error\u003d250]] widthQ8\u003d15833 lowerQ8\u003d15833;} direction\u003d4{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14843, lower\u003d14843, bankCell\u003dCell[x\u003d-1107, z\u003d-538, s\u003d14842, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d905, lower\u003d905, bankCell\u003dCell[x\u003d-1063, z\u003d-494, s\u003d1086, error\u003d0]] widthQ8\u003d16110 lowerQ8\u003d16110;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8507, lower\u003d8507, bankCell\u003dCell[x\u003d-1117, z\u003d-533, s\u003d8688, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d7059, lower\u003d6878, bankCell\u003dCell[x\u003d-1073, z\u003d-489, s\u003d7241, error\u003d0]] widthQ8\u003d15928 lowerQ8\u003d15747;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1267, lower\u003d1086, bankCell\u003dCell[x\u003d-1123, z\u003d-527, s\u003d1448, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d13576, lower\u003d13576, bankCell\u003dCell[x\u003d-1081, z\u003d-485, s\u003d13758, error\u003d0]] widthQ8\u003d15205 lowerQ8\u003d15024;} direction\u003d5{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1098, z\u003d-545, s\u003d14768, error\u003d250]] right\u003dSide[bank\u003dtrue, extent\u003d923, lower\u003d923, bankCell\u003dCell[x\u003d-1064, z\u003d-493, s\u003d1136, error\u003d20561]] widthQ8\u003d16046 lowerQ8\u003d16046;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d9017, lower\u003d9017, bankCell\u003dCell[x\u003d-1113, z\u003d-539, s\u003d9230, error\u003d100]] right\u003dSide[bank\u003dtrue, extent\u003d6674, lower\u003d6674, bankCell\u003dCell[x\u003d-1078, z\u003d-487, s\u003d6817, error\u003d4034]] widthQ8\u003d16046 lowerQ8\u003d16046;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1278, lower\u003d1278, bankCell\u003dCell[x\u003d-1122, z\u003d-528, s\u003d1491, error\u003d5200]] right\u003dSide[bank\u003dfalse, extent\u003d13632, lower\u003d13632, bankCell\u003dCell[x\u003d-1089, z\u003d-478, s\u003d13846, error\u003d208]] widthQ8\u003d15265 lowerQ8\u003d15265;} direction\u003d6{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1088, z\u003d-551, s\u003d14848, error\u003d13837]] right\u003dSide[bank\u003dtrue, extent\u003d807, lower\u003d807, bankCell\u003dCell[x\u003d-1065, z\u003d-493, s\u003d1044, error\u003d24217]] widthQ8\u003d16067 lowerQ8\u003d16067;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10318, lower\u003d10318, bankCell\u003dCell[x\u003d-1109, z\u003d-547, s\u003d10555, error\u003d3665]] right\u003dSide[bank\u003dtrue, extent\u003d6655, lower\u003d6655, bankCell\u003dCell[x\u003d-1083, z\u003d-484, s\u003d6893, error\u003d7108]] widthQ8\u003d17307 lowerQ8\u003d17307;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1378, lower\u003d1378, bankCell\u003dCell[x\u003d-1121, z\u003d-529, s\u003d1615, error\u003d13172]] right\u003dSide[bank\u003dfalse, extent\u003d14355, lower\u003d14355, bankCell\u003dCell[x\u003d-1097, z\u003d-471, s\u003d14455, error\u003d11965]] widthQ8\u003d16067 lowerQ8\u003d16067;} direction\u003d7{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1077, z\u003d-554, s\u003d14848, error\u003d7402]] right\u003dSide[bank\u003dtrue, extent\u003d803, lower\u003d803, bankCell\u003dCell[x\u003d-1065, z\u003d-493, s\u003d1054, error\u003d2600]] widthQ8\u003d15964 lowerQ8\u003d15964;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10442, lower\u003d10442, bankCell\u003dCell[x\u003d-1101, z\u003d-550, s\u003d10694, error\u003d1508]] right\u003dSide[bank\u003dtrue, extent\u003d7329, lower\u003d7329, bankCell\u003dCell[x\u003d-1087, z\u003d-480, s\u003d7581, error\u003d3370]] widthQ8\u003d18072 lowerQ8\u003d18072;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1556, lower\u003d1556, bankCell\u003dCell[x\u003d-1120, z\u003d-530, s\u003d1807, error\u003d9770]] right\u003dSide[bank\u003dfalse, extent\u003d14358, lower\u003d14358, bankCell\u003dCell[x\u003d-1108, z\u003d-467, s\u003d14611, error\u003d1205]] widthQ8\u003d16215 lowerQ8\u003d16215;} direction\u003d8{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1066, z\u003d-555, s\u003d14848, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d768, lower\u003d768, bankCell\u003dCell[x\u003d-1066, z\u003d-493, s\u003d1024, error\u003d0]] widthQ8\u003d15872 lowerQ8\u003d15872;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10496, lower\u003d10496, bankCell\u003dCell[x\u003d-1093, z\u003d-551, s\u003d10752, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d8192, lower\u003d8192, bankCell\u003dCell[x\u003d-1093, z\u003d-476, s\u003d8448, error\u003d0]] widthQ8\u003d18944 lowerQ8\u003d18944;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1792, lower\u003d1792, bankCell\u003dCell[x\u003d-1119, z\u003d-531, s\u003d2048, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1119, z\u003d-465, s\u003d14848, error\u003d0]] widthQ8\u003d16896 lowerQ8\u003d16896;} direction\u003d9{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1055, z\u003d-554, s\u003d14848, error\u003d7241]] right\u003dSide[bank\u003dtrue, extent\u003d1054, lower\u003d1054, bankCell\u003dCell[x\u003d-1067, z\u003d-492, s\u003d1305, error\u003d1]] widthQ8\u003d16215 lowerQ8\u003d16215;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10944, lower\u003d10944, bankCell\u003dCell[x\u003d-1085, z\u003d-552, s\u003d11196, error\u003d19225]] right\u003dSide[bank\u003dtrue, extent\u003d10191, lower\u003d10191, bankCell\u003dCell[x\u003d-1101, z\u003d-469, s\u003d10443, error\u003d104]] widthQ8\u003d21436 lowerQ8\u003d21436;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d2359, lower\u003d2359, bankCell\u003dCell[x\u003d-1117, z\u003d-533, s\u003d2611, error\u003d10]] right\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1130, z\u003d-466, s\u003d14848, error\u003d7461]] widthQ8\u003d17520 lowerQ8\u003d17520;} direction\u003d10{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d4372, lower\u003d4372, bankCell\u003dCell[x\u003d-1059, z\u003d-513, s\u003d4470, error\u003d7717]] right\u003dSide[bank\u003dtrue, extent\u003d1141, lower\u003d1141, bankCell\u003dCell[x\u003d-1068, z\u003d-492, s\u003d1379, error\u003d292]] widthQ8\u003d5847 lowerQ8\u003d5847;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14690, lower\u003d14690, bankCell\u003dCell[x\u003d-1071, z\u003d-563, s\u003d14848, error\u003d13736]] right\u003dSide[bank\u003dtrue, extent\u003d11696, lower\u003d11696, bankCell\u003dCell[x\u003d-1111, z\u003d-466, s\u003d11934, error\u003d1889]] widthQ8\u003d26720 lowerQ8\u003d26720;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d6419, lower\u003d3327, bankCell\u003dCell[x\u003d-1109, z\u003d-547, s\u003d6656, error\u003d194]] right\u003dSide[bank\u003dtrue, extent\u003d11027, lower\u003d11027, bankCell\u003dCell[x\u003d-1136, z\u003d-483, s\u003d11126, error\u003d10170]] widthQ8\u003d17780 lowerQ8\u003d14688;} direction\u003d11{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d3479, lower\u003d3479, bankCell\u003dCell[x\u003d-1058, z\u003d-509, s\u003d3692, error\u003d13]] right\u003dSide[bank\u003dtrue, extent\u003d1633, lower\u003d1278, bankCell\u003dCell[x\u003d-1070, z\u003d-491, s\u003d1846, error\u003d5]] widthQ8\u003d5467 lowerQ8\u003d5112;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1061, z\u003d-557, s\u003d14768, error\u003d233]] right\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1125, z\u003d-461, s\u003d14768, error\u003d277]] widthQ8\u003d29891 lowerQ8\u003d29891;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d8094, lower\u003d8094, bankCell\u003dCell[x\u003d-1101, z\u003d-550, s\u003d8307, error\u003d74]] right\u003dSide[bank\u003dtrue, extent\u003d5750, lower\u003d5750, bankCell\u003dCell[x\u003d-1132, z\u003d-504, s\u003d5893, error\u003d4212]] widthQ8\u003d14199 lowerQ8\u003d14199;} direction\u003d12{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d3258, lower\u003d3258, bankCell\u003dCell[x\u003d-1057, z\u003d-507, s\u003d3439, error\u003d32768]] right\u003dSide[bank\u003dtrue, extent\u003d2715, lower\u003d2715, bankCell\u003dCell[x\u003d-1074, z\u003d-489, s\u003d2896, error\u003d0]] widthQ8\u003d6335 lowerQ8\u003d6335;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14843, lower\u003d14843, bankCell\u003dCell[x\u003d-1052, z\u003d-550, s\u003d14843, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d14843, lower\u003d14843, bankCell\u003dCell[x\u003d-1134, z\u003d-468, s\u003d14843, error\u003d0]] widthQ8\u003d30048 lowerQ8\u003d30048;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d10137, lower\u003d9775, bankCell\u003dCell[x\u003d-1091, z\u003d-552, s\u003d10318, error\u003d32768]] right\u003dSide[bank\u003dtrue, extent\u003d4344, lower\u003d4344, bankCell\u003dCell[x\u003d-1132, z\u003d-511, s\u003d4525, error\u003d32768]] widthQ8\u003d14843 lowerQ8\u003d14481;} direction\u003d13{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d3124, lower\u003d2769, bankCell\u003dCell[x\u003d-1055, z\u003d-504, s\u003d3337, error\u003d5608]] right\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1114, z\u003d-465, s\u003d14768, error\u003d233]] widthQ8\u003d18247 lowerQ8\u003d17892;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14200, lower\u003d13845, bankCell\u003dCell[x\u003d-1046, z\u003d-540, s\u003d14413, error\u003d7488]] right\u003dSide[bank\u003dfalse, extent\u003d12922, lower\u003d12922, bankCell\u003dCell[x\u003d-1136, z\u003d-481, s\u003d13135, error\u003d24037]] widthQ8\u003d27477 lowerQ8\u003d27122;center\u003d2 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1071, z\u003d-555, s\u003d14768, error\u003d277]] right\u003dSide[bank\u003dtrue, extent\u003d1633, lower\u003d1278, bankCell\u003dCell[x\u003d-1125, z\u003d-519, s\u003d1846, error\u003d5]] widthQ8\u003d16756 lowerQ8\u003d16401;} direction\u003d14{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d2283, lower\u003d1949, bankCell\u003dCell[x\u003d-1057, z\u003d-501, s\u003d2521, error\u003d4106]] right\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1120, z\u003d-475, s\u003d14848, error\u003d13736]] widthQ8\u003d17543 lowerQ8\u003d17209;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d9176, lower\u003d9176, bankCell\u003dCell[x\u003d-1059, z\u003d-523, s\u003d9413, error\u003d425]] right\u003dSide[bank\u003dtrue, extent\u003d11362, lower\u003d11362, bankCell\u003dCell[x\u003d-1135, z\u003d-492, s\u003d11599, error\u003d8865]] widthQ8\u003d20872 lowerQ8\u003d20872;center\u003d2 left\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1065, z\u003d-545, s\u003d14848, error\u003d14050]] right\u003dSide[bank\u003dtrue, extent\u003d1141, lower\u003d1141, bankCell\u003dCell[x\u003d-1124, z\u003d-521, s\u003d1378, error\u003d292]] widthQ8\u003d16401 lowerQ8\u003d16401;} direction\u003d15{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d1305, lower\u003d1305, bankCell\u003dCell[x\u003d-1060, z\u003d-498, s\u003d1556, error\u003d2385]] right\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1123, z\u003d-486, s\u003d14848, error\u003d7241]] widthQ8\u003d16466 lowerQ8\u003d16466;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8585, lower\u003d8585, bankCell\u003dCell[x\u003d-1060, z\u003d-516, s\u003d8636, error\u003d11890]] right\u003dSide[bank\u003dtrue, extent\u003d9639, lower\u003d9639, bankCell\u003dCell[x\u003d-1131, z\u003d-502, s\u003d9891, error\u003d19498]] widthQ8\u003d18525 lowerQ8\u003d18525;center\u003d2 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1062, z\u003d-534, s\u003d14848, error\u003d7461]] right\u003dSide[bank\u003dtrue, extent\u003d1054, lower\u003d1054, bankCell\u003dCell[x\u003d-1124, z\u003d-522, s\u003d1305, error\u003d1]] widthQ8\u003d16215 lowerQ8\u003d16215;}]",
+      "originalStack": "local.plaincraft.greatwall.model.WallFailure: no consistent two-bank width proof: segment\u003d0 crossing\u003dArcInterval[fromQ8\u003d26172, toQ8\u003d43232] waterY\u003d63 waterMinY\u003d63 waterMaxY\u003d63 waterMismatch\u003dfalse mismatchedColumns\u003d0 bestDirection\u003d-1 allWide\u003dfalse chargedColumns\u003d8458 centers\u003d[Cell[x\u003d-1066, z\u003d-497, s\u003d27088, error\u003d25490], Cell[x\u003d-1093, z\u003d-509, s\u003d34644, error\u003d19972], Cell[x\u003d-1119, z\u003d-523, s\u003d42200, error\u003d17881]] transects\u003d[ direction\u003d0{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1124, z\u003d-497, s\u003d14848, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d1280, lower\u003d1280, bankCell\u003dCell[x\u003d-1060, z\u003d-497, s\u003d1536, error\u003d0]] widthQ8\u003d16384 lowerQ8\u003d16384;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d9728, lower\u003d9728, bankCell\u003dCell[x\u003d-1132, z\u003d-509, s\u003d9984, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d8704, lower\u003d8704, bankCell\u003dCell[x\u003d-1058, z\u003d-509, s\u003d8960, error\u003d0]] widthQ8\u003d18688 lowerQ8\u003d18688;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d768, lower\u003d768, bankCell\u003dCell[x\u003d-1123, z\u003d-523, s\u003d1024, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1061, z\u003d-523, s\u003d14848, error\u003d0]] widthQ8\u003d15872 lowerQ8\u003d15872;} direction\u003d1{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1123, z\u003d-508, s\u003d14848, error\u003d7402]] right\u003dSide[bank\u003dtrue, extent\u003d1054, lower\u003d1054, bankCell\u003dCell[x\u003d-1061, z\u003d-496, s\u003d1305, error\u003d1]] widthQ8\u003d16215 lowerQ8\u003d16215;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8886, lower\u003d8886, bankCell\u003dCell[x\u003d-1128, z\u003d-516, s\u003d9137, error\u003d85]] right\u003dSide[bank\u003dtrue, extent\u003d9137, lower\u003d9137, bankCell\u003dCell[x\u003d-1057, z\u003d-502, s\u003d9389, error\u003d1585]] widthQ8\u003d18324 lowerQ8\u003d18324;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d803, lower\u003d803, bankCell\u003dCell[x\u003d-1123, z\u003d-524, s\u003d1054, error\u003d2600]] right\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1062, z\u003d-512, s\u003d14848, error\u003d7300]] widthQ8\u003d15964 lowerQ8\u003d15964;} direction\u003d2{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1120, z\u003d-519, s\u003d14848, error\u003d13837]] right\u003dSide[bank\u003dtrue, extent\u003d1044, lower\u003d1044, bankCell\u003dCell[x\u003d-1062, z\u003d-495, s\u003d1142, error\u003d6586]] widthQ8\u003d16304 lowerQ8\u003d16304;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8368, lower\u003d8368, bankCell\u003dCell[x\u003d-1124, z\u003d-522, s\u003d8605, error\u003d1352]] right\u003dSide[bank\u003dtrue, extent\u003d8605, lower\u003d8605, bankCell\u003dCell[x\u003d-1061, z\u003d-496, s\u003d8842, error\u003d3665]] widthQ8\u003d17307 lowerQ8\u003d17307;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d807, lower\u003d807, bankCell\u003dCell[x\u003d-1123, z\u003d-524, s\u003d1044, error\u003d24217]] right\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1065, z\u003d-501, s\u003d14848, error\u003d13949]] widthQ8\u003d16067 lowerQ8\u003d16067;} direction\u003d3{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1114, z\u003d-529, s\u003d14768, error\u003d250]] right\u003dSide[bank\u003dtrue, extent\u003d923, lower\u003d923, bankCell\u003dCell[x\u003d-1062, z\u003d-495, s\u003d1136, error\u003d20561]] widthQ8\u003d16046 lowerQ8\u003d16046;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8662, lower\u003d8662, bankCell\u003dCell[x\u003d-1122, z\u003d-528, s\u003d8875, error\u003d6514]] right\u003dSide[bank\u003dtrue, extent\u003d7597, lower\u003d7597, bankCell\u003dCell[x\u003d-1068, z\u003d-492, s\u003d7740, error\u003d3929]] widthQ8\u003d16614 lowerQ8\u003d16614;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d923, lower\u003d923, bankCell\u003dCell[x\u003d-1123, z\u003d-525, s\u003d1136, error\u003d20561]] right\u003dSide[bank\u003dfalse, extent\u003d14555, lower\u003d14555, bankCell\u003dCell[x\u003d-1071, z\u003d-491, s\u003d14769, error\u003d250]] widthQ8\u003d15833 lowerQ8\u003d15833;} direction\u003d4{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14843, lower\u003d14843, bankCell\u003dCell[x\u003d-1107, z\u003d-538, s\u003d14842, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d905, lower\u003d905, bankCell\u003dCell[x\u003d-1063, z\u003d-494, s\u003d1086, error\u003d0]] widthQ8\u003d16110 lowerQ8\u003d16110;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8507, lower\u003d8507, bankCell\u003dCell[x\u003d-1117, z\u003d-533, s\u003d8688, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d7059, lower\u003d6878, bankCell\u003dCell[x\u003d-1073, z\u003d-489, s\u003d7241, error\u003d0]] widthQ8\u003d15928 lowerQ8\u003d15747;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1267, lower\u003d1086, bankCell\u003dCell[x\u003d-1123, z\u003d-527, s\u003d1448, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d13576, lower\u003d13576, bankCell\u003dCell[x\u003d-1081, z\u003d-485, s\u003d13758, error\u003d0]] widthQ8\u003d15205 lowerQ8\u003d15024;} direction\u003d5{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1098, z\u003d-545, s\u003d14768, error\u003d250]] right\u003dSide[bank\u003dtrue, extent\u003d923, lower\u003d923, bankCell\u003dCell[x\u003d-1064, z\u003d-493, s\u003d1136, error\u003d20561]] widthQ8\u003d16046 lowerQ8\u003d16046;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d9017, lower\u003d9017, bankCell\u003dCell[x\u003d-1113, z\u003d-539, s\u003d9230, error\u003d100]] right\u003dSide[bank\u003dtrue, extent\u003d6674, lower\u003d6674, bankCell\u003dCell[x\u003d-1078, z\u003d-487, s\u003d6817, error\u003d4034]] widthQ8\u003d16046 lowerQ8\u003d16046;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1278, lower\u003d1278, bankCell\u003dCell[x\u003d-1122, z\u003d-528, s\u003d1491, error\u003d5200]] right\u003dSide[bank\u003dfalse, extent\u003d13632, lower\u003d13632, bankCell\u003dCell[x\u003d-1089, z\u003d-478, s\u003d13846, error\u003d208]] widthQ8\u003d15265 lowerQ8\u003d15265;} direction\u003d6{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1088, z\u003d-551, s\u003d14848, error\u003d13837]] right\u003dSide[bank\u003dtrue, extent\u003d807, lower\u003d807, bankCell\u003dCell[x\u003d-1065, z\u003d-493, s\u003d1044, error\u003d24217]] widthQ8\u003d16067 lowerQ8\u003d16067;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10318, lower\u003d10318, bankCell\u003dCell[x\u003d-1109, z\u003d-547, s\u003d10555, error\u003d3665]] right\u003dSide[bank\u003dtrue, extent\u003d6655, lower\u003d6655, bankCell\u003dCell[x\u003d-1083, z\u003d-484, s\u003d6893, error\u003d7108]] widthQ8\u003d17307 lowerQ8\u003d17307;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1378, lower\u003d1378, bankCell\u003dCell[x\u003d-1121, z\u003d-529, s\u003d1615, error\u003d13172]] right\u003dSide[bank\u003dfalse, extent\u003d14355, lower\u003d14355, bankCell\u003dCell[x\u003d-1097, z\u003d-471, s\u003d14455, error\u003d11965]] widthQ8\u003d16067 lowerQ8\u003d16067;} direction\u003d7{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1077, z\u003d-554, s\u003d14848, error\u003d7402]] right\u003dSide[bank\u003dtrue, extent\u003d803, lower\u003d803, bankCell\u003dCell[x\u003d-1065, z\u003d-493, s\u003d1054, error\u003d2600]] widthQ8\u003d15964 lowerQ8\u003d15964;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10442, lower\u003d10442, bankCell\u003dCell[x\u003d-1101, z\u003d-550, s\u003d10694, error\u003d1508]] right\u003dSide[bank\u003dtrue, extent\u003d7329, lower\u003d7329, bankCell\u003dCell[x\u003d-1087, z\u003d-480, s\u003d7581, error\u003d3370]] widthQ8\u003d18072 lowerQ8\u003d18072;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1556, lower\u003d1556, bankCell\u003dCell[x\u003d-1120, z\u003d-530, s\u003d1807, error\u003d9770]] right\u003dSide[bank\u003dfalse, extent\u003d14358, lower\u003d14358, bankCell\u003dCell[x\u003d-1108, z\u003d-467, s\u003d14611, error\u003d1205]] widthQ8\u003d16215 lowerQ8\u003d16215;} direction\u003d8{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1066, z\u003d-555, s\u003d14848, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d768, lower\u003d768, bankCell\u003dCell[x\u003d-1066, z\u003d-493, s\u003d1024, error\u003d0]] widthQ8\u003d15872 lowerQ8\u003d15872;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10496, lower\u003d10496, bankCell\u003dCell[x\u003d-1093, z\u003d-551, s\u003d10752, error\u003d0]] right\u003dSide[bank\u003dtrue, extent\u003d8192, lower\u003d8192, bankCell\u003dCell[x\u003d-1093, z\u003d-476, s\u003d8448, error\u003d0]] widthQ8\u003d18944 lowerQ8\u003d18944;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d1792, lower\u003d1792, bankCell\u003dCell[x\u003d-1119, z\u003d-531, s\u003d2048, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d14848, lower\u003d14848, bankCell\u003dCell[x\u003d-1119, z\u003d-465, s\u003d14848, error\u003d0]] widthQ8\u003d16896 lowerQ8\u003d16896;} direction\u003d9{center\u003d0 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1055, z\u003d-554, s\u003d14848, error\u003d7241]] right\u003dSide[bank\u003dtrue, extent\u003d1054, lower\u003d1054, bankCell\u003dCell[x\u003d-1067, z\u003d-492, s\u003d1305, error\u003d1]] widthQ8\u003d16215 lowerQ8\u003d16215;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d10944, lower\u003d10944, bankCell\u003dCell[x\u003d-1085, z\u003d-552, s\u003d11196, error\u003d19225]] right\u003dSide[bank\u003dtrue, extent\u003d10191, lower\u003d10191, bankCell\u003dCell[x\u003d-1101, z\u003d-469, s\u003d10443, error\u003d104]] widthQ8\u003d21436 lowerQ8\u003d21436;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d2359, lower\u003d2359, bankCell\u003dCell[x\u003d-1117, z\u003d-533, s\u003d2611, error\u003d10]] right\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1130, z\u003d-466, s\u003d14848, error\u003d7461]] widthQ8\u003d17520 lowerQ8\u003d17520;} direction\u003d10{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d4372, lower\u003d4372, bankCell\u003dCell[x\u003d-1059, z\u003d-513, s\u003d4470, error\u003d7717]] right\u003dSide[bank\u003dtrue, extent\u003d1141, lower\u003d1141, bankCell\u003dCell[x\u003d-1068, z\u003d-492, s\u003d1379, error\u003d292]] widthQ8\u003d5847 lowerQ8\u003d5847;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14690, lower\u003d14690, bankCell\u003dCell[x\u003d-1071, z\u003d-563, s\u003d14848, error\u003d13736]] right\u003dSide[bank\u003dtrue, extent\u003d11696, lower\u003d11696, bankCell\u003dCell[x\u003d-1111, z\u003d-466, s\u003d11934, error\u003d1889]] widthQ8\u003d26720 lowerQ8\u003d26720;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d6419, lower\u003d3327, bankCell\u003dCell[x\u003d-1109, z\u003d-547, s\u003d6656, error\u003d194]] right\u003dSide[bank\u003dtrue, extent\u003d11027, lower\u003d11027, bankCell\u003dCell[x\u003d-1136, z\u003d-483, s\u003d11126, error\u003d10170]] widthQ8\u003d17780 lowerQ8\u003d14688;} direction\u003d11{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d3479, lower\u003d3479, bankCell\u003dCell[x\u003d-1058, z\u003d-509, s\u003d3692, error\u003d13]] right\u003dSide[bank\u003dtrue, extent\u003d1633, lower\u003d1278, bankCell\u003dCell[x\u003d-1070, z\u003d-491, s\u003d1846, error\u003d5]] widthQ8\u003d5467 lowerQ8\u003d5112;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1061, z\u003d-557, s\u003d14768, error\u003d233]] right\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1125, z\u003d-461, s\u003d14768, error\u003d277]] widthQ8\u003d29891 lowerQ8\u003d29891;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d8094, lower\u003d8094, bankCell\u003dCell[x\u003d-1101, z\u003d-550, s\u003d8307, error\u003d74]] right\u003dSide[bank\u003dtrue, extent\u003d5750, lower\u003d5750, bankCell\u003dCell[x\u003d-1132, z\u003d-504, s\u003d5893, error\u003d4212]] widthQ8\u003d14199 lowerQ8\u003d14199;} direction\u003d12{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d3258, lower\u003d3258, bankCell\u003dCell[x\u003d-1057, z\u003d-507, s\u003d3439, error\u003d32768]] right\u003dSide[bank\u003dtrue, extent\u003d2715, lower\u003d2715, bankCell\u003dCell[x\u003d-1074, z\u003d-489, s\u003d2896, error\u003d0]] widthQ8\u003d6335 lowerQ8\u003d6335;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14843, lower\u003d14843, bankCell\u003dCell[x\u003d-1052, z\u003d-550, s\u003d14843, error\u003d0]] right\u003dSide[bank\u003dfalse, extent\u003d14843, lower\u003d14843, bankCell\u003dCell[x\u003d-1134, z\u003d-468, s\u003d14843, error\u003d0]] widthQ8\u003d30048 lowerQ8\u003d30048;center\u003d2 left\u003dSide[bank\u003dtrue, extent\u003d10137, lower\u003d9775, bankCell\u003dCell[x\u003d-1091, z\u003d-552, s\u003d10318, error\u003d32768]] right\u003dSide[bank\u003dtrue, extent\u003d4344, lower\u003d4344, bankCell\u003dCell[x\u003d-1132, z\u003d-511, s\u003d4525, error\u003d32768]] widthQ8\u003d14843 lowerQ8\u003d14481;} direction\u003d13{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d3124, lower\u003d2769, bankCell\u003dCell[x\u003d-1055, z\u003d-504, s\u003d3337, error\u003d5608]] right\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1114, z\u003d-465, s\u003d14768, error\u003d233]] widthQ8\u003d18247 lowerQ8\u003d17892;center\u003d1 left\u003dSide[bank\u003dfalse, extent\u003d14200, lower\u003d13845, bankCell\u003dCell[x\u003d-1046, z\u003d-540, s\u003d14413, error\u003d7488]] right\u003dSide[bank\u003dfalse, extent\u003d12922, lower\u003d12922, bankCell\u003dCell[x\u003d-1136, z\u003d-481, s\u003d13135, error\u003d24037]] widthQ8\u003d27477 lowerQ8\u003d27122;center\u003d2 left\u003dSide[bank\u003dfalse, extent\u003d14768, lower\u003d14768, bankCell\u003dCell[x\u003d-1071, z\u003d-555, s\u003d14768, error\u003d277]] right\u003dSide[bank\u003dtrue, extent\u003d1633, lower\u003d1278, bankCell\u003dCell[x\u003d-1125, z\u003d-519, s\u003d1846, error\u003d5]] widthQ8\u003d16756 lowerQ8\u003d16401;} direction\u003d14{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d2283, lower\u003d1949, bankCell\u003dCell[x\u003d-1057, z\u003d-501, s\u003d2521, error\u003d4106]] right\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1120, z\u003d-475, s\u003d14848, error\u003d13736]] widthQ8\u003d17543 lowerQ8\u003d17209;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d9176, lower\u003d9176, bankCell\u003dCell[x\u003d-1059, z\u003d-523, s\u003d9413, error\u003d425]] right\u003dSide[bank\u003dtrue, extent\u003d11362, lower\u003d11362, bankCell\u003dCell[x\u003d-1135, z\u003d-492, s\u003d11599, error\u003d8865]] widthQ8\u003d20872 lowerQ8\u003d20872;center\u003d2 left\u003dSide[bank\u003dfalse, extent\u003d14926, lower\u003d14926, bankCell\u003dCell[x\u003d-1065, z\u003d-545, s\u003d14848, error\u003d14050]] right\u003dSide[bank\u003dtrue, extent\u003d1141, lower\u003d1141, bankCell\u003dCell[x\u003d-1124, z\u003d-521, s\u003d1378, error\u003d292]] widthQ8\u003d16401 lowerQ8\u003d16401;} direction\u003d15{center\u003d0 left\u003dSide[bank\u003dtrue, extent\u003d1305, lower\u003d1305, bankCell\u003dCell[x\u003d-1060, z\u003d-498, s\u003d1556, error\u003d2385]] right\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1123, z\u003d-486, s\u003d14848, error\u003d7241]] widthQ8\u003d16466 lowerQ8\u003d16466;center\u003d1 left\u003dSide[bank\u003dtrue, extent\u003d8585, lower\u003d8585, bankCell\u003dCell[x\u003d-1060, z\u003d-516, s\u003d8636, error\u003d11890]] right\u003dSide[bank\u003dtrue, extent\u003d9639, lower\u003d9639, bankCell\u003dCell[x\u003d-1131, z\u003d-502, s\u003d9891, error\u003d19498]] widthQ8\u003d18525 lowerQ8\u003d18525;center\u003d2 left\u003dSide[bank\u003dfalse, extent\u003d14860, lower\u003d14860, bankCell\u003dCell[x\u003d-1062, z\u003d-534, s\u003d14848, error\u003d7461]] right\u003dSide[bank\u003dtrue, extent\u003d1054, lower\u003d1054, bankCell\u003dCell[x\u003d-1124, z\u003d-522, s\u003d1305, error\u003d1]] widthQ8\u003d16215 lowerQ8\u003d16215;}]\r\n\tat knot//local.plaincraft.greatwall.terrain.HydrologyClassifier.classify(HydrologyClassifier.java:220)\r\n\tat knot//local.plaincraft.greatwall.terrain.HydrologyClassifier.advance(HydrologyClassifier.java:62)\r\n\tat knot//local.plaincraft.greatwall.planning.PlannerScheduler$HydroJob.advance(PlannerScheduler.java:718)\r\n\tat knot//local.plaincraft.greatwall.planning.PlannerScheduler.lambda$dispatch$44(PlannerScheduler.java:418)\r\n\tat knot//local.plaincraft.greatwall.terrain.OracleLane.lambda$submit$2(OracleLane.java:75)\r\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\r\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\r\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\r\n"
+    }
+  },
+  "rootAudit": {
+    "root": [
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 912,
+          "y": 67,
+          "z": 176
+        },
+        "radiusIndex": 0,
+        "angleIndex": 0,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 95,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 900,
+          "y": 67,
+          "z": 315
+        },
+        "radiusIndex": 0,
+        "angleIndex": 1,
+        "axisIndex": -1,
+        "wetColumns": 13,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 56,
+        "maxY": 70,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 864,
+          "y": 67,
+          "z": 450
+        },
+        "radiusIndex": 0,
+        "angleIndex": 2,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 61,
+        "maxY": 73,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 805,
+          "y": 67,
+          "z": 576
+        },
+        "radiusIndex": 0,
+        "angleIndex": 3,
+        "axisIndex": -1,
+        "wetColumns": 2,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 56,
+        "maxY": 83,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 512,
+          "y": 67,
+          "z": 869
+        },
+        "radiusIndex": 0,
+        "angleIndex": 6,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 61,
+        "maxY": 75,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 386,
+          "y": 67,
+          "z": 928
+        },
+        "radiusIndex": 0,
+        "angleIndex": 7,
+        "axisIndex": -1,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 60,
+        "maxY": 79,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 251,
+          "y": 67,
+          "z": 964
+        },
+        "radiusIndex": 0,
+        "angleIndex": 8,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 69,
+        "maxY": 80,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 112,
+          "y": 67,
+          "z": 976
+        },
+        "radiusIndex": 0,
+        "angleIndex": 9,
+        "axisIndex": -1,
+        "wetColumns": 2,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 62,
+        "maxY": 79,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -27,
+          "y": 67,
+          "z": 964
+        },
+        "radiusIndex": 0,
+        "angleIndex": 10,
+        "axisIndex": -1,
+        "wetColumns": 76,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 65,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -162,
+          "y": 67,
+          "z": 928
+        },
+        "radiusIndex": 0,
+        "angleIndex": 11,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 60,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -288,
+          "y": 67,
+          "z": 869
+        },
+        "radiusIndex": 0,
+        "angleIndex": 12,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 39,
+        "maxY": 58,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -581,
+          "y": 67,
+          "z": 576
+        },
+        "radiusIndex": 0,
+        "angleIndex": 15,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 48,
+        "maxY": 55,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -640,
+          "y": 67,
+          "z": 450
+        },
+        "radiusIndex": 0,
+        "angleIndex": 16,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 55,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -676,
+          "y": 67,
+          "z": 315
+        },
+        "radiusIndex": 0,
+        "angleIndex": 17,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 35,
+        "maxY": 54,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -688,
+          "y": 67,
+          "z": 176
+        },
+        "radiusIndex": 0,
+        "angleIndex": 18,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 3,
+        "maxY": 52,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -676,
+          "y": 67,
+          "z": 37
+        },
+        "radiusIndex": 0,
+        "angleIndex": 19,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 40,
+        "maxY": 54,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -640,
+          "y": 67,
+          "z": -98
+        },
+        "radiusIndex": 0,
+        "angleIndex": 20,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 20,
+        "maxY": 55,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -581,
+          "y": 67,
+          "z": -224
+        },
+        "radiusIndex": 0,
+        "angleIndex": 21,
+        "axisIndex": -1,
+        "wetColumns": 5,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 53,
+        "maxY": 76,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -288,
+          "y": 67,
+          "z": -517
+        },
+        "radiusIndex": 0,
+        "angleIndex": 24,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 34,
+        "maxY": 54,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -162,
+          "y": 67,
+          "z": -576
+        },
+        "radiusIndex": 0,
+        "angleIndex": 25,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 33,
+        "maxY": 53,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -27,
+          "y": 67,
+          "z": -612
+        },
+        "radiusIndex": 0,
+        "angleIndex": 26,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 36,
+        "maxY": 54,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 112,
+          "y": 67,
+          "z": -624
+        },
+        "radiusIndex": 0,
+        "angleIndex": 27,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 25,
+        "maxY": 40,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 251,
+          "y": 67,
+          "z": -612
+        },
+        "radiusIndex": 0,
+        "angleIndex": 28,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 43,
+        "maxY": 55,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 386,
+          "y": 67,
+          "z": -576
+        },
+        "radiusIndex": 0,
+        "angleIndex": 29,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 48,
+        "maxY": 61,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 512,
+          "y": 67,
+          "z": -517
+        },
+        "radiusIndex": 0,
+        "angleIndex": 30,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 21,
+        "maxY": 53,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 805,
+          "y": 67,
+          "z": -224
+        },
+        "radiusIndex": 0,
+        "angleIndex": 33,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 35,
+        "maxY": 52,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 864,
+          "y": 67,
+          "z": -98
+        },
+        "radiusIndex": 0,
+        "angleIndex": 34,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 32,
+        "maxY": 54,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 900,
+          "y": 67,
+          "z": 37
+        },
+        "radiusIndex": 0,
+        "angleIndex": 35,
+        "axisIndex": -1,
+        "wetColumns": 41,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 39,
+        "maxY": 70,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1112,
+          "y": 67,
+          "z": 176
+        },
+        "radiusIndex": 1,
+        "angleIndex": 0,
+        "axisIndex": -1,
+        "wetColumns": 2,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 62,
+        "maxY": 82,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1097,
+          "y": 67,
+          "z": 350
+        },
+        "radiusIndex": 1,
+        "angleIndex": 1,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 65,
+        "maxY": 86,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1052,
+          "y": 67,
+          "z": 518
+        },
+        "radiusIndex": 1,
+        "angleIndex": 2,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 61,
+        "maxY": 92,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 978,
+          "y": 67,
+          "z": 676
+        },
+        "radiusIndex": 1,
+        "angleIndex": 3,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 65,
+        "maxY": 79,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 878,
+          "y": 67,
+          "z": 819
+        },
+        "radiusIndex": 1,
+        "angleIndex": 4,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 83,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 755,
+          "y": 67,
+          "z": 942
+        },
+        "radiusIndex": 1,
+        "angleIndex": 5,
+        "axisIndex": -1,
+        "wetColumns": 8,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 58,
+        "maxY": 75,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 612,
+          "y": 67,
+          "z": 1042
+        },
+        "radiusIndex": 1,
+        "angleIndex": 6,
+        "axisIndex": -1,
+        "wetColumns": 38,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 54,
+        "maxY": 68,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 454,
+          "y": 67,
+          "z": 1116
+        },
+        "radiusIndex": 1,
+        "angleIndex": 7,
+        "axisIndex": -1,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": -18,
+        "maxY": 81,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 286,
+          "y": 67,
+          "z": 1161
+        },
+        "radiusIndex": 1,
+        "angleIndex": 8,
+        "axisIndex": -1,
+        "wetColumns": 22,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 85,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 112,
+          "y": 67,
+          "z": 1176
+        },
+        "radiusIndex": 1,
+        "angleIndex": 9,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 48,
+        "maxY": 56,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -62,
+          "y": 67,
+          "z": 1161
+        },
+        "radiusIndex": 1,
+        "angleIndex": 10,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 48,
+        "maxY": 53,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -230,
+          "y": 67,
+          "z": 1116
+        },
+        "radiusIndex": 1,
+        "angleIndex": 11,
+        "axisIndex": -1,
+        "wetColumns": 78,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 66,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -388,
+          "y": 67,
+          "z": 1042
+        },
+        "radiusIndex": 1,
+        "angleIndex": 12,
+        "axisIndex": -1,
+        "wetColumns": 39,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 49,
+        "maxY": 70,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -531,
+          "y": 67,
+          "z": 942
+        },
+        "radiusIndex": 1,
+        "angleIndex": 13,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 64,
+        "maxY": 79,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -654,
+          "y": 67,
+          "z": 819
+        },
+        "radiusIndex": 1,
+        "angleIndex": 14,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 39,
+        "maxY": 53,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -754,
+          "y": 67,
+          "z": 676
+        },
+        "radiusIndex": 1,
+        "angleIndex": 15,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 25,
+        "maxY": 44,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -828,
+          "y": 67,
+          "z": 518
+        },
+        "radiusIndex": 1,
+        "angleIndex": 16,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 33,
+        "maxY": 41,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -873,
+          "y": 67,
+          "z": 350
+        },
+        "radiusIndex": 1,
+        "angleIndex": 17,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 36,
+        "maxY": 47,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -888,
+          "y": 67,
+          "z": 176
+        },
+        "radiusIndex": 1,
+        "angleIndex": 18,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 31,
+        "maxY": 41,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -873,
+          "y": 67,
+          "z": 2
+        },
+        "radiusIndex": 1,
+        "angleIndex": 19,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 4,
+        "maxY": 42,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -828,
+          "y": 67,
+          "z": -166
+        },
+        "radiusIndex": 1,
+        "angleIndex": 20,
+        "axisIndex": -1,
+        "wetColumns": 62,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 65,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -754,
+          "y": 67,
+          "z": -324
+        },
+        "radiusIndex": 1,
+        "angleIndex": 21,
+        "axisIndex": -1,
+        "wetColumns": 16,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 71,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -654,
+          "y": 67,
+          "z": -467
+        },
+        "radiusIndex": 1,
+        "angleIndex": 22,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 64,
+        "maxY": 73,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -531,
+          "y": 67,
+          "z": -590
+        },
+        "radiusIndex": 1,
+        "angleIndex": 23,
+        "axisIndex": -1,
+        "wetColumns": 55,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 36,
+        "maxY": 69,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -388,
+          "y": 67,
+          "z": -690
+        },
+        "radiusIndex": 1,
+        "angleIndex": 24,
+        "axisIndex": -1,
+        "wetColumns": 34,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 65,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -230,
+          "y": 67,
+          "z": -764
+        },
+        "radiusIndex": 1,
+        "angleIndex": 25,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 60,
+        "maxY": 84,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -62,
+          "y": 67,
+          "z": -809
+        },
+        "radiusIndex": 1,
+        "angleIndex": 26,
+        "axisIndex": -1,
+        "wetColumns": 5,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 42,
+        "maxY": 69,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 112,
+          "y": 67,
+          "z": -824
+        },
+        "radiusIndex": 1,
+        "angleIndex": 27,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 31,
+        "maxY": 52,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 286,
+          "y": 67,
+          "z": -809
+        },
+        "radiusIndex": 1,
+        "angleIndex": 28,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 33,
+        "maxY": 50,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 454,
+          "y": 67,
+          "z": -764
+        },
+        "radiusIndex": 1,
+        "angleIndex": 29,
+        "axisIndex": -1,
+        "wetColumns": 67,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 48,
+        "maxY": 72,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 612,
+          "y": 67,
+          "z": -690
+        },
+        "radiusIndex": 1,
+        "angleIndex": 30,
+        "axisIndex": -1,
+        "wetColumns": 9,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 48,
+        "maxY": 76,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 755,
+          "y": 67,
+          "z": -590
+        },
+        "radiusIndex": 1,
+        "angleIndex": 31,
+        "axisIndex": -1,
+        "wetColumns": 13,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 73,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 878,
+          "y": 67,
+          "z": -467
+        },
+        "radiusIndex": 1,
+        "angleIndex": 32,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 55,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 978,
+          "y": 67,
+          "z": -324
+        },
+        "radiusIndex": 1,
+        "angleIndex": 33,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 25,
+        "maxY": 41,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1052,
+          "y": 67,
+          "z": -166
+        },
+        "radiusIndex": 1,
+        "angleIndex": 34,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 34,
+        "maxY": 48,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1097,
+          "y": 67,
+          "z": 2
+        },
+        "radiusIndex": 1,
+        "angleIndex": 35,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 68,
+        "maxY": 90,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1362,
+          "y": 67,
+          "z": 176
+        },
+        "radiusIndex": 2,
+        "angleIndex": 0,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 51,
+        "maxY": 62,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1343,
+          "y": 67,
+          "z": 393
+        },
+        "radiusIndex": 2,
+        "angleIndex": 1,
+        "axisIndex": -1,
+        "wetColumns": 23,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 100,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1287,
+          "y": 67,
+          "z": 604
+        },
+        "radiusIndex": 2,
+        "angleIndex": 2,
+        "axisIndex": -1,
+        "wetColumns": 65,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 52,
+        "maxY": 68,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1195,
+          "y": 67,
+          "z": 801
+        },
+        "radiusIndex": 2,
+        "angleIndex": 3,
+        "axisIndex": -1,
+        "wetColumns": 23,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 70,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1070,
+          "y": 67,
+          "z": 979
+        },
+        "radiusIndex": 2,
+        "angleIndex": 4,
+        "axisIndex": -1,
+        "wetColumns": 31,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 69,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 915,
+          "y": 67,
+          "z": 1134
+        },
+        "radiusIndex": 2,
+        "angleIndex": 5,
+        "axisIndex": -1,
+        "wetColumns": 2,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 60,
+        "maxY": 73,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 737,
+          "y": 67,
+          "z": 1259
+        },
+        "radiusIndex": 2,
+        "angleIndex": 6,
+        "axisIndex": -1,
+        "wetColumns": 57,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 50,
+        "maxY": 68,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 540,
+          "y": 67,
+          "z": 1351
+        },
+        "radiusIndex": 2,
+        "angleIndex": 7,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 65,
+        "maxY": 86,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 329,
+          "y": 67,
+          "z": 1407
+        },
+        "radiusIndex": 2,
+        "angleIndex": 8,
+        "axisIndex": -1,
+        "wetColumns": 26,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 39,
+        "maxY": 75,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 112,
+          "y": 67,
+          "z": 1426
+        },
+        "radiusIndex": 2,
+        "angleIndex": 9,
+        "axisIndex": -1,
+        "wetColumns": 40,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 49,
+        "maxY": 68,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -105,
+          "y": 67,
+          "z": 1407
+        },
+        "radiusIndex": 2,
+        "angleIndex": 10,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 40,
+        "maxY": 60,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -316,
+          "y": 67,
+          "z": 1351
+        },
+        "radiusIndex": 2,
+        "angleIndex": 11,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 59,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -513,
+          "y": 67,
+          "z": 1259
+        },
+        "radiusIndex": 2,
+        "angleIndex": 12,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 34,
+        "maxY": 42,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -691,
+          "y": 67,
+          "z": 1134
+        },
+        "radiusIndex": 2,
+        "angleIndex": 13,
+        "axisIndex": -1,
+        "wetColumns": 28,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 22,
+        "maxY": 67,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -846,
+          "y": 67,
+          "z": 979
+        },
+        "radiusIndex": 2,
+        "angleIndex": 14,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 38,
+        "maxY": 59,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -971,
+          "y": 67,
+          "z": 801
+        },
+        "radiusIndex": 2,
+        "angleIndex": 15,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 36,
+        "maxY": 40,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1063,
+          "y": 67,
+          "z": 604
+        },
+        "radiusIndex": 2,
+        "angleIndex": 16,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 28,
+        "maxY": 48,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1119,
+          "y": 67,
+          "z": 393
+        },
+        "radiusIndex": 2,
+        "angleIndex": 17,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 38,
+        "maxY": 55,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1138,
+          "y": 67,
+          "z": 176
+        },
+        "radiusIndex": 2,
+        "angleIndex": 18,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 25,
+        "maxY": 40,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1119,
+          "y": 67,
+          "z": -41
+        },
+        "radiusIndex": 2,
+        "angleIndex": 19,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 35,
+        "maxY": 39,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1063,
+          "y": 67,
+          "z": -252
+        },
+        "radiusIndex": 2,
+        "angleIndex": 20,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 52,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -971,
+          "y": 67,
+          "z": -449
+        },
+        "radiusIndex": 2,
+        "angleIndex": 21,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 74,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -846,
+          "y": 67,
+          "z": -627
+        },
+        "radiusIndex": 2,
+        "angleIndex": 22,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 65,
+        "maxY": 77,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -691,
+          "y": 67,
+          "z": -782
+        },
+        "radiusIndex": 2,
+        "angleIndex": 23,
+        "axisIndex": -1,
+        "wetColumns": 13,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 55,
+        "maxY": 69,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -513,
+          "y": 67,
+          "z": -907
+        },
+        "radiusIndex": 2,
+        "angleIndex": 24,
+        "axisIndex": -1,
+        "wetColumns": 35,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 53,
+        "maxY": 67,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -316,
+          "y": 67,
+          "z": -999
+        },
+        "radiusIndex": 2,
+        "angleIndex": 25,
+        "axisIndex": -1,
+        "wetColumns": 43,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 51,
+        "maxY": 68,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -105,
+          "y": 67,
+          "z": -1055
+        },
+        "radiusIndex": 2,
+        "angleIndex": 26,
+        "axisIndex": -1,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 74,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 112,
+          "y": 67,
+          "z": -1074
+        },
+        "radiusIndex": 2,
+        "angleIndex": 27,
+        "axisIndex": -1,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 50,
+        "maxY": 73,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 329,
+          "y": 67,
+          "z": -1055
+        },
+        "radiusIndex": 2,
+        "angleIndex": 28,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 28,
+        "maxY": 70,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 540,
+          "y": 67,
+          "z": -999
+        },
+        "radiusIndex": 2,
+        "angleIndex": 29,
+        "axisIndex": -1,
+        "wetColumns": 75,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 47,
+        "maxY": 65,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 737,
+          "y": 67,
+          "z": -907
+        },
+        "radiusIndex": 2,
+        "angleIndex": 30,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 33,
+        "maxY": 50,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 915,
+          "y": 67,
+          "z": -782
+        },
+        "radiusIndex": 2,
+        "angleIndex": 31,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 24,
+        "maxY": 47,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1070,
+          "y": 67,
+          "z": -627
+        },
+        "radiusIndex": 2,
+        "angleIndex": 32,
+        "axisIndex": -1,
+        "wetColumns": 36,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 50,
+        "maxY": 74,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1195,
+          "y": 67,
+          "z": -449
+        },
+        "radiusIndex": 2,
+        "angleIndex": 33,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 33,
+        "maxY": 57,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1287,
+          "y": 67,
+          "z": -252
+        },
+        "radiusIndex": 2,
+        "angleIndex": 34,
+        "axisIndex": -1,
+        "wetColumns": 80,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 44,
+        "maxY": 64,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1343,
+          "y": 67,
+          "z": -41
+        },
+        "radiusIndex": 2,
+        "angleIndex": 35,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 71,
+        "maxY": 84,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1612,
+          "y": 67,
+          "z": 176
+        },
+        "radiusIndex": 3,
+        "angleIndex": 0,
+        "axisIndex": -1,
+        "wetColumns": 8,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 60,
+        "maxY": 69,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1589,
+          "y": 67,
+          "z": 436
+        },
+        "radiusIndex": 3,
+        "angleIndex": 1,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 79,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1411,
+          "y": 67,
+          "z": 926
+        },
+        "radiusIndex": 3,
+        "angleIndex": 3,
+        "axisIndex": -1,
+        "wetColumns": 4,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": -28,
+        "maxY": 71,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1261,
+          "y": 67,
+          "z": 1140
+        },
+        "radiusIndex": 3,
+        "angleIndex": 4,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 66,
+        "maxY": 107,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1076,
+          "y": 67,
+          "z": 1325
+        },
+        "radiusIndex": 3,
+        "angleIndex": 5,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 71,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 862,
+          "y": 67,
+          "z": 1475
+        },
+        "radiusIndex": 3,
+        "angleIndex": 6,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 65,
+        "maxY": 85,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 372,
+          "y": 67,
+          "z": 1653
+        },
+        "radiusIndex": 3,
+        "angleIndex": 8,
+        "axisIndex": -1,
+        "wetColumns": 36,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 44,
+        "maxY": 77,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 112,
+          "y": 67,
+          "z": 1676
+        },
+        "radiusIndex": 3,
+        "angleIndex": 9,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 68,
+        "maxY": 83,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -148,
+          "y": 67,
+          "z": 1653
+        },
+        "radiusIndex": 3,
+        "angleIndex": 10,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 42,
+        "maxY": 55,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -638,
+          "y": 67,
+          "z": 1475
+        },
+        "radiusIndex": 3,
+        "angleIndex": 12,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 35,
+        "maxY": 43,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -852,
+          "y": 67,
+          "z": 1325
+        },
+        "radiusIndex": 3,
+        "angleIndex": 13,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 55,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1037,
+          "y": 67,
+          "z": 1140
+        },
+        "radiusIndex": 3,
+        "angleIndex": 14,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 8,
+        "maxY": 54,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1187,
+          "y": 67,
+          "z": 926
+        },
+        "radiusIndex": 3,
+        "angleIndex": 15,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 37,
+        "maxY": 60,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1365,
+          "y": 67,
+          "z": 436
+        },
+        "radiusIndex": 3,
+        "angleIndex": 17,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 27,
+        "maxY": 54,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1388,
+          "y": 67,
+          "z": 176
+        },
+        "radiusIndex": 3,
+        "angleIndex": 18,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 45,
+        "maxY": 53,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1365,
+          "y": 67,
+          "z": -84
+        },
+        "radiusIndex": 3,
+        "angleIndex": 19,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 34,
+        "maxY": 41,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1187,
+          "y": 67,
+          "z": -574
+        },
+        "radiusIndex": 3,
+        "angleIndex": 21,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 67,
+        "maxY": 86,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -1037,
+          "y": 67,
+          "z": -788
+        },
+        "radiusIndex": 3,
+        "angleIndex": 22,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 82,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -852,
+          "y": 67,
+          "z": -973
+        },
+        "radiusIndex": 3,
+        "angleIndex": 23,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 67,
+        "maxY": 81,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -638,
+          "y": 67,
+          "z": -1123
+        },
+        "radiusIndex": 3,
+        "angleIndex": 24,
+        "axisIndex": -1,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 62,
+        "maxY": 71,
+        "result": "SHORTLIST_ELIGIBLE"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": -148,
+          "y": 67,
+          "z": -1301
+        },
+        "radiusIndex": 3,
+        "angleIndex": 26,
+        "axisIndex": -1,
+        "wetColumns": 7,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 56,
+        "maxY": 75,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 112,
+          "y": 67,
+          "z": -1324
+        },
+        "radiusIndex": 3,
+        "angleIndex": 27,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 44,
+        "maxY": 80,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 372,
+          "y": 67,
+          "z": -1301
+        },
+        "radiusIndex": 3,
+        "angleIndex": 28,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 65,
+        "maxY": 86,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 862,
+          "y": 67,
+          "z": -1123
+        },
+        "radiusIndex": 3,
+        "angleIndex": 30,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 60,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1076,
+          "y": 67,
+          "z": -973
+        },
+        "radiusIndex": 3,
+        "angleIndex": 31,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 22,
+        "maxY": 42,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1261,
+          "y": 67,
+          "z": -788
+        },
+        "radiusIndex": 3,
+        "angleIndex": 32,
+        "axisIndex": -1,
+        "wetColumns": 81,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 38,
+        "maxY": 54,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1411,
+          "y": 67,
+          "z": -574
+        },
+        "radiusIndex": 3,
+        "angleIndex": 33,
+        "axisIndex": -1,
+        "wetColumns": 23,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 44,
+        "maxY": 74,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "coarse",
+        "origin": {
+          "x": 1589,
+          "y": 67,
+          "z": -84
+        },
+        "radiusIndex": 3,
+        "angleIndex": 35,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 98,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": 1076,
+          "y": 64,
+          "z": 1325
+        },
+        "radiusIndex": 3,
+        "angleIndex": 5,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 63,
+        "maxY": 68,
+        "result": "FOUNDATION_ELIGIBLE"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 1076,
+          "y": 64,
+          "z": 1325
+        },
+        "radiusIndex": 3,
+        "angleIndex": 5,
+        "axisIndex": 0,
+        "wetColumns": 7,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 40,
+        "maxY": 66,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 1076,
+          "y": 64,
+          "z": 1325
+        },
+        "radiusIndex": 3,
+        "angleIndex": 5,
+        "axisIndex": 1,
+        "wetColumns": 7,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 35,
+        "maxY": 64,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 1076,
+          "y": 64,
+          "z": 1325
+        },
+        "radiusIndex": 3,
+        "angleIndex": 5,
+        "axisIndex": 2,
+        "wetColumns": 4,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 52,
+        "maxY": 64,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 1076,
+          "y": 64,
+          "z": 1325
+        },
+        "radiusIndex": 3,
+        "angleIndex": 5,
+        "axisIndex": 3,
+        "wetColumns": 4,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 35,
+        "maxY": 90,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": 1076,
+          "y": 64,
+          "z": 1325
+        },
+        "radiusIndex": 3,
+        "angleIndex": 5,
+        "axisIndex": 4,
+        "wetColumns": 3,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 46,
+        "maxY": 76,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": -654,
+          "y": 69,
+          "z": -467
+        },
+        "radiusIndex": 1,
+        "angleIndex": 22,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 64,
+        "maxY": 71,
+        "result": "FOUNDATION_ELIGIBLE"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": -654,
+          "y": 69,
+          "z": -467
+        },
+        "radiusIndex": 1,
+        "angleIndex": 22,
+        "axisIndex": 0,
+        "wetColumns": 2,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 54,
+        "maxY": 77,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": -654,
+          "y": 69,
+          "z": -467
+        },
+        "radiusIndex": 1,
+        "angleIndex": 22,
+        "axisIndex": 1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 69,
+        "maxY": 126,
+        "result": "DRY_AXIS_ELIGIBLE"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": -654,
+          "y": 69,
+          "z": -467
+        },
+        "radiusIndex": 1,
+        "angleIndex": 22,
+        "axisIndex": 2,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 59,
+        "maxY": 77,
+        "result": "DRY_AXIS_ELIGIBLE"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": -654,
+          "y": 69,
+          "z": -467
+        },
+        "radiusIndex": 1,
+        "angleIndex": 22,
+        "axisIndex": 3,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 59,
+        "maxY": 74,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": -654,
+          "y": 69,
+          "z": -467
+        },
+        "radiusIndex": 1,
+        "angleIndex": 22,
+        "axisIndex": 4,
+        "wetColumns": 3,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 52,
+        "maxY": 93,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": 251,
+          "y": 78,
+          "z": 964
+        },
+        "radiusIndex": 0,
+        "angleIndex": 8,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 24,
+        "minY": 61,
+        "maxY": 80,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": -971,
+          "y": 63,
+          "z": -449
+        },
+        "radiusIndex": 2,
+        "angleIndex": 21,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 62,
+        "maxY": 74,
+        "result": "FOUNDATION_ELIGIBLE"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": -971,
+          "y": 63,
+          "z": -449
+        },
+        "radiusIndex": 2,
+        "angleIndex": 21,
+        "axisIndex": 0,
+        "wetColumns": 1,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 51,
+        "maxY": 111,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": -971,
+          "y": 63,
+          "z": -449
+        },
+        "radiusIndex": 2,
+        "angleIndex": 21,
+        "axisIndex": 1,
+        "wetColumns": 2,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 60,
+        "maxY": 100,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": -971,
+          "y": 63,
+          "z": -449
+        },
+        "radiusIndex": 2,
+        "angleIndex": 21,
+        "axisIndex": 2,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 70,
+        "maxY": 105,
+        "result": "DRY_AXIS_ELIGIBLE"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": -971,
+          "y": 63,
+          "z": -449
+        },
+        "radiusIndex": 2,
+        "angleIndex": 21,
+        "axisIndex": 3,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 64,
+        "maxY": 81,
+        "result": "DRY_AXIS_ELIGIBLE"
+      },
+      {
+        "stage": "axis",
+        "origin": {
+          "x": -971,
+          "y": 63,
+          "z": -449
+        },
+        "radiusIndex": 2,
+        "angleIndex": 21,
+        "axisIndex": 4,
+        "wetColumns": 3,
+        "invalidSamples": 0,
+        "failedFoundations": 0,
+        "minY": 59,
+        "maxY": 74,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": -846,
+          "y": 72,
+          "z": -627
+        },
+        "radiusIndex": 2,
+        "angleIndex": 22,
+        "axisIndex": -1,
+        "wetColumns": 0,
+        "invalidSamples": 0,
+        "failedFoundations": 60,
+        "minY": 61,
+        "maxY": 77,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": 864,
+          "y": 63,
+          "z": 450
+        },
+        "radiusIndex": 0,
+        "angleIndex": 2,
+        "axisIndex": -1,
+        "wetColumns": 5,
+        "invalidSamples": 0,
+        "failedFoundations": 108,
+        "minY": 49,
+        "maxY": 72,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": -638,
+          "y": 69,
+          "z": -1123
+        },
+        "radiusIndex": 3,
+        "angleIndex": 24,
+        "axisIndex": -1,
+        "wetColumns": 10,
+        "invalidSamples": 0,
+        "failedFoundations": 46,
+        "minY": 56,
+        "maxY": 71,
+        "result": "REJECTED"
+      },
+      {
+        "stage": "footprint",
+        "origin": {
+          "x": 1612,
+          "y": 63,
+          "z": 176
+        },
+        "radiusIndex": 3,
+        "angleIndex": 0,
+        "axisIndex": -1,
+        "wetColumns": 27,
+        "invalidSamples": 0,
+        "failedFoundations": 1,
+        "minY": 60,
+        "maxY": 67,
+        "result": "REJECTED"
+      }
+    ]
+  },
+  "runtime": "dc34f3ff-b38d-4198-94e9-ba14a4a439e2",
+  "barrier": {
+    "admitted": 0,
+    "flights": 0,
+    "terrainReserved": 0,
+    "leases": 0,
+    "compiledReserved": 0
+  }
+}
