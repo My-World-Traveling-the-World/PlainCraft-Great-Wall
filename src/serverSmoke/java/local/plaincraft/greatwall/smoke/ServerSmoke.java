@@ -23,6 +23,7 @@ public final class ServerSmoke implements ModInitializer {
     private final TerrainBarrierFixture terrain = new TerrainBarrierFixture();
     private final OracleProfileFixture oracle = new OracleProfileFixture();
     private final RealTerrainFixture wall = new RealTerrainFixture();
+    private final RootHydrologyFixture survey = new RootHydrologyFixture();
 
     @Override
     public void onInitialize() {
@@ -68,7 +69,9 @@ public final class ServerSmoke implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (!started || stopRequested) return;
             ticks++;
-            if (Boolean.getBoolean("greatwall.s1c.productionFixture")) {
+            if (RootHydrologyFixture.enabled()) {
+                if (!survey.tick(server)) return;
+            } else if (Boolean.getBoolean("greatwall.s1c.productionFixture")) {
                 if (!wall.tick(server)) return;
             } else if (Boolean.getBoolean("greatwall.s1c.oracle")) {
                 if (!oracle.tick(server)) return;
@@ -87,7 +90,7 @@ public final class ServerSmoke implements ModInitializer {
                 server.halt(false);
             }
         });
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> { oracle.close(); wall.close(); });
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> { oracle.close(); wall.close(); survey.close(); });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             if (!started || !stopRequested) {
                 if (Boolean.getBoolean("greatwall.s0.expectedFailure")) {

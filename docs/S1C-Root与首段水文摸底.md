@@ -68,3 +68,12 @@ compileServerSmokeJava --rerun-tasks --no-build-cache --console=plain --no-daemo
 exit0、26秒、6/6 JUnit。证据`docs/evidence/s1c/seed-survey-20261001/setup-unit/`。
 覆盖曲线S/u不同、跨桶、signed halo裁剪、段内S>2048、终点标签重叠。
 这不是六个seed结果；四十个实际输入仍NOT_RUN。
+
+测试专用出生钩子已编译/remap通过：`compileServerSmokeJava remapServerSmokeJar`
+（同JDK21/offline/strict、rerun、no-build-cache），exit0、21秒；
+证据`seed-survey-20261001/hook-compile/`。钩子require=1，生产目录没有修改，
+原RootProbe与InitialSpawn签名只在serverSmoke副本观察，普通模式只读开关后返回。
+运行器固定0..39、最多2个独立JVM；每个独立world/runDir/stdout/退出凭证。
+Gradle只准备一次严格离线缓存运行时，后续直接启动该已锁JDK21/原版server/API/模组Jar，
+避免40次构建共用输出发生并行冲突。脚本AST syntaxErrors=0。
+`OBSERVATION_COMPLETE`只表示该seed取证完成，任何失败分类都不写成墙通过。

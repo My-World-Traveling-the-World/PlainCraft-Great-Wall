@@ -23,6 +23,7 @@ def terrainResume = providers.gradleProperty('s0TerrainResume').getOrElse('false
 def oracleOnly = providers.gradleProperty('s1cOracleOnly').getOrElse('false').toBoolean()
 def realWall = providers.gradleProperty('s1cRealWall').getOrElse('false').toBoolean()
 def realReopen = providers.gradleProperty('s1cReopen').getOrElse('false').toBoolean()
+def seedSurvey = providers.gradleProperty('s1cSeedSurvey').getOrElse('false').toBoolean()
 def actualSeed = providers.gradleProperty('s1cSeed').getOrElse('9282026')
 if (!(actualSeed ==~ /-?[0-9]+/) || (realReopen && !realWall)) {
     throw new GradleException('Real fixture seed/reopen contract')
@@ -38,7 +39,13 @@ if (oracleOnly && (profile == 'pack-opencl' || terrainProbe ||
 if (disableRewrite && profile != 'tectonic-c2me') {
     throw new GradleException('Rewrite-disable capability test is isolated to the C2ME CPU profile')
 }
+if (seedSurvey && (profile != 'vanilla' || realWall || oracleOnly || terrainProbe || disableRewrite ||
+        providers.gradleProperty('s0Probe').getOrElse('false').toBoolean())) {
+    throw new GradleException('Seed survey is vanilla, read-only and separate from all production/S0 pipelines')
+}
 def probeArgs = [
+    "-Dgreatwall.s1c.seedSurvey=${seedSurvey}",
+    "-Dgreatwall.s1c.surveySeed=${actualSeed}",
     "-Dgreatwall.s1c.productionFixture=${realWall}",
     "-Dgreatwall.s1c.reopen=${realReopen}",
     "-Dgreatwall.s1c.oracle=${oracleOnly}",
@@ -149,7 +156,7 @@ generator-settings={"layers":[{"block":"minecraft:bedrock","height":1},{"block":
 spawn-protection=0
 ''', 'UTF-8')
         }
-        if (realWall) {
+        if (realWall || seedSurvey) {
             new File(root, 'server.properties').append("level-seed=${actualSeed}\nspawn-protection=0\n", 'UTF-8')
         }
         if (providers.gradleProperty('s0Reload').getOrElse('none') != 'none') {
@@ -176,7 +183,7 @@ def terrainWorkerAgent = tasks.register('terrainWorkerAgent', Jar) {
     }
 }
 tasks.named('runServerSmoke') {
-    timeout = java.time.Duration.ofMinutes(realWall ? 40 : oracleOnly ? 20 : terrainProbe ? 10 : 3)
+    timeout = java.time.Duration.ofMinutes(realWall ? 40 : seedSurvey || oracleOnly ? 20 : terrainProbe ? 10 : 3)
     dependsOn tasks.named('prepareServerSmoke')
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
     if (providers.gradleProperty('s0TerrainFixedWorkers').getOrElse('false').toBoolean() && profile == 'tectonic-c2me') {
@@ -233,6 +240,25 @@ def prepareProductionInputs = { runtimeSource, String gameJarName, File smokeFil
         into new File(directory.get().asFile, 'mods')
     }
     return files(runtimeLibraries, gameJar, intermediary)
+}
+tasks.register('prepareSeedSurveyRuntime') {
+    dependsOn tasks.named('remapJar'), remappedSmoke
+    doLast {
+        if (!seedSurvey || profile != 'vanilla') throw new GradleException('Explicit vanilla seed survey flag required')
+        def root = directory.get().asFile
+        if (new File(root, 'world').exists()) throw new GradleException('Runtime staging cannot reuse a world')
+        root.mkdirs()
+        def runtime = prepareProductionInputs(sourceSets.main, 'minecraft-extracted_server.jar',
+                remappedSmoke.get().archiveFile.get().asFile)
+        def description = [classpath: runtime.files.collect { it.absolutePath },
+                mods: new File(root, 'mods').listFiles().findAll { it.name.endsWith('.jar') }
+                        .collect { it.absolutePath }.sort(),
+                javaHome: javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+                        .get().metadata.installationPath.asFile.absolutePath,
+                purpose: 'read-only-root-hydrology-survey', productionWiring: 'OFF', networkUsed: false]
+        new File(root, 'seed-survey-runtime.json').setText(
+                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(description)), 'UTF-8')
+    }
 }
 tasks.register('runServerSmokeProduction', JavaExec) {
     timeout = java.time.Duration.ofMinutes(realWall ? 40 : 5)

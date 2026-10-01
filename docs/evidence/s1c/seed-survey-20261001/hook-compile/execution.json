@@ -1,0 +1,8 @@
+{
+  "sourceCommit": "5cdf3148c1893ee186cc41b594c52b68b920ef45",
+  "command": "gradlew.bat --offline --dependency-verification=strict compileServerSmokeJava remapServerSmokeJar --rerun-tasks --no-build-cache --console=plain --no-daemon",
+  "exitCode": 0,
+  "finishedUtc": "2026-10-01T01:44:53.7780015Z",
+  "productionWiring": "OFF",
+  "scope": "test-only mixin compile/remap, native hooks and seeds NOT_RUN"
+}
