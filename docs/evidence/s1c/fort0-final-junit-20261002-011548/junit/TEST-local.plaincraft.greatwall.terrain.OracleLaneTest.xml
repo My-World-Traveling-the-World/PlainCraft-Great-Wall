@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.terrain.OracleLaneTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-01T17:17:00.730Z" hostname="CAIMEO" time="0.025">
+  <properties/>
+  <testcase name="readinessCallbackCannotBorrowTheInitializationGrant()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.002"/>
+  <testcase name="eachLaneNativeConstructionPermitCanBeConsumedOnlyOnce()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.003"/>
+  <testcase name="sessionAndLaneIdentityNeverReuseAnotherOracle()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.002"/>
+  <testcase name="oncePerLaneAcrossJobsAndClosesOnlyAtDrain()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.001"/>
+  <testcase name="canceledDrainViewCannotHideCloseFailure()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.002"/>
+  <testcase name="closeDuringUninterruptibleInitializationWaitsForActualProducer()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.001"/>
+  <testcase name="initializationFailureCallbackCannotBorrowTheGrant()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.001"/>
+  <testcase name="lockedRequestAndUnauthorizedThreadFailBeforeFactory()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.001"/>
+  <testcase name="initFailureIsVisibleNotRetriedAndDependenciesTerminate()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.001"/>
+  <testcase name="fingerprintMismatchClosesTheActualOracle()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.0"/>
+  <testcase name="serverAndWorldgenThreadsCannotClaimNativeConstruction()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.001"/>
+  <testcase name="callerCancellationCannotCancelInitializationOrOtherJob()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.002"/>
+  <testcase name="queueCapacityIsReservedBeforeSubmittingAndReleasedAfterDrain()" classname="local.plaincraft.greatwall.terrain.OracleLaneTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

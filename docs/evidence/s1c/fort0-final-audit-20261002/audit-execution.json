@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "65bea36ad1a8bb5f2c6e06fecffbaf4f480b848a",
+  "dirty": true,
+  "startedUtc": "2026-10-01T18:12:27.8113455Z",
+  "finishedUtc": "2026-10-01T18:12:34.3199711Z",
+  "exitCode": 0,
+  "command": "java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -cp <Gradle generated bridge> local.plaincraft.greatwall.smoke.ProtectionEvidenceAudit build/run/serverSmoke/vanilla/fort0-revised-foundation-17-20261002-002523 176 923 236 983 87",
+  "scope": "read-only audit after latest path and overflow checks; original durable T0, no live world or full support certification",
+  "production": "OFF"
+}

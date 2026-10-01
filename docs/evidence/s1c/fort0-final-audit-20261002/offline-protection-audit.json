@@ -1,0 +1,337 @@
+{
+  "actualCachedFortFrame": {
+    "center": {
+      "xQ8": 52736,
+      "zQ8": 243968
+    },
+    "txQ30": 247565951,
+    "tzQ30": 1044812234,
+    "walkY": 87,
+    "mirror": false
+  },
+  "candidateColumns": 3600,
+  "cleanColumns": 3344,
+  "examples": [
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 188,
+        "y": 72,
+        "z": 925
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 189,
+        "y": 73,
+        "z": 925
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 190,
+        "y": 72,
+        "z": 925
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 188,
+        "y": 73,
+        "z": 926
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 189,
+        "y": 73,
+        "z": 926
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 190,
+        "y": 73,
+        "z": 926
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 188,
+        "y": 72,
+        "z": 927
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 189,
+        "y": 73,
+        "z": 927
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 190,
+        "y": 72,
+        "z": 927
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:magma_block{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 195,
+        "y": 57,
+        "z": 923
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:magma_block{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 196,
+        "y": 57,
+        "z": 923
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:magma_block{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 197,
+        "y": 59,
+        "z": 923
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 201,
+        "y": 72,
+        "z": 923
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 202,
+        "y": 73,
+        "z": 923
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 203,
+        "y": 72,
+        "z": 923
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 210,
+        "y": 72,
+        "z": 923
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 185,
+        "y": 70,
+        "z": 928
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 186,
+        "y": 71,
+        "z": 929
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 177,
+        "y": 70,
+        "z": 930
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 178,
+        "y": 71,
+        "z": 930
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 179,
+        "y": 70,
+        "z": 930
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 186,
+        "y": 71,
+        "z": 930
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 177,
+        "y": 71,
+        "z": 931
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 178,
+        "y": 71,
+        "z": 931
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 179,
+        "y": 71,
+        "z": 931
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 177,
+        "y": 70,
+        "z": 932
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 178,
+        "y": 71,
+        "z": 932
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 179,
+        "y": 70,
+        "z": 932
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:brown_mushroom{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 183,
+        "y": 70,
+        "z": 932
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:brown_mushroom{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 184,
+        "y": 70,
+        "z": 933
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:brown_mushroom{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 183,
+        "y": 70,
+        "z": 934
+      }
+    },
+    {
+      "source": "CAPTURED_IMMUTABLE_OR_BE",
+      "token": "minecraft:brown_mushroom{}:fluid\u003dminecraft:empty:be\u003dfalse",
+      "position": {
+        "x": 183,
+        "y": 70,
+        "z": 935
+      }
+    }
+  ],
+  "firstImmutableTokens": {
+    "minecraft:brown_mushroom{}:fluid\u003dminecraft:empty:be\u003dfalse": 40,
+    "minecraft:magma_block{}:fluid\u003dminecraft:empty:be\u003dfalse": 3,
+    "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse": 182,
+    "minecraft:pumpkin{}:fluid\u003dminecraft:empty:be\u003dfalse": 19,
+    "minecraft:sweet_berry_bush{age\u003d3}:fluid\u003dminecraft:empty:be\u003dfalse": 12
+  },
+  "firstStructureBoxes": {},
+  "fixture": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build\\run\\serverSmoke\\vanilla\\fort0-revised-foundation-17-20261002-002523",
+  "groundRoadColumns": 190,
+  "groundRoadFirstImmutableTokens": {
+    "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse": 16,
+    "minecraft:sweet_berry_bush{age\u003d3}:fluid\u003dminecraft:empty:be\u003dfalse": 2
+  },
+  "groundRoadProtectedColumns": 18,
+  "groundRoadRecordedHighestNonPlantFeet": [
+    67,
+    69
+  ],
+  "heightSummaryCaveat": "recorded highest nonplant is not SurfaceProbe\u0027s certified foundation height; no grade acceptance claimed",
+  "metadataOwners": 74,
+  "protectedColumns": 256,
+  "recipe": "f5dac0488a7c2b61e32b8223c3d13dd062a7a2cb5d6c6b9c8fd0efe7876b4e09",
+  "root": {
+    "x": 206,
+    "y": 67,
+    "z": 953
+  },
+  "scope": "original durable T0 immutable/BE/structure first-hit audit; thin-ice-only context is not reconstructed",
+  "window": [
+    52,
+    93
+  ]
+}

@@ -1,5 +1,16 @@
 # S1C 当前状态
 
+## 2026-10-02 fort0 批准修订结果
+
+**BLOCKED_AFTER_APPROVED_REVISIONS，未签收，生产 OFF，Tan's BLOCKED。**
+结构前置筛选和“可替换不等于可承重”两项修订已实现。固定 vanilla seed17
+选择了结构清空的根 `(206,67,953)`，但真实 fort0 仍在 APPLY 前失败：
+3600 列中 `SUPPORTED=3344`、`PROTECTED=256`；地面入口 190 列中有 18 列
+被 `mossy_cobblestone`/`sweet_berry_bush` 保护。`progressVoxels=null`，
+没有墙体写入证书。全量 JUnit 350/350、最新审计工具编译通过。
+这些自然装饰不属于本次获批的矿石/砾石范围，未静默放行；需新的有限
+FEATURES 前预留/抑制授权。完整记录见 `docs/S1C-fort0修订结果.md`。
+
 ## 2026-10-01 接手792f967后的来源取证
 
 **BLOCKED_PENDING_AUTHORIZATION，未签收，生产OFF，Tan's BLOCKED。**

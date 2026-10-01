@@ -1,0 +1,11 @@
+{
+  "exitCode": 0,
+  "sourceCommit": "65bea36ad1a8bb5f2c6e06fecffbaf4f480b848a",
+  "dirty": true,
+  "startedUtc": "2026-10-01T17:15:48.7358911Z",
+  "finishedUtc": "2026-10-01T17:17:10.6196087Z",
+  "command": "gradlew.bat --offline --dependency-verification=strict test compileServerSmokeJava --no-daemon --console=plain",
+  "production": "OFF",
+  "realWallAcceptance": "FAIL_BEFORE_APPLY",
+  "scope": "full JUnit plus test-only offline evidence audit compile; not a full build or native production pass"
+}

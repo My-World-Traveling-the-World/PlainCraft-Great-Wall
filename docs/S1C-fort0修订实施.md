@@ -1,7 +1,12 @@
 # fort0修订实施
 
 日期2026-10-01。用户批准两项修订；基线89c9fdc。
-状态IMPLEMENTING，不是签收。production OFF，Tan's BLOCKED。
+状态BLOCKED_AFTER_APPROVED_REVISIONS，不是签收。production OFF，Tan's BLOCKED。
+
+本批两项批准修订已完成并经固定 seed17 运行验证到新的阻塞点；详见
+`docs/S1C-fort0修订结果.md`。结构筛选和分类分离没有放宽保护层，
+但入口仍被 T0 中的苔石/浆果丛等未获授权的自然装饰保护，故没有 voxels>0
+或 APPLY 证书。S2-S5 不在此状态下推进。
 
 ## 实现前冻结的依赖图
 
@@ -22,7 +27,9 @@ creation授权 + 实际spawn + prepareLevels已进入 + 独立lane ready
 
 仍是800/1000/1250/1500四半径×36角度、原coarse排序、每批最多8精查槽和150000列预算。
 在截取8名之前过滤已批准的结构冲突，不能过滤后继续只困在原冲突的8名里。
-每个候选五朝向逐一使用完整48×48 fort及一格外接入口guard的旋转包络，
+每个候选五朝向使用覆盖完整48×48 fort、所有初始曲线朝向及入口guard的±36列包络，
+因为实际首段正切不一定等于投影轴；只检查轴朝向的单个旋转盒不够。
+该读域排除包络不改变fort写集/尺寸；360朝向的纯栅格反例测试验证覆盖。
 不按中心点或reference start chunk地址代替实际相交。
 所有候选/朝向被否决则ROOT_NOT_FOUND；结构引用未知否决候选，不假称无结构。
 

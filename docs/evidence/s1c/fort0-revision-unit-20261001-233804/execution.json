@@ -1,0 +1,9 @@
+{
+  "sourceCommit": "89c9fdca00131d48e1e16e935e8e933f2ebf4a0f",
+  "dirty": true,
+  "startedUtc": "2026-10-01T15:38:04.3599164Z",
+  "finishedUtc": "2026-10-01T15:38:43.7502674Z",
+  "exitCode": 0,
+  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.lifecycle.RootSearchTest --tests local.plaincraft.greatwall.lifecycle.WorldBootstrapTest runGameTest -PgreatwallGameTestClasses=ProtectionGameTests,CatalogGameTests --console=plain --no-daemon",
+  "production": "OFF"
+}

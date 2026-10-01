@@ -1,0 +1,8 @@
+{
+  "exitCode": 0,
+  "sourceCommit": "06fc94b6868b7bd2d7051af86e60b1be80b750de",
+  "dirty": true,
+  "finishedUtc": "2026-10-01T15:56:11.0858813Z",
+  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.lifecycle.RootSearchTest --tests local.plaincraft.greatwall.lifecycle.WorldBootstrapTest --console=plain --no-daemon",
+  "production": "OFF"
+}

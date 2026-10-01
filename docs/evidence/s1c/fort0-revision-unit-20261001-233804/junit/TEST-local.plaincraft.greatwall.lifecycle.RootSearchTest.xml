@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.lifecycle.RootSearchTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-01T15:38:21.656Z" hostname="CAIMEO" time="4.655">
+  <properties/>
+  <testcase name="singleOver40msPrimitiveStillRejectsTheCompletedSearch()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.157"/>
+  <testcase name="finishAndForeignLaneCannotReadPartialRoot()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.005"/>
+  <testcase name="flatLandSelectsFrozenRingAndIsStableAcrossBatchSizes()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.061"/>
+  <testcase name="nativeDomainIncludesAccumulatedRadiusAndTwoChunksOnly()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.003"/>
+  <testcase name="batchGuardStopsBeforeStackingAnotherSlowNativePrimitive()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="4.31"/>
+  <testcase name="unsupportedFootprintCannotBeReplacedWithAnEmptyFort()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.031"/>
+  <testcase name="allWetCandidatesFailVisiblyWithoutExpandingRing()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.015"/>
+  <testcase name="futureSeparationIncludesWholeChunkCornersTemplatesAndMargin()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.001"/>
+  <testcase name="filteringPrecedesFrozenEightCandidateLimitAndPreservesOrder()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.038"/>
+  <testcase name="oversizedSpawnDomainFailsInsteadOfGrantingAllChunks()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.001"/>
+  <testcase name="structureScreenPausesWithoutReadingMoreColumnsAndAllConflictsFailClosed()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.015"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

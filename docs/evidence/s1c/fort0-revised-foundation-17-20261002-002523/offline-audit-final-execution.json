@@ -1,0 +1,12 @@
+{
+  "exitCode": 0,
+  "finishedUtc": "2026-10-01T17:25:14.8717551Z",
+  "sourceCommit": "65bea36ad1a8bb5f2c6e06fecffbaf4f480b848a",
+  "toolDirty": true,
+  "scope": "original T0 plus exact cached fort frame, read-only; not a native world pass",
+  "launcherErrors": [
+    "Initial project-local classpath bridge not found",
+    "An unquoted -Dfile.encoding property was split by PowerShell; corrected to quoted JVM arguments"
+  ],
+  "encodingCorrection": "Original successful mojibake JSON retained as offline-protection-audit-initial-encoding.json; final output is UTF-8"
+}

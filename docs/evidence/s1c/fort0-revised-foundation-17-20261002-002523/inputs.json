@@ -1,0 +1,1019 @@
+{
+  "sourceCommit": "65bea36ad1a8bb5f2c6e06fecffbaf4f480b848a",
+  "sourceInputs": [
+    {
+      "path": "gradle\\dependency-evidence.gradle",
+      "sha256": "524cfd2480c54764d90b298dc6590b7e1b8de4716db806d8a749f8344021d136"
+    },
+    {
+      "path": "gradle\\README-local-inputs.md",
+      "sha256": "6ebc5095c4b3be83bf195fb613447e1f586f8b8b616d31d0286265defb03fc16"
+    },
+    {
+      "path": "gradle\\s0-probe.gradle",
+      "sha256": "444c6159e20f405fe6f9a96470ba9e782dadaffe5b4c5e17e1136e4c783e8c00"
+    },
+    {
+      "path": "gradle\\smoke-tests.gradle",
+      "sha256": "afbbf7b6a3e9d1f0b7439248352186ba0caa01194822adc05dab96990790bf1b"
+    },
+    {
+      "path": "gradle\\verification-metadata.xml",
+      "sha256": "2932b799922cf1302f8d4a7cf63b18a46541a8bd90e4c23d9f46e273560a7dd2"
+    },
+    {
+      "path": "gradle\\windows-test-classpath.gradle",
+      "sha256": "37ae860a7be65e0b1fddd5df445a34eebddc207813c9d5b641851092dbea90b3"
+    },
+    {
+      "path": "gradle\\wrapper\\gradle-wrapper.jar",
+      "sha256": "ed2c26eba7cfb93cc2b7785d05e534f07b5b48b5e7fc941921cd098628abca58"
+    },
+    {
+      "path": "gradle\\wrapper\\gradle-wrapper.properties",
+      "sha256": "8db3649f3cfc8789495b80e1cf8c66b2e547d3b2c0bae19c9a5b2ccb5b6cf4ee"
+    },
+    {
+      "path": "src\\client\\java\\local\\plaincraft\\greatwall\\client\\GreatWallClient.java",
+      "sha256": "182114481c6453229cb5e15f7f75c5fd0b95d8ee33da9312f047ea2767923385"
+    },
+    {
+      "path": "src\\client\\resources\\assets\\plaincraft_great_wall\\lang\\en_us.json",
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+    },
+    {
+      "path": "src\\clientSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\ClientSmoke.java",
+      "sha256": "192288c7b7bbd97a4cacfc9c9862803205b1c05508fb29f49b1996dfc78ec2bf"
+    },
+    {
+      "path": "src\\clientSmoke\\resources\\fabric.mod.json",
+      "sha256": "5e513261ed4a67c711153f7b56ba479a66cea7a7dbd99d7d9d9642a050e8613b"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\AdjacentComponentMatrixTests.java",
+      "sha256": "123f57a25f1fe796e2703caa55a2c7e36c8dbb2ea1207f2d467897a394555ee1"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\AdjacentFixtureDiagnosticTests.java",
+      "sha256": "56c866fd675ab513884856241ffba062de2588fffacf931525b5166d95e5fa9c"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\CatalogGameTests.java",
+      "sha256": "c0f47f4a42e1bb8addf851338110c1c9f5e9b3d7f6e09a1b37cb166825d96fb7"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\ColdCaptureAllocationTests.java",
+      "sha256": "a6d65f224b771fbd393d6874c1a4116318ad1e315348048fa4c08bc9e8399127"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\ComponentFixtures.java",
+      "sha256": "97d67464bc48c3308d9994601c0bd9d430ea7f15391586514d63a48b6a0403e8"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\ComponentGameTests.java",
+      "sha256": "8f4b0af91aa5d0038725e179dc0229de7de5e2093fc592582a5fd293272a89dc"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\ComponentSurvivalMatrixTests.java",
+      "sha256": "feef656a0de915be5a4782b9f23f438ed1b17122a1d319e51dd16d62a8993b33"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\CurvedGateRegressionTests.java",
+      "sha256": "1127effae719bbdefda40b4c2810ff6c57db0c7c8f36ecb9ca687bd6e963ae94"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\CurvedSiteMatrixTests.java",
+      "sha256": "6ccb5d61e8791a6d9dac9a272c4170bfd93332adf3f4f10d0dd72308f4d8acff"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\CurvedWallMatrixTests.java",
+      "sha256": "ddaf71ecb409396e789a45a955b9b93a1ac89d2a5ddab1de3061ebd1ae2cbece"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\HydroBoundaryRegressionTests.java",
+      "sha256": "c3218d039326bac0c31e27155e91405048c08555b4cb2065136f1d36c748db2f"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\NoiseBridgeGameTests.java",
+      "sha256": "032a3c3fe106620112bf695c16ecbc5c8fe28007cba502b5725d7ef844f50cb4"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\OracleGameTests.java",
+      "sha256": "cc8e9f4b4c0879e3da2f118f7e81433939f62edffbffd1115d6d773fb960c40a"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\PipelineReservationHandoffAuditTests.java",
+      "sha256": "178a4ddcf4006953bc513121896c020ec213113ef3eba0737a4068c03d74b84c"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\ProductionBarrierTests.java",
+      "sha256": "d30c59edcc728200bf092f60835030d9dd3ee55fcd155fe937f82771236ad2b9"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\ProductionInputGameTests.java",
+      "sha256": "1b2bb8d4226a2b6d40b07a7cfa381cde7da124bd39929a99e1b44b461e8ede45"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\ProductionPipelineTests.java",
+      "sha256": "a44aea92722295ba1518fb8d2fea86e7adce07c99246f9c170174af62966a144"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\ProtectionGameTests.java",
+      "sha256": "8c84abd06babf4909e220ee832f77ab1d2b4b7ca7fe02471da67f3ed85ad69ab"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\RampGroundPortalTests.java",
+      "sha256": "af9d498591fde05b3ab9ffbfb29be825d30f68b924dca7a5723c8614b7f3c29e"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\SkeletonGameTests.java",
+      "sha256": "99d7299e276ab8489d6a7c5e0b3f97435568ac3145dab61f78c8abadf54881f4"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\SnapshotAllocationBoundaryAuditTests.java",
+      "sha256": "13fc25effda2a9c277e724274b1fdecf6a1b491abfedf41cffc15bb7c121487c"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\TreeBoundsGameTests.java",
+      "sha256": "07f1fe1272a9308be5154fc74ac09e29a2985cfb1c31e46d6a2abaa6b0a54eba"
+    },
+    {
+      "path": "src\\gametest\\java\\local\\plaincraft\\greatwall\\gametest\\WriterGameTests.java",
+      "sha256": "df49a0f5b2ea6d51c28b7e543ae4d1f69680a9365fc66adb2cc4ac3faf408792"
+    },
+    {
+      "path": "src\\gametest\\resources\\fabric.mod.json",
+      "sha256": "2ff3a23a2100e92d4e6608c654fcc8a482933678d2f00c9e8e19c042970bb760"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\BuildContract.java",
+      "sha256": "56427e0f571661d4f28f0a0df8df14deec9a3dcc6f22413dc29712f84d6c21c8"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\compat\\c2me\\C2meProbeAdapter.java",
+      "sha256": "0b122bfe42789204ef76aa09e74c22092706a39d965860d687696775613b231b"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\compat\\c2me\\C2meTerrainEngine.java",
+      "sha256": "bfc7244698ccdf7b0716ee0dcc52b4c9f9995393bba40f4a89f7335611c1616e"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\compat\\c2me\\ProbeMixinPlugin.java",
+      "sha256": "9e724dac9d4faab4b8d09b8787e310e95e2b9f9c05e1f2b68691851ab7abe3fe"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\compat\\road\\PinnedWallSnapshot.java",
+      "sha256": "c2d8a6e93c9424e848a8b7cc1ba747b0caaa1cf1cf67ef7d103176b18d0a3f7b"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\compat\\road\\RoadTypes.java",
+      "sha256": "1afcf91c0913da0091ef18bf32f7285ce15f14e1e72be672b9a716d04a64a364"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\compat\\road\\RoadWeaverAdapter.java",
+      "sha256": "3119ca81128c373e533c172728c4b5ee978b500d305be6972fe58f06348cfddb"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\compat\\road\\WallArchBackfill.java",
+      "sha256": "6cecd1f2bef9e0195b33dcb82cdf3c1f0be836a23bf17bb97466c01d21da788f"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\compat\\road\\WallObstacleProvider.java",
+      "sha256": "e20018bc9ee634ad0ed8db593a31ab467c4b6fcb178ddba67f09261cfa6ab981"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\BeaconTower.java",
+      "sha256": "1fa91c4246e8d355d6ce957bfc166c79e234cf3652ba07629b8b776e970e7f12"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\ComponentAssembly.java",
+      "sha256": "797ad52b021c0233db9aef55c2f4fa33f982d00c5204eab5232d2c906eb7e06e"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\ComponentComposer.java",
+      "sha256": "f6b9f2f9d44708efc2c745a9cd0191c60d9a92796c49d1f0ec2180c788bd1a14"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\ComponentTemplate.java",
+      "sha256": "cf1899ec3ecea2de229715122a13dec3692d3f117cb5404476786b69893a8cc9"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\EndCap.java",
+      "sha256": "d827a616efb63ab613b70b632a286f8cb5463b5e7d437070c2889452bc9ea6e4"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\EnemyTower.java",
+      "sha256": "c61af833fa7074e3db1e78bcfded5cb62b9f5bcb536503153db5f2be887c5720"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\Fort.java",
+      "sha256": "ec8ebed618670a8ff004fd8d5c7f2d0dd1ac36bc5e6fcbc372b4e3222e8704c3"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\FortPlaceholder.java",
+      "sha256": "9c75b47813cdee7460f966f130fb2273fe7dfeffa768ae02914d7db19e8279ab"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\Gate.java",
+      "sha256": "3e7a0e358e4d9a6e0594cb8710f614fa7a7ac9f78c7168e584d2b724dc814c69"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\Ramp.java",
+      "sha256": "fea624f3277d1b1d663ec0abe4c63c9a162be9f09223036254e6395c2093baf8"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\S1TemplateSet.java",
+      "sha256": "98ca3c678bc91cf3e5526f5b61cf8bde9befff0b27d368a5bf2545943631ab95"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\WallSection.java",
+      "sha256": "63ba5587aa3c25791c0da478aefc1b6cf9316db57bd9da15a6f4581857f559ab"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\component\\WaterGate.java",
+      "sha256": "d6275f394fe204b8226bba6c7493e08956fa0b526fa0538e3527606fa1391ee9"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\decay\\BiomePaletteIndex.java",
+      "sha256": "8de350f2300f582f21458be258cccf4b3d5d62a06ce831cc9fd2c43e6cdb6bfe"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\decay\\DecayField.java",
+      "sha256": "c287add560dc36a2d30b2b16fc4dcb0b3705c6bf5e65cf80c79c18603bdb5a25"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\decay\\PaletteBinding.java",
+      "sha256": "f475e1bc082d4194c9a12ee5f1f696eafe44f0f73fbadd2746ce22ae7757fc5f"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\decay\\PaletteBlend.java",
+      "sha256": "d232ed0e447b44f7a5c5ee558a52ccaeb3085bbb2ef23db3a0ca9543b4466ae1"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\decay\\PaletteTypes.java",
+      "sha256": "251e9bd1155c5f8b0a4e581088fbe50d707bb3e22774a42cdb6fcb171e3153a2"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\decay\\SupportGraph.java",
+      "sha256": "39afb4da87802363b00b5adcf487f37605778d028b35562e9e8db91d50088c79"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\AllocationBudget.java",
+      "sha256": "35597c7ac481bb8746498011e1a6b50551296b44978cf0bfaf1a49bd8c6b6e53"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\BoundedByteArrayOutputStream.java",
+      "sha256": "89355abd0b6cf3ccf58ad0b45b54bf468456380ea39d3327d85620b1433eb13b"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\BudgetCache.java",
+      "sha256": "f95f5a844cdf6504f51e25895ae335fe5886be40b069db6aee28d284c712ede1"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\BudgetReservation.java",
+      "sha256": "350097cf517820fd3d6345d1d2431c630e484ca7b3e8b22a3e8f442139baa10e"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\CodecIO.java",
+      "sha256": "c4efea0ec19e7ae6ec1e61c047490735200f7e1cda9a657c072b79ca9e67c8c3"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\CodecMemory.java",
+      "sha256": "283771bbf97acf11bf586b52a6917e2cbaed12ad6f501e1471dd2b448bf6deca"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\CompiledAllocation.java",
+      "sha256": "94c60640d7fa80992e6733a61dde343980431c77bdc8e603b6b2fe97aa87e842"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\FaultInjector.java",
+      "sha256": "1ebe6b0b3eb9d4fcdceda048c642804c2b817b430618df991c061fd33d52f2f4"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\RuntimeVersions.java",
+      "sha256": "3610edbba859029beb56a98332ee4bdbda964f7f736bb1a0d042217693f80861"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\StageTrace.java",
+      "sha256": "a985307970969bd937016b34bf1653351bc0bd0042f394c4031cd9884842f6d0"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\gameplay\\BeaconLedger.java",
+      "sha256": "6c5ae7b67dc0115fdc5e79153b22fe13716e1d6ede7350439f7b9c80da8e29f3"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\gameplay\\GameplayTypes.java",
+      "sha256": "389fc769d033d1dd9149882cc16a1a72d855b8e587e0b993d3c14293536febb4"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\gameplay\\GarrisonController.java",
+      "sha256": "9609a6837ccc3c5c73dec77899d9095aada67b04a3191902b5441c8bd3a555de"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\gameplay\\SiteRuntimeIndex.java",
+      "sha256": "f9645217fea6d6ecbcfa756bf2b769bddedd17006252294abde5839444b0d410"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\BarrierFixtureLayout.java",
+      "sha256": "41b645779ff1ee11339050fb65e79d2065c0548dcbf2f89d80ca6eebeb8c4d9a"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\ChunkPlanCompiler.java",
+      "sha256": "52d3e23654e25c17421659f3ac432c66db24bd2bb13aa32f5e0b65dea2abee07"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\ChunkWallWriter.java",
+      "sha256": "cd739c2554b2865c5e1f7e1cb818cdfe9a79e60e264df20796014557fc478da0"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\CoveragePlanner.java",
+      "sha256": "b1041b7b8bcc8fa717f891c36e524adbeaa5631c58a5f0ffbce7ec1177026fe3"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\FeaturesLease.java",
+      "sha256": "dbda55fd88e267ebb4ab8c50fba32ed2042adcc64d10680ff680165b34367012"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\NativeRootStructureScreen.java",
+      "sha256": "0696ff0095d4f2b5cf744b795496d73cbb793eaf5dfa90a681c4fbffd5fbbd37"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\OwnershipGuard.java",
+      "sha256": "fc1aaf6fa9bdf74ddf6283ad9eb2ce004a92d7da7e4a7faf03a5470f115db7e5"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\ProductionWallPipeline.java",
+      "sha256": "2f3c71124a6793e7ef40e3975a1d6514a7726e14ac167e2865076e2fb7ec7b64"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\ProtectionSnapshot.java",
+      "sha256": "5cf24a55f26e8a5df1c0d7a0115f656b9f00ede48d499ebc6cd3b532ab82a47a"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\StructureLease.java",
+      "sha256": "7c4e02aca46553d434808b52568bd8224323b66300bdb4c02f126dd71c94524b"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\SurfaceProbe.java",
+      "sha256": "6fb8088bcf54f29f2711b872b1a21b3d5cfc3bc47771035195617f30addcf6d3"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\TerrainEngine.java",
+      "sha256": "6e0f11c81c07a7d231226dc2dc3b76776abf71dd47c0b4f4b0adc2fde4003f61"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\TerrainMarkers.java",
+      "sha256": "dc4f3bad91d483295b34b1d1770919f0e29ac935ea207e914c37cf2a14f404e9"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\TreeBoundsCatalog.java",
+      "sha256": "895639c8efcbeb1ae600bb1ab6e17a42f35f32826a35390880143c416cd17ccf"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\VanillaTerrainEngine.java",
+      "sha256": "c71a462c5713d7c0f114c80eee28b31eef34a0acc5d6d4875d3761bba60096c0"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\VegetationGuard.java",
+      "sha256": "2ad34c4834d7068f0e6f04942e372c9a8fd5ac6f57d04298acac6f09bf69e581"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\generation\\WallStageCoordinator.java",
+      "sha256": "36584a870ff10ea9029be974fe4c36a511791d434b54a1abae4b67be3173afb6"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\ArcLength.java",
+      "sha256": "edac038bb612cfefb7310cd4d3878dbbbb488646fb5bb91ecf515a6e55933fd7"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\CanonicalCodec.java",
+      "sha256": "afb8bebfc0e79cfc8bb28432c993b317eee8674a405dbd1789b3194d2eb9e13a"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\DeterministicHash.java",
+      "sha256": "0e58a6dfd60f39a0cc057e559877459486d27fcf9e9102b5a60bed093f76eaf7"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\FixedMath.java",
+      "sha256": "d188ba557a578c1c5681df19cbf3e6ceca5cadef44dd607aaa8886ea083ff788"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\Projection.java",
+      "sha256": "32f0766cbe2f8118531ca1448d9ee54e0519ae3c1cb172dcc6438c6d83ada93f"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\geometry\\Rasterizer.java",
+      "sha256": "1a5c6a1018ebc46de840245ba598f1bbebb4bcdd46e37828a202b85085a5b2f1"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\GreatWallMod.java",
+      "sha256": "c67005ce2d8da5c0b6ab4be5cb4af23b99aaccc8d2eee1f736f4aba3dfd3810b"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\lifecycle\\BootstrapState.java",
+      "sha256": "d43e8cf699740f5916af0ca79ea7d96a7638f6ff3d891d26112daa7a5eb150bc"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\lifecycle\\GenerationResourceFingerprint.java",
+      "sha256": "b0c8e599bf765a744a99d285bd9126c66c428b788583aa899219942104ccd872"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\lifecycle\\ProductionInputs.java",
+      "sha256": "fcec286ddca88e3c6e67ad6fbaacd4e5f6e87d069f48887a7b78d777b39c3188"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\lifecycle\\ProductionSession.java",
+      "sha256": "7a30153a433a3e7d3df654aae1c4482f2cd82f29093fbe06a22acf4133ffce7a"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\lifecycle\\RootSearch.java",
+      "sha256": "fc665b350a628ef814d246151c8a21861e3baf2247ea63ca65d1822ca7db593c"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\lifecycle\\RootStructureScreen.java",
+      "sha256": "00fa90ac568442cf50777f6f54b82c828ca399b50ebcdb9b812d4940b5730153"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\lifecycle\\SpawnDomain.java",
+      "sha256": "9683b82fc41624eb8d2d4b70e283a8cb94c9245dd5cf0a456ba6a9b4b1dd7d4f"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\lifecycle\\WorldBootstrap.java",
+      "sha256": "8684efa9060fd68a0ca70d905b663d043404271dbb58a027d05af3df3f798eba"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\lifecycle\\WorldRecipeGuard.java",
+      "sha256": "94b6faa4bf3108289fdbf149b8a08e10d5e45d4d7482373e083a1a863272bf6c"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\lifecycle\\WorldServices.java",
+      "sha256": "2eb36f6d6cbfee22a20fd14e37e587a94c4386ff1c792408df7d76dd9dc9b5ad"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\BootstrapSpawnMixin.java",
+      "sha256": "245aa0d6953432aa9ccea92e80d995f472954a28aabfe63ab3f26dbbda2af550"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\C2meFeatureSkipMixin.java",
+      "sha256": "48b6d9ac2018ddacfd12b5227ebb019d5dae06cabad83f5515ca74160346c14a"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\C2meGateMixin.java",
+      "sha256": "6693527dd07d631104c9b7bd2160f68b3597f21992775b0f43f27a771b61b592"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\ChunkMapAccess.java",
+      "sha256": "85d8294b464638081c4ea546801d35d149ed6239de64b21697eaf1e2ebb878d2"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\MinecraftServerProbeMixin.java",
+      "sha256": "e88e2a13d6cebbaf7abd2694fdf78084a4e8dc730affbac1e0136e0ba07c36c7"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\NoiseGeneratorAccess.java",
+      "sha256": "b40d9460b1679f2909c1b94f88cf2c6ccc8735c306e8773db099f7bad33924cf"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\NoiseInterpolatorAccess.java",
+      "sha256": "8d6b23d1c2231970e0b4de2d5ae8e30beb45b590baa58e9ceba77817b7fe3877"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\NoiseSliceMixin.java",
+      "sha256": "5b16319f69d7b8c956fe79f2586ddc44cc4dd8788e7afb8e3084d49d439eef42"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\SpawnProbeMixin.java",
+      "sha256": "40c7de77747179fcde7251be3c6e2fb94ddef594000789c55357f6c686b20a33"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\TerrainChunkAccess.java",
+      "sha256": "821bf736140009bcf52c04945fb88db7acf63427f8f11f5c89523548c18e6ba6"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\TreeFeatureMixin.java",
+      "sha256": "26478f280f41ab79c759d0c8b3ec38846ec3bbd84dea29e125c65aa80c7121d4"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\mixin\\VanillaGateMixin.java",
+      "sha256": "4150c335a12233bf366263c1b162759687ab25ace1af55e813100cd6487e784f"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\model\\PlanLease.java",
+      "sha256": "d435ab3cec31bd2d727c32c9d3360b800cc9d039890a674a050486566fff6e25"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\model\\WallFailure.java",
+      "sha256": "ddbf4c0137139acd085ba162ae883ab01d6a32c2f8f4adc9e17d3ea925bea509"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\model\\WallTypes.java",
+      "sha256": "a368fe613b9a785b307129f6a732ef49ffa0663e287687b163d51409ffeb30fc"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\AtomicFiles.java",
+      "sha256": "675bde293e03740f38bbfe811e9de8cf633b3254dc6cdd9b70c07ef19daf6b64"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\ChunkEvidenceStore.java",
+      "sha256": "00a53be8182487bc8437d7d5635a4fcf58d2e01f97bc878eda404141790e5b14"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\DurableLog.java",
+      "sha256": "c08aaec29412df625640ee62ed53b7af8a3933e673deb42ca2fc9d1d9fb56e7e"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\EvidenceCodec.java",
+      "sha256": "c36eaaf23a115ec7ce53aaeff50e98e4ab4a794d6f3f3b606ccebb2a0fcf05cf"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\GateLedger.java",
+      "sha256": "419d4a893f3daafdbf51ca075a1a56c0f7dcd2810ab41831a83e734b977f7c9b"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\GroundExitCodec.java",
+      "sha256": "6437e99c67fc6d9013e6015985d7a2054efe0cd3323e1a142c907487689b4671"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\HistoryJournal.java",
+      "sha256": "95dc5fc34f6c30186a93e64436b9064d8d59cbee4e2e001d4eb0515f75054f92"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\HistoryTypes.java",
+      "sha256": "54f4534a761c9f487b3daf899682c0a3e4671e3fe9dadcc1baf84036e888ac40"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\RecoveryCoordinator.java",
+      "sha256": "973c393865f4f1539fbecfbe1beeeffa714c598f87aec2d9bb26cfe8924f988a"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\SegmentCacheStore.java",
+      "sha256": "9d865517397d7fc5de5172978a8ea44b3909e2001713188fa5e3bca29ea6e73c"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\persistence\\WorldManifest.java",
+      "sha256": "bbe285c84814d5963901b1b9c83808a3dbc13e5990bf19ba3dbf0cd721cbdd0b"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\planning\\AnchorField.java",
+      "sha256": "761042f6d8a3f4c2324102430397e922429039c8e5f119fa6be54ec9c67503ba"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\planning\\ArcPlanProvider.java",
+      "sha256": "8c16b1465f52677fb20dea22d23e19a528002b2cbd248d652e2bd65353fc7249"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\planning\\HeightContractPlanner.java",
+      "sha256": "d228b7c7a45a8202bb669567dc5391d9d35fc5ee26c1e5fbcbed53ca621faff7"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\planning\\PlannerScheduler.java",
+      "sha256": "9ce01090ba13c4d585a509b19daf1eb260c80890fe9e6e18010a77146b631768"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\planning\\PrefixSummaryIndex.java",
+      "sha256": "d090566344078193d3b286d64b1dcf5f9998a134d2559b96dd36d4d2d2e142e9"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\planning\\ProbePlanner.java",
+      "sha256": "8dc2f2d06c1ada0d2e90bae62f6e23faa1eb2e5246311e4d2c6b3e7721544c12"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\planning\\RidgePlanner.java",
+      "sha256": "ad9e6326cf07b5107db92ce215f1c8e12b9274ed1c412a92615618f07b43ee16"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\planning\\SiteScheduler.java",
+      "sha256": "ef57d397e97410450ed0c8326c6767aaef52eed9f5a50bacc831d48cf88d8d7f"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\BlockCatalog.java",
+      "sha256": "5c90bf159180e45de3fae3a848c32ba577af4684d2460e905b7628cfb1ce0c04"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\CpuTerrainOracle.java",
+      "sha256": "0ef01295287ed59f1af1a50be6a601e883156eb93b4faa4366acf4f3018a568a"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\GroundExitDecision.java",
+      "sha256": "f19d5d7e9f03658f46c078be3c0fef264e99bb8231764b34130d5653ad2ac081"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\GroundExitResolver.java",
+      "sha256": "bd077f4653e7d1c7c50b17d8f5e36ff3c8bbd9db75052ac4d59215b6d14f9c5d"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\HydrologyClassifier.java",
+      "sha256": "5227971ad4f2414c443cacbbf02a5e4dddd9368b8b789039c7815f0d665b3702"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\NaturalTerrainOracle.java",
+      "sha256": "a8310b2c72fdac4bc150c1e8c5d68f176f93e118de774c3cdb55728c855648a2"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\NoiseCursorBridge.java",
+      "sha256": "57c88398fec13143b412bf794ed76739ea42e23aad2a72c23398a3fbeed29be2"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\OracleLane.java",
+      "sha256": "ce3363e74b4aa582e8e553ef6ef6a52586160cff28084dd7157be555324fa0fa"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\RealizationPlanner.java",
+      "sha256": "9202a284cef421eeae4a49d8a8d177f242494c86437a5d98d63badf41720fbd8"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\SnapshotColumnView.java",
+      "sha256": "23a99a45f7849b3558be5c717357a5d6953b9469e79b3d4d0c1b5debd999b291"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\TerrainSnapshotService.java",
+      "sha256": "59a0ba568286a1ccc16cd97f6e8f41943812eb720363825ee9806da756a08b31"
+    },
+    {
+      "path": "src\\main\\java\\local\\plaincraft\\greatwall\\terrain\\TerrainTile.java",
+      "sha256": "28a9fa2b75b6a6631505c9675b7341ad36a02468db178208c574240a2bd20712"
+    },
+    {
+      "path": "src\\main\\resources\\data\\plaincraft_great_wall\\tags\\block\\foundation_support.json",
+      "sha256": "2bff6458b04c13af7fc71e678701c10734fdfea4a04fd1e3fb93ef6b4cdad844"
+    },
+    {
+      "path": "src\\main\\resources\\data\\plaincraft_great_wall\\tags\\block\\natural_replaceable.json",
+      "sha256": "d6c4781b6950384a070aafa26cedfdf0982a06832b1582ff9b4a129ec161a60d"
+    },
+    {
+      "path": "src\\main\\resources\\data\\plaincraft_great_wall\\tags\\block\\protected.json",
+      "sha256": "f5d9e57a60764c32feb09ce55517c0d3f0fa756b6131591eeec966d2bfb9cdca"
+    },
+    {
+      "path": "src\\main\\resources\\data\\plaincraft_great_wall\\tags\\block\\replaceable_vegetation.json",
+      "sha256": "a0d8d244cdc8b7ecb4ef8d7baabbeb5f8299d1ccb0e0fd9e19b3e7af30a5e395"
+    },
+    {
+      "path": "src\\main\\resources\\fabric.mod.json",
+      "sha256": "f9e13578fb9cf30f508ac94aadb77a08c8f3ef9e4c30a140f0a3a0c03cfb7bde"
+    },
+    {
+      "path": "src\\main\\resources\\pack.mcmeta",
+      "sha256": "81f6a2f050fdbce207f912623414377559744a06a8da7adf599321ff6505cb95"
+    },
+    {
+      "path": "src\\main\\resources\\plaincraft_great_wall.accesswidener",
+      "sha256": "6d663516b1222370603f3409efee24554c03e6ad7813a38577b16ac7b27c3049"
+    },
+    {
+      "path": "src\\main\\resources\\plaincraft_great_wall.mixins.json",
+      "sha256": "274d3f554fb022d6c1f2396616700d867f1ed2b980f3e64b5351b80c0d86de64"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\mixin\\ChunkFutureAccess.java",
+      "sha256": "ce9b2d754f77b0bb37da1f3d8aea8216108b717b9455274de398ab7b618b867a"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\mixin\\SeedSurveyInitialSpawnMixin.java",
+      "sha256": "edb63d51a15b44e5fefc52965f63bb061bddd1410acdd35ece76ce7c6f5e2a7a"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\mixin\\SeedSurveySpawnProbeMixin.java",
+      "sha256": "feb89f8c7ce0a4148e6ad9abf0f3962afb3849220e4fe41effcdd5c76fc0c150"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\NativeSchedulerFixture.java",
+      "sha256": "656057ffa67ea012e8c082cf0e0972f8fb36516384afa8d9a63241bb02a53380"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\NeighborStripeFeature.java",
+      "sha256": "f4d2222a0168b6908efac638a4ea3385bc5479980bbef4a5f072e4b84d88e344"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\OracleProfileFixture.java",
+      "sha256": "04b3b5767cddbebe9016f4c625e5052dcac281420f431c453be936f7ac315da6"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\RealTerrainFixture.java",
+      "sha256": "1584cb267535e9bfbd776b7b16dc63529280d14fbfba0fa72974944a880f3898"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\RootBatchLedger.java",
+      "sha256": "2994bf4cd6f0f9145425565ecdea953207a22da6e35eb858bc917a7bd2bd32fd"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\RootHydrologyFixture.java",
+      "sha256": "d8d5c5aca4a099b42e05b4175e683de982ac57c35330627632552d923d181742"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\RootTimingAnalyzer.java",
+      "sha256": "0f8c1a6aef64cf5d4eb958b9954eabe9db4ba6d92587798c83f98e2058917da4"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\RuntimeEntryFixture.java",
+      "sha256": "ab22a1827d1b81099921d0d2c0fe0a01ceee385e27db1b2675b40875098928f9"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\SeedSurveyLocations.java",
+      "sha256": "12c31fae5e25a48665e6cb35d08988393a530a165c6c39b225b446fe54191a62"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\ServerSmoke.java",
+      "sha256": "70a4a9cc62dad673d19decb88c27030313984b8b4c901c851d6eae5270f97519"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\TerrainBarrierFixture.java",
+      "sha256": "c9aca53a4095ee69fec9232062359d36eb8afe6e782c913710d1fd60e45e182b"
+    },
+    {
+      "path": "src\\serverSmoke\\java\\local\\plaincraft\\greatwall\\smoke\\WorkerCountAgent.java",
+      "sha256": "7a7487e5d39cb8efe9d824bd0c88a78fdbf0ac4b78fa70ca67b6075feb63e86b"
+    },
+    {
+      "path": "src\\serverSmoke\\resources\\data\\greatwall_server_smoke\\worldgen\\configured_feature\\neighbor_stripe.json",
+      "sha256": "8995250ec01425911d975b21966b19ab00e79c7b437f12cfde640d36764f4280"
+    },
+    {
+      "path": "src\\serverSmoke\\resources\\data\\greatwall_server_smoke\\worldgen\\placed_feature\\neighbor_stripe.json",
+      "sha256": "dae14ca021f84abd88d51bf6a811bc5048ab185ab68f6b682ee93942b15090f7"
+    },
+    {
+      "path": "src\\serverSmoke\\resources\\fabric.mod.json",
+      "sha256": "09604b31003200ac117d084f5fa63e8d4ff496427d67f76d6c3c65a7c7499ce0"
+    },
+    {
+      "path": "src\\serverSmoke\\resources\\greatwall-server-smoke.mixins.json",
+      "sha256": "0efcd9cabbe413798e54057663a55d03584fbc6c0e9a1adda21f4440c11ac079"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\BuildContractTest.java",
+      "sha256": "f0aa562734c142412bd13f6d30bc001a3d61518d33f678a54a5d4f5eaf131ff0"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\CompiledAllocationTest.java",
+      "sha256": "067ace1311de7bad2f97c9ebc2401c6ba1987aac30e4fc85aa5fc736549438f9"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\ComponentAssemblyTest.java",
+      "sha256": "2959d94bff6fc128b9fb672bd7fcb2f83ff880852b72c433cb10ba79d0ba57a5"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\CurvedGateBoundaryTest.java",
+      "sha256": "457c8e179b627292ea181751b65d2f42cf9a3c0e60673285934a8deb650f5cd1"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\GateCapTest.java",
+      "sha256": "69760ba8859b1faf937c49e0ee801a05558e28c002314675cb5edc967644a35a"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\GroundEntranceTest.java",
+      "sha256": "2e5a104002ad24b4480aeb8f8ba133863d9953ecc909a3c838ff9896c264859d"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\GroundExitCapVariantsTest.java",
+      "sha256": "eb9e1e8dedd8d8ea9946961071c3f57c9bb287586c8de4a39aac206d337cb074"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\RampSpecificationTest.java",
+      "sha256": "94bbbce3c8dfab4fc65939df0fc0023e2ff1be2d5882e7a4a6b9ffd3da4b8b0f"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\ReservationHeapPressureTest.java",
+      "sha256": "c510f4d4fd6d6a21f189d5a8295a802026350c0229db370806bdcaf3d4bc110d"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\S1TemplateSetTest.java",
+      "sha256": "d98074f28db0abf0d8010ebd80d4f905924ea56ef2033146811bb08c6bf3c257"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\TemplateFixtures.java",
+      "sha256": "771df8697852c7763db1b7eb5a7799ab8fc64ccf36f64c361f12af219728bb6c"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\TemplateTest.java",
+      "sha256": "ee1d101990c01bdc1abadbae5fdf5e6f4be9a6b8fa55a666c200e693ecba2ec3"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\WallContractEquivalenceTest.java",
+      "sha256": "7871d856d35578ca9c040b7de9d5dff0ad1f31233c3de96cde12ccad6a3c5801"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\WallDecayTest.java",
+      "sha256": "056d1be90304103319e475d891ad0411f38a8d944fa8683a1f412bc572cb2536"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\WallRampTest.java",
+      "sha256": "62874e026a5701c73fe4e2da15bcad2a4a715ca6193c79574bc419de9fb35f4a"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\component\\WaterFortTest.java",
+      "sha256": "d5838b020273aadf7ab3bf27551c34142a8a5fc241fe8c27e8002931a12d8e95"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\decay\\DecayFieldTest.java",
+      "sha256": "30ef446877d59c14948450191206103a8504e6281c9d7f15b50b62951626f7d0"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\decay\\SupportGraphTest.java",
+      "sha256": "9e715a53c11255494a8ed84afc72eb6d4d229c754207c79a68f6d6e283722029"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\diagnostics\\AllocationBudgetTest.java",
+      "sha256": "35cb388384bd42c5fd750d44c7e75b9c21a8a3a3006a52c1ca101b5b33209432"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\diagnostics\\BoundedByteArrayOutputStreamTest.java",
+      "sha256": "f713d918746a83831d5ba986340631bd99df8fcaebedd4d2d5061d1fd519949f"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\diagnostics\\BudgetCacheTest.java",
+      "sha256": "63c13782b64e16e39cbb642c999f500f280ac70cb92d1ef177e97af3f027f410"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\diagnostics\\BudgetReservationLifecycleAuditTest.java",
+      "sha256": "bc8fefdb9171eb531c7b17966bab048902e9c990219ed49aacf85f319029dd8f"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\diagnostics\\BudgetReservationTest.java",
+      "sha256": "e6e695fb5ac99ff0dbe58d6c045d52939678ba0398058b64ea890afaa20ae32e"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\diagnostics\\BufferedCodecTest.java",
+      "sha256": "50403c286329423ed53c7e22cfee8c4e3323f78de3e978ce0e125515d8a550e4"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\diagnostics\\CodecScratchBoundaryTest.java",
+      "sha256": "3f6900f3aaf283dcdcbe8e2df46babde3b31c7dcc82d553110ca761d91866627"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\diagnostics\\CompiledAllocationScopeAuditTest.java",
+      "sha256": "eb69734078448c5ea515ef859e2689044a6d417121200b4f1664f886bad59698"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\generation\\ChunkPlanCompilerTest.java",
+      "sha256": "9a023444b8d5d26aed53e646c2da781b05102db10d1544b1e6dcdb8944d9cb92"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\generation\\CoveragePlannerTest.java",
+      "sha256": "7c9ba3d7fb3f71cb3201166820c7c2a4641d505c25ef20f261b02a8ec1e7dea7"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\generation\\OwnershipGuardTest.java",
+      "sha256": "12a0510242931223d153d567f2295c995e9bf1e84fe438663e511838e1b90951"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\generation\\ProtectionSnapshotTest.java",
+      "sha256": "720974bd577e776aded5444880b99c10118816028ba0c86c7f5dcfa8b4b43cae"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\generation\\SurfaceProbeTest.java",
+      "sha256": "123351a167fe2101fd4ffaf9d17d1cfaf2e6d3833c8d5585eea4996278fd0edf"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\generation\\VegetationGuardTest.java",
+      "sha256": "0e854a0d758a567aaafb5642bdd06ce85177bf04dfa4d2826bf2139f4b7f3589"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\geometry\\ArcLengthTest.java",
+      "sha256": "f683b32a315154776b437c89418d387e244e77e61c31b9d9826f0f19dd244edb"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\geometry\\CanonicalCodecTest.java",
+      "sha256": "0b17ec100cdb457eee253838bc9bda7e1ae7bd546a40d68f6bb8e874862ca335"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\geometry\\FixedMathTest.java",
+      "sha256": "832900b75a86696076fd928d7722ba05c4d37cbf5762ddc72f22ad8b4f252892"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\geometry\\MulDivFastPathTest.java",
+      "sha256": "f3f8c06b360a4d95ead3b367b13fa4833e5298c6eefcefa01a7f367fad7d37a1"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\geometry\\RasterizerTest.java",
+      "sha256": "cf9cb2f0660bc3ce73fdad58218a6a161fa3d36729cc829ee799fdc648e55426"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\lifecycle\\RootSearchTest.java",
+      "sha256": "d47306392c15d567b44cb7fe8ee2674e581c4a27582d80ffb3e486f911abcd84"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\lifecycle\\WorldBootstrapTest.java",
+      "sha256": "2579cf84573972271b1844f7aefa3a222cf758b5c2366219b333f7b8a0d98c17"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\model\\ModelContractTest.java",
+      "sha256": "1d4029061d4d7d50cc72a0dafde265480a0ed8575d19e032316b75794252bcf1"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\persistence\\EvidenceAllocationBoundaryAuditTest.java",
+      "sha256": "472758a5c5ce9b4adb38efc9e7f309569ef79bded51be659d0a3a4e23168a476"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\persistence\\ProductionEvidenceTest.java",
+      "sha256": "16b6fe531ae428d2e47c1f7aeaa6406954a05496f88903d803c6343e27c1ab3d"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\persistence\\SegmentCacheTest.java",
+      "sha256": "046ba3661dcbc09ed89ef159d1dcfd38d9576b3888bf1ca1b406429bf60ecdcd"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\persistence\\StreamingEvidenceBudgetTest.java",
+      "sha256": "60b2bdc0f875859a454dbc464dd54c6f7b1391e76f976b667806ed20a8f39bcc"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\persistence\\WorldManifestTest.java",
+      "sha256": "5e5f64f905b658d9d3f0d4fe1157b792f175c594a3a7cf3ffcd0c063411f7126"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\planning\\AnchorProjectionTest.java",
+      "sha256": "592889be879822d711d23de29184408b2943d5f7275f9a6761d0335e3882499b"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\planning\\ArcPlanProviderTest.java",
+      "sha256": "e46a4cd126d2f841438cc274e58b42f9edfabbd29bb592388663c84dc9a12de2"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\planning\\GeometryDeterminismTest.java",
+      "sha256": "e15a22fc5df4261f700ea62f544e23204ee8486b469d1c1dd8f76355967ffffa"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\planning\\PlannerSchedulerTest.java",
+      "sha256": "5cf10fca5eb40fbd924a9849f679a94d1327fb7cda8728aee2d22ce06480619a"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\planning\\PlanningFixtures.java",
+      "sha256": "d125cd3b27102d7ccb395923132c01b548cd1290c607616be95318b9dda5953b"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\planning\\PrefixSummaryIndexTest.java",
+      "sha256": "2092b0ecdd628bd5adb627b8ea40c60c98bdf9efdc385a3bd1d630dd36916a4f"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\planning\\RidgePlannerTest.java",
+      "sha256": "636365a4e75f775109e36e156589c668221126555ea7ec405756f6e14201be46"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\planning\\ScheduleContractTest.java",
+      "sha256": "522d36e79dc51b4bdd17f66e5b5bce9819601f5edf0a88bcb2af2e6dc68c0835"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\ProbePlannerTest.java",
+      "sha256": "49b699ca7279302898f197df49f0485c526202c425f24e1464bf9e7d2a24c52a"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\smoke\\RootBatchLedgerTest.java",
+      "sha256": "1737d648a3619e673a41e8fe7802dca75184ddb857abe25a3d650b5685fd641f"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\smoke\\RootTimingAnalyzerTest.java",
+      "sha256": "1b442cd2d4bbe77422c21f8c3670c6ca11a04fe9155151ed00c883fca310f0b5"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\smoke\\SeedSurveyLocationsTest.java",
+      "sha256": "97282ee397cbd9702aa64fb053aa7f119daaf2a2ab49e5534c5ba6dc18704d2c"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\terrain\\AnalyticTerrainOracle.java",
+      "sha256": "335f4c9aa48ce193f7e574c3f6660987fc553906a2e88f19aac3946bbb002c61"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\terrain\\GroundExitEvidenceTest.java",
+      "sha256": "0882c6a4b8b69cc2d6cff9b95ea09b3ca56405e8700797b2793d482f2e06c91e"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\terrain\\GroundExitFallbackTest.java",
+      "sha256": "be39b1531874a26fafbff201b4de0e7a6610ee8d4379d436d5910f25704b7c7c"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\terrain\\GroundExitReservationTest.java",
+      "sha256": "384db12772af71e194f01d8de02cac1bffcde6ffc4374b831646ead436839aa5"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\terrain\\GroundExitResolverTest.java",
+      "sha256": "e15e782437ce0018ced5f05173129723a82ab2f2ab79bc9fb7fc64069d08ddc3"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\terrain\\HydrologyTest.java",
+      "sha256": "82c7d076e50d871be565f16b25f9ed67e7ccfdc9da528e769c4fba41a16c7e04"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\terrain\\OracleLaneTest.java",
+      "sha256": "d80d5361317fb1caa78e479856b2cf00723380143cb0a3f2d6b9b8be9ea05f12"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\terrain\\RealizationPlannerTest.java",
+      "sha256": "d51bd99d8cf116b373b879f85cca41a4bf8d4ad3807fbebb120c3760a8a7ce30"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\TerrainEvidenceTest.java",
+      "sha256": "db5efb7b09f119c2b47aea39941ce3e74580b3de255fa391121e4894aa05f4f1"
+    },
+    {
+      "path": "src\\test\\java\\local\\plaincraft\\greatwall\\WorldRecipeGuardTest.java",
+      "sha256": "5f1afdcc29ba855df7a5343d18078cad0d0c80feb92f7fe40bcd56032b9b1967"
+    }
+  ],
+  "runId": "fort0-revised-foundation-17-20261002-002523",
+  "seed": 17,
+  "startedUtc": "2026-10-01T16:25:23.7563775Z",
+  "command": "gradlew.bat --offline --dependency-verification=strict runServerSmoke -PsmokeProfile=vanilla -PsmokeRunId=<runId> -Ps1cRealWall=true -Ps1cSeed=17 -Ps1cRepresentativeBlocks=100 -Ps1cProtectionTrace=true --no-daemon --console=plain",
+  "production": "OFF",
+  "scope": "fixed seed17 first actual APPLY; 100 diagnostic threshold not full S1C acceptance"
+}

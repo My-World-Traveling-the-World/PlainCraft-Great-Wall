@@ -1,0 +1,11 @@
+{
+  "sourceCommit": "65bea36ad1a8bb5f2c6e06fecffbaf4f480b848a",
+  "dirty": true,
+  "startedUtc": "2026-10-01T18:10:12.6916827Z",
+  "finishedUtc": "2026-10-01T18:10:22.9761799Z",
+  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.generation.RootFootprintGuardTest compileServerSmokeJava --no-daemon --console=plain",
+  "exitCode": 0,
+  "scope": "one envelope JUnit and latest read-only audit helper compile; not full JUnit or native world acceptance",
+  "production": "OFF",
+  "Tans": "BLOCKED"
+}
