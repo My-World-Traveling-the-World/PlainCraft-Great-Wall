@@ -16,7 +16,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 
 /** Immutable protection evidence. Native reads require the caller's completed FEATURES/owner lease. */
@@ -62,7 +64,23 @@ public record ProtectionSnapshot(List<Bounds> structures,Set<Point3i> blockEntit
         return freeze(boxes,entities,immutable);
     }
 
-    /** Only the supplied finite, already prepared map resolves references. Missing references protect the read window. */
+    /**
+     * Structure bounding boxes to protect, resolved from already-prepared chunks.
+     *
+     * <p>Resolved starts yield their exact boxes, which are Y-precise: an
+     * underground structure whose box sits below the wall's probe window never
+     * collides with it.
+     *
+     * <p>An <b>unresolved</b> reference (its start chunk is outside the finite
+     * FEATURES halo) has no known extent, so the fail-closed answer is to protect
+     * the whole read window. That is correct for a surface structure, but wrong
+     * for an underground one: the read window spans the whole column, so a
+     * mineshaft reference would block surface masonry that it can never touch.
+     * Measured on seed 17 this made the fort0 entrance 188/188 columns protected
+     * with zero terrain faults. The structure's own generation step is the
+     * authoritative classifier here, so an unresolved reference only protects the
+     * read window when its step actually places blocks at the surface.
+     */
     public static List<Bounds> structureBounds(ChunkAccess owner,List<Bounds> predicted,
             Map<ChunkPos,ChunkAccess> prepared,Bounds conservativeReadBounds) {
         requireFeatures(owner);Objects.requireNonNull(predicted);Objects.requireNonNull(prepared);
@@ -73,10 +91,28 @@ public record ProtectionSnapshot(List<Bounds> structures,Set<Point3i> blockEntit
             for(long reference:entry.getValue()) {
                 var chunk=prepared.get(new ChunkPos(reference));
                 var start=chunk==null?null:chunk.getStartForStructure(entry.getKey());
-                if(start==null||!start.isValid())boxes.add(conservativeReadBounds);else append(start,boxes);
+                if(start==null||!start.isValid()){
+                    // Unresolved: only a structure that generates at the surface can
+                    // conflict with the wall, so an underground step is not protected.
+                    if(surfaceStep(entry.getKey()))boxes.add(conservativeReadBounds);
+                }else append(start,boxes);
             }
         }
         return boxes.stream().distinct().sorted(BOX_ORDER).toList();
+    }
+
+    /**
+     * True when the structure's generation step can place blocks at the surface.
+     *
+     * <p>Constants taken from the mapped enum (1.21.1): the surface-bearing steps
+     * are {@code SURFACE_STRUCTURES} and {@code TOP_LAYER_MODIFICATION}.
+     * {@code UNDERGROUND_STRUCTURES} (mineshafts, strongholds) and the deeper
+     * steps cannot reach the wall's surface probe window.
+     */
+    private static boolean surfaceStep(Structure structure) {
+        GenerationStep.Decoration step=structure.step();
+        return step==GenerationStep.Decoration.SURFACE_STRUCTURES
+                ||step==GenerationStep.Decoration.TOP_LAYER_MODIFICATION;
     }
 
     /** Count native piece views before the T0 allocation reservation; do not construct evidence here. */

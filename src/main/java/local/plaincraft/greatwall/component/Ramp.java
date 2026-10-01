@@ -38,41 +38,18 @@ public final class Ramp implements ComponentTemplate {
         if(lower==Integer.MIN_VALUE)return ComponentAssembly.empty(input.site().id(),input.site().bounds());
         return compileBetween(input,lower,input.site().frame().walkY());
     }
-    /**
-     * Ground-entrance height solver.
-     *
-     * <p>Column acceptance is deliberately identical to
-     * {@code ComponentAssembly}'s per-column rule: a column must carry a
-     * natural {@link ProbeKind#SUPPORTED} probe inside the
-     * {@code [walkY-32, walkY)} window. Root search enforces the same rule
-     * across the whole 48x48 footprint, so a start that root selected always
-     * satisfies this; relaxing it here (as an earlier revision did, allowing a
-     * fraction of unsupported columns) merely moved the rejection later, to
-     * "fort0 footprint is not fully supported".
-     *
-     * <p>The only deliberately different rule is flatness. Measured on real
-     * terrain (seed 17, walkY 116) the supported columns spanned 2 blocks
-     * (94..96) across a 48-block corridor, a 1:24 grade. The previous
-     * span-of-1 rule was stricter than the fort's own frozen contract, which
-     * admits a column whose drop is up to 12 blocks, so the corridor tolerates
-     * the same {@link #MAX_ENTRANCE_DROP}.
-     */
-    private static final int MAX_ENTRANCE_DROP = 12;
-
     static int ground(ComponentInput input,int x0,int z0,int x1,int z1) {
         var frame=input.site().frame();
         var bounds=Rasterizer.worldBounds(frame,new Bounds(x0,-33,z0,x1,3,z1));
-        int min=Integer.MAX_VALUE,max=Integer.MIN_VALUE,count=0,total=0;
+        int min=Integer.MAX_VALUE,max=Integer.MIN_VALUE,count=0;
         for(int z=bounds.minZ();z<bounds.maxZExclusive();z++)for(int x=bounds.minX();x<bounds.maxXExclusive();x++){
             var local=Rasterizer.localCell(frame,new Point3i(x,frame.walkY(),z));
             if(local.x()<x0||local.x()>=x1||local.z()<z0||local.z()>=z1)continue;
-            total++;
             var support=input.supports().get(new Point3i(x,frame.walkY(),z));
             if(support==null||support.kind()!=ProbeKind.SUPPORTED)return Integer.MIN_VALUE;
             min=Math.min(min,support.groundTopY());max=Math.max(max,support.groundTopY());count++;
         }
-        if(count==0||max-min>MAX_ENTRANCE_DROP||max<frame.walkY()-32||max>=frame.walkY())return Integer.MIN_VALUE;
-        return max;
+        return count==0||max-min>1||max<frame.walkY()-32||max>=frame.walkY()?Integer.MIN_VALUE:max;
     }
     public ComponentVoxels compileBetween(ComponentInput input, int lowerFeetY, int upperFeetY) {
         int w = input.site().frame().walkY();
