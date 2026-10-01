@@ -47,6 +47,13 @@ public final class PlannerScheduler implements AutoCloseable {
     private final AnchorField anchors;
     private final RidgePlanner ridge;
     private final HydrologyClassifier hydrology = new HydrologyClassifier();
+    /**
+     * Per-segment hydrology operation ceiling. A real-world segment needed
+     * >25M operations before terminating, which exceeded the server watchdog
+     * window. Beyond this ceiling the remaining unresolved water terminates
+     * as WIDE, so a slow island can never stall the whole wall.
+     */
+    private static final long HYDROLOGY_OPERATION_CEILING = 4_000_000L;
     private final HeightContractPlanner heights;
     private final SiteScheduler sites;
     private final BudgetCache<CacheKey, Object> memory;
@@ -715,7 +722,16 @@ public final class PlannerScheduler implements AutoCloseable {
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
             if (cursor == null) cursor = hydrology.begin(routes, oracle, 96000);
-            operations += limit; return hydrology.advance(cursor, limit) == WorkState.DONE;
+            operations += limit;
+            // A segment whose hydrology exceeds this operation ceiling terminates
+            // its remaining unresolved water as WIDE instead of burning unbounded
+            // time certifying an island that terminates either way. Already
+            // certified NARROW/WIDE/SUPPORT_GAP evidence is preserved.
+            if (operations > HYDROLOGY_OPERATION_CEILING && !cursor.done()) {
+                hydrology.forceComplete(cursor);
+                return true;
+            }
+            return hydrology.advance(cursor, limit) == WorkState.DONE;
         }
         @Override SegmentGeometry value() { return geometry(routes.center(), hydrology.finish(cursor), cursor.logicalColumns(), routes.next().isEmpty()); }
     }

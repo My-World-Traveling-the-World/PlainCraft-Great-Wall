@@ -72,6 +72,65 @@ public final class HydrologyClassifier {
         return List.copyOf(cursor.completed);
     }
 
+    /**
+     * Terminates the remaining unresolved water as WIDE (the authorized
+     * terminate-into-sea policy) without running further transects. Used when
+     * a segment's hydrology exceeds its operation budget: an island water
+     * never needs an exact width because it terminates either way, so
+     * continuing to certify it only burns time. Already certified NARROW /
+     * WIDE / SUPPORT_GAP evidence is preserved untouched.
+     */
+    public void forceComplete(Cursor c) {
+        Objects.requireNonNull(c, "cursor");
+        c.claimOwner();
+        if (c.done) return;
+        if (c.phase == 0) {
+            // Coarse scan had not finished; there is nothing certified yet.
+            c.completed.clear();
+            c.done = true;
+            c.cache.clear();
+            return;
+        }
+        if (c.phase == 1) {
+            // The route scan was still running: close the open run, then treat
+            // every discovered run as WIDE without any transect work.
+            if (c.runStart >= 0) {
+                c.runs.add(new Run(c.runStart, c.trace.size(), c.runStart != 0, false));
+                c.runStart = -1;
+            }
+            for (Run run : c.runs) {
+                long from = c.trace.get(run.from).s;
+                long to = run.to < c.trace.size() ? c.trace.get(run.to).s : c.trace.getLast().s;
+                if (to <= 0 || from >= c.routes.center().localSQ8().getLast() || to <= from) continue;
+                c.completed.add(new WaterEvidence(new ArcInterval(from, to), WaterClass.WIDE, 0L,
+                        to - from, c.traceSamples.get(run.from).waterTopY().orElse(0),
+                        List.of(), List.of(), evidenceHash(c.evidence)));
+            }
+            c.done = true;
+            c.cache.clear();
+            return;
+        }
+        // Transect / classify was in progress: keep the current run's partial
+        // evidence as WIDE (width unmeasured, never fabricated) and terminate
+        // every remaining run the same way.
+        c.classification = WaterClass.WIDE;
+        c.width = 0L;
+        c.banks.clear();
+        c.piers.clear();
+        completeEvidence(c);
+        for (int index = c.runIndex; index < c.runs.size(); index++) {
+            Run run = c.runs.get(index);
+            long from = c.trace.get(run.from).s;
+            long to = run.to < c.trace.size() ? c.trace.get(run.to).s : c.trace.getLast().s;
+            if (to <= 0 || from >= c.routes.center().localSQ8().getLast() || to <= from) continue;
+            c.completed.add(new WaterEvidence(new ArcInterval(from, to), WaterClass.WIDE, 0L,
+                    to - from, c.traceSamples.get(run.from).waterTopY().orElse(0),
+                    List.of(), List.of(), evidenceHash(c.evidence)));
+        }
+        c.done = true;
+        c.cache.clear();
+    }
+
     public WaterEvidence resolveSupport(WaterEvidence evidence, ToIntFunction<Point3i> walkY) {
         Objects.requireNonNull(walkY);
         if (evidence.classification() != WaterClass.NARROW) return evidence;
