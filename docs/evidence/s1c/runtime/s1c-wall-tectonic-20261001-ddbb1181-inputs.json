@@ -1,0 +1,31 @@
+{
+  "collectedAt": "2026-10-01T08:20:15.6815606+08:00",
+  "source": "D:\\Minecraft\\Plain Craft Launcher 2\\.minecraft\\versions\\【云游四海】WAYFARING",
+  "destination": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build\\run\\serverSmoke\\tectonic\\s1c-wall-tectonic-20261001-ddbb1181",
+  "profile": "tectonic",
+  "runId": "s1c-wall-tectonic-20261001-ddbb1181",
+  "mods": [
+    {
+      "source": "D:\\minecraft\\Plain Craft Launcher 2\\.minecraft\\versions\\【云游四海】WAYFARING\\mods\\lithostitched-1.8.0+beta6-fabric-21.1.jar",
+      "name": "lithostitched-1.8.0+beta6-fabric-21.1.jar",
+      "id": "lithostitched",
+      "version": "1.8.0+beta6",
+      "environment": "*",
+      "java": null,
+      "sha256": "e32f7b1b36e7ab1955fd4972cc0b992512edbda866798a86096dde0835189274"
+    },
+    {
+      "source": "D:\\minecraft\\Plain Craft Launcher 2\\.minecraft\\versions\\【云游四海】WAYFARING\\mods\\tectonic-3.0.26-fabric-21.1.jar",
+      "name": "tectonic-3.0.26-fabric-21.1.jar",
+      "id": "tectonic",
+      "version": "3.0.26",
+      "environment": "*",
+      "java": null,
+      "sha256": "6653be7cb1574e5973cde0a8cacb9d79d9e55a99bf7378937e0c47979b718b67"
+    }
+  ],
+  "configs": [],
+  "fabricApiProvidedByLoom": "0.116.14+1.21.1",
+  "networkUsed": false,
+  "sourceModified": false
+}

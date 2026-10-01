@@ -1,0 +1,30 @@
+{
+  "sourceCommit": "f04b793ef45d4bc1ef8b00c3233fd1595c78d8f6",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "runId": "s1c-wall-tectonic-20261001-ddbb1181",
+  "profile": "tectonic",
+  "seed": 0,
+  "phase": "generated",
+  "command": "gradlew.bat --offline --dependency-verification=strict runServerSmoke -PsmokeProfile=tectonic -PsmokeRunId=s1c-wall-tectonic-20261001-ddbb1181 -Ps1cRealWall=true -Ps1cSeed=0 --console=plain --no-daemon",
+  "startedUtc": "2026-10-01T00:20:15.7304931Z",
+  "finishedUtc": "2026-10-01T00:30:27.5552457Z",
+  "seconds": 611.8172438,
+  "exitCode": 1,
+  "timedOut": false,
+  "passed": false,
+  "freshCertificate": false,
+  "cleanShutdown": false,
+  "sourceInputsUnchanged": true,
+  "productionWiring": "OFF",
+  "NOT_RUN": [
+    "S0 hundred-round terrain matrix",
+    "human walking",
+    "Golden",
+    "height6000",
+    "S5 24h"
+  ],
+  "BLOCKED": [
+    "Tan's Huge Trees",
+    "TYG write-set"
+  ]
+}
