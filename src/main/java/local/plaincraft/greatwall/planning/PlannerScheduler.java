@@ -269,7 +269,7 @@ public final class PlannerScheduler implements AutoCloseable {
             var center = computeRoute(segment, oracle);
             var previous = segment == 0 ? Optional.<RouteShape>empty() : Optional.of(computeRoute(segment - 1, oracle));
             var next = safeSegment(segment + 1) ? Optional.of(computeRoute(segment + 1, oracle)) : Optional.<RouteShape>empty();
-            var cursor = hydrology.begin(new RouteNeighborhood(center, previous, next), oracle, 24000);
+            var cursor = hydrology.begin(new RouteNeighborhood(center, previous, next), oracle, 96000);
             while (hydrology.advance(cursor, 64) != WorkState.DONE) if (closed()) throw closedFailure();
             return geometry(center, hydrology.finish(cursor), cursor.logicalColumns(), next.isEmpty());
         } finally {
@@ -714,7 +714,7 @@ public final class PlannerScheduler implements AutoCloseable {
             result.thenAcceptAsync(PlannerScheduler.this::persist, pump);
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
-            if (cursor == null) cursor = hydrology.begin(routes, oracle, 24000);
+            if (cursor == null) cursor = hydrology.begin(routes, oracle, 96000);
             operations += limit; return hydrology.advance(cursor, limit) == WorkState.DONE;
         }
         @Override SegmentGeometry value() { return geometry(routes.center(), hydrology.finish(cursor), cursor.logicalColumns(), routes.next().isEmpty()); }

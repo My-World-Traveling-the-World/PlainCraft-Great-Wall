@@ -22,7 +22,7 @@ public final class HydrologyClassifier {
     public HydrologyClassifier() {}
 
     public Cursor begin(RouteNeighborhood routes, NaturalTerrainOracle oracle, int columnBudget) {
-        if (columnBudget < 1 || columnBudget > 24000) throw new IllegalArgumentException("hydrology budget 1..24000");
+        if (columnBudget < 1 || columnBudget > 120000) throw new IllegalArgumentException("hydrology budget 1..120000");
         var c = new Cursor();
         c.routes = Objects.requireNonNull(routes); c.oracle = Objects.requireNonNull(oracle); c.budget = columnBudget;
         var nodes = new ArrayList<Node>();
