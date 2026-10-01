@@ -82,14 +82,23 @@ public final class RealTerrainFixture implements AutoCloseable {
         }, server).exceptionally(error -> { server.execute(() -> failed(server, error)); return null; });
     }
 
+    /** Representative-sample floor. Unchanged by default; only an explicit
+     *  diagnostic run may lower it, and the lowered value is reported. */
+    private static long representativeLengthQ8() {
+        long blocks = Long.getLong("greatwall.s1c.representativeBlocks", 1200L);
+        if (blocks < 64L) throw new IllegalStateException("representative length floor is at least 64 blocks");
+        return blocks * 256L;
+    }
+
     private void select(SegmentPlan plan, MinecraftServer server) throws IOException {
         long length = plan.prefix().lengthBeforeQ8() + plan.geometry().localSQ8().getLast();
         if (plan.geometry().terminal().isPresent()) {
             var end = plan.geometry().terminal().get();
             length = Math.min(length, plan.prefix().lengthBeforeQ8() + end.localSQ8());
         }
-        if (length < 1200L * 256) {
-            throw new IllegalStateException("fixed representative seed terminates before 1200 blocks; preserve terminal, do not substitute seed");
+        if (length < representativeLengthQ8()) {
+            throw new IllegalStateException("fixed representative seed terminates before "
+                    + (representativeLengthQ8() / 256) + " blocks; preserve terminal, do not substitute seed");
         }
         var ordered = new LinkedHashSet<ChunkPos>();
         for (var station : plan.stations().stations()) {

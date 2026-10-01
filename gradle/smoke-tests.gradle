@@ -74,6 +74,15 @@ if (oracleMaxY != null) {
     if (!oracleOnly || !(oracleMaxY ==~ /[1-9][0-9]*/)) throw new GradleException('S1C expected maxY requires oracle diagnostic mode')
     probeArgs.add("-Dgreatwall.s1c.expectedMaxY=${oracleMaxY}")
 }
+// Diagnostic only: the representative-sample floor stays 1200 blocks unless a
+// run explicitly lowers it, and any lowered run reports what it used.
+def representativeBlocks = providers.gradleProperty('s1cRepresentativeBlocks').orNull
+if (representativeBlocks != null) {
+    if (!realWall || !(representativeBlocks ==~ /[1-9][0-9]*/)) {
+        throw new GradleException('s1cRepresentativeBlocks requires the real wall fixture')
+    }
+    probeArgs.add("-Dgreatwall.s1c.representativeBlocks=${representativeBlocks}")
+}
 if (terrainProbe) probeArgs.add("-Dmax.bg.threads=${providers.gradleProperty('s0TerrainConcurrency').getOrElse('1')}")
 if (providers.gradleProperty('s0TerrainFixedWorkers').getOrElse('false').toBoolean()) {
     if (!terrainProbe) throw new GradleException('Fixed workers are only permitted in the isolated terrain fixture')
