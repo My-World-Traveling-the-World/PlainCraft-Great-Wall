@@ -1,0 +1,11 @@
+{
+  "sourceCommit": "715428f",
+  "testPid": 2076,
+  "reason": "User added mandatory registered-structure avoidance; preserve the old-policy partial baseline before changing source",
+  "status": "INTERRUPTED_FOR_NEW_REQUIREMENT",
+  "fullBuild": "NOT_COMPLETED",
+  "fullGameTest": "NOT_COMPLETED",
+  "endedByThisAgent": true,
+  "otherProcessesTerminated": false,
+  "utc": "2026-10-01T08:12:56.4185539Z"
+}

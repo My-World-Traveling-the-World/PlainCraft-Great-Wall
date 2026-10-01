@@ -1,0 +1,72 @@
+diff --git a/src/main/java/local/plaincraft/greatwall/terrain/BlockCatalog.java b/src/main/java/local/plaincraft/greatwall/terrain/BlockCatalog.java
+index 6d7bf00..d111fff 100644
+--- a/src/main/java/local/plaincraft/greatwall/terrain/BlockCatalog.java
++++ b/src/main/java/local/plaincraft/greatwall/terrain/BlockCatalog.java
+@@ -3,6 +3,7 @@ package local.plaincraft.greatwall.terrain;
+ import java.nio.charset.StandardCharsets;
+ import java.util.Map;
+ import java.util.Objects;
++import java.util.Set;
+ import java.util.TreeMap;
+ import local.plaincraft.greatwall.geometry.DeterministicHash;
+ import local.plaincraft.greatwall.model.WallFailure;
+@@ -22,6 +23,7 @@ import net.minecraft.world.level.block.FallingBlock;
+ import net.minecraft.world.level.block.SnowLayerBlock;
+ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.block.state.properties.Property;
++import net.minecraft.world.level.levelgen.structure.Structure;
+ 
+ /** Registry-owner frozen classification. Unknown states fail closed; no neighbor/chunk lookup. */
+ public final class BlockCatalog {
+@@ -31,8 +33,11 @@ public final class BlockCatalog {
+     public record Flags(boolean support,boolean replaceablePlant,boolean water,boolean gravity,boolean blockEntity,boolean protectedBlock) {}
+     private final Map<String,Flags> flags;
+     private final String hash;
++    private final Set<Structure> registeredStructures;
+     public BlockCatalog(RegistryAccess registries) {
+         Objects.requireNonNull(registries);
++        registeredStructures = registries.registry(Registries.STRUCTURE)
++                .map(registry -> Set.copyOf(registry.stream().toList())).orElse(Set.of());
+         var values=new TreeMap<String,Flags>();
+         for(var block:BuiltInRegistries.BLOCK) for(var state:block.getStateDefinition().getPossibleStates()) {
+             String id=BuiltInRegistries.BLOCK.getKey(block).toString();
+@@ -63,6 +68,7 @@ public final class BlockCatalog {
+     }
+     public BlockState resolve(BlockSpec spec) {return resolveState(spec);}
+     public String hash(){return hash;}
++    public Set<Structure> registeredStructures(){return registeredStructures;}
+     public static BlockState resolveState(BlockSpec spec) {
+         var id=ResourceLocation.parse(spec.id());
+         if(!BuiltInRegistries.BLOCK.containsKey(id))throw new WallFailure(FailureCode.INVALID_RESOURCE,"unknown block "+id);
+diff --git a/src/main/java/local/plaincraft/greatwall/terrain/TerrainSnapshotService.java b/src/main/java/local/plaincraft/greatwall/terrain/TerrainSnapshotService.java
+index 9bdb0f1..2243468 100644
+--- a/src/main/java/local/plaincraft/greatwall/terrain/TerrainSnapshotService.java
++++ b/src/main/java/local/plaincraft/greatwall/terrain/TerrainSnapshotService.java
+@@ -7,6 +7,7 @@ import java.util.concurrent.*;
+ import local.plaincraft.greatwall.generation.TerrainEngine;
+ import local.plaincraft.greatwall.generation.TerrainMarkers;
+ import local.plaincraft.greatwall.generation.ProtectionSnapshot;
++import local.plaincraft.greatwall.generation.RegisteredStructureGuard;
+ import local.plaincraft.greatwall.geometry.DeterministicHash;
+ import local.plaincraft.greatwall.model.WallFailure;
+ import local.plaincraft.greatwall.model.WallTypes.*;
+@@ -139,7 +140,8 @@ public final class TerrainSnapshotService implements AutoCloseable {
+                             return columns.thenComposeAsync(summary->engine.exclusive(owner.getPos(),()->{
+                                 active();var entities=new HashSet<Point3i>();
+                                 for(var p:owner.getBlockEntitiesPos())entities.add(new Point3i(p.getX(),p.getY(),p.getZ()));
+-                                var structures=ProtectionSnapshot.structureBounds(owner,predictedStructures,frozenPrepared,coverage.readBounds());
++                                var structures=new ArrayList<>(ProtectionSnapshot.structureBounds(owner,predictedStructures,frozenPrepared,coverage.readBounds()));
++                                structures.addAll(RegisteredStructureGuard.columns(owner,frozenPrepared,catalog.registeredStructures()));
+                                 return new CaptureMetadata(coverage,summary,structures,entities,Set.of(),"0".repeat(64));
+                             }),io).thenComposeAsync(base->io(()->accounted(scratchBudget,()->{
+                                 var immutable=new HashSet<Point3i>();
+@@ -283,7 +285,8 @@ public final class TerrainSnapshotService implements AutoCloseable {
+         }
+         if(hints.metadata().isPresent())bytes=Math.addExact(bytes,hints.metadata().getAsLong());
+         else bytes=Math.addExact(bytes,16384L+128L*(protectedCount+entities.size()
+-                +ProtectionSnapshot.structureBoxUpperBound(owner,predictedStructures.size(),prepared)+1));
++                +ProtectionSnapshot.structureBoxUpperBound(owner,predictedStructures.size(),prepared)
++                +RegisteredStructureGuard.boxUpperBound(owner,prepared,catalog.registeredStructures())+1));
+         return bytes;
+     }
+     private TerrainTile capturePage(ChunkAccess owner,TerrainTile.Key key,String recipe) {

@@ -1,0 +1,24 @@
+{
+  "baseline": "715428ff53deb764d3467c2ab9ea3df5c58a532c",
+  "status": "DRAFT_NOT_COMPILED_NOT_TESTED",
+  "scopeCorrection": "Ground surface registered structures only; underground and sky excluded",
+  "knownMismatch": "Current draft projects all registered structures through full dimension height and does not yet implement the ground-only filter",
+  "sourceFiles": [
+    {
+      "path": "src/main/java/local/plaincraft/greatwall/terrain/BlockCatalog.java",
+      "sha256": "b5d3385b60d6a3d1f347c9ebf234ad7a16f45d0481f14029ac59f4eae238d485"
+    },
+    {
+      "path": "src/main/java/local/plaincraft/greatwall/terrain/TerrainSnapshotService.java",
+      "sha256": "c317c9d1b30d98d7e8d53746212e7c1cb565e53c0dc047f846c46b0a3eefce2d"
+    },
+    {
+      "path": "src/main/java/local/plaincraft/greatwall/generation/RegisteredStructureGuard.java",
+      "sha256": "8d84699374f8f7c4df2929c970d47892dabd547d6ef5e799b6bd46e9341b68df"
+    }
+  ],
+  "capturedUtc": "2026-10-01T08:36:02.3914873Z",
+  "production": "OFF",
+  "fixtureExecution": "NOT_RUN",
+  "nextAction": "Audit the contract before changing code"
+}

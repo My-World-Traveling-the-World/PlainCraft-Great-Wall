@@ -1,6 +1,7 @@
 # S1C WIDE收头收尾
 
-日期2026-10-01。状态：IN_PROGRESS，未签收。正式production OFF，Tan's BLOCKED。
+日期2026-10-01。状态：PAUSED_FOR_AUDIT，未签收。正式production OFF，Tan's BLOCKED。
+最新状态和分叉以S1C-暂停审计交接.md为准；以下已完成的历史证据保留。
 
 ## 冻结新规则
 
@@ -21,7 +22,7 @@ WIDE现在也表示用户授权的保守终止政策，不必然表示实测widt
 | 用户两处改动上的全量JUnit | 343/343，exit0，1m17s | docs/evidence/s1c/wide-closeout-20261001-151922/ |
 | 补充后的Hydrology/PlannerScheduler/PrefixSummary/Realization四组+assemble | 41/41，exit0，34s | docs/evidence/s1c/wide-regression-20261001-152423/ |
 | 完整build任务图核对 | 包含:runGameTest，慢矩阵未被自动排除 | 当前调用输出；此项不是build执行PASS |
-| 完整build及全部GameTest | NOT_RUN / 即将执行 | 不以assemble代替 |
+| 完整build及全部GameTest | 已启动后主动中止exit1，NOT_COMPLETED | evidence/s1c/wide-full-build-20261001-153829/；追加结构要求后停止旧基线 |
 | 新规则三profile真实生成/重进/每chunk成本 | NOT_RUN / 待执行 | 原五轮失败原件保留，不重写 |
 | 客户端人工实走 | NOT_RUN | 程序化验证不能代替 |
 

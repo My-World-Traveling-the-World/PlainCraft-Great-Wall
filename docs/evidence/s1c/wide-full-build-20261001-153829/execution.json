@@ -1,0 +1,14 @@
+{
+  "sourceCommit": "715428ff53deb764d3467c2ab9ea3df5c58a532c",
+  "startedUtc": "2026-10-01T07:38:29.3109418Z",
+  "finishedUtc": "2026-10-01T08:12:57.0754385Z",
+  "exitCode": 1,
+  "sourceInputsUnchanged": true,
+  "command": "gradlew.bat --offline --dependency-verification=strict build --no-daemon --console=plain",
+  "artifact": "build\\libs\\plaincraft-great-wall-0.1.0-s1c-preview.1.jar",
+  "sha256": "6308ef8a7e1f0c6bc68c62c2b9aa0f3f520075ff89c16e05f227cd7725f0a03d",
+  "production": "OFF",
+  "S0HundredRoundMatrix": "NOT_RUN",
+  "realWall": "NOT_RUN",
+  "Tans": "BLOCKED"
+}

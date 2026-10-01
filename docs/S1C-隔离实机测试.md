@@ -1,6 +1,8 @@
 # S1C 隔离实机测试
 
 状态：候选测试入口，非发布签收、非S5完整模组。正式生产OFF，Tan's BLOCKED。
+2026-10-01更新：按用户指示PAUSED_FOR_AUDIT；追加地表结构/快水需求尚未闭合。
+下面保留入口说明，当前不启动客户端、不授权该候选符合新增验收，先读S1C-暂停审计交接.md。
 当前候选版本0.1.0-s1c-preview.1；最终SHA见本批artifact证据，不拿旧包SHA作证。
 已完成prepareWallPreview（exit0，14秒），未启动客户端；
 候选Jar SHA256：`6308ef8a7e1f0c6bc68c62c2b9aa0f3f520075ff89c16e05f227cd7725f0a03d`。
