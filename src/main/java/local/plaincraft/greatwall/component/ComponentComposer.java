@@ -48,6 +48,6 @@ final class ComponentComposer {
         var old=input.site();
         var site=new SiteRecord(old.id(),s,frame,old.bounds(),old.state(),old.absorbedBy(),old.reason());
         return new ComponentInput(site,input.stations(),input.supports(),input.decay(),input.family(),
-                input.redSandstone(),input.waters(),input.materials());
+                input.redSandstone(),input.waters(),input.materials(),input.entranceEvidence());
     }
 }

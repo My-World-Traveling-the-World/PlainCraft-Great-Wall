@@ -422,7 +422,16 @@ public final class RealizationPlanner {
                             &&b.minZ()<world.maxZExclusive()&&b.maxZExclusive()>world.minZ()
                             &&b.minY()<world.maxYExclusive()&&b.maxYExclusive()>world.minY()).distinct().toList());
         }
-        return new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,List.of());
+        var evidence=new GroundEntranceContract.Evidence(
+                recipe==null?GroundEntranceContract.Source.ANALYTIC_FIXTURE:GroundEntranceContract.Source.DURABLE_T0,
+                bounds,input.columns());
+        var candidate=new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,List.of(),evidence);
+        if(Boolean.getBoolean("greatwall.s1c.protectionTrace")&&site.id().kind()==SiteKind.FORT&&site.id().ordinal()==0){
+            var certificate=GroundEntranceContract.inspect(site.frame(),GroundEntranceContract.Corridor.fort(),supports,evidence);
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:entrance] fort0 frame={} source={} certificate={}",site.frame(),evidence.source(),certificate);
+        }
+        return candidate;
     }
     private static long workingBytes(Input input) {
         long bytes=Math.addExact(8192,Math.multiplyExact(256L,input.columns().size()));

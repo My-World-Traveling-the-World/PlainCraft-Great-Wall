@@ -477,7 +477,15 @@ public final class WallTypes {
     public record ComponentInput(SiteRecord site, List<Station> stations,
             Map<Point3i, ProbeResult> supports, DecaySample decay, PaletteFamily family,
             boolean redSandstone, List<WaterEvidence> waters,
-            List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> materials) {
+            List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> materials,
+            local.plaincraft.greatwall.component.GroundEntranceContract.Evidence entranceEvidence) {
+        /** Analytic fixture compatibility; production supplies its actual immutable column evidence. */
+        public ComponentInput(SiteRecord site,List<Station> stations,Map<Point3i,ProbeResult> supports,
+                DecaySample decay,PaletteFamily family,boolean redSandstone,List<WaterEvidence> waters,
+                List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> materials) {
+            this(site,stations,supports,decay,family,redSandstone,waters,materials,
+                    local.plaincraft.greatwall.component.GroundEntranceContract.Evidence.analytic(supports));
+        }
         public ComponentInput {
             Objects.requireNonNull(site, "site");
             stations = List.copyOf(stations);
@@ -486,6 +494,7 @@ public final class WallTypes {
             Objects.requireNonNull(family, "family");
             waters = List.copyOf(waters);
             materials = List.copyOf(materials);
+            Objects.requireNonNull(entranceEvidence,"entranceEvidence");
         }
     }
 
