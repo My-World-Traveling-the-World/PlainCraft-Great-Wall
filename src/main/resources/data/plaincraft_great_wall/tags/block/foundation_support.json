@@ -1,7 +1,7 @@
 {
   "replace": false,
   "values": [
-    "minecraft:stone", "minecraft:deepslate", "minecraft:granite", "minecraft:diorite",
+    "minecraft:stone", "minecraft:mossy_cobblestone", "minecraft:deepslate", "minecraft:granite", "minecraft:diorite",
     "minecraft:andesite", "minecraft:tuff", "minecraft:calcite", "minecraft:dirt",
     "minecraft:grass_block", "minecraft:podzol", "minecraft:coarse_dirt", "minecraft:rooted_dirt",
     "minecraft:sandstone", "minecraft:red_sandstone", "minecraft:terracotta",
