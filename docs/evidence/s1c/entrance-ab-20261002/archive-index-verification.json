@@ -1,0 +1,16 @@
+{
+  "verifiedUtc": "2026-10-02T06:48:34.3447290Z",
+  "runs": [
+    {
+      "runId": "entrance-ab17-20261002-122705",
+      "exactByteGitBlobs": 237
+    },
+    {
+      "runId": "entrance-ab17-final-20261002-134025",
+      "exactByteGitBlobs": 425
+    }
+  ],
+  "meaning": "all original archived greatwall files now indexed and match exact original bytes",
+  "longPathHandling": "per-file git -c core.longpaths=true add; no machine config change",
+  "productionChanges": "none; paused for audit"
+}
