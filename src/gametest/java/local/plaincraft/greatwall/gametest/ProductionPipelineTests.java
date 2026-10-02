@@ -21,7 +21,7 @@ import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 
 public final class ProductionPipelineTests implements FabricGameTest {
-    public void fringeOwnerMissingDurableCoverageIsRejectedBeforeApply(GameTestHelper helper){
+    public void fringeOwnerOutsideCaptureDomainIsSkippedBeforeApply(GameTestHelper helper){
         var io=Executors.newSingleThreadExecutor(r->{var t=new Thread(r,"pgw-fringe-owner");t.setDaemon(true);return t;});
         var chunks=new ConcurrentHashMap<ChunkPos,ChunkAccess>();
         var failures=new ConcurrentHashMap<String,Throwable>();var recipe=recipe();var window=plans();
@@ -42,9 +42,8 @@ public final class ProductionPipelineTests implements FabricGameTest {
         var pipeline=new ProductionWallPipeline(recipe,ports,snapshots,realization,new ChunkPlanCompiler(),new ChunkWallWriter());
         var key=new ChunkKey(recipe.dimension(),2,6);var pos=new ChunkPos(2,6);
         var coverage=new CoveragePlanner();
-        helper.assertTrue(!coverage.cellsForChunk(key,window).isEmpty(),"104-block lateral halo dispatches this owner");
-        helper.assertTrue(coverage.cellsForChunk(key,window).stream().noneMatch(cell->
-                coverage.realizationOwners(cell,window).contains(key)),"owner is outside every station capture set");
+        helper.assertTrue(coverage.cellsForChunk(key,window).isEmpty(),
+                "the old 104-block lateral fringe is explicitly a non-owner after A+C");
         var owner=chunks.computeIfAbsent(pos,p->chunk(helper,p));
         // Isolated ProtoChunks need no live world's mailbox admission. Keep the actual
         // lock sentinel and producer chain; only the scheduling port is fixture-local.
@@ -61,15 +60,11 @@ public final class ProductionPipelineTests implements FabricGameTest {
         pipeline.beforeLight(key,owner,engine)
                 .orTimeout(120,TimeUnit.SECONDS).whenComplete((ignored,error)->helper.getLevel().getServer().execute(()->{
                     try{
-                        Throwable cause=error;
-                        while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();
-                        helper.assertTrue(cause instanceof local.plaincraft.greatwall.model.WallFailure
-                                &&((local.plaincraft.greatwall.model.WallFailure)cause).code()==FailureCode.T0_MISSING
-                                &&cause.getMessage().equals("owner not in realization evidence"),
-                                "retained pre-fix counterexample must reproduce exact missing-owner failure, not timeout: "+cause);
-                        helper.assertTrue(owner.getAttached(TerrainMarkers.PRODUCTION)==null,"failure remains before APPLY");
+                        helper.assertTrue(error==null,"non-owner traversal must be a clean no-op: "+error);
+                        helper.assertTrue(failures.isEmpty(),"non-owner traversal must not report a production failure");
+                        helper.assertTrue(owner.getAttached(TerrainMarkers.PRODUCTION)==null,"non-owner has no production marker");
                         helper.assertTrue(pipeline.diagnostics().getOrDefault("PRODUCTION_APPLY_ENTER",0L)==0,"zero writes on missing evidence");
-                        System.out.println("S1C_FRINGE_REPRODUCED owner="+key+" lateral=104 exact="+cause);
+                        System.out.println("S1C_NON_OWNER owner="+key+" lateral=104 status=NON_OWNER");
                         helper.runAfterDelay(1,helper::succeed);
                     }finally{pipeline.close();io.shutdown();}
                 }));

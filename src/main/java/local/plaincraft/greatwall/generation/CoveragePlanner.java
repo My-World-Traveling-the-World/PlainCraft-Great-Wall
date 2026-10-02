@@ -53,8 +53,10 @@ public final class CoveragePlanner {
         long min=Math.max(0,projection.globalSQ8()-192L*256),max=projection.globalSQ8()+192L*256;
         String recipe=plans.plans().getFirst().geometry().key().recipeHash();
         var result=new ArrayList<CellKey>();
-        for(long cell=Math.floorDiv(min,64L*256);cell<=Math.floorDiv(max,64L*256);cell++)
-            result.add(new CellKey(recipe,chunk.dimension(),cell));
+        for(long cell=Math.floorDiv(min,64L*256);cell<=Math.floorDiv(max,64L*256);cell++) {
+            var candidate=new CellKey(recipe,chunk.dimension(),cell);
+            if(realizationOwners(candidate,plans).contains(chunk)) result.add(candidate);
+        }
         return List.copyOf(result);
     }
     public List<ChunkKey> realizationOwners(CellKey cell,PlanWindow plans) {

@@ -8,6 +8,7 @@ import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.*;
 import local.plaincraft.greatwall.GreatWallMod;
+import local.plaincraft.greatwall.generation.CoveragePlanner;
 import local.plaincraft.greatwall.generation.TerrainMarkers;
 import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.lifecycle.WorldServices;
@@ -35,10 +36,12 @@ public final class RealTerrainFixture implements AutoCloseable {
         var thread = new Thread(task, "pgw-real-fixture-evidence"); thread.setDaemon(true); return thread;
     });
     private final List<Map<String, Object>> owners = new ArrayList<>();
+    private final List<Map<String, Object>> nonOwners = new ArrayList<>();
     private final List<ChunkPos> positions = new ArrayList<>();
     private final List<Long> latency = new ArrayList<>();
     private final ConcurrentHashMap<String, Boolean> closed = new ConcurrentHashMap<>();
     private PlanLease<SegmentPlan> planning;
+    private PlanWindow planWindow;
     private CompletableFuture<Void> progress;
     private WorldRecipe recipe;
     private List<Map<String, Object>> firstRun = List.of();
@@ -48,6 +51,7 @@ public final class RealTerrainFixture implements AutoCloseable {
     private long voxels, feet;
     private boolean begun, finished;
     private final boolean reopen = Boolean.getBoolean("greatwall.s1c.reopen");
+    private final CoveragePlanner coverage = new CoveragePlanner();
 
     public static CompletableFuture<Void> run(ServerLevel level, long seed) {
         if (level.getSeed() != seed) return CompletableFuture.failedFuture(new IllegalArgumentException("actual world seed differs"));
@@ -91,6 +95,7 @@ public final class RealTerrainFixture implements AutoCloseable {
     }
 
     private void select(SegmentPlan plan, MinecraftServer server) throws IOException {
+        planWindow = new PlanWindow(List.of(plan));
         long length = plan.prefix().lengthBeforeQ8() + plan.geometry().localSQ8().getLast();
         if (plan.geometry().terminal().isPresent()) {
             var end = plan.geometry().terminal().get();
@@ -127,8 +132,13 @@ public final class RealTerrainFixture implements AutoCloseable {
             var baseline = new ArrayList<Map<String, Object>>();
             for (var entry : tree.getAsJsonArray("owners")) {
                 var item = entry.getAsJsonObject();
-                baseline.add(Map.of("x", item.get("x").getAsInt(), "z", item.get("z").getAsInt(),
-                        "plan", item.get("plan").getAsString(), "actualHash", item.get("actualHash").getAsString()));
+                var row = new HashMap<String, Object>();
+                row.put("x", item.get("x").getAsInt());
+                row.put("z", item.get("z").getAsInt());
+                row.put("status", item.has("status") ? item.get("status").getAsString() : "OWNER");
+                if (item.has("plan")) row.put("plan", item.get("plan").getAsString());
+                if (item.has("actualHash")) row.put("actualHash", item.get("actualHash").getAsString());
+                baseline.add(Map.copyOf(row));
             }
             firstRun = List.copyOf(baseline);
             if (firstRun.size() != positions.size()) throw new IllegalStateException("reopen owner count changed");
@@ -148,7 +158,21 @@ public final class RealTerrainFixture implements AutoCloseable {
         ((TerrainChunkAccess) source).greatwall$request(pos.x, pos.z, ChunkStatus.FULL, true)
                 .thenComposeAsync(result -> {
                     var chunk = result.orElseThrow(() -> new IllegalStateException("FULL unavailable " + pos + ": " + result.getError()));
+                    var key = new ChunkKey(recipe.dimension(), pos.x, pos.z);
                     var marker = chunk.getAttached(TerrainMarkers.PRODUCTION);
+                    if (coverage.cellsForChunk(key, planWindow).isEmpty()) {
+                        if (marker != null) throw new IllegalStateException("NON_OWNER has a wall marker " + pos);
+                        var row = Map.<String, Object>of("x", pos.x, "z", pos.z,
+                                "status", "NON_OWNER", "voxels", 0L, "feet", 0L);
+                        nonOwners.add(row);
+                        if (reopen) {
+                            var prior = firstRun.get(next);
+                            if (!"NON_OWNER".equals(prior.get("status"))
+                                    || !prior.get("x").equals(pos.x) || !prior.get("z").equals(pos.z))
+                                throw new IllegalStateException("reopened owner-domain classification changed " + pos);
+                        }
+                        return CompletableFuture.completedFuture(row);
+                    }
                     if (marker == null || !marker.complete() || !marker.recipe().equals(recipe.recipeHash())) {
                         throw new IllegalStateException("missing/foreign completed production marker in traversed owner " + pos);
                     }
@@ -201,11 +225,13 @@ public final class RealTerrainFixture implements AutoCloseable {
             if (reopen) {
                 var prior = firstRun.get(next);
                 if (!prior.get("x").equals(chunk.getPos().x) || !prior.get("z").equals(chunk.getPos().z)
+                        || !"OWNER".equals(prior.getOrDefault("status", "OWNER"))
                         || !prior.get("plan").equals(plan.hash()) || !prior.get("actualHash").equals(actual)) {
                     throw new IllegalStateException("reopened owner lost/changed geometry " + chunk.getPos());
                 }
             }
-            return Map.of("x", chunk.getPos().x, "z", chunk.getPos().z, "plan", plan.hash(), "actualHash", actual,
+            return Map.of("x", chunk.getPos().x, "z", chunk.getPos().z, "status", "OWNER",
+                    "plan", plan.hash(), "actualHash", actual,
                     "voxels", (long) plan.voxels().size(), "feet", (long) marker.walkwayFeet().size());
         } catch (java.security.NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); }
     }
@@ -227,6 +253,7 @@ public final class RealTerrainFixture implements AutoCloseable {
             report.put("arcDomain", "S=[0,1248], representative planned land at least1200, intentional realized breaks are not omitted owners");
             report.put("minY", server.overworld().getMinBuildHeight()); report.put("maxYExclusive", server.overworld().getMaxBuildHeight());
             report.put("ownerCount", positions.size()); report.put("owners", List.copyOf(owners)); report.put("voxels", voxels); report.put("walkwayFeet", feet);
+            report.put("nonOwnerCount", nonOwners.size()); report.put("nonOwners", List.copyOf(nonOwners));
             report.put("fullRequestMedianMs", sorted.get(sorted.size() / 2) / 1_000_000.0);
             report.put("fullRequestP95Ms", sorted.get((int) Math.ceil(sorted.size() * .95) - 1) / 1_000_000.0);
             report.put("fullRequestMaxMs", sorted.getLast() / 1_000_000.0);
@@ -247,7 +274,8 @@ public final class RealTerrainFixture implements AutoCloseable {
     private void writeProgress(MinecraftServer server) {
         try {
             var report = Map.of("completedOwners", next, "totalOwners", positions.size(), "voxels", voxels,
-                    "walkwayFeet", feet, "reopen", reopen, "failure", failure == null ? "" : failure.toString(),
+                    "walkwayFeet", feet, "nonOwnerCount", nonOwners.size(), "reopen", reopen,
+                    "failure", failure == null ? "" : failure.toString(),
                     "elapsedSeconds", (System.nanoTime() - started) / 1_000_000_000.0,
                     "session", WorldServices.find(server).productionDiagnostics());
             Files.writeString(reportPath(reopen ? "reopen-progress" : "progress"), new GsonBuilder().setPrettyPrinting().create().toJson(report));

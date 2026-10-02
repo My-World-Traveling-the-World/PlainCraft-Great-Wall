@@ -49,31 +49,35 @@ class ArchivedOwnerCoverageTest {
             });
         }
         var coverage=new CoveragePlanner();
-        var difference=new ArrayList<Map<String,Object>>();
+        var nonOwners=new ArrayList<ChunkKey>();
+        var violations=new ArrayList<Map<String,Object>>();
         for(var owner:ordered) {
             var cells=coverage.cellsForChunk(owner,window);
-            if(cells.isEmpty())continue;
-            boolean inAny=cells.stream().anyMatch(cell->coverage.realizationOwners(cell,window).contains(owner));
-            if(!inAny) {
+            for(var cell:cells) if(!coverage.realizationOwners(cell,window).contains(owner)) {
                 var projection=Projection.nearest(owner.x()*16+8,owner.z()*16+8,
                         new GeometryWindow(List.of(plan.geometry()),List.of(plan.prefix())));
-                difference.add(Map.of("owner",owner,"cells",cells.stream().map(CellKey::arcCell).toList(),
+                violations.add(Map.of("owner",owner,"cell",cell.arcCell(),
                         "lateralQ8",projection.lateralQ8(),"capturedInLog",captured.contains(owner)));
             }
+            if(cells.isEmpty()) nonOwners.add(owner);
         }
         var first=ordered.iterator().next();
         var report=new LinkedHashMap<String,Object>();
         report.put("scope","OFFLINE_ARCHIVE_ONLY; candidate difference is not exact failure identity");
         report.put("sourceCommit","e2959de");report.put("recipeHash",recipe.recipeHash());
         report.put("traversalOwners",ordered.size());report.put("capturedDistinct",captured.size());
-        report.put("firstTraversalOwner",first);report.put("missingFromCaptureDomain",difference);
-        report.put("exactFailureOwner","UNDETERMINED: LIGHT admissions race; no requester trace retained");
+        report.put("firstTraversalOwner",first);report.put("nonOwnerTraversalChunks",nonOwners);
+        report.put("triggerCaptureViolations",violations);
+        report.put("exactFailureOwner","historical pre-fix owner was resolved separately; this test checks the repaired invariant");
         var out=Path.of("build/reports/s1c-owner/offline-owner-difference.json");
         Files.createDirectories(out.getParent());
         Files.writeString(out,new GsonBuilder().setPrettyPrinting().create().toJson(report));
         assertEquals(505,ordered.size());
         assertEquals(133,captured.size());
-        assertFalse(difference.isEmpty(),"archived real geometry must exhibit unequal domains");
-        System.out.println("S1C_OWNER_OFFLINE first="+first+" captures="+captured.size()+" difference="+difference.size());
+        assertTrue(violations.isEmpty(),"every dispatched cell must have durable capture ownership");
+        assertTrue(nonOwners.stream().allMatch(owner->coverage.cellsForChunk(owner,window).isEmpty()),
+                "non-owner traversal chunks must remain outside the dispatch domain");
+        System.out.println("S1C_OWNER_OFFLINE first="+first+" captures="+captured.size()
+                +" nonOwners="+nonOwners.size()+" violations="+violations.size());
     }
 }
