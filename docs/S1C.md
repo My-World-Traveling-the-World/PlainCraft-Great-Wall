@@ -1,5 +1,16 @@
 # S1C 当前状态
 
+## 2026-10-02 A 与 Fort 坐标已修，入口补充合同待确认
+
+**未签收，生产 OFF，Tan's BLOCKED。** 最新报告：
+`docs/S1C-标签与Fort坐标修订.md`。
+`995bc8b`补苔石支撑/三植物标签，`ed36e5b`修完整Fort按世界坐标检查实际足印。
+本轮全量JUnit353/353、定向Catalog/Protection原生10/10，exit0；红例已保留。
+主册虽无高差<=1，但S1B补充合同65/110明确有该条，故Ramp暂不改，等明确替换确认。
+本轮新seed17入口/APPLY/voxels均NOT_RUN，不重复已知入口会拒绝的真实运行。
+当前真实模板链绑定FortPlaceholder；完整Fort全足印实际生产结果仍NOT_RUN，
+不将坐标单测通过当成当前真实墙通过。S1C-DRAIN-01继续独立未闭合。
+
 ## 2026-10-02 标签补齐与抑制的改前成本分析
 
 **仅分析、等方案确认；生产 OFF，Tan's BLOCKED，未签收。**

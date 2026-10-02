@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.diagnostics.CompiledAllocationScopeAuditTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-02T01:50:02.813Z" hostname="CAIMEO" time="0.007">
+  <properties/>
+  <testcase name="childCapacityFailureRestoresParentAndReleasesOnlyChildCharges()" classname="local.plaincraft.greatwall.diagnostics.CompiledAllocationScopeAuditTest" time="0.001"/>
+  <testcase name="explicitReturnedEvidenceKeepsItsPrechargedArenaUntilConsumerRelease()" classname="local.plaincraft.greatwall.diagnostics.CompiledAllocationScopeAuditTest" time="0.001"/>
+  <testcase name="retainedBytesCannotExceedPrechargedBytesEvenAfterNestedSuccess()" classname="local.plaincraft.greatwall.diagnostics.CompiledAllocationScopeAuditTest" time="0.001"/>
+  <testcase name="foreignNestedBudgetIsRejectedBeforeItsProducerAndParentSurvives()" classname="local.plaincraft.greatwall.diagnostics.CompiledAllocationScopeAuditTest" time="0.001"/>
+  <testcase name="successfulChildTransfersOnlyRetainedBytesToItsParent()" classname="local.plaincraft.greatwall.diagnostics.CompiledAllocationScopeAuditTest" time="0.0"/>
+  <testcase name="failedRetentionEstimatorRestoresThreadLocalScope()" classname="local.plaincraft.greatwall.diagnostics.CompiledAllocationScopeAuditTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
