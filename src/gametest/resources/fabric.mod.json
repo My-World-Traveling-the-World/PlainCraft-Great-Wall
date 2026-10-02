@@ -17,6 +17,7 @@
       "local.plaincraft.greatwall.gametest.ProductionBarrierTests",
       "local.plaincraft.greatwall.gametest.ProductionPipelineTests",
       "local.plaincraft.greatwall.gametest.ComponentGameTests",
+      "local.plaincraft.greatwall.gametest.GroundEntranceContractGameTests",
       "local.plaincraft.greatwall.gametest.ComponentSurvivalMatrixTests",
       "local.plaincraft.greatwall.gametest.CurvedWallMatrixTests",
       "local.plaincraft.greatwall.gametest.CurvedSiteMatrixTests",
