@@ -63,6 +63,18 @@ class GroundEntranceContractTest {
         map.put(new Point3i(0,84,-25),probe(ProbeKind.SUPPORTED,64,0));
         assertTrue(inspect(map).isEmpty(),"one legal outside column is not three-wide access");
     }
+    @Test void twoOutsideColumnsCannotBeReusedAsThreeIndependentRotatedApproaches(){
+        var frame=new Frame(new Point2q(52736,243968),247565951,1044812234,87,false);
+        var map=new HashMap<Point3i,ProbeResult>();
+        for(var p:GroundEntranceContract.columns(frame,CORRIDOR)){
+            boolean inside=CORRIDOR.contains(local.plaincraft.greatwall.geometry.Rasterizer.localCell(frame,p));
+            boolean outside=p.x()==182&&(p.z()==958||p.z()==959);
+            map.put(p,probe(inside||outside?ProbeKind.SUPPORTED:ProbeKind.PROTECTED,inside?70:69,0));
+        }
+        assertTrue(GroundEntranceContract.inspect(frame,CORRIDOR,map,
+                GroundEntranceContract.Evidence.analytic(map)).isEmpty(),
+                "the same outside voxel cannot certify several independent entrance columns");
+    }
     @Test void realHeadroomAndUnapprovedVoidMaterialsAreCheckedBeforeCertificate(){
         var supports=flat();
         var analytic=GroundEntranceContract.Evidence.analytic(supports);

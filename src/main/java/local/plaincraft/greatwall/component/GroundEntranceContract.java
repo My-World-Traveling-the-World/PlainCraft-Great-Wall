@@ -89,7 +89,12 @@ public final class GroundEntranceContract {
                 (long)corridor.maxZ()-corridor.minZ()),4L);
         long work=Math.addExact(4096L,Math.multiplyExact(384L,Math.multiplyExact(side,side)));
         local.plaincraft.greatwall.diagnostics.CompiledAllocation.charge(work);
-        return inspectAdmitted(frame,corridor,supports,evidence);
+        long keep=0;
+        try{
+            var result=inspectAdmitted(frame,corridor,supports,evidence);
+            if(result.isPresent())keep=4096L+256L*result.get().approaches().size();
+            return result;
+        }finally{local.plaincraft.greatwall.diagnostics.CompiledAllocation.discard(work-keep);}
     }
     private static Optional<Certificate> inspectAdmitted(Frame frame,Corridor corridor,
             Map<Point3i,ProbeResult> supports,Evidence evidence){
@@ -122,14 +127,21 @@ public final class GroundEntranceContract {
                     if(!valid(probe,w,g)||Math.abs((long)probe.groundTopY()-lower)>1)continue;
                     int head=Math.max(lower,probe.groundTopY())+2;
                     if(!clear(evidence,outside,probe.groundTopY(),head)||!clear(evidence,p,lower,head))continue;
-                    lanes.putIfAbsent(p,List.of(new Point3i(outside.x(),probe.groundTopY(),outside.z()),
-                            new Point3i(p.x(),lower,p.z())));
+                    lanes.computeIfAbsent(p,k->new ArrayList<>()).add(
+                            new Point3i(outside.x(),probe.groundTopY(),outside.z()));
                 }
             }
             // Local indices can be absent after rotation. Require the whole actual declared portal,
             // not a invented consecutive-index band or just a single convenient outside column.
             if(!expected.isEmpty()&&lanes.keySet().equals(expected)){
-                var approaches=List.copyOf(lanes.values());
+                var outsideOwners=new TreeMap<Point3i,Point3i>(ORDER);
+                boolean complete=true;
+                for(var p:expected)if(!match(p,lanes,outsideOwners,new HashSet<>())){complete=false;break;}
+                if(!complete)continue;
+                var insideOrigins=new TreeMap<Point3i,Point3i>(ORDER);
+                outsideOwners.forEach((outside,insidePoint)->insideOrigins.put(insidePoint,outside));
+                var approaches=new ArrayList<List<Point3i>>();
+                for(var p:expected)approaches.add(List.of(insideOrigins.get(p),new Point3i(p.x(),lower,p.z())));
                 var hashes=new TreeSet<String>();
                 for(var p:inside.keySet()){
                     var column=evidence.columns().get(new Point3i(p.x(),0,p.z()));
@@ -145,6 +157,17 @@ public final class GroundEntranceContract {
             }
         }
         return Optional.empty();
+    }
+    private static boolean match(Point3i inside,Map<Point3i,List<Point3i>> choices,
+            Map<Point3i,Point3i> outsideOwners,Set<Point3i> seen){
+        for(var outside:choices.getOrDefault(inside,List.of())){
+            if(!seen.add(outside))continue;
+            var previous=outsideOwners.get(outside);
+            if(previous==null||match(previous,choices,outsideOwners,seen)){
+                outsideOwners.put(outside,inside);return true;
+            }
+        }
+        return false;
     }
     private static boolean valid(ProbeResult p,int w,int g){
         return p!=null&&p.kind()==ProbeKind.SUPPORTED&&p.drop()>=0&&p.drop()<=12
