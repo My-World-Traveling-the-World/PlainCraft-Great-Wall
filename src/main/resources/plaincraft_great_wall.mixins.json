@@ -5,6 +5,6 @@
   "plugin": "local.plaincraft.greatwall.compat.c2me.ProbeMixinPlugin",
   "mixins": ["ChunkMapAccess", "TerrainChunkAccess", "MinecraftServerProbeMixin", "VanillaGateMixin",
     "NoiseInterpolatorAccess", "NoiseGeneratorAccess", "NoiseSliceMixin",
-    "SpawnProbeMixin", "BootstrapSpawnMixin", "TreeFeatureMixin"],
+    "SpawnProbeMixin", "BootstrapSpawnMixin", "TreeFeatureMixin", "OwnershipMutationMixin"],
   "injectors": {"defaultRequire": 1}
 }

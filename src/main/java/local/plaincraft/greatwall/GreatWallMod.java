@@ -13,6 +13,7 @@ public final class GreatWallMod implements ModInitializer {
     @Override
     public void onInitialize() {
         TerrainMarkers.register();
+        local.plaincraft.greatwall.generation.OwnershipMutations.register();
         WorldServices.register();
         LOGGER.info("[GreatWall:S0-01] Common entrypoint loaded; world generation disabled");
         RuntimeVersions.capture().forEach(version -> LOGGER.info(
