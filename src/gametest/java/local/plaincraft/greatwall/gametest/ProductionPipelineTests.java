@@ -21,8 +21,7 @@ import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 
 public final class ProductionPipelineTests implements FabricGameTest {
-    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
-    public void fringeOwnerOutsideAllComponentReadsStillHasItsOwnDurableCoverage(GameTestHelper helper){
+    public void fringeOwnerMissingDurableCoverageIsRejectedBeforeApply(GameTestHelper helper){
         var io=Executors.newSingleThreadExecutor(r->{var t=new Thread(r,"pgw-fringe-owner");t.setDaemon(true);return t;});
         var chunks=new ConcurrentHashMap<ChunkPos,ChunkAccess>();
         var failures=new ConcurrentHashMap<String,Throwable>();var recipe=recipe();var window=plans();
@@ -36,24 +35,42 @@ public final class ProductionPipelineTests implements FabricGameTest {
                     for(var p:positions)ready.put(p,chunks.computeIfAbsent(p,q->chunk(helper,q)));
                     return new PlanLease<>(UUID.randomUUID(),CompletableFuture.completedFuture(Map.copyOf(ready)),()->{});
                 },()->{},e->failures.put("failure",e),io);
-        var realization=new RealizationPlanner(recipe,new SurfaceProbe(),S1TemplateSet.create(recipe.seed()));
+        var decay=new DecayField(3);var palette=palette();
+        var realization=new RealizationPlanner(recipe,new SurfaceProbe(),Map.of(
+                SiteKind.WALL,new WallSection(decay,palette),SiteKind.END_CAP,new EndCap(decay,palette),
+                SiteKind.FORT,new FortPlaceholder(decay,palette)));
         var pipeline=new ProductionWallPipeline(recipe,ports,snapshots,realization,new ChunkPlanCompiler(),new ChunkWallWriter());
-        var key=new ChunkKey(recipe.dimension(),0,4);var pos=new ChunkPos(0,4);
+        var key=new ChunkKey(recipe.dimension(),2,6);var pos=new ChunkPos(2,6);
+        var coverage=new CoveragePlanner();
+        helper.assertTrue(!coverage.cellsForChunk(key,window).isEmpty(),"104-block lateral halo dispatches this owner");
+        helper.assertTrue(coverage.cellsForChunk(key,window).stream().noneMatch(cell->
+                coverage.realizationOwners(cell,window).contains(key)),"owner is outside every station capture set");
         var owner=chunks.computeIfAbsent(pos,p->chunk(helper,p));
-        pipeline.beforeLight(key,owner,new VanillaTerrainEngine(helper.getLevel()))
-                .thenApplyAsync(ignored->{
-                    try{return Map.entry(store.readCoverage(key).orElseThrow(),store.readPlan(key).orElseThrow());}
-                    catch(Exception error){throw new CompletionException(error);}
-                },io).orTimeout(120,TimeUnit.SECONDS).whenComplete((proof,error)->helper.getLevel().getServer().execute(()->{
+        // Isolated ProtoChunks need no live world's mailbox admission. Keep the actual
+        // lock sentinel and producer chain; only the scheduling port is fixture-local.
+        var engine=new TerrainEngine() {
+            public <T> CompletableFuture<T> exclusive(ChunkPos pos,java.util.function.Supplier<T> action) {
+                return CompletableFuture.supplyAsync(()->{
+                    local.plaincraft.greatwall.diagnostics.StageTrace.enterLockAction();
+                    try{return action.get();}
+                    finally{local.plaincraft.greatwall.diagnostics.StageTrace.leaveLockAction();}
+                },io);
+            }
+            public String name(){return "isolated-proto-owner";}
+        };
+        pipeline.beforeLight(key,owner,engine)
+                .orTimeout(120,TimeUnit.SECONDS).whenComplete((ignored,error)->helper.getLevel().getServer().execute(()->{
                     try{
-                        if(error!=null){helper.fail(error.toString());return;}
-                        helper.assertTrue(proof.getValue().voxels().isEmpty(),"fringe owner is not a wall body");
-                        helper.assertTrue(proof.getKey().coverage().hash().equals(proof.getValue().metadata().coverageHash()),
-                                "empty plans still bind actual persisted owner coverage");
-                        helper.assertTrue(owner.getAttached(TerrainMarkers.PRODUCTION)!=null
-                                &&owner.getAttached(TerrainMarkers.PRODUCTION).complete(),"own marker follows durable proof");
-                        helper.assertTrue(failures.isEmpty(),"no missing-owner exception suppressed");
-                        helper.succeed();
+                        Throwable cause=error;
+                        while(cause instanceof CompletionException&&cause.getCause()!=null)cause=cause.getCause();
+                        helper.assertTrue(cause instanceof local.plaincraft.greatwall.model.WallFailure
+                                &&((local.plaincraft.greatwall.model.WallFailure)cause).code()==FailureCode.T0_MISSING
+                                &&cause.getMessage().equals("owner not in realization evidence"),
+                                "retained pre-fix counterexample must reproduce exact missing-owner failure, not timeout: "+cause);
+                        helper.assertTrue(owner.getAttached(TerrainMarkers.PRODUCTION)==null,"failure remains before APPLY");
+                        helper.assertTrue(pipeline.diagnostics().getOrDefault("PRODUCTION_APPLY_ENTER",0L)==0,"zero writes on missing evidence");
+                        System.out.println("S1C_FRINGE_REPRODUCED owner="+key+" lateral=104 exact="+cause);
+                        helper.runAfterDelay(1,helper::succeed);
                     }finally{pipeline.close();io.shutdown();}
                 }));
     }

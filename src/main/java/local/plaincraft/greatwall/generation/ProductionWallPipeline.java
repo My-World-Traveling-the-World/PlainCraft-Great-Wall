@@ -147,7 +147,10 @@ public final class ProductionWallPipeline implements AutoCloseable {
                 .thenApply(next->combine(prior,next)),ports.worker());
         return chain.thenComposeAsync(collected->{
             active();
-            if(collected.own()==null)throw failure(FailureCode.T0_MISSING,"owner not in realization evidence");
+            if(collected.own()==null) {
+                System.err.println("S1C_OWNER_COVERAGE_MISSING owner="+key+" requestedCells="+cells);
+                throw failure(FailureCode.T0_MISSING,"owner not in realization evidence");
+            }
             var plan=CompiledAllocation.run(compilationBudget(),()->compiler.bindCoverage(
                     compiler.compile(key,recipe.recipeHash(),collected.cells(),collected.before()),collected.own().hash()),
                     value->4096L+512L*value.voxels().size());
@@ -181,6 +184,16 @@ public final class ProductionWallPipeline implements AutoCloseable {
                     before.put(v.pos(),column.state(v.pos().y()));
                 }
                 var own=data.metadata().get(owner);
+                if(own==null) {
+                    var projection=local.plaincraft.greatwall.geometry.Projection.nearest(
+                            owner.x()*16+8,owner.z()*16+8,new GeometryWindow(
+                                    initial.plans().stream().map(SegmentPlan::geometry).toList(),
+                                    initial.plans().stream().map(SegmentPlan::prefix).toList()));
+                    System.err.println("S1C_OWNER_CELL_DIAGNOSTIC owner="+owner+" cell="+cell
+                            +" lateralQ8="+projection.lateralQ8()+" globalSQ8="+projection.globalSQ8()
+                            +" capturedOwners="+data.metadata().keySet().stream()
+                                    .sorted(Comparator.comparingInt(ChunkKey::x).thenComparingInt(ChunkKey::z)).toList());
+                }
                 return new Collected(List.of(result),before,own==null?null:own.coverage(),componentBytes(result)+128L*before.size(),decisions);
             });
         },ports.worker());
