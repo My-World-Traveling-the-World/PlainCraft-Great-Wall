@@ -349,7 +349,8 @@ public final class RealizationPlanner {
                 var n=new Point3i(p.x()+dir[0],p.y()+dy,p.z()+dir[1]);
                 if(feet.contains(n)){if(seen.add(n))queue.addLast(n);continue;}
                 var column=input.columns().get(new Point3i(n.x(),0,n.z()));
-                if(column==null)throw new WallFailure(FailureCode.T0_MISSING,"ground-exit apron not captured");
+                if(column==null)throw new WallFailure(FailureCode.T0_MISSING,"ground-exit apron not captured: site="
+                        +site.id()+" from="+p+" neighbor="+n+" componentBounds="+box);
                 column=protectedView(column,n,input.protectedBounds());
                 if(n.y()<site.frame().walkY()&&column.highestNonPlantFeet()==n.y()&&column.solidSupport(n.y()-1)
                         &&!solids.contains(n)&&!solids.contains(new Point3i(n.x(),n.y()+1,n.z()))

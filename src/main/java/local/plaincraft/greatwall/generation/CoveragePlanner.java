@@ -7,12 +7,16 @@ import java.util.TreeSet;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.geometry.Projection;
+import local.plaincraft.greatwall.geometry.Rasterizer;
+import local.plaincraft.greatwall.component.ComponentTemplate;
+import local.plaincraft.greatwall.component.S1TemplateSet;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.EvidenceCodec;
 
 /** A canonical per-owner envelope includes every potential local template/retreat, not just accepted cells. */
 public final class CoveragePlanner {
+    private final java.util.Map<SiteKind,ComponentTemplate> templates=S1TemplateSet.create(0);
     public CoveragePlanner() {}
     public Coverage forChunk(ChunkKey chunk,PlanWindow plans,DimensionBounds bounds) {
         var stations=stations(plans);
@@ -59,16 +63,24 @@ public final class CoveragePlanner {
         for(var s:stations(plans))if(s.globalSQ8()>=from&&s.globalSQ8()<=to) {
             int x=FixedMath.floorBlock(s.point().xQ8()),z=FixedMath.floorBlock(s.point().zQ8());
             for(int cx=Math.floorDiv(x-16,16);cx<=Math.floorDiv(x+16,16);cx++)
-                for(int cz=Math.floorDiv(z-16,16);cz<=Math.floorDiv(z+16,16);cz++)owners.add(new ChunkKey(cell.dimension(),cx,cz));
+                for(int cz=Math.floorDiv(z-16,16);cz<=Math.floorDiv(z+16,16);cz++)
+                    owners.add(new ChunkKey(cell.dimension(),cx,cz));
         }
         for(var plan:plans.plans())for(var site:plan.sites())if(site.globalSQ8()>=from&&site.globalSQ8()<=to) {
-            var b=site.bounds();
-            for(int cx=Math.floorDiv(b.minX()-1,16);cx<=Math.floorDiv(b.maxXExclusive(),16);cx++)
-                for(int cz=Math.floorDiv(b.minZ()-1,16);cz<=Math.floorDiv(b.maxZExclusive(),16);cz++)
-                    owners.add(new ChunkKey(cell.dimension(),cx,cz));
+            var template=templates.get(site.id().kind());
+            if(template==null)throw new WallFailure(FailureCode.INVALID_RESOURCE,"unknown capture footprint: "+site.id());
+            var provisional=new ComponentInput(site,List.of(),java.util.Map.of(),new DecaySample(DecayState.INTACT,0,20),
+                    PaletteFamily.STONE,false,List.of(),List.of());
+            var b=Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
+            addOwners(owners,cell.dimension(),b);
         }
         if(owners.size()>256)throw new WallFailure(FailureCode.CAPACITY,"realization footprint exceeds 256 capture owners");
         return List.copyOf(owners);
+    }
+    private static void addOwners(TreeSet<ChunkKey> owners,String dimension,Bounds b){
+        for(int cx=Math.floorDiv(b.minX()-1,16);cx<=Math.floorDiv(b.maxXExclusive(),16);cx++)
+            for(int cz=Math.floorDiv(b.minZ()-1,16);cz<=Math.floorDiv(b.maxZExclusive(),16);cz++)
+                owners.add(new ChunkKey(dimension,cx,cz));
     }
     private static List<Station> stations(PlanWindow plans) {
         var result=new TreeMap<Long,Station>();
