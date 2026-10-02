@@ -60,9 +60,10 @@ public final class Fort implements ComponentTemplate {
         if (root) {
             input = new ComponentInput(input.site(), input.stations(), input.supports(),
                     new DecaySample(DecayState.INTACT, 0, 20), input.family(), input.redSandstone(),
-                    input.waters(), input.materials());
+                    input.waters(), input.materials(), input.entranceEvidence());
         }
-        int groundFeet = Ramp.ground(input, -2, -HALF, 2, HALF);
+        var entrance = Ramp.entrance(input, -2, -HALF, 2, HALF);
+        int groundFeet = entrance.map(GroundEntranceContract.Certificate::lowerFeetY).orElse(Integer.MIN_VALUE);
         if (groundFeet == Integer.MIN_VALUE) {
             if (root) throw new WallFailure(FailureCode.ROOT_NOT_FOUND, "fort0 ground road has no supported entrance");
             return ComponentAssembly.empty(input.site().id(), input.site().bounds());

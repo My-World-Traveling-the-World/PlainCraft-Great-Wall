@@ -3,7 +3,6 @@ package local.plaincraft.greatwall.component;
 import java.util.Objects;
 import local.plaincraft.greatwall.decay.DecayField;
 import local.plaincraft.greatwall.decay.PaletteBinding;
-import local.plaincraft.greatwall.geometry.Rasterizer;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.model.WallFailure;
 
@@ -39,17 +38,12 @@ public final class Ramp implements ComponentTemplate {
         return compileBetween(input,lower,input.site().frame().walkY());
     }
     static int ground(ComponentInput input,int x0,int z0,int x1,int z1) {
-        var frame=input.site().frame();
-        var bounds=Rasterizer.worldBounds(frame,new Bounds(x0,-33,z0,x1,3,z1));
-        int min=Integer.MAX_VALUE,max=Integer.MIN_VALUE,count=0;
-        for(int z=bounds.minZ();z<bounds.maxZExclusive();z++)for(int x=bounds.minX();x<bounds.maxXExclusive();x++){
-            var local=Rasterizer.localCell(frame,new Point3i(x,frame.walkY(),z));
-            if(local.x()<x0||local.x()>=x1||local.z()<z0||local.z()>=z1)continue;
-            var support=input.supports().get(new Point3i(x,frame.walkY(),z));
-            if(support==null||support.kind()!=ProbeKind.SUPPORTED)return Integer.MIN_VALUE;
-            min=Math.min(min,support.groundTopY());max=Math.max(max,support.groundTopY());count++;
-        }
-        return count==0||max-min>1||max<frame.walkY()-32||max>=frame.walkY()?Integer.MIN_VALUE:max;
+        return entrance(input,x0,z0,x1,z1).map(GroundEntranceContract.Certificate::lowerFeetY).orElse(Integer.MIN_VALUE);
+    }
+    static java.util.Optional<GroundEntranceContract.Certificate> entrance(ComponentInput input,int x0,int z0,int x1,int z1) {
+        return GroundEntranceContract.inspect(input.site().frame(),
+                GroundEntranceContract.Corridor.forSite(input.site().id().kind(),x0,z0,x1,z1),
+                input.supports(),input.entranceEvidence());
     }
     public ComponentVoxels compileBetween(ComponentInput input, int lowerFeetY, int upperFeetY) {
         int w = input.site().frame().walkY();
