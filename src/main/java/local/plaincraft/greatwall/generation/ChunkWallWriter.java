@@ -65,6 +65,10 @@ public final class ChunkWallWriter {
         for(var p:plan.walkwayFeet())checkOwner(plan,p,bounds);
         for(var p:plan.metadata().spawnSlots())checkOwner(plan,p.feet(),bounds);
         if(!conflicts.isEmpty())return new WriteReport(plan.owner(),0,0,conflicts,false,plan.hash());
+        var owned=new HashSet<Point3i>();var firepits=new HashSet<Point3i>();
+        for(var v:plan.voxels())owned.add(v.pos());
+        for(var e:plan.blockEntities())if(e.type().equals("minecraft:campfire"))firepits.add(e.pos());
+        owner.setAttached(TerrainMarkers.OWNERSHIP,new TerrainMarkers.Ownership(plan.metadata().gateRevision(),owned,firepits));
         owner.setAttached(TerrainMarkers.PRODUCTION,marker(plan,false));
         owner.setUnsaved(true);
         int written=0,unchanged=0;
