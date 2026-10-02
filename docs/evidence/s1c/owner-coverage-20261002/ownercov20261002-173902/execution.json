@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "sourceCommit": "e84c30b89b1861a0b63ef76e7beb84299e7abb17",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "sourceStatus": [
+    "?? \"docs/S1C-owner-coverage-\\350\\257\\212\\346\\226\\255\\344\\270\\216\\346\\226\\271\\346\\241\\210.md\"",
+    "?? docs/S2.md",
+    "?? docs/evidence/s1c/owner-coverage-20261002/",
+    "?? docs/evidence/s2/initial-20261002/"
+  ],
+  "sourceHashes": "source-files.sha256.json",
+  "command": [
+    ".\\gradlew.bat",
+    "--offline",
+    "--dependency-verification=strict",
+    "runServerSmoke",
+    "-PsmokeProfile=vanilla",
+    "-PsmokeRunId=ownercov20261002-173902",
+    "-Ps1cRealWall=true",
+    "-Ps1cSeed=17",
+    "-Ps1cRepresentativeBlocks=100",
+    "--no-daemon",
+    "--console=plain"
+  ],
+  "startedUtc": "2026-10-02T09:39:03.2802291+00:00",
+  "status": "COMMAND_FAILED",
+  "exitCode": 1,
+  "finishedUtc": "2026-10-02T10:16:45.0560620+00:00",
+  "elapsedSeconds": 2261.7758329,
+  "logSha256": "4ac49722d4eb00c3363add0e5c554ca3727b567915fcc726472a8ec93e398150"
+}

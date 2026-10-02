@@ -1,0 +1,36 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileClientJava UP-TO-DATE
+> Task :processClientResources UP-TO-DATE
+> Task :clientClasses UP-TO-DATE
+> Task :compileGametestJava UP-TO-DATE
+> Task :compileServerSmokeJava
+> Task :processServerSmokeResources UP-TO-DATE
+> Task :serverSmokeClasses
+> Task :compileTestJava UP-TO-DATE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :testClasspathBridge
+
+> Task :test
+
+ArchivedOwnerCoverageTest > archivedRequestsAreComparedWithActualDurableCaptureOwners() PASSED
+
+WallWorldStateTest > verifiedHeaderRoundTripsWithoutStoringPermanentIds() PASSED
+
+WallWorldStateTest > negativeAndMalformedHeaderCannotBecomeEmptyHistory() PASSED
+
+WallWorldStateTest > everyMissingFieldAndFutureSchemaFailClosed() PASSED
+
+WallWorldStateTest > applyRejectsRollbackAndForeignJournalIdentity() PASSED
+
+BUILD SUCCESSFUL in 21s
+10 actionable tasks: 3 executed, 7 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html

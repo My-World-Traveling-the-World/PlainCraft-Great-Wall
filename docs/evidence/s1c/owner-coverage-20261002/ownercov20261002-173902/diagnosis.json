@@ -1,0 +1,2083 @@
+{
+  "scope": "Read-only diagnostic rerun; NOT S1C acceptance or coverage repair",
+  "sourceCommit": "e84c30b89b1861a0b63ef76e7beb84299e7abb17",
+  "headAtArchive": "065790d860d68fad496705c6a341f89cf937edd1",
+  "sourceInputsChecked": 290,
+  "changedSourceInputs": [],
+  "exitCode": 1,
+  "elapsedSeconds": 2261.7758329,
+  "failure": "T0_MISSING: owner not in realization evidence",
+  "finalMissingOwners": [
+    {
+      "evidenceLevel": "VERIFIED_RUNTIME",
+      "logLine": 292,
+      "owner": {
+        "dimension": "minecraft:overworld",
+        "x": 9,
+        "z": 56
+      },
+      "raw": "[18:15:43] [greatwall-t0-io/INFO] (Minecraft) [STDERR]: S1C_OWNER_COVERAGE_MISSING owner=ChunkKey[dimension=minecraft:overworld, x=9, z=56] requestedCells=[CellKey[recipeHash=2d98902029c77dc0040bd82cc2e70a1d0bb246eedfa7ee38935406b16348cf7b, dimension=minecraft:overworld, arcCell=0], CellKey[recipeHash=2d98902029c77dc0040bd82cc2e70a1d0bb246eedfa7ee38935406b16348cf7b, dimension=minecraft:overworld, arcCell=1], CellKey[recipeHash=2d98902029c77dc0040bd82cc2e70a1d0bb246eedfa7ee38935406b16348cf7b, dimension=minecraft:overworld, arcCell=2], CellKey[recipeHash=2d98902029c77dc0040bd82cc2e70a1d0bb246eedfa7ee38935406b16348cf7b, dimension=minecraft:overworld, arcCell=3]]"
+    }
+  ],
+  "cellDiagnostics": [
+    {
+      "evidenceLevel": "VERIFIED_RUNTIME",
+      "logLine": 288,
+      "owner": {
+        "dimension": "minecraft:overworld",
+        "x": 9,
+        "z": 56
+      },
+      "cell": 0,
+      "lateralQ8": 18486,
+      "lateralBlocks": 72.2109375,
+      "globalSQ8": 0,
+      "capturedOwnerCount": 79,
+      "capturedContainsRequester": false,
+      "capturedOwners": [
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 76
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 76
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 76
+        }
+      ]
+    },
+    {
+      "evidenceLevel": "VERIFIED_RUNTIME",
+      "logLine": 289,
+      "owner": {
+        "dimension": "minecraft:overworld",
+        "x": 9,
+        "z": 56
+      },
+      "cell": 1,
+      "lateralQ8": 18486,
+      "lateralBlocks": 72.2109375,
+      "globalSQ8": 0,
+      "capturedOwnerCount": 91,
+      "capturedContainsRequester": false,
+      "capturedOwners": [
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 76
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 77
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 78
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 79
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 80
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 76
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 77
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 78
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 79
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 80
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 76
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 77
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 78
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 79
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 80
+        }
+      ]
+    },
+    {
+      "evidenceLevel": "VERIFIED_RUNTIME",
+      "logLine": 290,
+      "owner": {
+        "dimension": "minecraft:overworld",
+        "x": 9,
+        "z": 56
+      },
+      "cell": 2,
+      "lateralQ8": 18486,
+      "lateralBlocks": 72.2109375,
+      "globalSQ8": 0,
+      "capturedOwnerCount": 106,
+      "capturedContainsRequester": false,
+      "capturedOwners": [
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 76
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 77
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 78
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 79
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 80
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 81
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 76
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 77
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 78
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 79
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 80
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 81
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 82
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 83
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 84
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 76
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 77
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 78
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 79
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 80
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 81
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 82
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 83
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 84
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 79
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 80
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 81
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 82
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 83
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 84
+        }
+      ]
+    },
+    {
+      "evidenceLevel": "VERIFIED_RUNTIME",
+      "logLine": 291,
+      "owner": {
+        "dimension": "minecraft:overworld",
+        "x": 9,
+        "z": 56
+      },
+      "cell": 3,
+      "lateralQ8": 18486,
+      "lateralBlocks": 72.2109375,
+      "globalSQ8": 0,
+      "capturedOwnerCount": 118,
+      "capturedContainsRequester": false,
+      "capturedOwners": [
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 10,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 11,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 12,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 13,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 57
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 58
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 59
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 60
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 61
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 62
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 14,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 63
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 64
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 65
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 66
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 67
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 76
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 77
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 78
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 79
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 80
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 15,
+          "z": 81
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 68
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 69
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 70
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 71
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 72
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 76
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 77
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 78
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 79
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 80
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 81
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 82
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 83
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 84
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 85
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 86
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 87
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 16,
+          "z": 88
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 73
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 74
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 75
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 76
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 77
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 78
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 79
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 80
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 81
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 82
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 83
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 84
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 85
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 86
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 87
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 17,
+          "z": 88
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 79
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 80
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 81
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 82
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 83
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 84
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 85
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 86
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 87
+        },
+        {
+          "dimension": "minecraft:overworld",
+          "x": 18,
+          "z": 88
+        }
+      ]
+    }
+  ],
+  "oldRunExactOwner": "UNDETERMINED; this rerun identity cannot replace the old requester",
+  "productionWiring": "OFF",
+  "root": {
+    "x": 206,
+    "y": 67,
+    "z": 953
+  },
+  "rootMaxBatchMs": 18.8661,
+  "rootOver40msBatches": 0,
+  "durableCoverageFiles": 133,
+  "progressPresent": false,
+  "voxels": null,
+  "voxelsEvidence": "NOT_AVAILABLE: real-wall-progress.json absent",
+  "observedApplyEnterCount": 0,
+  "observedApplyExitCount": 0,
+  "stoppingFlights": 8,
+  "stoppingAdmitted": 8,
+  "drainDefect": "S1C-DRAIN-01 OPEN; watchdog exit",
+  "preservedWorldScope": "world/greatwall only; original isolated world remains unmodified in build/run",
+  "fixtureRepresentativeBlocks": 100,
+  "derivedEvidenceCorrection": "Explicit PSMember array count; first invalid-count export retained separately. No raw log or runtime input changed."
+}
