@@ -111,7 +111,8 @@ public final class RealizationPlanner {
             if(e.getKey().y()!=0)throw new IllegalArgumentException("column keys use y=0, independent of contract W");
             var contract=WallSection.contract(stations,e.getKey().x(),e.getKey().z());
             if(contract.globalSQ8()<Math.max(0,from-160L*256)||contract.globalSQ8()>=to+160L*256)continue;
-            var value=probe.probe(protectedView(e.getValue(),e.getKey(),input.protectedBounds()),contract.walkY(),bounds);
+            var value=ProtectedColumnView.use(e.getValue(),e.getKey(),input.protectedBounds(),
+                    column->probe.probe(column,contract.walkY(),bounds));
             supported.put(new Point3i(e.getKey().x(),contract.walkY(),e.getKey().z()),value);
             if(contract.lateralCell()>=-5&&contract.lateralCell()<5&&value.kind()!=ProbeKind.SUPPORTED&&value.kind()!=ProbeKind.WATER){
                 long bin=Math.floorDiv(contract.globalSQ8(),256)*256;
@@ -351,11 +352,12 @@ public final class RealizationPlanner {
                 var column=input.columns().get(new Point3i(n.x(),0,n.z()));
                 if(column==null)throw new WallFailure(FailureCode.T0_MISSING,"ground-exit apron not captured: site="
                         +site.id()+" from="+p+" neighbor="+n+" componentBounds="+box);
-                column=protectedView(column,n,input.protectedBounds());
-                if(n.y()<site.frame().walkY()&&column.highestNonPlantFeet()==n.y()&&column.solidSupport(n.y()-1)
+                boolean natural=ProtectedColumnView.use(column,n,input.protectedBounds(),view->
+                        n.y()<site.frame().walkY()&&view.highestNonPlantFeet()==n.y()&&view.solidSupport(n.y()-1)
                         &&!solids.contains(n)&&!solids.contains(new Point3i(n.x(),n.y()+1,n.z()))
-                        &&column.airOrReplaceablePlant(n.y())&&column.airOrReplaceablePlant(n.y()+1)
-                        &&!column.protectedAt(n.y())&&!column.protectedAt(n.y()-1)) {
+                        &&view.airOrReplaceablePlant(n.y())&&view.airOrReplaceablePlant(n.y()+1)
+                        &&!view.protectedAt(n.y())&&!view.protectedAt(n.y()-1));
+                if(natural) {
                     if(n.x()<box.minX()||n.x()>=box.maxXExclusive()||n.z()<box.minZ()||n.z()>=box.maxZExclusive())return true;
                     if(seen.add(n))queue.addLast(n);
                 }
@@ -411,7 +413,8 @@ public final class RealizationPlanner {
             if(column==null)throw new WallFailure(FailureCode.T0_MISSING,"complete component T0 column missing: "+pos);
             var key=new Point3i(x,site.frame().walkY(),z);
             var existing=known.get(key);
-            supports.put(key,existing!=null?existing:probe.probe(protectedView(column,pos,input.protectedBounds()),key.y(),bounds));
+            supports.put(key,existing!=null?existing:ProtectedColumnView.use(column,pos,input.protectedBounds(),
+                    view->probe.probe(view,key.y(),bounds)));
         }
         if(Boolean.getBoolean("greatwall.s1c.protectionTrace")&&site.id().kind()==SiteKind.FORT&&site.id().ordinal()==0) {
             var counts=new EnumMap<ProbeKind,Integer>(ProbeKind.class);
@@ -504,16 +507,6 @@ public final class RealizationPlanner {
             cursor=Math.max(cursor,gap.toQ8());if(cursor>=span.toQ8())break;
         }
         if(cursor<span.toQ8())result.add(new ArcInterval(cursor,span.toQ8()));return List.copyOf(result);
-    }
-    private static SurfaceProbe.ColumnView protectedView(SurfaceProbe.ColumnView original,Point3i pos,List<Bounds> boxes){
-        return new SurfaceProbe.ColumnView(){
-            public String state(int y){return original.state(y);}public boolean solidSupport(int y){return original.solidSupport(y);}
-            public boolean water(int y){return original.water(y);}public boolean airOrReplaceablePlant(int y){return original.airOrReplaceablePlant(y);}
-            public int highestNonPlantFeet(){return original.highestNonPlantFeet();}public String hash(){return original.hash();}
-            public boolean naturalThinIce(int y){return original.naturalThinIce(y)&&!protectedAt(y);}
-            public boolean protectedAt(int y){return original.protectedAt(y)||boxes.stream().anyMatch(b->pos.x()>=b.minX()&&pos.x()<b.maxXExclusive()
-                    &&pos.z()>=b.minZ()&&pos.z()<b.maxZExclusive()&&y>=b.minY()&&y<b.maxYExclusive());}
-        };
     }
     private static BreakReason reason(ProbeKind kind){return switch(kind){case PROTECTED->BreakReason.STRUCTURE_CONFLICT;case UPPER_CENSORED->BreakReason.BURIED;default->BreakReason.NO_SUPPORT;};}
     private static RealizationCell result(Input input,List<BreakInterval> breaks,List<ComponentVoxels> components,String t0){
