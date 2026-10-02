@@ -64,7 +64,9 @@ public final class EnemyTower implements ComponentTemplate {
     private static int entranceDrop(ComponentInput input) {
         int[][] doors={{-4,-5,-2,-4},{-4,5,-2,6},{5,3,6,5},{3,-5,5,-4}};
         for(int side=0;side<doors.length;side++) {
-            var door=doors[side];int ground=Ramp.ground(input,door[0],door[1],door[2],door[3]);
+            var door=doors[side];
+            var entrance=Ramp.entrance(input,door[0],door[1],door[2],door[3]);
+            int ground=entrance.map(GroundEntranceContract.Certificate::lowerFeetY).orElse(Integer.MIN_VALUE);
             if(ground==Integer.MIN_VALUE)continue;
             int drop=input.site().frame().walkY()-20-ground;
             if(side==0&&drop==0||side==1&&drop>=1&&drop<=5||side==2&&drop>=6&&drop<=10||side==3&&drop>=11&&drop<=12)return drop;

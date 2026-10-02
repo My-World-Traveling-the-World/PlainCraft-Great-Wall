@@ -13,7 +13,8 @@ public final class Gate implements ComponentTemplate {
     public Gate(DecayField decay,PaletteBinding palette) {this.decay=Objects.requireNonNull(decay);this.palette=Objects.requireNonNull(palette);}
     @Override public Bounds localBounds(ComponentInput input) { Objects.requireNonNull(input);return new Bounds(-30,-33,-15,30,4,15); }
     @Override public ComponentVoxels compile(ComponentInput input) {
-        int ground=Ramp.ground(input,-2,-5,2,5);
+        var entrance=Ramp.entrance(input,-2,-5,2,5);
+        int ground=entrance.map(GroundEntranceContract.Certificate::lowerFeetY).orElse(Integer.MIN_VALUE);
         if(ground==Integer.MIN_VALUE)return ComponentAssembly.empty(input.site().id(),input.site().bounds());
         return compileAtGround(input,ground);
     }
