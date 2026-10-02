@@ -5,8 +5,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.function.BiPredicate;
 import local.plaincraft.greatwall.geometry.FixedMath;
+import local.plaincraft.greatwall.geometry.DeterministicHash;
+import local.plaincraft.greatwall.component.GroundEntranceContract;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.NaturalTerrainOracle;
@@ -64,6 +67,11 @@ public final class RootSearch {
     private boolean invalid, lastSupport;
     private Axis axis;
     private Selection best;
+    private Frame entranceFrame;
+    private List<Point3i> entrancePositions=List.of();
+    private final Map<Point3i,ProbeResult> entranceSupports=new java.util.HashMap<>();
+    private final Map<Point3i,local.plaincraft.greatwall.generation.SurfaceProbe.ColumnView> entranceColumns=new java.util.HashMap<>();
+    private int entranceIndex,entranceMin,entranceMax;
 
     public RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
             BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation) {
@@ -93,6 +101,7 @@ public final class RootSearch {
                     case 0 -> coarseStep(oracle);
                     case 1 -> footprintStep(oracle);
                     case 2 -> axisStep(oracle);
+                    case 5 -> entranceStep(oracle);
                     default -> throw new IllegalStateException("unknown root phase");
                 }
                 if (System.nanoTime() >= deadline) break;
@@ -247,10 +256,45 @@ public final class RootSearch {
         if (++sampleIndex < 9) return;
         audit.add(new Audit("axis", current.origin(), current.radius(), current.angle(), axisIndex, wet,
                 invalidSamples, 0, min, max, !invalid && wet == 0 ? "DRY_AXIS_ELIGIBLE" : "REJECTED"));
-        if (!invalid && wet == 0 && (best == null || axisScore > best.ridgeScore())) {
-            best = new Selection(axis, current.radius(), current.angle(), axisIndex, axisScore, 0, 0, 0);
+        if (!invalid && wet == 0) {
+            entranceFrame=new Frame(new Point2q((long)axis.origin().x()*256,(long)axis.origin().z()*256),
+                    axis.exQ30(),axis.ezQ30(),Math.addExact(axis.origin().y(),20),false);
+            entrancePositions=GroundEntranceContract.columns(entranceFrame,GroundEntranceContract.Corridor.fort());
+            entranceSupports.clear();entranceColumns.clear();entranceIndex=0;
+            entranceMin=Integer.MAX_VALUE;entranceMax=Integer.MIN_VALUE;phase=5;return;
         }
         axisIndex++; resetSamples();
+    }
+
+    private void entranceStep(NaturalTerrainOracle oracle){
+        var current=shortlisted.get(selectedIndex);
+        var p=entrancePositions.get(entranceIndex);
+        if(!inside(p.x(),p.z(),0)){
+            finishEntrance(current,OptionalInt.empty());return;
+        }
+        var value=read(oracle,p.x(),p.z(),true);
+        if(value==null)return;
+        int drop=Math.max(0,entranceFrame.walkY()-20-value.groundTopY());
+        ProbeKind kind=value.upperCensored()||value.quality()!=Quality.REFERENCE?ProbeKind.UPPER_CENSORED:
+                !lastSupport||drop>12?ProbeKind.NO_SUPPORT:value.waterTopY().isPresent()?ProbeKind.WATER:ProbeKind.SUPPORTED;
+        String hash=DeterministicHash.sha256((oracle.fingerprint()+"\n"+p+"\n"+value+"\n"+lastSupport)
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        var probe=new ProbeResult(kind,value.groundTopY(),value.waterTopY(),value.bedTopY(),drop,hash);
+        entranceSupports.put(p,probe);
+        entranceColumns.put(new Point3i(p.x(),0,p.z()),new GroundEntranceContract.ClearSkyColumn(probe));
+        entranceMin=Math.min(entranceMin,value.groundTopY());entranceMax=Math.max(entranceMax,value.groundTopY());
+        if(++entranceIndex<entrancePositions.size())return;
+        var evidence=new GroundEntranceContract.Evidence(GroundEntranceContract.Source.NATURAL_REFERENCE,bounds,entranceColumns);
+        var certificate=GroundEntranceContract.inspect(entranceFrame,GroundEntranceContract.Corridor.fort(),entranceSupports,evidence);
+        finishEntrance(current,certificate.isPresent()?OptionalInt.of(certificate.get().lowerFeetY()):OptionalInt.empty());
+    }
+    private void finishEntrance(Candidate current,OptionalInt lower){
+        audit.add(new Audit("entrance-rotated-reference",current.origin(),current.radius(),current.angle(),axisIndex,
+                0,0,0,entranceMin,entranceMax,lower.isPresent()?"ENTRY_ELIGIBLE:lower="+lower.getAsInt():"REJECTED"));
+        if(lower.isPresent()&&(best==null||axisScore>best.ridgeScore()))
+            best=new Selection(axis,current.radius(),current.angle(),axisIndex,axisScore,0,0,0);
+        entranceSupports.clear();entranceColumns.clear();entrancePositions=List.of();
+        axisIndex++;phase=2;resetSamples();
     }
 
     private ColumnSample read(NaturalTerrainOracle oracle, int x, int z, boolean requireFoundation) {

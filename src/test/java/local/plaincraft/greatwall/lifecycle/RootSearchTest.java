@@ -11,6 +11,16 @@ import org.junit.jupiter.api.Test;
 
 final class RootSearchTest {
     private static final DimensionBounds BOUNDS = new DimensionBounds(-64, 320, 30_000_000);
+    @Test void selectedAxisHasSeparateRotatedEntranceEvidenceWithinTheOriginalBudget() {
+        var search=search((o,c)->true);var oracle=new Fixture(false);
+        while(search.advance(oracle,64)!=WorkState.DONE){}
+        var selected=search.finish();
+        assertTrue(search.audit().stream().anyMatch(a->a.stage().equals("entrance-rotated-reference")
+                &&a.radiusIndex()==selected.radiusIndex()&&a.angleIndex()==selected.angleIndex()
+                &&a.axisIndex()==selected.axisIndex()&&a.result().startsWith("ENTRY_ELIGIBLE")));
+        assertTrue(selected.columns()<=150000);
+        assertTrue(selected.columns()>128*81+8*2304,"rotated entrance is separately sampled, not borrowed from the axis-aligned footprint");
+    }
     @Test void screenedCandidatesContinueInOriginalOrderAfterFirstEightFailSupport() {
         var domain=new SpawnDomain();domain.authorize(new ChunkKey("minecraft:overworld",-63,-63),11);
         int[] foundations={0};
