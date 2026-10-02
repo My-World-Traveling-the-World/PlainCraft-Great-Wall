@@ -53,7 +53,7 @@ public final class WallObstacleProvider implements PlanningObstacleProvider {
         this.source = Objects.requireNonNull(source, "source");
     }
 
-    @Override public String providerId() { return "plaincraft_great_wall"; }
+    @Override public String providerId() { return "plaincraft_great_wall:wall"; }
 
     @Override public int protocolVersion() { return 1; }
 
