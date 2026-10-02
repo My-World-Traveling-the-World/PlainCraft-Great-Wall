@@ -8,6 +8,7 @@ import java.util.Objects;
 import local.plaincraft.greatwall.decay.DecayField;
 import local.plaincraft.greatwall.decay.PaletteBinding;
 import local.plaincraft.greatwall.decay.SupportGraph;
+import local.plaincraft.greatwall.geometry.Rasterizer;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
@@ -182,14 +183,21 @@ public final class Fort implements ComponentTemplate {
 
     private static boolean footprintSupported(ComponentInput input, int walkY, int groundFeet) {
         var supports = input.supports();
-        for (int z = -HALF; z < HALF; z++) for (int x = -HALF; x < HALF; x++) {
+        var frame = input.site().frame();
+        var world = Rasterizer.worldBounds(frame, new Bounds(-HALF,-32,-HALF,HALF,8,HALF));
+        int columns = 0;
+        for (int z = world.minZ(); z < world.maxZExclusive(); z++)
+                for (int x = world.minX(); x < world.maxXExclusive(); x++) {
+            var local = Rasterizer.localCell(frame, new Point3i(x,walkY,z));
+            if (local.x() < -HALF || local.x() >= HALF || local.z() < -HALF || local.z() >= HALF) continue;
             var probe = supports.get(new Point3i(x, walkY, z));
             if (probe == null) return false;
             if (probe.kind() != ProbeKind.SUPPORTED && probe.kind() != ProbeKind.WATER) return false;
             if (probe.drop() > 12) return false;
             if (probe.groundTopY() >= walkY) return false;
+            columns++;
         }
-        return true;
+        return columns > 0;
     }
 
     private record Point2i(int x, int z) {}
