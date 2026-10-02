@@ -1,5 +1,16 @@
 # S1C 当前状态
 
+## 2026-10-02 标签补齐与抑制的改前成本分析
+
+**仅分析、等方案确认；生产 OFF，Tan's BLOCKED，未签收。**
+最新分析见 `docs/S1C-fort0标签与抑制成本对比.md`。
+优先建议 A 的显式标签补齐，未实施标签或 FEATURES 抑制。
+旧真实 T0/frame 的只读拟议分类预检：入口190/190 SUPPORTED，
+但苔石承重时 groundTopY=67..70（差3），仅可替换时67..69（差2），
+都超过原入口差值<=1。此为反事实诊断，不是新标签实机通过。
+3列残余岩浆在读取包络外沿而不在 fort 局部足印，不误称实际构件相交。
+S1C-DRAIN-01仍独立未闭合；本轮未新跑JUnit/build/GameTest/seed17写墙。
+
 ## 2026-10-02 fort0 批准修订结果
 
 **BLOCKED_AFTER_APPROVED_REVISIONS，未签收，生产 OFF，Tan's BLOCKED。**

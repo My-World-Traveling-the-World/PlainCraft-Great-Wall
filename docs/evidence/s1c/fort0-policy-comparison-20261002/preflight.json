@@ -1,0 +1,5557 @@
+{
+  "bounds": {
+    "minX": 176,
+    "minY": 55,
+    "minZ": 923,
+    "maxXExclusive": 236,
+    "maxYExclusive": 95,
+    "maxZExclusive": 983
+  },
+  "currentKinds": {
+    "PROTECTED": 256,
+    "SUPPORTED": 3344
+  },
+  "entranceColumns": 190,
+  "entranceKinds": {
+    "SUPPORTED": 190
+  },
+  "entranceRows": [
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 14
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 191,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 18
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 187,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 17
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 188,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 16
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 189,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 15
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 190,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 14
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 191,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 22
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 183,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 21
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 184,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 20
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 185,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 19
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 186,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 18
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 187,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 17
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 188,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 16
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 189,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 15
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 190,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 14
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 191,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 23
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 182,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:podzol{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 22
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 183,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 21
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 184,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 20
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 185,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 20
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 186,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 19
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 187,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 18
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 188,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 17
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 189,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 16
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 190,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 15
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 191,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 23
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 183,
+      "z": 958,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:podzol{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 22
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 184,
+      "z": 958,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 21
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 185,
+      "z": 958,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 20
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 186,
+      "z": 958,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 19
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 187,
+      "z": 958,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 18
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 188,
+      "z": 958,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 17
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 189,
+      "z": 958,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 16
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 190,
+      "z": 958,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 23
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 183,
+      "z": 959,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:podzol{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 22
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 184,
+      "z": 959,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:podzol{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 21
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 185,
+      "z": 959,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:podzol{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 20
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 186,
+      "z": 959,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 1
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 204,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 0
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 205,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -1
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 206,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -2
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 207,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 6
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 199,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 5
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 200,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 4
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 201,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 3
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 202,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 2
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 203,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 1
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 204,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 0
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 205,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -1
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 206,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -2
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 207,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 10
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 195,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 9
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 196,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 8
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 197,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 7
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 198,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 6
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 199,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 5
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 200,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 4
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 201,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 3
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 202,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 2
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 203,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 204,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 205,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -1
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 206,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -2
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 207,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 13
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 192,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 12
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 193,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": 11
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 194,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 10
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 195,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 9
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 196,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 8
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 197,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 7
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 198,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 6
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 199,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 5
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 200,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 4
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 201,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 3
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 202,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 2
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 203,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 1
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 204,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 0
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 205,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -1
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 206,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -2
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 207,
+      "z": 954,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 13
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 192,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 12
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 193,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": 11
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 194,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 10
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 195,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 9
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 196,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 8
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 197,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 7
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 198,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 6
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 199,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 5
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 200,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 4
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 201,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 3
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 202,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 3
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 203,
+      "z": 955,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 13
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 192,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 12
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 193,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 11
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 194,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": 11
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 195,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 10
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 196,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 9
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 197,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 8
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 198,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 7
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 199,
+      "z": 956,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 14
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 192,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 13
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 193,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 12
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 194,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 70,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": 11
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 195,
+      "z": 957,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -17
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 221,
+      "z": 947,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -18
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 222,
+      "z": 947,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -19
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 223,
+      "z": 947,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -12
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 216,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -13
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 217,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -14
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 218,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -15
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 219,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -16
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 220,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -17
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 221,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -18
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 222,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -19
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 223,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 70,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -8
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 212,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -9
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 213,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -10
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 214,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -11
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 215,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -12
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 216,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -12
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 217,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -13
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 218,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -14
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 219,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -15
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 220,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -16
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 221,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -17
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 222,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -18
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 223,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -4
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 208,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -4
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 209,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -5
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 210,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -6
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 211,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -7
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 212,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -8
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 213,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -9
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 214,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -10
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 215,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -11
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 216,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -12
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 217,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -13
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 218,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -14
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 219,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -15
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 220,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -16
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 221,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -17
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 222,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -18
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 223,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -3
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 208,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -4
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 209,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -5
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 210,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -6
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 211,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -7
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 212,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -8
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 213,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -9
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 214,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -10
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 215,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -11
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 216,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -12
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 217,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -13
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 218,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -14
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 219,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -15
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 220,
+      "z": 951,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -3
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 208,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -4
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 209,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -5
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 210,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -6
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 211,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -7
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 212,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -8
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 213,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -9
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 214,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -10
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 215,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -11
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 216,
+      "z": 952,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -3
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 208,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -4
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 209,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -5
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 210,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -6
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 211,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -7
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 212,
+      "z": 953,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -21
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 225,
+      "z": 946,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -22
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 226,
+      "z": 946,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -23
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 227,
+      "z": 946,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:diorite{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -24
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 228,
+      "z": 946,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:diorite{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -2,
+        "y": 0,
+        "z": -20
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 224,
+      "z": 947,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 70,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -21
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 225,
+      "z": 947,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -22
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 226,
+      "z": 947,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:diorite{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -23
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 227,
+      "z": 947,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:diorite{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -24
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 228,
+      "z": 947,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:diorite{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": -1,
+        "y": 0,
+        "z": -20
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 224,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 70,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -21
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 225,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 70,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -21
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 226,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -22
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 227,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:diorite{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -23
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 228,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:diorite{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -24
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 229,
+      "z": 948,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:diorite{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 0,
+        "y": 0,
+        "z": -19
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 224,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 70,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -20
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 225,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 69,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:mossy_cobblestone{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -21
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 226,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:diorite{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -22
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 67,
+        "waterTopY": "absent",
+        "kind": "PROTECTED"
+      },
+      "x": 227,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:diorite{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -23
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 228,
+      "z": 949,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:diorite{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    },
+    {
+      "local": {
+        "x": 1,
+        "y": 0,
+        "z": -19
+      },
+      "current": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "x": 224,
+      "z": 950,
+      "proposed": {
+        "drop": 0,
+        "thinIceY": "absent",
+        "groundTopY": 68,
+        "waterTopY": "absent",
+        "kind": "SUPPORTED"
+      },
+      "threeLayers": [
+        "minecraft:grass_block{snowy\u003dfalse}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:dirt{}:fluid\u003dminecraft:empty:be\u003dfalse",
+        "minecraft:stone{}:fluid\u003dminecraft:empty:be\u003dfalse"
+      ]
+    }
+  ],
+  "frame": {
+    "center": {
+      "xQ8": 52736,
+      "zQ8": 243968
+    },
+    "txQ30": 247565951,
+    "tzQ30": 1044812234,
+    "walkY": 87,
+    "mirror": false
+  },
+  "groundSpread": 3,
+  "groundTopYDistribution": {
+    "67": 57,
+    "68": 96,
+    "69": 31,
+    "70": 6
+  },
+  "maxGroundTopY": 70,
+  "minGroundTopY": 67,
+  "modelCaveats": [
+    "native tag sets expanded from current local resources, not a live world\u0027s loaded tag binding",
+    "old immutable marks removed only in an in-memory hypothetical new capture; old durable T0 remains unchanged",
+    "original height upper-censor summary retained; existing captured-column thin-ice formula retained",
+    "bootstrap fluid tags are unbound: vanilla water/lava use exact native fluid identities",
+    "mossy collision property does not prove feature origin or player provenance"
+  ],
+  "mossyInThreeLayerEvidence": [
+    {
+      "x": 193,
+      "y": 69,
+      "z": 957
+    },
+    {
+      "x": 194,
+      "y": 70,
+      "z": 957
+    },
+    {
+      "x": 223,
+      "y": 69,
+      "z": 947
+    },
+    {
+      "x": 220,
+      "y": 68,
+      "z": 948
+    },
+    {
+      "x": 223,
+      "y": 70,
+      "z": 948
+    },
+    {
+      "x": 220,
+      "y": 68,
+      "z": 949
+    },
+    {
+      "x": 223,
+      "y": 69,
+      "z": 949
+    },
+    {
+      "x": 221,
+      "y": 69,
+      "z": 950
+    },
+    {
+      "x": 224,
+      "y": 70,
+      "z": 947
+    },
+    {
+      "x": 225,
+      "y": 69,
+      "z": 947
+    },
+    {
+      "x": 224,
+      "y": 70,
+      "z": 948
+    },
+    {
+      "x": 225,
+      "y": 70,
+      "z": 948
+    },
+    {
+      "x": 226,
+      "y": 69,
+      "z": 948
+    },
+    {
+      "x": 224,
+      "y": 70,
+      "z": 949
+    },
+    {
+      "x": 225,
+      "y": 69,
+      "z": 949
+    }
+  ],
+  "nativeProperties": {
+    "minecraft:brown_mushroom": {
+      "proposed": {
+        "support": false,
+        "replaceablePlant": true,
+        "water": false,
+        "gravity": false,
+        "blockEntity": false,
+        "protectedBlock": false
+      },
+      "current": {
+        "support": false,
+        "replaceablePlant": false,
+        "water": false,
+        "gravity": false,
+        "blockEntity": false,
+        "protectedBlock": true
+      },
+      "nativeBlockClass": "net.minecraft.world.level.block.MushroomBlock",
+      "nativeTopFaceSturdy": false,
+      "nativeCollisionFullBlock": false
+    },
+    "minecraft:magma_block": {
+      "proposed": {
+        "support": false,
+        "replaceablePlant": false,
+        "water": false,
+        "gravity": false,
+        "blockEntity": false,
+        "protectedBlock": true
+      },
+      "current": {
+        "support": false,
+        "replaceablePlant": false,
+        "water": false,
+        "gravity": false,
+        "blockEntity": false,
+        "protectedBlock": true
+      }
+    },
+    "minecraft:mossy_cobblestone": {
+      "proposed": {
+        "support": true,
+        "replaceablePlant": false,
+        "water": false,
+        "gravity": false,
+        "blockEntity": false,
+        "protectedBlock": false
+      },
+      "current": {
+        "support": false,
+        "replaceablePlant": false,
+        "water": false,
+        "gravity": false,
+        "blockEntity": false,
+        "protectedBlock": true
+      },
+      "nativeBlockClass": "net.minecraft.world.level.block.Block",
+      "nativeTopFaceSturdy": true,
+      "nativeCollisionFullBlock": true
+    },
+    "minecraft:pumpkin": {
+      "proposed": {
+        "support": false,
+        "replaceablePlant": true,
+        "water": false,
+        "gravity": false,
+        "blockEntity": false,
+        "protectedBlock": false
+      },
+      "current": {
+        "support": false,
+        "replaceablePlant": false,
+        "water": false,
+        "gravity": false,
+        "blockEntity": false,
+        "protectedBlock": true
+      },
+      "nativeBlockClass": "net.minecraft.world.level.block.PumpkinBlock",
+      "nativeTopFaceSturdy": true,
+      "nativeCollisionFullBlock": true
+    },
+    "minecraft:sweet_berry_bush": {
+      "proposed": {
+        "support": false,
+        "replaceablePlant": true,
+        "water": false,
+        "gravity": false,
+        "blockEntity": false,
+        "protectedBlock": false
+      },
+      "current": {
+        "support": false,
+        "replaceablePlant": false,
+        "water": false,
+        "gravity": false,
+        "blockEntity": false,
+        "protectedBlock": true
+      },
+      "nativeBlockClass": "net.minecraft.world.level.block.SweetBerryBushBlock",
+      "nativeTopFaceSturdy": false,
+      "nativeCollisionFullBlock": false
+    }
+  },
+  "proposedKinds": {
+    "PROTECTED": 3,
+    "SUPPORTED": 3597
+  },
+  "rampGroundContractAccepts": false,
+  "recipe": "f5dac0488a7c2b61e32b8223c3d13dd062a7a2cb5d6c6b9c8fd0efe7876b4e09",
+  "residualProtectedFirstTokens": {
+    "minecraft:magma_block{}:fluid\u003dminecraft:empty:be\u003dfalse": 3
+  },
+  "scope": "COUNTERFACTUAL diagnostic using unchanged SurfaceProbe, original T0 and modeled fresh tag classification; NOT real run or APPLY acceptance"
+}

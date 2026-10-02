@@ -1,0 +1,13 @@
+{
+  "sourceCommit": "ffc7c76d712520d05d5ac10cb620aaf778ed919e",
+  "productionSourceChanged": false,
+  "diagnosticSourceSHA256": "cfa132f40aeb0430e384882f28e5fba4c1aff77ce308aa7c220e74d332af4f5f",
+  "startedUtc": "2026-10-02T00:57:26.2115293Z",
+  "finishedUtc": "2026-10-02T00:57:33.9831228Z",
+  "compileExitCode": 0,
+  "runExitCode": 1,
+  "command": "javac -proc:none -encoding UTF-8 -cp <existing Gradle bridge> -d build/analysis/fort0-policy PolicyPreflight.java; java -cp <analysis output>;<bridge> PolicyPreflight <marked seed17 isolated fixture> <report>",
+  "scope": "read-only counterfactual cost/grade analysis; no tags changed, no world launched, no Gradle acceptance run",
+  "production": "OFF",
+  "Tans": "BLOCKED"
+}

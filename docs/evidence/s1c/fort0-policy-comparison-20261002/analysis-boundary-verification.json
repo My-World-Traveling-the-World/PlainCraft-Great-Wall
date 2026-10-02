@@ -1,0 +1,8 @@
+{
+  "sourceCommit": "ffc7c76d712520d05d5ac10cb620aaf778ed919e",
+  "verifiedUtc": "2026-10-02T01:19:46.5939804Z",
+  "unchangedOriginalArchiveFiles": 239,
+  "unchangedProductionGitDiff": [],
+  "scope": "original immutable archive rehash and production-source diff after analysis",
+  "bootstrapLogs": "logs created by diagnostic Bootstrap archived, not live server logs"
+}
