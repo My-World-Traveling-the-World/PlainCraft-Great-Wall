@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "sourceCommit": "3c557d7c8c90c69c6922959ce50bcf21498f904a",
+  "workspace": "D:\\云游四海-Mod源码\\roadweaver",
+  "sourceStatus": [
+    " M common/build.gradle",
+    " M common/src/main/java/net/shiroha233/roadweaver/api/RoadNetworkApi.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/planning/RoadPlanningReadinessIndex.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/planning/RoadPlanningService.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/runtime/RuntimeLoadPolicy.java",
+    "?? common/src/test/java/net/shiroha233/roadweaver/runtime/GameplayCoordinatorGateGuardTest.java"
+  ],
+  "sourceHashes": "source-files.sha256.json",
+  "command": [
+    ".\\gradlew.bat",
+    "--offline",
+    "--dependency-verification=strict",
+    ":common:compileJava",
+    ":common:wallInteropRegression",
+    "--no-daemon",
+    "--console=plain"
+  ],
+  "startedUtc": "2026-10-02T09:53:40.7354934+00:00",
+  "status": "COMMAND_COMPLETED_EXIT_0",
+  "exitCode": 0,
+  "scope": "Fork compilation and four interop tests only; not GW-011 or bilateral production validation",
+  "finishedUtc": "2026-10-02T09:53:57.4167576+00:00",
+  "elapsedSeconds": 16.6812642,
+  "logSha256": "0aaf1b42f17077f6d5e41bc4581323bad33ecdcd4cd7e7c328fc19d86e2e01ef"
+}

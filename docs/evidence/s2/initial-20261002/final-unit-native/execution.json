@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "sourceCommit": "e84c30b89b1861a0b63ef76e7beb84299e7abb17",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "sourceStatus": [
+    "?? \"docs/S1C-owner-coverage-\\350\\257\\212\\346\\226\\255\\344\\270\\216\\346\\226\\271\\346\\241\\210.md\"",
+    "?? docs/S2.md",
+    "?? docs/evidence/s1c/owner-coverage-20261002/"
+  ],
+  "sourceHashes": "source-files.sha256.json",
+  "command": [
+    ".\\gradlew.bat",
+    "--offline",
+    "--dependency-verification=strict",
+    "test",
+    "runGameTest",
+    "-PgreatwallGameTestClasses=FringeOwnerCoverageTests,OwnershipMutationTests",
+    "--no-daemon",
+    "--console=plain"
+  ],
+  "startedUtc": "2026-10-02T09:32:57.7255651+00:00",
+  "status": "COMMAND_COMPLETED_EXIT_0",
+  "exitCode": 0,
+  "finishedUtc": "2026-10-02T09:34:42.3155645+00:00",
+  "elapsedSeconds": 104.5899994,
+  "logSha256": "17c1d85745cfb79e9d431711776939f1d9e0b694746e1d19a3e618a440b2935e"
+}

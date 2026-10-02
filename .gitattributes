@@ -10,3 +10,6 @@ docs/evidence/s1b/cross-cell/**/*.txt -whitespace
 docs/evidence/s1b/matrix/cross-cell/**/gradle.txt -whitespace
 docs/evidence/s1c/** -text whitespace=cr-at-eol
 docs/evidence/s1c/**/*.log -whitespace
+docs/evidence/s2/initial-20261002/** -text whitespace=cr-at-eol
+docs/evidence/s2/initial-20261002/**/*.log -whitespace
+docs/evidence/s2/initial-20261002/**/*.diff -whitespace

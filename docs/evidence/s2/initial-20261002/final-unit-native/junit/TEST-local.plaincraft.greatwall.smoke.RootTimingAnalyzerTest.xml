@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.smoke.RootTimingAnalyzerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-02T09:34:04.304Z" hostname="CAIMEO" time="0.314">
+  <properties/>
+  <testcase name="actualJfrClockAnchorJoinsExactBatchLedgerWithoutDroppingRows()" classname="local.plaincraft.greatwall.smoke.RootTimingAnalyzerTest" time="0.302"/>
+  <testcase name="overlappingNestedPausesAreCountedOnceAndClippedToBatch()" classname="local.plaincraft.greatwall.smoke.RootTimingAnalyzerTest" time="0.005"/>
+  <testcase name="absentOrMerelyTouchingPausesDoNotExplainSlowNativeCpu()" classname="local.plaincraft.greatwall.smoke.RootTimingAnalyzerTest" time="0.005"/>
+  <system-out><![CDATA[ROOT_TIMING_ANALYSIS verdict=A_OBSERVED_NO_ROOT_OVERRUN batches=1 ownOver40=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

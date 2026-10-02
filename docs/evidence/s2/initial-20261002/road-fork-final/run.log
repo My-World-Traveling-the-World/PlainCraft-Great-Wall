@@ -1,0 +1,35 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.8/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Architect Plugin: 3.4.164
+Architectury Loom: 1.7.435
+You are using an outdated version of Architectury Loom! This version will not receive any support, please consider updating!
+
+> Task :cleanLegacyIdeOutputs UP-TO-DATE
+> Task :common:compileJava
+> Task :common:processResources UP-TO-DATE
+> Task :common:classes
+> Task :common:compileTestJava UP-TO-DATE
+> Task :common:processTestResources NO-SOURCE
+> Task :common:testClasses UP-TO-DATE
+
+> Task :common:wallInteropRegression
+
+Test run finished after 781 ms
+[         2 containers found      ]
+[         0 containers skipped    ]
+[         2 containers started    ]
+[         0 containers aborted    ]
+[         2 containers successful ]
+[         0 containers failed     ]
+[         4 tests found           ]
+[         0 tests skipped         ]
+[         4 tests started         ]
+[         0 tests aborted         ]
+[         4 tests successful      ]
+[         0 tests failed          ]
+
+
+BUILD SUCCESSFUL in 16s
+5 actionable tasks: 2 executed, 3 up-to-date

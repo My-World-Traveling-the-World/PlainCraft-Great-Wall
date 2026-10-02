@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.component.TemplateTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-02T09:33:21.835Z" hostname="CAIMEO" time="0.177">
+  <properties/>
+  <testcase name="ruinAndBuriedHaveNoFunctionalFireOrSpawn()" classname="local.plaincraft.greatwall.component.TemplateTest" time="0.003"/>
+  <testcase name="beaconHasFourUnlitFiresOneIdentity()" classname="local.plaincraft.greatwall.component.TemplateTest" time="0.015"/>
+  <testcase name="allHeadingsKeepFourFireIdentitiesAndTowerRoutes()" classname="local.plaincraft.greatwall.component.TemplateTest" time="0.145"/>
+  <testcase name="towerIs11Not12AndAllLevelsReachGround()" classname="local.plaincraft.greatwall.component.TemplateTest" time="0.014"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

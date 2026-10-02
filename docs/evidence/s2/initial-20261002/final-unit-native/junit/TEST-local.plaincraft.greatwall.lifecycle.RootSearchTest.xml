@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.lifecycle.RootSearchTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-02T09:33:27.028Z" hostname="CAIMEO" time="5.116">
+  <properties/>
+  <testcase name="singleOver40msPrimitiveStillRejectsTheCompletedSearch()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.189"/>
+  <testcase name="finishAndForeignLaneCannotReadPartialRoot()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.002"/>
+  <testcase name="flatLandSelectsFrozenRingAndIsStableAcrossBatchSizes()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.232"/>
+  <testcase name="nativeDomainIncludesAccumulatedRadiusAndTwoChunksOnly()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.001"/>
+  <testcase name="batchGuardStopsBeforeStackingAnotherSlowNativePrimitive()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="4.305"/>
+  <testcase name="unsupportedFootprintCannotBeReplacedWithAnEmptyFort()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.019"/>
+  <testcase name="allWetCandidatesFailVisiblyWithoutExpandingRing()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.01"/>
+  <testcase name="selectedAxisHasSeparateRotatedEntranceEvidenceWithinTheOriginalBudget()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.125"/>
+  <testcase name="futureSeparationIncludesWholeChunkCornersTemplatesAndMargin()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.0"/>
+  <testcase name="filteringPrecedesFrozenEightCandidateLimitAndPreservesOrder()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.12"/>
+  <testcase name="screenedCandidatesContinueInOriginalOrderAfterFirstEightFailSupport()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.103"/>
+  <testcase name="oversizedSpawnDomainFailsInsteadOfGrantingAllChunks()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.001"/>
+  <testcase name="structureScreenPausesWithoutReadingMoreColumnsAndAllConflictsFailClosed()" classname="local.plaincraft.greatwall.lifecycle.RootSearchTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
