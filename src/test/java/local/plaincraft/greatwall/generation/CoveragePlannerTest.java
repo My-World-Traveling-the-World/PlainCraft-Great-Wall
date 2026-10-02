@@ -65,6 +65,81 @@ class CoveragePlannerTest {
                 "the old lateral-halo fringe is explicitly a non-owner after A+C");
     }
 
+    @Test void everyTemplateWaterGateAndExitEnvelopeOwnerRemainsDispatchableInFiveOrientations() {
+        var templates=local.plaincraft.greatwall.component.S1TemplateSet.create(0);
+        for(int[] direction:List.of(new int[]{1<<30,0},new int[]{0,1<<30},
+                new int[]{-1<<30,0},new int[]{759250125,759250125},
+                new int[]{247565951,1044812234})) {
+            for(var entry:templates.entrySet()) {
+                if(entry.getKey()==SiteKind.WATER_GATE)continue;
+                var base=window(256).plans().getFirst();
+                long s=128L*256;
+                var frame=new Frame(new Point2q(s,0),direction[0],direction[1],84,false);
+                var site=new SiteRecord(new SiteId("fixture",entry.getKey(),0),s,frame,
+                        new Bounds(0,49,-64,256,92,64),SiteState.PLANNED,Optional.empty(),Optional.empty());
+                var input=new ComponentInput(site,List.of(),Map.of(),new DecaySample(DecayState.INTACT,0,20),
+                        PaletteFamily.STONE,false,List.of(),List.of());
+                var actual=Rasterizer.worldBounds(frame,entry.getValue().localBounds(input));
+                var plan=new SegmentPlan(base.geometry(),base.prefix(),base.stations(),List.of(site),H);
+                var plans=new PlanWindow(List.of(plan));
+                var planner=new CoveragePlanner();
+                var cell=new CellKey(H,"minecraft:overworld",2);
+                for(var owner:Rasterizer.owners("minecraft:overworld",actual)) {
+                    assertTrue(planner.realizationOwners(cell,plans).contains(owner),
+                            entry.getKey()+" potential write owner is captured: "+owner);
+                    assertTrue(planner.cellsForChunk(owner,plans).contains(cell),
+                            entry.getKey()+" potential write owner is dispatched: "+owner);
+                }
+            }
+        }
+    }
+
+    @Test void dynamicWaterGateAndBothExitDirectionsAreCoveredWithoutSyntheticPlannedSites() {
+        var templates=local.plaincraft.greatwall.component.S1TemplateSet.create(0);
+        for(int[] direction:List.of(new int[]{1<<30,0},new int[]{0,1<<30},
+                new int[]{-1<<30,0},new int[]{759250125,759250125},
+                new int[]{247565951,1044812234})) {
+            var stations=new ArrayList<Station>();
+            for(int s=0;s<=256;s+=4)stations.add(new Station(s*256L,
+                    new Point2q(local.plaincraft.greatwall.geometry.FixedMath.mulDiv(s*256L,direction[0],1L<<30),
+                            local.plaincraft.greatwall.geometry.FixedMath.mulDiv(s*256L,direction[1],1L<<30)),84,0));
+            var water=new WaterEvidence(new ArcInterval(104*256L,152*256L),WaterClass.NARROW,
+                    48*256L,48*256L,66,List.of(),List.of(),H);
+            var start=new Boundary(0,stations.getFirst().point(),84,H);
+            var end=new Boundary(1,stations.getLast().point(),84,H);
+            var geometry=new SegmentGeometry(new SegmentKey(H,"minecraft:overworld",0),
+                    List.of(start.point(),end.point()),List.of(0L,256*256L),List.of(water),
+                    Optional.of(new Terminal(0,256*256L,TerminalKind.WORLD_LIMIT)),start,end,0,0,H);
+            var plans=new PlanWindow(List.of(new SegmentPlan(geometry,new PrefixSummary(0,0,Optional.empty(),H),
+                    new StationTable(stations,List.of(),H),List.of(),H)));
+            var planner=new CoveragePlanner();
+            var cell=new CellKey(H,"minecraft:overworld",2);
+            for(SiteKind kind:List.of(SiteKind.WATER_GATE,SiteKind.END_CAP))for(boolean reverse:List.of(false,true)) {
+                var frame=new Frame(stations.get(32).point(),reverse?-direction[0]:direction[0],
+                        reverse?-direction[1]:direction[1],84,false);
+                var site=new SiteRecord(new SiteId("fixture",kind,0),128*256L,frame,
+                        new Bounds(-256,49,-256,256,92,256),SiteState.PLANNED,Optional.empty(),Optional.empty());
+                var input=new ComponentInput(site,stations,Map.of(),new DecaySample(DecayState.INTACT,0,20),
+                        PaletteFamily.STONE,false,kind==SiteKind.WATER_GATE?List.of(water):List.of(),List.of());
+                var local=templates.get(kind).localBounds(input);
+                var envelope=Rasterizer.worldBounds(frame,local);
+                var writes=new HashSet<ChunkKey>();
+                for(int x=envelope.minX();x<envelope.maxXExclusive();x++)
+                    for(int z=envelope.minZ();z<envelope.maxZExclusive();z++) {
+                        var p=Rasterizer.localCell(frame,new Point3i(x,84,z));
+                        if(p.x()>=local.minX()&&p.x()<local.maxXExclusive()
+                                &&p.z()>=local.minZ()&&p.z()<local.maxZExclusive())
+                            writes.add(new ChunkKey("minecraft:overworld",Math.floorDiv(x,16),Math.floorDiv(z,16)));
+                    }
+                assertFalse(writes.isEmpty(),"the full inverse-rasterized template domain is exercised");
+                for(var owner:writes) {
+                    assertTrue(planner.realizationOwners(cell,plans).contains(owner),kind+" captured "+owner);
+                    assertTrue(planner.cellsForChunk(owner,plans).contains(cell),kind+" dispatched "+owner);
+                }
+            }
+        }
+    }
+
     private static PlanWindow window(int length) {
         var stations=new ArrayList<Station>();
         for(int x=0;x<=length;x+=4) stations.add(new Station(x*256L,new Point2q(x*256L,0),84,0));
