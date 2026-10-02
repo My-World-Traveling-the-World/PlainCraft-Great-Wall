@@ -21,6 +21,42 @@ import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 
 public final class ProductionPipelineTests implements FabricGameTest {
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
+    public void fringeOwnerOutsideAllComponentReadsStillHasItsOwnDurableCoverage(GameTestHelper helper){
+        var io=Executors.newSingleThreadExecutor(r->{var t=new Thread(r,"pgw-fringe-owner");t.setDaemon(true);return t;});
+        var chunks=new ConcurrentHashMap<ChunkPos,ChunkAccess>();
+        var failures=new ConcurrentHashMap<String,Throwable>();var recipe=recipe();var window=plans();
+        var store=ChunkEvidenceStore.production(Path.of("build","s1b-game-fixtures",UUID.randomUUID().toString()));
+        var snapshots=new TerrainSnapshotService(store,io,new BlockCatalog(helper.getLevel().registryAccess()));
+        var ports=new ProductionWallPipeline.Ports(
+                (k,m)->new PlanLease<>(UUID.randomUUID(),CompletableFuture.completedFuture(window),()->{}),
+                k->new PlanLease<>(UUID.randomUUID(),CompletableFuture.completedFuture(window),()->{}),
+                positions->{
+                    var ready=new HashMap<ChunkPos,ChunkAccess>();
+                    for(var p:positions)ready.put(p,chunks.computeIfAbsent(p,q->chunk(helper,q)));
+                    return new PlanLease<>(UUID.randomUUID(),CompletableFuture.completedFuture(Map.copyOf(ready)),()->{});
+                },()->{},e->failures.put("failure",e),io);
+        var realization=new RealizationPlanner(recipe,new SurfaceProbe(),S1TemplateSet.create(recipe.seed()));
+        var pipeline=new ProductionWallPipeline(recipe,ports,snapshots,realization,new ChunkPlanCompiler(),new ChunkWallWriter());
+        var key=new ChunkKey(recipe.dimension(),0,4);var pos=new ChunkPos(0,4);
+        var owner=chunks.computeIfAbsent(pos,p->chunk(helper,p));
+        pipeline.beforeLight(key,owner,new VanillaTerrainEngine(helper.getLevel()))
+                .thenApplyAsync(ignored->{
+                    try{return Map.entry(store.readCoverage(key).orElseThrow(),store.readPlan(key).orElseThrow());}
+                    catch(Exception error){throw new CompletionException(error);}
+                },io).orTimeout(120,TimeUnit.SECONDS).whenComplete((proof,error)->helper.getLevel().getServer().execute(()->{
+                    try{
+                        if(error!=null){helper.fail(error.toString());return;}
+                        helper.assertTrue(proof.getValue().voxels().isEmpty(),"fringe owner is not a wall body");
+                        helper.assertTrue(proof.getKey().coverage().hash().equals(proof.getValue().metadata().coverageHash()),
+                                "empty plans still bind actual persisted owner coverage");
+                        helper.assertTrue(owner.getAttached(TerrainMarkers.PRODUCTION)!=null
+                                &&owner.getAttached(TerrainMarkers.PRODUCTION).complete(),"own marker follows durable proof");
+                        helper.assertTrue(failures.isEmpty(),"no missing-owner exception suppressed");
+                        helper.succeed();
+                    }finally{pipeline.close();io.shutdown();}
+                }));
+    }
     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000,batch="pgw-production-memory")
     public void queuedOwnersMeasureNativePipelineHeapAndReleaseEveryPin(GameTestHelper helper) {
         var io=Executors.newSingleThreadExecutor(r->{var t=new Thread(r,"pgw-owner-pressure");t.setDaemon(true);return t;});
