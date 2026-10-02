@@ -1,0 +1,9 @@
+{
+  "sourceCommit": "8f49e24f0815d4eb707e409df5f9bb0175c5f618",
+  "dirty": true,
+  "exitCode": 1,
+  "finishedUtc": "2026-10-02T04:51:19.9069687Z",
+  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.generation.CoveragePlannerTest --no-daemon --console=plain",
+  "scope": "before actual-component apron capture regression",
+  "production": "OFF"
+}

@@ -1,0 +1,9 @@
+{
+  "sourceCommit": "8f49e24f0815d4eb707e409df5f9bb0175c5f618",
+  "runId": "entrance-ab17-20261002-122705",
+  "startedUtc": "2026-10-02T04:27:05.4654426Z",
+  "seed": 17,
+  "production": "OFF",
+  "Tans": "BLOCKED",
+  "command": "gradlew.bat --offline --dependency-verification=strict runServerSmoke -PsmokeProfile=vanilla -PsmokeRunId=entrance-ab17-20261002-122705 -Ps1cRealWall=true -Ps1cSeed=17 -Ps1cRepresentativeBlocks=100 -Ps1cProtectionTrace=true --no-daemon --console=plain"
+}

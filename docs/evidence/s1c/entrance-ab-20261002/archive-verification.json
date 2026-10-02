@@ -1,0 +1,24 @@
+{
+  "verifiedUtc": "2026-10-02T06:46:56.8640866Z",
+  "sourceCommit": "3a8d891cc1ec560b4c36ab03674a02de1bd864f1",
+  "realRuns": [
+    {
+      "runId": "entrance-ab17-20261002-122705",
+      "originalFiles": 237,
+      "bytes": 2492829,
+      "sha256Match": "all original greatwall files match archived copies"
+    },
+    {
+      "runId": "entrance-ab17-final-20261002-134025",
+      "originalFiles": 425,
+      "bytes": 5706888,
+      "sha256Match": "all original greatwall files match archived copies"
+    }
+  ],
+  "production": "OFF",
+  "Tans": "BLOCKED",
+  "status": "PAUSED_FOR_AUDIT",
+  "allTestProcesses": "finished",
+  "ownerFix": "NOT_IMPLEMENTED",
+  "sourceChangesAfter3a8d891": "one WIP GameTest only, its observed failure is tick timeout not the real missing-owner exception"
+}

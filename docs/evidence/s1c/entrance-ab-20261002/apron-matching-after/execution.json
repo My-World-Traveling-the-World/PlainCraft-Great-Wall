@@ -1,0 +1,11 @@
+{
+  "sourceCommit": "8f49e24f0815d4eb707e409df5f9bb0175c5f618",
+  "dirty": true,
+  "startedUtc": "2026-10-02T05:19:09.2841811Z",
+  "finishedUtc": "2026-10-02T05:21:34.8958593Z",
+  "exitCode": 1,
+  "command": "gradlew.bat --offline --dependency-verification=strict test runGameTest -PgreatwallGameTestClasses=ProductionPipelineTests,GroundEntranceContractGameTests --continue --no-daemon --console=plain",
+  "scope": "full JUnit and unchanged-budget native pipeline plus entrance regressions",
+  "production": "OFF",
+  "Tans": "BLOCKED"
+}

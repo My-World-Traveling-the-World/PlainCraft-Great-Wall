@@ -1,0 +1,11 @@
+{
+  "sourceCommit": "a276e097a94a627caeaf506cf0da5aaeee9472c3",
+  "dirty": true,
+  "startedUtc": "2026-10-02T03:53:20.5577290Z",
+  "finishedUtc": "2026-10-02T03:53:41.4826648Z",
+  "exitCode": 0,
+  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.component.TemplateTest --tests local.plaincraft.greatwall.component.GroundEntranceContractTest --tests local.plaincraft.greatwall.lifecycle.RootSearchTest --continue --no-daemon --console=plain",
+  "scope": "repair actual portal raster coverage without changing old test assertions",
+  "production": "OFF",
+  "Tans": "BLOCKED"
+}

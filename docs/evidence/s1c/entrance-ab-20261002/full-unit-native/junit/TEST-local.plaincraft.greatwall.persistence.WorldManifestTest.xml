@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.persistence.WorldManifestTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-02T04:14:23.620Z" hostname="CAIMEO" time="0.494">
+  <properties/>
+  <testcase name="wrongSeedOrConfigRejectedOnReopen()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.063"/>
+  <testcase name="creationCrashResumesOwnToken()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.035"/>
+  <testcase name="oversizedManifestIsRejectedBeforeParsing()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.029"/>
+  <testcase name="worldRecipeRoundTripsThreeIntCoordinatesIncluding6000()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.053"/>
+  <testcase name="schemaAndCrcDamageAreExplicitErrors()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.066"/>
+  <testcase name="corruptWorldNeverFallsBackToEmptyRecipe()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.059"/>
+  <testcase name="s0RootNeverAuthorizesProduction()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.002"/>
+  <testcase name="existingUnmarkedWorldIsRejected()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.019"/>
+  <testcase name="concurrentFileLeaseDeniesSecondWriter()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.023"/>
+  <testcase name="missingCreationForFrozenWorldFailsClosed()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.053"/>
+  <testcase name="frozenRecipeCannotChangeIdentityOrGeometry()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.059"/>
+  <testcase name="corruptCreationNeverBecomesNewWorld()" classname="local.plaincraft.greatwall.persistence.WorldManifestTest" time="0.029"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
