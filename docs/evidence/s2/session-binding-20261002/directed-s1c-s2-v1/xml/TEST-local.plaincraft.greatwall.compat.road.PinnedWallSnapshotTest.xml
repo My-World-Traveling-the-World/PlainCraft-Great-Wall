@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.compat.road.PinnedWallSnapshotTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-02T15:49:44.910Z" hostname="CAIMEO" time="0.063">
+  <properties/>
+  <testcase name="longSweptEdgeCannotJumpAnOffCentreWall()" classname="local.plaincraft.greatwall.compat.road.PinnedWallSnapshotTest" time="0.022"/>
+  <testcase name="frozenButNotPhysicalGateCostsZeroAndStillPausesConstruction()" classname="local.plaincraft.greatwall.compat.road.PinnedWallSnapshotTest" time="0.002"/>
+  <testcase name="failedReleaseDoesNotLeakTheOtherSnapshotLeases()" classname="local.plaincraft.greatwall.compat.road.PinnedWallSnapshotTest" time="0.002"/>
+  <testcase name="sparsePolylineCrossingTheQueryIsNotLostByEndpointFiltering()" classname="local.plaincraft.greatwall.compat.road.PinnedWallSnapshotTest" time="0.015"/>
+  <testcase name="fullGateSectionNarrowsShouldersButKeepsFourClearBlocks()" classname="local.plaincraft.greatwall.compat.road.PinnedWallSnapshotTest" time="0.0"/>
+  <testcase name="diagonalAndShortEdgesCannotEscapeTheFullGateSection()" classname="local.plaincraft.greatwall.compat.road.PinnedWallSnapshotTest" time="0.0"/>
+  <testcase name="closeReleasesEachLeaseOnceWithoutCancellingTheSharedPlanner()" classname="local.plaincraft.greatwall.compat.road.PinnedWallSnapshotTest" time="0.001"/>
+  <testcase name="gateZeroDoesNotEraseAnotherIntersectingWall()" classname="local.plaincraft.greatwall.compat.road.PinnedWallSnapshotTest" time="0.001"/>
+  <testcase name="eightBlockEdgeCrossesWallWithBothEndsOutside()" classname="local.plaincraft.greatwall.compat.road.PinnedWallSnapshotTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

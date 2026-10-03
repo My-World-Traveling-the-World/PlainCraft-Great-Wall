@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "sourceCommit": "062df0346a3733ccf2f823ee3f335b5302a9c278",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "sourceStatus": [
+    " M src/main/java/local/plaincraft/greatwall/compat/road/PinnedWallSnapshot.java",
+    " M src/main/java/local/plaincraft/greatwall/compat/road/RoadWeaverAdapter.java",
+    " M src/main/java/local/plaincraft/greatwall/compat/road/WallObstacleProvider.java",
+    " M src/main/java/local/plaincraft/greatwall/lifecycle/WorldServices.java",
+    "?? docs/evidence/s1c/owner-coverage-ac-20261002/",
+    "?? docs/evidence/s2/session-binding-20261002/",
+    "?? src/main/java/local/plaincraft/greatwall/compat/road/WallObstacleGeometry.java",
+    "?? src/main/java/local/plaincraft/greatwall/compat/road/WallSnapshotBuilder.java",
+    "?? src/main/java/local/plaincraft/greatwall/persistence/HistoryCodec.java",
+    "?? src/main/java/local/plaincraft/greatwall/persistence/HistoryIndex.java",
+    "?? src/test/java/local/plaincraft/greatwall/compat/"
+  ],
+  "sourceHashes": "source-files.sha256.json",
+  "command": [
+    ".\\gradlew.bat",
+    "--offline",
+    "--dependency-verification=strict",
+    "runServerSmoke",
+    "-PsmokeProfile=vanilla",
+    "-PsmokeRunId=s1c-ac-fast-20261002-231705",
+    "-Ps1cRealWall=true",
+    "-Ps1cSeed=17",
+    "-Ps1cRepresentativeBlocks=100",
+    "--no-daemon",
+    "--console=plain"
+  ],
+  "startedUtc": "2026-10-02T15:16:30.4112600+00:00",
+  "status": "COMMAND_FAILED",
+  "exitCode": 1,
+  "finishedUtc": "2026-10-02T15:45:25.7401612+00:00",
+  "elapsedSeconds": 1735.3289012,
+  "logSha256": "6925b43e2858a9e8d1d5a185fb0b1a5a0e5b850d6577e191586f7f8833e9ddd4"
+}

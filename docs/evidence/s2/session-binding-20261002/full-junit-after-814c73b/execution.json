@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "sourceCommit": "814c73b673ecd9ea25694b57965982801c50b9c6",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "sourceStatus": [
+    "?? docs/evidence/s1c/owner-coverage-ac-20261002/",
+    "?? docs/evidence/s2/session-binding-20261002/"
+  ],
+  "sourceHashes": "source-files.sha256.json",
+  "command": [
+    ".\\gradlew.bat",
+    "--offline",
+    "--dependency-verification=strict",
+    "test",
+    "--no-daemon",
+    "--console=plain"
+  ],
+  "startedUtc": "2026-10-03T04:08:59.3206063+00:00",
+  "status": "COMMAND_FAILED",
+  "exitCode": 1,
+  "finishedUtc": "2026-10-03T04:09:04.5745892+00:00",
+  "elapsedSeconds": 5.2539829,
+  "logSha256": "e60a3a83315bf9f46471292f9d2b9205acefac6d23cb73c970dee4ba596a74c0"
+}

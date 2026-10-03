@@ -1,0 +1,208 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava
+注: D:\云游四海-Mod源码\plaincraft-great-wall\src\main\java\local\plaincraft\greatwall\mixin\TreeFeatureMixin.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :compileClientJava UP-TO-DATE
+> Task :processClientResources UP-TO-DATE
+> Task :clientClasses UP-TO-DATE
+> Task :compileServerSmokeJava
+> Task :processServerSmokeResources UP-TO-DATE
+> Task :serverSmokeClasses
+> Task :compileTestJava
+> Task :processTestResources NO-SOURCE
+> Task :testClasses
+> Task :testClasspathBridge
+
+> Task :test
+
+PinnedWallSnapshotTest > longSweptEdgeCannotJumpAnOffCentreWall() PASSED
+
+PinnedWallSnapshotTest > frozenButNotPhysicalGateCostsZeroAndStillPausesConstruction() PASSED
+
+PinnedWallSnapshotTest > failedReleaseDoesNotLeakTheOtherSnapshotLeases() PASSED
+
+PinnedWallSnapshotTest > sparsePolylineCrossingTheQueryIsNotLostByEndpointFiltering() PASSED
+
+PinnedWallSnapshotTest > fullGateSectionNarrowsShouldersButKeepsFourClearBlocks() PASSED
+
+PinnedWallSnapshotTest > diagonalAndShortEdgesCannotEscapeTheFullGateSection() PASSED
+
+PinnedWallSnapshotTest > closeReleasesEachLeaseOnceWithoutCancellingTheSharedPlanner() PASSED
+
+PinnedWallSnapshotTest > gateZeroDoesNotEraseAnotherIntersectingWall() PASSED
+
+PinnedWallSnapshotTest > eightBlockEdgeCrossesWallWithBothEndsOutside() PASSED
+
+RoadAdapterStateTest > noncanonicalAndTruncatedGateIdsAreRejected() PASSED
+
+RoadAdapterStateTest > closeBeforeReadyRejectsWorkWithoutCancellingSharedReadiness() PASSED
+
+RoadAdapterStateTest > receiptMustPrecedeLedgerPublicationAndClosingDoesNotCancelTheDurableAppend() PASSED
+
+RoadAdapterStateTest > changedBindingIsRecheckedOnOwnerAndReported() PASSED
+
+RoadAdapterStateTest > invalidSessionUnknownGateAndForeignWallNeverAppend() PASSED
+
+RoadAdapterStateTest > failedReadinessNeverRegistersAnEndpoint() PASSED
+
+RoadAdapterStateTest > proposalCopiesInputAndDoesNotWaitForRoadReadinessOrPublishAPlaceholder() PASSED
+
+RoadAdapterStateTest > readinessCompletionQueuesEffectsOnTheOwner() PASSED
+
+RoadAdapterStateTest > journalFailureNeverPublishesOrFreezesGate() PASSED
+
+RoadAdapterStateTest > reversedConnectionsReachThePortInTheSameCanonicalOrder() PASSED
+
+RoadAdapterStateTest > appliedStateWithoutDurableProfileOrPhysicalProofIsNotAnAgreement() PASSED
+
+RoadAdapterStateTest > unnegotiatedPlannedGateRegistryBackpressuresInsteadOfGrowingForever() PASSED
+
+RoadAdapterStateTest > closedBatchCannotBeReplacedAndIncompleteBatchIsNotFrozen() PASSED
+
+RoadAdapterStateTest > fullGateEncodingDoesNotCollideOnSharedSixteenCharacterPrefix() PASSED
+
+RoadAdapterStateTest > closeAfterReadyButBeforeOwnerDispatchAlsoPreventsEffects() PASSED
+
+WallObstacleProviderTest > journalAckAloneCannotPublishAPhysicallyReadyGate() PASSED
+
+WallObstacleProviderTest > everyStripIsAtMost512ArcBlocksAndStopsAtThePermanentTerminal() PASSED
+
+WallObstacleProviderTest > cancellationWhileSourceIsPendingClosesLeasesOnHandoff() PASSED
+
+WallObstacleProviderTest > providerRetainsSparseCrossingAndReleasesItsActualPinsOnlyOnClose() PASSED
+
+WallObstacleProviderTest > oversizedOrInitiallyCancelledRequestNeverAsksForPlans() PASSED
+
+WallObstacleProviderTest > failedPreparedSnapshotClosesPinsAndDoesNotPretendThereIsNoWall() PASSED
+
+GroundEntranceContractTest > dropThirteenAndBothFootHeightBoundsStayClosed() PASSED
+
+GroundEntranceContractTest > oneLaneAndAllBlockedExteriorFacesAreNotThreeWideEntrances() PASSED
+
+GroundEntranceContractTest > protectedWaterMissingAndUpperCensoredColumnsRejectInsteadOfGuessingAir() PASSED
+
+GroundEntranceContractTest > anIsolatedLevelIslandCannotSupplyExteriorAccess() PASSED
+
+GroundEntranceContractTest > naturalHeightSpreadIsNotAProxyForACompleteThreeWideEntrance() PASSED
+
+GroundEntranceContractTest > realHeadroomAndUnapprovedVoidMaterialsAreCheckedBeforeCertificate() PASSED
+
+GroundEntranceContractTest > twoOutsideColumnsCannotBeReusedAsThreeIndependentRotatedApproaches() PASSED
+
+GroundEntranceTest > fortCourtyardAndBothInternalRampsMeetNaturalGround() PASSED
+
+GroundEntranceTest > nominalGroundFormulaIsNotAnExitWhenFoundationDropIsNonzero() PASSED
+
+GroundEntranceTest > enemyTowerHasARealGroundExitForEverySupportedFoundationDrop() PASSED
+
+CoveragePlannerTest > triggerDomainUsesTheSameOwnerFunctionAsDurableCapture() PASSED
+
+CoveragePlannerTest > rotatedFortReadDomainIncludesTheActualRasterGuardAndExternalApron() PASSED
+
+CoveragePlannerTest > canonicalCoverageIncludesLowerGuardUpperSentinelAndNegativePages() PASSED
+
+CoveragePlannerTest > everyTemplateWaterGateAndExitEnvelopeOwnerRemainsDispatchableInFiveOrientations() PASSED
+
+CoveragePlannerTest > dynamicWaterGateAndBothExitDirectionsAreCoveredWithoutSyntheticPlannedSites() PASSED
+
+HistoryCodecTest > stringLimitIs4096Utf8BytesAndPayloadHashIsValidated() PASSED
+
+HistoryCodecTest > canonicalFieldsUseUnsignedUtf8NotMapOrUtf16Order() PASSED
+
+HistoryCodecTest > malformedUtf8SurrogatesNulAndUnknownTypesAreRejected() PASSED
+
+HistoryCodecTest > headRoundTripsOnlyTwoRootsAndDetectsCrcDamage() PASSED
+
+HistoryCodecTest > walUsesFrozenSchemaSequenceKeyTypeFieldsOrder() PASSED
+
+HistoryIndexTest > missingCompleteBadHashAndWrongLengthAreNotAbsence() PASSED
+
+HistoryIndexTest > unsortedLeavesOverlapsFalseRangesAndWrongLevelsAreCorrupt() PASSED
+
+HistoryIndexTest > pathsCannotEscapeOrUseAliases() PASSED
+
+HistoryIndexTest > emptyTreeHasNoFileAndByteSortedKeysStayExact() PASSED
+
+HistoryIndexTest > longKeysSplitInternalPagesByBytesAndSeekSkipsEarlierLeaves() PASSED
+
+HistoryJournalTest > cancelledCallerDoesNotCancelAcceptedWrite() PASSED
+
+HistoryJournalTest > pagedHistoryKeepsHeadAndResidentMemoryBounded() PASSED
+
+HistoryJournalTest > sequenceGapAndInvalidLengthAreHardFailures() PASSED
+
+HistoryJournalTest > blobCopiesAtAdmissionAndChecksLengthHashAndKind() PASSED
+
+HistoryJournalTest > damagedIndexMissingWalAndWrongWorldNeverBecomeEmpty() PASSED
+
+HistoryJournalTest > secondJournalWriterIsRejectedWithoutDisturbingFirst() PASSED
+
+HistoryJournalTest > completeBadCrcIsNotTruncated() PASSED
+
+HistoryJournalTest > checkpointDoesNotDropConcurrentTail() PASSED
+
+HistoryJournalTest > twoCallerOwnersSerializeWithoutDuplicateSequence() PASSED
+
+HistoryJournalTest > unauthorizedAndLegacyHistoriesAreRejectedWithoutMigration() PASSED
+
+HistoryJournalTest > constructorDoesNotTouchDiskAndUnopenedCallsFailClosed() PASSED
+
+HistoryJournalTest > failedFsyncNeverPublishesAndVerifiedRetryReusesActualTail() PASSED
+
+HistoryJournalTest > replayOnlyRunsOnIoOwnerAndStrictlyChecksLimits() PASSED
+
+HistoryJournalTest > missingHeadRecoversOnlyAConsistentRetainedChain() PASSED
+
+HistoryJournalTest > entryLimitIs64KiBNotThePublicAbsoluteLimit() PASSED
+
+HistoryJournalTest > partialTailIsArchivedReadOnlyBeforeForcedTruncate() PASSED
+
+HistoryJournalTest > queueIsBoundedAndCloseDrainsAcceptedWritesWithoutBlocking() PASSED
+
+HistoryJournalTest > concurrentAdmissionCancellationFlushAndRepeatedCloseSettleExactlyAcceptedRequests() PASSED
+
+HistoryJournalTest > checkpointFailureLeavesOriginalHeadAndRecoveryCanContinue() PASSED
+
+HistoryJournalTest > appendIsDurableAndIdempotent() PASSED
+
+RecoveryCoordinatorTest > aDifferentJournalRootCannotBeOpenedByMatchingExternalManifest() PASSED
+
+RecoveryCoordinatorTest > verifiedManifestFileHashIsNotTheSemanticRecipeHash() PASSED
+
+RecoveryCoordinatorTest > unmarkedManifestDoesNotInitializeEmptyHistory() PASSED
+
+RecoveryCoordinatorTest > recoveredSequenceIncludesDurableWalBeyondCheckpoint() PASSED
+
+WallWorldStateTest > verifiedHeaderRoundTripsWithoutStoringPermanentIds() PASSED
+
+WallWorldStateTest > negativeAndMalformedHeaderCannotBecomeEmptyHistory() PASSED
+
+WallWorldStateTest > everyMissingFieldAndFutureSchemaFailClosed() PASSED
+
+WallWorldStateTest > applyRejectsRollbackAndForeignJournalIdentity() PASSED
+
+ProtectedColumnViewTest > noIntersectingStructureStillKeepsOriginalProtectionAndThinIcePrecedence() PASSED
+
+ProtectedColumnViewTest > prefilteredColumnsMatchTheIndependentOldScanIncludingBoundariesAndDuplicates() PASSED
+
+ProtectedColumnViewTest > originalDuplicatedBoxesAreTraversedOnceNotAgainForEveryColumn() PASSED
+
+ProtectedColumnViewTest > insufficientBucketBudgetFailsBeforeColumnsAndDoesNotMaskCapacity() PASSED
+
+ProtectedColumnViewTest > invocationIndexPreservesOldProtectionAcrossNegativeChunksAndUnknownColumns() PASSED
+
+ProtectedColumnViewTest > indexScopeReleasesScratchAndRestoresThePreviousInvocationOnFailure() PASSED
+
+[Incubating] Problems report is available at: file:///D:/%E4%BA%91%E6%B8%B8%E5%9B%9B%E6%B5%B7-Mod%E6%BA%90%E7%A0%81/plaincraft-great-wall/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 43s
+9 actionable tasks: 5 executed, 4 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html
