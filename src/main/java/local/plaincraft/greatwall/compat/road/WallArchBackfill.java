@@ -53,23 +53,24 @@ public final class WallArchBackfill {
             return CompletableFuture.failedFuture(new IllegalStateException(
                     "only a frozen gate can be prepared, found " + frozen.state()));
         }
-        return CompletableFuture.supplyAsync(() -> {
-            if (!level.getServer().isSameThread()) {
-                // Chunk access must happen on the server owner.
-                CompletableFuture<Void> hop = new CompletableFuture<>();
-                level.getServer().execute(() -> {
-                    try {
-                        buildPlans(frozen);
-                        hop.complete(null);
-                    } catch (Throwable failure) {
-                        hop.completeExceptionally(failure);
-                    }
-                });
-                return hop.join();
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        var server = level.getServer();
+        Runnable prepareOnOwner = () -> {
+            if (result.isDone()) return;
+            try {
+                buildPlans(frozen);
+                result.complete(null);
+            } catch (Throwable failure) {
+                result.completeExceptionally(failure);
             }
-            buildPlans(frozen);
-            return null;
-        }).thenAccept(ignored -> { });
+        };
+        try {
+            if (server.isSameThread()) prepareOnOwner.run();
+            else server.execute(prepareOnOwner);
+        } catch (Throwable failure) {
+            result.completeExceptionally(failure);
+        }
+        return result;
     }
 
     private void buildPlans(RoadTypes.GateRecord frozen) {
