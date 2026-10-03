@@ -123,6 +123,7 @@ public final class RealizationPlanner {
         var occupied=new ArrayList<ArcInterval>();
         var gateWalkIntervals=new ArrayList<ArcInterval>();
         var gateEndPlanes=new ArrayList<Frame>();
+        String evidence=null;
         for(var site:sites) {
             if(site.globalSQ8()<Math.max(0,from-64L*256)||site.globalSQ8()>=to+64L*256||site.state()==SiteState.SUPPRESSED||site.state()==SiteState.ABSORBED)continue;
             long extent=switch(site.id().kind()){case FORT->24L*256;case GATE->30L*256;case ENEMY_TOWER->6L*256;case BEACON->5L*256;default->0;};
@@ -150,8 +151,11 @@ public final class RealizationPlanner {
                 maintained.add(site.globalSQ8());
                 if(site.globalSQ8()>=from&&site.globalSQ8()<to&&site.globalSQ8()<terminal) {
                     accepted.add(component);
-                    if(naturalExit(input,site,component))exits.add(new GroundExitDecision.Exit(site.id(),site.globalSQ8(),
-                            new ArcInterval(siteFrom,siteTo),component.hash(),evidenceHash(input)));
+                    if(naturalExit(input,site,component)) {
+                        if(evidence==null)evidence=evidenceHash(input);
+                        exits.add(new GroundExitDecision.Exit(site.id(),site.globalSQ8(),
+                                new ArcInterval(siteFrom,siteTo),component.hash(),evidence));
+                    }
                 }
             }
         }
@@ -182,7 +186,7 @@ public final class RealizationPlanner {
                 long a=Math.max(from,gap.range().fromQ8()),b=Math.min(to,gap.range().toQ8());
                 if(a<b)core.add(new BreakInterval(new ArcInterval(a,b),gap.reason(),gap.scope()));
             }
-            inspection.accept(inspection(input.key(),exits,core,terminal(input.plans()),evidenceHash(input)));
+            inspection.accept(inspection(input.key(),exits,core,terminal(input.plans()),evidence==null?evidenceHash(input):evidence));
             return result(input,walkMerged,accepted,t0);
         }
         var capExclusions=new ArrayList<ArcInterval>();
