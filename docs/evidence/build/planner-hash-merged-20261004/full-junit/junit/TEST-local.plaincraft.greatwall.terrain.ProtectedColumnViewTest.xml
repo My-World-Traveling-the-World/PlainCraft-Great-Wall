@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.terrain.ProtectedColumnViewTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-03T22:45:33.380Z" hostname="CAIMEO" time="0.553">
+  <properties/>
+  <testcase name="noIntersectingStructureStillKeepsOriginalProtectionAndThinIcePrecedence()" classname="local.plaincraft.greatwall.terrain.ProtectedColumnViewTest" time="0.001"/>
+  <testcase name="prefilteredColumnsMatchTheIndependentOldScanIncludingBoundariesAndDuplicates()" classname="local.plaincraft.greatwall.terrain.ProtectedColumnViewTest" time="0.502"/>
+  <testcase name="originalDuplicatedBoxesAreTraversedOnceNotAgainForEveryColumn()" classname="local.plaincraft.greatwall.terrain.ProtectedColumnViewTest" time="0.004"/>
+  <testcase name="insufficientBucketBudgetFailsBeforeColumnsAndDoesNotMaskCapacity()" classname="local.plaincraft.greatwall.terrain.ProtectedColumnViewTest" time="0.0"/>
+  <testcase name="invocationIndexPreservesOldProtectionAcrossNegativeChunksAndUnknownColumns()" classname="local.plaincraft.greatwall.terrain.ProtectedColumnViewTest" time="0.038"/>
+  <testcase name="indexScopeReleasesScratchAndRestoresThePreviousInvocationOnFailure()" classname="local.plaincraft.greatwall.terrain.ProtectedColumnViewTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

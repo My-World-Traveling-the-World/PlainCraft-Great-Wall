@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.terrain.RealizationPlannerEvidenceHashTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-03T22:45:33.933Z" hostname="CAIMEO" time="3.487">
+  <properties/>
+  <testcase name="insertionOrderAndOriginalUtf8SignatureRemainUnchanged()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerEvidenceHashTest" time="0.436"/>
+  <testcase name="naturalExitsWithoutInspectionReduceFullEvidenceExactlyOnce()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerEvidenceHashTest" time="0.514"/>
+  <testcase name="earlyStationBranchesKeepTheirOriginalHashBehavior()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerEvidenceHashTest" time="0.042"/>
+  <testcase name="naturalExitsAndFinalSliceReduceFullEvidenceExactlyOnce()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerEvidenceHashTest" time="0.21"/>
+  <testcase name="noNaturalExitHashesOnlyWhenPublishingInspection()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerEvidenceHashTest" time="0.776"/>
+  <testcase name="fullEvidenceRemainsSensitiveToEveryOriginalInputField()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerEvidenceHashTest" time="1.506"/>
+  <system-out><![CDATA[[06:45:34] [Test worker/INFO]: [STDOUT]: originalEvidenceSignature=15c74f9cf28d029557be9db0bfadf90b188fb025ca5beacfbbbb2696ce1f3b78
+[06:45:34] [Test worker/INFO]: [STDOUT]: resolve: outsideColumnHashReads=1
+[06:45:35] [Test worker/INFO]: [STDOUT]: inspect: naturalExits=2, outsideColumnHashReads=1
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

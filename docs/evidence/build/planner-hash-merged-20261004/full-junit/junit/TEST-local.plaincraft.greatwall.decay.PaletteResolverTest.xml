@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.decay.PaletteResolverTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-03T22:43:59.722Z" hostname="CAIMEO" time="0.853">
+  <properties/>
+  <testcase name="frameDirectionsAgreeWithTheTemplateConvention()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.016"/>
+  <testcase name="emptyOrUnorderedOrMissingHaloRibbonsFailClosed()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.002"/>
+  <testcase name="malformedExistingResourcesNeverFallBackToDefaults()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.165"/>
+  <testcase name="absentResourceUsesDefaultsAndCompleteResourcesAreOrderIndependent()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.019"/>
+  <testcase name="allFrozenPropertiesAndGeometryOverridesAreImmutable()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.006"/>
+  <testcase name="fixedDecayTowerAndBeaconOccupancyRoutesAndFunctionalIdentitiesMatchAllFamilies()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.554"/>
+  <testcase name="resourceByteLimitUtf8AndStreamClosureAreEnforced()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.021"/>
+  <testcase name="sameWorldPartUsesIndependentNamedEntropyNotCallerHashOrOwnerIdentity()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.002"/>
+  <testcase name="unsignedRollsAndBoundariesDoNotRoundOrUseAbsoluteValue()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.001"/>
+  <testcase name="catalogCannotSupplyFakeHashesMissingTablesOrGeometryProperties()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.007"/>
+  <testcase name="all320TablesHaveTheExactOrderedWeightsAndEveryRoll()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.042"/>
+  <testcase name="contentChangesAlterShaButPropertyOrderDoesNotAndConflictingShapeFails()" classname="local.plaincraft.greatwall.decay.PaletteResolverTest" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

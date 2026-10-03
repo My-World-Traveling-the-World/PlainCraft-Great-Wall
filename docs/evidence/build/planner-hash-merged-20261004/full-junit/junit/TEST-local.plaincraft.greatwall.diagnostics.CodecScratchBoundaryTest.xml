@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-03T22:44:00.730Z" hostname="CAIMEO" time="0.01">
+  <properties/>
+  <testcase name="modifiedUtfBytesMatchDataOutputIncludingNullAndUnpairedSurrogates()" classname="local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest" time="0.001"/>
+  <testcase name="exactTakeTransfersOnlyTheArrayWithoutCopyHeadroom()" classname="local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest" time="0.0"/>
+  <testcase name="copyDenialDoesNotReleaseOrModifyOriginalBuffer()" classname="local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest" time="0.001"/>
+  <testcase name="nestedResultsAndScratchTransferOnlyRetainedBytes()" classname="local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest" time="0.001"/>
+  <testcase name="utf8EncoderRetainsLegacyReplacementBehaviorForUnpairedSurrogates()" classname="local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest" time="0.0"/>
+  <testcase name="failedNestedScopeReleasesScratchWithoutReleasingParentCharge()" classname="local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest" time="0.002"/>
+  <testcase name="validUtf8MatchesJdkAndRetainsOnlyDecodedString()" classname="local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest" time="0.001"/>
+  <testcase name="bufferGrowthDenialKeepsOriginalCapacityAndContents()" classname="local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest" time="0.0"/>
+  <testcase name="byteArrayStreamCloseRemainsCompatibleWithReadingAfterClose()" classname="local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest" time="0.0"/>
+  <testcase name="invalidUtf8AndTruncationReleaseAllDecodeScratch()" classname="local.plaincraft.greatwall.diagnostics.CodecScratchBoundaryTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

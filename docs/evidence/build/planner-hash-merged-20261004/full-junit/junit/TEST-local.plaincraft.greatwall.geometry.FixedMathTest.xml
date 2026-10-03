@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.geometry.FixedMathTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-03T22:44:12.787Z" hostname="CAIMEO" time="0.027">
+  <properties/>
+  <testcase name="smoothAndLerpHaveExactEndpoints()" classname="local.plaincraft.greatwall.geometry.FixedMathTest" time="0.003"/>
+  <testcase name="splitmixAndShaHaveFixedVectors()" classname="local.plaincraft.greatwall.geometry.FixedMathTest" time="0.001"/>
+  <testcase name="overflowAndInvalidInputsAreRejected()" classname="local.plaincraft.greatwall.geometry.FixedMathTest" time="0.001"/>
+  <testcase name="fieldOrderChangesHash()" classname="local.plaincraft.greatwall.geometry.FixedMathTest" time="0.0"/>
+  <testcase name="integerSquareRootMatchesBigInteger()" classname="local.plaincraft.greatwall.geometry.FixedMathTest" time="0.016"/>
+  <testcase name="entityIdentityIsStableAndNamespaced()" classname="local.plaincraft.greatwall.geometry.FixedMathTest" time="0.001"/>
+  <testcase name="millionBlockMathDoesNotOverflow()" classname="local.plaincraft.greatwall.geometry.FixedMathTest" time="0.0"/>
+  <testcase name="negativeCoordinatesUseFloorDivision()" classname="local.plaincraft.greatwall.geometry.FixedMathTest" time="0.0"/>
+  <testcase name="multiplicationMatchesExactFloorReference()" classname="local.plaincraft.greatwall.geometry.FixedMathTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

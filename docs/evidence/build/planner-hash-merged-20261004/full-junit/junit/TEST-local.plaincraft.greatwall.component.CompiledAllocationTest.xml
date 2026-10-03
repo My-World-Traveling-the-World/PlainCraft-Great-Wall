@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.component.CompiledAllocationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-03T22:43:41.689Z" hostname="CAIMEO" time="1.052">
+  <properties/>
+  <testcase name="sufficientAdmissionKeepsIdenticalGeometryAndReleasesTemporaryCapacity()" classname="local.plaincraft.greatwall.component.CompiledAllocationTest" time="0.26"/>
+  <testcase name="insufficientCapacityRejectsBeforeAnyPaletteOrVoxelProduction()" classname="local.plaincraft.greatwall.component.CompiledAllocationTest" time="0.005"/>
+  <testcase name="fortReleasesConsumedBuilderTablesBeforeMergingWithoutIncreasingBudget()" classname="local.plaincraft.greatwall.component.CompiledAllocationTest" time="0.786"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

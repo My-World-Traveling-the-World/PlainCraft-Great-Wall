@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.generation.ArchivedOwnerCoverageTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-03T22:44:05.801Z" hostname="CAIMEO" time="5.123">
+  <properties/>
+  <testcase name="archivedRequestsAreComparedWithActualDurableCaptureOwners()" classname="local.plaincraft.greatwall.generation.ArchivedOwnerCoverageTest" time="5.123"/>
+  <system-out><![CDATA[[06:44:10] [Test worker/INFO]: [STDOUT]: S1C_OWNER_OFFLINE first=ChunkKey[dimension=minecraft:overworld, x=10, z=57] captures=133 nonOwners=219 violations=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

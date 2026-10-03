@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.diagnostics.WalkwayCollisionCheckTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-03T22:44:05.748Z" hostname="CAIMEO" time="0.006">
+  <properties/>
+  <testcase name="allFourBottomStairDirectionsRetainNativePlayerSupport()" classname="local.plaincraft.greatwall.diagnostics.WalkwayCollisionCheckTest" time="0.003"/>
+  <testcase name="tallBaseShapeCannotInvadePlayerBodyToFakeSupport()" classname="local.plaincraft.greatwall.diagnostics.WalkwayCollisionCheckTest" time="0.0"/>
+  <testcase name="footCollisionStillRejectsEvenWithSolidGround()" classname="local.plaincraft.greatwall.diagnostics.WalkwayCollisionCheckTest" time="0.0"/>
+  <testcase name="edgeSliverOutsidePlayerFootprintDoesNotCountAsGround()" classname="local.plaincraft.greatwall.diagnostics.WalkwayCollisionCheckTest" time="0.0"/>
+  <testcase name="savedWestStairHasPlayerSupportEvenThoughTheOldFullFaceCheckRejectsIt()" classname="local.plaincraft.greatwall.diagnostics.WalkwayCollisionCheckTest" time="0.0"/>
+  <testcase name="groundFarBelowFeetDoesNotCountAsAnEntrancePlatform()" classname="local.plaincraft.greatwall.diagnostics.WalkwayCollisionCheckTest" time="0.0"/>
+  <testcase name="headCollisionStillRejectsEvenWithSolidGround()" classname="local.plaincraft.greatwall.diagnostics.WalkwayCollisionCheckTest" time="0.001"/>
+  <testcase name="airAndBottomSlabsDoNotFakeSupportAtIntegerFeet()" classname="local.plaincraft.greatwall.diagnostics.WalkwayCollisionCheckTest" time="0.0"/>
+  <testcase name="fullBlocksAndTopSlabsSupportIntegerFeet()" classname="local.plaincraft.greatwall.diagnostics.WalkwayCollisionCheckTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

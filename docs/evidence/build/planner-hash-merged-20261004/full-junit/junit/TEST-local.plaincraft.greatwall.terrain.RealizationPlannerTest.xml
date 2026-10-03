@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.terrain.RealizationPlannerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-03T22:45:37.421Z" hostname="CAIMEO" time="13.014">
+  <properties/>
+  <testcase name="immutableInspectionHandoffRemainsChargedUntilItsOwnerCloses()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="0.013"/>
+  <testcase name="partialTerminalCellKeepsOneNearSideCapAndOriginalReason()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="1.281"/>
+  <testcase name="orderIndependentCellKeepsStationContractImmutable()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="1.135"/>
+  <testcase name="capVotesCannotOverwriteAnAcceptedWholeGateFootprint()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="8.934"/>
+  <testcase name="elevenWideTowerKeepsTheWallColumnInsideItsTwelveWidePlanningGuard()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="0.427"/>
+  <testcase name="exhaustedBudgetRejectsInspectionBeforeAnyTerrainColumnIsRead()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="0.011"/>
+  <testcase name="inspectionScratchIsReleasedOnSuccessAndMissingColumnFailure()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="0.346"/>
+  <testcase name="frozenGateRevisionChangesCellHashWithoutChangingGeometry()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="0.861"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
