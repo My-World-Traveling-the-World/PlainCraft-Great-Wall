@@ -68,7 +68,8 @@ public final class RealizationPlanner {
             java.util.function.Consumer<GroundExitDecision.Slice> inspection) {
         long temporary=workingBytes(input);
         CompiledAllocation.charge(temporary);
-        try { return resolveAccounted(input,decisions,inspection); }
+        try { return ProtectedColumnView.indexed(input.protectedBounds(),input.columns().keySet(),
+                ()->resolveAccounted(input,decisions,inspection)); }
         finally { CompiledAllocation.discard(temporary); }
     }
     private RealizationCell resolveAccounted(Input input,List<GroundExitDecision> decisions,
@@ -240,7 +241,8 @@ public final class RealizationPlanner {
     public GroundExitDecision.CapVote probeCap(Input input,GroundExitDecision.Edge edge) {
         long temporary=workingBytes(input);
         CompiledAllocation.charge(temporary);
-        try { return probeCapAccounted(input,edge); }
+        try { return ProtectedColumnView.indexed(input.protectedBounds(),input.columns().keySet(),
+                ()->probeCapAccounted(input,edge)); }
         finally { CompiledAllocation.discard(temporary); }
     }
     private GroundExitDecision.CapVote probeCapAccounted(Input input,GroundExitDecision.Edge edge) {
