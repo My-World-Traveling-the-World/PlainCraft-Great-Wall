@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.lifecycle.WorldBootstrapTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-03T15:10:16.070Z" hostname="CAIMEO" time="2.103">
+  <properties/>
+  <testcase name="initializedUnmarkedWorldFailsInsteadOfBackfill()" classname="local.plaincraft.greatwall.lifecycle.WorldBootstrapTest" time="0.024"/>
+  <testcase name="frozenRecipeIsDurableAndRootTransfersOneNativeFactoryPerLane()" classname="local.plaincraft.greatwall.lifecycle.WorldBootstrapTest" time="1.175"/>
+  <testcase name="closeDuringAuthorizationDoesNotStartLateOracleOrPublishRecipe()" classname="local.plaincraft.greatwall.lifecycle.WorldBootstrapTest" time="0.042"/>
+  <testcase name="heldStructureScreenDoesNotFreezeRecipeOrWaitForFeaturesOrNormalTicks()" classname="local.plaincraft.greatwall.lifecycle.WorldBootstrapTest" time="0.289"/>
+  <testcase name="canceledReadyViewCannotCancelRootProducer()" classname="local.plaincraft.greatwall.lifecycle.WorldBootstrapTest" time="0.252"/>
+  <testcase name="reopenedRecipeWaitsForActualInputsAndIgnoresChangedWorldSpawn()" classname="local.plaincraft.greatwall.lifecycle.WorldBootstrapTest" time="0.283"/>
+  <testcase name="earlySpawnWaitsOnlyForAuthorizationAndRemoteDoesNotPass()" classname="local.plaincraft.greatwall.lifecycle.WorldBootstrapTest" time="0.035"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

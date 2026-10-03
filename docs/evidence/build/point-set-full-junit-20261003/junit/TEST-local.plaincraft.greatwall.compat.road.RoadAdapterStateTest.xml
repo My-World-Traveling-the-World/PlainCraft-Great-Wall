@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-03T15:09:34.381Z" hostname="CAIMEO" time="0.148">
+  <properties/>
+  <testcase name="noncanonicalAndTruncatedGateIdsAreRejected()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.007"/>
+  <testcase name="closeBeforeReadyRejectsWorkWithoutCancellingSharedReadiness()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.007"/>
+  <testcase name="receiptMustPrecedeLedgerPublicationAndClosingDoesNotCancelTheDurableAppend()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.014"/>
+  <testcase name="changedBindingIsRecheckedOnOwnerAndReported()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.002"/>
+  <testcase name="invalidSessionUnknownGateAndForeignWallNeverAppend()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.001"/>
+  <testcase name="failedReadinessNeverRegistersAnEndpoint()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.0"/>
+  <testcase name="proposalCopiesInputAndDoesNotWaitForRoadReadinessOrPublishAPlaceholder()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.005"/>
+  <testcase name="readinessCompletionQueuesEffectsOnTheOwner()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.002"/>
+  <testcase name="journalFailureNeverPublishesOrFreezesGate()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.001"/>
+  <testcase name="reversedConnectionsReachThePortInTheSameCanonicalOrder()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.006"/>
+  <testcase name="appliedStateWithoutDurableProfileOrPhysicalProofIsNotAnAgreement()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.012"/>
+  <testcase name="unnegotiatedPlannedGateRegistryBackpressuresInsteadOfGrowingForever()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.082"/>
+  <testcase name="closedBatchCannotBeReplacedAndIncompleteBatchIsNotFrozen()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.001"/>
+  <testcase name="fullGateEncodingDoesNotCollideOnSharedSixteenCharacterPrefix()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.0"/>
+  <testcase name="closeAfterReadyButBeforeOwnerDispatchAlsoPreventsEffects()" classname="local.plaincraft.greatwall.compat.road.RoadAdapterStateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

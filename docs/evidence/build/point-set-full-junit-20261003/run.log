@@ -1,0 +1,1015 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.16.3
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileClientJava UP-TO-DATE
+> Task :processClientResources UP-TO-DATE
+> Task :clientClasses UP-TO-DATE
+> Task :compileServerSmokeJava UP-TO-DATE
+> Task :processServerSmokeResources UP-TO-DATE
+> Task :serverSmokeClasses UP-TO-DATE
+> Task :compileTestJava UP-TO-DATE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :testClasspathBridge UP-TO-DATE
+
+> Task :test
+
+BuildContractTest > commonMetadataSeparatesClientEntrypoint() PASSED
+
+BuildContractTest > combinedModPackSupportsBothMinecraftPackFormats() PASSED
+
+BuildContractTest > javaAndMinecraftTargetAreFrozen() PASSED
+
+ProbePlannerTest > failureAndCancellationDoNotPublishEmptySuccess() PASSED
+
+ProbePlannerTest > previousSessionCannotPublishIntoNewSession() PASSED
+
+ProbePlannerTest > hundredWaitersComputeOnceAndCancelIndependently() PASSED
+
+ProbePlannerTest > orderDelayAndSessionNeverEnterTheDiagnosticPlanHash() PASSED
+
+ProbePlannerTest > startupPumpDoesNotNeedNormalTicks() PASSED
+
+ProbePlannerTest > closingThirtySecondPlanTerminatesEveryFuture() PASSED
+
+ProbePlannerTest > diagnosticSentinelRejectsAnActualLockAction() PASSED
+
+TerrainEvidenceTest > truncatedAndOversizedEvidenceFailsWithoutReconstruction() PASSED
+
+TerrainEvidenceTest > paletteNumberingDoesNotChangeCanonicalHash() PASSED
+
+TerrainEvidenceTest > evidenceRejectsDifferentRecipeAndOverwrite() PASSED
+
+TerrainEvidenceTest > windowIsInclusiveAndDataIsDefensivelyCopied() PASSED
+
+TerrainEvidenceTest > highYAndDimensionIdentitySurviveDiskRoundTrip() PASSED
+
+TerrainEvidenceTest > windowBoundsRejectOverflowAndInvalidPaletteIndices() PASSED
+
+TerrainEvidenceTest > ownerGuardUsesFloorDivisionAndProtectsPlayerChanges() PASSED
+
+TerrainEvidenceTest > durableRoundTripIsIdempotentAndNotACache() PASSED
+
+WorldRecipeGuardTest > oldWorldAndCorruptManifestAreNotSilentlyReset() PASSED
+
+WorldRecipeGuardTest > validJsonWithTamperedInputsIsRejectedWithoutOverwritingEvidence() PASSED
+
+WorldRecipeGuardTest > persistedRecipeRejectsGenerationChanges() PASSED
+
+WorldRecipeGuardTest > jsonKeyOrderAndFormattingDoNotChangeFingerprint() PASSED
+
+PinnedWallSnapshotTest > longSweptEdgeCannotJumpAnOffCentreWall() PASSED
+
+PinnedWallSnapshotTest > frozenButNotPhysicalGateCostsZeroAndStillPausesConstruction() PASSED
+
+PinnedWallSnapshotTest > failedReleaseDoesNotLeakTheOtherSnapshotLeases() PASSED
+
+PinnedWallSnapshotTest > sparsePolylineCrossingTheQueryIsNotLostByEndpointFiltering() PASSED
+
+PinnedWallSnapshotTest > fullGateSectionNarrowsShouldersButKeepsFourClearBlocks() PASSED
+
+PinnedWallSnapshotTest > diagonalAndShortEdgesCannotEscapeTheFullGateSection() PASSED
+
+PinnedWallSnapshotTest > closeReleasesEachLeaseOnceWithoutCancellingTheSharedPlanner() PASSED
+
+PinnedWallSnapshotTest > gateZeroDoesNotEraseAnotherIntersectingWall() PASSED
+
+PinnedWallSnapshotTest > eightBlockEdgeCrossesWallWithBothEndsOutside() PASSED
+
+RoadAdapterStateTest > noncanonicalAndTruncatedGateIdsAreRejected() PASSED
+
+RoadAdapterStateTest > closeBeforeReadyRejectsWorkWithoutCancellingSharedReadiness() PASSED
+
+RoadAdapterStateTest > receiptMustPrecedeLedgerPublicationAndClosingDoesNotCancelTheDurableAppend() PASSED
+
+RoadAdapterStateTest > changedBindingIsRecheckedOnOwnerAndReported() PASSED
+
+RoadAdapterStateTest > invalidSessionUnknownGateAndForeignWallNeverAppend() PASSED
+
+RoadAdapterStateTest > failedReadinessNeverRegistersAnEndpoint() PASSED
+
+RoadAdapterStateTest > proposalCopiesInputAndDoesNotWaitForRoadReadinessOrPublishAPlaceholder() PASSED
+
+RoadAdapterStateTest > readinessCompletionQueuesEffectsOnTheOwner() PASSED
+
+RoadAdapterStateTest > journalFailureNeverPublishesOrFreezesGate() PASSED
+
+RoadAdapterStateTest > reversedConnectionsReachThePortInTheSameCanonicalOrder() PASSED
+
+RoadAdapterStateTest > appliedStateWithoutDurableProfileOrPhysicalProofIsNotAnAgreement() PASSED
+
+RoadAdapterStateTest > unnegotiatedPlannedGateRegistryBackpressuresInsteadOfGrowingForever() PASSED
+
+RoadAdapterStateTest > closedBatchCannotBeReplacedAndIncompleteBatchIsNotFrozen() PASSED
+
+RoadAdapterStateTest > fullGateEncodingDoesNotCollideOnSharedSixteenCharacterPrefix() PASSED
+
+RoadAdapterStateTest > closeAfterReadyButBeforeOwnerDispatchAlsoPreventsEffects() PASSED
+
+WallObstacleProviderTest > journalAckAloneCannotPublishAPhysicallyReadyGate() PASSED
+
+WallObstacleProviderTest > everyStripIsAtMost512ArcBlocksAndStopsAtThePermanentTerminal() PASSED
+
+WallObstacleProviderTest > cancellationWhileSourceIsPendingClosesLeasesOnHandoff() PASSED
+
+WallObstacleProviderTest > providerRetainsSparseCrossingAndReleasesItsActualPinsOnlyOnClose() PASSED
+
+WallObstacleProviderTest > oversizedOrInitiallyCancelledRequestNeverAsksForPlans() PASSED
+
+WallObstacleProviderTest > failedPreparedSnapshotClosesPinsAndDoesNotPretendThereIsNoWall() PASSED
+
+CompiledAllocationTest > sufficientAdmissionKeepsIdenticalGeometryAndReleasesTemporaryCapacity() PASSED
+
+CompiledAllocationTest > insufficientCapacityRejectsBeforeAnyPaletteOrVoxelProduction() PASSED
+
+CompiledAllocationTest > fortReleasesConsumedBuilderTablesBeforeMergingWithoutIncreasingBudget() PASSED
+
+ComponentAssemblyTest > candidatesAndInputAreNotMutatedByRepeatedCompilation() PASSED
+
+ComponentAssemblyTest > incompatibleRequiredFloorAndHeadroomRejectWholeComponent() PASSED
+
+ComponentAssemblyTest > wholeComponentNeedsEverySupportBeforeClipping() PASSED
+
+CurvedGateBoundaryTest > legacyScalarCutReallyPublishesClearanceInsideTheFirstGateParapetColumn() PASSED
+
+CurvedGateBoundaryTest > gateOrderCannotChangeCanonicalWallBytes() PASSED
+
+CurvedGateBoundaryTest > replacementUsesCompleteEndPlanesNotAConflictCoordinateWhitelist() PASSED
+
+CurvedGateBoundaryTest > emptyReplacementInputAndStraightGatePreserveCanonicalWallBytes() PASSED
+
+FortFootprintCoordinatesTest > translatedAndRotatedFootprintUsesWorldKeysRatherThanLocalCoordinates() PASSED
+
+FortFootprintCoordinatesTest > boundingBoxGuardColumnsAreNotMistakenForTheRotatedFortFootprint() PASSED
+
+FortFootprintCoordinatesTest > everyActualFootprintColumnRemainsMandatoryAndProtectionCannotBeSkipped() PASSED
+
+GateCapTest > capRetreatFollowsBendAndHeightInsteadOfOriginalTangent() PASSED
+
+GateCapTest > filledFoundationsDoNotPretendTheirTopIsNaturalGround() PASSED
+
+GateCapTest > capHasGroundEgressAndDoesNotKeepAnIsolatedTip() PASSED
+
+GateCapTest > nonWalkableCapStatesRetainRuinsWithoutReadingANonexistentRoute() PASSED
+
+GateCapTest > rampsNeverBlockGateApproach() PASSED
+
+GroundEntranceContractTest > dropThirteenAndBothFootHeightBoundsStayClosed() PASSED
+
+GroundEntranceContractTest > oneLaneAndAllBlockedExteriorFacesAreNotThreeWideEntrances() PASSED
+
+GroundEntranceContractTest > protectedWaterMissingAndUpperCensoredColumnsRejectInsteadOfGuessingAir() PASSED
+
+GroundEntranceContractTest > anIsolatedLevelIslandCannotSupplyExteriorAccess() PASSED
+
+GroundEntranceContractTest > naturalHeightSpreadIsNotAProxyForACompleteThreeWideEntrance() PASSED
+
+GroundEntranceContractTest > realHeadroomAndUnapprovedVoidMaterialsAreCheckedBeforeCertificate() PASSED
+
+GroundEntranceContractTest > twoOutsideColumnsCannotBeReusedAsThreeIndependentRotatedApproaches() PASSED
+
+GroundEntranceTest > fortCourtyardAndBothInternalRampsMeetNaturalGround() PASSED
+
+GroundEntranceTest > nominalGroundFormulaIsNotAnExitWhenFoundationDropIsNonzero() PASSED
+
+GroundEntranceTest > enemyTowerHasARealGroundExitForEverySupportedFoundationDrop() PASSED
+
+GroundExitCapVariantsTest > allFourCapExitsConnectToTheSameWallWithoutChangingRetreatSchedule() PASSED
+
+GroundExitCapVariantsTest > rejectedFirstOrientationDoesNotSkipTheRemainingCandidatesAtThisRetreat() PASSED
+
+RampSpecificationTest > frozenUpperEndRailSealsTheGroundLandingAtHeightTwenty() PASSED
+
+RampSpecificationTest > height32LandingSupportFallsBelowFrozenLocalBounds() PASSED
+
+RampSpecificationTest > frozenSmallRampPlatformsIntersectRequiredEntranceAir(int) > [1] 1 PASSED
+
+RampSpecificationTest > frozenSmallRampPlatformsIntersectRequiredEntranceAir(int) > [2] 2 PASSED
+
+ReservationHeapPressureTest > fullBudgetPinsBackpressureWhileRealPayloadsStayLive() PASSED
+
+S1TemplateSetTest > frozenBaseBindingPreservesAllThreeFamiliesAndFunctionalParts() PASSED
+
+TemplateTest > ruinAndBuriedHaveNoFunctionalFireOrSpawn() PASSED
+
+TemplateTest > beaconHasFourUnlitFiresOneIdentity() PASSED
+
+TemplateTest > allHeadingsKeepFourFireIdentitiesAndTowerRoutes() PASSED
+
+TemplateTest > towerIs11Not12AndAllLevelsReachGround() PASSED
+
+WallContractEquivalenceTest > nearestEdgeOptimizationMatchesOriginalScanOnCurvesSlopesAndFarCoordinates() PASSED
+
+WallContractEquivalenceTest > equalDistanceRetainsFirstEdgeAndEndpointsRetainOriginalRounding() PASSED
+
+WallDecayTest > oneCellRendersLowRuinsWithoutKeepingTheirSkyWalkway() PASSED
+
+WallDecayTest > finalPartialCellDoesNotDemandNonexistentFutureStations() PASSED
+
+WallRampTest > outerRailsAreGroundedAndNeverReplaceTheThreeWideRuns() PASSED
+
+WallRampTest > familiesHaveSameOccupancy() PASSED
+
+WallRampTest > wallHas20By10TaperAndSixClearLane() PASSED
+
+WallRampTest > fixedFourCandidateOrderUsesCompleteFootprintsAndNeverLoadedSide() PASSED
+
+WallRampTest > rampHasGroundToWallRouteAndRejectsMissingSupport() PASSED
+
+WallRampTest > defaultRampGroundEntranceTracksActualSupportedGround(int) > [1] 0 PASSED
+
+WallRampTest > defaultRampGroundEntranceTracksActualSupportedGround(int) > [2] 4 PASSED
+
+WallRampTest > defaultRampGroundEntranceTracksActualSupportedGround(int) > [3] 5 PASSED
+
+WallRampTest > defaultRampGroundEntranceTracksActualSupportedGround(int) > [4] 12 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [1] 1 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [2] 2 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [3] 3 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [4] 4 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [5] 20 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [6] 31 PASSED
+
+WallRampTest > rampHeightBoundary(int) > [7] 32 PASSED
+
+WallRampTest > rotatedWallRetainsContinuousSixWidePath() PASSED
+
+WallRampTest > allThirtyTwoHeightsKeepTheirRequiredLandingsAndHeadroom() PASSED
+
+WaterFortTest > fortStays48AndHasNoGameplayEntities() PASSED
+
+WaterFortTest > naturalThinIceOnlyClearsMainFourAndCannotBecomeAnUnsupportedPier() PASSED
+
+WaterFortTest > secondarySpansNeverLeaveOneOrTwoWideRemaindersOrExceedSix() PASSED
+
+WaterFortTest > width49Crosses50And51AreRejectedWithoutWaterRise() PASSED
+
+WaterFortTest > sevenColumnTailCannotBeMergedIntoFourPlusTwoPierUnderSixLimit() PASSED
+
+DecayFieldTest > familyBiasDoesNotChangeNoiseOrRequiredSupport() PASSED
+
+DecayFieldTest > ruinHeightIsRelativeToGroundAndPartialDetailsAreGrouped() PASSED
+
+DecayFieldTest > fieldIsDeterministicContinuousAndMaintenanceIsOrderIndependent() PASSED
+
+PaletteResolverTest > frameDirectionsAgreeWithTheTemplateConvention() PASSED
+
+PaletteResolverTest > emptyOrUnorderedOrMissingHaloRibbonsFailClosed() PASSED
+
+PaletteResolverTest > malformedExistingResourcesNeverFallBackToDefaults() PASSED
+
+PaletteResolverTest > absentResourceUsesDefaultsAndCompleteResourcesAreOrderIndependent() PASSED
+
+PaletteResolverTest > allFrozenPropertiesAndGeometryOverridesAreImmutable() PASSED
+
+PaletteResolverTest > fixedDecayTowerAndBeaconOccupancyRoutesAndFunctionalIdentitiesMatchAllFamilies() PASSED
+
+PaletteResolverTest > resourceByteLimitUtf8AndStreamClosureAreEnforced() PASSED
+
+PaletteResolverTest > sameWorldPartUsesIndependentNamedEntropyNotCallerHashOrOwnerIdentity() PASSED
+
+PaletteResolverTest > unsignedRollsAndBoundariesDoNotRoundOrUseAbsoluteValue() PASSED
+
+PaletteResolverTest > catalogCannotSupplyFakeHashesMissingTablesOrGeometryProperties() PASSED
+
+PaletteResolverTest > all320TablesHaveTheExactOrderedWeightsAndEveryRoll() PASSED
+
+PaletteResolverTest > contentChangesAlterShaButPropertyOrderDoesNotAndConflictingShapeFails() PASSED
+
+SupportGraphTest > gravityCannotBeHeldFromSideAndDuplicateVoxelsFailClosed() PASSED
+
+SupportGraphTest > routesNeedSupportTwoBlockHeadroomAndOneBlockRise() PASSED
+
+SupportGraphTest > removesFloatingIslandsButRejectsRequiredIsland() PASSED
+
+SupportGraphTest > oneAbutmentCannotRootTheOtherThroughItsOwnArch() PASSED
+
+AllocationBudgetTest > refusesBeforeCallingProducerAndNeverChangesUsageOnRejection() PASSED
+
+AllocationBudgetTest > ownerCloseRejectsLateProducersAndLatePinCloseIsIdempotent() PASSED
+
+BoundedByteArrayOutputStreamTest > capacityNeverRoundsPastNonPowerOfTwoLimit() PASSED
+
+BoundedByteArrayOutputStreamTest > bulkOverflowFailsBeforeGrowthAndPreservesPreviousContents() PASSED
+
+BudgetCacheTest > pinnedCacheBackpressuresWithoutStartingLoader() PASSED
+
+BudgetCacheTest > retainedSizeUnderestimationFailsExplicitly() PASSED
+
+BudgetCacheTest > hundredCallersShareOneComputeAndIndependentPins() PASSED
+
+BudgetCacheTest > closeTerminatesWaitersAndLateLoaderCannotPublish() PASSED
+
+BudgetReservationLifecycleAuditTest > closeBeforeDrainFailsEveryWaiterAndQueuedDrainCannotResurrectThem() PASSED
+
+BudgetReservationLifecycleAuditTest > cancellingBeforeOwnerDrainNeverCreatesAHeldPin() PASSED
+
+BudgetReservationLifecycleAuditTest > failingConsumerOwnsItsPinUntilFinallyClosesIt() PASSED
+
+BudgetReservationLifecycleAuditTest > cancellingFifoHeadAdmitsSmallerSuccessorWithoutReleasingExistingConsumer() PASSED
+
+BudgetReservationLifecycleAuditTest > executorRejectionFailsWaitersButCannotUnpinDeliveredData() PASSED
+
+BudgetReservationLifecycleAuditTest > reentrantCloseOnFirstGrantCannotLeakOtherAlreadyAdmittedJobs() PASSED
+
+BudgetReservationTest > concurrentOwnerDoesNotRequireASingleThreadExecutor() PASSED
+
+BudgetReservationTest > reservationIsGrantedBeforeProducerAndReleasedAfterPinClose() PASSED
+
+BudgetReservationTest > rejectedExecutorFailsPendingAdmissionWithoutRetainingBytes() PASSED
+
+BudgetReservationTest > overLimitIsRejectedBeforeAnyAllocationCanStart() PASSED
+
+BudgetReservationTest > closeKeepsDeliveredPinsAccountedUntilTheirActualRelease() PASSED
+
+BudgetReservationTest > cancelledWaiterDoesNotConsumeCapacity() PASSED
+
+BufferedCodecTest > byteLengthShaCrcAndTargetMatchAnIndependentUnbufferedReference() PASSED
+
+BufferedCodecTest > exhaustedBudgetRejectsTheFixedBufferBeforeCallingTheProducer() PASSED
+
+BufferedCodecTest > countingPassDoesNotAllocateAHarmlessButUnneededHashBuffer() PASSED
+
+CodecScratchBoundaryTest > modifiedUtfBytesMatchDataOutputIncludingNullAndUnpairedSurrogates() PASSED
+
+CodecScratchBoundaryTest > exactTakeTransfersOnlyTheArrayWithoutCopyHeadroom() PASSED
+
+CodecScratchBoundaryTest > copyDenialDoesNotReleaseOrModifyOriginalBuffer() PASSED
+
+CodecScratchBoundaryTest > nestedResultsAndScratchTransferOnlyRetainedBytes() PASSED
+
+CodecScratchBoundaryTest > utf8EncoderRetainsLegacyReplacementBehaviorForUnpairedSurrogates() PASSED
+
+CodecScratchBoundaryTest > failedNestedScopeReleasesScratchWithoutReleasingParentCharge() PASSED
+
+CodecScratchBoundaryTest > validUtf8MatchesJdkAndRetainsOnlyDecodedString() PASSED
+
+CodecScratchBoundaryTest > bufferGrowthDenialKeepsOriginalCapacityAndContents() PASSED
+
+CodecScratchBoundaryTest > byteArrayStreamCloseRemainsCompatibleWithReadingAfterClose() PASSED
+
+CodecScratchBoundaryTest > invalidUtf8AndTruncationReleaseAllDecodeScratch() PASSED
+
+CompiledAllocationScopeAuditTest > childCapacityFailureRestoresParentAndReleasesOnlyChildCharges() PASSED
+
+CompiledAllocationScopeAuditTest > explicitReturnedEvidenceKeepsItsPrechargedArenaUntilConsumerRelease() PASSED
+
+CompiledAllocationScopeAuditTest > retainedBytesCannotExceedPrechargedBytesEvenAfterNestedSuccess() PASSED
+
+CompiledAllocationScopeAuditTest > foreignNestedBudgetIsRejectedBeforeItsProducerAndParentSurvives() PASSED
+
+CompiledAllocationScopeAuditTest > successfulChildTransfersOnlyRetainedBytesToItsParent() PASSED
+
+CompiledAllocationScopeAuditTest > failedRetentionEstimatorRestoresThreadLocalScope() PASSED
+
+DebugPayloadTest > registrationIsIdempotentAndKeepsTheSameTypeAndCodec() PASSED
+
+DebugPayloadTest > decoderRejectsLabelLengthsBeforeAllocatingText() PASSED
+
+DebugPayloadTest > encodingLimitIsPerPayloadNotPriorBufferContents() PASSED
+
+DebugPayloadTest > coordinatesUseThreeSignedIntsAndRoundTripAbovePackedYRange() PASSED
+
+DebugPayloadTest > constructorRejectsOverLimitCollectionsBeforeCopyingTheirContents() PASSED
+
+DebugPayloadTest > decoderConsumesOnlyOneValueAndLeavesLargeTrailingStreamFieldsUntouched() PASSED
+
+DebugPayloadTest > revisionPreservesTheFrozenLongWithoutAnInventedNumericRange() PASSED
+
+DebugPayloadTest > labelsAreLimitedByUtf8BytesRatherThanJavaCharacterCount() PASSED
+
+DebugPayloadTest > malformedUnicodeAndMalformedWireUtf8CannotSilentlyChangeLabels() PASSED
+
+DebugPayloadTest > everyTruncatedPrefixFailsInsteadOfReturningAPartialPage() PASSED
+
+DebugPayloadTest > decoderRejectsAnInvalidBoundsRecord() PASSED
+
+DebugPayloadTest > pageBoundsAreCheckedBeforeReadingAnyCollections() PASSED
+
+DebugPayloadTest > maximumCountsAndUtf8BytesFitWithinOneBoundedPage() PASSED
+
+DebugPayloadTest > payloadCollectionsAreDetachedAndNestedValuesCannotBeNull() PASSED
+
+DebugPayloadTest > decoderRejectsNegativeExcessiveAndHugeCountsBeforeAllocatingLists() PASSED
+
+WalkwayCollisionCheckTest > allFourBottomStairDirectionsRetainNativePlayerSupport() PASSED
+
+WalkwayCollisionCheckTest > tallBaseShapeCannotInvadePlayerBodyToFakeSupport() PASSED
+
+WalkwayCollisionCheckTest > footCollisionStillRejectsEvenWithSolidGround() PASSED
+
+WalkwayCollisionCheckTest > edgeSliverOutsidePlayerFootprintDoesNotCountAsGround() PASSED
+
+WalkwayCollisionCheckTest > savedWestStairHasPlayerSupportEvenThoughTheOldFullFaceCheckRejectsIt() PASSED
+
+WalkwayCollisionCheckTest > groundFarBelowFeetDoesNotCountAsAnEntrancePlatform() PASSED
+
+WalkwayCollisionCheckTest > headCollisionStillRejectsEvenWithSolidGround() PASSED
+
+WalkwayCollisionCheckTest > airAndBottomSlabsDoNotFakeSupportAtIntegerFeet() PASSED
+
+WalkwayCollisionCheckTest > fullBlocksAndTopSlabsSupportIntegerFeet() PASSED
+
+WallMetricsTest > publicRecordsCopyInputsAndValidateHistogramConsistency() PASSED
+
+WallMetricsTest > timingOverflowAndNegativeInputCannotPartiallyUpdateHistogram() PASSED
+
+WallMetricsTest > timingsUseSixtyFourLog2BinsAndAnExactMaximum() PASSED
+
+WallMetricsTest > everyPositivePowerOfTwoHasItsOwnBin() PASSED
+
+WallMetricsTest > counterOverflowAndUnderflowPreserveThePreviousValue() PASSED
+
+WallMetricsTest > overFortyMillisecondsKeepsBoundedClassPrimitiveAndStackWithoutReplacingGauge() PASSED
+
+WallMetricsTest > resetOnlyClearsThisMetricsInstanceAndRetainedSnapshotsStayIntact() PASSED
+
+WallMetricsTest > unobservedMetricsAreNotSyntheticZeroMeasurements() PASSED
+
+WallMetricsTest > concurrentWritersLoseNeitherCountsNorHistogramObservations() PASSED
+
+WallMetricsTest > snapshotsAreSortedDetachedAndDeeplyImmutable() PASSED
+
+WallMetricsTest > gaugeLimitAndNullsDoNotErasePreviousObservations() PASSED
+
+WallMetricsTest > whitelistCoversEveryFrozenNameAndRejectsDynamicKeys() PASSED
+
+WallMetricsTest > applyAndCpuOracleRemainSeparateObservations() PASSED
+
+ArchivedOwnerCoverageTest > archivedRequestsAreComparedWithActualDurableCaptureOwners() PASSED
+
+ChunkPlanCompilerTest > negativeSpaceNeverCarvesForeignVoxelsAndMissingEvidenceFails() PASSED
+
+ChunkPlanCompilerTest > componentOrderAndDuplicatesDoNotChangePlan() PASSED
+
+ChunkPlanCompilerTest > clipsAfterWholeComponentAndRoundTripsMetadata() PASSED
+
+ChunkPlanCompilerTest > gateRevisionAndCoverageChangeCompileKey() PASSED
+
+CoveragePlannerTest > triggerDomainUsesTheSameOwnerFunctionAsDurableCapture() PASSED
+
+CoveragePlannerTest > rotatedFortReadDomainIncludesTheActualRasterGuardAndExternalApron() PASSED
+
+CoveragePlannerTest > canonicalCoverageIncludesLowerGuardUpperSentinelAndNegativePages() PASSED
+
+CoveragePlannerTest > everyTemplateWaterGateAndExitEnvelopeOwnerRemainsDispatchableInFiveOrientations() PASSED
+
+CoveragePlannerTest > dynamicWaterGateAndBothExitDirectionsAreCoveredWithoutSyntheticPlannedSites() PASSED
+
+OwnershipGuardTest > markerAndOwnershipCannotBeInferredFromStoneEquality() PASSED
+
+OwnershipGuardTest > playerMutationsFullChunksAndUndurableProofAreRejected() PASSED
+
+ProtectionSnapshotTest > orderingAndDuplicateBoxesDoNotChangeHashButTamperingFails() PASSED
+
+ProtectionSnapshotTest > immutableHalfOpenProtectionPreservesTallCoordinates() PASSED
+
+RootFootprintGuardTest > everyInitialTangentAndItsEntranceGuardFitThePreRecipeStructureEnvelope() PASSED
+
+SurfaceProbeTest > onlyExposedSingleNaturalIceLayerIsRecordedWithoutWideningWindow() PASSED
+
+SurfaceProbeTest > dropBoundary(int) > [1] 0 PASSED
+
+SurfaceProbeTest > dropBoundary(int) > [2] 4 PASSED
+
+SurfaceProbeTest > dropBoundary(int) > [3] 5 PASSED
+
+SurfaceProbeTest > dropBoundary(int) > [4] 12 PASSED
+
+SurfaceProbeTest > dropBoundary(int) > [5] 13 PASSED
+
+SurfaceProbeTest > leavesPowderSnowAndCaveRoofNotFoundation() PASSED
+
+SurfaceProbeTest > upperSentinelDoesNotInventAir() PASSED
+
+SurfaceProbeTest > protectedLowerLayerRejectsWholeColumnAndWaterReportsBed() PASSED
+
+SurfaceProbeTest > lowerGuardReadsWMinus35() PASSED
+
+SurfaceProbeTest > dimensionBottomRequiresThreeLayersAndTopIsCensored() PASSED
+
+VegetationGuardTest > originOutsideStillSuppressesIntersectingCompleteCanopy() PASSED
+
+VegetationGuardTest > unknownOrReleasedOwnerCannotSilentlyPlaceTrees() PASSED
+
+VegetationGuardTest > prospectiveGroundExitOutsideOrdinaryWallMarginStillHasItsFull32Margin() PASSED
+
+ArcLengthTest > duplicatePointsCannotSilentlyChangeUIndices() PASSED
+
+ArcLengthTest > trueLengthAndBoundaryInterpolationAreExact() PASSED
+
+CanonicalCodecTest > nestedHashesAreRetainedAndVerified() PASSED
+
+CanonicalCodecTest > rejectsTruncationTrailingBytesAndHugeLengths() PASSED
+
+CanonicalCodecTest > invalidUtf8BooleanAndSchemaFailClosed() PASSED
+
+CanonicalCodecTest > writePlanMapsAreSortedAndTallYIsNotPacked() PASSED
+
+CanonicalCodecTest > recipeOmitsSessionAndDerivedIdentities() PASSED
+
+CanonicalCodecTest > geometryRoundTripsWithStableCanonicalBytes() PASSED
+
+FixedMathTest > smoothAndLerpHaveExactEndpoints() PASSED
+
+FixedMathTest > splitmixAndShaHaveFixedVectors() PASSED
+
+FixedMathTest > overflowAndInvalidInputsAreRejected() PASSED
+
+FixedMathTest > fieldOrderChangesHash() PASSED
+
+FixedMathTest > integerSquareRootMatchesBigInteger() PASSED
+
+FixedMathTest > entityIdentityIsStableAndNamespaced() PASSED
+
+FixedMathTest > millionBlockMathDoesNotOverflow() PASSED
+
+FixedMathTest > negativeCoordinatesUseFloorDivision() PASSED
+
+FixedMathTest > multiplicationMatchesExactFloorReference() PASSED
+
+MulDivFastPathTest > integerFastPathAndWideFallbackMatchIndependentFloorDivision() PASSED
+
+MulDivFastPathTest > invalidDivisorsAreStillRejectedBeforeMultiplication() PASSED
+
+RasterizerTest > transformedBoundsContainAllInverseSelectedCells() PASSED
+
+RasterizerTest > inverseUsesCentersAndMirrorsExactlyOnce() PASSED
+
+RasterizerTest > supercoverIncludesCornerSidesAndIsReversible() PASSED
+
+RasterizerTest > boundaryLineCoversBothSidesAndTraversalIsBounded() PASSED
+
+RasterizerTest > ownersUseFloorDivisionAndExclusiveMaximum() PASSED
+
+PaletteResourceValidatorTests > requireValidAcceptsOnlyAnEmptyErrorList() PASSED
+
+PaletteResourceValidatorTests > oneFailureRetainsTheEntireImmutableErrorList() PASSED
+
+RootSearchTest > singleOver40msPrimitiveStillRejectsTheCompletedSearch() PASSED
+
+RootSearchTest > finishAndForeignLaneCannotReadPartialRoot() PASSED
+
+RootSearchTest > flatLandSelectsFrozenRingAndIsStableAcrossBatchSizes() PASSED
+
+RootSearchTest > nativeDomainIncludesAccumulatedRadiusAndTwoChunksOnly() PASSED
+
+RootSearchTest > batchGuardStopsBeforeStackingAnotherSlowNativePrimitive() PASSED
+
+RootSearchTest > unsupportedFootprintCannotBeReplacedWithAnEmptyFort() PASSED
+
+RootSearchTest > allWetCandidatesFailVisiblyWithoutExpandingRing() PASSED
+
+RootSearchTest > selectedAxisHasSeparateRotatedEntranceEvidenceWithinTheOriginalBudget() PASSED
+
+RootSearchTest > futureSeparationIncludesWholeChunkCornersTemplatesAndMargin() PASSED
+
+RootSearchTest > filteringPrecedesFrozenEightCandidateLimitAndPreservesOrder() PASSED
+
+RootSearchTest > screenedCandidatesContinueInOriginalOrderAfterFirstEightFailSupport() PASSED
+
+RootSearchTest > oversizedSpawnDomainFailsInsteadOfGrantingAllChunks() PASSED
+
+RootSearchTest > structureScreenPausesWithoutReadingMoreColumnsAndAllConflictsFailClosed() PASSED
+
+WorldBootstrapTest > initializedUnmarkedWorldFailsInsteadOfBackfill() PASSED
+
+WorldBootstrapTest > frozenRecipeIsDurableAndRootTransfersOneNativeFactoryPerLane() PASSED
+
+WorldBootstrapTest > closeDuringAuthorizationDoesNotStartLateOracleOrPublishRecipe() PASSED
+
+WorldBootstrapTest > heldStructureScreenDoesNotFreezeRecipeOrWaitForFeaturesOrNormalTicks() PASSED
+
+WorldBootstrapTest > canceledReadyViewCannotCancelRootProducer() PASSED
+
+WorldBootstrapTest > reopenedRecipeWaitsForActualInputsAndIgnoresChangedWorldSpawn() PASSED
+
+WorldBootstrapTest > earlySpawnWaitsOnlyForAuthorizationAndRemoteDoesNotPass() PASSED
+
+ImmutablePointSetTest > metadataUsesDetachedSnapshotsAndReusesOnlyTrustedFrozenValues() PASSED
+
+ImmutablePointSetTest > largeDenseCoordinateSnapshotRetainsEveryPointAndItsOriginalSetHash() PASSED
+
+ImmutablePointSetTest > nullSourceAndNullMembersRemainRejected() PASSED
+
+ImmutablePointSetTest > everyMutationIsRejectedIncludingNoOpAndEmptySetOperations() PASSED
+
+ModelContractTest > twiceQ30UnitLengthIsRejected() PASSED
+
+ModelContractTest > componentRoutesAreDeeplyImmutable() PASSED
+
+ModelContractTest > q30UnitDirectionsAreAccepted() PASSED
+
+ModelContractTest > neighborhoodRejectsForeignRecipe() PASSED
+
+ModelContractTest > routeBoundariesCannotBeNull() PASSED
+
+ModelContractTest > paletteTableCannotPassByIntegerOverflow() PASSED
+
+ModelContractTest > failureKeepsCodeAndOriginalCause() PASSED
+
+ModelContractTest > neighborhoodRejectsNonAdjacentSegment() PASSED
+
+ModelContractTest > sharedLeaseCancellationIsIsolatedAndReleaseIsOnce() PASSED
+
+EvidenceAllocationBoundaryAuditTest > allocationHintAccountsForPaletteTextAndPreservesOriginalT0Hash() PASSED
+
+EvidenceAllocationBoundaryAuditTest > readPlanMustReserveScratchBeforeDecodingIntoAFullWorkingSet() PASSED
+
+EvidenceAllocationBoundaryAuditTest > allocationHintIsNotAuthorityToReadWithAnotherRecipe() PASSED
+
+EvidenceAllocationBoundaryAuditTest > persistPlanMustReserveScratchBeforePublishingIntoAFullWorkingSet() PASSED
+
+EvidenceAllocationBoundaryAuditTest > canonicalPlanEncodingMustReserveItsBufferInsideAProductionScope() PASSED
+
+HistoryCodecTest > stringLimitIs4096Utf8BytesAndPayloadHashIsValidated() PASSED
+
+HistoryCodecTest > canonicalFieldsUseUnsignedUtf8NotMapOrUtf16Order() PASSED
+
+HistoryCodecTest > malformedUtf8SurrogatesNulAndUnknownTypesAreRejected() PASSED
+
+HistoryCodecTest > headRoundTripsOnlyTwoRootsAndDetectsCrcDamage() PASSED
+
+HistoryCodecTest > walUsesFrozenSchemaSequenceKeyTypeFieldsOrder() PASSED
+
+HistoryIndexTest > missingCompleteBadHashAndWrongLengthAreNotAbsence() PASSED
+
+HistoryIndexTest > unsortedLeavesOverlapsFalseRangesAndWrongLevelsAreCorrupt() PASSED
+
+HistoryIndexTest > pathsCannotEscapeOrUseAliases() PASSED
+
+HistoryIndexTest > emptyTreeHasNoFileAndByteSortedKeysStayExact() PASSED
+
+HistoryIndexTest > longKeysSplitInternalPagesByBytesAndSeekSkipsEarlierLeaves() PASSED
+
+HistoryJournalTest > cancelledCallerDoesNotCancelAcceptedWrite() PASSED
+
+HistoryJournalTest > pagedHistoryKeepsHeadAndResidentMemoryBounded() PASSED
+
+HistoryJournalTest > sequenceGapAndInvalidLengthAreHardFailures() PASSED
+
+HistoryJournalTest > blobCopiesAtAdmissionAndChecksLengthHashAndKind() PASSED
+
+HistoryJournalTest > damagedIndexMissingWalAndWrongWorldNeverBecomeEmpty() PASSED
+
+HistoryJournalTest > secondJournalWriterIsRejectedWithoutDisturbingFirst() PASSED
+
+HistoryJournalTest > completeBadCrcIsNotTruncated() PASSED
+
+HistoryJournalTest > checkpointDoesNotDropConcurrentTail() PASSED
+
+HistoryJournalTest > twoCallerOwnersSerializeWithoutDuplicateSequence() PASSED
+
+HistoryJournalTest > unauthorizedAndLegacyHistoriesAreRejectedWithoutMigration() PASSED
+
+HistoryJournalTest > constructorDoesNotTouchDiskAndUnopenedCallsFailClosed() PASSED
+
+HistoryJournalTest > failedFsyncNeverPublishesAndVerifiedRetryReusesActualTail() PASSED
+
+HistoryJournalTest > replayOnlyRunsOnIoOwnerAndStrictlyChecksLimits() PASSED
+
+HistoryJournalTest > missingHeadRecoversOnlyAConsistentRetainedChain() PASSED
+
+HistoryJournalTest > entryLimitIs64KiBNotThePublicAbsoluteLimit() PASSED
+
+HistoryJournalTest > partialTailIsArchivedReadOnlyBeforeForcedTruncate() PASSED
+
+HistoryJournalTest > queueIsBoundedAndCloseDrainsAcceptedWritesWithoutBlocking() PASSED
+
+HistoryJournalTest > concurrentAdmissionCancellationFlushAndRepeatedCloseSettleExactlyAcceptedRequests() PASSED
+
+HistoryJournalTest > checkpointFailureLeavesOriginalHeadAndRecoveryCanContinue() PASSED
+
+HistoryJournalTest > appendIsDurableAndIdempotent() PASSED
+
+ProductionEvidenceTest > coverageIsDurableIdempotentAndCorruptionDoesNotReset() PASSED
+
+ProductionEvidenceTest > proofKeepsRevisionAndCannotBeReplaced() PASSED
+
+RecoveryCoordinatorTest > aDifferentJournalRootCannotBeOpenedByMatchingExternalManifest() PASSED
+
+RecoveryCoordinatorTest > verifiedManifestFileHashIsNotTheSemanticRecipeHash() PASSED
+
+RecoveryCoordinatorTest > unmarkedManifestDoesNotInitializeEmptyHistory() PASSED
+
+RecoveryCoordinatorTest > recoveredSequenceIncludesDurableWalBeyondCheckpoint() PASSED
+
+SegmentCacheTest > crcFailureRecomputesCacheOnly() PASSED
+
+SegmentCacheTest > invalidPrefixCannotSkipGap() PASSED
+
+SegmentCacheTest > parallelVolumeWritersCannotLoseBlobs() PASSED
+
+SegmentCacheTest > malformedLengthsRejected() PASSED
+
+StreamingEvidenceBudgetTest > exitCertificateBytesIncludeLegacyModifiedUtfAndCapFootprints() PASSED
+
+StreamingEvidenceBudgetTest > absentReadsLeaveNoPathHashOrWrapperCharges() PASSED
+
+StreamingEvidenceBudgetTest > persistenceStillRejectsMapKeysThatCollideAfterLegacyUtf8Replacement() PASSED
+
+StreamingEvidenceBudgetTest > tileForecastCoversDecodedRetainedAllowanceEvenForTinyPalettes() PASSED
+
+StreamingEvidenceBudgetTest > planDecodeRetainsExactlyTheReturnedObjectGraph() PASSED
+
+StreamingEvidenceBudgetTest > t0StreamingPersistenceAndReadKeepStableHashAndNoScratch() PASSED
+
+StreamingEvidenceBudgetTest > componentAndPlanHashesMatchIndependentLegacyBytes() PASSED
+
+StreamingEvidenceBudgetTest > metadataForecastCoversProtectedPointRetainedAllowance() PASSED
+
+StreamingEvidenceBudgetTest > malformedDecodeCanRetryInsideTheSameArenaWithoutAccumulation() PASSED
+
+StreamingEvidenceBudgetTest > metadataBytesAndStreamingHashMatchIndependentLegacyProtocol() PASSED
+
+StreamingEvidenceBudgetTest > largeComponentHashDoesNotRequirePayloadSizedCapacity() PASSED
+
+StreamingEvidenceBudgetTest > repeatedExitProofVerificationReleasesEachCertificateScratch() PASSED
+
+StreamingEvidenceBudgetTest > dimensionValidationFailureDoesNotRetainDecodedResult() PASSED
+
+StreamingEvidenceBudgetTest > repeatedLargePlanPersistenceUsesBoundedScratchAndNeverOverwrites() PASSED
+
+StreamingEvidenceBudgetTest > storeReadRetainsOnlyOptionalAndDecodedPlanNotPayloadBytes() PASSED
+
+WallWorldStateTest > verifiedHeaderRoundTripsWithoutStoringPermanentIds() PASSED
+
+WallWorldStateTest > negativeAndMalformedHeaderCannotBecomeEmptyHistory() PASSED
+
+WallWorldStateTest > everyMissingFieldAndFutureSchemaFailClosed() PASSED
+
+WallWorldStateTest > applyRejectsRollbackAndForeignJournalIdentity() PASSED
+
+WorldManifestTest > wrongSeedOrConfigRejectedOnReopen() PASSED
+
+WorldManifestTest > creationCrashResumesOwnToken() PASSED
+
+WorldManifestTest > oversizedManifestIsRejectedBeforeParsing() PASSED
+
+WorldManifestTest > worldRecipeRoundTripsThreeIntCoordinatesIncluding6000() PASSED
+
+WorldManifestTest > schemaAndCrcDamageAreExplicitErrors() PASSED
+
+WorldManifestTest > corruptWorldNeverFallsBackToEmptyRecipe() PASSED
+
+WorldManifestTest > s0RootNeverAuthorizesProduction() PASSED
+
+WorldManifestTest > existingUnmarkedWorldIsRejected() PASSED
+
+WorldManifestTest > concurrentFileLeaseDeniesSecondWriter() PASSED
+
+WorldManifestTest > missingCreationForFrozenWorldFailsClosed() PASSED
+
+WorldManifestTest > frozenRecipeCannotChangeIdentityOrGeometry() PASSED
+
+WorldManifestTest > corruptCreationNeverBecomesNewWorld() PASSED
+
+AnchorProjectionTest > carrierSeamsAndTangentsAreIndexOnly() PASSED
+
+AnchorProjectionTest > envelopeAndHeadingHoldAtEveryBlock() PASSED
+
+AnchorProjectionTest > negativeProjectionAndMillionCoordinatesAreSafe() PASSED
+
+AnchorProjectionTest > projectionUsesTrueArcAndStableEdgeTies() PASSED
+
+ArcPlanProviderTest > closeAndExecutorRejectionCompleteRequests() PASSED
+
+ArcPlanProviderTest > resolvesArcInsteadOfAxialSegmentAndReleasesEveryLease() PASSED
+
+ArcPlanProviderTest > stopsAtPermanentTerminalEvenForDistantRequest() PASSED
+
+GeometryDeterminismTest > completeGeometryBlobsMatchAcrossFourSeedsAndThreeOrders() PASSED
+
+PlannerSchedulerTest > neighborHydrologyNeverWaitsOnNeighborGeometry() PASSED
+
+PlannerSchedulerTest > manyDistinctPlansCannotReserveAwayTheirDependencies() PASSED
+
+PlannerSchedulerTest > hundredCallersShareOneCompute() PASSED
+
+PlannerSchedulerTest > prewarmedStartupStillServesNewPlansBeforeFirstTick() PASSED
+
+PlannerSchedulerTest > foreignOrClosedBootstrapLanesCannotBeTransferred() PASSED
+
+PlannerSchedulerTest > startupPumpProgressesWithoutNormalTicks() PASSED
+
+PlannerSchedulerTest > fragmentedWaterTerminatesGeometryAndPermanentPrefixWithoutChangingSamplingFailures() PASSED
+
+PlannerSchedulerTest > rejectedIoExecutorCannotLeaveAnUnfinishedFuture() PASSED
+
+PlannerSchedulerTest > heldNativeInitializationDoesNotStopStartupPumpOrNeedTicks() PASSED
+
+PlannerSchedulerTest > nonOverworldAndTamperedRecipeCannotCreateSecondPlanner() PASSED
+
+PlannerSchedulerTest > otherDimensionAndDistantLateralChunksReturnExplicitEmptyWindows() PASSED
+
+PlannerSchedulerTest > samplingFailureIsNotReplacedByGenericClosedInParentPlan() PASSED
+
+PlannerSchedulerTest > cancelOneLeaseKeepsOthers() PASSED
+
+PlannerSchedulerTest > closeTerminatesAllFutures() PASSED
+
+PlannerSchedulerTest > nativeFactoryFailureTerminatesSchedulerDependenciesAndDrains() PASSED
+
+PlannerSchedulerTest > lastSafeSegmentEndsBeforeWorldLimit() PASSED
+
+PlannerSchedulerTest > lateWorldACallbackCannotPublishWorldB() PASSED
+
+PlannerSchedulerTest > rootLanesTransferWithoutReinitializationAndSchedulerOwnsDrain() PASSED
+
+PrefixSummaryIndexTest > callerCancellationAndCloseAreIsolated() PASSED
+
+PrefixSummaryIndexTest > earliestOceanWinsAllOrders() PASSED
+
+PrefixSummaryIndexTest > coldPrefixDoesNotClaimConstantTime() PASSED
+
+RidgePlannerTest > unfinishedAndClosedOracleFailRatherThanPublishingPartialRoute() PASSED
+
+RidgePlannerTest > negativeProjectionDoesNotCreateSecondWall() PASSED
+
+RidgePlannerTest > forwardReverseRandomProduceSameBytes() PASSED
+
+RidgePlannerTest > sliceSizesDoNotChangePlan() PASSED
+
+RidgePlannerTest > cacheTemperatureDoesNotChangeBudget() PASSED
+
+RidgePlannerTest > budgetNeverExceeds150000() PASSED
+
+RidgePlannerTest > adjacentAnchorsAndTangentsMatch() PASSED
+
+ScheduleContractTest > infeasibleSlopeCreatesExplicitBreak() PASSED
+
+ScheduleContractTest > platformAcrossSeamUsesOneHeight() PASSED
+
+ScheduleContractTest > gateAndFortGapsAreBounded() PASSED
+
+ScheduleContractTest > stationColumnsAreExplicitAndSlopeLimitsHold() PASSED
+
+ScheduleContractTest > towerOrdinalsCross2048Seam() PASSED
+
+RootBatchLedgerTest > exhaustionAndInvalidTimesAreVisibleRatherThanDroppingBatches() PASSED
+
+RootBatchLedgerTest > everyBatchRetainsItsExactPrimitiveTimesAndDoesNotOverwrite() PASSED
+
+RootTimingAnalyzerTest > actualJfrClockAnchorJoinsExactBatchLedgerWithoutDroppingRows() PASSED
+
+RootTimingAnalyzerTest > overlappingNestedPausesAreCountedOnceAndClippedToBatch() PASSED
+
+RootTimingAnalyzerTest > absentOrMerelyTouchingPausesDoNotExplainSlowNativeCpu() PASSED
+
+SeedSurveyLocationsTest > signedHaloEvidenceRetainsRawRangeAndClipsOnlyForDistribution() PASSED
+
+SeedSurveyLocationsTest > curvedArcPast1024CanStillHaveAxisUInside1024() PASSED
+
+SeedSurveyLocationsTest > straightIntervalKeepsArcAndAxisBucketsEqual() PASSED
+
+SeedSurveyLocationsTest > actualSegmentArcCanExceed2048WithoutLeavingSegmentZero() PASSED
+
+SeedSurveyLocationsTest > straddlingIntervalsAreNotForcedIntoEitherHalf() PASSED
+
+SeedSurveyLocationsTest > endBandIsAnOverlappingTagNotAThirdExclusiveBucket() PASSED
+
+GroundExitEvidenceTest > ownerWithoutExitBindingCannotReplayProduction() PASSED
+
+GroundExitEvidenceTest > missingOrCorruptDecisionNeverSilentlyRebuildsOwnerProof() PASSED
+
+GroundExitEvidenceTest > durableCertificateAndOwnerBindingSurviveColdReopen() PASSED
+
+GroundExitFallbackTest > finiteRetreatCanFailAfterAnEarlierValidGroundExit() PASSED
+
+GroundExitFallbackTest > missingFootprintColumnFailsBeforeExitCanBeVotedDown() PASSED
+
+GroundExitFallbackTest > exhaustedCapSearchMustFallBackToTheEarlierGroundExitWithoutFatalGeneration() PASSED
+
+GroundExitReservationTest > pausedVoteKeepsTemporaryAndCacheChargesUntilClose() PASSED
+
+GroundExitReservationTest > cancellationOfDrainViewCannotReleaseOrCancelTheProducer() PASSED
+
+GroundExitReservationTest > rejectedExecutorDoesNotLeakPreallocatedWork() PASSED
+
+GroundExitReservationTest > localSubdomainsNeverIncreaseTheEightMiBSummaryAllowance() PASSED
+
+GroundExitReservationTest > completedOutputsStayChargedAndBothConstructorFormsKeepCanonicalOrder() PASSED
+
+GroundExitReservationTest > aCachedResolverCannotMigrateToTheNextOwnerArena() PASSED
+
+GroundExitReservationTest > actualGatherCallbacksRejectTheDenseEightCellDomainWithoutPublishing() PASSED
+
+GroundExitReservationTest > failedPersistenceReleasesUnpublishedDecisionAndCopyReservations() PASSED
+
+GroundExitReservationTest > asynchronousCallbackCannotEscapeAnExhaustedCompiledArena() PASSED
+
+GroundExitReservationTest > closeKeepsPinsWhileEnteredPersistenceStillOwnsTheDecision() PASSED
+
+GroundExitReservationTest > sixtyFiveThousandDisjointGapsRejectBeforeAnyCopyOrSortRead() PASSED
+
+GroundExitResolverTest > missingEvidenceDoesNotBecomeARejectedRampOrPublishACut() PASSED
+
+GroundExitResolverTest > closedAndRejectedExecutorReleaseAllFlights() PASSED
+
+GroundExitResolverTest > distantSparseRequestStreamsSlicesWithoutUnboundedPinnedSummaries() PASSED
+
+GroundExitResolverTest > earlyAndTerminalConsumersShareCanonicalFallbackBeforePublication() PASSED
+
+GroundExitResolverTest > forwardReverseRandomColdAndWarmRequestsProduceIdenticalBytes() PASSED
+
+GroundExitResolverTest > identityIncludesRemoteT0AndAcceptedCapSiteAndFinalCut() PASSED
+
+GroundExitResolverTest > acceptedIntermediateGroundExitInsulatesEarlierPublishedInterval() PASSED
+
+GroundExitResolverTest > pausedRemoteEvidenceBlocksEverySubscriberAndCancellationIsLocal() PASSED
+
+GroundExitResolverTest > codecRejectsTruncationTrailingBytesAndUnknownVersion() PASSED
+
+HydrologyTest > width49IsNarrow50And51Terminate() PASSED
+
+HydrologyTest > wetRootFailsExplicitly() PASSED
+
+HydrologyTest > deepNarrowRiverMakesSupportGap() PASSED
+
+HydrologyTest > seamRiverHasSameBanksAndOneGlobalCrossing() PASSED
+
+HydrologyTest > sliceAndCacheTemperatureDoNotAffectWaterEvidence() PASSED
+
+HydrologyTest > roofedAquiferIsNotRiver() PASSED
+
+HydrologyTest > oneBlockRiverBetweenCoarseSamplesIsFound() PASSED
+
+HydrologyTest > budgetExhaustionIsNotOcean() PASSED
+
+HydrologyTest > formerUnequalLevelWitnessTerminatesWithoutFabricatedWidth() PASSED
+
+HydrologyTest > inconsistentWaterLevelTerminatesAsWide() PASSED
+
+HydrologyTest > diagonalSpanIsNotChannelWidth() PASSED
+
+HydrologyTest > missingBedOrCensoredReferenceIsNotCertifiedDry() PASSED
+
+OracleLaneTest > readinessCallbackCannotBorrowTheInitializationGrant() PASSED
+
+OracleLaneTest > eachLaneNativeConstructionPermitCanBeConsumedOnlyOnce() PASSED
+
+OracleLaneTest > sessionAndLaneIdentityNeverReuseAnotherOracle() PASSED
+
+OracleLaneTest > oncePerLaneAcrossJobsAndClosesOnlyAtDrain() PASSED
+
+OracleLaneTest > canceledDrainViewCannotHideCloseFailure() PASSED
+
+OracleLaneTest > closeDuringUninterruptibleInitializationWaitsForActualProducer() PASSED
+
+OracleLaneTest > initializationFailureCallbackCannotBorrowTheGrant() PASSED
+
+OracleLaneTest > lockedRequestAndUnauthorizedThreadFailBeforeFactory() PASSED
+
+OracleLaneTest > initFailureIsVisibleNotRetriedAndDependenciesTerminate() PASSED
+
+OracleLaneTest > fingerprintMismatchClosesTheActualOracle() PASSED
+
+OracleLaneTest > serverAndWorldgenThreadsCannotClaimNativeConstruction() PASSED
+
+OracleLaneTest > callerCancellationCannotCancelInitializationOrOtherJob() PASSED
+
+OracleLaneTest > queueCapacityIsReservedBeforeSubmittingAndReleasedAfterDrain() PASSED
+
+ProtectedColumnViewTest > noIntersectingStructureStillKeepsOriginalProtectionAndThinIcePrecedence() PASSED
+
+ProtectedColumnViewTest > prefilteredColumnsMatchTheIndependentOldScanIncludingBoundariesAndDuplicates() PASSED
+
+ProtectedColumnViewTest > originalDuplicatedBoxesAreTraversedOnceNotAgainForEveryColumn() PASSED
+
+ProtectedColumnViewTest > insufficientBucketBudgetFailsBeforeColumnsAndDoesNotMaskCapacity() PASSED
+
+ProtectedColumnViewTest > invocationIndexPreservesOldProtectionAcrossNegativeChunksAndUnknownColumns() PASSED
+
+ProtectedColumnViewTest > indexScopeReleasesScratchAndRestoresThePreviousInvocationOnFailure() PASSED
+
+RealizationPlannerTest > immutableInspectionHandoffRemainsChargedUntilItsOwnerCloses() PASSED
+
+RealizationPlannerTest > partialTerminalCellKeepsOneNearSideCapAndOriginalReason() PASSED
+
+RealizationPlannerTest > orderIndependentCellKeepsStationContractImmutable() PASSED
+
+RealizationPlannerTest > capVotesCannotOverwriteAnAcceptedWholeGateFootprint() PASSED
+
+RealizationPlannerTest > elevenWideTowerKeepsTheWallColumnInsideItsTwelveWidePlanningGuard() PASSED
+
+RealizationPlannerTest > exhaustedBudgetRejectsInspectionBeforeAnyTerrainColumnIsRead() PASSED
+
+RealizationPlannerTest > inspectionScratchIsReleasedOnSuccessAndMissingColumnFailure() PASSED
+
+RealizationPlannerTest > frozenGateRevisionChangesCellHashWithoutChangingGeometry() PASSED
+
+BUILD SUCCESSFUL in 2m 40s
+9 actionable tasks: 1 executed, 8 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html

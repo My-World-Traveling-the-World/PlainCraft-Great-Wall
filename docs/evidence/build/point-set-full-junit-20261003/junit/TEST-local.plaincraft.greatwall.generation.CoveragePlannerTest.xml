@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.generation.CoveragePlannerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-03T15:10:07.943Z" hostname="CAIMEO" time="2.164">
+  <properties/>
+  <testcase name="triggerDomainUsesTheSameOwnerFunctionAsDurableCapture()" classname="local.plaincraft.greatwall.generation.CoveragePlannerTest" time="0.209"/>
+  <testcase name="rotatedFortReadDomainIncludesTheActualRasterGuardAndExternalApron()" classname="local.plaincraft.greatwall.generation.CoveragePlannerTest" time="0.0"/>
+  <testcase name="canonicalCoverageIncludesLowerGuardUpperSentinelAndNegativePages()" classname="local.plaincraft.greatwall.generation.CoveragePlannerTest" time="0.004"/>
+  <testcase name="everyTemplateWaterGateAndExitEnvelopeOwnerRemainsDispatchableInFiveOrientations()" classname="local.plaincraft.greatwall.generation.CoveragePlannerTest" time="1.335"/>
+  <testcase name="dynamicWaterGateAndBothExitDirectionsAreCoveredWithoutSyntheticPlannedSites()" classname="local.plaincraft.greatwall.generation.CoveragePlannerTest" time="0.615"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

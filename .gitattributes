@@ -18,3 +18,8 @@ docs/evidence/s2/session-binding-20261002/** -text whitespace=cr-at-eol
 docs/evidence/s2/session-binding-20261002/**/*.log -whitespace
 docs/evidence/s2/session-binding-20261002/junit-discovery-red/discovery-failure.html -whitespace
 docs/evidence/s1c/owner-coverage-ac-20261002/**/*.txt -whitespace
+docs/evidence/build/** -text whitespace=cr-at-eol
+docs/evidence/build/**/*.log -whitespace
+docs/evidence/build/**/*.txt -whitespace
+docs/evidence/s2/arch-owner-handoff-20261003/** -text whitespace=cr-at-eol
+docs/evidence/s2/arch-owner-handoff-20261003/**/*.log -whitespace

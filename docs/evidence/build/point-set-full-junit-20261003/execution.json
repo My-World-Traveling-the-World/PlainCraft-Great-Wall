@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "sourceCommit": "8fe8500a8716658f01924ef0ed81597ae7cca1cf",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "sourceStatus": [
+    "?? docs/evidence/s2/arch-owner-handoff-20261003/",
+    "?? \"docs/\\350\\256\\244\\347\\237\\245\\345\\234\\260\\345\\233\\276-\\345\\256\\241\\350\\256\\241\\345\\237\\272\\347\\272\\277.md\"",
+    "?? logs/",
+    "?? src/clientSmoke/java/local/plaincraft/greatwall/client/",
+    "?? tools/ProtectedPointSetProbe.java",
+    "?? tools/smoke-checklist-test.init.gradle"
+  ],
+  "sourceHashes": "source-files.sha256.json",
+  "command": [
+    ".\\gradlew.bat",
+    "--offline",
+    "--dependency-verification=strict",
+    "test",
+    "--no-daemon",
+    "--console=plain"
+  ],
+  "startedUtc": "2026-10-03T15:09:17.4281857+00:00",
+  "status": "COMMAND_COMPLETED_EXIT_0",
+  "exitCode": 0,
+  "finishedUtc": "2026-10-03T15:11:58.0490323+00:00",
+  "elapsedSeconds": 160.6208466,
+  "logSha256": "3dd8245241a4f7f2731c4715db53f7ea4ca56fde703ea9f22cf2fa7cadf20a3b"
+}

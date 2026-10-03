@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.ProbePlannerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-03T15:09:31.332Z" hostname="CAIMEO" time="2.764">
+  <properties/>
+  <testcase name="failureAndCancellationDoNotPublishEmptySuccess()" classname="local.plaincraft.greatwall.ProbePlannerTest" time="0.028"/>
+  <testcase name="previousSessionCannotPublishIntoNewSession()" classname="local.plaincraft.greatwall.ProbePlannerTest" time="0.021"/>
+  <testcase name="hundredWaitersComputeOnceAndCancelIndependently()" classname="local.plaincraft.greatwall.ProbePlannerTest" time="0.518"/>
+  <testcase name="orderDelayAndSessionNeverEnterTheDiagnosticPlanHash()" classname="local.plaincraft.greatwall.ProbePlannerTest" time="0.06"/>
+  <testcase name="startupPumpDoesNotNeedNormalTicks()" classname="local.plaincraft.greatwall.ProbePlannerTest" time="2.129"/>
+  <testcase name="closingThirtySecondPlanTerminatesEveryFuture()" classname="local.plaincraft.greatwall.ProbePlannerTest" time="0.002"/>
+  <testcase name="diagnosticSentinelRejectsAnActualLockAction()" classname="local.plaincraft.greatwall.ProbePlannerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

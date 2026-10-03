@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.diagnostics.WallMetricsTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-03T15:10:01.653Z" hostname="CAIMEO" time="0.046">
+  <properties/>
+  <testcase name="publicRecordsCopyInputsAndValidateHistogramConsistency()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.001"/>
+  <testcase name="timingOverflowAndNegativeInputCannotPartiallyUpdateHistogram()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.003"/>
+  <testcase name="timingsUseSixtyFourLog2BinsAndAnExactMaximum()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.001"/>
+  <testcase name="everyPositivePowerOfTwoHasItsOwnBin()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.001"/>
+  <testcase name="counterOverflowAndUnderflowPreserveThePreviousValue()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.001"/>
+  <testcase name="overFortyMillisecondsKeepsBoundedClassPrimitiveAndStackWithoutReplacingGauge()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.001"/>
+  <testcase name="resetOnlyClearsThisMetricsInstanceAndRetainedSnapshotsStayIntact()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.001"/>
+  <testcase name="unobservedMetricsAreNotSyntheticZeroMeasurements()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.001"/>
+  <testcase name="concurrentWritersLoseNeitherCountsNorHistogramObservations()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.026"/>
+  <testcase name="snapshotsAreSortedDetachedAndDeeplyImmutable()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.003"/>
+  <testcase name="gaugeLimitAndNullsDoNotErasePreviousObservations()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.002"/>
+  <testcase name="whitelistCoversEveryFrozenNameAndRejectsDynamicKeys()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.001"/>
+  <testcase name="applyAndCpuOracleRemainSeparateObservations()" classname="local.plaincraft.greatwall.diagnostics.WallMetricsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
