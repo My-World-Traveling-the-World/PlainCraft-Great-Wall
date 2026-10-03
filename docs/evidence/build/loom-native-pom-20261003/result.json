@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "14f93e8e860e728bb975db3ae9518e24bfd2dc1b",
+  "command": ".\\gradlew.bat --offline --dependency-verification=strict test --no-daemon --console=plain",
+  "javaHome": "C:\\Program Files\\Java\\jdk-21",
+  "started": "2026-10-03T16:22:39.7669923+08:00",
+  "finished": "2026-10-03T16:22:45.5545263+08:00",
+  "exitCode": 1,
+  "testExecution": "NOT_RUN",
+  "pomSha256": "8370853dca591385d934a560aac0993f121286877893ada50553d3260b46a05d"
+}
