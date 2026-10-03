@@ -34,6 +34,16 @@ public final class ProductionWallPipeline implements AutoCloseable {
             PlanLease<BudgetReservation.Reservation> reservation,AllocationBudget allocations) {
         CellTerrain {metadata=Map.copyOf(metadata);}
     }
+    private static final class CellCaptureAccumulator {
+        private final Map<TerrainTile.Key,TerrainTile> tiles=new HashMap<>();
+        private final Map<ChunkKey,CaptureMetadata> metadata=new HashMap<>();
+        private void add(TerrainSnapshotService.CapturedTerrain captured) {
+            tiles.putAll(captured.tiles());metadata.putAll(captured.metadata());
+        }
+        private TerrainSnapshotService.CapturedTerrain freeze() {
+            return new TerrainSnapshotService.CapturedTerrain(tiles,metadata);
+        }
+    }
     private final WorldRecipe recipe;
     private final Ports ports;
     private final TerrainSnapshotService snapshots;
@@ -236,15 +246,14 @@ public final class ProductionWallPipeline implements AutoCloseable {
           catch(Throwable error){allocations.close();releasePin(pin);return CompletableFuture.<CellTerrain>failedFuture(error);}
           return lease.future().thenComposeAsync(plans->{
             active();var owners=coverage.realizationOwners(cell,plans);
-            CompletableFuture<TerrainSnapshotService.CapturedTerrain> chain=CompletableFuture.completedFuture(
-                    new TerrainSnapshotService.CapturedTerrain(Map.of(),Map.of()));
-            for(var member:owners)chain=chain.thenComposeAsync(all->capture(member,engine,allocations).thenApply(one->{
-                var tiles=new HashMap<>(all.tiles());tiles.putAll(one.tiles());
-                var metadata=new HashMap<>(all.metadata());metadata.putAll(one.metadata());
-                return new TerrainSnapshotService.CapturedTerrain(tiles,metadata);
-            }),ports.worker());
-            return chain.thenApplyAsync(captured->{
-                active();var columns=new HashMap<Point3i,SurfaceProbe.ColumnView>();var protection=new ArrayList<Bounds>();
+            // Serial future completion publishes each merge before the next owner; existing forecast pins cover the maps.
+            var accumulated=new CellCaptureAccumulator();
+            CompletableFuture<Void> chain=CompletableFuture.completedFuture(null);
+            for(var member:owners)chain=chain.thenComposeAsync(ignored->capture(member,engine,allocations)
+                    .thenAccept(accumulated::add),ports.worker());
+            return chain.thenApplyAsync(ignored->{
+                active();var captured=accumulated.freeze();
+                var columns=new HashMap<Point3i,SurfaceProbe.ColumnView>();var protection=new ArrayList<Bounds>();
                 for(var metadata:captured.metadata().values()){
                     protection.addAll(metadata.protectedStructures());
                     columns.putAll(SnapshotColumnView.columns(metadata,captured.tiles(),snapshots.catalog()));
