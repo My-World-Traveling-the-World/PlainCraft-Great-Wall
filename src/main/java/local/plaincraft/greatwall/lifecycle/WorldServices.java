@@ -195,6 +195,10 @@ public final class WorldServices {
                 && value.production.runtime().equals(session) && !value.production.rejected()).findFirst();
     }
     public boolean productionFixture() { return production != null; }
+    /** The durable runtime identity used by optional integrations for this world session. */
+    public UUID runtimeSession() { return requireProductionSession().runtime(); }
+    public ServerLevel overworld() { assertActiveSession(); return server.overworld(); }
+    public java.util.concurrent.Executor serverOwner() { return server; }
     public WorldRecipe recipe() { return requireProductionSession().recipe(); }
     public PlannerScheduler planning() { return requireProductionSession().planning(); }
     public WorldBootstrap bootstrap() { return requireProductionSession().bootstrap(); }

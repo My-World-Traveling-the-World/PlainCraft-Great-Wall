@@ -43,6 +43,7 @@ public final class RecoveryCoordinator {
     private final HistoryJournal journal;
     private final ChunkEvidenceStore evidence;
     private final Executor ioOwner;
+    private record Preflight(Optional<Report> problem, String manifestHash) {}
 
     public RecoveryCoordinator(WorldManifest manifest, HistoryJournal journal,
             ChunkEvidenceStore evidence, Executor ioOwner) {
@@ -66,35 +67,44 @@ public final class RecoveryCoordinator {
             if (stored.isEmpty()) {
                 // A world that already had vanilla generation but no manifest is not ours to adopt.
                 blocked.add("manifest");
-                return report(Status.NEEDS_OPERATOR, 0L, actions, blocked);
+                return new Preflight(Optional.of(report(Status.NEEDS_OPERATOR, 0L, actions, blocked)), "");
             }
             WorldRecipe recipe = stored.get();
-            if (!recipe.recipeHash().equals(expected.recipeHash())) {
+            if (!recipe.recipeHash().equals(expected.recipeHash()) || !recipe.instance().equals(expected.instance())) {
                 blocked.add("recipe");
                 actions.add("stored recipe differs from the running configuration");
-                return report(Status.INCOMPATIBLE, 0L, actions, blocked);
+                return new Preflight(Optional.of(report(Status.INCOMPATIBLE, 0L, actions, blocked)), "");
             }
-            HistoryTypes.Head head;
             try {
-                head = readHead(recipe).orElse(null);
-            } catch (IOException failure) {
-                throw new WallFailure(FailureCode.IO_FAILED, "cannot read the history head", failure);
-            }
-            long recovered = 0L;
-            Status status = Status.CLEAN;
-            if (head != null) {
-                HistoryTypes.Recovery recovery = journal.open(head).toCompletableFuture().join();
-                recovered = recovery.head().sequence();
-                if (recovery.archivedPartialTail()) {
-                    status = Status.RECOVERED_PARTIAL_TAIL;
-                    actions.add("archived a torn journal tail below the last committed record");
+                var journalRecipe = new WorldManifest(journal.root().resolve("manifest")).read();
+                if (journalRecipe.isEmpty() || !journalRecipe.get().equals(recipe)) {
+                    throw new WallFailure(FailureCode.RECIPE_MISMATCH,
+                            "journal root manifest differs from the recovery manifest");
                 }
+                return new Preflight(Optional.empty(), AtomicFiles.sha256(
+                        AtomicFiles.readChecked(journal.root(), "manifest/world.json", 65536, null)));
+            } catch (IOException failure) {
+                throw new WallFailure(FailureCode.IO_FAILED, "cannot validate the journal manifest", failure);
             }
-            // Unsaved cache temporaries may be deleted; permanent .tmp files are evidence.
-            cleanupCacheTemporaries(actions, blocked);
-            if (!blocked.isEmpty()) status = Status.NEEDS_OPERATOR;
-            return report(status, recovered, actions, blocked);
-        }, ioOwner);
+        }, ioOwner).thenCompose(preflight -> {
+            if (preflight.problem().isPresent()) return CompletableFuture.completedFuture(preflight.problem().get());
+            return journal.open().thenApplyAsync(recovery -> {
+                var recovered = journal.state();
+                if (!expected.instance().equals(recovery.head().world())
+                        || !expected.instance().equals(recovered.world())
+                        || !preflight.manifestHash().equals(recovered.manifestHash())) {
+                    throw new WallFailure(FailureCode.RECIPE_MISMATCH, "recovered history belongs to another permanent world");
+                }
+                List<String> actions = new ArrayList<>();
+                List<String> blocked = new ArrayList<>();
+                Status status = recovery.archivedPartialTail() ? Status.RECOVERED_PARTIAL_TAIL : Status.CLEAN;
+                if (recovery.archivedPartialTail()) actions.add("archived an incomplete journal tail before truncation");
+                // Unsaved cache temporaries may be deleted; permanent .tmp files are evidence.
+                cleanupCacheTemporaries(actions, blocked);
+                if (!blocked.isEmpty()) status = Status.NEEDS_OPERATOR;
+                return report(status, recovered.sequence(), actions, blocked);
+            }, ioOwner);
+        });
     }
 
     public CompletionStage<Report> inspectGate(GateId id, boolean dryRun) {
@@ -127,34 +137,6 @@ public final class RecoveryCoordinator {
         }, ioOwner);
     }
 
-    private Optional<HistoryTypes.Head> readHead(WorldRecipe recipe) throws IOException {
-        Path root = journal.root();
-        Path headFile = AtomicFiles.resolveUnder(root, "journal/head.json");
-        if (!Files.isRegularFile(headFile)) return Optional.empty();
-        String text = Files.readString(headFile, java.nio.charset.StandardCharsets.UTF_8).trim();
-        if (text.isEmpty()) return Optional.empty();
-        // The head is only trusted when its hash matches its own content.
-        String[] parts = text.split("\n", -1);
-        if (parts.length < 4) {
-            throw new WallFailure(FailureCode.T0_CORRUPT, "history head is truncated");
-        }
-        long generation = Long.parseLong(parts[0].trim());
-        long sequence = Long.parseLong(parts[1].trim());
-        long beaconCount = Long.parseLong(parts[2].trim());
-        String hash = parts[3].trim();
-        var roots = sequence == 0 ? java.util.Map.<String, HistoryTypes.BlobRef>of()
-                : java.util.Map.of("by_key", new HistoryTypes.BlobRef("journal/by_key.idx", 0L,
-                        "0".repeat(64)),
-                        "by_sequence", new HistoryTypes.BlobRef("journal/by_sequence.idx", 0L,
-                                "0".repeat(64)));
-        var head = new HistoryTypes.Head(recipe.dimension().startsWith("minecraft:")
-                ? java.util.UUID.nameUUIDFromBytes(recipe.recipeHash().getBytes(
-                        java.nio.charset.StandardCharsets.UTF_8))
-                : java.util.UUID.randomUUID(),
-                generation, sequence, beaconCount, roots, hash);
-        return Optional.of(head);
-    }
-
     private void cleanupCacheTemporaries(List<String> actions, List<String> blocked) {
         Path root = journal.root();
         Path cache = root.resolve("cache");
@@ -171,7 +153,7 @@ public final class RecoveryCoordinator {
             actions.add("cache cleanup failed: " + failure.getMessage());
         }
         // Permanent temporaries are evidence: keep them and report.
-        Path permanent = root.resolve("journal");
+        Path permanent = root.resolve("history");
         if (!Files.isDirectory(permanent)) return;
         try (var stream = Files.list(permanent)) {
             for (Path path : stream.filter(Files::isRegularFile)
@@ -180,7 +162,7 @@ public final class RecoveryCoordinator {
                 actions.add("preserved permanent temporary as evidence " + permanent.relativize(path));
             }
         } catch (IOException failure) {
-            blocked.add("journal");
+            blocked.add("history");
             actions.add("permanent temporary scan failed: " + failure.getMessage());
         }
     }

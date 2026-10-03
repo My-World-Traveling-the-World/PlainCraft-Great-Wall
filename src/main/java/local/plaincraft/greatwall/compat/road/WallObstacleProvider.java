@@ -10,6 +10,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import local.plaincraft.greatwall.lifecycle.WorldServices;
+import local.plaincraft.greatwall.model.PlanLease;
+import local.plaincraft.greatwall.model.WallTypes.PlanWindow;
+import local.plaincraft.greatwall.model.WallTypes.ChunkKey;
+import local.plaincraft.greatwall.model.WallTypes.Priority;
+import local.plaincraft.greatwall.persistence.GateLedger;
 import local.plaincraft.greatwall.model.WallTypes.ArcInterval;
 import local.plaincraft.greatwall.model.WallTypes.Point3i;
 import net.shiroha233.roadweaver.api.interop.PlanningObstacleProvider;
@@ -26,6 +34,8 @@ import net.shiroha233.roadweaver.api.interop.WallInteropTypes.Strip;
  * owner's APPLY and never starts a future from inside A*.
  */
 public final class WallObstacleProvider implements PlanningObstacleProvider {
+    private record Binding(WorldServices services, GateLedger gates) {}
+    private static final ConcurrentHashMap<UUID, Binding> SESSIONS = new ConcurrentHashMap<>();
     /** One prepared strip may never span more than this arc length. */
     public static final long MAX_STRIP_ARC_Q8 = 512L * 256;
     /** A request domain is bounded; a long road is split by the caller. */
@@ -44,6 +54,64 @@ public final class WallObstacleProvider implements PlanningObstacleProvider {
         List<Passage> gates();
 
         Map<Long, String> gateByArcBucket();
+
+        default List<PlanLease<PlanWindow>> leases() { return List.of(); }
+    }
+
+    public WallObstacleProvider() {
+        this(java.util.concurrent.ForkJoinPool.commonPool(), WallObstacleProvider::prepareRuntime);
+    }
+
+    static void bind(WorldServices services, GateLedger gates) {
+        var level=services.overworld();
+        if(!level.getServer().isSameThread())throw new IllegalStateException("wall provider binding requires server owner");
+        var binding=new Binding(services,Objects.requireNonNull(gates));
+        var previous=SESSIONS.putIfAbsent(services.runtimeSession(),binding);
+        if(previous!=null&&(!previous.services().equals(services)||previous.gates()!=gates))
+            throw new IllegalStateException("wall provider session already bound");
+    }
+
+    static void closeSession(UUID session) { SESSIONS.remove(session); }
+
+    private static CompletableFuture<WallSnapshotSource> prepareRuntime(Request request,BooleanSupplier cancelled) {
+        var binding=SESSIONS.get(request.session());
+        if(binding==null)return CompletableFuture.failedFuture(new IllegalStateException("wall session has no prepared history binding"));
+        var services=binding.services();
+        try { services.assertActiveSession(); }
+        catch(RuntimeException failure){return CompletableFuture.failedFuture(failure);}
+        var leases=new ConcurrentHashMap<UUID,PlanLease<PlanWindow>>();
+        var result=new CompletableFuture<WallSnapshotSource>();
+        services.recipeReady().thenCompose(recipe->{
+            services.assertActiveSession();
+            if(SESSIONS.get(request.session())!=binding)throw new IllegalStateException("closed wall provider session");
+            if(!recipe.dimension().equals(request.dimension()))
+                throw new IllegalArgumentException("wall request dimension does not match session");
+            CompletableFuture<List<PlanWindow>> chain=CompletableFuture.completedFuture(List.of());
+            try {
+                for(long x=request.bounds().minX();x<request.bounds().maxXExclusive();x+=512)
+                    for(long z=request.bounds().minZ();z<request.bounds().maxZExclusive();z+=512) {
+                        if(cancelled.getAsBoolean())throw new java.util.concurrent.CancellationException("wall request cancelled");
+                        int cx=Math.toIntExact(Math.floorDiv(Math.min(x+256,(long)request.bounds().maxXExclusive()-1),16));
+                        int cz=Math.toIntExact(Math.floorDiv(Math.min(z+256,(long)request.bounds().maxZExclusive()-1),16));
+                        var lease=services.planning().requireWindow(new ChunkKey(request.dimension(),cx,cz),512,Priority.ROAD);
+                        leases.put(lease.id(),lease);
+                        chain=chain.thenCombine(lease.future(),(windows,window)->{
+                            var copy=new ArrayList<>(windows);copy.add(window);return List.copyOf(copy);
+                        });
+                    }
+            } catch(Throwable error){return CompletableFuture.failedFuture(error);}
+            return chain.thenApply(windows->{
+                services.assertActiveSession();
+                if(SESSIONS.get(request.session())!=binding)throw new IllegalStateException("closed wall provider session");
+                if(cancelled.getAsBoolean())throw new java.util.concurrent.CancellationException("wall request cancelled");
+                return WallSnapshotBuilder.build(recipe.recipeHash(),recipe.wallId(),request,windows,
+                        binding.gates().activeSnapshot(),List.copyOf(leases.values()));
+            });
+        }).whenComplete((snapshot,error)->{
+            if(error!=null){leases.values().forEach(PlanLease::close);result.completeExceptionally(error);}
+            else if(!result.complete(snapshot))snapshot.leases().forEach(PlanLease::close);
+        });
+        return result;
     }
 
     public WallObstacleProvider(Executor ioOwner,
@@ -61,8 +129,8 @@ public final class WallObstacleProvider implements PlanningObstacleProvider {
             Request request, BooleanSupplier cancelled) {
         Objects.requireNonNull(request, "request");
         Objects.requireNonNull(cancelled, "cancelled");
-        int spanX = request.bounds().maxXExclusive() - request.bounds().minX();
-        int spanZ = request.bounds().maxZExclusive() - request.bounds().minZ();
+        long spanX = (long)request.bounds().maxXExclusive() - request.bounds().minX();
+        long spanZ = (long)request.bounds().maxZExclusive() - request.bounds().minZ();
         if (spanX > MAX_REQUEST_SPAN || spanZ > MAX_REQUEST_SPAN) {
             return CompletableFuture.failedFuture(new IllegalArgumentException(
                     "wall obstacle request domain exceeds " + MAX_REQUEST_SPAN + " blocks; split it"));
@@ -71,7 +139,12 @@ public final class WallObstacleProvider implements PlanningObstacleProvider {
             return CompletableFuture.failedFuture(new java.util.concurrent.CancellationException(
                     "wall obstacle preparation was cancelled before it started"));
         }
-        return source.apply(request, cancelled).thenApplyAsync(frozen -> {
+        CompletableFuture<WallSnapshotSource> sourceFuture;
+        try {
+            new local.plaincraft.greatwall.diagnostics.StageTrace(request.session()).assertOutsideLock();
+            sourceFuture=source.apply(request, cancelled);
+        } catch(Throwable failure){return CompletableFuture.failedFuture(failure);}
+        var result=sourceFuture.thenApplyAsync(frozen -> {
             if (cancelled.getAsBoolean()) {
                 throw new java.util.concurrent.CancellationException("wall obstacle preparation was cancelled");
             }
@@ -91,16 +164,17 @@ public final class WallObstacleProvider implements PlanningObstacleProvider {
             for (Passage gate : frozen.gates()) {
                 if (request.bounds().contains(gate.center().x(), gate.center().z())) gates.add(gate);
             }
-            return new PinnedWallSnapshot(bounded, gates, buckets, frozen.revision(),
-                    () -> { /* the pin is released by the owner that created the source */ });
+            return (net.shiroha233.roadweaver.api.interop.ObstacleSnapshot)new PinnedWallSnapshot(bounded, gates,
+                    frozen.leases(), buckets, frozen.revision());
         }, ioOwner);
+        result.whenComplete((snapshot,error)->{
+            if(error!=null)sourceFuture.thenAccept(frozen->frozen.leases().forEach(PlanLease::close));
+        });
+        return result;
     }
 
     private static boolean overlaps(Strip strip, WallInteropTypes.Rect bounds) {
-        for (Pos point : strip.centerline()) {
-            if (bounds.contains(point.x(), point.z())) return true;
-        }
-        return false;
+        return WallObstacleGeometry.intersects(strip,bounds);
     }
 
     /** Builds one bounded strip from a centreline; the caller guarantees <= 512 arc blocks. */

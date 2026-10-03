@@ -1,20 +1,28 @@
 package local.plaincraft.greatwall.compat.road;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+import local.plaincraft.greatwall.GreatWallMod;
+import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.lifecycle.WorldServices;
-import local.plaincraft.greatwall.model.WallTypes.Point3i;
+import local.plaincraft.greatwall.model.WallTypes.GateId;
 import local.plaincraft.greatwall.persistence.GateLedger;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.shiroha233.roadweaver.api.RoadNetworkApi;
 import net.shiroha233.roadweaver.api.interop.EndpointHeightAgreementApi;
 import net.shiroha233.roadweaver.api.interop.PlanningInteropRegistry;
 import net.shiroha233.roadweaver.api.interop.WallInteropTypes;
@@ -26,135 +34,204 @@ import net.shiroha233.roadweaver.api.interop.WallInteropTypes;
  * order. When RoadWeaver is absent the class is never loaded.
  */
 public final class RoadWeaverAdapter implements EndpointHeightAgreementApi, AutoCloseable {
-    private static volatile RoadWeaverAdapter instance;
+    private static boolean providerRegistered;
+    private static final String ABI_ALLOWLIST = "/plaincraft_great_wall/roadweaver-interop.sha256";
 
-    private final WorldServices services;
-    private final GateLedger ledger;
-    private final WallArchBackfill backfill;
     private final ServerLevel overworld;
     private final UUID session;
-    private final Map<String, WallInteropTypes.Agreement> frozenByGate = new LinkedHashMap<>();
+    private final Executor owner;
+    private final RoadAdapterState state;
+
+    public RoadWeaverAdapter(WorldServices services, GateLedger ledger, WallArchBackfill backfill) {
+        this(services, ledger, backfill, Objects.requireNonNull(services).overworld());
+    }
 
     public RoadWeaverAdapter(WorldServices services, GateLedger ledger, WallArchBackfill backfill,
             ServerLevel overworld) {
-        this.services = Objects.requireNonNull(services, "services");
-        this.ledger = Objects.requireNonNull(ledger, "ledger");
-        this.backfill = Objects.requireNonNull(backfill, "backfill");
+        Objects.requireNonNull(services, "services");
+        Objects.requireNonNull(ledger, "ledger");
+        Objects.requireNonNull(backfill, "backfill");
         this.overworld = Objects.requireNonNull(overworld, "overworld");
-        this.session = UUID.randomUUID();
-        PlanningInteropRegistry.registerHeight(session, this);
+        if (services.overworld() != overworld) throw new IllegalArgumentException("not the service overworld");
+        if (!overworld.getServer().isSameThread()) {
+            throw new IllegalStateException("RoadWeaver adapter construction requires the server owner");
+        }
+        services.assertActiveSession();
+        this.session = services.runtimeSession();
+        this.owner = services.serverOwner();
+        if (PlanningInteropRegistry.protocolVersion() != 1) throw new IllegalStateException("RoadWeaver protocol mismatch");
+        if (PlanningInteropRegistry.height(session).isPresent()) {
+            throw new IllegalStateException("RoadWeaver height API already registered for this runtime");
+        }
+        this.state = new RoadAdapterState(session, services.recipe().wallId(), ledger, owner,
+                new RoadAdapterState.Port() {
+                    @Override public void validateSession() {
+                        services.assertActiveSession();
+                        if (!session.equals(services.runtimeSession())
+                                || !boundSession().filter(session::equals).isPresent()) {
+                            throw new IllegalStateException("RoadWeaver wall runtime session is not bound to this level");
+                        }
+                    }
+                    @Override public CompletionStage<Void> whenReady() {
+                        Object result = invokeRegistryLevel("whenReady", new Class<?>[] {ServerLevel.class}, overworld);
+                        if (!(result instanceof CompletionStage<?> ready)) {
+                            throw new IllegalStateException("RoadWeaver readiness returned an invalid ABI value");
+                        }
+                        return ready.thenApply(value -> {
+                            if (value != null) throw new IllegalStateException("invalid readiness completion value");
+                            return null;
+                        });
+                    }
+                    @Override public void registerEndpoint(RoadTypes.GateContract gate) {
+                        assertOwner();
+                        invoke("net.shiroha233.roadweaver.api.RoadNetworkApi", "registerStructureEndpointOnce",
+                                new Class<?>[] {ServerLevel.class, BlockPos.class, String.class},
+                                overworld, roadPosition(gate), stableId(gate.id()));
+                    }
+                    @Override public void ensureConnection(RoadTypes.GateContract from, RoadTypes.GateContract to) {
+                        assertOwner();
+                        invoke("net.shiroha233.roadweaver.api.RoadNetworkApi", "ensureConnection",
+                                new Class<?>[] {ServerLevel.class, BlockPos.class, BlockPos.class, boolean.class},
+                                overworld, roadPosition(from), roadPosition(to), false);
+                    }
+                    @Override public void failed(Throwable failure) {
+                        GreatWallMod.LOGGER.error("RoadWeaver endpoint side effect failed for runtime {}", session, failure);
+                    }
+                });
+        boolean wasBound = boundSession().isPresent();
+        invokeRegistryLevel("bindSession", new Class<?>[] {ServerLevel.class, UUID.class},
+                overworld, session);
+        boolean heightRegistered = false;
+        try {
+            PlanningInteropRegistry.registerHeight(session, this);
+            heightRegistered = true;
+            WallObstacleProvider.bind(services, ledger);
+        } catch (RuntimeException failure) {
+            state.stop();
+            if (heightRegistered) {
+                WallObstacleProvider.closeSession(session);
+                PlanningInteropRegistry.closeSession(session);
+            }
+            if (!wasBound) invokeRegistryLevel("closeLevel", new Class<?>[] {ServerLevel.class}, overworld);
+            throw failure;
+        }
     }
 
-    /** Called only from a guarded integration entry point. */
-    public static void initializeIfPresent() {
-        // The caller proves RoadWeaver is present (Fabric Loader check) before
-        // this class is touched, so reaching here already means the ABI exists.
-        if (instance != null) return;
-        instance = null; // constructed by the world-services owner that holds the gate ledger
+    /** Core must guard class loading with Loader before touching this soft-dependent class. */
+    public static synchronized void initializeIfPresent() {
+        if (!FabricLoader.getInstance().isModLoaded("roadweaver") || providerRegistered) return;
+        verifyLockedAbi();
+        PlanningInteropRegistry.register(new WallObstacleProvider());
+        providerRegistered = true;
     }
 
     /** Registers a gate endpoint once; repeated calls never add duplicate entries. */
     public void registerEndpoint(RoadTypes.GateContract gate) {
-        Objects.requireNonNull(gate, "gate");
-        ServerLevel level = overworld();
-        if (level == null) return;
-        String stableId = stableId(gate);
-        Point3i center = new Point3i(
-                local.plaincraft.greatwall.geometry.FixedMath.floorBlock(gate.frame().center().xQ8()),
-                gate.groundY(),
-                local.plaincraft.greatwall.geometry.FixedMath.floorBlock(gate.frame().center().zQ8()));
-        // RoadWeaver ships remapped Minecraft names, so the server-level calls
-        // go through reflection: the interop DTOs are the only compile-time ABI.
-        invokeServerLevel("registerStructureEndpointOnce",
-                new Class<?>[] {ServerLevel.class, BlockPos.class, String.class},
-                level, new BlockPos(center.x(), 0, center.z()), stableId);
+        state.registerEndpoint(gate);
     }
 
     public void ensureConnection(RoadTypes.GateContract from, RoadTypes.GateContract to) {
-        Objects.requireNonNull(from, "from");
-        Objects.requireNonNull(to, "to");
-        ServerLevel level = overworld();
-        if (level == null) return;
-        Point3i a = new Point3i(
-                local.plaincraft.greatwall.geometry.FixedMath.floorBlock(from.frame().center().xQ8()),
-                0,
-                local.plaincraft.greatwall.geometry.FixedMath.floorBlock(from.frame().center().zQ8()));
-        Point3i b = new Point3i(
-                local.plaincraft.greatwall.geometry.FixedMath.floorBlock(to.frame().center().xQ8()),
-                0,
-                local.plaincraft.greatwall.geometry.FixedMath.floorBlock(to.frame().center().zQ8()));
-        invokeServerLevel("ensureConnection",
-                new Class<?>[] {ServerLevel.class, BlockPos.class, BlockPos.class, boolean.class},
-                level, new BlockPos(a.x(), a.y(), a.z()), new BlockPos(b.x(), b.y(), b.z()), false);
-    }
-
-    private static void invokeServerLevel(String method, Class<?>[] parameterTypes, Object... arguments) {
-        try {
-            Class<?> api = Class.forName("net.shiroha233.roadweaver.api.RoadNetworkApi");
-            var target = api.getMethod(method, parameterTypes);
-            target.invoke(null, arguments);
-        } catch (ClassNotFoundException absent) {
-            // RoadWeaver is not installed; the wall simply has no road links.
-        } catch (ReflectiveOperationException failure) {
-            throw new IllegalStateException("RoadWeaver interop call failed: " + method, failure);
-        }
+        state.ensureConnection(from, to);
     }
 
     @Override public CompletionStage<WallInteropTypes.Agreement> propose(UUID session, String gateId,
             long expectedRevision, List<WallInteropTypes.Approach> approaches,
             List<String> completeBatchRoadIds) {
-        Objects.requireNonNull(session, "session");
-        if (gateId == null || !gateId.startsWith("plaincraft_great_wall:")) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException(
-                    "gate id must be namespaced plaincraft_great_wall:..."));
-        }
-        List<RoadTypes.Approach> converted = new ArrayList<>(approaches.size());
-        for (WallInteropTypes.Approach approach : approaches) {
-            List<Point3i> points = new ArrayList<>(approach.stations().size());
-            for (WallInteropTypes.Pos pos : approach.stations()) {
-                points.add(new Point3i(pos.x(), pos.y(), pos.z()));
-            }
-            converted.add(new RoadTypes.Approach(approach.roadId(), points));
-        }
-        // Height agreement is only reachable through an already-frozen gate.
-        var existing = frozenByGate.get(gateId);
-        if (existing != null) return CompletableFuture.completedFuture(existing);
-        return CompletableFuture.completedFuture(new WallInteropTypes.Agreement(gateId,
-                expectedRevision, 0, List.of(0), false, false,
-                local.plaincraft.greatwall.geometry.DeterministicHash.sha256(
-                        gateId.getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+        return state.propose(session, gateId, expectedRevision, approaches, completeBatchRoadIds);
     }
 
     @Override public Optional<WallInteropTypes.Agreement> frozen(UUID session, String gateId) {
-        if (gateId == null) return Optional.empty();
-        return Optional.ofNullable(frozenByGate.get(gateId));
+        return state.frozen(session, gateId);
     }
 
-    /** Records the agreement after the ledger freezes the gate. */
+    /** Compatibility entry point; caller-supplied profiles are not durable ledger proof. */
     public void adoptFrozen(RoadTypes.GateRecord record, int groundY, List<Integer> sharedProfile) {
-        Objects.requireNonNull(record, "record");
-        if (record.state() != RoadTypes.GateState.FROZEN
-                && record.state() != RoadTypes.GateState.PENDING_CHUNKS
-                && record.state() != RoadTypes.GateState.APPLIED) {
-            throw new IllegalStateException("only a frozen gate can publish an agreement");
+        state.adoptFrozen(record, groundY, sharedProfile);
+    }
+
+    public CompletionStage<Void> pendingSideEffects() {
+        return state.pendingSideEffects();
+    }
+
+    public static String stableId(GateId id) {
+        return RoadAdapterState.encode(id);
+    }
+
+    private static BlockPos roadPosition(RoadTypes.GateContract gate) {
+        return new BlockPos(FixedMath.floorBlock(gate.frame().center().xQ8()), 0,
+                FixedMath.floorBlock(gate.frame().center().zQ8()));
+    }
+
+    private void assertOwner() {
+        if (!overworld.getServer().isSameThread()) throw new IllegalStateException("Road side effect requires server owner");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Optional<UUID> boundSession() {
+        Object result = invokeRegistryLevel("session", new Class<?>[] {ServerLevel.class}, overworld);
+        if (!(result instanceof Optional<?> optional)
+                || optional.filter(value -> !(value instanceof UUID)).isPresent()) {
+            throw new IllegalStateException("RoadWeaver session query returned an invalid ABI value");
         }
-        String gateId = stableId(record.contract());
-        boolean ready = record.state() == RoadTypes.GateState.APPLIED;
-        frozenByGate.put(gateId, new WallInteropTypes.Agreement(gateId, record.revision(), groundY,
-                List.copyOf(sharedProfile), true, ready, record.contract().hash()));
+        return (Optional<UUID>) result;
     }
 
-    private ServerLevel overworld() {
-        return overworld;
+    private static Object invokeRegistryLevel(String method, Class<?>[] types, Object... args) {
+        return invoke("net.shiroha233.roadweaver.api.interop.PlanningInteropRegistry", method, types, args);
     }
 
-    private static String stableId(RoadTypes.GateContract gate) {
-        return "plaincraft_great_wall:" + gate.id().wallId().substring(0, Math.min(16, gate.id().wallId().length()))
-                + "/" + gate.id().namespace() + "/" + gate.id().ordinal();
+    private static Object invoke(String className, String method, Class<?>[] types, Object... args) {
+        try {
+            return Class.forName(className).getMethod(method, types).invoke(null, args);
+        } catch (InvocationTargetException failure) {
+            if (failure.getCause() instanceof RuntimeException runtime) throw runtime;
+            throw new IllegalStateException("RoadWeaver call failed: " + method, failure.getCause());
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("RoadWeaver level interop failed: " + method, failure);
+        }
+    }
+
+    private static void verifyLockedAbi() {
+        if (PlanningInteropRegistry.protocolVersion() != 1) throw new IllegalStateException("RoadWeaver protocol mismatch");
+        try (var locked = RoadWeaverAdapter.class.getResourceAsStream(ABI_ALLOWLIST)) {
+            if (locked == null) {
+                throw new IllegalStateException("S2 integration blocked: reviewed ABI SHA allowlist absent: " + ABI_ALLOWLIST);
+            }
+            var allowed = new BufferedReader(new InputStreamReader(locked, StandardCharsets.UTF_8))
+                    .lines().map(String::strip).filter(line -> !line.isEmpty() && !line.startsWith("#")).toList();
+            if (allowed.isEmpty() || allowed.stream().anyMatch(line -> !line.matches("[0-9a-f]{64}"))) {
+                throw new IllegalStateException("invalid reviewed RoadWeaver artifact SHA allowlist");
+            }
+            var source = PlanningInteropRegistry.class.getProtectionDomain().getCodeSource();
+            if (source == null || !"file".equals(source.getLocation().getProtocol())) {
+                throw new IllegalStateException("RoadWeaver artifact origin cannot be verified");
+            }
+            Path artifact = Path.of(source.getLocation().toURI());
+            if (!Files.isRegularFile(artifact)) throw new IllegalStateException("RoadWeaver origin is not a locked jar");
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            try (var input = new DigestInputStream(Files.newInputStream(artifact), digest)) {
+                input.transferTo(java.io.OutputStream.nullOutputStream());
+            }
+            if (!allowed.contains(HexFormat.of().formatHex(digest.digest()))) {
+                throw new IllegalStateException("RoadWeaver loaded jar SHA is not approved");
+            }
+        } catch (java.io.IOException | java.net.URISyntaxException | java.security.NoSuchAlgorithmException failure) {
+            throw new IllegalStateException("RoadWeaver ABI verification failed", failure);
+        }
     }
 
     @Override public void close() {
-        PlanningInteropRegistry.closeSession(session);
-        frozenByGate.clear();
+        if (!state.stop()) return;
+        owner.execute(() -> {
+            assertOwner();
+            try {
+                if (boundSession().filter(session::equals).isPresent()) {
+                    invokeRegistryLevel("closeLevel", new Class<?>[] {ServerLevel.class}, overworld);
+                }
+            } finally {
+                WallObstacleProvider.closeSession(session);
+                PlanningInteropRegistry.closeSession(session);
+            }
+        });
     }
 }

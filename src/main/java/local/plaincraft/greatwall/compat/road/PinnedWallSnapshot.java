@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ConcurrentHashMap;
+import local.plaincraft.greatwall.model.PlanLease;
+import local.plaincraft.greatwall.model.WallTypes.PlanWindow;
 import local.plaincraft.greatwall.model.WallTypes.ArcInterval;
 import net.shiroha233.roadweaver.api.interop.ObstacleSnapshot;
 import net.shiroha233.roadweaver.api.interop.WallInteropTypes;
@@ -31,7 +33,32 @@ public final class PinnedWallSnapshot implements ObstacleSnapshot {
     private final List<Passage> gates;
     private final Map<Long, String> gateByArcBucket;
     private final Runnable release;
-    private final AtomicBoolean closed = new AtomicBoolean();
+    private final ConcurrentHashMap<String, Boolean> closed = new ConcurrentHashMap<>();
+    private final Map<Long, List<Strip>> buckets;
+
+    public PinnedWallSnapshot(List<Strip> strips, List<Passage> gates,
+            List<PlanLease<PlanWindow>> leases, String revision) {
+        this(strips, gates, Map.of(), revision, release(List.copyOf(leases)));
+    }
+
+    PinnedWallSnapshot(List<Strip> strips, List<Passage> gates,
+            List<PlanLease<PlanWindow>> leases, Map<Long,String> arcBuckets, String revision) {
+        this(strips, gates, arcBuckets, revision, release(List.copyOf(leases)));
+    }
+
+    private static Runnable release(List<PlanLease<PlanWindow>> leases) {
+        return () -> {
+            RuntimeException failure = null;
+            for (var lease : leases) {
+                try { lease.close(); }
+                catch (RuntimeException error) {
+                    if (failure == null) failure = error;
+                    else failure.addSuppressed(error);
+                }
+            }
+            if (failure != null) throw failure;
+        };
+    }
 
     public PinnedWallSnapshot(List<Strip> strips, List<Passage> gates,
             Map<Long, String> gateByArcBucket, String revision, Runnable release) {
@@ -45,6 +72,19 @@ public final class PinnedWallSnapshot implements ObstacleSnapshot {
         this.gateByArcBucket = Map.copyOf(gateByArcBucket);
         this.revision = revision;
         this.release = release;
+        var index = new java.util.HashMap<Long, List<Strip>>();
+        for (Strip strip : this.strips) {
+            int minX = strip.centerline().stream().mapToInt(Pos::x).min().orElseThrow() - strip.halfWidth();
+            int maxX = strip.centerline().stream().mapToInt(Pos::x).max().orElseThrow() + strip.halfWidth();
+            int minZ = strip.centerline().stream().mapToInt(Pos::z).min().orElseThrow() - strip.halfWidth();
+            int maxZ = strip.centerline().stream().mapToInt(Pos::z).max().orElseThrow() + strip.halfWidth();
+            for (int x = Math.floorDiv(minX, 256); x <= Math.floorDiv(maxX, 256); x++)
+                for (int z = Math.floorDiv(minZ, 256); z <= Math.floorDiv(maxZ, 256); z++)
+                    index.computeIfAbsent(bucket(x, z), ignored -> new ArrayList<>()).add(strip);
+        }
+        var immutable = new java.util.HashMap<Long, List<Strip>>();
+        index.forEach((key, value) -> immutable.put(key, List.copyOf(value)));
+        buckets = Map.copyOf(immutable);
     }
 
     @Override public String revision() { return revision; }
@@ -52,9 +92,13 @@ public final class PinnedWallSnapshot implements ObstacleSnapshot {
     @Override public List<Strip> queryXZ(Rect bounds) {
         Objects.requireNonNull(bounds, "bounds");
         ensureOpen();
+        var candidates = new java.util.LinkedHashSet<Strip>();
+        for (int x = Math.floorDiv(bounds.minX(), 256); x <= Math.floorDiv(bounds.maxXExclusive() - 1, 256); x++)
+            for (int z = Math.floorDiv(bounds.minZ(), 256); z <= Math.floorDiv(bounds.maxZExclusive() - 1, 256); z++)
+                candidates.addAll(buckets.getOrDefault(bucket(x, z), List.of()));
         List<Strip> result = new ArrayList<>();
-        for (Strip strip : strips) {
-            if (intersectsStrip(strip, bounds)) result.add(strip);
+        for (Strip strip : candidates) {
+            if (WallObstacleGeometry.intersects(strip, bounds)) result.add(strip);
         }
         result.sort(Comparator.comparingLong(Strip::fromSQ8).thenComparing(Strip::id));
         return List.copyOf(result);
@@ -67,34 +111,32 @@ public final class PinnedWallSnapshot implements ObstacleSnapshot {
             throw new IllegalArgumentException("roadRadius 0..32 required");
         }
         Passage gate = gateForCrossing(edge).orElse(null);
-        if (gate != null) {
-            // A physically ready gate lets the road through at zero wall cost;
-            // any other building penalty the caller adds stays untouched.
-            return new Penalty(0L, false, Optional.of(gate.gateId()));
-        }
-        // The swept edge is more than its two endpoints: sample the corridor.
-        int steps = Math.max(2, Math.min(64, (int) Math.max(
-                Math.abs((long) edge.to().x() - edge.from().x()),
-                Math.abs((long) edge.to().z() - edge.from().z())) / 4 + 2));
-        for (int i = 0; i <= steps; i++) {
-            double t = (double) i / steps;
-            int x = (int) Math.round(edge.from().x() + (edge.to().x() - edge.from().x()) * t);
-            int z = (int) Math.round(edge.from().z() + (edge.to().z() - edge.from().z()) * t);
-            if (intersectsAnyStrip(x, z, roadRadius)) {
-                return new Penalty(WALL_PENALTY_COST, true, Optional.empty());
+        boolean intersection = false;
+        for (Strip strip : strips) {
+            for (int i = 1; i < strip.centerline().size(); i++) {
+                Pos a = strip.centerline().get(i - 1), b = strip.centerline().get(i);
+                if (!WallObstacleGeometry.swept(edge, a, b, strip.halfWidth() + roadRadius)) continue;
+                intersection = true;
+                if (gate == null || !WallObstacleGeometry.opensSegment(edge, gate, a, b,
+                        strip.halfWidth(), roadRadius)) {
+                    return new Penalty(WALL_PENALTY_COST, true, Optional.empty());
+                }
             }
         }
+        if (intersection && gate != null)
+            return new Penalty(0, !gate.physicallyReady(), Optional.of(gate.gateId()));
         return new Penalty(0L, false, Optional.empty());
     }
 
     @Override public Optional<Passage> gateForCrossing(Edge edge) {
         Objects.requireNonNull(edge, "edge");
         ensureOpen();
-        for (Passage gate : gates) {
-            if (!gate.physicallyReady()) continue;
-            if (segmentIntersectsGate(edge, gate)) return Optional.of(gate);
-        }
-        return Optional.empty();
+        return gates.stream().filter(gate -> WallObstacleGeometry.crosses(edge, gate, 0))
+                .min(Comparator.comparingDouble((Passage gate) -> {
+                    double dx = (double) edge.from().x() - gate.center().x();
+                    double dz = (double) edge.from().z() - gate.center().z();
+                    return dx * dx + dz * dz;
+                }).thenComparing(Passage::gateId));
     }
 
     /** Arc bucket lookup used by the endpoint agreement path. */
@@ -104,42 +146,14 @@ public final class PinnedWallSnapshot implements ObstacleSnapshot {
     }
 
     @Override public void close() {
-        if (closed.compareAndSet(false, true)) release.run();
+        if (closed.putIfAbsent("closed", true) == null) release.run();
     }
 
     private void ensureOpen() {
-        if (closed.get()) throw new IllegalStateException("snapshot is closed");
+        if (closed.containsKey("closed")) throw new IllegalStateException("snapshot is closed");
     }
 
-    private static boolean intersectsStrip(Strip strip, Rect bounds) {
-        // Strips are bounded by their centerline plus half width; the exact
-        // arc interval is authoritative, so a coarse box test only prunes.
-        for (Pos point : strip.centerline()) {
-            if (bounds.contains(point.x(), point.z())) return true;
-        }
-        return false;
-    }
-
-    private boolean intersectsAnyStrip(int x, int z, int radius) {
-        for (Strip strip : strips) {
-            for (Pos point : strip.centerline()) {
-                long dx = (long) point.x() - x;
-                long dz = (long) point.z() - z;
-                long reach = strip.halfWidth() + radius;
-                if (dx * dx + dz * dz <= reach * reach) return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean segmentIntersectsGate(Edge edge, Passage gate) {
-        long minX = Math.min(edge.from().x(), edge.to().x()) - gate.clearWidth() / 2;
-        long maxX = Math.max(edge.from().x(), edge.to().x()) + gate.clearWidth() / 2;
-        long minZ = Math.min(edge.from().z(), edge.to().z()) - gate.clearWidth() / 2;
-        long maxZ = Math.max(edge.from().z(), edge.to().z()) + gate.clearWidth() / 2;
-        return gate.center().x() >= minX && gate.center().x() <= maxX
-                && gate.center().z() >= minZ && gate.center().z() <= maxZ;
-    }
+    private static long bucket(int x, int z) { return ((long) x << 32) ^ (z & 0xffffffffL); }
 
     static ArcInterval intervalFor(Strip strip) {
         return new ArcInterval(strip.fromSQ8(), strip.toSQ8());
