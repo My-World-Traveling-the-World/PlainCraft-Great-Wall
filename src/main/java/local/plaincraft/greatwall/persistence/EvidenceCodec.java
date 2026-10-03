@@ -129,7 +129,7 @@ public final class EvidenceCodec {
                 checkOwner(point, key);
                 if (!points.add(point)) throw new IOException("duplicate protected position");
             }
-            return Set.copyOf(points);
+            return local.plaincraft.greatwall.model.ImmutablePointSet.copyOf(points);
         }
     }
     private static void checkOwner(Point3i point, ChunkKey key) throws IOException {

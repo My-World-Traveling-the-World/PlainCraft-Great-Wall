@@ -468,8 +468,8 @@ public final class WallTypes {
             Objects.requireNonNull(coverage, "coverage");
             columns = List.copyOf(columns);
             protectedStructures = List.copyOf(protectedStructures);
-            blockEntities = Set.copyOf(blockEntities);
-            immutableBlocks = Set.copyOf(immutableBlocks);
+            blockEntities = ImmutablePointSet.copyOf(blockEntities);
+            immutableBlocks = ImmutablePointSet.copyOf(immutableBlocks);
             requireHash(hash);
         }
     }
