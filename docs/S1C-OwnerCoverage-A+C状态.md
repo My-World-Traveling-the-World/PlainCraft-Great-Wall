@@ -45,7 +45,10 @@ FAIL，失败层为实际 WALKWAY 支撑/净空复核；不得据此报告 S1C �
 
 ## 尚未闭合
 
-- 新失败坐标的真实区块方块状态尚未离线解码，暂不能判定是脚下支撑还是上方碰撞。
+- 2026-10-03 已完成保存区块的只读解码及原版碰撞对照，发现完整 UP 面判据
+  拒绝可走底半砖台阶；已最小修正 fixture，详见
+  `docs/S1C-WALKWAY台阶误判诊断-20261003.md`。诊断 JUnit 9/9，
+  但 strict Gradle/新真实运行尚未完成，不把原 FAIL 回写成 PASS。
 - vanilla 全 505 owner、重进一致性、Tectonic/C2ME 代表种子、成功路径每 chunk 成本：NOT_RUN。
 - `S1C-DRAIN-01`：OPEN。此次 STOPPING 最终 flights/admitted/leases 为 0，但此次运行由校验失败和 watchdog 结束，不能据此关闭既有排空缺陷。
 - Tan's Huge Trees：BLOCKED。

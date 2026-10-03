@@ -1,0 +1,6 @@
+D:\�����ĺ�-ModԴ��\plaincraft-great-wall\src\serverSmoke\java\local\plaincraft\greatwall\smoke\RealTerrainFixture.java:162: ����: �Ҳ�������
+                    var marker = chunk.getAttached(TerrainMarkers.PRODUCTION);
+                                      ^
+  ����:   ���� getAttached(AttachmentType<Marker>)
+  λ��: ����ΪChunkAccess�ı��� chunk
+1 ������

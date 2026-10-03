@@ -1,0 +1,22 @@
+[
+  {
+    "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\main\\java\\local\\plaincraft\\greatwall\\diagnostics\\WalkwayCollisionCheck.java",
+    "sha256": "69cf2501b20204c90dc3e67c40cd7b67077fd5d84cfcc34d5075f36891ad9507"
+  },
+  {
+    "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\src\\test\\java\\local\\plaincraft\\greatwall\\diagnostics\\WalkwayCollisionCheckTest.java",
+    "sha256": "6d986220783de0b99b7599abd2144712369c88715bc8906ab7d5642ad5fd317e"
+  },
+  {
+    "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\tools\\RunWalkwayCollisionTests.java",
+    "sha256": "17e827cf4c9c151e01ea3911c132634ebf117fe9fde631e02517aab826899a67"
+  },
+  {
+    "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\tools\\ReadIsolatedWallColumn.java",
+    "sha256": "51a0d4c03747a460153a132629ecbe1148884769edf7d4bb8f5637fbe8e0e5c1"
+  },
+  {
+    "path": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\tools\\Run-IsolatedWallColumnDiagnosis.ps1",
+    "sha256": "15826dc85774750dc625477305a830cb4a274d8a9cfee49a01c1908cc3fdb365"
+  }
+]
