@@ -23,3 +23,5 @@ docs/evidence/build/**/*.log -whitespace
 docs/evidence/build/**/*.txt -whitespace
 docs/evidence/s2/arch-owner-handoff-20261003/** -text whitespace=cr-at-eol
 docs/evidence/s2/arch-owner-handoff-20261003/**/*.log -whitespace
+docs/evidence/s2/grade-async-20261003/** -text whitespace=cr-at-eol
+docs/evidence/s2/grade-async-20261003/**/*.log -whitespace

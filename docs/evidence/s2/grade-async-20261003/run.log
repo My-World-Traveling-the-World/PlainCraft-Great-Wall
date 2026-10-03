@@ -1,0 +1,660 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.8/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Architect Plugin: 3.4.164
+Architectury Loom: 1.7.435
+You are using an outdated version of Architectury Loom! This version will not receive any support, please consider updating!
+
+> Task :cleanLegacyIdeOutputs UP-TO-DATE
+> Task :common:compileJava
+> Task :common:processResources UP-TO-DATE
+> Task :common:classes
+> Task :common:compileTestJava
+> Task :common:processTestResources NO-SOURCE
+> Task :common:testClasses
+
+> Task :common:audit403Guard
+
+passed=15 failed=0
+Audit403GuardTest: PASS
+
+> Task :common:audit405Guard
+
+passed=16 failed=0
+Audit405GuardTest: PASS
+
+> Task :common:auditFixRegression
+[23:45:08] [main/INFO]: [STDOUT]: [P1-1] ���� BRIDGE span ����ұ� ROAD ʱ�Ա���
+[23:45:08] [main/INFO]: [STDOUT]:   ok  ���� BRIDGE span ���������޸�ǰ�ᱻ������
+[23:45:08] [main/INFO]: [STDOUT]: [P1-1] ��� span ���ǵ����䲻�ظ��������� span
+[23:45:08] [main/INFO]: [STDOUT]:   ok  BRIDGE span ֻ�� 1 ����ʵ�� 1��
+[23:45:08] [main/INFO]: [STDOUT]: [P1-2] �����Ŷ�Ҳ���� span
+[23:45:08] [main/INFO]: [STDOUT]:   ok  �����ŶΣ�Ҫô���� span��Ҫô��ȫ����ԭ����
+[23:45:08] [main/INFO]: [STDOUT]: [P2-13] �ǼǼ��� Y
+[23:45:08] [main/INFO]: [STDOUT]:   ok  ���ǿ�
+[23:45:08] [main/INFO]: [STDOUT]:   ok  XZ ��ͬ�� Y ��ͬ���������Ӽ���ͬ���޸�ǰ�ụ�า�ǣ�
+[23:45:08] [main/INFO]: [STDOUT]: [P2-13] �ǼǼ��뷽���޹�
+[23:45:08] [main/INFO]: [STDOUT]:   ok  A��B �� B��A ��ͬһ�������� PlannedPathCache һ�£�
+[23:45:08] [main/INFO]: [STDOUT]: [P2-11] �߶�ǯ��
+[23:45:08] [main/INFO]: [STDOUT]:   ok  ���߱�ǯ��
+[23:45:08] [main/INFO]: [STDOUT]:   ok  ���ͱ�ǯ��
+[23:45:08] [main/INFO]: [STDOUT]:   ok  �Ϸ�ֵ�����Ķ�
+[23:45:08] [main/INFO]: [STDOUT]: [�߶ȹ���] ·����Ҹ��� �� ����ȥ
+[23:45:08] [main/INFO]: [STDOUT]:   ok  targetY �����ڵر���ʵ�� [-64, -64, -64, -64]��
+[23:45:08] [main/INFO]: [STDOUT]:   ok  ȷʵ�����ˣ���ֵ < -60��
+[23:45:08] [main/INFO]: [STDOUT]: [�߶ȹ���] ·����Ҹ��� �� �����أ������գ�
+[23:45:08] [main/INFO]: [STDOUT]:   ok  targetY ���ֵر� -60��ʵ�� [-60, -60, -60, -60]��
+[23:45:08] [main/INFO]: [STDOUT]: [�û� 2026-09-25] ʩ���������ǰѡ��
+[23:45:08] [main/INFO]: [STDOUT]:   ok  �༭�����Ǹջ�������
+[23:45:08] [main/INFO]: [STDOUT]:   ok  ��·�߿ɻ��ƣ�submitForBuild �Ż������
+[23:45:08] [main/INFO]: [STDOUT]:   ok  �л������б༭�����µĿ�·�ߣ�
+[23:45:08] [main/INFO]: [STDOUT]:   ok  �༭�����ѻ�����·�ߣ�id ��ͬ��
+[23:45:08] [main/INFO]: [STDOUT]:   ok  �±༭�����ǿյģ����������ߣ�
+[23:45:08] [main/INFO]: [STDOUT]:   ok  �� ���ύ��·������ routes ����ؽ�����Ҫ�����ؽ��Ǽǣ�
+[23:45:08] [main/INFO]: [STDOUT]:   ok  ��״̬���� READY
+[23:45:08] [main/INFO]: [STDOUT]:   ok  pendingRoutes() ���� READY ·�ߣ������ڲ���Ⱦ��
+[23:45:08] [main/INFO]: [STDOUT]: 
+ȫ��ͨ����20 �
+
+> Task :common:checkpointCacheRegression
+[23:45:09] [main/INFO]: RoadWeaver checkpoint ״̬�ѻ��棨�� 1 ��ʵ�ʶ��̣���active=true completed=false
+[23:45:09] [main/INFO]: RoadWeaver checkpoint ״̬�ѻ��棨�� 1 ��ʵ�ʶ��̣���active=true completed=false
+[23:45:09] [main/INFO]: RoadWeaver checkpoint ״̬�ѻ��棨�� 2 ��ʵ�ʶ��̣���active=false completed=true
+[23:45:09] [main/INFO]: RoadWeaver checkpoint ״̬�ѻ��棨�� 1 ��ʵ�ʶ��̣���active=true completed=false
+[23:45:09] [main/INFO]: RoadWeaver checkpoint ״̬�ѻ��棨�� 2 ��ʵ�ʶ��̣���active=false completed=true
+[23:45:09] [main/INFO]: RoadWeaver checkpoint ״̬�ѻ��棨�� 1 ��ʵ�ʶ��̣���active=false completed=false
+[23:45:09] [main/INFO]: RoadWeaver checkpoint ״̬�ѻ��棨�� 1 ��ʵ�ʶ��̣���active=true completed=false
+[23:45:09] [main/INFO]: RoadWeaver checkpoint ״̬�ѻ��棨�� 1 ��ʵ�ʶ��̣���active=true completed=false
+
+passed=25 failed=0
+CheckpointCacheTest: PASS
+
+> Task :common:chunkyPreheatFixRegression
+[23:45:14] [main/INFO]: [STDOUT]: [P1-2] ��ռ���ʿɶ����ںϷ�����
+[23:45:14] [main/INFO]: [STDOUT]:   ok  ռ������ (0,1] �ڣ�ʵ�� 0.0248��
+[23:45:14] [main/INFO]: [STDOUT]: [P2-1] Ѳ����֧���ٷ��� 1������ 2��
+[23:45:14] [main/INFO]: [STDOUT]:   ok  ����ֵ�Ϸ���ʵ�� 2��
+[23:45:14] [main/INFO]: [STDOUT]:   ok  ���᷵�� 0������滮ͣ�ڣ�
+[23:45:14] [main/INFO]: [STDOUT]: [P1-3] δ���б�־ʱ���Ź������κ���
+[23:45:14] [main/INFO]: RoadWeaver runtime phase=POST_CHUNKY_RECOVERY
+[23:45:14] [main/INFO]: [STDOUT]:   ok  δ���б�־ �� ������������ false��
+[23:45:14] [main/INFO]: [STDOUT]:   ok  ��־���� false
+[23:45:14] [main/INFO]: [STDOUT]: [P1-3] �����־���¼��ʼʱ��
+[23:45:14] [main/INFO]: RoadWeaver runtime phase=CHUNKY_EXCLUSIVE
+[23:45:14] [main/INFO]: [STDOUT]:   ok  ��־������
+[23:45:14] [main/INFO]: [STDOUT]:   ok  �����𣨿������ڣ�������
+[23:45:14] [main/INFO]: RoadWeaver runtime phase=POST_CHUNKY_RECOVERY
+[23:45:14] [main/INFO]: [STDOUT]:   ok  �����������
+[23:45:14] [main/INFO]: [STDOUT]: [P1-3] �������ڲ��󽵼�
+[23:45:14] [main/INFO]: RoadWeaver runtime phase=CHUNKY_EXCLUSIVE
+[23:45:14] [main/INFO]: [STDOUT]:   ok  ���� 5 �β�ѯ������������������Ч��
+[23:45:14] [main/INFO]: [STDOUT]:   ok  ��־���� true
+[23:45:14] [main/INFO]: RoadWeaver runtime phase=POST_CHUNKY_RECOVERY
+[23:45:14] [main/INFO]: [STDOUT]: [P1-3] ��־��д�Գ�
+[23:45:14] [main/INFO]: RoadWeaver runtime phase=CHUNKY_EXCLUSIVE
+[23:45:14] [main/INFO]: [STDOUT]:   ok  true �ɶ���
+[23:45:14] [main/INFO]: RoadWeaver runtime phase=POST_CHUNKY_RECOVERY
+[23:45:14] [main/INFO]: [STDOUT]:   ok  false �ɶ���
+[23:45:14] [main/INFO]: [STDOUT]: 
+ȫ��ͨ����12 �
+
+> Task :common:coarseLaneCountBoundary
+
+passed=20 failed=0
+CoarseLaneCountBoundaryTest: PASS
+
+> Task :common:connectionFallbackPolicyRegression
+ConnectionFallbackPolicyTest: PASS
+
+> Task :common:endpointLockSimulation
+endpoint lock simulation: lock=407  unfixedStart=398 (dropped 9)  fixedStart=407 (dropped 0)  maxStep=1  descendingStations=23/220
+[23:45:21] [main/INFO]: [STDOUT]: endpoint lock simulation OK
+
+> Task :common:externalPlanningRequestRegression
+
+Test run finished after 124 ms
+[         3 containers found      ]
+[         0 containers skipped    ]
+[         3 containers started    ]
+[         0 containers aborted    ]
+[         3 containers successful ]
+[         0 containers failed     ]
+[         9 tests found           ]
+[         0 tests skipped         ]
+[         9 tests started         ]
+[         0 tests aborted         ]
+[         9 tests successful      ]
+[         0 tests failed          ]
+
+
+> Task :common:gameplayCoordinatorGateGuard
+passed=15 failed=0
+GameplayCoordinatorGateGuardTest: PASS
+
+> Task :common:gameplayGpuYieldGuard
+
+passed=8 failed=0
+GameplayGpuYieldGuardTest: PASS
+
+> Task :common:ioDegradedReadOnlyChainRegression
+IoDegradedReadOnlyChainTest: PASS
+
+> Task :common:ioNotCorruptionRegression
+IoNotCorruptionTest: PASS
+
+> Task :common:parallelCorridorHeadingTest
+[23:45:30] [main/INFO]: RoadWeaver junction+connect primary=-4083151913489216250 secondary=-6093022499093397310 junction=(428,0,428,6) idx=214/214 roadY=64->64 delta=0 side=start
+[23:45:30] [main/INFO]: RoadWeaver direct junction primary=-4083151913489216250 secondary=-6093022499093397310 mode=spatial owner=none side=start segments=216->16 cutIndex=214 anchorSegments=10
+[23:45:30] [main/INFO]: RoadWeaver junction+connect primary=-4083151913489216250 secondary=-6093022499093397310 junction=(2,0,2,6) idx=1/1 roadY=64->64 delta=0 side=end
+[23:45:30] [main/INFO]: RoadWeaver direct junction primary=-4083151913489216250 secondary=-6093022499093397310 mode=spatial owner=none side=end segments=216->16 cutIndex=1 anchorSegments=10
+[23:45:30] [main/INFO]: RoadWeaver joined nearby middle corridor primary=-4083151913489216250 secondary=-6093022499093397310 secondaryRun=13..202 primaryRun=13..202 segments=228
+[23:45:30] [main/INFO]: RoadWeaver selected snap candidate mode=endpoint-corridor primary=-4083151913489216250 secondary=-6093022499093397310 constructionLength=430.0 -> 12.0 reuseStations=216 segments=216->228
+[23:45:30] [main/INFO]: RoadWeaver removed duplicate junction span records owners=43 -> 44 removed=3
+[23:45:30] [main/INFO]: RoadWeaver junction+connect primary=-4083151913489216250 secondary=-6093022499093397310 junction=(430,0,430,2) idx=215/223 roadY=64->64 delta=0 side=start
+[23:45:30] [main/INFO]: RoadWeaver direct junction primary=-4083151913489216250 secondary=-6093022499093397310 mode=spatial owner=none side=start segments=228->16 cutIndex=223 anchorSegments=10
+[23:45:30] [main/INFO]: RoadWeaver junction+connect primary=-4083151913489216250 secondary=-6093022499093397310 junction=(430,0,430,4) idx=215/225 roadY=64->64 delta=0 side=end
+[23:45:30] [main/INFO]: RoadWeaver removed duplicate junction span records owners=43 -> 44 removed=1
+[23:45:30] [main/INFO]: RoadWeaver selected snap candidate mode=endpoint-corridor primary=-4083151913489216250 secondary=-6093022499093397310 constructionLength=12.0 -> 12.0 reuseStations=216 segments=228->228
+[23:45:30] [main/INFO]: RoadWeaver removed duplicate junction span records owners=43 -> 44 removed=3
+control: straight merged=ok reused=216
+[23:45:30] [main/INFO]: RoadWeaver junction+connect primary=-6122814733094912830 secondary=495017841686466694 junction=(344,215,339,217) idx=214/214 roadY=64->64 delta=0 side=start
+[23:45:30] [main/INFO]: RoadWeaver direct junction primary=-6122814733094912830 secondary=495017841686466694 mode=spatial owner=none side=start segments=216->14 cutIndex=214 anchorSegments=10
+[23:45:30] [main/INFO]: RoadWeaver junction+connect primary=-6122814733094912830 secondary=495017841686466694 junction=(2,0,2,6) idx=1/1 roadY=64->64 delta=0 side=end
+[23:45:30] [main/INFO]: RoadWeaver direct junction primary=-6122814733094912830 secondary=495017841686466694 mode=spatial owner=none side=end segments=216->16 cutIndex=1 anchorSegments=10
+[23:45:30] [main/INFO]: RoadWeaver joined nearby middle corridor primary=-6122814733094912830 secondary=495017841686466694 secondaryRun=13..202 primaryRun=13..202 segments=227
+[23:45:30] [main/INFO]: RoadWeaver selected snap candidate mode=endpoint-corridor primary=-6122814733094912830 secondary=495017841686466694 constructionLength=432.4192231242286 -> 11.828427124746192 reuseStations=216 segments=216->227
+[23:45:30] [main/INFO]: RoadWeaver removed duplicate junction span records owners=13 -> 14 removed=3
+[23:45:30] [main/INFO]: RoadWeaver junction+connect primary=-6122814733094912830 secondary=495017841686466694 junction=(345,217,343,218) idx=215/223 roadY=64->64 delta=0 side=start
+[23:45:30] [main/INFO]: RoadWeaver direct junction primary=-6122814733094912830 secondary=495017841686466694 mode=spatial owner=none side=start segments=227->15 cutIndex=223 anchorSegments=10
+[23:45:30] [main/INFO]: RoadWeaver junction+connect primary=-6122814733094912830 secondary=495017841686466694 junction=(344,215,342,218) idx=214/224 roadY=64->64 delta=0 side=end
+[23:45:30] [main/INFO]: RoadWeaver direct junction primary=-6122814733094912830 secondary=495017841686466694 mode=spatial owner=none side=end segments=227->236 cutIndex=224 anchorSegments=10
+[23:45:30] [main/INFO]: RoadWeaver removed duplicate junction span records owners=13 -> 14 removed=1
+[23:45:30] [main/INFO]: RoadWeaver selected snap candidate mode=spatial-end primary=-6122814733094912830 secondary=495017841686466694 constructionLength=11.828427124746192 -> 11.828427124746192 reuseStations=226 segments=227->236
+[23:45:30] [main/INFO]: RoadWeaver trimmed secondary tail at junction primary=-6122814733094912830 secondary=495017841686466694 junction=(344,215) segments=236 -> 227
+[23:45:30] [main/INFO]: RoadWeaver removed duplicate junction span records owners=13 -> 14 removed=3
+[23:45:30] [main/INFO]: RoadWeaver extended shared corridor primary=-6122814733094912830 secondary=495017841686466694 window=2 reuseStations=216 -> 221 constructionLength=11.828427124746192 -> 6.0
+[23:45:30] [main/INFO]: RoadWeaver junction+connect primary=-6122814733094912830 secondary=495017841686466694 junction=(0,0,0,3) idx=0/3 roadY=64->64 delta=0 side=start
+[23:45:30] [main/INFO]: RoadWeaver parallel corridor rejected reason=not-parallel-samples primary=-6122814733094912830 secondary=-8720906136667930234 secondaryRange=160..176 primaryRange=182..193 votes=0/9 worstDot=0.519 checked=17
+[23:45:30] [main/INFO]: RoadWeaver parallel corridor rejected reason=not-parallel primary=-6122814733094912830 secondary=-8720906136667930234 secondaryRange=160..176 primaryRange=182..193
+[23:45:30] [main/INFO]: RoadWeaver joined nearby middle corridor primary=-6122814733094912830 secondary=-8720906136667930234 secondaryRun=160..178 primaryRun=182..192 segments=230
+[23:45:30] [main/INFO]: RoadWeaver selected snap candidate mode=two-approaches primary=-6122814733094912830 secondary=-8720906136667930234 constructionLength=442.71293361082445 -> 435.39388439616954 reuseStations=11 segments=216->230
+[23:45:30] [main/INFO]: RoadWeaver parallel corridor rejected reason=not-parallel-samples primary=-6122814733094912830 secondary=-8720906136667930234 secondaryRange=160..190 primaryRange=182..194 votes=6/16 worstDot=0.051 checked=31
+[23:45:30] [main/INFO]: RoadWeaver parallel corridor rejected reason=not-parallel primary=-6122814733094912830 secondary=-8720906136667930234 secondaryRange=160..190 primaryRange=182..194
+[23:45:30] [main/INFO]: RoadWeaver joined nearby middle corridor primary=-6122814733094912830 secondary=-8720906136667930234 secondaryRun=160..192 primaryRun=182..192 segments=230
+[23:45:30] [main/INFO]: RoadWeaver removed duplicate junction span records owners=21 -> 22 removed=6
+[23:45:30] [main/INFO]: RoadWeaver selected snap candidate mode=two-approaches primary=-6122814733094912830 secondary=-8720906136667930234 constructionLength=435.39388439616954 -> 435.39388439616954 reuseStations=11 segments=230->230
+[23:45:30] [main/INFO]: RoadWeaver removed duplicate junction span records owners=21 -> 22 removed=3
+parallel corridor heading test: stations=216  reusedStations=221  crossingReused=11  distantReused=0
+[23:45:30] [main/INFO]: [STDOUT]: parallel corridor heading test OK
+
+> Task :common:parallelCorridorReuseAudit
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=3093109245259484098 junction=(156,0,156,8) idx=78/78 roadY=64->64 delta=0 side=start
+[23:45:35] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=3093109245259484098 mode=spatial owner=none side=start segments=80->18 cutIndex=78 anchorSegments=10
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=3093109245259484098 junction=(2,0,2,8) idx=1/1 roadY=64->64 delta=0 side=end
+[23:45:35] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=3093109245259484098 mode=spatial owner=none side=end segments=80->18 cutIndex=1 anchorSegments=10
+[23:45:35] [main/INFO]: RoadWeaver joined nearby middle corridor primary=5102979830863665158 secondary=3093109245259484098 secondaryRun=13..66 primaryRun=13..66 segments=96
+[23:45:35] [main/INFO]: RoadWeaver selected snap candidate mode=endpoint-corridor primary=5102979830863665158 secondary=3093109245259484098 constructionLength=158.0 -> 16.0 reuseStations=80 segments=80->96
+[23:45:35] [main/INFO]: RoadWeaver removed duplicate junction span records owners=3 -> 4 removed=3
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=3093109245259484098 junction=(158,0,158,2) idx=79/89 roadY=64->64 delta=0 side=start
+[23:45:35] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=3093109245259484098 mode=spatial owner=none side=start segments=96->18 cutIndex=89 anchorSegments=10
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=3093109245259484098 junction=(158,0,158,6) idx=79/93 roadY=64->64 delta=0 side=end
+[23:45:35] [main/INFO]: RoadWeaver removed duplicate junction span records owners=3 -> 4 removed=1
+[23:45:35] [main/INFO]: RoadWeaver selected snap candidate mode=endpoint-corridor primary=5102979830863665158 secondary=3093109245259484098 constructionLength=16.0 -> 16.0 reuseStations=80 segments=96->96
+[23:45:35] [main/INFO]: RoadWeaver removed duplicate junction span records owners=3 -> 4 removed=3
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-8735802253668687994 junction=(156,0,156,12) idx=78/78 roadY=64->64 delta=0 side=start
+[23:45:35] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-8735802253668687994 mode=spatial owner=none side=start segments=80->22 cutIndex=78 anchorSegments=10
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-8735802253668687994 junction=(2,0,2,12) idx=1/1 roadY=64->64 delta=0 side=end
+[23:45:35] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-8735802253668687994 mode=spatial owner=none side=end segments=80->22 cutIndex=1 anchorSegments=10
+[23:45:35] [main/INFO]: RoadWeaver joined nearby middle corridor primary=5102979830863665158 secondary=-8735802253668687994 secondaryRun=13..66 primaryRun=13..66 segments=104
+[23:45:35] [main/INFO]: RoadWeaver selected snap candidate mode=endpoint-corridor primary=5102979830863665158 secondary=-8735802253668687994 constructionLength=158.0 -> 24.0 reuseStations=80 segments=80->104
+[23:45:35] [main/INFO]: RoadWeaver removed duplicate junction span records owners=5 -> 6 removed=3
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-8735802253668687994 junction=(158,0,158,2) idx=79/93 roadY=64->64 delta=0 side=start
+[23:45:35] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-8735802253668687994 mode=spatial owner=none side=start segments=104->22 cutIndex=93 anchorSegments=10
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-8735802253668687994 junction=(158,0,158,10) idx=79/101 roadY=64->64 delta=0 side=end
+[23:45:35] [main/INFO]: RoadWeaver removed duplicate junction span records owners=5 -> 6 removed=1
+[23:45:35] [main/INFO]: RoadWeaver selected snap candidate mode=endpoint-corridor primary=5102979830863665158 secondary=-8735802253668687994 constructionLength=24.0 -> 24.0 reuseStations=80 segments=104->104
+[23:45:35] [main/INFO]: RoadWeaver removed duplicate junction span records owners=5 -> 6 removed=3
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-4112944147490731770 junction=(156,0,156,8) idx=78/78 roadY=64->64 delta=0 side=start
+[23:45:35] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-4112944147490731770 mode=spatial owner=none side=start segments=80->18 cutIndex=78 anchorSegments=10
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-4112944147490731770 junction=(2,0,2,8) idx=1/1 roadY=64->64 delta=0 side=end
+[23:45:35] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-4112944147490731770 mode=spatial owner=none side=end segments=80->18 cutIndex=1 anchorSegments=10
+[23:45:35] [main/INFO]: RoadWeaver joined nearby middle corridor primary=5102979830863665158 secondary=-4112944147490731770 secondaryRun=13..66 primaryRun=13..66 segments=96
+[23:45:35] [main/INFO]: RoadWeaver selected snap candidate mode=endpoint-corridor primary=5102979830863665158 secondary=-4112944147490731770 constructionLength=158.0 -> 16.0 reuseStations=80 segments=80->96
+[23:45:35] [main/INFO]: RoadWeaver removed duplicate junction span records owners=9 -> 10 removed=1
+[23:45:35] [main/INFO]: RoadWeaver removed duplicate junction span records owners=9 -> 10 removed=3
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-4112944147490731770 junction=(158,0,158,2) idx=79/89 roadY=64->64 delta=0 side=start
+[23:45:35] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-4112944147490731770 mode=spatial owner=none side=start segments=96->18 cutIndex=89 anchorSegments=10
+[23:45:35] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-4112944147490731770 junction=(158,0,158,6) idx=79/93 roadY=64->64 delta=0 side=end
+[23:45:35] [main/INFO]: RoadWeaver removed duplicate junction span records owners=9 -> 10 removed=1
+[23:45:35] [main/INFO]: RoadWeaver selected snap candidate mode=endpoint-corridor primary=5102979830863665158 secondary=-4112944147490731770 constructionLength=16.0 -> 16.0 reuseStations=80 segments=96->96
+[23:45:35] [main/INFO]: RoadWeaver removed duplicate junction span records owners=9 -> 10 removed=4
+[23:45:35] [main/INFO]: [STDOUT]: ParallelCorridorReuseAuditTest: PASS
+
+> Task :common:plannedReuseMatch
+planned reuse match: near=120  displaced(24 blocks)=120  far=0  underpass=0  (stations=120)
+[23:45:41] [main/INFO]: [STDOUT]: planned reuse match test OK
+
+> Task :common:playerRoutePendingCountRegression
+[23:45:46] [main/INFO]: [STDOUT]: PlayerRoutePendingCountTest: PASS
+
+> Task :common:preflightExemptionGuard
+
+[23:45:51] [main/INFO]: [STDOUT]: passed=17 failed=0
+[23:45:51] [main/INFO]: [STDOUT]: PreflightExemptionGuardTest: PASS
+
+> Task :common:roadAsyncRegression
+
+Test run finished after 5305 ms
+[         3 containers found      ]
+[         0 containers skipped    ]
+[         3 containers started    ]
+[         0 containers aborted    ]
+[         3 containers successful ]
+[         0 containers failed     ]
+[        35 tests found           ]
+[         0 tests skipped         ]
+[        35 tests started         ]
+[         0 tests aborted         ]
+[        35 tests successful      ]
+[         0 tests failed          ]
+
+
+> Task :common:roadConstructionSafetyPolicy
+RoadConstructionSafetyPolicyTest: PASS
+
+> Task :common:roadDataValidatorRegression
+[23:46:03] [main/INFO]: [STDOUT]: RoadDataValidatorTest: PASS
+
+> Task :common:roadJUnitRegressionSuite
+[23:46:05] [main/INFO]: RoadWeaver accurate grade profile: stations=60 changed=10 cutStations=7 fillStations=3 step2=1
+[23:46:05] [RW-PlannedPathWriter/WARN]: �־û�������·��ʧ�� dimension=null key=PlannedPathKey[first=Endpoint[x=2000, y=64, z=0], second=Endpoint[x=2100, y=64, z=400]]
+java.io.IOException: regression: deliberate persistence failure
+	at net.shiroha233.roadweaver.planning.path.PlannedPathCacheBatchWriteTest$RecordingStore.save(PlannedPathCacheBatchWriteTest.java:64) ~[test/:?]
+	at net.shiroha233.roadweaver.planning.path.PlannedPathCache.lambda$submitPersistence$0(PlannedPathCache.java:91) ~[main/:?]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[?:?]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[?:?]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+[23:46:10] [main/WARN]: RoadWeaver kept secondary tail: trimming would leave too few segments primary=2692133974186979968 secondary=2268523920696937236 junction=1 segments=6
+[23:46:10] [main/INFO]: RoadWeaver trimmed secondary tail at junction primary=2692133974186979968 secondary=7370661777538794126 junction=(8,0) segments=19 -> 17
+[23:46:10] [main/INFO]: RoadWeaver protected-gap approaches smoothed gaps=1 heightSteps=0 -> 0
+[23:46:10] [main/WARN]: RoadWeaver protected-gap smoothing could not flatten every gap (descent does not fit the ramp window); keeping the original profile heightSteps=0 -> affectedSteps=1
+[23:46:10] [main/INFO]: RoadWeaver unknown endpoint height chosen=64 structureSurfaceY=64 approachBaseY=104 lowestBase=104 window=48
+[23:46:10] [main/INFO]: RoadWeaver unknown endpoint height chosen=64 structureSurfaceY=64 approachBaseY=88 lowestBase=88 window=48
+[23:46:10] [main/INFO]: RoadWeaver unknown endpoint height chosen=64 structureSurfaceY=64 approachBaseY=64 lowestBase=64 window=48
+[23:46:10] [main/INFO]: RoadWeaver unknown endpoint height chosen=64 structureSurfaceY=64 approachBaseY=88 lowestBase=64 window=48
+[23:46:10] [main/INFO]: RoadWeaver extended secondary reuse past junction primary=3692736815352581779 secondary=-8516902711864651720 run=9..17 runs=1 from=(102,-11) to=(102,-3) reuseStations=8 -> 17
+[23:46:10] [main/INFO]: RoadWeaver created secondary reuse for shared corridor primary=3692736815352581779 secondary=-8516902711864651720 run=0..17 from=(100,-20) to=(102,-3) reuseStations=0 -> 18
+[23:46:10] [main/INFO]: RoadWeaver GPU memory probe: layer=PDH_LIVE total=32768 MiB used=1282 MiB free=31485 MiB fraction=1.00 budget=4096 MiB
+[23:46:10] [main/INFO]: RoadWeaver GPU memory probe: layer=PDH_LIVE total=8192 MiB used=1282 MiB free=6909 MiB fraction=1.00 budget=6909 MiB
+[23:46:10] [main/INFO]: [STDOUT]: RoadJUnitRegressionSuite: PASS tests=115
+
+> Task :common:roadTopologyWaterSimulation
+[23:46:15] [main/WARN]: RoadWeaver water validation failed road=1->2 segment=2 station=2,0 pos=BlockPos{x=2, y=64, z=0} reason=ordinary_construction_in_water targetY=64 waterSurfaceY=65 bedY=60 source=simulation span=ordinary
+[23:46:15] [main/INFO]: [STDOUT]: RoadTopologyWaterSimulationTest: PASS
+
+> Task :common:roadWholeFlowSimulation
+[23:46:21] [main/INFO]: RoadWeaver junction+connect primary=7222316955826190250 secondary=1812447911218174868 junction=(-10,0,0,0) idx=2/12 roadY=67->57 delta=10 side=end
+[23:46:21] [main/INFO]: RoadWeaver junction+connect primary=7222316955826190250 secondary=1812447911218174868 junction=(-2,0,0,-3) idx=10/9 roadY=67->57 delta=10 side=start
+[23:46:21] [main/INFO]: RoadWeaver junction+connect primary=7222316955826190250 secondary=1812447911218174868 junction=(-1,0,0,0) idx=11/12 roadY=67->57 delta=10 side=end
+[23:46:21] [main/INFO]: RoadWeaver direct junction primary=7222316955826190250 secondary=1812447911218174868 mode=spatial owner=none side=end segments=13->24 cutIndex=12 anchorSegments=12
+[23:46:21] [main/INFO]: RoadWeaver selected snap candidate mode=spatial-end primary=7222316955826190250 secondary=1812447911218174868 constructionLength=12.0 -> 12.414213562373096 reuseStations=12 segments=13->24
+[23:46:21] [main/INFO]: RoadWeaver junction+connect primary=7222316955826190250 secondary=1812447911218174868 junction=(-10,0,-1,0) idx=2/12 roadY=67->57 delta=10 side=end
+[23:46:21] [main/INFO]: RoadWeaver junction+connect primary=7222316955826190250 secondary=1812447911218174868 junction=(-2,0,0,-3) idx=10/9 roadY=67->57 delta=10 side=start
+[23:46:21] [main/INFO]: RoadWeaver junction+connect primary=7222316955826190250 secondary=1812447911218174868 junction=(-10,0,-1,0) idx=2/12 roadY=67->57 delta=10 side=end
+[23:46:21] [main/INFO]: RoadWeaver parallel corridor rejected reason=corridor-boundary primary=7222316955826190250 secondary=1812447911218174868 secondaryRange=12..23 primaryRange=22..23
+[23:46:21] [main/INFO]: RoadWeaver unified primary junction height owners=101 -> 202 pos=(-1,0) index=11 grade=57
+[23:46:21] [main/WARN]: RoadWeaver water validation failed road=1->2 segment=2 station=2,0 pos=BlockPos{x=2, y=64, z=0} reason=ordinary_construction_in_water targetY=64 waterSurfaceY=65 bedY=60 source=simulation span=ordinary
+[23:46:21] [main/WARN]: RoadWeaver water validation failed road=1->2 segment=2 station=2,0 pos=BlockPos{x=2, y=64, z=0} reason=ordinary_construction_in_water targetY=64 waterSurfaceY=65 bedY=60 source=simulation span=ordinary
+[23:46:21] [main/WARN]: RoadWeaver water validation failed road=1->2 segment=5 station=5,0 pos=BlockPos{x=5, y=64, z=0} reason=ordinary_construction_in_water targetY=64 waterSurfaceY=65 bedY=60 source=simulation span=ordinary
+[23:46:21] [main/INFO]: [STDOUT]: RoadWholeFlowSimulationTest: PASS
+
+> Task :common:routeAuditRound3Regression
+[23:46:26] [main/INFO]: [STDOUT]: [A-1] Catmull-Rom p3��ƽ�������Ƿ���ڡ���Ⱦ������������
+[23:46:26] [main/INFO]: [STDOUT]:   ..   ��������ȷ p3���е� �� (112.5,50.0)��ʵ������Ĳ����� (113,50)��ƫ�� 0.5 ��
+[23:46:26] [main/INFO]: [STDOUT]:   ok   ʩ���õ�ƽ������Ӧ����Ⱦ����������ȷ p3��һ�£�ʵ��ƫ�� 0.5 �� ���� ����������������������������ÿ�����Ƶ㴦���۽�
+[23:46:26] [main/INFO]: [STDOUT]: [A-2] �����ͣ�ƽ����������㣩��ӳ����������㣩�����Ƿ�һ��
+[23:46:26] [main/INFO]: [STDOUT]:   ..   ƽ�������� 51 �㣬ȫ�� Y=80? true
+[23:46:26] [main/INFO]: [STDOUT]:   ok   ƽ���������ε� BRIDGE��Y �������ֵ 80��
+[23:46:26] [main/INFO]: [STDOUT]:   ..   ʩ������ 11 �� �� BRIDGE 11 �����׸��� BRIDGE ���±� -1
+[23:46:26] [main/INFO]: [STDOUT]:   ok   ���Σ�0..100����Ӧ����Ϊ BRIDGE��ʵ��ֻ�� 11/11 �� ���� ��ֵ��Ϊ���ű��ضϳɵ���·���ĸ�������
+[23:46:26] [main/INFO]: [STDOUT]: [A-3] �պϻ�·�����һ���ܷ�ȡ��ƽ����·��
+[23:46:26] [main/INFO]: [STDOUT]:   ..   ���һ��ȡ�� 65 ��·���㣨ֱ�߻���ʱΪ 2��
+[23:46:26] [main/INFO]: [STDOUT]:   ok   �պϻ�·�����һ��Ӧȡ��ƽ����·����>2 �㣩��ʵ�� 65 ���� ���� 2 ˵���˻�������ֱ�ߣ�ת�Ǳ��е�
+[23:46:26] [main/INFO]: [STDOUT]: [A-4] �˻����룺�����غ�
+[23:46:26] [main/INFO]: [STDOUT]:   ..   �����غ� �� ƽ����� 1 ����
+[23:46:26] [main/INFO]: [STDOUT]:   ok   isDrawable() �ԡ������غϡ����� true������ submitForBuild ������ߣ�
+[23:46:26] [main/INFO]: [STDOUT]:   ok   �����غϵ�ƽ�����Ӧ < 2��������ע��ƻ�����ʵ�� 1
+[23:46:26] [main/INFO]: [STDOUT]: [A-5] ���β����ܶ�
+[23:46:26] [main/INFO]: [STDOUT]:   ..   500 ��� �� ���� 65 �㣬��� 4~10 �񣨲����ȣ�
+[23:46:26] [main/INFO]: [STDOUT]:   ok   ���β������Ӧ <= 16 ��ƽ�����߲Ų����������ߣ���ʵ�� 10
+
+[23:46:26] [main/INFO]: [STDOUT]: ȫ��ͨ����7 �
+
+> Task :common:routeBuildProgressRegression
+[23:46:31] [main/INFO]: [STDOUT]: [1] δ�ύ
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ���� 0
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �����ѽ��㣨û�ύ����
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �������
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �İ���ȷ����δ�ύʩ��
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ���� 0
+[23:46:31] [main/INFO]: [STDOUT]: [2] ȫ������
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �ѽ���
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �����
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ���� 100%
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �İ���? ����� 5 ��
+[23:46:31] [main/INFO]: [STDOUT]: [3] ʩ����
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ��û���㣨�����Ŷ�/�ڽ���
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ��; 6���Ŷ�4+�ڽ�2��
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �İ���ʩ���� 4/10���Ŷ� 4���ڽ� 2��
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ���� 40%
+[23:46:31] [main/INFO]: [STDOUT]: [4] ȫ��ʧ��
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �ѽ���
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ������ɣ���ʧ�ܣ�
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �İ���? ȫ��ʧ�ܣ�3 �Σ�
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ���� 100%�����Թ��ˣ�
+[23:46:31] [main/INFO]: [STDOUT]: [5] ���ֳɹ�����ʧ��
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �ѽ���
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �������
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �İ����������? ��� 4 �Σ�ʧ�� 2 ��
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �İ���ʧ������? ��� 4 �Σ�ʧ�� 2 ��
+[23:46:31] [main/INFO]: [STDOUT]: [6] �����Ƴ����ѽ��㣨�����ѱ����·��ͨ��
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �ѽ���
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ����ɣ����಻����ʧ�ܣ�
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ���� 100%
+[23:46:31] [main/INFO]: [STDOUT]:   ok  �İ���? ����� 5 ��
+[23:46:31] [main/INFO]: [STDOUT]: [7] ���Ȳ����� 100%
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ������ 1.0 ���ڣ�ʵ�� 1.0��
+[23:46:31] [main/INFO]: [STDOUT]:   ok  ��Ϊ��
+[23:46:31] [main/INFO]: [STDOUT]: 
+ȫ��ͨ����27 �
+
+> Task :common:routeCodecRegression
+[23:46:36] [main/INFO]: [STDOUT]: [1] ��·������
+[23:46:36] [main/INFO]: [STDOUT]:   ok  UUID ���ֲ���
+[23:46:36] [main/INFO]: [STDOUT]:   ok  ���ֱ���
+[23:46:36] [main/INFO]: [STDOUT]:   ok  ������Ϊ 0
+[23:46:36] [main/INFO]: [STDOUT]:   ok  ״̬��Ϊ DRAFT
+[23:46:36] [main/INFO]: [STDOUT]: [2] ����·��������4 �� 3 �Σ�
+[23:46:36] [main/INFO]: [STDOUT]:   ok  ���� 4
+[23:46:36] [main/INFO]: [STDOUT]:   ok  ���� 3
+[23:46:36] [main/INFO]: [STDOUT]:   ok  �������һ��
+[23:46:36] [main/INFO]: [STDOUT]:   ok  �յ�����һ��
+[23:46:36] [main/INFO]: [STDOUT]:   ok  ������������
+[23:46:36] [main/INFO]: [STDOUT]:   ok  �� 0 ������һ�� BlockPos{x=100, y=64, z=-200}
+[23:46:36] [main/INFO]: [STDOUT]:   ok  �� 1 ������һ�� BlockPos{x=120, y=70, z=-200}
+[23:46:36] [main/INFO]: [STDOUT]:   ok  �� 2 ������һ�� BlockPos{x=140, y=68, z=-180}
+[23:46:36] [main/INFO]: [STDOUT]:   ok  �� 3 ������һ�� BlockPos{x=160, y=64, z=-160}
+[23:46:36] [main/INFO]: [STDOUT]:   ok  �� 0 ������һ�� ROAD
+[23:46:36] [main/INFO]: [STDOUT]:   ok  �� 1 ������һ�� BRIDGE
+[23:46:36] [main/INFO]: [STDOUT]:   ok  �� 2 ������һ�� BRIDGE
+[23:46:36] [main/INFO]: [STDOUT]: [3] �������͸�������
+[23:46:36] [main/INFO]: [STDOUT]:   ok  ROAD ��������
+[23:46:36] [main/INFO]: [STDOUT]:   ok  ROAD ���л����ȶ���road��
+[23:46:36] [main/INFO]: [STDOUT]:   ok  BRIDGE ��������
+[23:46:36] [main/INFO]: [STDOUT]:   ok  BRIDGE ���л����ȶ���bridge��
+[23:46:36] [main/INFO]: [STDOUT]:   ok  TUNNEL ��������
+[23:46:36] [main/INFO]: [STDOUT]:   ok  TUNNEL ���л����ȶ���tunnel��
+[23:46:36] [main/INFO]: [STDOUT]: [4] ״̬����
+[23:46:36] [main/INFO]: [STDOUT]:   ok  DRAFT ״̬����
+[23:46:36] [main/INFO]: [STDOUT]:   ok  READY ״̬����
+[23:46:36] [main/INFO]: [STDOUT]:   ok  BUILDING ״̬����
+[23:46:36] [main/INFO]: [STDOUT]:   ok  DONE ״̬����
+[23:46:36] [main/INFO]: [STDOUT]:   ok  CANCELLED ״̬����
+[23:46:36] [main/INFO]: [STDOUT]: [5] ���߶ȣ������������뼫������
+[23:46:36] [main/INFO]: [STDOUT]:   ok  �� Y ����
+[23:46:36] [main/INFO]: [STDOUT]:   ok  ������������
+[23:46:36] [main/INFO]: [STDOUT]: 
+ȫ��ͨ����29 �
+
+> Task :common:routePreloadCallSiteGuard
+RoutePreloadCallSiteGuardTest: PASS (????? 1 ??????��?? `road() != null` ?????)
+
+> Task :common:routePreloadFallbackGuard
+[23:46:41] [main/INFO]: [STDOUT]: RoutePreloadFallbackGuardTest: PASS
+
+> Task :common:routePreloadTimingRegression
+[23:46:46] [main/INFO]: [STDOUT]: RoutePreloadTimingTest: PASS
+
+> Task :common:routeRoadDataPatcherRegression
+[23:46:51] [main/INFO]: [STDOUT]: [1] �Ÿ߶ȸ��ǹ�������ֵ
+[23:46:51] [main/INFO]: [STDOUT]:   ok  ��������ʵ��
+[23:46:51] [main/INFO]: [STDOUT]:   ok  targetY ȫ��Ϊ ~80��ʵ�� [80, 80, 80, 80, 80]��
+[23:46:51] [main/INFO]: [STDOUT]: [2] �����߶ȸ��ǹ�������ֵ
+[23:46:51] [main/INFO]: [STDOUT]:   ok  targetY ȫ��Ϊ 55��ʵ�� [55, 55, 55, 55, 55]��
+[23:46:51] [main/INFO]: [STDOUT]: [3] ·�����������ظ߶�
+[23:46:51] [main/INFO]: [STDOUT]:   ok  targetY ȫ������ 63��ʵ�� [63, 63, 63, 63, 63]��
+[23:46:51] [main/INFO]: [STDOUT]: [4] �Ŷ����� BRIDGE span
+[23:46:51] [main/INFO]: [STDOUT]:   ok  ���� BRIDGE span��ʵ�� 1 ����
+[23:46:51] [main/INFO]: [STDOUT]: [5] ����������϶��������
+[23:46:51] [main/INFO]: [STDOUT]:   ok  PROTECTED_GAP ������
+[23:46:51] [main/INFO]: [STDOUT]: [6] ��ˮ���Ű���ȫ���ȱ���
+[23:46:51] [main/INFO]: [STDOUT]:   ok  ROAD_CROSSING ������
+[23:46:51] [main/INFO]: [STDOUT]: [8] ���Ų����¶�����ѹƽ���� B��
+[23:46:51] [main/INFO]: [STDOUT]:   ok  patch �����˽��
+[23:46:51] [main/INFO]: [STDOUT]:   ok  �����ֵ���뱣ס���ֵ 68��ʵ�� max=68������=[64, 65, 66, 67, 68, 67, 66, 65, 64]��
+[23:46:51] [main/INFO]: [STDOUT]:   ok  ����������������ÿվ |��Y| �� 1������=[64, 65, 66, 67, 68, 67, 66, 65, 64]��
+[23:46:51] [main/INFO]: [STDOUT]: [9] ��·���治�� B Ӱ�죨���߼�飩
+[23:46:51] [main/INFO]: [STDOUT]:   ok  ��·���������Ϸ�������=[64, 64, 64, 64, 64, 64, 64]��
+[23:46:51] [main/INFO]: [STDOUT]: [7] �߽粻ը
+[23:46:51] [main/INFO]: [STDOUT]:   ok  ȫ null ���� null
+[23:46:51] [main/INFO]: [STDOUT]:   ok  ��·�߷���ԭ����
+[23:46:51] [main/INFO]: [STDOUT]:   ok  ��·�߷���ԭ����
+[23:46:51] [main/INFO]: [STDOUT]: 
+ȫ��ͨ����14 �
+
+> Task :common:routeSegmentMapperRegression
+[23:46:56] [main/INFO]: [STDOUT]: [1] ·���߶Ȳ�����Ҿ���
+[23:46:56] [main/INFO]: [STDOUT]:   ok  ��� 2 ��
+[23:46:56] [main/INFO]: [STDOUT]:   ok  ������·
+[23:46:56] [main/INFO]: [STDOUT]:   ok  ���Ϊ���߶Ȳ�������ҡ�
+[23:46:56] [main/INFO]: [STDOUT]: [2] �ţ��߶ȱ������ֵ
+[23:46:56] [main/INFO]: [STDOUT]:   ok  ��������
+[23:46:56] [main/INFO]: [STDOUT]:   ok  ���Ϊ���߶�������ҡ�
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �Ÿ߱����� ~80��û�б����� 64 ����
+[23:46:56] [main/INFO]: [STDOUT]: [3] �������߶ȱ������ֵ����ǳ������
+[23:46:56] [main/INFO]: [STDOUT]:   ok  ����������
+[23:46:56] [main/INFO]: [STDOUT]:   ok  ���Ϊ���߶�������ҡ�
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �����߱����� 55��û�б����� 64 ����
+[23:46:56] [main/INFO]: [STDOUT]: [4] �Ÿ߶��ؿ��Ƶ��ֵ
+[23:46:56] [main/INFO]: [STDOUT]:   ok  ���Լ 70��ʵ�� 70��
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �յ�Լ 90��ʵ�� 90��
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �е��������֮�䣨ʵ�� 80��
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �е�Լ 80��ʵ�� 80��
+[23:46:56] [main/INFO]: [STDOUT]: [5] ���·�ߣ��������Ͱ�������Ƶ��ж�
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �� 0 ����·
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �� 1 ������
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �� 2 ��������
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �� 3 ��Ҳ������
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �Ŷθ��ڵ��棨ʵ�� 75��
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �����ε��ڵ��棨ʵ�� 55��
+[23:46:56] [main/INFO]: [STDOUT]: [6] ������߽�
+[23:46:56] [main/INFO]: [STDOUT]:   ok  ȫ null ���ؿձ�
+[23:46:56] [main/INFO]: [STDOUT]:   ok  �ձ����ؿձ�
+[23:46:56] [main/INFO]: [STDOUT]:   ok  ��·����ʱ���ܸ��� 1 ��
+[23:46:56] [main/INFO]: [STDOUT]:   ok  Ĭ��������·
+[23:46:56] [main/INFO]: [STDOUT]: 
+ȫ��ͨ����23 �
+
+> Task :common:routeSmootherRegression
+[23:47:01] [main/INFO]: [STDOUT]: [1] ���㹲�� �� ƽ��������ֱ��
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ������·����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ȫ������ z=0 �ϣ����߲��������ۣ�
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ����ǵ�һ�����Ƶ�
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �յ������һ�����Ƶ�
+[23:47:01] [main/INFO]: [STDOUT]: [2] ֱ�ǹ��� �� ���ֲ���ԭ�����ϵ��м��
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ���ֹս��ڲ�Ĺ��ɵ㣨������Ч��
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ��㱣��
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �յ㱣��
+[23:47:01] [main/INFO]: [STDOUT]: [3] ·�����л� �� �Ŷβ�Խ���л���
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �����л��������·����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �Ŷθ߶Ȳ���·�������߼���Ⱦ
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ������ʱ�л�������
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ·�ε� Y ȡ����߶ȣ�50��
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �Ŷβ��ܵ���߶�Ӱ��
+[23:47:01] [main/INFO]: [STDOUT]: [4] �����˲�ͬ�� �� �м����Թ���
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ���е� Y �� 70~80 ֮�䣨���Բ�ֵ��Խ�磩
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ��������������
+[23:47:01] [main/INFO]: [STDOUT]: [5] · �� ȡ���θ߶�
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ·�� Y ȫ�����Ե��β��������Կ��Ƶ��ϵ� 999
+[23:47:01] [main/INFO]: [STDOUT]: [6] ����ջ
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ���Գ���
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ����һ���ص� 1 ����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �ٳ����ص� 0 ����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  û�и���ɳ���
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ��������
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �����ص� 1 ����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ջ������� 2
+[23:47:01] [main/INFO]: [STDOUT]: [7] ��ɾ���� kind ����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ����� 3 ����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �����̳�ǰһ��� kind��·��
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ԭ��˳�򲻱䣬�Ŷ�����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ɾ���� 2 ����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ɾ�����е�
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �� 0 �θ�Ϊ����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  Ųλֻ�� XZ��Y ����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �ĸ���Ч
+[23:47:01] [main/INFO]: [STDOUT]:   ok  �ͽ��鵽�� 1 ����
+[23:47:01] [main/INFO]: [STDOUT]:   ok  ��������鲻��
+[23:47:01] [main/INFO]: [STDOUT]: 
+ȫ��ͨ����33 �
+
+> Task :common:s2AsyncGenerationMigrationRegression
+S2AsyncGenerationMigrationTest: PASS (3348 checks; no live-world claim)
+
+> Task :common:savedEndpoint528Simulation
+[23:47:17] [main/INFO]: [STDOUT]: SavedEndpoint528SimulationTest: SKIP (audit save not present on this machine; expected 3 road shards under D:\minecraft\Plain Craft Launcher 2\.minecraft\versions\�������ĺ���WAYFARING\saves\1_6_2����08241035\data\roadweaver\persistence\roads\minecraft_overworld\roads)
+[23:47:17] [main/INFO]: [STDOUT]: SavedEndpoint528SimulationTest: PASS (skipped)
+
+> Task :common:sharedEndpointReuseRegression
+[23:47:18] [main/INFO]: RoadWeaver pre-detail shared-endpoint reuse endpoint=BlockPos{x=0, y=64, z=0} primary=PlannedPathKey[first=Endpoint[x=0, y=64, z=0], second=Endpoint[x=64, y=64, z=0]] secondary=PlannedPathKey[first=Endpoint[x=0, y=64, z=0], second=Endpoint[x=64, y=64, z=20]] stations=17->21
+[23:47:18] [main/INFO]: RoadWeaver pre-detail shared-endpoint reuse completed paths=2 endpointReused=1 spatialReused=0 joinDistance=12
+[23:47:18] [main/INFO]: RoadWeaver shared-endpoint trunk trim removed secondary stub overlapping trunk secondary=13..27 joinPrimaryEnd=12
+[23:47:18] [main/INFO]: RoadWeaver pre-detail shared-endpoint reuse endpoint=BlockPos{x=21, y=64, z=-1898} primary=PlannedPathKey[first=Endpoint[x=-176, y=64, z=-2080], second=Endpoint[x=21, y=64, z=-1898]] secondary=PlannedPathKey[first=Endpoint[x=0, y=64, z=0], second=Endpoint[x=21, y=64, z=-1898]] stations=500->500
+[23:47:18] [main/INFO]: RoadWeaver pre-detail shared-endpoint reuse endpoint=BlockPos{x=21, y=64, z=-1898} primary=PlannedPathKey[first=Endpoint[x=-176, y=64, z=-2080], second=Endpoint[x=21, y=64, z=-1898]] secondary=PlannedPathKey[first=Endpoint[x=21, y=64, z=-1898], second=Endpoint[x=192, y=64, z=-2080]] stations=56->56
+[23:47:18] [main/INFO]: RoadWeaver pre-detail shared-endpoint reuse completed paths=3 endpointReused=2 spatialReused=0 joinDistance=12
+[23:47:18] [main/INFO]: RoadWeaver selected shared-endpoint trunk endpoint=BlockPos{x=0, y=64, z=0} primary=PlannedPathKey[first=Endpoint[x=0, y=64, z=0], second=Endpoint[x=21, y=64, z=-1898]] routes=3 joinable=2 reusableStations=72
+[23:47:18] [main/INFO]: RoadWeaver pre-detail shared-endpoint reuse endpoint=BlockPos{x=0, y=64, z=0} primary=PlannedPathKey[first=Endpoint[x=0, y=64, z=0], second=Endpoint[x=21, y=64, z=-1898]] secondary=PlannedPathKey[first=Endpoint[x=-180, y=64, z=-1700], second=Endpoint[x=0, y=64, z=0]] stations=426->426
+[23:47:18] [main/INFO]: RoadWeaver pre-detail shared-endpoint reuse endpoint=BlockPos{x=0, y=64, z=0} primary=PlannedPathKey[first=Endpoint[x=0, y=64, z=0], second=Endpoint[x=21, y=64, z=-1898]] secondary=PlannedPathKey[first=Endpoint[x=0, y=64, z=0], second=Endpoint[x=192, y=64, z=-1800]] stations=451->451
+[23:47:18] [main/INFO]: RoadWeaver pre-detail shared-endpoint reuse completed paths=3 endpointReused=2 spatialReused=0 joinDistance=12
+SharedEndpointPathReuseTest: PASS
+
+> Task :common:structureAvoidanceRegression
+[23:47:19] [main/INFO]: RoadWeaver inferred endpoint owner from nearby verified building endpoint=BlockPos{x=0, y=64, z=0} owner=StructureOwnerKey[startChunkKey=11, structureId=test:village_terminal] distance=2.0
+[23:47:19] [main/INFO]: RoadWeaver inferred endpoint exit owner endpoint=BlockPos{x=0, y=64, z=0} registered=test:terminal actual=test:village_terminal distance=2.0
+[23:47:19] [main/INFO]: RoadWeaver inferred endpoint exit owner endpoint=BlockPos{x=256, y=300, z=-2160} registered=minecraft:village_snowy actual=ctov:large/village_mountain distance=0.0
+StructureAvoidanceServiceTest: PASS
+
+> Task :common:tunnelJunctionGradeRegression
+[23:47:24] [main/INFO]: RoadWeaver unified primary junction height owners=1 -> 2 pos=(11,0) index=11 grade=96
+[23:47:24] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=7335295237831254567 junction=(-1,0,0,0) idx=19/20 roadY=100->96 delta=4 side=end
+[23:47:24] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=7335295237831254567 mode=shared-owner owner=1 side=end segments=21->30 cutIndex=20 anchorSegments=10
+[23:47:24] [main/INFO]: RoadWeaver selected snap candidate mode=shared-endpoint primary=5102979830863665158 secondary=7335295237831254567 constructionLength=20.0 -> 20.414213562373096 reuseStations=10 segments=21->30
+[23:47:24] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=7335295237831254567 junction=(-1,0,-1,0) idx=19/20 roadY=100->96 delta=4 side=end
+[23:47:24] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=7335295237831254567 mode=shared-owner owner=1 side=end segments=30->30 cutIndex=20 anchorSegments=10
+[23:47:24] [main/INFO]: RoadWeaver removed duplicate junction span records owners=3 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=7335295237831254567 junction=(-1,0,-1,0) idx=19/20 roadY=100->96 delta=4 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=7335295237831254567 mode=spatial owner=none side=end segments=30->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver parallel corridor rejected reason=endpoint-margin primary=5102979830863665158 secondary=7335295237831254567 secondaryRange=19..29 primaryRange=19..16
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=3 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver selected snap candidate mode=shared-endpoint primary=5102979830863665158 secondary=7335295237831254567 constructionLength=20.414213562373096 -> 20.414213562373096 reuseStations=10 segments=30->30
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=3 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver unified primary junction height owners=1 -> 2 pos=(-1,0) index=19 grade=96
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=7335295237831254567 junction=(-1,0,0,0) idx=19/20 roadY=100->96 delta=4 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=7335295237831254567 mode=shared-owner owner=1 side=end segments=21->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver selected snap candidate mode=shared-endpoint primary=5102979830863665158 secondary=7335295237831254567 constructionLength=20.0 -> 20.414213562373096 reuseStations=10 segments=21->30
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=7335295237831254567 junction=(-1,0,-1,0) idx=19/20 roadY=100->96 delta=4 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=7335295237831254567 mode=shared-owner owner=1 side=end segments=30->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=3 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=7335295237831254567 junction=(-1,0,-1,0) idx=19/20 roadY=100->96 delta=4 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=7335295237831254567 mode=spatial owner=none side=end segments=30->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver parallel corridor rejected reason=endpoint-margin primary=5102979830863665158 secondary=7335295237831254567 secondaryRange=19..29 primaryRange=19..16
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=3 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver selected snap candidate mode=shared-endpoint primary=5102979830863665158 secondary=7335295237831254567 constructionLength=20.414213562373096 -> 20.414213562373096 reuseStations=10 segments=30->30
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=3 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver unified primary junction height owners=1 -> 2 pos=(-1,0) index=19 grade=96
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-8290912610941871296 junction=(-1,0,0,0) idx=19/20 roadY=96->96 delta=0 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-8290912610941871296 mode=shared-owner owner=1 side=end segments=21->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver selected snap candidate mode=shared-endpoint primary=5102979830863665158 secondary=-8290912610941871296 constructionLength=20.0 -> 20.414213562373096 reuseStations=10 segments=21->30
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-8290912610941871296 junction=(-1,0,-1,0) idx=19/20 roadY=96->96 delta=0 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-8290912610941871296 mode=shared-owner owner=1 side=end segments=30->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=4 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-8290912610941871296 junction=(-1,0,-1,0) idx=19/20 roadY=96->96 delta=0 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-8290912610941871296 mode=spatial owner=none side=end segments=30->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver parallel corridor rejected reason=endpoint-margin primary=5102979830863665158 secondary=-8290912610941871296 secondaryRange=19..29 primaryRange=19..16
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=4 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver selected snap candidate mode=shared-endpoint primary=5102979830863665158 secondary=-8290912610941871296 constructionLength=20.414213562373096 -> 20.414213562373096 reuseStations=10 segments=30->30
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=4 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-6179165068882037854 junction=(-1,0,0,0) idx=19/20 roadY=100->92 delta=8 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-6179165068882037854 mode=shared-owner owner=1 side=end segments=21->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver selected snap candidate mode=shared-endpoint primary=5102979830863665158 secondary=-6179165068882037854 constructionLength=20.0 -> 20.414213562373096 reuseStations=10 segments=21->30
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-6179165068882037854 junction=(-1,0,-1,0) idx=19/20 roadY=100->92 delta=8 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-6179165068882037854 mode=shared-owner owner=1 side=end segments=30->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=38 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-6179165068882037854 junction=(-1,0,-1,0) idx=19/20 roadY=100->92 delta=8 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-6179165068882037854 mode=spatial owner=none side=end segments=30->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver parallel corridor rejected reason=endpoint-margin primary=5102979830863665158 secondary=-6179165068882037854 secondaryRange=19..29 primaryRange=19..16
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=38 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver selected snap candidate mode=shared-endpoint primary=5102979830863665158 secondary=-6179165068882037854 constructionLength=20.414213562373096 -> 20.414213562373096 reuseStations=10 segments=30->30
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=38 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver unified primary junction height owners=1 -> 2 pos=(-1,0) index=19 grade=92
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-8999701293818463607 junction=(-1,0,0,0) idx=19/20 roadY=100->85 delta=15 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-8999701293818463607 mode=shared-owner owner=1 side=end segments=21->37 cutIndex=20 anchorSegments=17
+[23:47:25] [main/INFO]: RoadWeaver selected snap candidate mode=shared-endpoint primary=5102979830863665158 secondary=-8999701293818463607 constructionLength=20.0 -> 20.414213562373096 reuseStations=17 segments=21->37
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-8999701293818463607 junction=(-1,0,-1,0) idx=19/20 roadY=100->85 delta=15 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-8999701293818463607 mode=shared-owner owner=1 side=end segments=37->37 cutIndex=20 anchorSegments=17
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=45 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=5102979830863665158 secondary=-8999701293818463607 junction=(-1,0,-1,0) idx=19/20 roadY=100->85 delta=15 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=5102979830863665158 secondary=-8999701293818463607 mode=spatial owner=none side=end segments=37->37 cutIndex=20 anchorSegments=17
+[23:47:25] [main/INFO]: RoadWeaver parallel corridor rejected reason=endpoint-margin primary=5102979830863665158 secondary=-8999701293818463607 secondaryRange=19..36 primaryRange=19..23
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=45 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver selected snap candidate mode=shared-endpoint primary=5102979830863665158 secondary=-8999701293818463607 constructionLength=20.414213562373096 -> 20.414213562373096 reuseStations=17 segments=37->37
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=45 -> 1 removed=2
+[23:47:25] [main/INFO]: RoadWeaver unified primary junction height owners=1 -> 2 pos=(-1,0) index=19 grade=85
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=-6122814733094912830 secondary=-3890499326127323421 junction=(-1,0,0,0) idx=19/20 roadY=100->96 delta=4 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=-6122814733094912830 secondary=-3890499326127323421 mode=shared-owner owner=11 side=end segments=21->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=-6122814733094912830 secondary=-3890499326127323421 junction=(-1,0,0,0) idx=19/20 roadY=100->96 delta=4 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=-6122814733094912830 secondary=-3890499326127323421 mode=spatial owner=none side=end segments=21->30 cutIndex=20 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver selected snap candidate mode=shared-endpoint primary=-6122814733094912830 secondary=-3890499326127323421 constructionLength=20.0 -> 20.414213562373096 reuseStations=10 segments=21->30
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=-6122814733094912830 secondary=-3890499326127323421 junction=(-3,0,0,-1) idx=17/19 roadY=100->99 delta=1 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=-6122814733094912830 secondary=-3890499326127323421 mode=shared-owner owner=11 side=end segments=30->31 cutIndex=19 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=-6122814733094912830 secondary=-3890499326127323421 junction=(-7,0,0,-8) idx=13/12 roadY=100->96 delta=4 side=start
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=-6122814733094912830 secondary=-3890499326127323421 mode=spatial owner=none side=start segments=30->33 cutIndex=12 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver junction+connect primary=-6122814733094912830 secondary=-3890499326127323421 junction=(-3,0,0,-1) idx=17/19 roadY=100->99 delta=1 side=end
+[23:47:25] [main/INFO]: RoadWeaver direct junction primary=-6122814733094912830 secondary=-3890499326127323421 mode=spatial owner=none side=end segments=30->31 cutIndex=19 anchorSegments=10
+[23:47:25] [main/INFO]: RoadWeaver parallel corridor rejected reason=endpoint-margin primary=-6122814733094912830 secondary=-3890499326127323421 secondaryRange=19..29 primaryRange=19..16
+[23:47:25] [main/INFO]: RoadWeaver selected snap candidate mode=spatial-start primary=-6122814733094912830 secondary=-3890499326127323421 constructionLength=20.414213562373096 -> 0.0 reuseStations=33 segments=30->33
+[23:47:25] [main/INFO]: RoadWeaver trimmed secondary tail at junction primary=-6122814733094912830 secondary=-3890499326127323421 junction=(-1,0) segments=33 -> 24
+[23:47:25] [main/INFO]: RoadWeaver removed duplicate junction span records owners=13 -> 11 removed=2
+[23:47:25] [main/INFO]: RoadWeaver extended shared corridor primary=-6122814733094912830 secondary=-3890499326127323421 window=2 reuseStations=10 -> 24 constructionLength=20.414213562373096 -> 0.0
+[23:47:25] [main/INFO]: RoadWeaver parallel corridor rejected reason=endpoint-margin primary=-6122814733094912830 secondary=-3890499326127323421 secondaryRange=0..23 primaryRange=13..10
+[23:47:25] [main/INFO]: [STDOUT]: TunnelJunctionGradeSimulationTest: PASS
+
+> Task :common:wallInteropRegression
+
+Test run finished after 769 ms
+[         4 containers found      ]
+[         0 containers skipped    ]
+[         4 containers started    ]
+[         0 containers aborted    ]
+[         4 containers successful ]
+[         0 containers failed     ]
+[         9 tests found           ]
+[         0 tests skipped         ]
+[         9 tests started         ]
+[         0 tests aborted         ]
+[         9 tests successful      ]
+[         0 tests failed          ]
+
+
+> Task :common:waterOnlyBridgePolicy
+[23:47:31] [main/INFO]: [STDOUT]: WaterOnlyBridgePolicyTest: dryDepressionBridgeDepth=6
+[23:47:31] [main/INFO]: RoadWeaver final-grade dry depression plan type=ROAD_CROSSING widthBlocks=12 unsafeFillRange=1..10 stableRange=0..11 depth=6 bankHeightDelta=3
+[23:47:31] [main/INFO]: RoadWeaver final-grade dry depression plan type=BRIDGE widthBlocks=21 unsafeFillRange=1..19 stableRange=0..20 depth=6 bankHeightDelta=3
+[23:47:31] [main/INFO]: [STDOUT]: WaterOnlyBridgePolicyTest: PASS
+
+> Task :common:test NO-SOURCE
+
+BUILD SUCCESSFUL in 2m 46s
+44 actionable tasks: 42 executed, 2 up-to-date

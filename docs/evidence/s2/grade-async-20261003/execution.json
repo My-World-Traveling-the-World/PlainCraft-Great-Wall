@@ -1,0 +1,27 @@
+{
+  "sourceCommit": "f49f97a28ce880fa1579fc25963d271f82c130f7",
+  "status": "COMMAND_COMPLETED_EXIT_0",
+  "exitCode": 0,
+  "startedUtc": "2026-10-03T15:44:45.2832991+00:00",
+  "sourceStatus": [
+    " M common/build.gradle",
+    " M common/src/main/java/net/shiroha233/roadweaver/api/RoadNetworkApi.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/features/path/pathlogic/pathfinding/RoadPathCalculator.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/planning/RoadPlanningReadinessIndex.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/planning/RoadPlanningService.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/runtime/RuntimeLoadPolicy.java",
+    " M common/src/test/java/net/shiroha233/roadweaver/features/path/pathlogic/pathfinding/RoadPathCalculatorAsyncTest.java",
+    " M common/src/test/java/net/shiroha233/roadweaver/planning/RoadAsyncRegressionSuite.java",
+    "?? common/src/test/java/net/shiroha233/roadweaver/runtime/GameplayCoordinatorGateGuardTest.java"
+  ],
+  "command": [
+    ".\\gradlew.bat",
+    "--offline",
+    "--dependency-verification=strict",
+    ":common:test",
+    "--no-daemon",
+    "--console=plain"
+  ],
+  "finishedUtc": "2026-10-03T15:47:31.8521273+00:00",
+  "logSha256": "6a672b8e3ba0f1eb077a55d944f646826f0301318275f90ca5562efea262c7a7"
+}
