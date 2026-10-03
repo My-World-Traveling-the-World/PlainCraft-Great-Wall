@@ -1,0 +1,23 @@
+{
+  "sourceCommit": "20bb26d8c70de1ed954501c7c2dda39c27a5446c",
+  "workingTreePaths": [
+    "MM common/build.gradle",
+    " M common/src/main/java/net/shiroha233/roadweaver/api/RoadNetworkApi.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/generation/IdleRoadGenerationService.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/generation/RoadGenerationService.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/planning/RoadPlanningReadinessIndex.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/planning/RoadPlanningService.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/runtime/RuntimeLoadPolicy.java",
+    "?? common/src/test/java/net/shiroha233/roadweaver/generation/S2AsyncGenerationMigrationTest.java",
+    "?? common/src/test/java/net/shiroha233/roadweaver/runtime/GameplayCoordinatorGateGuardTest.java"
+  ],
+  "command": ".\\gradlew.bat --offline --dependency-verification=strict :common:test --no-daemon --console=plain",
+  "javaHome": "C:\\Program Files\\Java\\jdk-21",
+  "javaToolOptions": "-Droad.audit.root=\"D:/云游四海-Mod源码/roadweaver/common/build/s2-audit-empty\"",
+  "isolatedSaveReplayRoot": "D:\\云游四海-Mod源码\\roadweaver\\common\\build\\s2-audit-empty",
+  "started": "2026-10-03T17:32:25.9778746+08:00",
+  "finished": "2026-10-03T17:34:48.3902610+08:00",
+  "exitCode": 0,
+  "realSaveReplay": "NOT_RUN",
+  "liveWallRoadIntegration": "NOT_RUN"
+}
