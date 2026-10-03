@@ -1,0 +1,19 @@
+// Explicit ledger contract runner; does not launch a client or alter project repositories.
+gradle.projectsEvaluated {
+    def project = gradle.rootProject
+    if (!project.file('src/clientSmoke/java/local/plaincraft/greatwall/client/debug/SmokeVisualChecklistTests.java').isFile()) {
+        throw new GradleException('Smoke checklist contract source is missing')
+    }
+    project.tasks.register('smokeChecklistContract', JavaExec) {
+        dependsOn project.tasks.named('compileClientSmokeJava')
+        classpath = project.sourceSets.clientSmoke.runtimeClasspath
+        mainClass = 'local.plaincraft.greatwall.client.debug.SmokeVisualChecklistTests'
+        jvmArgs '-Djava.awt.headless=true'
+    }
+    project.tasks.register('debugClientCacheContract', JavaExec) {
+        dependsOn project.tasks.named('compileClientSmokeJava')
+        classpath = project.sourceSets.clientSmoke.runtimeClasspath
+        mainClass = 'local.plaincraft.greatwall.client.debug.GreatWallDebugClientCacheTests'
+        jvmArgs '-Djava.awt.headless=true'
+    }
+}
