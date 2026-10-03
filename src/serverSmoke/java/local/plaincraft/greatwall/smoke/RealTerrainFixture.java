@@ -8,6 +8,7 @@ import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.*;
 import local.plaincraft.greatwall.GreatWallMod;
+import local.plaincraft.greatwall.diagnostics.WalkwayCollisionCheck;
 import local.plaincraft.greatwall.generation.CoveragePlanner;
 import local.plaincraft.greatwall.generation.TerrainMarkers;
 import local.plaincraft.greatwall.geometry.FixedMath;
@@ -18,7 +19,6 @@ import local.plaincraft.greatwall.persistence.ChunkEvidenceStore;
 import local.plaincraft.greatwall.terrain.BlockCatalog;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
@@ -215,10 +215,13 @@ public final class RealTerrainFixture implements AutoCloseable {
             }
             for (var foot : marker.walkwayFeet()) {
                 var p = new BlockPos(foot.x(), foot.y(), foot.z());
-                if (!chunk.getBlockState(p).getCollisionShape(level, p).isEmpty()
-                        || !chunk.getBlockState(p.above()).getCollisionShape(level, p.above()).isEmpty()
-                        || !chunk.getBlockState(p.below()).isFaceSturdy(level, p.below(), Direction.UP)) {
-                    throw new IllegalStateException("real walkway lacks ground or two-block clearance " + p);
+                var result = WalkwayCollisionCheck.inspect(chunk.getBlockState(p).getCollisionShape(level, p),
+                        chunk.getBlockState(p.above()).getCollisionShape(level, p.above()),
+                        chunk.getBlockState(p.below()).getCollisionShape(level, p.below()));
+                if (!result.valid()) {
+                    throw new IllegalStateException("real walkway lacks ground or two-block clearance " + p
+                            + " " + result + " below=" + chunk.getBlockState(p.below())
+                            + " feet=" + chunk.getBlockState(p) + " head=" + chunk.getBlockState(p.above()));
                 }
             }
             String actual = HexFormat.of().formatHex(digest.digest());
