@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "status": "READ_ONLY_DIAGNOSTIC_NOT_ACCEPTANCE",
+  "source": {
+    "sessionSha256": "982d15700b432d7050f55281af5814b558ba690adb29321fd9fa1204a5904e01",
+    "archiveSha256": "86526cecda045f7e5e9c2c07f05eda7dd9df54368afbe71c45332ef96b964586"
+  },
+  "fullSessionCounts": {
+    "prepareFeatures": 77129,
+    "prepareReferences": 59134,
+    "sessionTraceTruncated": 176882,
+    "barrierTraceTruncated": 86655
+  },
+  "retainedSample": {
+    "events": 50000,
+    "windowSeconds": 799.3323401,
+    "countedFeaturesStages": [
+      "vanilla:features",
+      "c2me:features"
+    ],
+    "observedEntryStages": [
+      {
+        "stage": "vanilla:features",
+        "entries": 15775
+      }
+    ],
+    "featuresGateEntries": 15775,
+    "distinctFeaturesCoordinates": 311,
+    "repeatedCoordinateEntries": 15464,
+    "repeatedCoordinatePercent": 98.02852614896989,
+    "topCoordinates": [
+      {
+        "dimension": "minecraft:overworld",
+        "chunkX": 16,
+        "chunkZ": 72,
+        "entries": 192
+      },
+      {
+        "dimension": "minecraft:overworld",
+        "chunkX": 17,
+        "chunkZ": 72,
+        "entries": 192
+      },
+      {
+        "dimension": "minecraft:overworld",
+        "chunkX": 16,
+        "chunkZ": 73,
+        "entries": 187
+      },
+      {
+        "dimension": "minecraft:overworld",
+        "chunkX": 17,
+        "chunkZ": 73,
+        "entries": 186
+      },
+      {
+        "dimension": "minecraft:overworld",
+        "chunkX": 18,
+        "chunkZ": 76,
+        "entries": 185
+      },
+      {
+        "dimension": "minecraft:overworld",
+        "chunkX": 16,
+        "chunkZ": 74,
+        "entries": 181
+      },
+      {
+        "dimension": "minecraft:overworld",
+        "chunkX": 17,
+        "chunkZ": 74,
+        "entries": 181
+      },
+      {
+        "dimension": "minecraft:overworld",
+        "chunkX": 15,
+        "chunkZ": 76,
+        "entries": 180
+      },
+      {
+        "dimension": "minecraft:overworld",
+        "chunkX": 16,
+        "chunkZ": 76,
+        "entries": 180
+      },
+      {
+        "dimension": "minecraft:overworld",
+        "chunkX": 14,
+        "chunkZ": 75,
+        "entries": 179
+      }
+    ]
+  },
+  "limits": [
+    "The retained sample is truncated; it does not describe the whole session.",
+    "Coordinates do not identify cells or capture owners.",
+    "Repeated entries are not a measurement of complete capture cost.",
+    "No world, permanent T0, or manifest is read or modified."
+  ]
+}

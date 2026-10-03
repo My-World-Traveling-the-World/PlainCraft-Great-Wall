@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "status": "READ_ONLY_DIAGNOSTIC_NOT_ACCEPTANCE",
+  "source": {
+    "sessionSha256": "982d15700b432d7050f55281af5814b558ba690adb29321fd9fa1204a5904e01",
+    "archiveSha256": "86526cecda045f7e5e9c2c07f05eda7dd9df54368afbe71c45332ef96b964586"
+  },
+  "fullSessionCounts": {
+    "prepareFeatures": 77129,
+    "prepareReferences": 59134,
+    "sessionTraceTruncated": 176882,
+    "barrierTraceTruncated": 86655
+  },
+  "retainedSample": {
+    "events": 50000,
+    "windowSeconds": 799.3323401,
+    "featuresGateEntries": 0,
+    "distinctFeaturesCoordinates": 0,
+    "repeatedCoordinateEntries": 0,
+    "repeatedCoordinatePercent": 0.0,
+    "topCoordinates": []
+  },
+  "limits": [
+    "The retained sample is truncated; it does not describe the whole session.",
+    "Coordinates do not identify cells or capture owners.",
+    "Repeated entries are not a measurement of complete capture cost.",
+    "No world, permanent T0, or manifest is read or modified."
+  ]
+}
