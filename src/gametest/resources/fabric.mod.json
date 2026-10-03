@@ -20,6 +20,7 @@
       "local.plaincraft.greatwall.gametest.OwnershipMutationTests",
       "local.plaincraft.greatwall.gametest.WallArchPreparationGameTests",
       "local.plaincraft.greatwall.gametest.WalkwaySpawnGameTests",
+      "local.plaincraft.greatwall.gametest.LootResourceGameTests",
       "local.plaincraft.greatwall.gametest.PaletteResourceValidatorGameTests",
       "local.plaincraft.greatwall.gametest.ComponentGameTests",
       "local.plaincraft.greatwall.gametest.GroundEntranceContractGameTests",
