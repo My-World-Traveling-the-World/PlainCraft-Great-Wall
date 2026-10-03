@@ -1,0 +1,7 @@
+{
+  "sourceCommit": "56c1a4d5494b43e077079e600ebec750980103bd",
+  "command": ".\\gradlew.bat --offline --dependency-verification=strict test --no-daemon --console=plain",
+  "started": "2026-10-03T20:31:27.1030040+08:00",
+  "finished": "2026-10-03T20:31:39.2188621+08:00",
+  "exitCode": 1
+}

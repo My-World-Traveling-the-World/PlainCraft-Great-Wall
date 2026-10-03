@@ -1,0 +1,5 @@
+{
+  "command": ".\\gradlew.bat --offline --dependency-verification=strict dependencies --configuration compileClasspath --no-daemon --console=plain",
+  "exitCode": 0,
+  "scope": "Dependency graph inspection; not a build or test result"
+}

@@ -1,0 +1,97 @@
+{
+  "started": "2026-10-03T20:31:03.8743161+08:00",
+  "finished": "2026-10-03T20:31:07.1209761+08:00",
+  "status": "SUCCESS",
+  "failure": null,
+  "items": [
+    {
+      "component": "org.ow2.asm:asm:9.10.1",
+      "artifact": "asm-9.10.1.pom",
+      "source": "https://repo1.maven.org/maven2/org/ow2/asm/asm/9.10.1/asm-9.10.1.pom",
+      "sha256": "e1b1c3832ca3ac0a9e563c405f4c760118b5556a4920daee14058886197e094d",
+      "lockedSha256": "e1b1c3832ca3ac0a9e563c405f4c760118b5556a4920daee14058886197e094d",
+      "sha1": "507e7f8821c58fc995a057b63ad4008b96bafa4d",
+      "auditedSha1": "507e7f8821c58fc995a057b63ad4008b96bafa4d",
+      "status": "VERIFIED_INSTALLED",
+      "cachePath": "C:\\Users\\18364\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm\\9.10.1\\507e7f8821c58fc995a057b63ad4008b96bafa4d\\asm-9.10.1.pom"
+    },
+    {
+      "component": "org.ow2.asm:asm-analysis:9.10.1",
+      "artifact": "asm-analysis-9.10.1.pom",
+      "source": "https://repo1.maven.org/maven2/org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.pom",
+      "sha256": "534fbb85f643c2330691e92652ec40dd497b4f279ef13d829d85858905d33ba3",
+      "lockedSha256": "534fbb85f643c2330691e92652ec40dd497b4f279ef13d829d85858905d33ba3",
+      "sha1": "cf2754cfa5e4df15ccf9f8779485f23862c5b488",
+      "auditedSha1": "cf2754cfa5e4df15ccf9f8779485f23862c5b488",
+      "status": "VERIFIED_INSTALLED",
+      "cachePath": "C:\\Users\\18364\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-analysis\\9.10.1\\cf2754cfa5e4df15ccf9f8779485f23862c5b488\\asm-analysis-9.10.1.pom"
+    },
+    {
+      "component": "org.ow2.asm:asm-commons:9.10.1",
+      "artifact": "asm-commons-9.10.1.pom",
+      "source": "https://repo1.maven.org/maven2/org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.pom",
+      "sha256": "ceb2c43f3a273db88af8652d89ed6312f3e91a1a1e0ffc6f7823169278cf795c",
+      "lockedSha256": "ceb2c43f3a273db88af8652d89ed6312f3e91a1a1e0ffc6f7823169278cf795c",
+      "sha1": "a28039cb619a6c2a5c7ca5b3206381f9032c8368",
+      "auditedSha1": "a28039cb619a6c2a5c7ca5b3206381f9032c8368",
+      "status": "VERIFIED_INSTALLED",
+      "cachePath": "C:\\Users\\18364\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-commons\\9.10.1\\a28039cb619a6c2a5c7ca5b3206381f9032c8368\\asm-commons-9.10.1.pom"
+    },
+    {
+      "component": "org.ow2.asm:asm-tree:9.10.1",
+      "artifact": "asm-tree-9.10.1.pom",
+      "source": "https://repo1.maven.org/maven2/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.pom",
+      "sha256": "963eebdea6e2e1ff25c9068b64a238e1585c99f8acd455595ac159a7f52b6c41",
+      "lockedSha256": "963eebdea6e2e1ff25c9068b64a238e1585c99f8acd455595ac159a7f52b6c41",
+      "sha1": "0fe218ecae48cabf4e53295d64ae4e01e5ddfb33",
+      "auditedSha1": "0fe218ecae48cabf4e53295d64ae4e01e5ddfb33",
+      "status": "VERIFIED_INSTALLED",
+      "cachePath": "C:\\Users\\18364\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-tree\\9.10.1\\0fe218ecae48cabf4e53295d64ae4e01e5ddfb33\\asm-tree-9.10.1.pom"
+    },
+    {
+      "component": "org.ow2.asm:asm-util:9.10.1",
+      "artifact": "asm-util-9.10.1.pom",
+      "source": "https://repo1.maven.org/maven2/org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.pom",
+      "sha256": "fcea2bad7868ed18949a2e71c40cf26de1516d16440e63f585c3e05d285c0d2b",
+      "lockedSha256": "fcea2bad7868ed18949a2e71c40cf26de1516d16440e63f585c3e05d285c0d2b",
+      "sha1": "c6db0976b79a615802b820b08664602fa1f6a5ad",
+      "auditedSha1": "c6db0976b79a615802b820b08664602fa1f6a5ad",
+      "status": "VERIFIED_INSTALLED",
+      "cachePath": "C:\\Users\\18364\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-util\\9.10.1\\c6db0976b79a615802b820b08664602fa1f6a5ad\\asm-util-9.10.1.pom"
+    },
+    {
+      "component": "net.fabricmc:sponge-mixin:0.17.3+mixin.0.8.7",
+      "artifact": "sponge-mixin-0.17.3+mixin.0.8.7.pom",
+      "source": "https://maven.fabricmc.net/net/fabricmc/sponge-mixin/0.17.3+mixin.0.8.7/sponge-mixin-0.17.3+mixin.0.8.7.pom",
+      "sha256": "b56dd56dd5dad88c831a141f01cfe13e80164ab5232d520f905a5d5fd022a365",
+      "lockedSha256": "b56dd56dd5dad88c831a141f01cfe13e80164ab5232d520f905a5d5fd022a365",
+      "sha1": "e2f41a5b0bead7e1124969f21c0b571fb14fec69",
+      "auditedSha1": "e2f41a5b0bead7e1124969f21c0b571fb14fec69",
+      "status": "VERIFIED_INSTALLED",
+      "cachePath": "C:\\Users\\18364\\.gradle\\caches\\modules-2\\files-2.1\\net.fabricmc\\sponge-mixin\\0.17.3+mixin.0.8.7\\e2f41a5b0bead7e1124969f21c0b571fb14fec69\\sponge-mixin-0.17.3+mixin.0.8.7.pom"
+    },
+    {
+      "component": "io.github.llamalad7:mixinextras-fabric:0.5.4",
+      "artifact": "mixinextras-fabric-0.5.4.pom",
+      "source": "https://maven.fabricmc.net/io/github/llamalad7/mixinextras-fabric/0.5.4/mixinextras-fabric-0.5.4.pom",
+      "sha256": "1c457577a58e8df1c47fa9affd29770d49d09680ff2d7d973e5ef9872d5919d3",
+      "lockedSha256": "1c457577a58e8df1c47fa9affd29770d49d09680ff2d7d973e5ef9872d5919d3",
+      "sha1": "f872b6df401e5544b1eaf750723fa24f360ccdbd",
+      "auditedSha1": "f872b6df401e5544b1eaf750723fa24f360ccdbd",
+      "status": "VERIFIED_INSTALLED",
+      "cachePath": "C:\\Users\\18364\\.gradle\\caches\\modules-2\\files-2.1\\io.github.llamalad7\\mixinextras-fabric\\0.5.4\\f872b6df401e5544b1eaf750723fa24f360ccdbd\\mixinextras-fabric-0.5.4.pom"
+    },
+    {
+      "component": "net.sf.jopt-simple:jopt-simple:5.0.4",
+      "artifact": "jopt-simple-5.0.4.pom",
+      "source": "https://repo1.maven.org/maven2/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.pom",
+      "sha256": "6a67763b76afcd9c80b95e5c5e24782d18cc1b0e3d9b454ad3f8754c76b76815",
+      "lockedSha256": "6a67763b76afcd9c80b95e5c5e24782d18cc1b0e3d9b454ad3f8754c76b76815",
+      "sha1": "c761a09cd9a4695b242c1fc35322d5b1659df7ed",
+      "auditedSha1": "c761a09cd9a4695b242c1fc35322d5b1659df7ed",
+      "status": "VERIFIED_INSTALLED",
+      "cachePath": "C:\\Users\\18364\\.gradle\\caches\\modules-2\\files-2.1\\net.sf.jopt-simple\\jopt-simple\\5.0.4\\c761a09cd9a4695b242c1fc35322d5b1659df7ed\\jopt-simple-5.0.4.pom"
+    }
+  ],
+  "scope": "Eight approved POMs only; no build or index edits"
+}
