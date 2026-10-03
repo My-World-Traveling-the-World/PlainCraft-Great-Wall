@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "sourceCommit": "dcf7e6fbc84dbdc6406052e05c73a7bc77c51dff",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "sourceStatus": [
+    " M \"docs/S1C-\\345\\217\\260\\351\\230\\266\\345\\244\\215\\351\\252\\214\\344\\270\\216\\350\\266\\205\\346\\227\\266-20261003.md\"",
+    " M \"docs/S3-\\347\\212\\266\\346\\200\\201.md\"",
+    " M \"docs/S4-\\347\\212\\266\\346\\200\\201.md\"",
+    " M \"docs/S5-\\347\\212\\266\\346\\200\\201.md\"",
+    "?? \"docs/S1C-\\344\\277\\235\\346\\212\\244\\347\\202\\271\\351\\233\\206\\347\\246\\273\\347\\272\\277\\346\\205\\242\\350\\267\\257\\345\\276\\204-20261003.md\"",
+    "?? docs/evidence/s2/arch-owner-handoff-20261003/",
+    "?? docs/evidence/s2/grade-async-20261003/",
+    "?? \"docs/\\350\\256\\244\\347\\237\\245\\345\\234\\260\\345\\233\\276-\\345\\256\\241\\350\\256\\241\\345\\237\\272\\347\\272\\277.md\"",
+    "?? logs/"
+  ],
+  "sourceHashes": "source-files.sha256.json",
+  "command": [
+    ".\\gradlew.bat",
+    "--offline",
+    "--dependency-verification=strict",
+    "build",
+    "runGameTest",
+    "compileServerSmokeJava",
+    "compileClientSmokeJava",
+    "-I",
+    "tools/smoke-checklist-test.init.gradle",
+    "debugClientCacheContract",
+    "-PgreatwallTestHeap=1024m",
+    "--rerun-tasks",
+    "--no-build-cache",
+    "--continue",
+    "--no-daemon",
+    "--console=plain"
+  ],
+  "startedUtc": "2026-10-03T16:00:25.8838088+00:00",
+  "status": "COMMAND_COMPLETED_EXIT_0",
+  "exitCode": 0,
+  "finishedUtc": "2026-10-03T19:32:46.8714005+00:00",
+  "elapsedSeconds": 12740.9875917,
+  "logSha256": "9d00dfbe3a7208d30289128ff277fcfc1da60504729894e268478b4043ef1fd0"
+}
