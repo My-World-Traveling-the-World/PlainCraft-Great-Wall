@@ -14,3 +14,6 @@ docs/evidence/s1c/owner-coverage-20261002/ownercov20261002-173902/**/*.txt -whit
 docs/evidence/s2/initial-20261002/** -text whitespace=cr-at-eol
 docs/evidence/s2/initial-20261002/**/*.log -whitespace
 docs/evidence/s2/initial-20261002/**/*.diff -whitespace
+docs/evidence/s2/session-binding-20261002/** -text whitespace=cr-at-eol
+docs/evidence/s2/session-binding-20261002/**/*.log -whitespace
+docs/evidence/s1c/owner-coverage-ac-20261002/**/*.txt -whitespace
