@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.diagnostics.BudgetCacheTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-04T02:22:07.367Z" hostname="CAIMEO" time="0.012">
+  <properties/>
+  <testcase name="pinnedCacheBackpressuresWithoutStartingLoader()" classname="local.plaincraft.greatwall.diagnostics.BudgetCacheTest" time="0.006"/>
+  <testcase name="retainedSizeUnderestimationFailsExplicitly()" classname="local.plaincraft.greatwall.diagnostics.BudgetCacheTest" time="0.001"/>
+  <testcase name="hundredCallersShareOneComputeAndIndependentPins()" classname="local.plaincraft.greatwall.diagnostics.BudgetCacheTest" time="0.002"/>
+  <testcase name="closeTerminatesWaitersAndLateLoaderCannotPublish()" classname="local.plaincraft.greatwall.diagnostics.BudgetCacheTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

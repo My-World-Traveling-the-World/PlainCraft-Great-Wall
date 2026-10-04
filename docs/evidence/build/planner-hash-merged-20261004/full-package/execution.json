@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "sourceCommit": "c41dd14a0519dea6a5edce1b2f5c20969337672d",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "sourceStatus": [
+    "?? docs/release/",
+    "?? \"docs/\\350\\256\\244\\347\\237\\245\\345\\234\\260\\345\\233\\276-\\345\\256\\241\\350\\256\\241\\345\\237\\272\\347\\272\\277.md\"",
+    "?? logs/"
+  ],
+  "sourceHashes": "source-files.sha256.json",
+  "command": [
+    ".\\gradlew.bat",
+    "--offline",
+    "--dependency-verification=strict",
+    "build",
+    "runGameTest",
+    "compileServerSmokeJava",
+    "compileClientSmokeJava",
+    "-I",
+    "tools/smoke-checklist-test.init.gradle",
+    "debugClientCacheContract",
+    "-PgreatwallTestHeap=1024m",
+    "--rerun-tasks",
+    "--no-build-cache",
+    "--continue",
+    "--no-daemon",
+    "--console=plain"
+  ],
+  "startedUtc": "2026-10-03T22:47:53.2285941+00:00",
+  "status": "COMMAND_COMPLETED_EXIT_0",
+  "exitCode": 0,
+  "finishedUtc": "2026-10-04T02:23:57.8399423+00:00",
+  "elapsedSeconds": 12964.6113482,
+  "logSha256": "4bc40518c8774de581251ebf4176343a03a17e1f0f8d3c096ba59152a76f3848"
+}

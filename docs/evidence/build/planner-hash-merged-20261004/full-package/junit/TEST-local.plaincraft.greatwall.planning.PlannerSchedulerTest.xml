@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.planning.PlannerSchedulerTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-04T02:23:08.747Z" hostname="CAIMEO" time="6.271">
+  <properties/>
+  <testcase name="neighborHydrologyNeverWaitsOnNeighborGeometry()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.317"/>
+  <testcase name="manyDistinctPlansCannotReserveAwayTheirDependencies()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="1.094"/>
+  <testcase name="hundredCallersShareOneCompute()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.064"/>
+  <testcase name="prewarmedStartupStillServesNewPlansBeforeFirstTick()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="2.469"/>
+  <testcase name="foreignOrClosedBootstrapLanesCannotBeTransferred()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.004"/>
+  <testcase name="startupPumpProgressesWithoutNormalTicks()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.432"/>
+  <testcase name="fragmentedWaterTerminatesGeometryAndPermanentPrefixWithoutChangingSamplingFailures()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.854"/>
+  <testcase name="rejectedIoExecutorCannotLeaveAnUnfinishedFuture()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.006"/>
+  <testcase name="heldNativeInitializationDoesNotStopStartupPumpOrNeedTicks()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.475"/>
+  <testcase name="nonOverworldAndTamperedRecipeCannotCreateSecondPlanner()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.002"/>
+  <testcase name="otherDimensionAndDistantLateralChunksReturnExplicitEmptyWindows()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.002"/>
+  <testcase name="samplingFailureIsNotReplacedByGenericClosedInParentPlan()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.01"/>
+  <testcase name="cancelOneLeaseKeepsOthers()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.053"/>
+  <testcase name="closeTerminatesAllFutures()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.004"/>
+  <testcase name="nativeFactoryFailureTerminatesSchedulerDependenciesAndDrains()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.004"/>
+  <testcase name="lastSafeSegmentEndsBeforeWorldLimit()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.057"/>
+  <testcase name="lateWorldACallbackCannotPublishWorldB()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.083"/>
+  <testcase name="rootLanesTransferWithoutReinitializationAndSchedulerOwnsDrain()" classname="local.plaincraft.greatwall.planning.PlannerSchedulerTest" time="0.335"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
