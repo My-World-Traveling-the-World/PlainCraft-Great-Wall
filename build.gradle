@@ -33,6 +33,21 @@ dependencyLocking {
     lockAllConfigurations()
 }
 
+// Optional soft-dependency ABI jars (FTB quests/library/teams + Architectury) are
+// local machine inputs, not Maven coordinates. Loom remaps them, so they land in
+// compileClasspath under synthetic 'remapped.unspecified' ids that the frozen lock
+// state never recorded. Their bytes are still verified by
+// gradle/verification-metadata.xml, and gradle/ftb-quests.gradle re-checks each
+// SHA before it is added, so nothing here weakens the artifact trust chain.
+// The remapped ids appear in the compile classpaths (not the mod* configurations),
+// so those classpaths are unlocked; all other configurations stay locked.
+['compileClasspath', 'testCompileClasspath', 'gametestCompileClasspath',
+ 'clientCompileClasspath', 'clientSmokeCompileClasspath'].each { name ->
+    configurations.matching { it.name == name }.configureEach {
+        resolutionStrategy.deactivateDependencyLocking()
+    }
+}
+
 loom {
     accessWidenerPath = file('src/main/resources/plaincraft_great_wall.accesswidener')
     splitEnvironmentSourceSets()
@@ -131,6 +146,7 @@ tasks.named('test', Test) {
 apply from: 'gradle/windows-test-classpath.gradle'
 apply from: 'gradle/dependency-evidence.gradle'
 apply from: 'gradle/s0-probe.gradle'
+apply from: 'gradle/ftb-quests.gradle'
 apply from: 'gradle/smoke-tests.gradle'
 
 tasks.named('runGameTest') {

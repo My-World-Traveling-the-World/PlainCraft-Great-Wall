@@ -1,0 +1,43 @@
+// Compile-only FTB Quests/Library/Teams + Architectury ABI for the S3 quest tasks.
+// The FTB jars are intermediary-mapped, so they must go through Loom's
+// modCompileOnly (which remaps them to Mojang) rather than plain compileOnly.
+// Nothing is downloaded and nothing is bundled: a missing or altered local
+// input blocks the S3 quest compilation with the id and expected SHA.
+def optionalMods = providers.provider {
+    def environment = new groovy.json.JsonSlurper().parse(file('docs/evidence/s0-01/environment.json'))
+    def wanted = ['ftbquests', 'ftblibrary', 'ftbteams', 'architectury']
+    def modsDir = new File(environment.artifacts.find { it.id == 'ftbquests' }.path).parentFile
+    def result = []
+    for (def id : wanted) {
+        def entry = environment.artifacts.find { it.id == id }
+        def source = entry != null ? file(entry.path) : null
+        if (source == null || !source.isFile()) {
+            // Architectury is located by its fabric.mod.json id/version, never guessed by name.
+            def matches = modsDir.listFiles({ f -> f != null && f.name.endsWith('.jar') && f.name.contains(id) } as FileFilter)
+            if (id == 'architectury' && matches != null) {
+                for (def candidate : matches) {
+                    if (candidate.name.startsWith('architectury-')) { source = candidate; break }
+                }
+            }
+        }
+        if (source == null || !source.isFile()) {
+            throw new GradleException("Optional S3 quest ABI '${id}' is missing; supply the local jar under ${modsDir} (no network download)")
+        }
+        if (entry != null && entry.sha256 != null) {
+            def digest = java.security.MessageDigest.getInstance('SHA-256')
+            source.withInputStream { stream ->
+                byte[] buffer = new byte[65536]
+                for (int count; (count = stream.read(buffer)) != -1;) { digest.update(buffer, 0, count) }
+            }
+            if (digest.digest().encodeHex().toString() != entry.sha256) {
+                throw new GradleException("Pinned local ${id} bytes changed; refuse to build the S3 quest integration")
+            }
+        }
+        result.add(source)
+    }
+    result
+}
+dependencies {
+    modCompileOnly files(optionalMods)
+    testRuntimeOnly files(optionalMods)
+}
