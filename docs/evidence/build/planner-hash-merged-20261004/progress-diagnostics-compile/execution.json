@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "sourceCommit": "b8629782dee488bdd5b866b5439543ae93ff5a32",
+  "workspace": "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+  "sourceStatus": [
+    " M \"docs/S2-\\347\\212\\266\\346\\200\\201.md\"",
+    "?? \"docs/S1C-S5-\\346\\200\\247\\350\\203\\275\\345\\220\\210\\345\\271\\266\\345\\220\\216\\347\\273\\255\\344\\275\\234-20261004.md\"",
+    "?? docs/release/",
+    "?? \"docs/\\350\\256\\244\\347\\237\\245\\345\\234\\260\\345\\233\\276-\\345\\256\\241\\350\\256\\241\\345\\237\\272\\347\\272\\277.md\"",
+    "?? logs/"
+  ],
+  "sourceHashes": "source-files.sha256.json",
+  "command": [
+    ".\\gradlew.bat",
+    "--offline",
+    "--dependency-verification=strict",
+    "compileServerSmokeJava",
+    "--rerun-tasks",
+    "--no-build-cache",
+    "--no-daemon",
+    "--console=plain"
+  ],
+  "startedUtc": "2026-10-04T02:33:23.3695137+00:00",
+  "status": "COMMAND_COMPLETED_EXIT_0",
+  "exitCode": 0,
+  "finishedUtc": "2026-10-04T02:33:40.9802418+00:00",
+  "elapsedSeconds": 17.6107281,
+  "logSha256": "38aee85ab712d427b0629851e15df3e8f0e3f4673add17e2c966bd12d9e35f22"
+}
