@@ -29,3 +29,7 @@ docs/evidence/s2/xz-grade-20261004/** -text whitespace=cr-at-eol
 docs/evidence/s2/xz-grade-20261004/**/*.log -whitespace
 docs/evidence/s2/abi-candidate-20261004/** -text whitespace=cr-at-eol
 docs/evidence/s2/abi-candidate-20261004/**/*.log -whitespace
+docs/evidence/s2/epoch-merged-20261004/** -text whitespace=cr-at-eol
+docs/evidence/s2/epoch-merged-20261004/**/*.log -whitespace
+docs/evidence/s2/epoch-remap-20261004/** -text whitespace=cr-at-eol
+docs/evidence/s2/epoch-remap-20261004/**/*.log -whitespace
