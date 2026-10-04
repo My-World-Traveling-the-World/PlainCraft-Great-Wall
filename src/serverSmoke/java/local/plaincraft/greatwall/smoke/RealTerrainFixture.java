@@ -276,11 +276,17 @@ public final class RealTerrainFixture implements AutoCloseable {
     }
     private void writeProgress(MinecraftServer server) {
         try {
-            var report = Map.of("completedOwners", next, "totalOwners", positions.size(), "voxels", voxels,
+            var report = new TreeMap<String, Object>(Map.of("completedOwners", next, "totalOwners", positions.size(), "voxels", voxels,
                     "walkwayFeet", feet, "nonOwnerCount", nonOwners.size(), "reopen", reopen,
                     "failure", failure == null ? "" : failure.toString(),
                     "elapsedSeconds", (System.nanoTime() - started) / 1_000_000_000.0,
-                    "session", WorldServices.find(server).productionDiagnostics());
+                    "session", WorldServices.find(server).productionDiagnostics()));
+            report.put("owners", List.copyOf(owners));
+            report.put("nonOwners", List.copyOf(nonOwners));
+            if (next < positions.size()) {
+                var pos = positions.get(next);
+                report.put("nextTraversalChunk", Map.of("ordinal", next + 1, "x", pos.x, "z", pos.z));
+            }
             Files.writeString(reportPath(reopen ? "reopen-progress" : "progress"), new GsonBuilder().setPrettyPrinting().create().toJson(report));
         } catch (IOException error) { throw new IllegalStateException("cannot preserve real-world traversal diagnostics", error); }
     }
