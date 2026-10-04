@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "purpose": "BYTE_AND_PUBLIC_DESCRIPTOR_CANDIDATE_NOT_REVIEWED_ALLOWLIST",
+  "artifact": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.405-audit-io-degradation-and-counter-cleanup.jar",
+  "artifactSha256": "6acfedb7781030f67cdd44835146cbe9bf88a5af3afc668acfcf4ccdda7aac55",
+  "compileOnlyJar": "D:\\云游四海-Mod源码\\plaincraft-great-wall\\libs\\roadweaver-interop-compile-only.jar",
+  "compileOnlySha256": "528c3ac0cf50ef2fc9d5447905a5819aeb7c0bbbf131061e1464a58689a61758",
+  "runtimeInteropClassCount": 15,
+  "compileOnlyInteropClassCount": 15,
+  "classes": [
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/EndpointHeightAgreementApi.class",
+      "runtimeSha256": "de9c21ae03b4d0a5f95883a4955d16e1bfc2746c17d4f177105bf35afc272e04",
+      "compileOnlySha256": "de9c21ae03b4d0a5f95883a4955d16e1bfc2746c17d4f177105bf35afc272e04",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/LevelSessionBindings.class",
+      "runtimeSha256": "14e66086c277140334c4185473fa47ba7d72d22bafa55916fbc855a273855554",
+      "compileOnlySha256": "14e66086c277140334c4185473fa47ba7d72d22bafa55916fbc855a273855554",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/ObstacleSnapshot.class",
+      "runtimeSha256": "d06d5fe6a962ed488074de59e838dcb72b2b1f1f9beb5bdb27b3a34275f089c1",
+      "compileOnlySha256": "d06d5fe6a962ed488074de59e838dcb72b2b1f1f9beb5bdb27b3a34275f089c1",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/PlanningInteropRegistry.class",
+      "runtimeSha256": "67bfcd62ea8968b27484d34f0461ada0f0c7fe81416bd38af0521c1403353115",
+      "compileOnlySha256": "a796b618bdb4f79e49c5c89b14bc7698b9ca5a6a328bd6b7af8eab26fb8f6c92",
+      "byteIdentical": false
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/PlanningObstacleProvider.class",
+      "runtimeSha256": "7c3ec71f29864796401e125d377a49008379b05c1510b5e5a8416af57dae136a",
+      "compileOnlySha256": "7c3ec71f29864796401e125d377a49008379b05c1510b5e5a8416af57dae136a",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/WallInteropTypes.class",
+      "runtimeSha256": "bac57a24d90755f280a00dcf66051ce71b4c948bedf0aad0d9d3e7afbe8a27c8",
+      "compileOnlySha256": "bac57a24d90755f280a00dcf66051ce71b4c948bedf0aad0d9d3e7afbe8a27c8",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/WallInteropTypes$Agreement.class",
+      "runtimeSha256": "2e3b980b1a294184c23ea558490224a9a4275fbf4a75d7bda943afb83892d9db",
+      "compileOnlySha256": "2e3b980b1a294184c23ea558490224a9a4275fbf4a75d7bda943afb83892d9db",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/WallInteropTypes$Approach.class",
+      "runtimeSha256": "513435b0a544d09bcc8dbecc8e9338d41818f37dfa1765a3b330d6da22646979",
+      "compileOnlySha256": "513435b0a544d09bcc8dbecc8e9338d41818f37dfa1765a3b330d6da22646979",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/WallInteropTypes$Edge.class",
+      "runtimeSha256": "0a0e20d4a91d347fedfa933bb7468ab3bdbb96325d730f87576bbfbeb3b5bcc7",
+      "compileOnlySha256": "0a0e20d4a91d347fedfa933bb7468ab3bdbb96325d730f87576bbfbeb3b5bcc7",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/WallInteropTypes$Passage.class",
+      "runtimeSha256": "f986dfd2020c8daf2f449832e4fa298dd51abbbb8eaf5459b958d1fdfa2c7a64",
+      "compileOnlySha256": "f986dfd2020c8daf2f449832e4fa298dd51abbbb8eaf5459b958d1fdfa2c7a64",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/WallInteropTypes$Penalty.class",
+      "runtimeSha256": "495d8398f0f7904251b34adee015bc69f366b7c46913fdb2fdb654bf546cb77d",
+      "compileOnlySha256": "495d8398f0f7904251b34adee015bc69f366b7c46913fdb2fdb654bf546cb77d",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/WallInteropTypes$Pos.class",
+      "runtimeSha256": "b630e4faf440396b50afd30b3598fa34669ce66747c513da4c2d995f781a6df4",
+      "compileOnlySha256": "b630e4faf440396b50afd30b3598fa34669ce66747c513da4c2d995f781a6df4",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/WallInteropTypes$Rect.class",
+      "runtimeSha256": "1b0925995819ecf944c951be6e8d77f357bdafc9b1389b3a82079536af6db29d",
+      "compileOnlySha256": "1b0925995819ecf944c951be6e8d77f357bdafc9b1389b3a82079536af6db29d",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/WallInteropTypes$Request.class",
+      "runtimeSha256": "caa576a592017f954fa99e4384925eb33a9b22505e9729a661bff6f03ec9337c",
+      "compileOnlySha256": "caa576a592017f954fa99e4384925eb33a9b22505e9729a661bff6f03ec9337c",
+      "byteIdentical": true
+    },
+    {
+      "entry": "net/shiroha233/roadweaver/api/interop/WallInteropTypes$Strip.class",
+      "runtimeSha256": "6cc4be84a2b4206d486f5dfa2eb9c05671f74476ff6c9752459c51ddd2f9a138",
+      "compileOnlySha256": "6cc4be84a2b4206d486f5dfa2eb9c05671f74476ff6c9752459c51ddd2f9a138",
+      "byteIdentical": true
+    }
+  ],
+  "runtimeAbiCommand": [
+    "C:\\Program Files\\Java\\jdk-21\\bin\\javap.exe",
+    "-public",
+    "-s",
+    "-classpath",
+    "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.405-audit-io-degradation-and-counter-cleanup.jar",
+    "net.shiroha233.roadweaver.api.interop.EndpointHeightAgreementApi",
+    "net.shiroha233.roadweaver.api.interop.LevelSessionBindings",
+    "net.shiroha233.roadweaver.api.interop.ObstacleSnapshot",
+    "net.shiroha233.roadweaver.api.interop.PlanningInteropRegistry",
+    "net.shiroha233.roadweaver.api.interop.PlanningObstacleProvider",
+    "net.shiroha233.roadweaver.api.interop.WallInteropTypes",
+    "net.shiroha233.roadweaver.api.interop.WallInteropTypes$Agreement",
+    "net.shiroha233.roadweaver.api.interop.WallInteropTypes$Approach",
+    "net.shiroha233.roadweaver.api.interop.WallInteropTypes$Edge",
+    "net.shiroha233.roadweaver.api.interop.WallInteropTypes$Passage",
+    "net.shiroha233.roadweaver.api.interop.WallInteropTypes$Penalty",
+    "net.shiroha233.roadweaver.api.interop.WallInteropTypes$Pos",
+    "net.shiroha233.roadweaver.api.interop.WallInteropTypes$Rect",
+    "net.shiroha233.roadweaver.api.interop.WallInteropTypes$Request",
+    "net.shiroha233.roadweaver.api.interop.WallInteropTypes$Strip",
+    "net.shiroha233.roadweaver.api.RoadNetworkApi"
+  ],
+  "runtimeAbiSha256": "ae4361381cbe608dd0ce048d3a2f09fa67811d2bd7122c4f02930663619f1dae",
+  "compileOnlyAbiSha256": "5a34d1a518a537f47b0fd6408cb737f21f95badfc8486a400502b65002cef432",
+  "reviewedAllowlist": "NOT_CREATED_NOT_APPROVED",
+  "runtimeInvocation": "NOT_RUN",
+  "installedIntoMods": false,
+  "inputsUnchanged": true
+}
