@@ -172,4 +172,17 @@ public final class GameplayTypes {
         public static Approval deny(String reason) { return new Approval(false, reason, Optional.empty()); }
         public static Approval allow(UUID entity) { return new Approval(true, "ok", Optional.of(entity)); }
     }
+
+    /** Frozen loot-table choice for a single container; the seed is derived, never a random UUID. */
+    public record LootAssignment(SiteId site, int container, Point3i pos, String table, long seed, String inputHash) {
+        public LootAssignment {
+            Objects.requireNonNull(site, "site");
+            Objects.requireNonNull(pos, "pos");
+            Objects.requireNonNull(table, "table");
+            Objects.requireNonNull(inputHash, "inputHash");
+            if (container < 0) throw new IllegalArgumentException("container >= 0 required");
+            local.plaincraft.greatwall.model.WallTypes.requireResourceKey(table);
+            local.plaincraft.greatwall.model.WallTypes.requireHash(inputHash);
+        }
+    }
 }

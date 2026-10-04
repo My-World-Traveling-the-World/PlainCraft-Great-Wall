@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import local.plaincraft.greatwall.gameplay.GameplayTypes;
 import local.plaincraft.greatwall.model.WallTypes;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
@@ -78,6 +80,17 @@ public final class TerrainMarkers {
             ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall","ownership_v1"),OWNERSHIP_CODEC);
     public static final AttachmentType<Set<Point3i>> TOMBSTONES=AttachmentRegistry.createPersistent(
             ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall","tombstones_v1"),POINT_SET);
+    private static final Codec<UUID> UUID_CODEC=Codec.STRING.comapFlatMap(s->{
+        try{return DataResult.success(UUID.fromString(s));}
+        catch(IllegalArgumentException invalid){return DataResult.error(()->"invalid UUID: "+s);}
+    },UUID::toString);
+    private static final Codec<GameplayTypes.OwnedMob> OWNED_MOB_CODEC=RecordCodecBuilder.create(i->i.group(
+            SITE.fieldOf("site").forGetter(GameplayTypes.OwnedMob::site),
+            Codec.INT.fieldOf("ordinal").forGetter(GameplayTypes.OwnedMob::ordinal),
+            UUID_CODEC.fieldOf("entity").forGetter(GameplayTypes.OwnedMob::entity),
+            Codec.LONG.fieldOf("sequence").forGetter(GameplayTypes.OwnedMob::sequence)).apply(i,GameplayTypes.OwnedMob::new));
+    public static final AttachmentType<GameplayTypes.OwnedMob> OWNED_MOB=AttachmentRegistry.createPersistent(
+            ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall","owned_mob_v1"),OWNED_MOB_CODEC);
     private static <E extends Enum<E>> Codec<E> enumeration(Class<E> type) {
         return Codec.STRING.comapFlatMap(s->{try{return DataResult.success(Enum.valueOf(type,s));}
             catch(IllegalArgumentException invalid){return DataResult.error(()->"unknown "+type.getSimpleName()+": "+s);}},Enum::name);
