@@ -1,0 +1,364 @@
+{
+  "schema": 1,
+  "sourceCommit": "aebd48565ace3f53ce64758388925398c129cffd",
+  "sourceStatus": [
+    " M common/build.gradle",
+    " M common/src/main/java/net/shiroha233/roadweaver/api/RoadNetworkApi.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/planning/RoadPlanningReadinessIndex.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/planning/RoadPlanningService.java",
+    " M common/src/main/java/net/shiroha233/roadweaver/runtime/RuntimeLoadPolicy.java",
+    "?? common/src/test/java/net/shiroha233/roadweaver/runtime/GameplayCoordinatorGateGuardTest.java",
+    "?? docs/evidence/"
+  ],
+  "command": [
+    ".\\gradlew.bat",
+    "--offline",
+    "--dependency-verification=strict",
+    ":fabric:remapJar",
+    "--rerun-tasks",
+    "--no-build-cache",
+    "--max-workers=1",
+    "--no-daemon",
+    "--console=plain"
+  ],
+  "startedUtc": "2026-10-04T01:54:52.4867346+00:00",
+  "status": "CANDIDATE_PACKAGED_NOT_ABI_APPROVED_NOT_INSTALLED",
+  "exitCode": 0,
+  "finishedUtc": "2026-10-04T01:55:28.2776200+00:00",
+  "inputsUnchanged": true,
+  "changedInputs": [],
+  "inputCount": 657,
+  "logSha256": "fb203e959f84596561cf71454ef9c859987dcf3f79ebfd092f9c0e88c58900ee",
+  "artifacts": [
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.385-test-wiring-and-docs-dev-shadow.jar",
+      "length": 3693976,
+      "sha256": "a9fd610d5f56e684d6c501eacd31524edd4568d8c3dbdc1de9718ad52268b214"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.385-test-wiring-and-docs-sources.jar",
+      "length": 1999431,
+      "sha256": "c22190e8b0d92b6ac182c1b1bf1431b13939c4557d931d0f1bf0d418d9b05958"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.385-test-wiring-and-docs.jar",
+      "length": 6232877,
+      "sha256": "2e90fe7f5dc03ab296f739eaa43f3fe9d31d1a8a5447e9f8ae8a6e0412d39191"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.386-route-display-and-bridge-anchor-dev-shadow.jar",
+      "length": 3695027,
+      "sha256": "b1e2adf44e447f15f2c8ca2f0a08ef575b26488a63d2c512d182dd422bffe4b7"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.386-route-display-and-bridge-anchor-sources.jar",
+      "length": 2002741,
+      "sha256": "c618d2b255432340e1ce45f1d98b643caaa383efd6bae3fcdbf1b2389f345ef3"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.386-route-display-and-bridge-anchor.jar",
+      "length": 6233960,
+      "sha256": "bd95ab8d18de33638899881f16bb3173947083c655b78d24d02aeb5b4bfc17f8"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.386-route-map-display-dev-shadow.jar",
+      "length": 3694596,
+      "sha256": "571c86de5e43b368dc34376d6ba8b6495ba3528e79ef9db3e2ef45cdee1bfc5a"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.386-route-map-display-sources.jar",
+      "length": 2001246,
+      "sha256": "2fee5a674e9d8d755eea743a27e0dd6ddd570423fc54a21ca5576bb8f98f05af"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.386-route-map-display.jar",
+      "length": 6233527,
+      "sha256": "aec18f9318d20bb2931db93dea23e3d6a85b0ce7b6cc2f0d039051511ecb5d13"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.387-bridge-anchor-dev-shadow.jar",
+      "length": 3694936,
+      "sha256": "22fb9666f51a676babea997bf626cbc10f00a85ba8c2f2204ac1ab9b980e4b0b"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.387-bridge-anchor-sources.jar",
+      "length": 2002722,
+      "sha256": "f9bb81ad6117a9648013f402349596a1b751e88a2197f4f3e439b185695d6c42"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.387-bridge-anchor.jar",
+      "length": 6233875,
+      "sha256": "6804002e937c2a807ecaeb5eac9997a3171de86cfe09abafb4ccc19f2705236f"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.388-build-at-map-only-dev-shadow.jar",
+      "length": 3695035,
+      "sha256": "7e465fa545128feb1bbd0de0a6b7733e95579f2ce874ba4a6a246fffe6a1c636"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.388-build-at-map-only-sources.jar",
+      "length": 2003929,
+      "sha256": "10762c3d61723650d44524916d85b8e1f4fbd831b06b245c6a71973bbc3d1218"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.388-build-at-map-only.jar",
+      "length": 6233980,
+      "sha256": "4a84911a9d429a24ddbdbe8b23a522ada17d14398fbcffe0ccd56e0a8f7852d2"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.389-registry-cleanup-dev-shadow.jar",
+      "length": 3695764,
+      "sha256": "0f30e005e23a448fd5c0c66bfd68f2afeeeac73a6fe9a47c9c7310b92c0a8de2"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.389-registry-cleanup-sources.jar",
+      "length": 2006484,
+      "sha256": "8cf09c9a4130834dfa1e209febef2720ff549a4226ae2c5bc45d18cdb06b0285"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.389-registry-cleanup.jar",
+      "length": 6234719,
+      "sha256": "d7f60fa9c56376f805f4da97e3db489f7578170da79c074ae95ee90c57f37a16"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.390-hide-route-markers-and-side-hud-dev-shadow.jar",
+      "length": 3698009,
+      "sha256": "f8f5e5650d95482c9a3d5b0063fe2036456a40f516fc3f57070b96df8f1383cb"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.390-hide-route-markers-and-side-hud-sources.jar",
+      "length": 2009690,
+      "sha256": "14662deca482ccbc0013cd86e3c0dbadbb3fd484aa3012e68fb918d81e321f31"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.390-hide-route-markers-and-side-hud.jar",
+      "length": 6236962,
+      "sha256": "3d45a5b939bf176bf785effe24c58ea330249bd1e8338c327eb6e15e269d6534"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.391-route-chunk-preload-dev-shadow.jar",
+      "length": 3704838,
+      "sha256": "d36560be08bb556924ac8766741ef5362ff9b308832d8fa5b9c0e291951baf32"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.391-route-chunk-preload-sources.jar",
+      "length": 2018942,
+      "sha256": "f2dafcc870f26cee90ca72ba9199b15896198a2199ad9f6204e7df95c85a30e5"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.391-route-chunk-preload.jar",
+      "length": 6243885,
+      "sha256": "2d06db3b759b9a10396d9ae9c326ec1fc4cbc81224084ec619e86fcf44acc351"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.392-codex-r1-r9-fixes-dev-shadow.jar",
+      "length": 3707939,
+      "sha256": "be49e1bbe0060114f39fe8bf221e01a3494ef2124b862de38df40681959d9aa0"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.392-codex-r1-r9-fixes-sources.jar",
+      "length": 2023748,
+      "sha256": "f307e1100f9e336b61e7f7b1d40c58e7d4e5dca961f9fe445dadb90eafc4567a"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.392-codex-r1-r9-fixes.jar",
+      "length": 6247030,
+      "sha256": "90f87c033967b6b71473f146d32f985aaa6a400631e0d3240e9d33fb5609c48d"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.393-ground-snap-and-preload-ui-dev-shadow.jar",
+      "length": 3716398,
+      "sha256": "7c8c200b8ac6e73079f8aa4b1dbda060615adcc8462c7f23308effd1da5f5629"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.393-ground-snap-and-preload-ui-sources.jar",
+      "length": 2031199,
+      "sha256": "ab5d675859d01c2f3b45ba10a18286b08ec798cbaf2f7ecd4eb241116b35f268"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.393-ground-snap-and-preload-ui.jar",
+      "length": 6255609,
+      "sha256": "794e1a6dea9a974efa37450cca3f5d3baf8c5a7f8a62cf9a544350d59f8fda26"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.394-route-ux-batch-dev-shadow.jar",
+      "length": 3729112,
+      "sha256": "c70b801a74d40fc2c2b1f0d1f62d132786aac20b20bc0a6347e050569305cd52"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.394-route-ux-batch-sources.jar",
+      "length": 2040812,
+      "sha256": "89be1e29c6eb6cee27c463494a794f681951bbfbdadb53a6896b7704c9aa413a"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.394-route-ux-batch.jar",
+      "length": 6268422,
+      "sha256": "014d19d266369ce91635b5765aae2e2ae2ceb0a9630c4341a7087704f11cfead"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.395-workbuddy-fixes-dev-shadow.jar",
+      "length": 3731095,
+      "sha256": "ce7a8fbee7eafe904257de7c56329ba6f2d0d0a6f924ced6bd6f3d2f5b91b41b"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.395-workbuddy-fixes-sources.jar",
+      "length": 2045000,
+      "sha256": "14247c378879193089df782eaab6501b1d2c6efaae04857bcd09049be96d73b1"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.395-workbuddy-fixes.jar",
+      "length": 6270433,
+      "sha256": "9b5852af2c3b556513f9c93979c5658f3adc749de0a05a02c03d0c4ed62694a6"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.396-io-not-corruption-dev-shadow.jar",
+      "length": 3731850,
+      "sha256": "93c6a83ca25e0aa3c7d64434e37e6f54a6f10ede0ba09e18187ec0df15b9ce20"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.396-io-not-corruption-sources.jar",
+      "length": 2048737,
+      "sha256": "f40a404d76dc469ed6b87c8934c6fe44759b2508072806cecca8a7996667503d"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.396-io-not-corruption.jar",
+      "length": 6271161,
+      "sha256": "a1303d8f6d0386f81b4dcf5dfec28d8aecb94574f8ec60b2b0ad388a3ee4c2b7"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.397-marker-toggle-seethrough-priority-dev-shadow.jar",
+      "length": 3740005,
+      "sha256": "bd77c1985d28cecd87f6eab02159e76e0b38d0e47d381a77e837d35669b38a3d"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.397-marker-toggle-seethrough-priority-sources.jar",
+      "length": 2061585,
+      "sha256": "fb7b0fdec86a862d3e3bac26d4f22c52e8813081ec3d4958e8ea36cf3c165741"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.397-marker-toggle-seethrough-priority.jar",
+      "length": 6279206,
+      "sha256": "de47e18d677eb00745dce3e851a4917bda2cabbc126dcb78d6fd0a0b9ca3150e"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.398-dock-marker-button-and-priority-cap-dev-shadow.jar",
+      "length": 3740464,
+      "sha256": "2fe1b3dd185b9552d433064d2b1c214443cbf23a343b793adcb7ba4dbe661cde"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.398-dock-marker-button-and-priority-cap-sources.jar",
+      "length": 2063646,
+      "sha256": "ceca40161e6f60ef96087b779df64e3b14799fbe99d71be80cddc011842420eb"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.398-dock-marker-button-and-priority-cap.jar",
+      "length": 6279663,
+      "sha256": "08f3e19b1782d982702ed913c754fdf358d78b85bab07190a6067f229e268aea"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.399-workbuddy-w1-w16-fixes-dev-shadow.jar",
+      "length": 3745168,
+      "sha256": "7fc1bf78c6618a3ea0b7705a25598bb7d2c87574bb1760345f95518b9e276c5d"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.399-workbuddy-w1-w16-fixes-sources.jar",
+      "length": 2073187,
+      "sha256": "6ea99636a397cc858a2212acaf814117e2566bf2cc8de26a921c576ff64cfbaf"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.399-workbuddy-w1-w16-fixes.jar",
+      "length": 6284344,
+      "sha256": "5cbfbe753255b7bccce91b590d210ed4359c192a2d5447dba0e52f6355daf053"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.400-route-preload-tick-fallback-dev-shadow.jar",
+      "length": 3747656,
+      "sha256": "10bafd1f1b72ab4cf005ba019803ff01a8cb4fa4caf8dc5f0e1f06741c64ca3e"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.400-route-preload-tick-fallback-sources.jar",
+      "length": 2077354,
+      "sha256": "2c3bebe9a62ec24bdf61f92046b5039e3631c5d9193a1d2ae747e340179a82d7"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.400-route-preload-tick-fallback.jar",
+      "length": 6286866,
+      "sha256": "3f4c7829172efa5f3cc1e6fa0e5d5c38e343ec8cab94db34a21265b8d433674f"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.401-preflight-exemption-and-checkpoint-cache-dev-shadow.jar",
+      "length": 3751786,
+      "sha256": "f921d98ef66025d76e463cbdd7e7b01cea3ed7a21d2dcb617823b01e8dbb02d4"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.401-preflight-exemption-and-checkpoint-cache-sources.jar",
+      "length": 2083378,
+      "sha256": "765e87e234e34936c33951de57303af804c71d87c029ef603b1a06f5b839ff6d"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.401-preflight-exemption-and-checkpoint-cache.jar",
+      "length": 6291090,
+      "sha256": "16064714c94b2a3a0068c318e2089a651a2b98ae8ce96b11912f1aac2b2dae3e"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.402-gpu-lane-and-structure-cache-diagnostics-dev-shadow.jar",
+      "length": 3752944,
+      "sha256": "8c12560002d6257d5cdba2ee22ee26263f75cfe94e24d62f5640d425995477cc"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.402-gpu-lane-and-structure-cache-diagnostics-sources.jar",
+      "length": 2085281,
+      "sha256": "017cdfa8eb9611f6d3d157552bad97032bf28c868728293b5cc15e78c8f7a017"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.402-gpu-lane-and-structure-cache-diagnostics.jar",
+      "length": 6292321,
+      "sha256": "e918f86c4b7826f0d7e2235d6920b81c10a0a783716580a44b83194eec9e9d68"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.403-audit-postprocess-join-and-counter-cleanup-dev-shadow.jar",
+      "length": 3753241,
+      "sha256": "73e913e53adee8fd057d0cc80835b2b573f19db1fa536741b4010e58e959253c"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.403-audit-postprocess-join-and-counter-cleanup-sources.jar",
+      "length": 2086599,
+      "sha256": "16f94668dcae5c274bb6802399d75687f48b455d100dfd8cb2ea3d850bb0aa04"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.403-audit-postprocess-join-and-counter-cleanup.jar",
+      "length": 6292625,
+      "sha256": "2b4eb560470cde2d422cd51d17833df4f7835dda2a0efec72c80031570edd072"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.404-gameplay-gpu-yield-dev-shadow.jar",
+      "length": 3753336,
+      "sha256": "f01753dc97a49c9827bc04be0b16d2c3a91c03c3b0a306aec5bf669afebd8cc7"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.404-gameplay-gpu-yield-sources.jar",
+      "length": 2087742,
+      "sha256": "3d3bc8bb5cecc8c401a5c51a2ae5e155498bb79b963c0f679dc2d21c7f33f7ae"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.404-gameplay-gpu-yield.jar",
+      "length": 6292719,
+      "sha256": "10ac3fbc998757d79046ad7effe7454d7b5e8db5cf15e6e0127295f2bdd74ecb"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.405-audit-io-degradation-and-counter-cleanup-dev-shadow.jar",
+      "length": 3851762,
+      "sha256": "f450e33a7722ead6437a3843bcd82401bc270948f2be91e0148ec6c0e63a0793"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.405-audit-io-degradation-and-counter-cleanup-sources.jar",
+      "length": 2099585,
+      "sha256": "adc1a68f01387edc4d6cf25b3d967d268f9f737640cf1b8da22dac9652168eca"
+    },
+    {
+      "path": "D:\\云游四海-Mod源码\\roadweaver\\fabric\\build\\libs\\roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.405-audit-io-degradation-and-counter-cleanup.jar",
+      "length": 6393582,
+      "sha256": "6ec2c41db402de8fc697de398cc36803b518819c554f232b944121e00dd2e9e3"
+    }
+  ]
+}

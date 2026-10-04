@@ -1,0 +1,34 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.8/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Architect Plugin: 3.4.164
+Architectury Loom: 1.7.435
+You are using an outdated version of Architectury Loom! This version will not receive any support, please consider updating!
+
+> Task :common:compileJava
+ע: ĳЩ�����ļ�ʹ�û򸲸����ѹ�ʱ�� API��
+ע: �й���ϸ��Ϣ, ��ʹ�� -Xlint:deprecation ���±��롣
+
+> Task :common:processResources
+> Task :common:classes
+> Task :common:jar
+
+> Task :fabric:compileJava
+ע: D:\�����ĺ�-ModԴ��\roadweaver\fabric\src\main\java\net\shiroha233\roadweaver\mixin\fabric\BeardifierMixin.javaʹ�û򸲸����ѹ�ʱ�� API��
+ע: �й���ϸ��Ϣ, ��ʹ�� -Xlint:deprecation ���±��롣
+
+> Task :fabric:processResources
+> Task :fabric:classes
+> Task :fabric:jar
+> Task :fabric:processIncludeJars
+
+> Task :common:transformProductionFabric
+[Architectury Transformer] Read classpath in 1.187 s
+[Architectury Transformer] Transformed jar with 5 transformer(s) in 2.879 s
+
+> Task :fabric:shadowJar
+> Task :fabric:remapJar
+
+BUILD SUCCESSFUL in 35s
+10 actionable tasks: 10 executed
