@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "mod": "plaincraft_great_wall",
+  "version": "0.1.0",
+  "status": "NOT_READY",
+  "note": "Machine-readable release acceptance. Every entry is PASS|FAIL|NOT_RUN|BLOCKED with a relative log path, expected/actual result, hardware, and start/end times. The release may only be signed 'all S5 passed' when every entry is PASS (no FAIL / NOT_RUN / BLOCKED).",
+  "hardware": {
+    "cpu": "NOT_RECORDED",
+    "ram": "NOT_RECORDED",
+    "gpu": "NOT_RECORDED",
+    "jdk": "21 (core)",
+    "os": "Windows"
+  },
+  "acceptance": [
+    {
+      "id": "version-lock",
+      "title": "mod_version=0.1.0 and dependency versions unchanged",
+      "expected": "mod_version=0.1.0; Gradle 9.4.1 / Loom 1.16.3 / Loader 0.19.3 / FabricAPI 0.116.14+1.21.1 / JUnit 5.11.0",
+      "status": "NOT_RUN",
+      "log": null,
+      "actual": null,
+      "startedUtc": null,
+      "finishedUtc": null
+    },
+    {
+      "id": "artifact-contents",
+      "title": "remapJar + sourceJar contain no test/fault/fixture/agents/credentials/machine paths",
+      "expected": "clean artifact; SHA256 recorded",
+      "status": "NOT_RUN",
+      "log": null,
+      "actual": null,
+      "startedUtc": null,
+      "finishedUtc": null
+    },
+    {
+      "id": "reproducible-build",
+      "title": "two clean builds same source/JDK produce identical remapJar SHA256",
+      "expected": "SHA match across two clean builds",
+      "status": "NOT_RUN",
+      "log": null,
+      "actual": null,
+      "startedUtc": null,
+      "finishedUtc": null
+    },
+    {
+      "id": "integration-matrix",
+      "title": "dedicated server + client: core only / FTB absent+present / Road absent+patched / Tectonic / C2ME CPU / fullpack OpenCL",
+      "expected": "each profile verified; unauthenticated C2ME hooks refuse generation; OpenCL menu is not worldgen",
+      "status": "NOT_RUN",
+      "log": null,
+      "actual": null,
+      "startedUtc": null,
+      "finishedUtc": null
+    },
+    {
+      "id": "pack-format",
+      "title": "pack.mcmeta 34..48, datapack 48, resourcepack 34, singular directory names",
+      "expected": "no warnings on 1.21.1",
+      "status": "NOT_RUN",
+      "log": null,
+      "actual": null,
+      "startedUtc": null,
+      "finishedUtc": null
+    },
+    {
+      "id": "lifecycle-evidence",
+      "title": "new world / reopen / same-JVM A->B / changed seed+dimension+resource fingerprint / no-manifest old world rejection / atomic-file rejection",
+      "expected": "itemized evidence for each",
+      "status": "NOT_RUN",
+      "log": null,
+      "actual": null,
+      "startedUtc": null,
+      "finishedUtc": null
+    },
+    {
+      "id": "stress-24h",
+      "title": "24h stress / far-jump / Chunky corridor / CPU-GPU matrix / slice <=40ms / heap plateau",
+      "expected": "every performance gate PASS with real data",
+      "status": "NOT_RUN",
+      "log": null,
+      "actual": null,
+      "startedUtc": null,
+      "finishedUtc": null
+    },
+    {
+      "id": "fault-matrix",
+      "title": "18 fault points x {exception,halt} x 10 rounds recovery",
+      "expected": "per-matrix exact results; corrupt CRC never truncated",
+      "status": "NOT_RUN",
+      "log": null,
+      "actual": null,
+      "startedUtc": null,
+      "finishedUtc": null
+    },
+    {
+      "id": "negotiated-gate",
+      "title": "road-before-wall / shared-cell / protected-gap gate negotiation",
+      "expected": "same frozen gate transaction; no wider hole; no third-party block chiseling",
+      "status": "NOT_RUN",
+      "log": null,
+      "actual": null,
+      "startedUtc": null,
+      "finishedUtc": null
+    },
+    {
+      "id": "full-package",
+      "title": "strict offline clean build + runGameTest + verifyReleaseArtifacts",
+      "expected": "all green; no lowered validation",
+      "status": "NOT_RUN",
+      "log": null,
+      "actual": null,
+      "startedUtc": null,
+      "finishedUtc": null
+    }
+  ]
+}

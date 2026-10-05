@@ -9,20 +9,32 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import local.plaincraft.greatwall.generation.TerrainMarkers;
 import local.plaincraft.greatwall.model.WallTypes.DecayState;
 import local.plaincraft.greatwall.model.WallTypes.Point3i;
 import local.plaincraft.greatwall.model.WallTypes.SiteId;
 import local.plaincraft.greatwall.model.WallTypes.SiteKind;
+import local.plaincraft.greatwall.model.WallTypes.SpawnSlot;
 import local.plaincraft.greatwall.model.WallTypes.WorldRecipe;
 import local.plaincraft.greatwall.persistence.DurableLog;
 import local.plaincraft.greatwall.persistence.HistoryTypes;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.monster.PatrollingMonster;
 import net.minecraft.world.entity.monster.Pillager;
 import net.minecraft.world.entity.monster.Vindicator;
 import net.minecraft.world.entity.raid.Raider;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
 
 /**
  * Permanent-garrison policy. Every birth consumes a one-shot durable slot;
@@ -54,13 +66,17 @@ public final class GarrisonController implements AutoCloseable {
     private final WorldRecipe recipe;
     private final DurableLog journal;
     private final SiteRuntimeIndex sites;
+    private final UUID session;
     private final ConcurrentHashMap<UUID, GameplayTypes.OwnedMob> alive = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, GameplayTypes.SpawnPermit> reserved = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CompletableFuture<Optional<GameplayTypes.SpawnPermit>>> inFlight =
             new ConcurrentHashMap<>();
+    private int tickCounter;
+    private int slotCursor;
 
-    public GarrisonController(ServerLevel level, WorldRecipe recipe, DurableLog journal,
+    public GarrisonController(UUID session, ServerLevel level, WorldRecipe recipe, DurableLog journal,
             SiteRuntimeIndex sites) {
+        this.session = Objects.requireNonNull(session, "session");
         this.level = Objects.requireNonNull(level, "level");
         this.recipe = Objects.requireNonNull(recipe, "recipe");
         this.journal = Objects.requireNonNull(journal, "journal");
@@ -69,6 +85,64 @@ public final class GarrisonController implements AutoCloseable {
 
     public int loadedAndReserved() {
         return alive.size() + reserved.size() + inFlight.size();
+    }
+
+    /**
+     * The garrison birth loop. Runs every 20 ticks on the server owner within a
+     * shared 2ms main-thread budget. Scans loaded owned ENEMY_TOWER/FORT spawn
+     * slots, requires a non-spectator player within 64 blocks and at least 24
+     * blocks away, re-checks {@link #allowed}, and reserves at most two tower
+     * slots per pass. Queue rotation is a simple cursor so one loaded site can
+     * never starve the rest.
+     */
+    public void tick() {
+        if (!level.getServer().isSameThread()) throw new IllegalStateException("tick requires the server owner");
+        if (++tickCounter % 20 != 0) return;
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(2);
+        var slots = sites.allSlots();
+        int examined = 0;
+        int reservedThisPass = 0;
+        for (int i = 0; i < slots.size() && examined < 8 && reservedThisPass < 2; i++) {
+            if (System.nanoTime() > deadline) return;
+            int index = (slotCursor + i) % slots.size();
+            SpawnSlot slot = slots.get(index);
+            if (slot.site().kind() != SiteKind.ENEMY_TOWER && slot.site().kind() != SiteKind.FORT) continue;
+            examined++;
+            var state = sites.realized(slot.site()).orElse(DecayState.RUIN);
+            if (state != DecayState.INTACT && state != DecayState.PARTIAL) continue;
+            Point3i feet = slot.feet();
+            BlockPos pos = new BlockPos(feet.x(), feet.y(), feet.z());
+            if (level.getChunkSource().getChunkNow(feet.x() >> 4, feet.z() >> 4) == null) continue;
+            // Nearest non-spectator player must be within 64 and at least 24 blocks away.
+            ServerPlayer nearest = null;
+            double nearestSq = Double.MAX_VALUE;
+            for (ServerPlayer player : level.players()) {
+                if (player.isSpectator()) continue;
+                double d = player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+                if (d < nearestSq) { nearestSq = d; nearest = player; }
+            }
+            if (nearest == null) continue;
+            if (nearestSq > 64.0 * 64.0 || nearestSq < 24.0 * 24.0) continue;
+            var policy = new GameplayTypes.PolicyInput(
+                    level.getDifficulty() == Difficulty.PEACEFUL,
+                    !level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING),
+                    true, (long) nearestSq, level.getDayTime(), state);
+            if (!allowed(policy)) continue;
+            int ordinal = slotOrdinal(slot);
+            if (ordinal < 0) continue;
+            var request = new GameplayTypes.SpawnRequest(slot.site(), slot.slot(), ordinal, feet,
+                    slot.entityType(), 1, GameplayTypes.GarrisonState.valueOf(state.name()), 0, session);
+            reserve(request);
+            reservedThisPass++;
+        }
+        slotCursor = (slotCursor + examined) % Math.max(1, slots.size());
+    }
+
+    private static int slotOrdinal(SpawnSlot slot) {
+        // The birth ordinal is the local slot index: entityUuid(site, slot) is the
+        // deterministic per-slot entity identity, and SlotKey(site, slot, 0) is the
+        // one-shot durable consumption key. Stable across restarts, never re-rolled.
+        return slot.slot();
     }
 
     /** Reserves a slot by consuming it durably before any entity exists. */
@@ -115,6 +189,9 @@ public final class GarrisonController implements AutoCloseable {
                                 receipt.sequence(), request.session());
                         reserved.put(entity, permit);
                         fresh.complete(Optional.of(permit));
+                        // Durable consume is done; add the entity on this same owner
+                        // step so the birth completes while the slot is still fresh.
+                        spawn(permit);
                     });
                 }, level.getServer())
                 .exceptionally(failure -> {
@@ -129,6 +206,7 @@ public final class GarrisonController implements AutoCloseable {
     public boolean spawn(GameplayTypes.SpawnPermit permit) {
         Objects.requireNonNull(permit, "permit");
         if (!level.getServer().isSameThread()) throw new IllegalStateException("spawn requires the server owner");
+        if (!permit.session().equals(session)) return false;
         if (!reserved.containsKey(permit.entity())) return false;
         EntityType<?> type = EntityType.byString(permit.entityType()).orElse(null);
         if (type == null) {
@@ -144,10 +222,23 @@ public final class GarrisonController implements AutoCloseable {
         mob.moveTo(permit.feet().x() + 0.5, permit.feet().y(), permit.feet().z() + 0.5, 0.0F, 0.0F);
         mob.setPersistenceRequired();
         mob.setCanPickUpLoot(false);
+        // Finalize on the server owner before adding, matching the vanilla STRUCTURE path.
+        BlockPos feet = new BlockPos(permit.feet().x(), permit.feet().y(), permit.feet().z());
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(feet), MobSpawnType.STRUCTURE, null);
+        if (mob instanceof Pillager) {
+            mob.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.CROSSBOW));
+            mob.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        } else if (mob instanceof Vindicator) {
+            mob.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE));
+            mob.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        }
         if (mob instanceof Raider raider) raider.setCanJoinRaid(false);
+        if (mob instanceof PatrollingMonster patroller) patroller.setPatrolLeader(false);
         reserved.remove(permit.entity());
         alive.put(permit.entity(), new GameplayTypes.OwnedMob(permit.site(), permit.ordinal(),
                 permit.entity(), permit.sequence()));
+        mob.setAttached(TerrainMarkers.OWNED_MOB, new GameplayTypes.OwnedMob(permit.site(),
+                permit.ordinal(), permit.entity(), permit.sequence()));
         // addFreshEntity can still refuse; the slot is not refunded either way.
         boolean added = level.addFreshEntity(mob);
         appendResult(permit, added ? HistoryTypes.SpawnResult.ADDED : HistoryTypes.SpawnResult.REFUSED);

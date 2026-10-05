@@ -9,8 +9,10 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 public final class S1TemplateSet {
     private S1TemplateSet() {}
     public static Map<SiteKind, ComponentTemplate> create(long seed) {
+        return create(seed, S1TemplateSet::resolve);
+    }
+    public static Map<SiteKind, ComponentTemplate> create(long seed, PaletteBinding palette) {
         var decay = new DecayField(seed);
-        PaletteBinding palette = S1TemplateSet::resolve;
         return Map.of(SiteKind.WALL, new WallSection(decay, palette), SiteKind.ENEMY_TOWER, new EnemyTower(decay, palette),
                 SiteKind.BEACON, new BeaconTower(decay, palette), SiteKind.GATE, new Gate(decay, palette),
                 SiteKind.WATER_GATE, new WaterGate(decay, palette), SiteKind.END_CAP, new EndCap(decay, palette),

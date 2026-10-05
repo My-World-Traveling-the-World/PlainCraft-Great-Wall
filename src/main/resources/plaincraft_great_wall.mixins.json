@@ -6,6 +6,7 @@
   "mixins": ["ChunkMapAccess", "TerrainChunkAccess", "MinecraftServerProbeMixin", "VanillaGateMixin",
     "NoiseInterpolatorAccess", "NoiseGeneratorAccess", "NoiseSliceMixin",
     "SpawnProbeMixin", "BootstrapSpawnMixin", "TreeFeatureMixin", "OwnershipMutationMixin",
-    "NaturalSpawnMixin"],
+    "NaturalSpawnMixin", "BaseSpawnerAccess", "OwnedMobLootMixin", "IgnitionUseMixin",
+    "TorchIgnitionMixin", "WallSpawnerMixin"],
   "injectors": {"defaultRequire": 1}
 }

@@ -12,17 +12,34 @@ import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import local.plaincraft.greatwall.GreatWallMod;
+import local.plaincraft.greatwall.command.DiagnosticExporter;
+import local.plaincraft.greatwall.compat.road.NegotiatedGateService;
+import local.plaincraft.greatwall.compat.road.RoadWeaverAdapter;
+import local.plaincraft.greatwall.compat.road.WallArchBackfill;
 import local.plaincraft.greatwall.component.S1TemplateSet;
+import local.plaincraft.greatwall.decay.BiomePaletteIndex;
+import local.plaincraft.greatwall.decay.PaletteResolver;
+import local.plaincraft.greatwall.diagnostics.DebugService;
 import local.plaincraft.greatwall.diagnostics.StageTrace;
+import local.plaincraft.greatwall.gameplay.BeaconLedger;
+import local.plaincraft.greatwall.gameplay.GameplayTypes;
+import local.plaincraft.greatwall.gameplay.GarrisonController;
+import local.plaincraft.greatwall.gameplay.IgnitionService;
+import local.plaincraft.greatwall.gameplay.SiteRuntimeIndex;
+import local.plaincraft.greatwall.gameplay.WallSpawnerGuard;
 import local.plaincraft.greatwall.generation.*;
 import local.plaincraft.greatwall.model.PlanLease;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.ChunkEvidenceStore;
+import local.plaincraft.greatwall.persistence.GateLedger;
+import local.plaincraft.greatwall.persistence.HistoryJournal;
 import local.plaincraft.greatwall.persistence.SegmentCacheStore;
+import local.plaincraft.greatwall.persistence.WallWorldState;
 import local.plaincraft.greatwall.persistence.WorldManifest;
 import local.plaincraft.greatwall.planning.PlannerScheduler;
 import local.plaincraft.greatwall.terrain.RealizationPlanner;
@@ -53,6 +70,9 @@ final class ProductionSession implements AutoCloseable {
     private final CompletableFuture<Void> drained = new CompletableFuture<>();
     private final ThreadPoolExecutor io;
     private final WorldBootstrap bootstrap;
+    private final ExecutorService historyIo;
+    private final ConcurrentHashMap<String, Object> gameplay = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, WallWorldState> worldState = new ConcurrentHashMap<>();
 
     ProductionSession(MinecraftServer server, WorldServices services) {
         this.server = server; this.services = services;
@@ -67,6 +87,10 @@ final class ProductionSession implements AutoCloseable {
         io = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(128), task -> {
             var thread = new Thread(task, "pgw-production-io-" + runtime); thread.setDaemon(true); return thread;
         }, new ThreadPoolExecutor.AbortPolicy());
+        // HistoryJournal.close() shuts down its ioOwner, so it must never share production.io.
+        historyIo = java.util.concurrent.Executors.newSingleThreadExecutor(task -> {
+            var thread = new Thread(task, "pgw-history-io-" + runtime); thread.setDaemon(true); return thread;
+        });
         bootstrap = new WorldBootstrap(server, new WorldManifest(root.resolve("manifest")), io);
         bootstrap.ready().whenComplete((recipe, error) -> server.execute(() -> {
             if (state.containsKey("closed")) return;
@@ -79,13 +103,52 @@ final class ProductionSession implements AutoCloseable {
                 var planner = bootstrap.transferToPlanner(new SegmentCacheStore(root.resolve("cache"), recipe), io);
                 var store = ChunkEvidenceStore.production(root.resolve("evidence"));
                 var terrain = new TerrainSnapshotService(store, io, frozen.blocks());
-                var realization = new RealizationPlanner(recipe, new SurfaceProbe(), S1TemplateSet.create(recipe.seed()));
+                var realization = buildRealization(level, recipe);
                 var barrier = new WallStageCoordinator(level, services, recipe, planner, terrain, realization,
                         new ChunkPlanCompiler(), new ChunkWallWriter());
                 var snapshot = new Installed(recipe, planner, barrier, frozen);
                 snapshots.put("installed", snapshot);
                 planner.startupPump();
                 trace.record("PRODUCTION_RECIPE_INSTALLED", recipe.dimension(), 0, 0, "recipe-durable-before-generation", "none");
+                // S3 gameplay service assembly. The journal is world-scoped (manifest.instance),
+                // owns a dedicated IO executor (close() shuts it down), and recovers the beacon count
+                // before any credit ledger is published. Recovery is async but all service objects
+                // are constructed on the server owner.
+                var journal = new HistoryJournal(root.resolve("history"), recipe.instance(), historyIo);
+                gameplay.put("history", journal);
+                journal.open().thenAcceptAsync(recovery -> {
+                    active();
+                    var sites = new SiteRuntimeIndex(recipe);
+                    var beacons = new BeaconLedger(runtime, recipe.wallId(), journal, server,
+                            new GameplayTypes.BeaconProgress(recovery.head().beaconCount(), 0L, 10L, false, true));
+                    var ignition = new IgnitionService(runtime, sites, beacons);
+                    var garrison = new GarrisonController(runtime, level, recipe, journal, sites);
+                    var spawners = new WallSpawnerGuard(garrison, sites);
+                    var gates = new GateLedger(journal, server);
+                    var backfill = new WallArchBackfill(level, gates);
+                    var negotiated = new NegotiatedGateService(services, planner, gates, backfill);
+                    var debug = new DebugService(services);
+                    var exporter = new DiagnosticExporter(
+                            server.getWorldPath(LevelResource.ROOT).resolve("greatwall-exports"), planner, server);
+                    var state = new WallWorldState(journal.state());
+                    level.getDataStorage().set("plaincraft_great_wall", state);
+                    gameplay.put("sites", sites);
+                    gameplay.put("beacons", beacons);
+                    gameplay.put("ignition", ignition);
+                    gameplay.put("garrison", garrison);
+                    gameplay.put("spawners", spawners);
+                    gameplay.put("gates", gates);
+                    gameplay.put("negotiated", negotiated);
+                    gameplay.put("debug", debug);
+                    gameplay.put("diagnosticExporter", exporter);
+                    if (FabricLoader.getInstance().isModLoaded("roadweaver")) {
+                        gameplay.put("roadWeaverAdapter", new RoadWeaverAdapter(services, gates, backfill));
+                    }
+                    worldState.put("world", state);
+                    trace.record("PRODUCTION_GAMEPLAY_READY", recipe.dimension(), 0, 0, "history-recovered", "none");
+                    GreatWallMod.LOGGER.info("[GreatWall:S1C] GAMEPLAY_READY beacons={} session={}",
+                            recovery.head().beaconCount(), runtime);
+                }, server).exceptionally(failure -> { fail(failure); return null; });
                 installed.complete(snapshot);
                 GreatWallMod.LOGGER.info("[GreatWall:S1C] FIXTURE_RECIPE_READY runtime={} wall={} spawn={} axis={} production=OFF",
                         runtime, recipe.wallId(), recipe.frozenSpawn(), recipe.axis());
@@ -109,6 +172,39 @@ final class ProductionSession implements AutoCloseable {
     WallStageCoordinator barrier(ServerLevel level) {
         var value = snapshots.get("installed");
         return value != null && value.recipe().dimension().equals(level.dimension().location().toString()) ? value.barrier() : null;
+    }
+    UUID session() { return runtime; }
+    BeaconLedger beacons() { return requireGameplay("beacons"); }
+    GateLedger gates() { return requireGameplay("gates"); }
+    SiteRuntimeIndex sites() { return requireGameplay("sites"); }
+    GarrisonController garrison() { return requireGameplay("garrison"); }
+    IgnitionService ignition() { return requireGameplay("ignition"); }
+    WallSpawnerGuard spawners() { return requireGameplay("spawners"); }
+    HistoryJournal history() { return requireGameplay("history"); }
+    NegotiatedGateService negotiated() { return requireGameplay("negotiated"); }
+    DebugService debug() { return requireGameplay("debug"); }
+    DiagnosticExporter diagnosticExporter() { return requireGameplay("diagnosticExporter"); }
+    RoadWeaverAdapter roadWeaverAdapter() { return requireGameplay("roadWeaverAdapter"); }
+    WallWorldState worldState() {
+        var value = worldState.get("world");
+        if (value == null) throw new IllegalStateException("wall history header is not recovered");
+        return value;
+    }
+    /** Null-returning accessors for lifecycle events that may fire before gameplay assembly. */
+    SiteRuntimeIndex sitesIfReady() { return (SiteRuntimeIndex) gameplay.get("sites"); }
+    GarrisonController garrisonIfReady() { return (GarrisonController) gameplay.get("garrison"); }
+    RoadWeaverAdapter roadWeaverAdapterIfReady() { return (RoadWeaverAdapter) gameplay.get("roadWeaverAdapter"); }
+    private <T> T requireGameplay(String key) {
+        @SuppressWarnings("unchecked")
+        T value = (T) gameplay.get(key);
+        if (value == null) throw new IllegalStateException("gameplay service not assembled: " + key);
+        return value;
+    }
+    private RealizationPlanner buildRealization(ServerLevel level, WorldRecipe recipe) throws IOException {
+        var catalog = PaletteResolver.load(server.getResourceManager());
+        var palette = new PaletteResolver(recipe.seed(), catalog);
+        var biome = new BiomePaletteIndex(BiomePaletteIndex.freeze(level.registryAccess(), catalog));
+        return new RealizationPlanner(recipe, new SurfaceProbe(), biome, S1TemplateSet.create(recipe.seed(), palette));
     }
     void openDimension(ServerLevel level) { levels.put(level.dimension().location().toString(), level); }
     void warming() {
@@ -140,6 +236,8 @@ final class ProductionSession implements AutoCloseable {
             trace.record("PRODUCTION_ACTIVE", snapshot.recipe().dimension(), 0, 0, "server-started-and-prewarm-ready", "none");
         }
         snapshot.planner().tick(new SliceBudget(4096, System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25)));
+        var garrison = gameplay.get("garrison");
+        if (garrison instanceof GarrisonController controller) controller.tick();
     }
 
     PlanLease<Void> featureLease(ChunkKey key) {
@@ -249,8 +347,18 @@ final class ProductionSession implements AutoCloseable {
         });
         var snapshot = snapshots.get("installed");
         if (snapshot != null) snapshot.barrier().close();
+        // Stop new gameplay mutations before flushing permanent history: garrison birth and
+        // beacon credits must cease, then the journal flushes and shuts down its own executor.
+        for (String key : List.of("garrison", "beacons", "sites", "negotiated", "debug", "roadWeaverAdapter")) {
+            var service = gameplay.get(key);
+            if (service instanceof AutoCloseable closable) {
+                try { closable.close(); } catch (Exception ignored) {}
+            }
+        }
+        var journal = (HistoryJournal) gameplay.get("history");
         bootstrap.close();
         bootstrap.drain().whenComplete((value, error) -> {
+            if (journal != null) journal.close();
             io.shutdown();
             if (error == null) drained.complete(null); else drained.completeExceptionally(error);
         });

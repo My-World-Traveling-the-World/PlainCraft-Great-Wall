@@ -81,8 +81,12 @@ public final class FtbIntegration {
         if (player == null || player.getServer() == null) return Optional.empty();
         var services = WorldServices.find(player.getServer());
         if (services == null) return Optional.empty();
-        // Wired once WorldServices exposes the gameplay ledger and wall id getters.
-        return Optional.empty();
+        // The ledger is world-scoped and resolved only after the gameplay services are active.
+        try {
+            return Optional.of(new BeaconView(services.recipe().wallId(), services.beacons()));
+        } catch (RuntimeException inactive) {
+            return Optional.empty();
+        }
     }
 
     public static void lint(BaseQuestFile file) {

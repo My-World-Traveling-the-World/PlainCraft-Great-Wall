@@ -12,7 +12,20 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import local.plaincraft.greatwall.GreatWallMod;
+import local.plaincraft.greatwall.command.DiagnosticExporter;
+import local.plaincraft.greatwall.command.GreatWallCommands;
+import local.plaincraft.greatwall.compat.road.NegotiatedGateService;
+import local.plaincraft.greatwall.compat.road.RoadWeaverAdapter;
+import local.plaincraft.greatwall.diagnostics.DebugService;
+import local.plaincraft.greatwall.gameplay.BeaconLedger;
+import local.plaincraft.greatwall.gameplay.GarrisonController;
+import local.plaincraft.greatwall.gameplay.IgnitionService;
+import local.plaincraft.greatwall.gameplay.SiteRuntimeIndex;
+import local.plaincraft.greatwall.gameplay.WallSpawnerGuard;
 import local.plaincraft.greatwall.generation.WallStageCoordinator;
+import local.plaincraft.greatwall.persistence.GateLedger;
+import local.plaincraft.greatwall.persistence.HistoryJournal;
+import local.plaincraft.greatwall.persistence.WallWorldState;
 import local.plaincraft.greatwall.planning.ProbePlanner;
 import local.plaincraft.greatwall.planning.PlannerScheduler;
 import local.plaincraft.greatwall.generation.VegetationGuard;
@@ -21,13 +34,12 @@ import local.plaincraft.greatwall.generation.TerrainEngine;
 import local.plaincraft.greatwall.model.PlanLease;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -94,6 +106,25 @@ public final class WorldServices {
             var service = find(level.getServer());
             if (service != null && service.barrier(level) != null) service.barrier(level).verifyLoaded(chunk);
         });
+        ServerChunkEvents.CHUNK_UNLOAD.register((level, chunk) -> {
+            var service = find(level.getServer());
+            if (service == null || service.production == null) return;
+            var sites = service.production.sitesIfReady();
+            if (sites != null) sites.unloaded(new ChunkKey(level.dimension().location().toString(),
+                    chunk.getPos().x, chunk.getPos().z));
+        });
+        ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
+            var service = find(level.getServer());
+            if (service == null || service.production == null) return;
+            var garrison = service.production.garrisonIfReady();
+            if (garrison != null) garrison.loaded(entity);
+        });
+        ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> {
+            var service = find(level.getServer());
+            if (service == null || service.production == null) return;
+            var garrison = service.production.garrisonIfReady();
+            if (garrison != null) garrison.unloaded(entity);
+        });
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             var services = find(server);
             if (services == null) return;
@@ -157,16 +188,8 @@ public final class WorldServices {
                 services.writeEvidence("STOPPED");
             }
         });
-        CommandRegistrationCallback.EVENT.register((dispatcher, access, selection) -> dispatcher.register(
-                Commands.literal("greatwall").requires(source -> source.hasPermission(2))
-                        .then(Commands.literal("status").executes(context -> {
-                            var services = find(context.getSource().getServer());
-                            context.getSource().sendSuccess(() -> Component.literal(services == null
-                                    ? "Wall production OFF"
-                                    : services.production != null ? "S1C isolated fixture; production OFF " + services.production.diagnostics()
-                                    : "S0 " + services.planner.state() + " " + services.failure + " " + services.planner.trace().counts()), false);
-                            return 1;
-                        }))));
+        CommandRegistrationCallback.EVENT.register((dispatcher, access, selection) ->
+                GreatWallCommands.register(dispatcher, access, selection));
     }
 
     private void openDimension(ServerLevel level) {
@@ -206,6 +229,19 @@ public final class WorldServices {
     public TreeBoundsCatalog trees() { return requireProductionSession().trees(); }
     public CompletableFuture<WorldRecipe> recipeReady() { return requireProductionSession().recipeReady(); }
     public Map<String, Object> productionDiagnostics() { return requireProductionSession().diagnostics(); }
+    public BeaconLedger beacons() { return requireProductionSession().beacons(); }
+    public GateLedger gates() { return requireProductionSession().gates(); }
+    public SiteRuntimeIndex sites() { return requireProductionSession().sites(); }
+    public GarrisonController garrison() { return requireProductionSession().garrison(); }
+    public IgnitionService ignition() { return requireProductionSession().ignition(); }
+    public WallSpawnerGuard spawners() { return requireProductionSession().spawners(); }
+    public HistoryJournal history() { return requireProductionSession().history(); }
+    public NegotiatedGateService negotiated() { return requireProductionSession().negotiated(); }
+    public DebugService debug() { return requireProductionSession().debug(); }
+    public DiagnosticExporter diagnosticExporter() { return requireProductionSession().diagnosticExporter(); }
+    public RoadWeaverAdapter roadWeaverAdapter() { return requireProductionSession().roadWeaverAdapter(); }
+    public UUID session() { return requireProductionSession().session(); }
+    public WallWorldState worldState() { return requireProductionSession().worldState(); }
     public WallStageCoordinator barrier(ServerLevel level) {
         return production == null ? barriers.get(level) : production.barrier(level);
     }

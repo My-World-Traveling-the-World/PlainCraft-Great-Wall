@@ -34,7 +34,11 @@
       "local.plaincraft.greatwall.gametest.HydroBoundaryRegressionTests",
       "local.plaincraft.greatwall.gametest.AdjacentFixtureDiagnosticTests",
       "local.plaincraft.greatwall.gametest.RampGroundPortalTests",
-      "local.plaincraft.greatwall.gametest.ColdCaptureAllocationTests"
+      "local.plaincraft.greatwall.gametest.ColdCaptureAllocationTests",
+      "local.plaincraft.greatwall.gametest.VisualGalleryFixture",
+      "local.plaincraft.greatwall.gametest.PaletteGameTests",
+      "local.plaincraft.greatwall.gametest.NegotiatedGateGameTests",
+      "local.plaincraft.greatwall.gametest.LifecycleGameTests"
     ]
   },
   "depends": {

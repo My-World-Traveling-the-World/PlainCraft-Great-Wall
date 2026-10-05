@@ -11,6 +11,7 @@ import local.plaincraft.greatwall.generation.TerrainMarkers;
 import local.plaincraft.greatwall.model.WallTypes.BeaconId;
 import local.plaincraft.greatwall.model.WallTypes.BlockEntityIntent;
 import local.plaincraft.greatwall.model.WallTypes.ChunkKey;
+import local.plaincraft.greatwall.model.WallTypes.DecayState;
 import local.plaincraft.greatwall.model.WallTypes.Point3i;
 import local.plaincraft.greatwall.model.WallTypes.SiteId;
 import local.plaincraft.greatwall.model.WallTypes.SpawnSlot;
@@ -26,6 +27,7 @@ public final class SiteRuntimeIndex implements AutoCloseable {
     private final WorldRecipe recipe;
     private final ConcurrentHashMap<ChunkKey, List<BlockEntityIntent>> loaded = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ChunkKey, List<SpawnSlot>> slotBuckets = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<SiteId, DecayState> realizedStates = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     public SiteRuntimeIndex(WorldRecipe recipe) {
@@ -42,6 +44,7 @@ public final class SiteRuntimeIndex implements AutoCloseable {
         // Same hash is idempotent: a reload must not duplicate the bucket.
         loaded.putIfAbsent(key, List.copyOf(marker.gameplay()));
         slotBuckets.putIfAbsent(key, List.copyOf(marker.spawnSlots()));
+        marker.realizedStates().forEach(realizedStates::putIfAbsent);
     }
 
     public void unloaded(ChunkKey chunk) {
@@ -56,10 +59,9 @@ public final class SiteRuntimeIndex implements AutoCloseable {
         for (List<BlockEntityIntent> bucket : loaded.values()) {
             for (BlockEntityIntent intent : bucket) {
                 if (!intent.pos().equals(pos)) continue;
-                if (!"FIREPIT".equals(intent.type())) return Optional.empty();
-                int ordinal = parseInt(intent.fields().get("ordinal"));
-                long beaconOrdinal = parseLong(intent.fields().get("beacon"));
-                BeaconId beacon = new BeaconId(intent.site().wallId(), beaconOrdinal);
+                if (!"minecraft:campfire".equals(intent.type())) return Optional.empty();
+                int ordinal = intent.localId();
+                BeaconId beacon = new BeaconId(intent.site().wallId(), intent.site().ordinal());
                 boolean lit = Boolean.parseBoolean(intent.fields().getOrDefault("lit", "false"));
                 boolean waterlogged = Boolean.parseBoolean(
                         intent.fields().getOrDefault("waterlogged", "false"));
@@ -129,6 +131,21 @@ public final class SiteRuntimeIndex implements AutoCloseable {
         return false;
     }
 
+    /** The recorded realized decay state for a site, or empty when not loaded. */
+    public Optional<DecayState> realized(SiteId site) {
+        Objects.requireNonNull(site, "site");
+        ensureOpen();
+        return Optional.ofNullable(realizedStates.get(site));
+    }
+
+    /** Every loaded spawn slot, unsorted, for the garrison tick loop. */
+    public List<SpawnSlot> allSlots() {
+        ensureOpen();
+        List<SpawnSlot> result = new ArrayList<>();
+        for (List<SpawnSlot> bucket : slotBuckets.values()) result.addAll(bucket);
+        return List.copyOf(result);
+    }
+
     /** Snapshot of every loaded site bucket, for diagnostics. */
     public int loadedChunks() {
         ensureOpen();
@@ -145,6 +162,7 @@ public final class SiteRuntimeIndex implements AutoCloseable {
         if (!closed.compareAndSet(false, true)) return;
         loaded.clear();
         slotBuckets.clear();
+        realizedStates.clear();
     }
 
     private static int parseInt(String raw) {

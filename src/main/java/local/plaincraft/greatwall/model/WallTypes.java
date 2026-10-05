@@ -243,7 +243,8 @@ public final class WallTypes {
         }
     }
 
-    public record StationTable(List<Station> stations, List<BreakInterval> breaks, String hash) {
+    public record StationTable(List<Station> stations, List<BreakInterval> breaks, String hash,
+            Map<Long, String> biomeKeys) {
         public StationTable {
             stations = List.copyOf(stations);
             breaks = List.copyOf(breaks);
@@ -253,6 +254,16 @@ public final class WallTypes {
                 if (s.globalSQ8() <= prev) throw new IllegalArgumentException("station globalSQ8 strictly increasing required");
                 prev = s.globalSQ8();
             }
+            var keys = new java.util.TreeMap<Long, String>();
+            for (var entry : biomeKeys.entrySet()) {
+                if (entry.getKey() == null || entry.getKey() < 0) throw new IllegalArgumentException("biome station key >=0 required");
+                if (entry.getValue() == null) throw new IllegalArgumentException("biome key required");
+                keys.put(entry.getKey(), entry.getValue());
+            }
+            biomeKeys = java.util.Collections.unmodifiableMap(keys);
+        }
+        public StationTable(List<Station> stations, List<BreakInterval> breaks, String hash) {
+            this(stations, breaks, hash, Map.of());
         }
     }
 

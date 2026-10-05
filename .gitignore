@@ -5,6 +5,7 @@ out/
 .idea/
 *.iml
 *.log
+logs/
 
 # Machine-local compile-only inputs (never bundled into the release jar).
 # libs/roadweaver-interop-compile-only.jar provides the RoadWeaver interop ABI

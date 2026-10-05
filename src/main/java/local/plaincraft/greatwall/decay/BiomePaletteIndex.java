@@ -29,11 +29,11 @@ import net.minecraft.world.level.biome.Biome;
  */
 public final class BiomePaletteIndex {
     private static final ResourceLocation SANDSTONE_TAG =
-            ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall", "sandstone_biomes");
+            ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall", "palette_sandstone");
     private static final ResourceLocation RED_SANDSTONE_TAG =
-            ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall", "red_sandstone_biomes");
+            ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall", "palette_red_sandstone");
     private static final ResourceLocation DEEPSLATE_TAG =
-            ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall", "deepslate_biomes");
+            ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall", "palette_deepslate");
 
     private final PaletteTypes.Snapshot snapshot;
 
@@ -96,8 +96,20 @@ public final class BiomePaletteIndex {
      * caller error rather than a reason to query the world here.
      */
     public List<BiomeStation> ribbon(List<Station> stations, Map<Long, ColumnSample> alreadySampled) {
-        Objects.requireNonNull(stations, "stations");
         Objects.requireNonNull(alreadySampled, "alreadySampled");
+        var biomeKeys = new java.util.HashMap<Long, String>();
+        for (var entry : alreadySampled.entrySet()) biomeKeys.put(entry.getKey(), entry.getValue().biomeKey());
+        return ribbonByKey(stations, biomeKeys);
+    }
+
+    /**
+     * Builds the material ribbon for the given stations from an already-frozen
+     * globalSQ8 -> biomeKey map. A missing column is a caller error rather than
+     * a reason to query the world here.
+     */
+    public List<BiomeStation> ribbonByKey(List<Station> stations, Map<Long, String> biomeKeys) {
+        Objects.requireNonNull(stations, "stations");
+        Objects.requireNonNull(biomeKeys, "biomeKeys");
         if (stations.isEmpty()) throw new WallFailure(FailureCode.INVALID_RESOURCE, "ribbon needs stations");
         List<BiomeStation> ribbon = new ArrayList<>(stations.size());
         long previous = Long.MIN_VALUE;
@@ -109,13 +121,12 @@ public final class BiomePaletteIndex {
                 throw new WallFailure(FailureCode.INVALID_RESOURCE, "ribbon stations must strictly increase");
             }
             previous = station.globalSQ8();
-            ColumnSample sample = alreadySampled.get(station.globalSQ8());
-            if (sample == null) {
+            String biomeKey = biomeKeys.get(station.globalSQ8());
+            if (biomeKey == null) {
                 throw new WallFailure(FailureCode.T0_MISSING,
                         "ribbon station has no sampled column: " + station.globalSQ8());
             }
-            ribbon.add(new BiomeStation(station.globalSQ8(), sample.biomeKey(),
-                    classify(sample.biomeKey())));
+            ribbon.add(new BiomeStation(station.globalSQ8(), biomeKey, classify(biomeKey)));
         }
         return List.copyOf(ribbon);
     }

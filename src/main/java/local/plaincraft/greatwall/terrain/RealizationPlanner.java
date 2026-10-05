@@ -27,9 +27,14 @@ public final class RealizationPlanner {
     private final SurfaceProbe probe;
     private final Map<SiteKind,ComponentTemplate> templates;
     private final WorldRecipe recipe;
+    private final local.plaincraft.greatwall.decay.BiomePaletteIndex biomeIndex;
     public RealizationPlanner(SurfaceProbe probe,Map<SiteKind,ComponentTemplate> templates){this(null,probe,templates);}
     public RealizationPlanner(WorldRecipe recipe,SurfaceProbe probe,Map<SiteKind,ComponentTemplate> templates){
-        this.recipe=recipe;this.probe=Objects.requireNonNull(probe);this.templates=Map.copyOf(templates);
+        this(recipe,probe,null,templates);
+    }
+    public RealizationPlanner(WorldRecipe recipe,SurfaceProbe probe,
+            local.plaincraft.greatwall.decay.BiomePaletteIndex biomeIndex,Map<SiteKind,ComponentTemplate> templates){
+        this.recipe=recipe;this.probe=Objects.requireNonNull(probe);this.biomeIndex=biomeIndex;this.templates=Map.copyOf(templates);
     }
     public RealizationCell resolve(Input input) {
         return resolve(input,null,null);
@@ -407,7 +412,8 @@ public final class RealizationPlanner {
     }
     private ComponentInput componentInput(Input input,SiteRecord site,List<Station> stations,DecaySample decay,List<WaterEvidence> waters,
             DimensionBounds bounds,Map<Point3i,ProbeResult> known) {
-        var provisional=new ComponentInput(site,stations,Map.of(),decay,PaletteFamily.STONE,false,waters,List.of());
+        var materials=materials(input,stations);
+        var provisional=new ComponentInput(site,stations,Map.of(),decay,PaletteFamily.STONE,false,waters,materials);
         var template=templates.get(site.id().kind());if(template==null)throw new IllegalArgumentException("missing template "+site.id().kind());
         Bounds world=Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
         long columns=Math.multiplyExact((long)world.maxXExclusive()-world.minX(),(long)world.maxZExclusive()-world.minZ());
@@ -435,13 +441,19 @@ public final class RealizationPlanner {
         var evidence=new GroundEntranceContract.Evidence(
                 recipe==null?GroundEntranceContract.Source.ANALYTIC_FIXTURE:GroundEntranceContract.Source.DURABLE_T0,
                 bounds,input.columns());
-        var candidate=new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,List.of(),evidence);
+        var candidate=new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,materials,evidence);
         if(Boolean.getBoolean("greatwall.s1c.protectionTrace")&&site.id().kind()==SiteKind.FORT&&site.id().ordinal()==0){
             var certificate=GroundEntranceContract.inspect(site.frame(),GroundEntranceContract.Corridor.fort(),supports,evidence);
             local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                     "[GreatWall:entrance] fort0 frame={} source={} certificate={}",site.frame(),evidence.source(),certificate);
         }
         return candidate;
+    }
+    private List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> materials(Input input, List<Station> stations) {
+        if (biomeIndex == null) return List.of();
+        var keys = new java.util.HashMap<Long, String>();
+        for (var plan : input.plans().plans()) keys.putAll(plan.stations().biomeKeys());
+        return biomeIndex.ribbonByKey(stations, keys);
     }
     private static long workingBytes(Input input) {
         long bytes=Math.addExact(8192,Math.multiplyExact(256L,input.columns().size()));

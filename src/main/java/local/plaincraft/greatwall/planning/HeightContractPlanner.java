@@ -112,9 +112,21 @@ public final class HeightContractPlanner {
             int flags = node.flags | (cuts[i] || i + 1 < n && cuts[i + 1] ? 16 : 0);
             stations.add(new Station(node.s, node.point, y, flags));
         }
+        // Segment boundary stations (start/end) carry no sampled column of their
+        // own: their walk height is anchored to geometry, not terrain. Derive their
+        // biome from the nearest interior station so the ribbon stays complete.
+        var biomeKeys = new java.util.LinkedHashMap<Long, String>();
+        for (int i = 0; i < n; i++) {
+            var node = nodes.get(i);
+            ColumnSample sample;
+            if (node.s == start) sample = required(columns, nodes.get(i + 1).point);
+            else if (node.s == end) sample = required(columns, nodes.get(i - 1).point);
+            else sample = required(columns, node.point);
+            biomeKeys.put(node.s, sample.biomeKey());
+        }
         var merged = mergeBreaks(breaks);
-        var table = new StationTable(stations, merged, "0".repeat(64));
-        return new StationTable(stations, merged, DeterministicHash.sha256(CanonicalCodec.stations(table)));
+        var table = new StationTable(stations, merged, "0".repeat(64), biomeKeys);
+        return new StationTable(stations, merged, DeterministicHash.sha256(CanonicalCodec.stations(table)), biomeKeys);
     }
 
     public int walkY(StationTable table, long globalSQ8) {

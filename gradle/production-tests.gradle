@@ -1,0 +1,160 @@
+// production-tests.gradle
+//
+// Fixed production-test task names for the S5 release protocol. Every task
+// reuses the existing Loom sourceSets/runs (runServerSmoke, runServerSmokeProduction,
+// runGameTest); no classpath is ever hand-assembled here. Test implementations,
+// fault/fixture/agents never enter the main/client jars — they live only in the
+// serverSmoke/gametest/test source sets which are wired into isolated runs, not
+// into remapJar/sourcesJar.
+//
+// The GameTest subset selection is delegated to the existing
+// `processGametestResources` `-PgreatwallGameTestClasses=` filter. Callers
+// (tools/Test-S4Gallery.ps1, tools/Test-S5*.ps1) pass the subset property on the
+// command line; the fixed-name tasks below only declare the dependency and the
+// intent, never a second parallel test implementation.
+
+// ---------------------------------------------------------------------------
+// Server smoke / terrain matrix
+// ---------------------------------------------------------------------------
+
+tasks.register('runProductionServerSmoke') {
+    group = 'verification'
+    description = 'Production server smoke: isolated knot server, development=false'
+    dependsOn tasks.named('runServerSmokeProduction')
+}
+
+tasks.register('runRealTerrainMatrix') {
+    group = 'verification'
+    description = 'Real terrain matrix (isolated server smoke with s0Terrain probes)'
+    dependsOn tasks.named('runServerSmoke')
+}
+
+// ---------------------------------------------------------------------------
+// Stage GameTest subsets (S2 road, S3 FTB/gameplay, S4 gallery)
+// ---------------------------------------------------------------------------
+
+tasks.register('runS2RoadTests') {
+    group = 'verification'
+    description = 'S2 Road interop GameTests'
+    dependsOn tasks.named('runGameTest')
+}
+
+tasks.register('runS3FtbTests') {
+    group = 'verification'
+    description = 'S3 FTB/gameplay GameTests'
+    dependsOn tasks.named('runGameTest')
+}
+
+tasks.register('runS4Gallery') {
+    group = 'verification'
+    description = 'S4 palette/visual gallery GameTests'
+    dependsOn tasks.named('runGameTest')
+}
+
+// ---------------------------------------------------------------------------
+// S5 fault recovery + stress
+// ---------------------------------------------------------------------------
+
+tasks.register('runS5Faults') {
+    group = 'verification'
+    description = 'S5 fault-injection recovery matrix (isolated server smoke)'
+    dependsOn tasks.named('runServerSmoke')
+}
+
+tasks.register('runS5Stress') {
+    group = 'verification'
+    description = 'S5 stress / 24h profile (isolated server smoke)'
+    dependsOn tasks.named('runServerSmoke')
+}
+
+// ---------------------------------------------------------------------------
+// Release artifact verification
+// ---------------------------------------------------------------------------
+
+tasks.register('verifyReleaseArtifacts') {
+    group = 'verification'
+    description = 'Release gate: version, dependency lock, jar contents, pack format'
+    dependsOn tasks.named('remapJar'), tasks.named('sourcesJar')
+
+    doLast {
+        def errors = []
+        def report = [:]
+
+        // 1. Version gate: release is exactly 0.1.0, not a preview suffix.
+        def version = project.mod_version
+        report.version = version
+        if (version != '0.1.0') {
+            errors.add("mod_version must be exactly 0.1.0 for release, found '${version}'")
+        }
+
+        // 2. Dependency versions must remain frozen.
+        def expected = [
+            minecraft_version: '1.21.1',
+            loader_version: '0.19.3',
+            fabric_version: '0.116.14+1.21.1',
+            junit_version: '5.11.0',
+            junit_platform_version: '1.11.0'
+        ]
+        expected.each { key, want ->
+            def have = project.findProperty(key)
+            report[key] = have
+            if (have != want) {
+                errors.add("${key} must remain '${want}', found '${have}'")
+            }
+        }
+
+        // 3. remapJar contents: no test/fault/fixture/agent classes, no credentials
+        //    or machine paths.
+        def remapJar = tasks.named('remapJar').get().archiveFile.get().asFile
+        def sourceJar = tasks.named('sourcesJar').get().archiveFile.get().asFile
+        [remapJar, sourceJar].each { jar ->
+            if (!jar.isFile()) {
+                errors.add("missing artifact: ${jar.name}")
+                return
+            }
+            def forbidden = [
+                /local\/plaincraft\/greatwall\/gametest\//,
+                /local\/plaincraft\/greatwall\/stress\//,
+                /local\/plaincraft\/greatwall\/smoke\//,
+                /net\/fabricmc\/fabric\/api\/gametest\//
+            ]
+            new java.util.zip.ZipFile(jar).withCloseable { zip ->
+                zip.entries().each { entry ->
+                    def name = entry.name
+                    forbidden.each { pattern ->
+                        if (name ==~ pattern || name.contains('FaultInjector') || name.contains('FaultProcessMain')) {
+                            errors.add("forbidden test/fault class leaked into ${jar.name}: ${name}")
+                        }
+                    }
+                    if (name.contains('C:\\') || name.contains('D:\\') || name.contains('/home/')) {
+                        errors.add("machine path leaked into ${jar.name}: ${name}")
+                    }
+                }
+            }
+            report["${jar.name}.sha256"] = jar.digest('SHA-256')
+        }
+
+        // 4. pack.mcmeta: pack_format=34, supported 34..48.
+        def packMcmeta = file('src/main/resources/pack.mcmeta')
+        def packJson = new groovy.json.JsonSlurper().parse(packMcmeta)
+        def pack = packJson.pack
+        report.pack_format = pack.pack_format
+        report.supported_formats = pack.supported_formats
+        if (pack.pack_format != 34) {
+            errors.add("pack.mcmeta pack_format must be 34, found ${pack.pack_format}")
+        }
+        if (pack.supported_formats?.min_inclusive != 34 || pack.supported_formats?.max_inclusive != 48) {
+            errors.add("pack.mcmeta supported_formats must be 34..48, found ${pack.supported_formats}")
+        }
+
+        def outputDir = layout.buildDirectory.dir('release').get().asFile
+        outputDir.mkdirs()
+        def result = [status: errors.isEmpty() ? 'PASS' : 'FAIL', errors: errors, report: report]
+        new File(outputDir, 'verifyReleaseArtifacts.json').setText(
+                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(result)), 'UTF-8')
+        if (!errors.isEmpty()) {
+            throw new GradleException("Release verification failed:\n  - " + errors.join("\n  - "))
+        }
+        logger.lifecycle("RELEASE ARTIFACTS VERIFIED: ${result.status}")
+    }
+}

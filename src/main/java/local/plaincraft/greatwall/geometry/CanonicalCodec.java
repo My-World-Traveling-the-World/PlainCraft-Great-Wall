@@ -41,7 +41,8 @@ public final class CanonicalCodec {
     }
 
     public static byte[] plan(SegmentPlan value) {
-        return encode(4 * MIB, out -> {
+        return CodecIO.encode(4 * MIB, out -> {
+            out.writeInt(2); // schema 2: station tables carry biome keys
             geometryBody(out, value.geometry()); string(out, value.geometry().hash());
             prefixBody(out, value.prefix());
             stationsBody(out, value.stations()); string(out, value.stations().hash());
@@ -50,17 +51,20 @@ public final class CanonicalCodec {
     }
 
     public static SegmentPlan readPlan(byte[] payload) throws IOException {
-        return decode(payload, 4 * MIB, in -> {
+        return CodecIO.decode(payload, 4 * MIB, in -> {
+            int schema = in.readInt();
+            if (schema != 1 && schema != 2) throw new IOException("unknown canonical plan schema " + schema);
             var geometry = geometryBody(in);
             String geometryHash = string(in);
             try (var scratch = CodecMemory.open()) { requireHash(geometryHash, hashGeometry(geometry)); }
             geometry = withHash(geometry, geometryHash);
             var prefix = prefixBody(in);
-            var stations = stationsBody(in);
+            var stations = stationsBody(in, schema == 2);
             String stationHash = string(in);
-            try (var scratch = CodecMemory.open()) { requireHash(stationHash, hashStations(stations)); }
+            String recomputed = schema == 2 ? hashStations(stations) : hashStationsLegacy(stations);
+            try (var scratch = CodecMemory.open()) { requireHash(stationHash, recomputed); }
             CodecMemory.charge(128);
-            stations = new StationTable(stations.stations(), stations.breaks(), stationHash);
+            stations = new StationTable(stations.stations(), stations.breaks(), stationHash, stations.biomeKeys());
             return new SegmentPlan(geometry, prefix, stations, list(in, 64, CanonicalCodec::site),
                     CodecIO.sha256(payload));
         });
@@ -118,6 +122,10 @@ public final class CanonicalCodec {
 
     public static String hashStations(StationTable value) {
         return CodecIO.hash(2 * MIB, out -> { out.writeInt(1); stationsBody(out, value); });
+    }
+
+    public static String hashStationsLegacy(StationTable value) {
+        return CodecIO.hash(2 * MIB, out -> { out.writeInt(1); stationsBodyLegacy(out, value); });
     }
 
     public static byte[] writePlan(ChunkWritePlan value) {
@@ -283,14 +291,30 @@ public final class CanonicalCodec {
             o.writeLong(s.globalSQ8()); point(o, s.point()); o.writeInt(s.walkY()); o.writeInt(s.flags());
         });
         list(out, value.breaks(), (o, b) -> { interval(o, b.range()); enumeration(o, b.reason()); enumeration(o, b.scope()); });
+        var keys = new java.util.ArrayList<>(value.biomeKeys().keySet()); keys.sort(Long::compare);
+        out.writeInt(keys.size());
+        for (long globalSQ8 : keys) { out.writeLong(globalSQ8); string(out, value.biomeKeys().get(globalSQ8)); }
     }
 
-    private static StationTable stationsBody(DataInputStream in) throws IOException {
+    private static void stationsBodyLegacy(DataOutputStream out, StationTable value) throws IOException {
+        list(out, value.stations(), (o, s) -> {
+            o.writeLong(s.globalSQ8()); point(o, s.point()); o.writeInt(s.walkY()); o.writeInt(s.flags());
+        });
+        list(out, value.breaks(), (o, b) -> { interval(o, b.range()); enumeration(o, b.reason()); enumeration(o, b.scope()); });
+    }
+
+    private static StationTable stationsBody(DataInputStream in, boolean withBiomeKeys) throws IOException {
         var stations = list(in, 16384, i -> { CodecMemory.charge(64); return new Station(i.readLong(), point(i), i.readInt(), i.readInt()); });
         var breaks = list(in, 4096, i -> { CodecMemory.charge(64); return new BreakInterval(interval(i), enumeration(i, BreakReason.class),
                 enumeration(i, BreakScope.class)); });
+        var biomeKeys = new java.util.LinkedHashMap<Long, String>();
+        if (withBiomeKeys) {
+            int biomeCount = count(in, 16384);
+            CodecMemory.charge(CodecMemory.mapBytes(biomeCount));
+            for (int i = 0; i < biomeCount; i++) biomeKeys.put(in.readLong(), string(in));
+        }
         CodecMemory.charge(64);
-        return new StationTable(stations, breaks, ZERO);
+        return new StationTable(stations, breaks, ZERO, biomeKeys);
     }
 
     private static void prefixBody(DataOutputStream out, PrefixSummary value) throws IOException {
