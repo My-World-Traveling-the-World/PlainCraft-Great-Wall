@@ -181,7 +181,7 @@ public final class PlannerScheduler implements AutoCloseable {
             long b = FixedMath.roundDiv(side, 1L << 22);
             minB = Math.min(minB, b); maxB = Math.max(maxB, b);
         }
-        long lateral = (512L + 192 + 96 + marginBlocks) * 256;
+        long lateral = (512L + 512 + 96 + marginBlocks) * 256;
         if (minB > lateral || maxB < -lateral || maxU + (96L + marginBlocks) * 256 < 0) {
             return new PlanLease<>(UUID.randomUUID(), CompletableFuture.completedFuture(new PlanWindow(List.of())), () -> {});
         }
@@ -540,8 +540,8 @@ public final class PlannerScheduler implements AutoCloseable {
     private boolean safeSegment(long segment) {
         if (segment < 0) return false;
         try {
-            // 512 carrier + 192 ridge + 96 component + 48 reference side-column envelope.
-            long radius = 848L * 256, limit = recipe.bounds().horizontalLimit() * 256L;
+            // 512 carrier + 512 ridge + 96 component + 48 reference side-column envelope.
+            long radius = 1168L * 256, limit = recipe.bounds().horizontalLimit() * 256L;
             for (long index : new long[] {segment, Math.addExact(segment, 1)}) {
                 long u = Math.multiplyExact(index, 2048L * 256);
                 long x = Math.addExact(recipe.axis().origin().x() * 256L, FixedMath.mulDiv(u, recipe.axis().exQ30(), 1L << 30));

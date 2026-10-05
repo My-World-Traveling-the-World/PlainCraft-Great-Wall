@@ -58,6 +58,7 @@ public final class RootSearch {
     private int screenedOffset;
     private Map<Integer,List<Integer>> allowedAxes = Map.of();
     private final boolean screenStructures;
+    private final local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance;
     private NaturalTerrainOracle.ColumnCursor column;
     private Thread owner;
     private int phase, candidateIndex, sampleIndex, selectedIndex, axisIndex, columns;
@@ -75,15 +76,24 @@ public final class RootSearch {
 
     public RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
             BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation) {
-        this(spawn,bounds,early,foundation,false);
+        this(spawn,bounds,early,foundation,false,
+                local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance.none());
     }
     public RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
             BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation,boolean screenStructures) {
+        this(spawn,bounds,early,foundation,screenStructures,
+                local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance.none());
+    }
+    public RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
+            BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation,boolean screenStructures,
+            local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance) {
         this.spawn = Objects.requireNonNull(spawn);
         this.bounds = Objects.requireNonNull(bounds);
         this.early = List.copyOf(early);
         this.foundation = Objects.requireNonNull(foundation);
         this.screenStructures=screenStructures;
+        this.sanctuaryAvoidance = sanctuaryAvoidance == null
+                ? local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance.none() : sanctuaryAvoidance;
         if (early.isEmpty()) throw new IllegalArgumentException("native spawn domain must be recorded");
     }
 
@@ -236,6 +246,11 @@ public final class RootSearch {
                         0, 0, 0, 0, 0, "REJECTED_EARLY_DOMAIN_OR_HEADING"));
                 axisIndex++; resetSamples(); return;
             }
+            if (crossesSanctuary(axis)) {
+                audit.add(new Audit("axis", current.origin(), current.radius(), current.angle(), axisIndex,
+                        0, 0, 0, 0, 0, "REJECTED_SANCTUARY"));
+                axisIndex++; resetSamples(); return;
+            }
         }
         int distance = AXIS_DISTANCES[sampleIndex / 3];
         int across = AXIS_ACROSS[sampleIndex % 3];
@@ -337,6 +352,27 @@ public final class RootSearch {
                 + StrictMath.toRadians(AXIS_DEGREES[index]);
         return new Axis(origin, Math.toIntExact(StrictMath.round(StrictMath.cos(angle) * (1L << 30))),
                 Math.toIntExact(StrictMath.round(StrictMath.sin(angle) * (1L << 30))));
+    }
+
+    /**
+     * Rejects an axis whose infinite line passes within the sanctuary biome circle.
+     * The wall may wander up to {@code carrierAmplitude + corridorHalfWidth} laterally
+     * (384 + 512), so the axis must stay at least {@code radius + 384 + 512 + buffer}
+     * away from the sanctuary centre.
+     *
+     * <p>The perpendicular distance from centre to the axis line is
+     * {@code |dx*ez - dz*ex| / 2^30}, where (dx,dz) = centre - origin and
+     * (ex,ez) is the Q30 unit axis direction.</p>
+     */
+    private boolean crossesSanctuary(Axis candidate) {
+        if (!sanctuaryAvoidance.active()) return false;
+        long dx = sanctuaryAvoidance.centerX() - candidate.origin().x();
+        long dz = sanctuaryAvoidance.centerZ() - candidate.origin().z();
+        long cross = Math.subtractExact(Math.multiplyExact(dx, candidate.ezQ30()),
+                Math.multiplyExact(dz, candidate.exQ30()));
+        long distanceQ30 = StrictMath.abs(cross);  // blocks * 2^30
+        long safeQ30 = Math.multiplyExact(Math.addExact(sanctuaryAvoidance.radiusBlocks(), 384L + 512L + 64L), 1L << 30);
+        return distanceQ30 < safeQ30;
     }
 
     private boolean inside(int x, int z, int margin) {

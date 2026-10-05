@@ -250,7 +250,7 @@ class PlannerSchedulerTest {
     }
 
     @Test void lastSafeSegmentEndsBeforeWorldLimit() throws Exception {
-        var recipe = PlanningFixtures.recipe(0, 1 << 30, 0, 6000);
+        var recipe = PlanningFixtures.recipe(0, 1 << 30, 0, 7000);
         try (var io = Executors.newSingleThreadExecutor();
              var scheduler = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(true), new SegmentCacheStore(directory.resolve("cache"), recipe), io);
              var timer = ticks(scheduler)) {
@@ -265,7 +265,7 @@ class PlannerSchedulerTest {
     }
 
     @Test void startupPumpProgressesWithoutNormalTicks() throws Exception {
-        var recipe = PlanningFixtures.recipe(0, 1 << 30, 0, 6000);
+        var recipe = PlanningFixtures.recipe(0, 1 << 30, 0, 7000);
         try (var io = Executors.newSingleThreadExecutor();
              var scheduler = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(true), new SegmentCacheStore(directory.resolve("cache"), recipe), io)) {
             var lease = scheduler.requirePlan(1, Priority.PLAYER);

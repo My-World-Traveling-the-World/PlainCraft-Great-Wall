@@ -28,10 +28,18 @@ import net.minecraft.server.level.ServerLevel;
 public final class WorldBootstrap implements AutoCloseable {
     public record Frozen(DimensionBounds bounds, String terrainHash, String paletteHash, String templatesHash,
             Supplier<NaturalTerrainOracle> factory,
-            BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation,RootStructureScreen structures) {
+            BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation,RootStructureScreen structures,
+            local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance) {
         public Frozen(DimensionBounds bounds,String terrainHash,String paletteHash,String templatesHash,
                 Supplier<NaturalTerrainOracle> factory,BiPredicate<NaturalTerrainOracle,NaturalTerrainOracle.ColumnCursor> foundation){
-            this(bounds,terrainHash,paletteHash,templatesHash,factory,foundation,null);
+            this(bounds,terrainHash,paletteHash,templatesHash,factory,foundation,null,
+                    local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance.none());
+        }
+        public Frozen(DimensionBounds bounds,String terrainHash,String paletteHash,String templatesHash,
+                Supplier<NaturalTerrainOracle> factory,BiPredicate<NaturalTerrainOracle,NaturalTerrainOracle.ColumnCursor> foundation,
+                RootStructureScreen structures){
+            this(bounds,terrainHash,paletteHash,templatesHash,factory,foundation,structures,
+                    local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance.none());
         }
         public Frozen {
             Objects.requireNonNull(bounds); Objects.requireNonNull(factory); Objects.requireNonNull(foundation);
@@ -98,7 +106,7 @@ public final class WorldBootstrap implements AutoCloseable {
         // 256 MiB to cover a full 2048-block cell. The compiled budget is
         // raised for the same reason: componentBytes charges 256 bytes per
         // voxel and one chunk owner retains many cells. Segment stays at 64 MiB.
-        return new GenerationConfig(1, 1, 2048, 4, 150000, 384, 192, 4,
+        return new GenerationConfig(1, 1, 2048, 4, 150000, 384, 512, 4,
                 64L << 20, 256L << 20, 256L << 20);
     }
 
@@ -206,7 +214,7 @@ public final class WorldBootstrap implements AutoCloseable {
                         publish(recipe);
                     } else {
                         if(server!=null&&inputs.structures()==null)throw new IllegalStateException("native bootstrap requires a structure screen");
-                        var search = new RootSearch(spawn.get("chosen"), inputs.bounds(), earlyDomain.snapshot(), inputs.foundation(),inputs.structures()!=null);
+                        var search = new RootSearch(spawn.get("chosen"), inputs.bounds(), earlyDomain.snapshot(), inputs.foundation(),inputs.structures()!=null, inputs.sanctuaryAvoidance());
                         advance(search, lanes.getFirst(), authorization.creation(), inputs);
                     }
                 } catch (Throwable failure) { fail(failure); }

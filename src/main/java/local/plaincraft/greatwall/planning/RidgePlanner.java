@@ -27,8 +27,8 @@ public final class RidgePlanner {
     public RidgePlanner(WorldRecipe recipe, AnchorField anchors) {
         this.recipe = Objects.requireNonNull(recipe, "recipe");
         this.anchors = Objects.requireNonNull(anchors, "anchors");
-        if (recipe.config().columnBudget() != 150000 || recipe.config().corridorHalfWidth() != 192) {
-            throw new IllegalArgumentException("requires frozen 150000/192 budget and corridor");
+        if (recipe.config().columnBudget() != 150000 || recipe.config().corridorHalfWidth() != 512) {
+            throw new IllegalArgumentException("requires frozen 150000/512 budget and corridor");
         }
     }
 
@@ -94,15 +94,15 @@ public final class RidgePlanner {
             c.degradation = Math.max(c.degradation, c.searchColumns < 60000 ? 0 : c.searchColumns < 100000 ? 1 : 2);
             c.lookaheadLimit = Math.min(c.lookaheadLimit, 129 - c.step);
             c.candidateOffset = c.previousOffsetQ8 + delta * 256L;
-            if (Math.abs(c.candidateOffset) > 192 * 256L
-                    || Math.abs(c.candidateOffset) > (2048 - c.step * 16) * 192L
+            if (Math.abs(c.candidateOffset) > 512 * 256L
+                    || Math.abs(c.candidateOffset) > (2048 - c.step * 16) * 512L
                     || Math.abs(delta) > (129 - c.step) * 8) { c.candidate++; return; }
             c.lookahead = 0; c.sampleIndex = 0; c.candidateScore = 0; c.candidatePreviousHeight = c.previousHeight;
             c.candidateActive = true;
         }
         int u = (c.step + c.lookahead) * 16;
         long rawOffset = c.candidateOffset + c.lookahead * DELTAS.get(c.candidate) * 256L;
-        if (Math.abs(rawOffset) > 192 * 256L) { rejectCandidate(c); return; }
+        if (Math.abs(rawOffset) > 512 * 256L) { rejectCandidate(c); return; }
         Point2q center;
         try {
             center = position(c, u * 256, tapered(rawOffset, u));
@@ -130,7 +130,7 @@ public final class RidgePlanner {
         long slope = Math.min(1024, Math.abs((long) h.groundTopY() - c.candidatePreviousHeight) * 256 / 16);
         long turn = Math.abs(DELTAS.get(c.candidate) * 256L - c.previousDeltaQ8) / 16;
         long wet = h.waterTopY().isPresent() || h.upperCensored() ? 256 : 0;
-        long departure = Math.abs(rawOffset) / 192;
+        long departure = Math.abs(rawOffset) / 512;
         long score = 4 * ridge + 2 * prominence - 5 * slope - 2 * turn - 8 * wet - departure;
         c.candidateScore += score * (c.lookahead == 0 ? 4 : c.lookahead == 1 ? 2 : 1);
         if (c.lookahead == 0) c.candidateFirstHeight = h.groundTopY();
@@ -207,7 +207,7 @@ public final class RidgePlanner {
         int i = c.curveIndex;
         double a = 2 * c.controls.get(i) - 2 * c.controls.get(i + 1) + c.tangents[i] + c.tangents[i + 1];
         double b = -3 * c.controls.get(i) + 3 * c.controls.get(i + 1) - 2 * c.tangents[i] - c.tangents[i + 1];
-        if (extreme(a, b, c.tangents[i], c.controls.get(i)) > 192 * 256) {
+        if (extreme(a, b, c.tangents[i], c.controls.get(i)) > 512 * 256) {
             c.tangents[i] = 0; c.tangents[i + 1] = 0;
         }
         if (++c.curveIndex == 128) {
@@ -260,7 +260,7 @@ public final class RidgePlanner {
                     + (-2 * t3 + 48 * t2) * c.controls.get(edge + 1)
                     + (t3 - 16 * t2) * c.tangents[edge + 1], 4096);
         }
-        if (Math.abs(residual) > 192L * 256) {
+        if (Math.abs(residual) > 512L * 256) {
             c.fallback = true; c.degradation = 3; c.points.clear(); return;
         }
         Point2q point = position(c, u * 256, residual);

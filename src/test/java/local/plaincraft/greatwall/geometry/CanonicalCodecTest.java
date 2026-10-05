@@ -98,7 +98,7 @@ class CanonicalCodecTest {
     private static WorldRecipe recipe(UUID instance, String wallId, String hash) {
         return new WorldRecipe(instance, wallId, 1, "minecraft:overworld", new Point3i(0, 64, 0),
                 new Axis(new Point3i(1000, 64, 0), 1 << 30, 0), new DimensionBounds(-64, 320, 29_000_000),
-                new GenerationConfig(1, 1, 2048, 4, 150000, 384, 192, 4, 67108864, 67108864, 33554432),
+                new GenerationConfig(1, 1, 2048, 4, 150000, 384, 512, 4, 67108864, 67108864, 33554432),
                 H, H, H, hash);
     }
 
