@@ -38,20 +38,22 @@ public final class TreeBoundsCatalog {
                 if (++visited[0] > 262144) throw unsupported("configured feature traversal exceeds finite registry allowance");
                 if (child.config() instanceof TreeConfiguration tree) {
                     JsonObject encoded;
+                    int radius;
                     try {
                         encoded = encode(tree);
+                        radius = radius(encoded);
                     } catch (Throwable failure) {
-                        // Real modpacks ship third-party tree features whose TreeConfiguration
-                        // cannot be round-tripped by the vanilla codec (null fields, custom
-                        // decorators, or broken registry entries). A tree we cannot encode is
-                        // simply excluded from the frozen protection catalog: fail-closed only
-                        // applies to trees we actually manage, never to an unrelated mod's
-                        // unencodable feature. This keeps production freeze from NPE-ing.
+                        // Real modpacks ship third-party tree features that cannot be
+                        // round-tripped by the vanilla codec (null fields, custom decorators,
+                        // broken registry entries) or use a trunk/foliage placer outside the
+                        // frozen whitelist. A tree we cannot encode/measure is simply excluded
+                        // from the protection catalog: fail-closed only applies to trees we
+                        // actually manage, never to an unrelated mod's feature. This keeps
+                        // production freeze from NPE-ing or aborting on the first exotic tree.
                         GreatWallMod.LOGGER.warn("Skipping unencodable tree feature during freeze: {}",
                                 child.feature().toString(), failure);
                         return;
                     }
-                    int radius = radius(encoded);
                     if (radius > 2048) throw unsupported("tree radius exceeds 2048: " + radius);
                     values.put(hash(encoded), radius);
                 }
