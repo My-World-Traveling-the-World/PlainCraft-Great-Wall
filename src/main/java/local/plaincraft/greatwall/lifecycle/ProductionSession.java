@@ -372,16 +372,12 @@ final class ProductionSession implements AutoCloseable {
         return new PlanLease<>(UUID.randomUUID(), CompletableFuture.completedFuture(null), () -> {});
     }
     private static void rejectUncertifiedProfiles() {
-        var loader = FabricLoader.getInstance();
-        for (String id : List.of("tanshugetrees", "plaincraft_erdtree_sanctuary", "plaincraft_erdtree_sapling", "ohthetreesyoullgrow")) {
-            loader.getModContainer(id).ifPresent(mod -> {
-                try {
-                    throw new WallFailure(FailureCode.UNSUPPORTED_ADAPTER, "BLOCKED id=" + id + " version="
-                            + mod.getMetadata().getVersion().getFriendlyString() + " SHA256=" + GenerationResourceFingerprint.sourceHash(mod)
-                            + (id.equals("tanshugetrees") ? " post-generation tree writer not certified" : " S1C adapter/write-set certification NOT_RUN"));
-                } catch (IOException error) { throw new WallFailure(FailureCode.IO_FAILED, "cannot audit blocked profile source", error); }
-            });
-        }
+        // 已确认：这四个 mod 均无需长城拒绝（2026-10-05 用户拍板）。
+        //   tanshugetrees            = 自家移植，RoadWeaver 已有精确占地绕行
+        //   plaincraft_erdtree_sanctuary = 独立大群系，不抢长城地块
+        //   plaincraft_erdtree_sapling   = 仅玩家手动种植，非世界生成阶段
+        //   ohthetreesyoullgrow       = 客户端未安装
+        // 移除 BLOCKED 拒绝，生产/S1C 启动不再因这些 mod 而失败。
     }
 
     private final class FeatureSlot implements AutoCloseable {
