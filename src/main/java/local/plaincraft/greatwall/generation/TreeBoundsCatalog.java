@@ -18,6 +18,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.util.valueproviders.IntProvider;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
+import net.minecraft.world.level.levelgen.feature.configurations.RandomFeatureConfiguration;
 import net.minecraft.world.level.levelgen.feature.configurations.TreeConfiguration;
 import net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecorator;
 
@@ -32,43 +33,44 @@ public final class TreeBoundsCatalog {
     public TreeBoundsCatalog(HolderLookup.Provider registries, Collection<ConfiguredFeature<?, ?>> configured) {
         this.registries = Objects.requireNonNull(registries);
         var values = new TreeMap<String, Integer>();
-        int[] visited = {0};
-        for (var feature : configured) {
-            // getFeatures() itself walks nested configurations (RandomFeatureConfiguration
-            // returns its placed features, which may point back at an ancestor). A
-            // third-party pack can therefore build a reference cycle that recurses until
-            // the stack overflows *before* any codec runs. The whole consumption must be
-            // inside the guard, not just the encode call.
-            try {
-                feature.getFeatures().forEach(child -> {
-                    if (++visited[0] > 262144) throw unsupported("configured feature traversal exceeds finite registry allowance");
-                    if (child.config() instanceof TreeConfiguration tree) {
-                        JsonObject encoded;
-                        int radius;
-                        try {
-                            encoded = encode(tree);
-                            radius = radius(encoded);
-                        } catch (Throwable failure) {
-                            // Real modpacks ship third-party tree features that cannot be
-                            // round-tripped by the vanilla codec (null fields, custom decorators,
-                            // broken registry entries) or use a trunk/foliage placer outside the
-                            // frozen whitelist. A tree we cannot encode/measure is simply excluded
-                            // from the protection catalog: fail-closed only applies to trees we
-                            // actually manage, never to an unrelated mod's feature. This keeps
-                            // production freeze from NPE-ing or aborting on the first exotic tree.
-                            GreatWallMod.LOGGER.warn("Skipping unencodable tree feature during freeze: {}",
-                                    child.feature().toString(), failure);
-                            return;
-                        }
-                        if (radius > 2048) throw unsupported("tree radius exceeds 2048: " + radius);
-                        values.put(hash(encoded), radius);
-                    }
-                });
-            } catch (StackOverflowError cycle) {
-                // Self-referential RandomFeatureConfiguration chain; nothing here is a tree
-                // we own, so skip the whole cycle instead of aborting the world freeze.
-                GreatWallMod.LOGGER.warn("Skipping cyclic configured feature during freeze: {}",
-                        feature.feature().toString(), cycle);
+        long[] visited = {0};
+        // ConfiguredFeature is a value record whose getFeatures() walks nested
+        // configurations; a third-party RandomFeatureConfiguration that references an
+        // ancestor makes that walk (and even equals()) recurse forever. Walk the
+        // reference graph ourselves with an identity set and an explicit stack so a
+        // cycle terminates by construction instead of overflowing the JVM stack.
+        Set<ConfiguredFeature<?, ?>> seen =
+                java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        var pending = new java.util.ArrayDeque<ConfiguredFeature<?, ?>>();
+        for (var feature : configured) pending.add(feature);
+        while (!pending.isEmpty()) {
+            var feature = pending.poll();
+            if (!seen.add(feature)) continue;  // already visited this exact instance
+            if (++visited[0] > 262144) throw unsupported("configured feature traversal exceeds finite registry allowance");
+            if (feature.config() instanceof TreeConfiguration tree) {
+                JsonObject encoded;
+                int radius;
+                try {
+                    encoded = encode(tree);
+                    radius = radius(encoded);
+                } catch (Throwable failure) {
+                    // Real modpacks ship third-party tree features that cannot be
+                    // round-tripped by the vanilla codec (null fields, custom decorators,
+                    // broken registry entries) or use a trunk/foliage placer outside the
+                    // frozen whitelist. A tree we cannot encode/measure is simply excluded
+                    // from the protection catalog: fail-closed only applies to trees we
+                    // actually manage, never to an unrelated mod's feature. This keeps
+                    // production freeze from NPE-ing or aborting on the first exotic tree.
+                    GreatWallMod.LOGGER.warn("Skipping unencodable tree feature during freeze: {}",
+                            feature.feature().toString(), failure);
+                    continue;
+                }
+                if (radius > 2048) throw unsupported("tree radius exceeds 2048: " + radius);
+                values.put(hash(encoded), radius);
+                continue;
+            }
+            for (var child : nestedFeatures(feature)) {
+                if (!seen.contains(child)) pending.add(child);
             }
         }
         radii = Map.copyOf(values);
@@ -141,6 +143,36 @@ public final class TreeBoundsCatalog {
 
     private JsonObject encode(TreeConfiguration tree) {
         return TreeConfiguration.CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, registries), tree).getOrThrow().getAsJsonObject();
+    }
+
+    /**
+     * Direct child features of one configuration, without the vanilla recursive walk.
+     *
+     * <p>{@code ConfiguredFeature.getFeatures()} concatenates itself with
+     * {@code config.getFeatures()}, and {@code RandomFeatureConfiguration} returns its
+     * placed features, which point back at configured features. Following that API on a
+     * self-referential pack recurses until {@code StackOverflowError}. Reading the
+     * public {@code features} list and resolving each placed feature's holder one level
+     * lets the caller keep an identity set and terminate cycles safely.</p>
+     */
+    private static List<ConfiguredFeature<?, ?>> nestedFeatures(ConfiguredFeature<?, ?> feature) {
+        if (!(feature.config() instanceof RandomFeatureConfiguration random)) return List.of();
+        var result = new java.util.ArrayList<ConfiguredFeature<?, ?>>();
+        for (var weighted : random.features) {
+            if (weighted == null || weighted.feature == null) continue;
+            var placed = weighted.feature.value();
+            if (placed == null || placed.feature() == null) continue;
+            var nested = placed.feature().value();
+            if (nested != null) result.add(nested);
+        }
+        if (random.defaultFeature != null) {
+            var placed = random.defaultFeature.value();
+            if (placed != null && placed.feature() != null) {
+                var nested = placed.feature().value();
+                if (nested != null) result.add(nested);
+            }
+        }
+        return result;
     }
     private static String hash(JsonObject tree) { return WorldRecipeGuard.fingerprint(Map.of("tree", tree)); }
     private static int integer(JsonObject value, String name) {
