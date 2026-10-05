@@ -127,7 +127,12 @@ public final class RootSearch {
     public Selection finish() {
         claimOwner();
         if (phase != 3 || best == null) throw new IllegalStateException("root search is incomplete");
-        if (over40msBatches != 0) throw new WallFailure(FailureCode.UNSUPPORTED_ADAPTER, "root steady sampling exceeded 40ms");
+        // 2026-10-05 用户授权：移除 40ms 稳态采样的硬拒绝。
+        // 真机取证：真实整合包 + 手动放大的道路/河流范围 + Streams 采样满载时，
+        // 单批 advance 会被抢占而超过 40ms。原实现据此直接把整个 S1C 判失败，
+        // 使长城在达标硬件上也无法生成。计时仍完整保留（maxBatchNanos /
+        // over40msBatches 照常记录并写入 diagnostics 与 progress），只是不再作为
+        // 选址的拒绝条件；性能观测与验收口径见 docs/release/acceptance.json。
         return new Selection(best.axis(), best.radiusIndex(), best.angleIndex(), best.axisIndex(), best.ridgeScore(),
                 columns, maxBatchNanos, over40msBatches);
     }

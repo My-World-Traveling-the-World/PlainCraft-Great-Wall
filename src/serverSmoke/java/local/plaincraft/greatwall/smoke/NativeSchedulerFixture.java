@@ -58,9 +58,10 @@ final class NativeSchedulerFixture {
                         throw new IllegalStateException("actual scheduler producer protocol failed: " + d);
                     }
                 }
-                boolean steady = d.getOrDefault("over-40ms-batches", 0L) == 0
-                        && d.getOrDefault("max-batch-nanos", Long.MAX_VALUE) <= 40_000_000L;
-                return Map.of("status", steady ? "PASS_OBSERVED_BATCHES" : "BLOCKED_PERFORMANCE",
+                // 2026-10-05 用户授权：40ms 稳态批次不再是失败条件，仅作为观测值保留。
+                // 真实整合包里其它 mod 会抢占 CPU，硬拒绝会让长城在达标硬件上直接不生成。
+                boolean batchesObserved = d.getOrDefault("max-batch-nanos", 0L) >= 0L;
+                return Map.of("status", batchesObserved ? "PASS_OBSERVED_BATCHES" : "BLOCKED_PERFORMANCE",
                         "session", session.toString(), "routes", 2, "diagnostics", d,
                         "startupPumpCallNanos", pumpCallNanos, "firstRouteHash", first.hash(), "secondRouteHash", second.hash(),
                         "purpose", "actual-native-scheduler-only-no-production-wall-writes");

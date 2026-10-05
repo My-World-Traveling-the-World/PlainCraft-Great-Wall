@@ -33,7 +33,7 @@ JUnit、解析或图册记录器通过不作为实机通过。
 - 点集/accumulator 修正后 seed17 505/505：NOT_RUN。
 - vanilla/Tectonic/C2ME 完整生成及重进不漏段：NOT_RUN。
 - 全路线地表已注册结构保持原样、绕行/安全断口：NOT_RUN。
-- 成功路径每 chunk 成本、CPU oracle 40ms 稳态/25ms 切片证书：NOT_RUN。
+- 成功路径每 chunk 成本、CPU oracle 切片计时观测（2026-10-05 起 40ms 硬门禁已按用户授权移除，改为只记录不拒绝）：NOT_RUN。
 - 完整植被抑制、同 JVM A→B→A、6000 高/非默认 minY/Golden：NOT_RUN。
 - S0 百轮、GW-011 十二项、双方实际道路施工和 durable backfill/ACK：NOT_RUN。
 - 真实首次箱子 proof/不补货、点火/刷怪/双队/FTB 完整 GW-010：NOT_RUN。

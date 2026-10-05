@@ -74,8 +74,8 @@
     },
     {
       "id": "stress-24h",
-      "title": "24h stress / far-jump / Chunky corridor / CPU-GPU matrix / slice <=40ms / heap plateau",
-      "expected": "every performance gate PASS with real data",
+      "title": "24h stress / far-jump / Chunky corridor / CPU-GPU matrix / slice timing observed (no hard 40ms gate) / heap plateau",
+      "expected": "every performance gate PASS with real data; slice timing is recorded and reported, but a slow batch caused by other mods competing for CPU does not fail the release",
       "status": "NOT_RUN",
       "log": null,
       "actual": null,

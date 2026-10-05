@@ -172,15 +172,20 @@ final class RootSearchTest {
                 () -> "max batch nanos=" + search.progress().maxBatchNanos());
     }
 
-    @Test void singleOver40msPrimitiveStillRejectsTheCompletedSearch() {
+    @Test void over40msPrimitiveIsRecordedButNoLongerRejectsTheCompletedSearch() {
+        // 2026-10-05 用户授权：40ms 稳态采样从"硬拒绝"改为"仅记录"。
+        // 慢原语仍必须被如实计入 over40msBatches / maxBatchNanos（性能观测不丢），
+        // 但选址本身不再因为被其它 mod 抢占 CPU 而整体判失败。
         var search = search((o, c) -> true);
         var oracle = new Fixture(false, 45, 1);
         while (search.advance(oracle, 64) != WorkState.DONE) {}
-        assertTrue(search.progress().over40msBatches() >= 1);
-        assertTrue(search.progress().maxBatchNanos() > 40_000_000L);
-        var failure = assertThrows(WallFailure.class, search::finish);
-        assertEquals(FailureCode.UNSUPPORTED_ADAPTER, failure.code());
-        assertTrue(failure.getMessage().contains("steady sampling exceeded 40ms"));
+        assertTrue(search.progress().over40msBatches() >= 1,
+                "a slow native primitive must still be counted");
+        assertTrue(search.progress().maxBatchNanos() > 40_000_000L,
+                "max batch nanos must still record the real maximum");
+        var selection = search.finish();
+        assertEquals(search.progress().over40msBatches(), selection.over40msBatches());
+        assertTrue(selection.maxBatchNanos() > 40_000_000L);
     }
 
     private static RootSearch.Selection run(Fixture oracle, int batch) {
