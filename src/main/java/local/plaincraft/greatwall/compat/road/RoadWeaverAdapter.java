@@ -106,6 +106,7 @@ public final class RoadWeaverAdapter implements EndpointHeightAgreementApi, Auto
             PlanningInteropRegistry.registerHeight(session, this);
             heightRegistered = true;
             WallObstacleProvider.bind(services, ledger);
+            registerProviderOnce();
         } catch (RuntimeException failure) {
             state.stop();
             if (heightRegistered) {
@@ -117,12 +118,26 @@ public final class RoadWeaverAdapter implements EndpointHeightAgreementApi, Auto
         }
     }
 
-    /** Core must guard class loading with Loader before touching this soft-dependent class. */
-    public static synchronized void initializeIfPresent() {
-        if (!FabricLoader.getInstance().isModLoaded("roadweaver") || providerRegistered) return;
-        verifyLockedAbi();
+    /**
+     * Publishes the wall obstacle provider only after this adapter has bound a live
+     * wall production session. When wall production is OFF this constructor never
+     * runs, so RoadWeaver sees no provider and takes its normal (no-wall) branch
+     * instead of failing with "external planning session pending or closed".
+     */
+    private static synchronized void registerProviderOnce() {
+        if (providerRegistered) return;
         PlanningInteropRegistry.register(new WallObstacleProvider());
         providerRegistered = true;
+    }
+
+    /** Core must guard class loading with Loader before touching this soft-dependent class. */
+    public static synchronized void initializeIfPresent() {
+        if (!FabricLoader.getInstance().isModLoaded("roadweaver")) return;
+        verifyLockedAbi();
+        // Provider registration moved into the adapter constructor (after bindSession).
+        // Registering here would publish a provider even when the wall production is OFF,
+        // making RoadWeaver take the external-planning branch and then fail with
+        // "external planning session pending or closed" (no session was ever bound).
     }
 
     /** Registers a gate endpoint once; repeated calls never add duplicate entries. */
