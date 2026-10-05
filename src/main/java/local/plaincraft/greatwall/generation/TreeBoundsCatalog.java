@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.lifecycle.WorldRecipeGuard;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
@@ -36,7 +37,20 @@ public final class TreeBoundsCatalog {
             feature.getFeatures().forEach(child -> {
                 if (++visited[0] > 262144) throw unsupported("configured feature traversal exceeds finite registry allowance");
                 if (child.config() instanceof TreeConfiguration tree) {
-                    JsonObject encoded = encode(tree);
+                    JsonObject encoded;
+                    try {
+                        encoded = encode(tree);
+                    } catch (Throwable failure) {
+                        // Real modpacks ship third-party tree features whose TreeConfiguration
+                        // cannot be round-tripped by the vanilla codec (null fields, custom
+                        // decorators, or broken registry entries). A tree we cannot encode is
+                        // simply excluded from the frozen protection catalog: fail-closed only
+                        // applies to trees we actually manage, never to an unrelated mod's
+                        // unencodable feature. This keeps production freeze from NPE-ing.
+                        GreatWallMod.LOGGER.warn("Skipping unencodable tree feature during freeze: {}",
+                                child.feature().toString(), failure);
+                        return;
+                    }
                     int radius = radius(encoded);
                     if (radius > 2048) throw unsupported("tree radius exceeds 2048: " + radius);
                     values.put(hash(encoded), radius);
