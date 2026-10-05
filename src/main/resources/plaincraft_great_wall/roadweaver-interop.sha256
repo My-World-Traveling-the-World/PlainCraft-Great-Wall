@@ -1,0 +1,8 @@
+# Reviewed RoadWeaver interop artifact SHA-256 allowlist.
+# One lowercase hex SHA-256 per line. Lines starting with '#' are ignored.
+# The GreatWall RoadWeaverAdapter refuses to initialize the soft-dependency
+# bridge unless the RoadWeaver jar loaded at runtime matches an entry here.
+# Regenerate this file after rebuilding/upgrading RoadWeaver and re-reviewing
+# its interop ABI (PlanningInteropRegistry / WallInteropTypes / RoadNetworkApi
+# registerStructureEndpointOnce signature).
+bed13208658438dcc27efe965155958d2e3b0386488ab9023432b6db9a854dd1
