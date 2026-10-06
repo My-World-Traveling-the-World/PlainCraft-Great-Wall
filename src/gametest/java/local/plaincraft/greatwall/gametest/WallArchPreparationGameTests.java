@@ -23,14 +23,23 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Negative owner-handoff tests only. Requests are not durable gate/T0 proof;
- * the stub's empty recipe hash rejects plan schema construction before
- * ownership preflight, ACK or mutation. This is not GW-011 certification.
+ * Negative owner-handoff tests only.
+ *
+ * <p>These pin the threading shape of a rejected owner turn: preparation must finish its failure
+ * inline on the owner without hopping to a background pool and without writing or ACKing anything.
+ *
+ * <p>The failure is now injected through the durable plan reader rather than through plan-schema
+ * construction. An earlier revision fabricated a write plan with an empty recipe hash, and these
+ * tests used the resulting schema rejection as their failure trigger; that fabrication was itself the
+ * defect, so it was removed and a frozen gate with no durable proof now stays PENDING instead. The
+ * threading guarantees these tests protect are unchanged, so they are driven by a durable-read
+ * failure, which is a real path, and the new PENDING behaviour is pinned separately. This is not
+ * GW-011 certification.
  */
 public final class WallArchPreparationGameTests implements FabricGameTest {
     @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 100)
-    public void ownerPlanSchemaRejectionCompletesWithoutACommonPoolHop(GameTestHelper helper) {
-        Fixture fixture = fixture(helper, RoadTypes.GateState.FROZEN);
+    public void ownerPreparationFailureCompletesWithoutACommonPoolHop(GameTestHelper helper) {
+        Fixture fixture = fixtureWithFailingDurable(helper, RoadTypes.GateState.FROZEN);
         var failures = new ConcurrentHashMap<String, Throwable>();
         var ownerCallbacks = new ConcurrentHashMap<String, Boolean>();
         var result = fixture.backfill().prepare(fixture.request()).toCompletableFuture();
@@ -42,14 +51,31 @@ public final class WallArchPreparationGameTests implements FabricGameTest {
                 "owner preparation must finish its rejected turn without a background wait");
         helper.assertTrue(Boolean.TRUE.equals(ownerCallbacks.get("owner")),
                 "an inline owner turn publishes its failure on the owner");
-        verifyPlanSchemaRejection(helper, fixture, failures.get("failure"));
+        verifyDurableReadFailure(helper, failures.get("failure"));
+        verifyUnchanged(helper, fixture);
+        fixture.backfill().close();
+        helper.succeed();
+    }
+
+    /**
+     * A frozen gate whose owner has no durable proof yet is not an error: the owner may simply not be
+     * generated. It must stay PENDING with nothing written and nothing ACKed, and it must complete
+     * normally rather than reporting a failure the caller cannot act on.
+     */
+    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 100)
+    public void absentDurableProofKeepsGatePendingWithoutThrowingOrAcknowledging(GameTestHelper helper) {
+        Fixture fixture = fixture(helper, RoadTypes.GateState.FROZEN);
+        var result = fixture.backfill().prepare(fixture.request()).toCompletableFuture();
+        helper.assertTrue(result.isDone() && !result.isCompletedExceptionally(),
+                "an owner without durable proof is pending, not failed");
+        verifyUnchanged(helper, fixture);
         fixture.backfill().close();
         helper.succeed();
     }
 
     @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 200)
-    public void workerReceivesOwnerPlanSchemaRejectionWithoutWritingOrAcknowledging(GameTestHelper helper) {
-        Fixture fixture = fixture(helper, RoadTypes.GateState.PENDING_CHUNKS);
+    public void workerReceivesOwnerPreparationFailureWithoutWritingOrAcknowledging(GameTestHelper helper) {
+        Fixture fixture = fixtureWithFailingDurable(helper, RoadTypes.GateState.PENDING_CHUNKS);
         var returned = new CompletableFuture<CompletableFuture<Void>>();
         var failures = new ConcurrentHashMap<String, Throwable>();
         var completion = returned.thenCompose(stage -> stage);
@@ -104,12 +130,25 @@ public final class WallArchPreparationGameTests implements FabricGameTest {
                 "the worker returns a stage rather than throwing the owner failure");
         helper.assertTrue(completion.isCompletedExceptionally(),
                 "the returned completion carries the rejected owner turn");
-        verifyPlanSchemaRejection(helper, fixture, failures.get("failure"));
+        verifyDurableReadFailure(helper, failures.get("failure"));
+        verifyUnchanged(helper, fixture);
         fixture.backfill().close();
         helper.succeed();
     }
 
     private static Fixture fixture(GameTestHelper helper, RoadTypes.GateState state) {
+        return fixture(helper, state, owner -> Optional.empty());
+    }
+
+    /** A fixture whose durable plan reader fails, used to drive the rejected-turn threading shape. */
+    private static Fixture fixtureWithFailingDurable(GameTestHelper helper, RoadTypes.GateState state) {
+        return fixture(helper, state, owner -> {
+            throw new IllegalStateException("durable plan store unavailable");
+        });
+    }
+
+    private static Fixture fixture(GameTestHelper helper, RoadTypes.GateState state,
+            WallArchBackfill.DurablePlans durable) {
         var level = helper.getLevel();
         helper.assertTrue(level.getServer().isSameThread(), "fixture setup requires the real server owner");
         BlockPos position = helper.absolutePos(new BlockPos(1, 1, 1));
@@ -123,24 +162,15 @@ public final class WallArchPreparationGameTests implements FabricGameTest {
                         1 << 30, 0, position.getY(), false),
                 position.getY() - 10, 4, 5, List.of(owner), "a".repeat(64));
         var request = new RoadTypes.GateRecord(gate, 1, state, List.of(), List.of(), Map.of(), 0);
-        return new Fixture(new WallArchBackfill(level, ledger), ledger, request,
+        return new Fixture(new WallArchBackfill(level, ledger, Runnable::run, durable), ledger, request,
                 position, chunk.getBlockState(position));
     }
 
-    private static void verifyPlanSchemaRejection(GameTestHelper helper, Fixture fixture, Throwable failure) {
-        helper.assertTrue(failure instanceof IllegalArgumentException
-                        && "64-char lowercase hex hash required: ".equals(failure.getMessage()),
-                "the stub's empty recipe hash must reject plan construction");
-        boolean fromPlanSchema = false;
-        for (StackTraceElement frame : failure.getStackTrace()) {
-            if (frame.getClassName().equals("local.plaincraft.greatwall.model.WallTypes$ChunkWritePlan")
-                    && frame.getMethodName().equals("<init>")) {
-                fromPlanSchema = true;
-            }
-        }
-        helper.assertTrue(fromPlanSchema,
-                "the valid contract hash passes metadata validation; missing recipe hash fails in plan schema");
-        verifyUnchanged(helper, fixture);
+    /** The injected durable-read failure must reach the caller with its own identity intact. */
+    private static void verifyDurableReadFailure(GameTestHelper helper, Throwable failure) {
+        helper.assertTrue(failure instanceof IllegalStateException
+                        && "durable plan store unavailable".equals(failure.getMessage()),
+                "the durable-read failure must reach the caller unwrapped, found " + failure);
     }
 
     private static void verifyUnchanged(GameTestHelper helper, Fixture fixture) {
