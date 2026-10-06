@@ -28,6 +28,8 @@ import net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecorator;
 public final class TreeBoundsCatalog {
     private static final Set<String> FOLIAGE = Set.of("blob", "spruce", "pine", "acacia", "bush", "fancy",
             "jungle", "mega_pine", "dark_oak", "random_spread", "cherry");
+    /** Upper bound for the conservative fallback radius; keeps an exotic tree's footprint finite. */
+    private static final int MAX_FALLBACK_RADIUS = 64;
     private final HolderLookup.Provider registries;
     private final Map<String, Integer> radii;
     private final int maximumRadius;
@@ -87,10 +89,34 @@ public final class TreeBoundsCatalog {
     }
 
     public Bounds vanilla(BlockPos origin, TreeConfiguration config, DimensionBounds dimension) {
-        Integer radius = radii.get(hash(encode(config)));
-        if (radius == null) throw unsupported("tree configuration was not in the frozen registry");
-        return new Bounds(Math.subtractExact(origin.getX(), radius), dimension.minY(), Math.subtractExact(origin.getZ(), radius),
-                Math.addExact(origin.getX(), radius + 1), dimension.maxYExclusive(), Math.addExact(origin.getZ(), radius + 1));
+        // 学 RoadWeaver 的抑制方式：它只看"这棵树是否落在路上"，从不依赖一张
+        // 可能查不到的目录表。这里同样不能在查不到时抛异常——异常发生在世界生成
+        // 线程里会把生成直接打断（真机证据：被跳过的树里包含原版
+        // net.minecraft.class_2944 = TreeFeature，而本方法唯一的生产调用点
+        // TreeFeatureMixin 正注入 TreeFeature.place）。
+        // 取不到精确半径时退化为保守半径：最坏情况是多抑制一点植被，绝不崩。
+        Integer radius = null;
+        try {
+            radius = radii.get(hash(encode(config)));
+        } catch (Throwable unencodable) {
+            // 冻结期就编不了的配置，生成期同样编不了；按保守半径处理而不是抛。
+            GreatWallMod.LOGGER.debug("Tree configuration not encodable at place time; "
+                    + "falling back to the conservative radius", unencodable);
+        }
+        int effective = radius != null ? radius : conservativeRadius();
+        return new Bounds(Math.subtractExact(origin.getX(), effective), dimension.minY(),
+                Math.subtractExact(origin.getZ(), effective),
+                Math.addExact(origin.getX(), effective + 1), dimension.maxYExclusive(),
+                Math.addExact(origin.getZ(), effective + 1));
+    }
+
+    /**
+     * Radius used when a tree cannot be found in (or cannot be encoded for) the frozen
+     * catalog. Bounded by the largest radius actually observed so one exotic tree cannot
+     * demand an unbounded footprint.
+     */
+    private int conservativeRadius() {
+        return Math.max(1, Math.min(maximumRadius, MAX_FALLBACK_RADIUS));
     }
 
     public int maximumRadius() { return maximumRadius; }
