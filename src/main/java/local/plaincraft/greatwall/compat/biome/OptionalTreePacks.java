@@ -31,10 +31,11 @@ public final class OptionalTreePacks {
     /**
      * Registers the biome data pack. Idempotent; safe to call once from the common entrypoint.
      *
-     * <p>The pack is {@link ResourcePackActivationType#DEFAULT_ENABLED}: a fresh world receives the
-     * dedicated biome without manual steps, while an operator can still switch it off in the pack
-     * screen. Enabling it changes which biomes a world may contain, so it also changes the world
-     * recipe fingerprint — by design, and consistent with "create a new world" for older saves.
+     * <p>Activation is deliberately {@link ResourcePackActivationType#NORMAL}, i.e. opt-in. The pack
+     * changes which biomes a world may contain, which changes the world recipe fingerprint; enabling
+     * it by default would make every pre-existing world refuse to load with a recipe mismatch. An
+     * operator enables it explicitly for a new world instead. Do not flip this to
+     * {@code DEFAULT_ENABLED} without also accepting that every existing save becomes unloadable.
      */
     public static void register() {
         var loader = FabricLoader.getInstance();
@@ -45,9 +46,9 @@ public final class OptionalTreePacks {
         }
         var id = ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall", PACK_PATH);
         boolean registered = ResourceManagerHelper.registerBuiltinResourcePack(
-                id, container, ResourcePackActivationType.DEFAULT_ENABLED);
+                id, container, ResourcePackActivationType.NORMAL);
         if (registered) {
-            LOGGER.info("Great Wall biome data pack registered as DEFAULT_ENABLED ({}).", id);
+            LOGGER.info("Great Wall biome data pack registered as NORMAL (opt-in) ({}).", id);
         } else {
             // A duplicate registration is not fatal: the pack is already present.
             LOGGER.warn("Great Wall biome data pack {} was already registered; keeping the first registration.", id);

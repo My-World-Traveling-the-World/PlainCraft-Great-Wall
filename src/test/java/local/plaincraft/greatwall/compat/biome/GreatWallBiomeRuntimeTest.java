@@ -65,13 +65,22 @@ final class GreatWallBiomeRuntimeTest {
                 "a second lease for the same owner must not silently replace the first");
     }
 
-    @Test void foreignDimensionPlanWindowIsRejected() {
+    @Test void corruptOwnerKeyStillFailsClosed() {
+        var runtime = runtime(OVERWORLD);
+        // A right-dimension owner that was simply never published must fail loudly, never resolve to
+        // an empty mask that would read as "no wall here".
+        assertTrue(runtime.find(new ChunkKey(OVERWORLD, 99, 99)).isEmpty());
+        assertThrows(WallFailure.class, () -> runtime.require(new ChunkKey(OVERWORLD, 99, 99)));
+    }
+
+    @Test void planWindowFromAnotherDimensionIsRejected() {
         var runtime = runtime(OVERWORLD);
         var owner = new ChunkKey(OVERWORLD, 0, 0);
-        var foreign = new PlanWindow(List.of());
-        // An empty window carries no dimension to disagree with, so it is accepted; the guard that
-        // matters is the non-empty case, exercised through the owner key below.
-        assertNotNull(runtime.publish(owner, foreign, 1));
+        // The shared box builder refuses a plan whose own dimension disagrees, so a mismatched
+        // window can never be compiled into an overworld mask.
+        var foreign = new PlanWindow(List.of(planIn("minecraft:the_nether")));
+        assertThrows(IllegalArgumentException.class, () -> runtime.publish(owner, foreign, 1));
+        assertEquals(0, runtime.leases(), "a rejected window must not leave a lease behind");
     }
 
     @Test void releaseAndCloseAreIdempotentAndDrain() throws Exception {
@@ -91,12 +100,17 @@ final class GreatWallBiomeRuntimeTest {
     }
 
     private static PlanWindow plans() {
-        var recipe = PlanningFixtures.recipe(0);
+        return new PlanWindow(List.of(planIn(OVERWORLD)));
+    }
+
+    /** A single-segment plan whose geometry claims the given dimension. */
+    private static SegmentPlan planIn(String dimension) {
+        var recipe = PlanningFixtures.recipe(0, dimension);
         var geometry = PlanningFixtures.geometry(recipe, 0, Optional.empty());
         var stations = new StationTable(List.of(new Station(0, new Point2q(1000L * 256, 0), 84, 0),
                 new Station(4 * 256, new Point2q(1004L * 256, 0), 84, 0)), List.of(), PlanningFixtures.HASH);
-        return new PlanWindow(List.of(new SegmentPlan(geometry,
+        return new SegmentPlan(geometry,
                 new PrefixSummary(0, 0, Optional.empty(), PlanningFixtures.HASH), stations, List.of(),
-                PlanningFixtures.HASH)));
+                PlanningFixtures.HASH);
     }
 }

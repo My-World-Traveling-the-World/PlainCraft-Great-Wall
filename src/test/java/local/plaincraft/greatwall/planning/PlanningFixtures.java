@@ -12,10 +12,21 @@ public final class PlanningFixtures {
     public static final String HASH = "a".repeat(64);
     private PlanningFixtures() {}
 
-    public static WorldRecipe recipe(long seed) { return recipe(seed, 1 << 30, 0, 29_000_000); }
+    public static WorldRecipe recipe(long seed) {
+        return recipe(seed, "minecraft:overworld", 1 << 30, 0, 29_000_000);
+    }
+
+    /** A recipe whose segment keys claim the given dimension, for cross-dimension rejections. */
+    public static WorldRecipe recipe(long seed, String dimension) {
+        return recipe(seed, dimension, 1 << 30, 0, 29_000_000);
+    }
 
     public static WorldRecipe recipe(long seed, int ex, int ez, int limit) {
-        var r = new WorldRecipe(new UUID(0, 1), HASH, seed, "minecraft:overworld", new Point3i(0, 64, 0),
+        return recipe(seed, "minecraft:overworld", ex, ez, limit);
+    }
+
+    public static WorldRecipe recipe(long seed, String dimension, int ex, int ez, int limit) {
+        var r = new WorldRecipe(new UUID(0, 1), HASH, seed, dimension, new Point3i(0, 64, 0),
                 new Axis(new Point3i(1000, 64, 0), ex, ez), new DimensionBounds(-64, 7000, limit),
                 new GenerationConfig(1, 1, 2048, 4, 150000, 384, 512, 4, 67108864, 67108864, 33554432),
                 HASH, HASH, HASH, HASH);
