@@ -179,7 +179,12 @@ public final class FaultProcessMain {
                     + "\"seq\":" + hits + ","
                     + "\"key\":\"" + key + "\"}";
             byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
-            try (FileChannel channel = FileChannel.open(root.resolve("fault-hit.json"),
+            // The witness goes in a per-run directory, never the shared root. The driver drives many
+            // runs against one root, so a root-level CREATE_NEW file made every run after the first
+            // fail with FileAlreadyExistsException and be reported as a failed fault injection.
+            Path witness = root.resolve(runDirectoryName()).resolve("fault-hit.json");
+            Files.createDirectories(witness.getParent());
+            try (FileChannel channel = FileChannel.open(witness,
                     StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS)) {
                 var buffer = java.nio.ByteBuffer.wrap(bytes);
                 while (buffer.hasRemaining()) {
@@ -187,6 +192,11 @@ public final class FaultProcessMain {
                 }
                 channel.force(true);
             }
+        }
+
+        /** The same directory name the driver uses, so the witness and the driver agree. */
+        private String runDirectoryName() {
+            return arguments.point().name() + "-" + arguments.occurrence();
         }
     }
 }
