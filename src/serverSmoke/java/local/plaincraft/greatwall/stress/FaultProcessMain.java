@@ -196,7 +196,11 @@ public final class FaultProcessMain {
 
         /** The same directory name the driver uses, so the witness and the driver agree. */
         private String runDirectoryName() {
-            return arguments.point().name() + "-" + arguments.occurrence();
+            // The mode is part of the name: exception and halt runs of the same point and occurrence are
+            // separate experiments, and sharing a directory made the second mode fail on the witness the
+            // first mode had already written.
+            return arguments.point().name() + "-" + arguments.occurrence() + "-"
+                    + arguments.mode().name().toLowerCase(Locale.ROOT);
         }
     }
 }

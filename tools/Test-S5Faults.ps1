@@ -40,7 +40,7 @@ foreach ($point in $points) {
         # fault-hit.json.
         $faultArgs = @("--root", $root, "--point", $point, "--occurrence", "$occurrence",
             "--mode", $FaultMode)
-        $runDir = Join-Path $root "$point-$occurrence"
+        $runDir = Join-Path $root "$point-$occurrence-$FaultMode"
         New-Item -ItemType Directory -Path $runDir -Force | Out-Null
         $info = [Diagnostics.ProcessStartInfo]::new()
         $info.FileName = $env:ComSpec

@@ -110,9 +110,12 @@ tasks.register('runS5Faults', JavaExec) {
                 "occurrence=${project.property('greatwallFaultOccurrence')} mode=${mode}")
     }
     // Written after the child exits, so the driver can read the real status rather than the wrapper's.
+    // The directory name includes the mode: exception and halt runs of one point are separate
+    // experiments and must not share a witness file.
     doLast {
         def witness = new File(project.property('greatwallFaultRoot').toString(),
-                "${project.property('greatwallFaultPoint')}-${project.property('greatwallFaultOccurrence')}/exit-code.txt")
+                "${project.property('greatwallFaultPoint')}-${project.property('greatwallFaultOccurrence')}"
+                        + "-${project.property('greatwallFaultMode')}/exit-code.txt")
         witness.parentFile.mkdirs()
         witness.setText(executionResult.get().exitValue.toString(), 'UTF-8')
     }
