@@ -29,6 +29,12 @@ import net.minecraft.server.level.ServerLevel;
  */
 public final class StressFixture implements AutoCloseable {
     private static final int CHECKPOINT_INTERVAL_TICKS = 600;
+    /**
+     * Slack allowed between the observed run length and the requested one. Elapsed time is taken from
+     * the last checkpoint, so a profile that ends between checkpoints would otherwise look short by up
+     * to one interval and be failed on rounding rather than on substance.
+     */
+    private static final long DURATION_TOLERANCE_SECONDS = 120L;
 
     private final Path reportDir;
     private final long minutes;
@@ -141,9 +147,24 @@ public final class StressFixture implements AutoCloseable {
         if (finished) return;
         finished = true;
         long completed = checkpoints.isEmpty() ? -1L : checkpoints.getLast().completedChunks();
-        boolean passed = failure == null && completed > 0 && !checkpoints.isEmpty();
+        // The profile is only passed when it actually ran for the requested duration.
+        //
+        // The controller stops itself as soon as its pending queue drains, and that queue is finite
+        // (MAX_PENDING positions, polled without refill), so a long profile can end far short of its
+        // window: a 24h request was on course to finish in about 4.5h. Judging only "did any chunk
+        // complete" reported that as passed, which is an acceptance gate that certifies a duration it
+        // never observed. The elapsed time is therefore part of the verdict, with a small tolerance so
+        // a run that stops a tick or two early is not failed on rounding.
+        long requestedSeconds = TimeUnit.MINUTES.toSeconds(minutes);
+        boolean durationMet = lastElapsedSeconds >= requestedSeconds - DURATION_TOLERANCE_SECONDS;
+        boolean passed = failure == null && completed > 0 && !checkpoints.isEmpty() && durationMet;
+        if (!durationMet && failure == null) {
+            failure = new IllegalStateException("profile ran " + lastElapsedSeconds + "s of the requested "
+                    + requestedSeconds + "s; the workload queue drained early, so this run does not "
+                    + "certify the requested duration");
+        }
         try {
-            writeReport(passed, completed);
+            writeReport(passed, completed, durationMet, requestedSeconds);
         } catch (IOException writeFailure) {
             failure = failure == null ? writeFailure : failure;
             passed = false;
@@ -154,11 +175,14 @@ public final class StressFixture implements AutoCloseable {
         }
     }
 
-    private void writeReport(boolean passed, long completedChunks) throws IOException {
+    private void writeReport(boolean passed, long completedChunks, boolean durationMet, long requestedSeconds)
+            throws IOException {
         var text = new StringBuilder();
         text.append("{\n");
         text.append("  \"profile\": \"MIXED_24H\",\n");
         text.append("  \"requestedMinutes\": ").append(minutes).append(",\n");
+        text.append("  \"requestedSeconds\": ").append(requestedSeconds).append(",\n");
+        text.append("  \"durationMet\": ").append(durationMet).append(",\n");
         text.append("  \"observedSeconds\": ").append(lastElapsedSeconds).append(",\n");
         text.append("  \"completedChunks\": ").append(completedChunks).append(",\n");
         text.append("  \"peakHeapBytes\": ").append(peakHeapBytes).append(",\n");

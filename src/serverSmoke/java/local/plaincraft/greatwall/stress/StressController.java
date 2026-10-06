@@ -91,6 +91,8 @@ public final class StressController implements AutoCloseable {
     private final Set<ChunkPos> inFlight = ConcurrentHashMap.newKeySet();
     private final List<CompletableFuture<?>> inFlightFutures = new CopyOnWriteArrayList<>();
     private final AtomicLong completedChunks = new AtomicLong();
+    /** How many times the finite position list has been refilled to cover the requested window. */
+    private final AtomicLong refills = new AtomicLong();
     private final AtomicBoolean started = new AtomicBoolean();
     private final AtomicBoolean stopping = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -136,6 +138,17 @@ public final class StressController implements AutoCloseable {
     public void tick() {
         if (!started.get() || stopping.get() || closed.get()) return;
         if (failure != null) throw new IllegalStateException("stress run failed", failure);
+        // The window is the contract, not the queue. The position list is finite (MAX_PENDING), so a
+        // long profile would otherwise drain it and stop far short of its requested duration — a 24h
+        // request was on course to end after roughly 4.5h. Both the S5 spec and this class document the
+        // long mode as "2..24h rotating walk / far jump / concurrency / re-entry into already generated
+        // regions", so once the list is exhausted it is refilled and revisited for as long as the run
+        // still has time left. Refilling keeps the same deterministic order, so the workload stays
+        // reproducible and the extra time is spent re-entering terrain rather than inventing new work.
+        if (pending.isEmpty() && inFlight.isEmpty() && !windowElapsed()) {
+            pending.addAll(generatePositions());
+            refills.incrementAndGet();
+        }
         int scheduled = 0;
         while (scheduled < MAX_TICK_SCHEDULE && inFlight.size() < config.concurrency() && !pending.isEmpty()) {
             ChunkPos pos = pending.poll();
@@ -150,6 +163,11 @@ public final class StressController implements AutoCloseable {
         if (pending.isEmpty() && inFlight.isEmpty()) {
             stop();
         }
+    }
+
+    /** True once the requested profile window has been observed. */
+    private boolean windowElapsed() {
+        return (System.nanoTime() - startedWallNanos) / 1_000_000_000L >= config.durationSeconds();
     }
 
     public CompletionStage<Checkpoint> sample() {
@@ -385,11 +403,15 @@ public final class StressController implements AutoCloseable {
             summary.put("seed", config.seed());
             summary.put("mode", config.mode().name());
             summary.put("completedChunks", completedChunks.get());
+            // Reported so a reader can tell a genuine full-window run from one that drained its queue
+            // and stopped early; re-entry into already generated terrain is part of the long profile.
+            summary.put("positionRefills", refills.get());
             summary.put("elapsedSeconds", (System.nanoTime() - startedWallNanos) / 1_000_000_000L);
             summary.put("failure", failure == null ? "" : failure.toString());
             Files.writeString(reports.resolve("summary.json"), GSON.toJson(summary));
-            GreatWallMod.LOGGER.info("[GreatWall:S5] STRESS_STOP mode={} completed={} failure={}",
-                    config.mode(), completedChunks.get(), failure == null ? "none" : failure.toString());
+            GreatWallMod.LOGGER.info("[GreatWall:S5] STRESS_STOP mode={} completed={} refills={} failure={}",
+                    config.mode(), completedChunks.get(), refills.get(),
+                    failure == null ? "none" : failure.toString());
         } catch (IOException e) {
             GreatWallMod.LOGGER.error("[GreatWall:S5] cannot flush stress report", e);
         }
