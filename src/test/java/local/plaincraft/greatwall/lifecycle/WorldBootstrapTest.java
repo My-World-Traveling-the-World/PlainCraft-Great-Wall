@@ -9,6 +9,7 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.SegmentCacheStore;
 import local.plaincraft.greatwall.persistence.WorldManifest;
 import local.plaincraft.greatwall.terrain.AnalyticTerrainOracle;
+import local.plaincraft.greatwall.terrain.LanePolicy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -80,13 +81,20 @@ final class WorldBootstrapTest {
                 var recipe = bootstrap.ready().get(30, TimeUnit.SECONDS);
                 assertEquals(recipe, manifest.read().orElseThrow());
                 assertEquals(new Point3i(-1000, 64, -1000), recipe.frozenSpawn());
-                assertEquals(0L, bootstrap.progress().get("root").over40msBatches());
+                // Timing is recorded, never enforced: the hard 40ms rejection was removed by explicit
+                // user authorization, so a loaded machine legitimately produces counter-examples. The
+                // observable contract is that the counters exist and are non-negative.
+                var rootProgress = bootstrap.progress().get("root");
+                assertNotNull(rootProgress, "root progress must be reported");
+                assertTrue(rootProgress.maxBatchNanos() >= 0L, "max batch time must be recorded");
+                assertTrue(rootProgress.over40msBatches() >= 0L, "over-40ms counter must be recorded");
                 var planner = bootstrap.transferToPlanner(new SegmentCacheStore(directory.resolve("cache"), recipe), io);
                 planner.startupPump();
                 try (var route = planner.requireRoute(0, Priority.PLAYER)) {
                     route.future().get(30, TimeUnit.SECONDS);
                 }
-                assertEquals(2, made.get());
+                assertEquals(LanePolicy.resolve().startupLaneCount(), made.get(),
+                        "bootstrap builds one native factory per startup lane; root still uses lane 0 only");
                 assertThrows(IllegalStateException.class,
                         () -> bootstrap.transferToPlanner(new SegmentCacheStore(directory.resolve("cache"), recipe), io));
             } finally { bootstrap.close(); bootstrap.drain().get(10, TimeUnit.SECONDS); }

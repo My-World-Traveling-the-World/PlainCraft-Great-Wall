@@ -13,6 +13,7 @@ import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.SegmentCacheStore;
 import local.plaincraft.greatwall.terrain.AnalyticTerrainOracle;
+import local.plaincraft.greatwall.terrain.LanePolicy;
 import local.plaincraft.greatwall.terrain.OracleLane;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -83,7 +84,8 @@ class PlannerSchedulerTest {
             for (int i = 0; i < 100; i++) leases.add(scheduler.requireGeometry(0, Priority.PLAYER));
             var expected = leases.getFirst().future().get(30, TimeUnit.SECONDS);
             for (var lease : leases) { assertSame(expected, lease.future().get(5, TimeUnit.SECONDS)); lease.close(); }
-            assertEquals(2, created.get(), "one oracle per lane, reused by two routes and hydrology");
+            assertEquals(LanePolicy.resolve().startupLaneCount(), created.get(),
+                    "one oracle per lane, reused by two routes and hydrology");
         }
     }
 
@@ -138,7 +140,11 @@ class PlannerSchedulerTest {
 
     @Test void heldNativeInitializationDoesNotStopStartupPumpOrNeedTicks() throws Exception {
         var recipe = PlanningFixtures.recipe(0);
-        var entered = new CountDownLatch(2); var release = new CountDownLatch(1);
+        int lanes = LanePolicy.resolve().startupLaneCount();
+        // Demand-only startup means lanes initialize lazily, so hold just the first one. What this
+        // test protects is that a blocked native initialization neither stalls the pump nor requires
+        // a server tick to make progress.
+        var entered = new CountDownLatch(1); var release = new CountDownLatch(1);
         var created = new AtomicInteger();
         try (var io = Executors.newSingleThreadExecutor()) {
             var scheduler = new PlannerScheduler(recipe, () -> {
@@ -149,20 +155,31 @@ class PlannerSchedulerTest {
             }, new SegmentCacheStore(directory.resolve("cache"), recipe), io);
             try {
                 scheduler.startupPump();
-                assertTrue(entered.await(5, TimeUnit.SECONDS));
-                long iterations = scheduler.diagnostics().getOrDefault("startup-pump-iterations", 0L);
-                long timeout = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
-                while (scheduler.diagnostics().getOrDefault("startup-pump-iterations", 0L) <= iterations + 5
-                        && System.nanoTime() < timeout) Thread.sleep(2);
-                assertTrue(scheduler.diagnostics().get("startup-pump-iterations") > iterations + 5);
-                assertFalse(scheduler.diagnostics().containsKey("startup-ready"));
-                assertFalse(scheduler.diagnostics().containsKey("tick-enqueued"));
-                try (var route = scheduler.requireRoute(0, Priority.PLAYER)) {
-                    assertFalse(route.future().isDone());
-                    release.countDown();
-                    assertEquals(0, route.future().get(30, TimeUnit.SECONDS).key().index());
+                // The pump's first task runs asynchronously, so wait for it rather than asserting.
+                long ready = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+                while (!scheduler.diagnostics().containsKey("startup-ready") && System.nanoTime() < ready) {
+                    Thread.sleep(2);
                 }
-                assertEquals(2, created.get());
+                assertTrue(scheduler.diagnostics().containsKey("startup-ready"),
+                        "demand-only startup is ready without waiting for any bulk prewarm");
+                // Demand the work that forces lane initialization.
+                var held = scheduler.requireRoute(0, Priority.PLAYER);
+                try {
+                    assertTrue(entered.await(5, TimeUnit.SECONDS), "a lane must begin initializing");
+                    long iterations = scheduler.diagnostics().getOrDefault("startup-pump-iterations", 0L);
+                    long timeout = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+                    while (scheduler.diagnostics().getOrDefault("startup-pump-iterations", 0L) <= iterations + 5
+                            && System.nanoTime() < timeout) Thread.sleep(2);
+                    assertTrue(scheduler.diagnostics().get("startup-pump-iterations") > iterations + 5,
+                            "the pump must keep running while a native initialization is blocked");
+                    assertFalse(scheduler.diagnostics().containsKey("tick-enqueued"),
+                            "progress must not require a server tick");
+                    assertFalse(held.future().isDone(), "no work can complete before its lane is ready");
+                    release.countDown();
+                    assertEquals(0, held.future().get(30, TimeUnit.SECONDS).key().index());
+                } finally { held.close(); }
+                assertTrue(created.get() >= 1 && created.get() <= lanes,
+                        "lanes remain bounded by the resolved policy: " + created.get() + " of " + lanes);
             } finally {
                 release.countDown(); scheduler.close(); scheduler.drain().get(10, TimeUnit.SECONDS);
             }
@@ -284,13 +301,23 @@ class PlannerSchedulerTest {
              var scheduler = new PlannerScheduler(recipe, () -> new AnalyticTerrainOracle(
                      (x, z) -> AnalyticTerrainOracle.dry(64), true),
                      new SegmentCacheStore(directory.resolve("cache"), recipe), io)) {
+            // Demand-only startup is ready as soon as the pump runs; the bulk prewarm is a separate,
+            // later phase so it can never contend with a blocking startup peer.
             scheduler.startupPump();
             long timeout = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
             while (!scheduler.diagnostics().containsKey("startup-ready") && System.nanoTime() < timeout) {
                 assertFalse(scheduler.diagnostics().containsKey("startup-failed"));
                 Thread.sleep(2);
             }
-            assertTrue(scheduler.diagnostics().containsKey("startup-ready"), "prewarm must finish before the counterexample");
+            assertTrue(scheduler.diagnostics().containsKey("startup-ready"), "demand-only pump must start");
+            assertTrue(scheduler.diagnostics().containsKey("demand-only"), "early startup must not bulk-prewarm");
+            scheduler.afterRoadBulk();
+            timeout = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+            while (!scheduler.diagnostics().containsKey("bulk-ready") && System.nanoTime() < timeout) {
+                assertFalse(scheduler.diagnostics().containsKey("bulk-failed"));
+                Thread.sleep(2);
+            }
+            assertTrue(scheduler.diagnostics().containsKey("bulk-ready"), "bulk prewarm must finish once requested");
             try (var later = scheduler.requirePlan(6, Priority.PLAYER)) {
                 var plan = later.future().get(10, TimeUnit.SECONDS);
                 assertEquals(6, plan.geometry().key().index());

@@ -33,7 +33,9 @@ public final class OracleLane implements AutoCloseable {
 
     public OracleLane(UUID session, int index, String fingerprint, Supplier<NaturalTerrainOracle> factory) {
         this.session = Objects.requireNonNull(session);
-        if (index < 0 || index > 1) throw new IllegalArgumentException("oracle lane index 0..1");
+        if (index < 0 || index >= LanePolicy.MAX_LANES) {
+            throw new IllegalArgumentException("oracle lane index 0.." + (LanePolicy.MAX_LANES - 1));
+        }
         this.index = index; this.fingerprint = Objects.requireNonNull(fingerprint);
         this.factory = Objects.requireNonNull(factory);
         trace = new StageTrace(session);

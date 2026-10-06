@@ -15,6 +15,10 @@ public final class GreatWallMod implements ModInitializer {
     public void onInitialize() {
         TerrainMarkers.register();
         local.plaincraft.greatwall.generation.OwnershipMutations.register();
+        // Registers the bundled data pack carrying the dedicated Great Wall biome identity. This is
+        // additive data only: if it fails to register, no biome key resolves and generation proceeds
+        // exactly as before.
+        local.plaincraft.greatwall.compat.biome.OptionalTreePacks.register();
         WorldServices.register();
         local.plaincraft.greatwall.diagnostics.DebugPayload.registerType();
         // Soft-dependency RoadWeaver bridge: guard class loading with Loader before touching

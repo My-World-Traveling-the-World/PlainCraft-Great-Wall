@@ -41,7 +41,12 @@ public final class GenerationResourceFingerprint {
                     .encodeStart(ops, noise.generatorSettings().value()).getOrThrow());
         }
         for (String prefix : new String[]{"worldgen", "dimension", "dimension_type", "tags/worldgen",
-                "tags/block", "plaincraft_great_wall"}) {
+                "tags/block", "plaincraft_great_wall",
+                // Lithostitched's own registries live outside the vanilla namespace. A changed
+                // biome injector, region or worldgen modifier alters which biomes a world can even
+                // contain, so it must be part of the frozen inputs; hashing only the built jar
+                // would miss a user datapack overriding them.
+                "lithostitched"}) {
             for (var entry : resources.listResources(prefix, name -> name.getPath().endsWith(".json")).entrySet()) {
                 try (var reader = entry.getValue().openAsReader()) {
                     inputs.put("resource:" + entry.getKey(), JsonParser.parseReader(reader));
@@ -72,6 +77,12 @@ public final class GenerationResourceFingerprint {
         inputs.put("naturalReplacementPolicy",new JsonPrimitive("explicit-ores-gravel-v1"));
         inputs.put("rootFoundationPolicy",new JsonPrimitive("surface-h-minus-1-2-3-v1"));
         inputs.put("groundEntrancePolicy",new JsonPrimitive("shared-level-floor-exterior-width-headroom-v1"));
+        // Dedicated biome identity policy. Changing any of these changes which columns receive the
+        // Great Wall biome, so they are part of the recipe rather than incidental runtime state.
+        inputs.put("biomePolicy",new JsonPrimitive("route-union-hard-domain-thinY-v1"));
+        inputs.put("biomeBandLow",new JsonPrimitive("[8,32)"));
+        inputs.put("biomeBandEdge",new JsonPrimitive("[32,64)"));
+        inputs.put("biomePaintBand",new JsonPrimitive("[-8,+32)"));
         BuiltInRegistries.BLOCK.getTags().forEach(pair -> {
             var values = new com.google.gson.JsonArray();
             pair.getSecond().stream().map(holder -> BuiltInRegistries.BLOCK.getKey(holder.value()).toString())

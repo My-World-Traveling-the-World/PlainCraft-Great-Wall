@@ -23,6 +23,7 @@ import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.SegmentCacheStore;
 import local.plaincraft.greatwall.terrain.HydrologyClassifier;
+import local.plaincraft.greatwall.terrain.LanePolicy;
 import local.plaincraft.greatwall.terrain.NaturalTerrainOracle;
 import local.plaincraft.greatwall.terrain.OracleLane;
 
@@ -54,12 +55,14 @@ public final class PlannerScheduler implements AutoCloseable {
      * as WIDE, so a slow island can never stall the whole wall.
      */
     private static final long HYDROLOGY_OPERATION_CEILING = 4_000_000L;
+    /** Opening segments pre-computed by the bulk prewarm, once the blocking startup peer is done. */
+    private static final long STARTUP_PREWARM_SEGMENTS = 4;
     private final HeightContractPlanner heights;
     private final SiteScheduler sites;
     private final BudgetCache<CacheKey, Object> memory;
     private final List<OracleLane> lanes;
     private final CompletableFuture<Void> drained = new CompletableFuture<>();
-    private final List<Lane> laneState = List.of(new Lane(), new Lane());
+    private final List<Lane> laneState;
     private final PriorityQueue<Job<?>> pending = new PriorityQueue<>(Comparator.<Job<?>, Priority>comparing(j -> j.priority)
             .thenComparingLong(j -> j.sequence));
     private final ArrayDeque<Runnable> geometryQueue = new ArrayDeque<>();
@@ -67,6 +70,8 @@ public final class PlannerScheduler implements AutoCloseable {
     private final ArrayDeque<Runnable> planAdmissions = new ArrayDeque<>(), geometryAdmissions = new ArrayDeque<>();
     private final Map<UUID, Job<?>> activeJobs = new HashMap<>();
     private int activeGeometry, credits, activeIo, admittedPlans, admittedGeometries;
+    /** Native lanes currently initializing; bounded by {@link LanePolicy#MAX_CONCURRENT_INITIALIZATIONS}. */
+    private int initializing;
     private long deadline, sequence, background = 4;
     private ScheduledFuture<?> startupTimer;
     private PlanLease<SegmentPlan> backgroundLease;
@@ -92,8 +97,10 @@ public final class PlannerScheduler implements AutoCloseable {
         }
         if (!cache.recipeHash().equals(recipe.recipeHash())) throw new IllegalArgumentException("cache recipe mismatch");
         if (bootstrapLanes != null) {
-            if (bootstrapLanes.size() != 2) throw new IllegalArgumentException("two bootstrap lanes required");
-            for (int index = 0; index < 2; index++) {
+            if (bootstrapLanes.size() < LanePolicy.MIN_LANES) {
+                throw new IllegalArgumentException("at least " + LanePolicy.MIN_LANES + " bootstrap lanes required");
+            }
+            for (int index = 0; index < bootstrapLanes.size(); index++) {
                 var lane = bootstrapLanes.get(index);
                 if (lane.index() != index || !lane.session().equals(recipe.instance())
                         || !lane.fingerprint().equals(recipe.terrainHash())
@@ -106,11 +113,20 @@ public final class PlannerScheduler implements AutoCloseable {
         this.heights = new HeightContractPlanner(recipe); this.sites = new SiteScheduler(recipe);
         this.pump = new ScheduledThreadPoolExecutor(1, factory("pgw-planner-" + recipe.instance()));
         pump.setRemoveOnCancelPolicy(true);
-        this.lanes = bootstrapLanes != null ? bootstrapLanes
-                : List.of(new OracleLane(recipe.instance(), 0, recipe.terrainHash(), oracleFactory),
-                        new OracleLane(recipe.instance(), 1, recipe.terrainHash(), oracleFactory));
+        this.lanes = bootstrapLanes != null ? List.copyOf(bootstrapLanes)
+                : lanes(recipe, oracleFactory, LanePolicy.resolve().startupLaneCount());
+        this.laneState = this.lanes.stream().map(ignored -> new Lane()).toList();
         this.memory = new BudgetCache<>(recipe.config().segmentBytes(), 256, 4096, pump, PlannerScheduler::retainedBytes);
         this.prefixes = new PrefixSummaryIndex(i -> requireGeometry(i, Priority.PLAYER_PREFETCH), pump, cache, this::submitIo);
+    }
+
+    private static List<OracleLane> lanes(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory,
+                                          int count) {
+        var built = new java.util.ArrayList<OracleLane>(count);
+        for (int index = 0; index < count; index++) {
+            built.add(new OracleLane(recipe.instance(), index, recipe.terrainHash(), oracleFactory));
+        }
+        return List.copyOf(built);
     }
 
     public PlanLease<RouteShape> requireRoute(long segment, Priority priority) {
@@ -206,21 +222,49 @@ public final class PlannerScheduler implements AutoCloseable {
                 || p.prefix().terminal().get().segment() >= p.geometry().key().index()).toList())), () -> leases.forEach(PlanLease::close));
     }
 
+    /**
+     * Starts the scheduling pump in <em>demand-only</em> mode: the pump runs so that on-demand
+     * planning (which optional integrations depend on) makes progress, but the bulk prewarm of the
+     * first segments is deliberately not enqueued.
+     *
+     * <p>This split exists to break a startup cycle. RoadWeaver blocks inside
+     * {@code MinecraftServer.prepareLevels} and asks the wall for its recipe and plans while it does
+     * so. If the wall were to spend that window running its own bulk prewarm, both sides would wait
+     * on each other. Demand-only startup satisfies every dependency the other side needs without
+     * competing for the same native lanes, and {@link #afterRoadBulk()} starts the bulk once the
+     * other side has finished.
+     */
     public void startupPump() {
         if (closed()) throw closedFailure();
         if (state.putIfAbsent("startup", 1L) != null) return;
+        state.put("demand-only", 1L);
         pump.execute(() -> {
             startupTimer = pump.scheduleWithFixedDelay(() -> {
                 state.merge("startup-pump-iterations", 1L, Long::sum);
                 credits = 4096; deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25); dispatch();
             }, 0, 1, TimeUnit.MILLISECONDS);
+            // Demand-only: readiness means "the pump is running", not "the first segments are done".
+            // Spawn preparation can still require a segment, and it is served from this pump.
+            state.put("startup-ready", 1L);
+        });
+    }
+
+    /**
+     * Enqueues the bulk prewarm of the opening segments. Call only after any blocking startup peer
+     * has finished, so the two never contend for the same native lanes.
+     */
+    public void afterRoadBulk() {
+        if (closed()) throw closedFailure();
+        if (state.putIfAbsent("after-road-bulk", 1L) != null) return;
+        pump.execute(() -> {
             var prewarm = new ArrayList<PlanLease<SegmentPlan>>();
-            for (long i = 0; i < 4 && safeSegment(i); i++) prewarm.add(requirePlan(i, Priority.PLAYER_PREFETCH));
+            for (long i = 0; i < STARTUP_PREWARM_SEGMENTS && safeSegment(i); i++) {
+                prewarm.add(requirePlan(i, Priority.PLAYER_PREFETCH));
+            }
             CompletableFuture.allOf(prewarm.stream().map(PlanLease::future).toArray(CompletableFuture[]::new))
                     .whenCompleteAsync((value, error) -> {
                         prewarm.forEach(PlanLease::close);
-                        state.put(error == null ? "startup-ready" : "startup-failed", 1L);
-                        // Spawn preparation can require another segment after prewarm, before server ticks exist.
+                        state.put(error == null ? "bulk-ready" : "bulk-failed", 1L);
                         if (error != null && startupTimer != null) startupTimer.cancel(false);
                     }, pump);
         });
@@ -241,7 +285,7 @@ public final class PlannerScheduler implements AutoCloseable {
             }
             credits = Math.toIntExact(Math.min(65536, state.getOrDefault("tick-operations", 0L)));
             deadline = state.getOrDefault("tick-deadline", 0L);
-            if (state.containsKey("startup-ready") && !state.containsKey("background-terminal") && backgroundLease == null && safeSegment(background)) {
+            if (state.containsKey("bulk-ready") && !state.containsKey("background-terminal") && backgroundLease == null && safeSegment(background)) {
                 backgroundLease = requirePlan(background++, Priority.BACKGROUND);
                 var lease = backgroundLease;
                 lease.future().whenCompleteAsync((v, e) -> {
@@ -395,9 +439,13 @@ public final class PlannerScheduler implements AutoCloseable {
             if (slot.busy) continue;
             var nativeLane = lanes.get(lane);
             if (!slot.ready) {
-                if (!slot.initializing) {
+                // Initializing every lane at once would peak N native RandomState instances together.
+                // Admit only a bounded number in flight; released lanes re-enter dispatch themselves.
+                if (!slot.initializing && initializing < LanePolicy.MAX_CONCURRENT_INITIALIZATIONS) {
                     slot.initializing = true;
+                    initializing++;
                     nativeLane.start().whenCompleteAsync((value, error) -> {
+                        initializing--;
                         if (error != null) {
                             state.merge("lane-initialization-failures", 1L, Long::sum);
                             recordFailure(error, "NATIVE_INITIALIZATION", -1, 0);

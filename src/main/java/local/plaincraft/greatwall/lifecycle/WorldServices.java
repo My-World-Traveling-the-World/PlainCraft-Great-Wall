@@ -226,6 +226,10 @@ public final class WorldServices {
     public PlannerScheduler planning() { return requireProductionSession().planning(); }
     public WorldBootstrap bootstrap() { return requireProductionSession().bootstrap(); }
     public VegetationGuard vegetation() { return requireProductionSession().vegetation(); }
+    /** Dedicated biome runtime, or null when the biome identity mode is off for this run. */
+    public local.plaincraft.greatwall.compat.biome.GreatWallBiomeRuntime biomeRuntime() {
+        return requireProductionSession().biomeRuntime();
+    }
     public TreeBoundsCatalog trees() { return requireProductionSession().trees(); }
     public CompletableFuture<WorldRecipe> recipeReady() { return requireProductionSession().recipeReady(); }
     public Map<String, Object> productionDiagnostics() { return requireProductionSession().diagnostics(); }
@@ -272,6 +276,16 @@ public final class WorldServices {
             services.planner.transition(BootstrapState.RECIPE_READY, BootstrapState.WARMING);
             services.trace("STARTUP_WARMING", "*", 0, 0, "prepareLevels", "none");
         }
+    }
+
+    /**
+     * Called from {@code prepareLevels} TAIL. Any blocking startup peer that runs at that method's
+     * HEAD has necessarily returned by now, so this is the sound point to release the wall's bulk
+     * prewarm without racing the peer for the same native lanes.
+     */
+    public static void afterRoadReached(MinecraftServer server) {
+        var services = find(server);
+        if (services != null && services.production != null) services.production.afterRoadReached();
     }
     public void assertActiveSession() {
         if (production != null) {

@@ -60,6 +60,13 @@ final class ProductionSession implements AutoCloseable {
     private final Path root;
     private final StageTrace trace = new StageTrace(runtime);
     private final VegetationGuard vegetation = new VegetationGuard();
+    /** Null until the recipe hash is known; the dedicated biome identity is opt-in per run. */
+    private volatile local.plaincraft.greatwall.compat.biome.GreatWallBiomeRuntime biomeRuntime;
+    /**
+     * Registry epoch for the biome identity. V1 never hot-swaps an active registry, so the epoch is
+     * a constant: a new registry means a new world, which means a new session and a new runtime.
+     */
+    private static final long BIOME_REGISTRY_EPOCH = 1L;
     private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> failures = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ServerLevel> levels = new ConcurrentHashMap<>();
@@ -109,7 +116,17 @@ final class ProductionSession implements AutoCloseable {
                         new ChunkPlanCompiler(), new ChunkWallWriter());
                 var snapshot = new Installed(recipe, planner, barrier, frozen);
                 snapshots.put("installed", snapshot);
+                installBiomeRuntime(level, recipe);
+                // Phase split: the pump starts demand-only so a blocking startup peer (RoadWeaver
+                // blocks inside prepareLevels and asks the wall for recipe and plans) is never
+                // competing with the wall's own bulk prewarm. The bulk is released by
+                // afterRoadReached(), which is driven from prepareLevels TAIL -- guaranteed to run
+                // after the road's HEAD blocking work returns.
                 planner.startupPump();
+                if (state.containsKey("after-road-reached")) {
+                    planner.afterRoadBulk();
+                    trace.record("PRODUCTION_AFTER_ROAD_BULK", recipe.dimension(), 0, 0, "road-finished-before-install", "none");
+                }
                 trace.record("PRODUCTION_RECIPE_INSTALLED", recipe.dimension(), 0, 0, "recipe-durable-before-generation", "none");
                 // S3 gameplay service assembly. The journal is world-scoped (manifest.instance),
                 // owns a dedicated IO executor (close() shuts it down), and recovers the beacon count
@@ -170,6 +187,37 @@ final class ProductionSession implements AutoCloseable {
     UUID runtime() { return runtime; }
     WorldBootstrap bootstrap() { return bootstrap; }
     VegetationGuard vegetation() { return vegetation; }
+    /** The dedicated biome runtime for this run, or null when the biome identity mode is off. */
+    local.plaincraft.greatwall.compat.biome.GreatWallBiomeRuntime biomeRuntime() { return biomeRuntime; }
+
+    /**
+     * Builds the Great Wall biome runtime and binds its identity, if and only if the bundled biome
+     * data pack is actually loaded and the biome key resolves.
+     *
+     * <p>Failing to resolve is not fatal to the run: the wall still builds exactly as before, it
+     * simply has no dedicated biome identity. That keeps this feature strictly additive, so a
+     * missing or disabled pack can never block world generation.
+     */
+    private void installBiomeRuntime(ServerLevel level, WorldRecipe recipe) {
+        var runtimeId = local.plaincraft.greatwall.compat.biome.GreatWallBiomeRuntime.BIOME_ID;
+        var biomeKey = net.minecraft.resources.ResourceKey.create(
+                net.minecraft.core.registries.Registries.BIOME, runtimeId);
+        var lookup = level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME);
+        var resolved = lookup.getHolder(biomeKey);
+        if (resolved.isEmpty()) {
+            state.put("biome-identity-absent", true);
+            GreatWallMod.LOGGER.info("[GreatWall:biome] identity {} is not present; dedicated biome mode OFF",
+                    runtimeId);
+            return;
+        }
+        var candidate = new local.plaincraft.greatwall.compat.biome.GreatWallBiomeRuntime(
+                runtime, level.dimension().location().toString(), recipe.recipeHash(), BIOME_REGISTRY_EPOCH, server);
+        candidate.markPackEnabled(true);
+        candidate.bindIdentity(resolved.get());
+        biomeRuntime = candidate;
+        GreatWallMod.LOGGER.info("[GreatWall:biome] identity {} bound; dedicated biome mode ON session={}",
+                runtimeId, runtime);
+    }
     CompletableFuture<WorldRecipe> recipeReady() { return installed.thenApply(Installed::recipe).copy(); }
     PlannerScheduler planning() { return requireInstalled().planner(); }
     WorldRecipe recipe() { return requireInstalled().recipe(); }
@@ -234,13 +282,34 @@ final class ProductionSession implements AutoCloseable {
         } catch (Throwable error) { fail(error); throw new IllegalStateException("Production input freeze failed", error); }
     }
     void started() { state.put("server-started", true); }
+
+    /**
+     * Records that {@code MinecraftServer.prepareLevels} has returned, therefore that any blocking
+     * startup peer which runs at that method's HEAD (RoadWeaver's initial road generation) has
+     * finished. Releases the wall's bulk prewarm if the recipe was already installed, and otherwise
+     * lets the install path release it as soon as it runs.
+     *
+     * <p>Order independence matters: the road mixin and the wall mixin both target
+     * {@code prepareLevels}, and correctness must not depend on which one wins. Whichever of the two
+     * events happens second performs the release.
+     */
+    void afterRoadReached() {
+        if (state.putIfAbsent("after-road-reached", true) != null) return;
+        trace.record("PRODUCTION_AFTER_ROAD_REACHED", "minecraft:overworld", 0, 0, "prepareLevels-returned", "none");
+        var snapshot = snapshots.get("installed");
+        if (snapshot == null) return;
+        snapshot.planner().afterRoadBulk();
+        trace.record("PRODUCTION_AFTER_ROAD_BULK", snapshot.recipe().dimension(), 0, 0, "post-road-startup", "none");
+    }
     void tick() {
         if (state.containsKey("closed") || state.containsKey("failed")) return;
         var snapshot = snapshots.get("installed");
         if (snapshot == null) return;
         var diagnostics = snapshot.planner().diagnostics();
-        if (diagnostics.containsKey("startup-failed")) { fail(new IllegalStateException("production prewarm failed")); return; }
-        if (state.containsKey("server-started") && diagnostics.containsKey("startup-ready")
+        if (diagnostics.containsKey("startup-failed") || diagnostics.containsKey("bulk-failed")) {
+            fail(new IllegalStateException("production prewarm failed")); return;
+        }
+        if (state.containsKey("server-started") && diagnostics.containsKey("bulk-ready")
                 && state.putIfAbsent("active", true) == null) {
             trace.record("PRODUCTION_ACTIVE", snapshot.recipe().dimension(), 0, 0, "server-started-and-prewarm-ready", "none");
         }
@@ -411,6 +480,8 @@ final class ProductionSession implements AutoCloseable {
         private final ConcurrentHashMap<UUID, Boolean> callers = new ConcurrentHashMap<>();
         private final ConcurrentHashMap<UUID, PlanLease<PlanWindow>> children = new ConcurrentHashMap<>();
         private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();
+        /** Native FEATURES block-state write radius, read from the live chunk pyramid. */
+        private int writeRadius;
         private FeatureSlot(ChunkKey owner) { this.owner = owner; }
         private void start() {
             bootstrap.beforeRecipe(owner).thenComposeAsync(ignored -> {
@@ -422,6 +493,7 @@ final class ProductionSession implements AutoCloseable {
                 int halo = net.minecraft.world.level.chunk.status.ChunkPyramid.GENERATION_PYRAMID
                         .getStepTo(net.minecraft.world.level.chunk.status.ChunkStatus.FEATURES).blockStateWriteRadius();
                 if (halo < 0 || halo > 4) throw new WallFailure(FailureCode.UNSUPPORTED_ADAPTER, "unknown native FEATURES write halo");
+                writeRadius = halo;
                 int margin = Math.addExact(snapshot.inputs().trees().maximumRadius(), 32 + halo * 16);
                 int grid = margin <= 512 ? 0 : Math.toIntExact(Math.floorDiv((long) margin + 511, 512));
                 if (grid > 5) throw new WallFailure(FailureCode.CAPACITY, "vegetation plan subdivision exceeds finite grid");
@@ -450,7 +522,16 @@ final class ProductionSession implements AutoCloseable {
                 active();
                 featureSlots.computeIfPresent(owner, (position, current) -> {
                     if (current != this || state.containsKey("closed")) return current;
-                    if (plans != null) vegetation.publish(owner, plans);
+                    if (plans != null) {
+                        vegetation.publish(owner, plans);
+                        // The dedicated biome mask is compiled from the very same frozen window, so
+                        // the hard domain the tree guard enforces and the domain the biome paints can
+                        // never disagree. A run without a bound identity simply skips this.
+                        var biomes = biomeRuntime;
+                        if (biomes != null && !biomes.closed()) {
+                            biomes.publish(owner, plans, writeRadius);
+                        }
+                    }
                     state.put("published", true);
                     return current;
                 });

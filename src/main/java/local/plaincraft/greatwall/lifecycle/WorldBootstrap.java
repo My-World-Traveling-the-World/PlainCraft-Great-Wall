@@ -204,8 +204,15 @@ public final class WorldBootstrap implements AutoCloseable {
                     var lanes = laneSnapshot.compute("lanes", (key, previous) -> {
                         active();
                         if (previous != null) throw new IllegalStateException("bootstrap lane group already created");
-                        return List.of(new OracleLane(authorization.creation().instance(), 0, inputs.terrainHash(), inputs.factory()),
-                                new OracleLane(authorization.creation().instance(), 1, inputs.terrainHash(), inputs.factory()));
+                        // Root search always runs on lane 0 and stays serial; the remaining lanes
+                        // only widen route/geometry parallelism once planning begins.
+                        int count = local.plaincraft.greatwall.terrain.LanePolicy.resolve().startupLaneCount();
+                        var built = new java.util.ArrayList<OracleLane>(count);
+                        for (int index = 0; index < count; index++) {
+                            built.add(new OracleLane(authorization.creation().instance(), index,
+                                    inputs.terrainHash(), inputs.factory()));
+                        }
+                        return List.copyOf(built);
                     });
                     active();
                     if (authorization.saved().isPresent()) {

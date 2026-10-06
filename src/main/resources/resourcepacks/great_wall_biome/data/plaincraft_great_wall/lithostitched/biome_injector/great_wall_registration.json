@@ -1,0 +1,9 @@
+{
+  "type": "lithostitched:force_placement",
+  "dimension": "minecraft:overworld",
+  "priority": 1000,
+  "biome": "plaincraft_great_wall:great_wall",
+  "parameters": {
+    "plaincraft_great_wall:registration_zero": 1.0
+  }
+}
