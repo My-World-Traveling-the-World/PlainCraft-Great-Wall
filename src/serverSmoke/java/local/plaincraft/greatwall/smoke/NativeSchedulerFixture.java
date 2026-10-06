@@ -59,8 +59,12 @@ final class NativeSchedulerFixture {
                     }
                 }
                 // 2026-10-05 用户授权：40ms 稳态批次不再是失败条件，仅作为观测值保留。
-                // 真实整合包里其它 mod 会抢占 CPU，硬拒绝会让长城在达标硬件上直接不生成。
-                boolean batchesObserved = d.getOrDefault("max-batch-nanos", 0L) >= 0L;
+                // 2026-10-06 修正：原判断 `getOrDefault("max-batch-nanos", 0L) >= 0L` 恒为 true，
+                // 使 BLOCKED_PERFORMANCE 成为死代码，等于连"计时是否真的被记录"都没验证。
+                // 现在要求该字段确实存在且非负：缺失即视为观测链路断了，仍然报 BLOCKED。
+                boolean batchesObserved = d.containsKey("max-batch-nanos")
+                        && d.getOrDefault("max-batch-nanos", -1L) >= 0L
+                        && d.containsKey("over-40ms-batches");
                 return Map.of("status", batchesObserved ? "PASS_OBSERVED_BATCHES" : "BLOCKED_PERFORMANCE",
                         "session", session.toString(), "routes", 2, "diagnostics", d,
                         "startupPumpCallNanos", pumpCallNanos, "firstRouteHash", first.hash(), "secondRouteHash", second.hash(),

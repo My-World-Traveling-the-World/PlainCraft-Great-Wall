@@ -49,14 +49,30 @@ public final class GarrisonController implements AutoCloseable {
     /** Only these spawn when a tower slot fires; the 2:1 mix is fixed by slot order. */
     private static final List<String> TOWER_SLOT_TYPES =
             List.of("minecraft:pillager", "minecraft:pillager", "minecraft:vindicator");
-    private static final long MIN_PLAYER_DISTANCE_SQUARED = 250_000L;
+    /**
+     * 出生触发窗口：玩家必须在这个距离带内，驻军才会被激活。
+     *
+     * <p>2026-10-06 修正：规格 S3 同时写了「distance² &gt; 250000」（&ge;500 格）和
+     * 「64 格内且至少 24 格」两条距离规则，两者数学上不可同时满足（24..64 格的
+     * distance² 恒 &le; 4096 &lt; 250000），导致 {@link #allowed} 对 tick 传入的任何
+     * 合法值都返回 false、驻军永远不出生。这里按规格自身的触发语义统一为
+     * 「24..64 格」一带：远离玩家由下限 24 格保证（不在玩家脸上刷怪），
+     * 上限 64 格保证只在该站点附近有玩家时才激活。全局 500 格门已删除。</p>
+     */
+    public static final double SPAWN_MIN_DISTANCE = 24.0D;
+    public static final double SPAWN_MAX_DISTANCE = 64.0D;
+    private static final long SPAWN_MIN_DISTANCE_SQUARED = 24L * 24L;
+    private static final long SPAWN_MAX_DISTANCE_SQUARED = 64L * 64L;
 
     /** Pure spawn policy; unit-testable with no world. */
     public static boolean allowed(GameplayTypes.PolicyInput policy) {
         Objects.requireNonNull(policy, "policy");
         if (policy.peaceful() || !policy.mobSpawning()) return false;
         if (!policy.playerNear()) return false;
-        if (policy.nearestPlayerDistanceSquared() <= MIN_PLAYER_DISTANCE_SQUARED) return false;
+        // 单一距离带：太近不在玩家脸上刷怪，太远说明该站点无人激活。
+        long distanceSquared = policy.nearestPlayerDistanceSquared();
+        if (distanceSquared < SPAWN_MIN_DISTANCE_SQUARED
+                || distanceSquared > SPAWN_MAX_DISTANCE_SQUARED) return false;
         long dayTime = Math.floorMod(policy.dayTime(), 24_000L);
         if (dayTime < 13_000L || dayTime >= 23_000L) return false;
         return policy.decay() == DecayState.INTACT || policy.decay() == DecayState.PARTIAL;
@@ -122,7 +138,8 @@ public final class GarrisonController implements AutoCloseable {
                 if (d < nearestSq) { nearestSq = d; nearest = player; }
             }
             if (nearest == null) continue;
-            if (nearestSq > 64.0 * 64.0 || nearestSq < 24.0 * 24.0) continue;
+            // 与 allowed() 共用同一距离带，避免两处字面量再次漂移成矛盾条件。
+            if (nearestSq > SPAWN_MAX_DISTANCE_SQUARED || nearestSq < SPAWN_MIN_DISTANCE_SQUARED) continue;
             var policy = new GameplayTypes.PolicyInput(
                     level.getDifficulty() == Difficulty.PEACEFUL,
                     !level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING),

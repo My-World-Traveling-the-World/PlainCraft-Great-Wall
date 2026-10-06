@@ -393,8 +393,12 @@ public final class NegotiatedGateService implements AutoCloseable {
         return ledger
                 .propose(contract, request.completeApproaches(), request.completeBatchRoadIds(),
                         request.topologyRevision())
+                // freeze 必须针对 propose 刚刚产出的那条记录：propose 会写入 revision+1，
+                // 而 request.topologyRevision() 是调用方看到的旧值（首次新门为 0）。
+                // 用旧值 freeze 会让首次门闸必然 revision mismatch。改用 proposed.revision()；
+                // 若期间有并发 propose 抢先，freeze 仍会以 mismatch 正确拒绝（fail-closed）。
                 .thenCompose(proposed -> ledger.freeze(proposed.contract().id(),
-                        request.topologyRevision()))
+                        proposed.revision()))
                 .thenCompose(frozen -> {
                     if (!isCommitted(frozen.state())) {
                         return completed(new Result(Optional.of(frozen), "PROTECTED_GAP",

@@ -125,7 +125,15 @@ final class ProductionSession implements AutoCloseable {
                     var garrison = new GarrisonController(runtime, level, recipe, journal, sites);
                     var spawners = new WallSpawnerGuard(garrison, sites);
                     var gates = new GateLedger(journal, server);
-                    var backfill = new WallArchBackfill(level, gates);
+                    // 门洞回填只读取墙生成时已持久化的真实写集（build-proof），
+                    // 不在缺失时伪造空集；读取走 IO 线程，校验与写入留在 server owner。
+                    var backfill = new WallArchBackfill(level, gates, io, owner -> {
+                        try {
+                            return store.readPlan(owner);
+                        } catch (java.io.IOException failure) {
+                            throw new java.util.concurrent.CompletionException(failure);
+                        }
+                    });
                     var negotiated = new NegotiatedGateService(services, planner, gates, backfill);
                     var debug = new DebugService(services);
                     var exporter = new DiagnosticExporter(
