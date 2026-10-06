@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
@@ -28,12 +29,13 @@ import net.minecraft.server.level.ServerLevel;
  */
 public final class StressFixture implements AutoCloseable {
     private static final int CHECKPOINT_INTERVAL_TICKS = 600;
-    private static final long SETTLE_TIMEOUT_SECONDS = 120L;
 
     private final Path reportDir;
     private final long minutes;
     private final List<StressController.Checkpoint> checkpoints = new ArrayList<>();
     private StressController controller;
+    /** Non-null once the end-of-run drain has been started; polled, never waited on, by tick(). */
+    private CompletableFuture<Void> draining;
     private int ticks;
     private boolean started;
     private boolean finished;
@@ -90,6 +92,12 @@ public final class StressFixture implements AutoCloseable {
     /**
      * Advances the profile. Returns true once the run has terminated (successfully or not), so the
      * caller can stop the server.
+     *
+     * <p>This runs on the server thread, from the end-of-tick event. It must therefore never wait for
+     * the drain: chunk completions are delivered on this very thread, so blocking here would prevent
+     * the work being waited for from ever completing. An earlier revision called {@code stop().get()}
+     * with a 120s budget, which turned the end of every run into a single 120s tick and let the
+     * watchdog kill the server at 60s. The drain is now started once and polled.
      */
     public boolean tick(MinecraftServer server) {
         if (!started || finished) return finished;
@@ -98,6 +106,16 @@ public final class StressFixture implements AutoCloseable {
             return true;
         }
         try {
+            // A drain already in progress owns the end of the run; keep ticking so its completions can
+            // be delivered, and only finish once it actually settles.
+            if (draining != null) {
+                if (!draining.isDone()) return false;
+                if (draining.isCompletedExceptionally()) {
+                    draining.join();
+                }
+                finish(server);
+                return true;
+            }
             controller.tick();
             ticks++;
             if (ticks % CHECKPOINT_INTERVAL_TICKS == 0 || ticks == 1) {
@@ -107,9 +125,9 @@ public final class StressFixture implements AutoCloseable {
                 peakHeapBytes = Math.max(peakHeapBytes, checkpoint.usedHeapBytes());
             }
             if (lastElapsedSeconds >= TimeUnit.MINUTES.toSeconds(minutes)) {
-                controller.stop().toCompletableFuture().get(SETTLE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                finish(server);
-                return true;
+                // Start the drain and return without blocking; the next ticks poll it to completion.
+                draining = controller.stop().toCompletableFuture();
+                return false;
             }
         } catch (Throwable error) {
             failure = error;
