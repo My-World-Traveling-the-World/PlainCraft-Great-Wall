@@ -147,7 +147,14 @@ public final class StressController implements AutoCloseable {
         // reproducible and the extra time is spent re-entering terrain rather than inventing new work.
         if (pending.isEmpty() && inFlight.isEmpty() && !windowElapsed()) {
             pending.addAll(generatePositions());
-            refills.incrementAndGet();
+            // Logged because the refill is the only thing separating a real full-window profile from one
+            // that quietly drained its queue and stopped hours early; it should be visible while the run
+            // is still going, not only in the final report.
+            long ordinal = refills.incrementAndGet();
+            GreatWallMod.LOGGER.info("[GreatWall:S5] STRESS_REFILL ordinal={} completed={} elapsedSeconds={} "
+                            + "remainingSeconds={}", ordinal, completedChunks.get(),
+                    (System.nanoTime() - startedWallNanos) / 1_000_000_000L,
+                    config.durationSeconds() - (System.nanoTime() - startedWallNanos) / 1_000_000_000L);
         }
         int scheduled = 0;
         while (scheduled < MAX_TICK_SCHEDULE && inFlight.size() < config.concurrency() && !pending.isEmpty()) {
