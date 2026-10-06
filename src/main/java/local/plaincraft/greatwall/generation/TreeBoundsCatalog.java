@@ -18,7 +18,9 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.util.valueproviders.IntProvider;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
+import net.minecraft.world.level.levelgen.feature.configurations.RandomBooleanFeatureConfiguration;
 import net.minecraft.world.level.levelgen.feature.configurations.RandomFeatureConfiguration;
+import net.minecraft.world.level.levelgen.feature.configurations.SimpleRandomFeatureConfiguration;
 import net.minecraft.world.level.levelgen.feature.configurations.TreeConfiguration;
 import net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecorator;
 
@@ -156,23 +158,36 @@ public final class TreeBoundsCatalog {
      * lets the caller keep an identity set and terminate cycles safely.</p>
      */
     private static List<ConfiguredFeature<?, ?>> nestedFeatures(ConfiguredFeature<?, ?> feature) {
-        if (!(feature.config() instanceof RandomFeatureConfiguration random)) return List.of();
+        // 原版有三个配置类覆盖 getFeatures()（javap 实测）：
+        //   RandomFeatureConfiguration        -> features(List<WeightedPlacedFeature>) + defaultFeature
+        //   RandomBooleanFeatureConfiguration -> featureTrue + featureFalse
+        //   SimpleRandomFeatureConfiguration  -> features(HolderSet<PlacedFeature>)
+        // 早期实现只展开第一个，另外两类里的树会被静默漏出保护目录，因此这里三类都展开。
         var result = new java.util.ArrayList<ConfiguredFeature<?, ?>>();
-        for (var weighted : random.features) {
-            if (weighted == null || weighted.feature == null) continue;
-            var placed = weighted.feature.value();
-            if (placed == null || placed.feature() == null) continue;
-            var nested = placed.feature().value();
-            if (nested != null) result.add(nested);
-        }
-        if (random.defaultFeature != null) {
-            var placed = random.defaultFeature.value();
-            if (placed != null && placed.feature() != null) {
-                var nested = placed.feature().value();
-                if (nested != null) result.add(nested);
+        var config = feature.config();
+        if (config instanceof RandomFeatureConfiguration random) {
+            for (var weighted : random.features) {
+                if (weighted == null) continue;
+                addPlaced(result, weighted.feature);
             }
+            addPlaced(result, random.defaultFeature);
+        } else if (config instanceof RandomBooleanFeatureConfiguration both) {
+            addPlaced(result, both.featureTrue);
+            addPlaced(result, both.featureFalse);
+        } else if (config instanceof SimpleRandomFeatureConfiguration simple) {
+            for (var placed : simple.features) addPlaced(result, placed);
         }
         return result;
+    }
+
+    /** Resolves one placed-feature holder to its configured feature, tolerating absent entries. */
+    private static void addPlaced(List<ConfiguredFeature<?, ?>> into,
+            net.minecraft.core.Holder<net.minecraft.world.level.levelgen.placement.PlacedFeature> holder) {
+        if (holder == null) return;
+        var placed = holder.value();
+        if (placed == null || placed.feature() == null) return;
+        var nested = placed.feature().value();
+        if (nested != null) into.add(nested);
     }
     private static String hash(JsonObject tree) { return WorldRecipeGuard.fingerprint(Map.of("tree", tree)); }
     private static int integer(JsonObject value, String name) {

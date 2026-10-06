@@ -32,6 +32,10 @@ public final class HistoryJournal implements DurableLog {
     private final ArrayList<Record> tailBySequence = new ArrayList<>();
     private boolean opened;
     private long tailBytes, lastSequence, beaconCount;
+    /** 关闭只执行一次；等待者共享同一完成信号。 */
+    private final java.util.concurrent.atomic.AtomicBoolean closeRequested =
+            new java.util.concurrent.atomic.AtomicBoolean();
+    private final CompletableFuture<Void> closeCompletion = new CompletableFuture<>();
     private String manifestHash = ZERO_HASH;
     private Head head;
     private FileChannel wal, lockChannel;
@@ -533,18 +537,43 @@ public final class HistoryJournal implements DurableLog {
         if (failure == null) task.result().complete(value); else task.result().completeExceptionally(failure);
     }
 
-    @Override public void close() {
-        admit(new Task<>(() -> {
-            try { if (wal != null) hooks.force(wal); }
-            finally {
-                try { releaseChannels(); }
+    @Override public void close() { closeAsync(); }
+
+    /**
+     * 可等待的关闭：把 force/关通道/IO 线程收尾排入队列，并返回完成 stage。
+     *
+     * <p>2026-10-06 修正：原 {@code close()} 只是把收尾任务 {@code admit} 进队列就返回
+     * {@code void}，调用方（{@code ProductionSession.close()}）随即发布 {@code drained}，
+     * 于是 WAL force 与 channel close 可能尚未完成就被报告为已排空——尾写丢失、
+     * 文件锁竞争、下一 session 读到未完成状态。现在由需要排空保证的调用方等待本
+     * stage，{@link #close()} 仍保留为即发即忘的 AutoCloseable 兼容入口。</p>
+     */
+    public CompletionStage<Void> closeAsync() {
+        if (!closeRequested.compareAndSet(false, true)) return closeCompletion.copy();
+        var completion = new CompletableFuture<Void>();
+        try {
+            CompletionStage<Void> stage = admit(new Task<>(() -> {
+                try { if (wal != null) hooks.force(wal); }
                 finally {
-                    opened = false; index.clear(); tailByKey.clear(); tailBySequence.clear(); tailBytes = 0;
-                    mark(Health.CLOSED); ioOwner.shutdown();
+                    try { releaseChannels(); }
+                    finally {
+                        opened = false; index.clear(); tailByKey.clear(); tailBySequence.clear(); tailBytes = 0;
+                        mark(Health.CLOSED);
+                    }
                 }
-            }
-            return null;
-        }, new CompletableFuture<Void>(), 0, Health.DEGRADED, null), null, true);
+                return null;
+            }, completion, 0, Health.DEGRADED, null), null, true);
+            // 队列本身可能拒绝（已关闭/CAPACITY）；两种结果都要让等待者看到终态。
+            stage.whenComplete((value, error) -> {
+                if (error != null) completion.completeExceptionally(error);
+                else completion.complete(null);
+                ioOwner.shutdown();
+            });
+        } catch (Throwable failure) {
+            completion.completeExceptionally(failure);
+            ioOwner.shutdown();
+        }
+        return closeCompletion.copy();
     }
     private void releaseChannels() throws IOException {
         IOException failure = null;

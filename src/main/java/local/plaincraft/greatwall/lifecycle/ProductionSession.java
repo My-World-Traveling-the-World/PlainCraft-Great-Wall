@@ -11,6 +11,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -366,9 +367,16 @@ final class ProductionSession implements AutoCloseable {
         var journal = (HistoryJournal) gameplay.get("history");
         bootstrap.close();
         bootstrap.drain().whenComplete((value, error) -> {
-            if (journal != null) journal.close();
-            io.shutdown();
-            if (error == null) drained.complete(null); else drained.completeExceptionally(error);
+            // journal 的 WAL force / channel close 必须真正完成后才能宣布 drained，
+            // 否则尾写可能丢失或与下一 session 争用文件锁。
+            CompletionStage<Void> journalClosed = journal == null
+                    ? CompletableFuture.completedFuture(null) : journal.closeAsync();
+            journalClosed.whenComplete((ignored, journalError) -> {
+                io.shutdown();
+                if (error != null) drained.completeExceptionally(error);
+                else if (journalError != null) drained.completeExceptionally(journalError);
+                else drained.complete(null);
+            });
         });
     }
     private Installed requireInstalled() {
