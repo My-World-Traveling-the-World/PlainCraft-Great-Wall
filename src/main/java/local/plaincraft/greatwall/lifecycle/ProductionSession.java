@@ -143,7 +143,12 @@ final class ProductionSession implements AutoCloseable {
                 // owns a dedicated IO executor (close() shuts it down), and recovers the beacon count
                 // before any credit ledger is published. Recovery is async but all service objects
                 // are constructed on the server owner.
-                var journal = new HistoryJournal(root.resolve("history"), recipe.instance(), historyIo);
+                // HistoryJournal derives both its own `history/` subtree and the sibling `manifest/`
+                // directory from the root it is given, so it must receive the greatwall root itself.
+                // Passing `root/history` made it look for `root/history/manifest/creation.json`, which
+                // never exists, so every real-world run failed recovery with "creation token required
+                // for history" while the unit tests (which pass the correct root) stayed green.
+                var journal = new HistoryJournal(root, recipe.instance(), historyIo);
                 gameplay.put("history", journal);
                 journal.open().thenAcceptAsync(recovery -> {
                     active();
@@ -259,7 +264,25 @@ final class ProductionSession implements AutoCloseable {
     SiteRuntimeIndex sites() { return requireGameplay("sites"); }
     GarrisonController garrison() { return requireGameplay("garrison"); }
     IgnitionService ignition() { return requireGameplay("ignition"); }
+    /**
+     * The ignition service, or null when gameplay assembly has not finished.
+     *
+     * <p>Player interaction can arrive before the journal is recovered and the gameplay services
+     * exist. A caller on that path must degrade to "not a wall fire pit" for the moment rather than
+     * failing the interaction, so it asks without demanding.
+     */
+    IgnitionService ignitionIfReady() { return (IgnitionService) gameplay.get("ignition"); }
     WallSpawnerGuard spawners() { return requireGameplay("spawners"); }
+    /**
+     * The spawner guard, or null when gameplay assembly has not finished.
+     *
+     * <p>Block entities tick from the moment their chunk is loaded, which can happen before the
+     * journal has been recovered and the gameplay services exist. A hot-path caller such as
+     * {@code WallSpawnerMixin} must therefore ask without demanding: returning null lets it fall
+     * through to vanilla behaviour for that tick instead of turning a normal startup window into a
+     * server crash.
+     */
+    WallSpawnerGuard spawnersIfReady() { return (WallSpawnerGuard) gameplay.get("spawners"); }
     HistoryJournal history() { return requireGameplay("history"); }
     NegotiatedGateService negotiated() { return requireGameplay("negotiated"); }
     /** Arch backfill, used by the explicit repair-confirm path. Null until gameplay is assembled. */

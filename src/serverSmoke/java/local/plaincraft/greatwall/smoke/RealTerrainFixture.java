@@ -60,11 +60,28 @@ public final class RealTerrainFixture implements AutoCloseable {
         return fixture.progress.copy().whenComplete((value, error) -> fixture.close());
     }
 
+    /**
+     * Traversal wall-clock budget in minutes.
+     *
+     * <p>The default stays 39 minutes because that is the bounded figure the fixture was certified
+     * against; a run that silently exceeded it would no longer be the certified shape. A full
+     * 505-owner traversal at the measured steady rate (about 27 s/owner once JIT has warmed, and
+     * several times that while another JVM competes for CPU) genuinely needs longer, so an explicit
+     * diagnostic run may raise it. The value actually used is reported, so a raised budget can never
+     * be mistaken for the default.
+     */
+    private static long budgetMinutes() {
+        long minutes = Long.getLong("greatwall.s1c.traversalMinutes", 39L);
+        if (minutes < 1L) throw new IllegalStateException("traversal budget must be at least one minute");
+        return minutes;
+    }
+
     boolean tick(MinecraftServer server) {
         if (!begun) begin(server);
         if (failure != null) throw new IllegalStateException("real wall traversal failed; production remains OFF", failure);
-        if (System.nanoTime() - started > TimeUnit.MINUTES.toNanos(39)) {
-            throw new IllegalStateException("real wall traversal exceeded its finite 39-minute budget");
+        if (System.nanoTime() - started > TimeUnit.MINUTES.toNanos(budgetMinutes())) {
+            throw new IllegalStateException("real wall traversal exceeded its finite "
+                    + budgetMinutes() + "-minute budget");
         }
         return finished;
     }

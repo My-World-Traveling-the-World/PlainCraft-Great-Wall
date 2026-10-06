@@ -105,6 +105,11 @@ public final class WallArchBackfill {
             return new ReadResult(plans, missing);
         }, io).thenComposeAsync(read -> {
             // 2. Owner-side verification happens on the server thread.
+            //
+            // The continuation must run on the injected executor, not on the default one. An
+            // executor-less thenComposeAsync hops to ForkJoinPool.commonPool(), which both breaks the
+            // single-owner threading contract this class documents and makes the result of a rejected
+            // turn arrive after the caller has already inspected it.
             var result = new CompletableFuture<Void>();
             var server = level.getServer();
             Runnable verifyOnOwner = () -> {
@@ -123,7 +128,7 @@ public final class WallArchBackfill {
                 result.completeExceptionally(failure);
             }
             return result;
-        });
+        }, io);
     }
 
     private record ReadResult(Map<ChunkKey, ChunkWritePlan> plans, List<ChunkKey> missing) {}

@@ -25,6 +25,9 @@ def realWall = providers.gradleProperty('s1cRealWall').getOrElse('false').toBool
 def realReopen = providers.gradleProperty('s1cReopen').getOrElse('false').toBoolean()
 def seedSurvey = providers.gradleProperty('s1cSeedSurvey').getOrElse('false').toBoolean()
 def actualSeed = providers.gradleProperty('s1cSeed').getOrElse('9282026')
+// Real-wall traversal budget, shared by the fixture's own guard and the Gradle task timeout so the
+// two can never disagree. Defaults to the certified 39 minutes.
+def traversalMinutes = providers.gradleProperty('s1cTraversalMinutes').getOrElse('39').toLong()
 if (!(actualSeed ==~ /-?[0-9]+/) || (realReopen && !realWall)) {
     throw new GradleException('Real fixture seed/reopen contract')
 }
@@ -68,6 +71,9 @@ def probeArgs = [
     "-Dgreatwall.s0.disableRewrite=${disableRewrite}",
     "-Dgreatwall.s0.expectedFailure=${providers.gradleProperty('s0ExpectedFailure').getOrElse('false')}",
     "-Dgreatwall.s0.expectedAdapter=${!disableRewrite && (profile == 'tectonic-c2me' || profile == 'pack-opencl') ? 'c2me' : 'vanilla'}",
+    // Real-wall traversal budget. Defaults to the certified 39 minutes; a full 505-owner traversal
+    // needs more, so an explicit diagnostic run raises it and the fixture reports the value it used.
+    "-Dgreatwall.s1c.traversalMinutes=${providers.gradleProperty('s1cTraversalMinutes').getOrElse('39')}",
     // S5 stress selection. Inert (false/0) for every ordinary smoke run; the runS5Stress entry point
     // requires these to be supplied, so the stress fixture is selected in exactly one place — here,
     // where all server JVM arguments are assembled — instead of by a second launcher definition.
@@ -201,7 +207,10 @@ def terrainWorkerAgent = tasks.register('terrainWorkerAgent', Jar) {
     }
 }
 tasks.named('runServerSmoke') {
-    timeout = java.time.Duration.ofMinutes(realWall ? 40 : seedSurvey || oracleOnly ? 20 : terrainProbe ? 10 : 3)
+    // The task timeout must outlast the fixture's own traversal budget, otherwise Gradle kills the
+    // server mid-traversal and the failure looks like a crash rather than an exhausted budget. The
+    // margin covers world load, plan preparation and the final report.
+    timeout = java.time.Duration.ofMinutes(realWall ? traversalMinutes + 10 : seedSurvey || oracleOnly ? 20 : terrainProbe ? 10 : 3)
     dependsOn tasks.named('prepareServerSmoke')
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
     if (providers.gradleProperty('s0TerrainFixedWorkers').getOrElse('false').toBoolean() && profile == 'tectonic-c2me') {
@@ -281,7 +290,7 @@ tasks.register('prepareSeedSurveyRuntime') {
     }
 }
 tasks.register('runServerSmokeProduction', JavaExec) {
-    timeout = java.time.Duration.ofMinutes(realWall ? 40 : 5)
+    timeout = java.time.Duration.ofMinutes(realWall ? traversalMinutes + 10 : 5)
     dependsOn tasks.named('prepareServerSmoke'), tasks.named('remapJar'), remappedSmoke
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
     workingDir = directory.get().asFile

@@ -250,7 +250,17 @@ public final class WorldServices {
     public SiteRuntimeIndex sites() { return requireProductionSession().sites(); }
     public GarrisonController garrison() { return requireProductionSession().garrison(); }
     public IgnitionService ignition() { return requireProductionSession().ignition(); }
+    /** Ignition service for interaction paths, or null before gameplay assembly completes. */
+    public IgnitionService ignitionIfReady() {
+        var session = find(server);
+        return session == null || session.production == null ? null : session.production.ignitionIfReady();
+    }
     public WallSpawnerGuard spawners() { return requireProductionSession().spawners(); }
+    /** Spawner guard for hot-path callers, or null before gameplay assembly completes. */
+    public WallSpawnerGuard spawnersIfReady() {
+        var session = find(server);
+        return session == null || session.production == null ? null : session.production.spawnersIfReady();
+    }
     public HistoryJournal history() { return requireProductionSession().history(); }
     public NegotiatedGateService negotiated() { return requireProductionSession().negotiated(); }
     /** Arch backfill for the explicit repair path, or null before gameplay assembly completes. */

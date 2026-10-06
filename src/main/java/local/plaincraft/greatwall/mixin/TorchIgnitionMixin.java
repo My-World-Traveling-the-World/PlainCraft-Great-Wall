@@ -26,8 +26,14 @@ public abstract class TorchIgnitionMixin {
             Operation<InteractionResult> original) {
         var services = WorldServices.find(context.getLevel().getServer());
         if (services != null) {
-            var custom = services.ignition().useTorchAfterPermission(context);
-            if (custom.isPresent()) return custom.get();
+            // Non-throwing accessor: this mixin also runs in the client process and can fire before
+            // gameplay assembly, so an absent service must mean "ordinary torch behaviour" rather
+            // than an exception on a player interaction.
+            var ignition = services.ignitionIfReady();
+            if (ignition != null) {
+                var custom = ignition.useTorchAfterPermission(context);
+                if (custom.isPresent()) return custom.get();
+            }
         }
         return original.call(item, context);
     }

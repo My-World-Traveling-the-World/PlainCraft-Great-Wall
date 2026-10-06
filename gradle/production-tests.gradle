@@ -141,6 +141,17 @@ tasks.register('runS5Stress') {
 // Release artifact verification
 // ---------------------------------------------------------------------------
 
+// Top-level helper: `File.digest(String)` is not part of the plain JDK File API, so calling it on a
+// File reached through a task property fails at execution time. This computes the digest directly.
+def sha256 = { File target ->
+    def digest = java.security.MessageDigest.getInstance('SHA-256')
+    target.withInputStream { stream ->
+        byte[] buffer = new byte[65536]
+        for (int count; (count = stream.read(buffer)) != -1;) digest.update(buffer, 0, count)
+    }
+    digest.digest().encodeHex().toString()
+}
+
 tasks.register('verifyReleaseArtifacts') {
     group = 'verification'
     description = 'Release gate: version, dependency lock, jar contents, pack format'
@@ -203,7 +214,7 @@ tasks.register('verifyReleaseArtifacts') {
                     }
                 }
             }
-            report["${jar.name}.sha256"] = jar.digest('SHA-256')
+            report["${jar.name}.sha256"] = sha256(jar)
         }
 
         // 4. pack.mcmeta: pack_format=34, supported 34..48.

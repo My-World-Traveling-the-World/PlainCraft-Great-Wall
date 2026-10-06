@@ -14,6 +14,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * every other cage, patrol and raid keeps its original behaviour. The client
  * still observes the vanilla sync animation and never makes a birth decision
  * here.
+ *
+ * <p>Block entities begin ticking as soon as their chunk loads, which can precede the journal
+ * recovery and gameplay assembly that publish the spawner guard. So this asks for the guard through
+ * the non-throwing accessor and falls through to vanilla behaviour while it is absent, rather than
+ * demanding a service that legitimately does not exist yet.
  */
 @Mixin(BaseSpawner.class)
 public abstract class WallSpawnerMixin {
@@ -21,7 +26,9 @@ public abstract class WallSpawnerMixin {
     private void greatwall$tick(ServerLevel level, BlockPos pos, CallbackInfo ci) {
         var services = WorldServices.find(level.getServer());
         if (services == null) return;
-        if (services.spawners().tickOwned((BaseSpawner) (Object) this, level, pos)) {
+        var guard = services.spawnersIfReady();
+        if (guard == null) return;
+        if (guard.tickOwned((BaseSpawner) (Object) this, level, pos)) {
             ci.cancel();
         }
     }

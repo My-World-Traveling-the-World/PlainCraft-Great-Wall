@@ -26,13 +26,17 @@ public abstract class IgnitionUseMixin {
     private InteractionResult greatwall$observe(ServerPlayer player, Level level, ItemStack stack,
             InteractionHand hand, BlockHitResult hit, Operation<InteractionResult> original) {
         var services = WorldServices.find(level.getServer());
+        // Non-throwing accessor: a player can interact before the journal has been recovered, and an
+        // unavailable ignition service must simply mean "no beacon credit" for this action rather than
+        // an exception that fails the interaction.
+        var ignition = services == null ? null : services.ignitionIfReady();
         GameplayTypes.BeforeUse token = null;
-        if (services != null) {
-            token = services.ignition().beforeUse(player, level, stack, hand, hit).orElse(null);
+        if (ignition != null) {
+            token = ignition.beforeUse(player, level, stack, hand, hit).orElse(null);
         }
         InteractionResult result = original.call(player, level, stack, hand, hit);
         if (token != null) {
-            services.ignition().afterUse(token, player, result);
+            ignition.afterUse(token, player, result);
         }
         return result;
     }
