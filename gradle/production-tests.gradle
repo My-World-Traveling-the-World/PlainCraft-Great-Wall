@@ -100,12 +100,21 @@ tasks.register('runS5Faults', JavaExec) {
                 '--point', project.property('greatwallFaultPoint').toString(),
                 '--occurrence', project.property('greatwallFaultOccurrence').toString(),
                 '--mode', mode
-        // halt mode is expected to terminate with 137 and exception mode with a non-zero code. The
-        // driving script asserts the exact expected code per mode, so the exit value must not be
-        // turned into a Gradle failure here; ignoring it is what lets the child die as designed.
+        // halt mode is expected to terminate with 137 and exception mode with a non-zero code, so the
+        // exit value must not be turned into a Gradle failure here. It must nevertheless be observable:
+        // the driver asserts the exact expected code per mode, and a wrapper that always exits 0 hides
+        // the child's real status from it. The code is captured in the doLast below, which is declared
+        // outside this configuration block because a task may not gain actions once it has started.
         ignoreExitValue = true
         logger.lifecycle("S5 fault child: point=${project.property('greatwallFaultPoint')} " +
                 "occurrence=${project.property('greatwallFaultOccurrence')} mode=${mode}")
+    }
+    // Written after the child exits, so the driver can read the real status rather than the wrapper's.
+    doLast {
+        def witness = new File(project.property('greatwallFaultRoot').toString(),
+                "${project.property('greatwallFaultPoint')}-${project.property('greatwallFaultOccurrence')}/exit-code.txt")
+        witness.parentFile.mkdirs()
+        witness.setText(executionResult.get().exitValue.toString(), 'UTF-8')
     }
 }
 

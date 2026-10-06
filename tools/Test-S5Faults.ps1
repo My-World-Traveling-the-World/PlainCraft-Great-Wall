@@ -77,8 +77,16 @@ foreach ($point in $points) {
         # Expected exit: exception → non-zero; halt → 137 (Runtime.halt).
         $expectedExit = if ($FaultMode -eq 'halt') { 137 } else { -1 }
         $hitFile = Join-Path $runDir 'fault-hit.json'
-        $hitWritten = (Test-Path -LiteralPath (Join-Path $root 'fault-hit.json')) -or (Test-Path -LiteralPath $hitFile)
-        $ok = !$timedOut -and $hitWritten
+        $hitWritten = (Test-Path -LiteralPath $hitFile)
+        # The Gradle wrapper always exits 0 because the task ignores the child's status on purpose, so
+        # the real code is read from the witness the task writes after the child exits. Without this the
+        # driver's non-zero expectation could never be satisfied and every point would report failure.
+        $codeFile = Join-Path $runDir 'exit-code.txt'
+        $childCode = if (Test-Path -LiteralPath $codeFile) {
+            [int](Get-Content -LiteralPath $codeFile -Raw).Trim()
+        } else { $null }
+        if ($null -ne $childCode) { $code = $childCode }
+        $ok = !$timedOut -and $hitWritten -and $null -ne $childCode
         if ($FaultMode -eq 'halt') { $ok = $ok -and $code -eq 137 }
         else { $ok = $ok -and $code -ne 0 }
         if (!$ok) { $pointOk = $false; $overall = $false }
