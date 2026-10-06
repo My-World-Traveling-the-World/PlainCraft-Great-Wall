@@ -79,7 +79,10 @@ tasks.register('runS5Faults', JavaExec) {
         languageVersion = JavaLanguageVersion.of(
                 providers.gradleProperty('smokeJavaVersion').getOrElse('21').toInteger())
     }
-    workingDir = layout.buildDirectory.dir('run/serverSmoke/s5-faults').get().asFile
+    // The child resolves its workspace from the working directory and then requires the fault root to
+    // be a strict descendant of <workspace>/build/fault-runs, so the working directory must be the
+    // project root, not the fault-runs directory itself.
+    workingDir = projectDir
     classpath = sourceSets.serverSmoke.runtimeClasspath
     mainClass = 'local.plaincraft.greatwall.stress.FaultProcessMain'
     doFirst {
@@ -122,8 +125,21 @@ tasks.register('prepareS5Stress') {
         if (!(hoursText ==~ /[1-9][0-9]{0,2}/) || hoursText.toLong() > 24L) {
             throw new GradleException("greatwallStressHours must be 1..24, found '${hoursText}'")
         }
-        logger.lifecycle("S5 stress profile armed: hours=${hoursText} " +
-                "minutes=${hoursText.toLong() * 60L}")
+        // The server selects the stress fixture from s5Stress, and the fixture reads its duration from
+        // s5StressMinutes. Validating only the driver's `hours` wording would let an invocation that
+        // omits the actual switches pass this gate and then quietly run an ordinary smoke test, which
+        // is precisely the "asked for stress, tested nothing" failure this task exists to prevent.
+        def switchOn = project.findProperty('s5Stress')
+        if (switchOn == null || switchOn.toString() != 'true') {
+            throw new GradleException('runS5Stress requires -Ps5Stress=true so the server actually ' +
+                    'selects the stress fixture; pass it together with -Ps5StressMinutes')
+        }
+        def minutesProp = project.findProperty('s5StressMinutes')
+        if (minutesProp == null || minutesProp.toString() != (hoursText.toLong() * 60L).toString()) {
+            throw new GradleException("runS5Stress requires -Ps5StressMinutes=${hoursText.toLong() * 60L} " +
+                    "to match -PgreatwallStressHours=${hoursText}; found '${minutesProp}'")
+        }
+        logger.lifecycle("S5 stress profile armed: hours=${hoursText} minutes=${minutesProp}")
     }
 }
 
