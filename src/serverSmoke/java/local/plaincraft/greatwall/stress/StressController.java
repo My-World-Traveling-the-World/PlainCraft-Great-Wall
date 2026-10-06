@@ -55,7 +55,17 @@ public final class StressController implements AutoCloseable {
             Comparator.comparingInt((ChunkPos p) -> p.x).thenComparingInt(p -> p.z));
     private static final int MAX_TICK_SCHEDULE = 4;
     private static final int MAX_PENDING = 65_536;
-    private static final long STOP_TIMEOUT_SECONDS = 30L;
+    // How long the drain may take after the profile window closes.
+    //
+    // This is a grace period for work that is already running, not a bound on how fast the machine is.
+    // The profile deliberately overloads the server, and chunk completions are delivered on the server
+    // thread, so while the server is behind the drain makes little progress. A one-hour run at
+    // concurrency 8 measured single chunks taking up to 10.3s with a 7.4/8GB heap; a 30s window
+    // therefore expired with work still legitimately in flight and reported a completed profile as
+    // failed. The window now scales with the requested duration so it cannot be shorter than the
+    // workload it is draining.
+    private static final long STOP_TIMEOUT_FLOOR_SECONDS = 120L;
+    private static final long STOP_TIMEOUT_CEILING_SECONDS = 600L;
     private static final Set<Integer> ALLOWED_CONCURRENCY = Set.of(1, 2, 8, 16);
 
     public enum Mode { WALK_CORRIDOR, FAR_JUMP, CHUNKY, RELOAD, MIXED_24H }
@@ -163,8 +173,12 @@ public final class StressController implements AutoCloseable {
         stopping.set(true);
         pending.clear();
         CompletableFuture<?>[] snapshot = inFlightFutures.toArray(new CompletableFuture<?>[0]);
+        // A short profile drains quickly; a long one is allowed proportionally longer, bounded on both
+        // ends so the grace period is never zero and never hides a genuinely stuck future.
+        long drainSeconds = Math.max(STOP_TIMEOUT_FLOOR_SECONDS,
+                Math.min(STOP_TIMEOUT_CEILING_SECONDS, config.durationSeconds() / 6L + 60L));
         CompletableFuture.allOf(snapshot)
-                .orTimeout(STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .orTimeout(drainSeconds, TimeUnit.SECONDS)
                 .whenCompleteAsync((value, error) -> {
                     if (failure != null) {
                         flushReport();
