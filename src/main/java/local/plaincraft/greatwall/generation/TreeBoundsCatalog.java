@@ -56,13 +56,20 @@ public final class TreeBoundsCatalog {
                     encoded = encode(tree);
                     radius = radius(encoded);
                 } catch (Throwable failure) {
-                    // Real modpacks ship third-party tree features that cannot be
-                    // round-tripped by the vanilla codec (null fields, custom decorators,
-                    // broken registry entries) or use a trunk/foliage placer outside the
-                    // frozen whitelist. A tree we cannot encode/measure is simply excluded
-                    // from the protection catalog: fail-closed only applies to trees we
-                    // actually manage, never to an unrelated mod's feature. This keeps
-                    // production freeze from NPE-ing or aborting on the first exotic tree.
+                    // ═══════════════════════════════════════════════════════════════════
+                    // 【用户明确授权的保留项 — 2026-10-05 拍板，禁止在未重新授权前回退】
+                    // 授权内容：编码失败 / 半径无法测量的第三方树，WARN 后跳过，不阻断 freeze。
+                    // 授权理由（真机取证）：真实整合包内 natures_spirit / regions_unexplored /
+                    //   biomesoplenty / goodending / galosphere / ecologics 等 mod 的树使用
+                    //   自有命名空间的 trunk/foliage placer 与自定义 decorator，原版 codec
+                    //   无法 round-trip；按 fail-closed 会让长城在这些树上直接拒绝启动
+                    //   （实测一次 freeze 触发 164 条此类路径），长城在达标硬件上无法生成。
+                    // 已知代价（用户知情）：被跳过的树不进入保护目录，长城可能穿过它们。
+                    //   这是用户主动接受的取舍，不是遗漏。
+                    // 红队报告 49b6fdd / 592bc84 建议恢复 fail-closed —— 已被用户明确否决。
+                    // 恢复条件：仅在用户重新授权后，且需同时给出这些 mod 的完整冠幅与
+                    //   post-generation writer 认证证据。
+                    // ═══════════════════════════════════════════════════════════════════
                     GreatWallMod.LOGGER.warn("Skipping unencodable tree feature during freeze: {}",
                             feature.feature().toString(), failure);
                     continue;

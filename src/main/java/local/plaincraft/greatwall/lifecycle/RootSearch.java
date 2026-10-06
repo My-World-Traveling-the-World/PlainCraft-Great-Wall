@@ -127,12 +127,19 @@ public final class RootSearch {
     public Selection finish() {
         claimOwner();
         if (phase != 3 || best == null) throw new IllegalStateException("root search is incomplete");
-        // 2026-10-05 用户授权：移除 40ms 稳态采样的硬拒绝。
-        // 真机取证：真实整合包 + 手动放大的道路/河流范围 + Streams 采样满载时，
-        // 单批 advance 会被抢占而超过 40ms。原实现据此直接把整个 S1C 判失败，
-        // 使长城在达标硬件上也无法生成。计时仍完整保留（maxBatchNanos /
-        // over40msBatches 照常记录并写入 diagnostics 与 progress），只是不再作为
-        // 选址的拒绝条件；性能观测与验收口径见 docs/release/acceptance.json。
+        // ═══════════════════════════════════════════════════════════════════════════
+        // 【用户明确授权的保留项 — 2026-10-05 拍板，禁止在未重新授权前回退】
+        // 授权内容：移除 40ms 稳态采样的硬拒绝（原 `if (over40msBatches != 0) throw ...`）。
+        // 授权理由（真机取证）：真实整合包 + 手动放大的道路/河流范围 + Streams 采样满载时，
+        //   单批 advance 会被抢占而超过 40ms；原实现据此把整个 S1C 判失败，
+        //   使长城在达标硬件上完全无法生成。
+        // 保留的观测：maxBatchNanos / over40msBatches 仍如实记录，并写入 diagnostics 与
+        //   Progress/Selection，只是不再作为选址的拒绝条件。
+        // 已知代价（用户知情）：采样过慢不再阻止生成，慢只会表现为生成耗时变长。
+        // 验收口径已同步调整：docs/release/acceptance.json 的 stress-24h 改为
+        //   "slice timing observed (no hard 40ms gate)"，docs/S5.md 与 preview-status.md 同步。
+        // 恢复条件：仅在用户重新授权后。
+        // ═══════════════════════════════════════════════════════════════════════════
         return new Selection(best.axis(), best.radiusIndex(), best.angleIndex(), best.axisIndex(), best.ridgeScore(),
                 columns, maxBatchNanos, over40msBatches);
     }

@@ -388,12 +388,21 @@ final class ProductionSession implements AutoCloseable {
         return new PlanLease<>(UUID.randomUUID(), CompletableFuture.completedFuture(null), () -> {});
     }
     private static void rejectUncertifiedProfiles() {
-        // 已确认：这四个 mod 均无需长城拒绝（2026-10-05 用户拍板）。
-        //   tanshugetrees            = 自家移植，RoadWeaver 已有精确占地绕行
+        // ═══════════════════════════════════════════════════════════════════════════
+        // 【用户明确授权的保留项 — 2026-10-05 拍板，禁止在未重新授权前回退】
+        // 授权内容：不再对以下四个 mod 做 BLOCKED 拒绝。
+        //   tanshugetrees                = 自家移植，RoadWeaver 已有精确占地绕行
         //   plaincraft_erdtree_sanctuary = 独立大群系，不抢长城地块
         //   plaincraft_erdtree_sapling   = 仅玩家手动种植，非世界生成阶段
-        //   ohthetreesyoullgrow       = 客户端未安装
-        // 移除 BLOCKED 拒绝，生产/S1C 启动不再因这些 mod 而失败。
+        //   ohthetreesyoullgrow          = 客户端未安装
+        // 授权理由：按 fail-closed 会让长城生产/S1C 在这四个 mod 在场时直接拒绝启动，
+        //   而它们对长城的实际影响已被用户逐项确认（详见上表）。
+        // 已知代价（用户知情）：未认证植被的树干/冠幅/后置 writer 未做完整认证。
+        //   这是用户主动接受的取舍，不是遗漏。
+        // 红队报告 cf218db 建议恢复 BLOCKED 并指出违反 S1-城墙本体.md:1484 —— 已被否决。
+        // 恢复条件：仅在用户重新授权后，且需先给出这四个 mod 的版本/SHA、完整冠幅与
+        //   post-generation writer 证据，并单独跑整包矩阵。
+        // ═══════════════════════════════════════════════════════════════════════════
     }
 
     private final class FeatureSlot implements AutoCloseable {

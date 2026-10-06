@@ -18,7 +18,18 @@ import net.minecraft.server.level.ServerLevel;
 public record SanctuaryAvoidance(long centerX, long centerZ, long radiusBlocks) {
     private static final String MOD_ID = "plaincraft_erdtree_sanctuary";
     private static final String MOD_CLASS = "local.plaincraft.erdtreesanctuary.GoldenErdtreeSanctuaryMod";
-    /** BASE_RADIUS of the sanctuary biome circle. */
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 【用户明确授权的保留项 — 2026-10-05 拍板：只绕主群系圆，不绕外延河流】
+    // 授权内容：固定使用 Golden 工程的 BASE_RADIUS = 2000（主群系圆），
+    //   不使用其 MAX_RADIUS = 2600（transition 过渡带 / 外延河流）。
+    // 授权理由：用户明确指示「长城绕行不要进入黄金树群系」——群系本身即 2000 圆；
+    //   外延部分是水系而非群系，且长城本身具备跨河水门/断口机制，不需要绕开。
+    //   用户原话：「只绕主群系圆（半径2000）」。
+    // 已知代价（用户知情）：长城可能进入 2000..2600 的过渡带（含外延河流区域）。
+    //   这是用户主动接受的取舍，不是遗漏。
+    // 红队报告 H3 指出固定 2000 会漏掉 transition 外圈 —— 已被用户明确否决。
+    // 恢复条件：仅在用户重新授权后，改为读取真实 layout 的 transition 半径。
+    // ═══════════════════════════════════════════════════════════════════════════════
     private static final long SANCTUARY_RADIUS = 2000L;
 
     public SanctuaryAvoidance {
