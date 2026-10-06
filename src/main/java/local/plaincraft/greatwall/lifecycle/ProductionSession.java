@@ -67,6 +67,17 @@ final class ProductionSession implements AutoCloseable {
      * a constant: a new registry means a new world, which means a new session and a new runtime.
      */
     private static final long BIOME_REGISTRY_EPOCH = 1L;
+    /**
+     * Completes only after every gameplay service has been constructed and published.
+     *
+     * <p>{@code installed} becomes ready as soon as the recipe is durable, which is well before the
+     * historical journal has been recovered and the gameplay objects exist. Callers that need those
+     * objects must await this instead, otherwise they can observe a session that looks active while
+     * the service they ask for does not exist yet.
+     */
+    private final CompletableFuture<GameplayStamp> gameplayReady = new CompletableFuture<>();
+    /** Marker type; carries no data, its completion is the signal. */
+    private enum GameplayStamp { INSTANCE }
     private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> failures = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ServerLevel> levels = new ConcurrentHashMap<>();
@@ -137,8 +148,11 @@ final class ProductionSession implements AutoCloseable {
                 journal.open().thenAcceptAsync(recovery -> {
                     active();
                     var sites = new SiteRuntimeIndex(recipe);
+                    // Use the post-replay count: a WAL tail can carry beacon records that are not yet
+                    // checkpointed, and seeding the ledger from the checkpoint alone would undercount
+                    // beacons that the verified log already contains.
                     var beacons = new BeaconLedger(runtime, recipe.wallId(), journal, server,
-                            new GameplayTypes.BeaconProgress(recovery.head().beaconCount(), 0L, 10L, false, true));
+                            new GameplayTypes.BeaconProgress(recovery.replayedBeaconCount(), 0L, 10L, false, true));
                     var ignition = new IgnitionService(runtime, sites, beacons);
                     var garrison = new GarrisonController(runtime, level, recipe, journal, sites);
                     var spawners = new WallSpawnerGuard(garrison, sites);
@@ -164,6 +178,7 @@ final class ProductionSession implements AutoCloseable {
                     gameplay.put("garrison", garrison);
                     gameplay.put("spawners", spawners);
                     gameplay.put("gates", gates);
+                    gameplay.put("backfill", backfill);
                     gameplay.put("negotiated", negotiated);
                     gameplay.put("debug", debug);
                     gameplay.put("diagnosticExporter", exporter);
@@ -172,9 +187,17 @@ final class ProductionSession implements AutoCloseable {
                     }
                     worldState.put("world", state);
                     trace.record("PRODUCTION_GAMEPLAY_READY", recipe.dimension(), 0, 0, "history-recovered", "none");
-                    GreatWallMod.LOGGER.info("[GreatWall:S1C] GAMEPLAY_READY beacons={} session={}",
-                            recovery.head().beaconCount(), runtime);
-                }, server).exceptionally(failure -> { fail(failure); return null; });
+                    GreatWallMod.LOGGER.info("[GreatWall:S1C] GAMEPLAY_READY beacons={} replayedBeyondHead={} session={}",
+                            recovery.replayedBeaconCount(), recovery.replayedBeyondHead(), runtime);
+                    // Published last: until this completes, gameplay services are absent and no
+                    // caller may be told the session is fully assembled.
+                    gameplayReady.complete(GameplayStamp.INSTANCE);
+                }, server).exceptionally(failure -> {
+                    // Assembly failed, so no caller can ever be admitted through the gameplay gate.
+                    gameplayReady.completeExceptionally(failure);
+                    fail(failure);
+                    return null;
+                });
                 installed.complete(snapshot);
                 GreatWallMod.LOGGER.info("[GreatWall:S1C] FIXTURE_RECIPE_READY runtime={} wall={} spawn={} axis={} production=OFF",
                         runtime, recipe.wallId(), recipe.frozenSpawn(), recipe.axis());
@@ -239,6 +262,10 @@ final class ProductionSession implements AutoCloseable {
     WallSpawnerGuard spawners() { return requireGameplay("spawners"); }
     HistoryJournal history() { return requireGameplay("history"); }
     NegotiatedGateService negotiated() { return requireGameplay("negotiated"); }
+    /** Arch backfill, used by the explicit repair-confirm path. Null until gameplay is assembled. */
+    local.plaincraft.greatwall.compat.road.WallArchBackfill backfillIfReady() {
+        return (local.plaincraft.greatwall.compat.road.WallArchBackfill) gameplay.get("backfill");
+    }
     DebugService debug() { return requireGameplay("debug"); }
     DiagnosticExporter diagnosticExporter() { return requireGameplay("diagnosticExporter"); }
     RoadWeaverAdapter roadWeaverAdapter() { return requireGameplay("roadWeaverAdapter"); }
@@ -251,11 +278,35 @@ final class ProductionSession implements AutoCloseable {
     SiteRuntimeIndex sitesIfReady() { return (SiteRuntimeIndex) gameplay.get("sites"); }
     GarrisonController garrisonIfReady() { return (GarrisonController) gameplay.get("garrison"); }
     RoadWeaverAdapter roadWeaverAdapterIfReady() { return (RoadWeaverAdapter) gameplay.get("roadWeaverAdapter"); }
+    /**
+     * Returns a gameplay service, refusing to answer before assembly has actually completed.
+     *
+     * <p>The explicit {@code gameplayReady} check is what closes the window where {@code installed} is
+     * already done (recipe durable) but the journal has not been recovered and the services do not
+     * exist yet. Without it a caller could see an "active" session and then receive a confusing
+     * missing-service error, or worse, act on a partially assembled world.
+     */
     private <T> T requireGameplay(String key) {
+        if (!gameplayReady.isDone()) {
+            throw new WallFailure(FailureCode.CLOSED,
+                    "gameplay services are not ready yet; requested " + key);
+        }
+        if (gameplayReady.isCompletedExceptionally()) {
+            throw new WallFailure(FailureCode.CLOSED,
+                    "gameplay assembly failed; requested " + key);
+        }
         @SuppressWarnings("unchecked")
         T value = (T) gameplay.get(key);
         if (value == null) throw new IllegalStateException("gameplay service not assembled: " + key);
         return value;
+    }
+
+    /** True once every gameplay service has been constructed and published. */
+    boolean gameplayReady() { return gameplayReady.isDone() && !gameplayReady.isCompletedExceptionally(); }
+
+    /** Fails every waiter when the session closes before gameplay assembly finished. */
+    private void failGameplayWaiters(Throwable error) {
+        gameplayReady.completeExceptionally(error);
     }
     private RealizationPlanner buildRealization(ServerLevel level, WorldRecipe recipe) throws IOException {
         var catalog = PaletteResolver.load(server.getResourceManager());
@@ -379,6 +430,8 @@ final class ProductionSession implements AutoCloseable {
     void fail(Throwable error) {
         if (state.containsKey("closed") || failures.putIfAbsent("required", error.toString()) != null) return;
         state.put("failed", true);
+        // A failed assembly must release waiters too, not leave them pending on a dead session.
+        failGameplayWaiters(error);
         trace.record("PRODUCTION_FAILED", "*", 0, 0, "required-plan", "none");
         GreatWallMod.LOGGER.error("[GreatWall:S1C] FIXTURE_FAILED production remains OFF", error);
         installed.completeExceptionally(error);
@@ -420,6 +473,9 @@ final class ProductionSession implements AutoCloseable {
     @Override public void close() {
         if (state.putIfAbsent("closed", true) != null) return;
         installed.completeExceptionally(new WallFailure(FailureCode.CLOSED, "production session closed"));
+        // Release anyone waiting on gameplay assembly rather than letting them block forever on a
+        // session that will never finish assembling.
+        failGameplayWaiters(new WallFailure(FailureCode.CLOSED, "production session closed before gameplay assembly"));
         for (var key : List.copyOf(featureSlots.keySet())) featureSlots.computeIfPresent(key, (position, slot) -> {
             slot.close(); admissions.compute("features", (name, count) -> count - 1); return null;
         });

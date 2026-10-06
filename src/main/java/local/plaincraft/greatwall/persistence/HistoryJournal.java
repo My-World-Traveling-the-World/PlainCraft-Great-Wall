@@ -83,7 +83,11 @@ public final class HistoryJournal implements DurableLog {
     }
 
     private Recovery openOnOwner() throws IOException {
-        if (opened && state().health() == Health.READY) return new Recovery(head, tailBySequence, false);
+        // Already open: the replayed counters are still current, so report them rather than falling
+        // back to the checkpoint values and reintroducing the undercount on a second open.
+        if (opened && state().health() == Health.READY) {
+            return new Recovery(head, tailBySequence, false, lastSequence, beaconCount);
+        }
         releaseChannels();
         tailByKey.clear(); tailBySequence.clear(); tailBytes = 0; index.clear(); opened = false;
         readManifest();
@@ -123,7 +127,13 @@ public final class HistoryJournal implements DurableLog {
         wal.position(wal.size());
         if (missingHead) replaceHead(HistoryCodec.head(head));
         opened = true; publish(Health.READY);
-        return new Recovery(head, tailBySequence, archived);
+        // The replayed WAL may hold beacon records that are not yet checkpointed, and the local
+        // beaconCount was advanced for each of them. Reporting only the durable HEAD here would make
+        // every derived service (starting with BeaconLedger) come up short of what was actually
+        // replayed. The durable head is therefore still the authoritative checkpoint, and the replayed
+        // counters are exposed alongside it rather than folded into it: a Head whose roots do not
+        // match its sequence would fail validateHead.
+        return new Recovery(head, tailBySequence, archived, lastSequence, beaconCount);
     }
 
     private void readManifest() throws IOException {

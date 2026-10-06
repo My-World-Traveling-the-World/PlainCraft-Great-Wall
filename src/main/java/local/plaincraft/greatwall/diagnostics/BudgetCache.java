@@ -22,7 +22,7 @@ import local.plaincraft.greatwall.model.WallTypes.FailureCode;
 /** Cache accounting and LRU are owner-confined; published values and Stats are immutable. */
 public final class BudgetCache<K, V> implements AutoCloseable {
     public record Stats(long bytes, long reservedBytes, long pinnedBytes, int entries,
-            int waiting, long evictions, long rejected) {}
+            int waiting, int liveCallers, long evictions, long rejected) {}
     private final ConcurrentHashMap<K, V> completed = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Stats> snapshots = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Integer> state = new ConcurrentHashMap<>();
@@ -43,7 +43,7 @@ public final class BudgetCache<K, V> implements AutoCloseable {
         this.metadataBytes = Math.addExact(Math.multiplyExact((long) waiterLimit, 4096), Math.multiplyExact((long) entryLimit, 256));
         if (metadataBytes >= byteLimit) throw new IllegalArgumentException("cache must accommodate bounded request/entry metadata");
         this.owner = Objects.requireNonNull(owner); this.retainedBytes = Objects.requireNonNull(retainedBytes);
-        snapshots.put("stats", new Stats(metadataBytes, 0, 0, 0, 0, 0, 0));
+        snapshots.put("stats", new Stats(metadataBytes, 0, 0, 0, 0, 0, 0, 0));
     }
 
     public CompletionStage<PlanLease<V>> acquire(K key, long reservationUpperBound, Supplier<CompletionStage<V>> loader) {
@@ -91,7 +91,27 @@ public final class BudgetCache<K, V> implements AutoCloseable {
             rejected++; future.completeExceptionally(failure(FailureCode.CAPACITY, "single reservation exceeds cache limit")); publish(); return;
         }
         var existing = loading.get(key);
-        if (existing != null) { existing.callers.add(future); publish(); return; }
+        if (existing != null) {
+            // Register the waiter with a self-removal hook. Without it a cancelled caller would stay in
+            // the list for the whole (possibly long) load, so an abandoned request would keep costing
+            // memory and completion time until the load happened to finish. The list stays
+            // owner-confined: the hook hops back onto the owner.
+            existing.callers.add(future);
+            future.whenComplete((value, error) -> {
+                try {
+                    owner.execute(() -> {
+                        existing.callers.remove(future);
+                        // Republish so the observed waiter count reflects the departure immediately;
+                        // otherwise the removal is invisible until some unrelated event publishes.
+                        drain(); publish();
+                    });
+                } catch (RuntimeException rejected) {
+                    // A shut-down owner means the whole cache is going away; there is nothing to prune.
+                }
+            });
+            publish();
+            return;
+        }
         var job = new Loading<>(key, upper, loader); job.callers.add(future); loading.put(key, job);
         waiting.add(job); drain(); publish();
     }
@@ -130,11 +150,17 @@ public final class BudgetCache<K, V> implements AutoCloseable {
                 if (actual <= 0 || actual > job.upper) throw failure(FailureCode.CAPACITY, "retained size exceeds reserved upper bound");
             } catch (Throwable invalid) { error = invalid; }
         }
-        if (error != null) for (var caller : job.callers) caller.completeExceptionally(error);
+        // Deliver only to waiters that are still interested. A caller that was cancelled while this
+        // load was in flight must not receive a lease, and iterating a list that keeps growing with
+        // dead waiters would make completion cost grow with every abandoned request.
+        var live = new ArrayList<CompletableFuture<PlanLease<V>>>(job.callers.size());
+        for (var caller : job.callers) if (!caller.isDone()) live.add(caller);
+        job.callers.clear();
+        if (error != null) for (var caller : live) caller.completeExceptionally(error);
         else {
             var entry = new Entry<>(value, actual);
             entries.put(job.key, entry); completed.put(job.key, value); bytes += actual;
-            for (var caller : job.callers) deliver(job.key, entry, caller);
+            for (var caller : live) deliver(job.key, entry, caller);
         }
         drain(); publish();
     }
@@ -161,8 +187,12 @@ public final class BudgetCache<K, V> implements AutoCloseable {
 
     private void publish() {
         long pinned = 0; for (var value : entries.values()) if (value.pins > 0) pinned += value.bytes;
+        // Live waiter count across in-flight loads. Exposed so an abandoned request that never leaves
+        // the waiter list is observable rather than only inferable from memory growth.
+        int callers = 0;
+        for (var job : loading.values()) for (var caller : job.callers) if (!caller.isDone()) callers++;
         snapshots.put("stats", new Stats(bytes + (state.containsKey("closed") ? 0 : metadataBytes), reserved,
-                pinned, entries.size(), waiting.size(), evictions, rejected));
+                pinned, entries.size(), waiting.size(), callers, evictions, rejected));
     }
 
     @Override public void close() {

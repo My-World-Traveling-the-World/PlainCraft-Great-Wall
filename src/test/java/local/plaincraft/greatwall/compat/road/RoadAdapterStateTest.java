@@ -145,7 +145,7 @@ class RoadAdapterStateTest {
         assertEquals(2, f.port.storedEndpoints.size());
     }
 
-    @Test void proposalCopiesInputAndDoesNotWaitForRoadReadinessOrPublishAPlaceholder() {
+    @Test void proposalCopiesInputAndDoesNotWaitForRoadReadinessOrPublishAPlaceholder() throws Exception {
         Fixture f = new Fixture();
         var planned = gate(1, 0, 70);
         f.state.registerEndpoint(planned);
@@ -162,8 +162,15 @@ class RoadAdapterStateTest {
         assertEquals(List.of("road-a", "road-b"), record.proposals().stream()
                 .map(RoadTypes.Approach::roadId).toList());
         assertThrows(UnsupportedOperationException.class, () -> record.proposals().clear());
-        assertTrue(result.toCompletableFuture().isCompletedExceptionally());
-        assertTrue(failure(result).getMessage().contains("durable sharedProfile unavailable"));
+        // The proposal now resolves to a real agreement: the freeze solver derives the shared height
+        // from the gate contract instead of reporting the feature as unavailable. The gate ground is
+        // still PROPOSED in the ledger because freeze() is a separate durable step.
+        var agreement = result.toCompletableFuture().get(5, java.util.concurrent.TimeUnit.SECONDS);
+        assertEquals(70, agreement.groundY(), "the solved height matches the gate's frozen ground");
+        assertEquals(70, agreement.sharedProfile().getFirst(), "the profile starts at the ground");
+        assertTrue(agreement.frozen(), "an agreement is only reported once the gate is frozen");
+        assertFalse(agreement.physicallyReady(),
+                "no affected chunk has been ACKed yet, so the opening is not passable");
         assertEquals(List.of("GATE_PROPOSED"), f.log.entries.stream().map(DurableLog.Entry::type).toList());
         assertFalse(f.port.ready.isDone(), "wall negotiation must not introduce a startup readiness cycle");
         assertEquals(0, f.port.registrations);
@@ -234,7 +241,7 @@ class RoadAdapterStateTest {
         assertEquals(RoadTypes.GateState.PROPOSED, f.ledger.find(planned.id()).orElseThrow().state());
     }
 
-    @Test void appliedStateWithoutDurableProfileOrPhysicalProofIsNotAnAgreement() {
+    @Test void adoptedProfileIsValidatedAndThenReportedAsAnAgreement() {
         Fixture f = new Fixture();
         var planned = gate(1, 0, 70);
         f.ledger.propose(planned, List.of(new RoadTypes.Approach("road",
@@ -247,9 +254,41 @@ class RoadAdapterStateTest {
         f.owner.drain();
         var record = f.ledger.find(planned.id()).orElseThrow();
         assertEquals(RoadTypes.GateState.APPLIED, record.state());
-        assertThrows(IllegalStateException.class, () -> f.state.frozen(SESSION, RoadAdapterState.encode(planned.id())));
-        assertThrows(IllegalStateException.class, () -> f.state.adoptFrozen(record, 70, List.of(70)));
-        assertThrows(IllegalArgumentException.class, () -> f.state.adoptFrozen(record, 0, List.of(0)));
+
+        // An adopted profile is external input, so it is validated rather than trusted: a profile that
+        // does not start at the recorded ground, or that steps too far, is rejected outright.
+        assertThrows(IllegalArgumentException.class, () -> f.state.adoptFrozen(record, 0, List.of(0)),
+                "a profile starting somewhere other than the durable ground is not adoptable");
+        assertThrows(local.plaincraft.greatwall.model.WallFailure.class,
+                () -> f.state.adoptFrozen(record, 70, List.of(70, 75)),
+                "a profile stepping more than one block per station is not adoptable");
+
+        // A well-formed profile is accepted, and the gate is then reported as an agreement. Every
+        // affected chunk was ACKed above, so it is also physically passable.
+        f.state.adoptFrozen(record, 70, List.of(70));
+        var agreement = f.state.frozen(SESSION, RoadAdapterState.encode(planned.id())).orElseThrow();
+        assertEquals(70, agreement.groundY());
+        assertEquals(List.of(70), agreement.sharedProfile());
+        assertTrue(agreement.frozen(), "an APPLIED gate is frozen");
+        assertTrue(agreement.physicallyReady(), "every affected chunk was ACKed, so the opening exists");
+    }
+
+    @Test void agreementIsNotPhysicallyReadyUntilEveryAffectedChunkIsAcked() throws Exception {
+        Fixture f = new Fixture();
+        var planned = gate(1, 0, 70);
+        f.ledger.propose(planned, List.of(new RoadTypes.Approach("road",
+                List.of(new local.plaincraft.greatwall.model.WallTypes.Point3i(0, 70, 0)))),
+                List.of("road"), 0);
+        f.owner.drain();
+        f.ledger.freeze(planned.id(), 1);
+        f.owner.drain();
+        var record = f.ledger.find(planned.id()).orElseThrow();
+        var solved = f.state.propose(SESSION, RoadAdapterState.encode(planned.id()), record.revision(),
+                List.of(approach("road", 70)), List.of("road"));
+        f.owner.drain();
+        var agreement = solved.toCompletableFuture().get(5, java.util.concurrent.TimeUnit.SECONDS);
+        assertFalse(agreement.physicallyReady(),
+                "a frozen but completely un-ACKed gate must not advertise a passable opening");
     }
 
     private static Throwable failure(CompletionStage<?> stage) {

@@ -66,4 +66,54 @@ class BudgetCacheTest {
             assertEquals(0, cache.stats().reservedBytes()); assertTrue(cache.peek("a").isEmpty());
         }
     }
+
+    @Test void cancelledWaiterLeavesTheSingleFlightListWithoutWaitingForTheLoad() throws Exception {
+        try (var owner = Executors.newSingleThreadExecutor();
+             var cache = new BudgetCache<String, String>(2000000, 4, 64, owner, value -> 60000)) {
+            var source = new CompletableFuture<String>();
+            var calls = new AtomicInteger();
+            // One caller starts the load; the rest join it as waiters on the same in-flight job.
+            var starter = cache.acquire("a", 60000, () -> { calls.incrementAndGet(); return source; })
+                    .toCompletableFuture();
+            var waiters = new ArrayList<CompletableFuture<PlanLease<String>>>();
+            for (int i = 0; i < 20; i++) {
+                waiters.add(cache.acquire("a", 60000, () -> { calls.incrementAndGet(); return source; })
+                        .toCompletableFuture());
+            }
+            owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
+            assertEquals(1, calls.get(), "all callers must share a single in-flight load");
+            assertEquals(21, cache.stats().liveCallers(), "every waiter is counted while the load runs");
+
+            // Cancel them while the load is still pending: they must drop out without waiting for it.
+            for (var waiter : waiters) waiter.cancel(false);
+            owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
+            assertEquals(1, cache.stats().liveCallers(),
+                    "cancelled waiters must leave the single-flight list, leaving only the live starter");
+
+            // The load still completes normally and serves the one caller that stayed interested.
+            source.complete("a");
+            starter.get(5, TimeUnit.SECONDS).close();
+            owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
+            assertEquals(1, calls.get());
+            assertEquals(0, cache.stats().liveCallers());
+        }
+    }
+
+    @Test void cancelledWaitersDoNotReceiveLeasesWhenTheLoadFinishes() throws Exception {
+        try (var owner = Executors.newSingleThreadExecutor();
+             var cache = new BudgetCache<String, String>(2000000, 4, 64, owner, value -> 60000)) {
+            var source = new CompletableFuture<String>();
+            var starter = cache.acquire("a", 60000, () -> source).toCompletableFuture();
+            var cancelled = cache.acquire("a", 60000, () -> source).toCompletableFuture();
+            owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
+            assertTrue(cancelled.cancel(false));
+            source.complete("a");
+            assertTrue(cancelled.isCancelled(), "a cancelled waiter must stay cancelled");
+            starter.get(5, TimeUnit.SECONDS).close();
+            owner.submit(() -> {}).get(5, TimeUnit.SECONDS);
+            // The cancelled caller never took a pin, so the entry is unpinned once the live caller closes.
+            assertEquals(0, cache.stats().pinnedBytes());
+            assertTrue(cache.peek("a").isPresent(), "the load still populated the cache");
+        }
+    }
 }

@@ -66,7 +66,10 @@ public final class GenerationResourceFingerprint {
         return Map.copyOf(inputs);
     }
 
-    /** Frozen semantic inputs only. Optional code is not linked, and possibleBiomes is never consulted. */
+    /**
+     * Frozen semantic inputs only. Optional code is not linked, and the biome source's identity set
+     * is never enumerated; see the frozen red line recorded in docs/S1-S5实施规格/README.md.
+     */
     public static Map<String, JsonElement> captureProduction(ServerLevel level, ResourceManager resources) throws IOException {
         if (!level.getServer().isSameThread()) throw new IllegalStateException("production inputs freeze on server owner");
         var inputs = new TreeMap<>(capture(level, resources));

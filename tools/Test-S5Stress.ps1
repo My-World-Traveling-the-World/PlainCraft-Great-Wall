@@ -22,12 +22,13 @@ $id = "s5-stress-$Profile-$((Get-Date).ToString('yyyyMMdd'))-$([Guid]::NewGuid()
 $evidence = Join-Path $project "docs\evidence\s5\$id"
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 
-# 24h stress: duration measured in seconds (wall clock), concurrency is validated
-# upstream by StressController to {1,2,8,16}.
+# 24h stress: duration measured in hours by the driver, converted to minutes for the in-server
+# fixture; concurrency is validated upstream by StressController to {1,2,8,16}.
 $durationSeconds = [long]$Hours * 3600
 $arguments = @('--offline', '--dependency-verification=strict', 'runS5Stress',
-    "-PgreatwallStressHours=$Hours", "-PgreatwallStressConcurrency=$Concurrency",
-    "-PgreatwallStressSeed=$Seed", '--console=plain', '--no-daemon')
+    "-PgreatwallStressHours=$Hours", "-Ps5Stress=true", "-Ps5StressMinutes=$([long]$Hours * 60)",
+    "-PgreatwallStressConcurrency=$Concurrency", "-PgreatwallStressSeed=$Seed",
+    '--console=plain', '--no-daemon')
 
 $info = [Diagnostics.ProcessStartInfo]::new()
 $info.FileName = $env:ComSpec

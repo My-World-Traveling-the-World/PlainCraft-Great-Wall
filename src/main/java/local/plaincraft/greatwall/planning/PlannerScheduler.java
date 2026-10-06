@@ -57,6 +57,9 @@ public final class PlannerScheduler implements AutoCloseable {
     private static final long HYDROLOGY_OPERATION_CEILING = 4_000_000L;
     /** Opening segments pre-computed by the bulk prewarm, once the blocking startup peer is done. */
     private static final long STARTUP_PREWARM_SEGMENTS = 4;
+    /** Thread-name prefixes owned by this scheduler; used to refuse self-blocking waits. */
+    private static final String pumpThreadPrefix = "pgw-planner-";
+    private static final String laneThreadPrefix = "pgw-oracle-";
     private final HeightContractPlanner heights;
     private final SiteScheduler sites;
     private final BudgetCache<CacheKey, Object> memory;
@@ -702,6 +705,20 @@ public final class PlannerScheduler implements AutoCloseable {
                 : new WallFailure(first.code(), "planner failed in " + first.phase() + " segment="
                         + first.segment() + ": " + first.exceptionType() + ": " + first.message());
     }
+    /**
+     * Refuses to run on a thread that the planner itself owns.
+     *
+     * <p>Used by callers that block on planner futures. Waiting on this scheduler from one of its own
+     * threads cannot succeed — the work being awaited can only progress on the pump that is blocked —
+     * so the hazard is converted into an immediate, named failure.
+     */
+    public void assertOutsidePlanningThread(String purpose) {
+        String thread = Thread.currentThread().getName();
+        if (thread.startsWith(pumpThreadPrefix) || thread.startsWith(laneThreadPrefix)) {
+            throw new IllegalStateException(purpose + " must not block on the planner from a planner-owned thread: " + thread);
+        }
+    }
+
     private static ThreadFactory factory(String name) {
         return runnable -> { Thread thread = new Thread(runnable, name); thread.setDaemon(true); return thread; };
     }

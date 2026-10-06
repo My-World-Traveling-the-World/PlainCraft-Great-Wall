@@ -127,7 +127,17 @@ public final class DiagnosticExporter {
 
     private record Page(long from, long to) {}
 
+    /**
+     * Blocks until every plan in the page is available.
+     *
+     * <p>This waits on planner futures, so it is only legal on a thread that is <em>not</em> part of
+     * the world-generation or planner pump: waiting there would stall the very work being awaited.
+     * {@link #export} dispatches onto {@code ioOwner}, which is a dedicated export executor, and the
+     * guard below makes that a checked precondition instead of a silent hazard — an accidental call
+     * from the planner thread now fails loudly rather than deadlocking the server.
+     */
     private PlanWindow requireWindow(Page page) {
+        planner.assertOutsidePlanningThread("diagnostic export");
         List<SegmentPlan> plans = new ArrayList<>();
         List<PlanLease<SegmentPlan>> leases = new ArrayList<>();
         try {

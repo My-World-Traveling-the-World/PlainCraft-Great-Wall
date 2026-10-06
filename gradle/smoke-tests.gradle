@@ -67,7 +67,12 @@ def probeArgs = [
     "-Dgreatwall.s0.runId=${runId}",
     "-Dgreatwall.s0.disableRewrite=${disableRewrite}",
     "-Dgreatwall.s0.expectedFailure=${providers.gradleProperty('s0ExpectedFailure').getOrElse('false')}",
-    "-Dgreatwall.s0.expectedAdapter=${!disableRewrite && (profile == 'tectonic-c2me' || profile == 'pack-opencl') ? 'c2me' : 'vanilla'}"
+    "-Dgreatwall.s0.expectedAdapter=${!disableRewrite && (profile == 'tectonic-c2me' || profile == 'pack-opencl') ? 'c2me' : 'vanilla'}",
+    // S5 stress selection. Inert (false/0) for every ordinary smoke run; the runS5Stress entry point
+    // requires these to be supplied, so the stress fixture is selected in exactly one place — here,
+    // where all server JVM arguments are assembled — instead of by a second launcher definition.
+    "-Dgreatwall.s5.stress=${providers.gradleProperty('s5Stress').getOrElse('false')}",
+    "-Dgreatwall.stress.minutes=${providers.gradleProperty('s5StressMinutes').getOrElse('0')}"
 ]
 def oracleMaxY = providers.gradleProperty('s1cExpectedMaxY').orNull
 if (oracleMaxY != null) {

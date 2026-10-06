@@ -143,11 +143,32 @@ public final class HistoryTypes {
         }
     }
 
-    public record Recovery(Head head, List<DurableLog.Record> tail, boolean archivedPartialTail) {
+    /**
+     * The outcome of opening a journal.
+     *
+     * <p>{@code head} is the durable checkpoint and remains authoritative for the on-disk roots; its
+     * {@code sequence}/{@code beaconCount} describe only what was checkpointed. A replayed WAL tail
+     * can contain additional beacon records, so {@code replayedSequence} and {@code replayedBeaconCount}
+     * carry the post-replay totals. Derived services must use the replayed values — reading only
+     * {@code head.beaconCount()} silently undercounts beacons that exist in the verified log.
+     */
+    public record Recovery(Head head, List<DurableLog.Record> tail, boolean archivedPartialTail,
+                           long replayedSequence, long replayedBeaconCount) {
         public Recovery {
             Objects.requireNonNull(head, "head");
             Objects.requireNonNull(tail, "tail");
             tail = List.copyOf(tail);
+            if (replayedSequence < head.sequence()) {
+                throw new IllegalArgumentException("replayed sequence must not precede the durable head");
+            }
+            if (replayedBeaconCount < head.beaconCount()) {
+                throw new IllegalArgumentException("replayed beacon count must not precede the durable head");
+            }
+        }
+
+        /** True when the WAL tail carried records beyond the checkpoint. */
+        public boolean replayedBeyondHead() {
+            return replayedSequence != head.sequence() || replayedBeaconCount != head.beaconCount();
         }
     }
 }

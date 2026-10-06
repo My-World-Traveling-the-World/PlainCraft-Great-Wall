@@ -46,6 +46,7 @@ foreach ($point in $points) {
         $info.FileName = $env:ComSpec
         $info.Arguments = '/d /c ""{0}" {1}"' -f (Join-Path $project 'gradlew.bat'),
             ((@('--offline', '--dependency-verification=strict', 'runS5Faults',
+                "-PgreatwallFaultRoot=$root",
                 "-PgreatwallFaultPoint=$point", "-PgreatwallFaultOccurrence=$occurrence",
                 "-PgreatwallFaultMode=$FaultMode", '--console=plain', '--no-daemon')) -join ' ')
         $info.WorkingDirectory = $project

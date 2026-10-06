@@ -31,9 +31,10 @@
   "optionalIntegrations": [
     {
       "id": "roadweaver",
-      "version": "2.3.1-1.21.1-plaincraft-direct-core.0.8.405-audit-io-degradation-and-counter-cleanup",
-      "sha256": "2ecf57bccd162c4444f9c50649e9d59a3163e718ab037c07e58286efdad2c265",
-      "source": "archive_metadata"
+      "version": "2.3.1-1.21.1-plaincraft-direct-core.0.8.406-perf-batch",
+      "sha256": "bed13208658438dcc27efe965155958d2e3b0386488ab9023432b6db9a854dd1",
+      "source": "archive_metadata",
+      "note": "Must stay identical to src/main/resources/plaincraft_great_wall/roadweaver-interop.sha256. The runtime allowlist is the ABI gate: a jar whose SHA is absent there makes RoadWeaverAdapter refuse to initialise. Documenting a different build than the one the allowlist admits would describe an artifact the mod cannot actually start with."
     },
     {
       "id": "ftbquests",

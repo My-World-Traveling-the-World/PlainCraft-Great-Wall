@@ -64,7 +64,18 @@ public final class GreatWallCommands {
     private record CommandJob(UUID id, String kind, UUID owner, long createdNanos,
             CompletableFuture<?> done, List<PlanLease<?>> leases) {}
 
-    private record RepairToken(GateId id, long issuedNanos, String hash) {}
+    /**
+     * A one-shot repair approval. {@code revisionHash} binds the token to the exact gate revision the
+     * operator saw during dry-run, so approving one state can never authorise repairs against a
+     * different one.
+     */
+    private record RepairToken(GateId id, long issuedNanos, String revisionHash) {}
+
+    /** Binds a gate identity and revision into the token hash. */
+    private static String revisionHash(GateId id, String state, long revision) {
+        return DeterministicHash.sha256((id + "|" + state + "|" + revision)
+                .getBytes(StandardCharsets.UTF_8));
+    }
 
     private GreatWallCommands() {}
 
@@ -604,9 +615,11 @@ public final class GreatWallCommands {
         Optional<RoadTypes.GateRecord> record = svc.gates().find(id);
         String state = record.map(r -> r.state().name() + " rev=" + r.revision()).orElse("absent");
         String token = UUID.randomUUID().toString();
-        String hash = DeterministicHash.sha256((token + "|" + id + "|" + state)
-                .getBytes(StandardCharsets.UTF_8));
-        REPAIR_TOKENS.put(token, new RepairToken(id, System.nanoTime(), hash));
+        // Bind the token to the gate revision observed right now; repair-confirm rejects the token if
+        // the gate has moved on since, instead of repairing a state the operator never approved.
+        long revision = record.map(RoadTypes.GateRecord::revision).orElse(-1L);
+        String gateState = record.map(r -> r.state().name()).orElse("ABSENT");
+        REPAIR_TOKENS.put(token, new RepairToken(id, System.nanoTime(), revisionHash(id, gateState, revision)));
         pruneRepairTokens();
         source.sendSuccess(() -> Component.literal("repair dry-run " + id + " state=" + state
                 + " zero writes; token=" + token), false);
@@ -626,10 +639,43 @@ public final class GreatWallCommands {
             source.sendFailure(Component.literal("repair requires the S1C production fixture"));
             return 0;
         }
-        // WallArchBackfill 未通过 WorldServices 暴露；确认仅校验 token/会话/proof/revision，
-        // 不做任何写入（绝不 force-ignore-conflict）。
+        var backfill = svc.backfillIfReady();
+        if (backfill == null) {
+            // Gameplay services are not assembled yet, so nothing can be repaired. Reporting success
+            // here would let an operator believe the arch was cut when no work was attempted.
+            source.sendFailure(Component.literal("repair confirm " + pending.id()
+                    + ": backfill service is not ready; nothing was written"));
+            return 0;
+        }
+        var gates = svc.gates();
+        var record = gates.find(pending.id());
+        if (record.isEmpty()) {
+            source.sendFailure(Component.literal("repair confirm " + pending.id() + ": gate is absent"));
+            return 0;
+        }
+        var gate = record.get();
+        // The dry-run captured the revision it observed; a change since then invalidates the token,
+        // because the operator approved a different state than the one now on disk.
+        if (!pending.revisionHash().equals(revisionHash(pending.id(), gate.state().name(), gate.revision()))) {
+            source.sendFailure(Component.literal("repair confirm " + pending.id()
+                    + ": gate revision changed since dry-run (now " + gate.revision() + "); re-run dry-run"));
+            return 0;
+        }
+        // Real work is asynchronous: acknowledge acceptance, then report the durable outcome. The
+        // command returns success only after prepare() completes without failure, so a conflict can
+        // never be mistaken for a repair.
+        backfill.prepare(gate).whenComplete((ignored, failure) -> source.getServer().execute(() -> {
+            if (failure != null) {
+                source.sendFailure(Component.literal("repair confirm " + pending.id()
+                        + ": backfill failed: " + failure.getMessage()));
+                return;
+            }
+            var after = gates.find(pending.id()).map(r -> r.state().name()).orElse("absent");
+            source.sendSuccess(() -> Component.literal("repair confirm " + pending.id()
+                    + ": backfill prepared, gate state=" + after), true);
+        }));
         source.sendSuccess(() -> Component.literal("repair confirm " + pending.id()
-                + ": token validated, zero writes (backfill not wired in this session)"), false);
+                + ": backfill started; the durable outcome follows"), false);
         return 1;
     }
 

@@ -31,6 +31,45 @@ class HistoryJournalTest {
         var running = new Running(new HistoryJournal(root, world, io, hooks), io);
         journals.add(running); return running;
     }
+    @Test void reopenedJournalReportsTheReplayedBeaconCountNotJustTheCheckpoint() throws Exception {
+        // A WAL tail that was never checkpointed is still verified history. Recovery must report the
+        // post-replay beacon total: seeding services from the checkpoint alone would undercount
+        // beacons that provably exist in the log.
+        var running = create(temp, authorize(temp), new HistoryJournal.IoHooks() {});
+        await(running.journal().open());
+        for (int i = 1; i <= 3; i++) await(running.journal().append(credit(i)));
+        await(running.journal().checkpoint());
+        // Two more beacon records land after the checkpoint, so they exist only in the WAL tail.
+        for (int i = 4; i <= 5; i++) await(running.journal().append(credit(i)));
+        awaitClose(running);
+
+        var restarted = create(temp, authorize(temp), new HistoryJournal.IoHooks() {});
+        var recovery = await(restarted.journal().open());
+        assertEquals(3, recovery.head().beaconCount(),
+                "the durable checkpoint describes only the checkpointed beacons");
+        assertEquals(5, recovery.replayedBeaconCount(),
+                "recovery must report every beacon the verified log contains, including the WAL tail");
+        assertEquals(5, recovery.replayedSequence());
+        assertTrue(recovery.replayedBeyondHead(),
+                "the tail carried records beyond the checkpoint, which must be visible");
+        // The public state accessor must agree with the replayed total, not the checkpoint.
+        assertEquals(5, restarted.journal().state().beaconCount());
+    }
+
+    @Test void recoveryWithoutATailReportsTheCheckpointUnchanged() throws Exception {
+        var running = create(temp, authorize(temp), new HistoryJournal.IoHooks() {});
+        await(running.journal().open());
+        await(running.journal().append(credit(1)));
+        await(running.journal().checkpoint());
+        awaitClose(running);
+
+        var restarted = create(temp, authorize(temp), new HistoryJournal.IoHooks() {});
+        var recovery = await(restarted.journal().open());
+        assertFalse(recovery.replayedBeyondHead(), "a fully checkpointed history has nothing left to replay");
+        assertEquals(recovery.head().beaconCount(), recovery.replayedBeaconCount());
+        assertEquals(1, recovery.replayedBeaconCount());
+    }
+
     private Running open(Path root) throws Exception {
         var running = create(root, authorize(root), new HistoryJournal.IoHooks() {});
         await(running.journal().open()); return running;

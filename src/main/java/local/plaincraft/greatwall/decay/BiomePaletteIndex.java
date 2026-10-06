@@ -42,8 +42,9 @@ public final class BiomePaletteIndex {
     }
 
     /**
-     * Expands the three own biome tags against the live registry. Never calls
-     * possibleBiomes: iteration is over holder keys and tag membership only.
+     * Expands the three own biome tags against the live registry. Iteration is strictly over registry
+     * holder keys and tag membership, so the biome source's identity set is never enumerated; see the
+     * frozen red line recorded in docs/S1-S5实施规格/README.md.
      */
     public static PaletteTypes.Snapshot freeze(RegistryAccess access, PaletteTypes.Catalog catalog) {
         Objects.requireNonNull(access, "access");

@@ -54,17 +54,87 @@ tasks.register('runS4Gallery') {
 // ---------------------------------------------------------------------------
 // S5 fault recovery + stress
 // ---------------------------------------------------------------------------
+//
+// These are REAL entry points, not aliases for a generic smoke run. A plain smoke run
+// exercises none of the 18 fault points, neither exception/halt mode, nor a stress
+// profile, so depending on one would let this gate report success without testing
+// anything — which is exactly the defect this section used to have.
+//
+// The two shapes differ:
+//   * Fault injection needs no server. FaultProcessMain is a self-contained child JVM
+//     that reaches the Nth hit of one fault point and then throws or halts.
+//   * Stress needs a live dedicated server, because the profile demands chunks, jumps
+//     far and triggers reloads. It is therefore the ordinary isolated smoke server with
+//     the stress fixture selected through the same probe properties every other fixture
+//     uses; nothing about the runtime is re-implemented here.
+//
+// Both tasks fail on a missing or malformed parameter, so an under-specified
+// invocation is a configuration error rather than a silent pass.
 
-tasks.register('runS5Faults') {
+tasks.register('runS5Faults', JavaExec) {
     group = 'verification'
-    description = 'S5 fault-injection recovery matrix (isolated server smoke)'
-    dependsOn tasks.named('runServerSmoke')
+    description = 'S5 fault-injection: one isolated child JVM at one fault point (per-point driver: tools/Test-S5Faults.ps1)'
+    dependsOn tasks.named('serverSmokeClasses')
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(
+                providers.gradleProperty('smokeJavaVersion').getOrElse('21').toInteger())
+    }
+    workingDir = layout.buildDirectory.dir('run/serverSmoke/s5-faults').get().asFile
+    classpath = sourceSets.serverSmoke.runtimeClasspath
+    mainClass = 'local.plaincraft.greatwall.stress.FaultProcessMain'
+    doFirst {
+        def required = ['greatwallFaultRoot', 'greatwallFaultPoint', 'greatwallFaultOccurrence', 'greatwallFaultMode']
+        def missing = required.findAll { !project.hasProperty(it) }
+        if (!missing.isEmpty()) {
+            throw new GradleException("runS5Faults requires -P${missing.join(', -P')}; " +
+                    'use tools/Test-S5Faults.ps1 to drive the full matrix')
+        }
+        def mode = project.property('greatwallFaultMode').toString()
+        if (!(mode in ['exception', 'halt'])) {
+            throw new GradleException("greatwallFaultMode must be 'exception' or 'halt', found '${mode}'")
+        }
+        args '--root', project.property('greatwallFaultRoot').toString(),
+                '--point', project.property('greatwallFaultPoint').toString(),
+                '--occurrence', project.property('greatwallFaultOccurrence').toString(),
+                '--mode', mode
+        // halt mode is expected to terminate with 137 and exception mode with a non-zero code. The
+        // driving script asserts the exact expected code per mode, so the exit value must not be
+        // turned into a Gradle failure here; ignoring it is what lets the child die as designed.
+        ignoreExitValue = true
+        logger.lifecycle("S5 fault child: point=${project.property('greatwallFaultPoint')} " +
+                "occurrence=${project.property('greatwallFaultOccurrence')} mode=${mode}")
+    }
+}
+
+// Validates the request, then delegates to the ordinary isolated smoke server with the stress switch
+// turned on. The switch lives in one place only — the smoke script's JVM-argument assembly — so there
+// is exactly one definition of how the isolated server starts.
+tasks.register('prepareS5Stress') {
+    group = 'verification'
+    description = 'Validates the S5 stress request before any server starts'
+    doFirst {
+        def hours = project.findProperty('greatwallStressHours')
+        if (hours == null) {
+            throw new GradleException('runS5Stress requires -PgreatwallStressHours; ' +
+                    'use tools/Test-S5Stress.ps1 to drive the profile')
+        }
+        def hoursText = hours.toString()
+        if (!(hoursText ==~ /[1-9][0-9]{0,2}/) || hoursText.toLong() > 24L) {
+            throw new GradleException("greatwallStressHours must be 1..24, found '${hoursText}'")
+        }
+        logger.lifecycle("S5 stress profile armed: hours=${hoursText} " +
+                "minutes=${hoursText.toLong() * 60L}")
+    }
 }
 
 tasks.register('runS5Stress') {
     group = 'verification'
-    description = 'S5 stress / 24h profile (isolated server smoke)'
-    dependsOn tasks.named('runServerSmoke')
+    description = 'S5 stress: the isolated dedicated server running the MIXED_24H chunk-demand profile (driver: tools/Test-S5Stress.ps1)'
+    // The profile IS the isolated smoke server with the stress fixture selected, so this task's only
+    // job is to require the stress properties and hand off to that server. Gradle reads the
+    // -Ps5Stress / -Ps5StressMinutes values that the driver passes; an invocation that omits them
+    // fails in prepareS5Stress rather than silently running a normal smoke test.
+    dependsOn tasks.named('prepareS5Stress'), tasks.named('runServerSmokeProduction')
 }
 
 // ---------------------------------------------------------------------------
@@ -122,7 +192,9 @@ tasks.register('verifyReleaseArtifacts') {
                 zip.entries().each { entry ->
                     def name = entry.name
                     forbidden.each { pattern ->
-                        if (name ==~ pattern || name.contains('FaultInjector') || name.contains('FaultProcessMain')) {
+                        if (name ==~ pattern || name.contains('FaultInjector') || name.contains('FaultProcessMain')
+                                || name.contains('StressProcessMain') || name.contains('StressController')
+                                || name.contains('StressFixture')) {
                             errors.add("forbidden test/fault class leaked into ${jar.name}: ${name}")
                         }
                     }

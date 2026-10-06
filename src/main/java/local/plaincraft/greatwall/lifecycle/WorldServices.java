@@ -212,7 +212,19 @@ public final class WorldServices {
         }
     }
 
-    public static WorldServices find(MinecraftServer server) { return SESSIONS.get(server); }
+    /**
+     * Looks up the wall services for a server, tolerating a null server.
+     *
+     * <p>A null server is the normal case on a client: an integrated-server mixin target can also run
+     * in the client process, where {@code Level.getServer()} returns null until a world is hosted.
+     * {@link ConcurrentHashMap#get} throws {@link NullPointerException} for a null key, so callers
+     * that pass an unguarded {@code level.getServer()} would crash the client. Returning null here
+     * keeps every call site on the existing "no services, do nothing" path.
+     */
+    public static WorldServices find(MinecraftServer server) {
+        if (server == null) return null;
+        return SESSIONS.get(server);
+    }
     public static Optional<WorldServices> find(UUID session) {
         return SESSIONS.values().stream().filter(value -> value.production != null
                 && value.production.runtime().equals(session) && !value.production.rejected()).findFirst();
@@ -241,6 +253,10 @@ public final class WorldServices {
     public WallSpawnerGuard spawners() { return requireProductionSession().spawners(); }
     public HistoryJournal history() { return requireProductionSession().history(); }
     public NegotiatedGateService negotiated() { return requireProductionSession().negotiated(); }
+    /** Arch backfill for the explicit repair path, or null before gameplay assembly completes. */
+    public local.plaincraft.greatwall.compat.road.WallArchBackfill backfillIfReady() {
+        return requireProductionSession().backfillIfReady();
+    }
     public DebugService debug() { return requireProductionSession().debug(); }
     public DiagnosticExporter diagnosticExporter() { return requireProductionSession().diagnosticExporter(); }
     public RoadWeaverAdapter roadWeaverAdapter() { return requireProductionSession().roadWeaverAdapter(); }

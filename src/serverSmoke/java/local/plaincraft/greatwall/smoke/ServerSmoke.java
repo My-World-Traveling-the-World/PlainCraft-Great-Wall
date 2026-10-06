@@ -24,6 +24,8 @@ public final class ServerSmoke implements ModInitializer {
     private final OracleProfileFixture oracle = new OracleProfileFixture();
     private final RealTerrainFixture wall = new RealTerrainFixture();
     private final RootHydrologyFixture survey = new RootHydrologyFixture();
+    /** Lazily created on first tick when the S5 stress profile is selected. */
+    private local.plaincraft.greatwall.stress.StressFixture stressFixture;
 
     @Override
     public void onInitialize() {
@@ -69,7 +71,9 @@ public final class ServerSmoke implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (!started || stopRequested) return;
             ticks++;
-            if (RootHydrologyFixture.enabled()) {
+            if (Boolean.getBoolean("greatwall.s5.stress")) {
+                if (!stress(server)) return;
+            } else if (RootHydrologyFixture.enabled()) {
                 if (!survey.tick(server)) return;
             } else if (Boolean.getBoolean("greatwall.s1c.productionFixture")) {
                 if (!wall.tick(server)) return;
@@ -107,6 +111,26 @@ public final class ServerSmoke implements ModInitializer {
             }
             GreatWallMod.LOGGER.info("[GreatWall:S0-01] SERVER_SMOKE_PASS: stopped normally");
         });
+    }
+
+    /**
+     * Drives the S5 stress profile. Returns false while the profile is still running and true once it
+     * has terminated, so the shared stop request fires exactly as it does for the other fixtures.
+     *
+     * <p>The fixture is created lazily on the first tick so a missing parameter surfaces as a start
+     * failure rather than a silently shortened run.
+     */
+    private boolean stress(MinecraftServer server) {
+        if (stressFixture == null) {
+            stressFixture = local.plaincraft.greatwall.stress.StressFixture
+                    .fromSystemProperties(FabricLoader.getInstance().getGameDir());
+            try {
+                stressFixture.start(server);
+            } catch (IOException | RuntimeException failure) {
+                throw new IllegalStateException("S5 stress profile failed to start", failure);
+            }
+        }
+        return stressFixture.tick(server);
     }
 
     private boolean reloadFixture(MinecraftServer server) {
