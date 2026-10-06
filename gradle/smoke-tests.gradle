@@ -239,9 +239,14 @@ def remappedSmoke = tasks.register('remapServerSmokeJar', remapJarType) {
 // can download outside Gradle's resolver, which is forbidden for this workflow.
 def prepareProductionInputs = { runtimeSource, String gameJarName, File smokeFile, File stagingRoot = directory.get().asFile ->
     def gameJar = new File(gradle.gradleUserHomeDir, "caches/fabric-loom/1.21.1/${gameJarName}")
+    // Loom caches the intermediary artifact with a mapping-version suffix, e.g.
+    // intermediary-1.21.1-v2.jar. Matching the bare 'intermediary-1.21.1.jar' name therefore found
+    // nothing and every production run aborted with "Missing cached production game/intermediary",
+    // even though the artifact was present. Match the version prefix and require exactly one.
     def intermediary = fileTree(new File(gradle.gradleUserHomeDir,
             'caches/modules-2/files-2.1/net.fabricmc/intermediary/1.21.1')).matching {
-        include '**/intermediary-1.21.1.jar'
+        include '**/intermediary-1.21.1*.jar'
+        exclude '**/*-sources.jar'
     }.files
     if (!gameJar.isFile() || intermediary.size() != 1) {
         throw new GradleException('Missing cached production game/intermediary; downloads are forbidden')
