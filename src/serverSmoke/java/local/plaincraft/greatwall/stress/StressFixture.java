@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
@@ -74,7 +75,11 @@ public final class StressFixture implements AutoCloseable {
     public void start(MinecraftServer server) throws IOException {
         if (started) return;
         started = true;
-        Files.createDirectories(reportDir);
+        // The controller creates and owns its report directory, and deliberately refuses one that
+        // already exists so a previous run's evidence can never be overwritten. Creating it here
+        // defeated that guard and made the profile fail to start, so the parent is prepared instead
+        // and the leaf is left for the controller.
+        Files.createDirectories(Objects.requireNonNull(reportDir.getParent()));
         ServerLevel level = server.overworld();
         var config = new StressController.Config(level.getSeed(), StressController.Mode.MIXED_24H,
                 TimeUnit.MINUTES.toSeconds(minutes), 8, List.of(), null, true);

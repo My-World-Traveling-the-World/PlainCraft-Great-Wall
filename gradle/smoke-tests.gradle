@@ -295,7 +295,16 @@ tasks.register('prepareSeedSurveyRuntime') {
     }
 }
 tasks.register('runServerSmokeProduction', JavaExec) {
-    timeout = java.time.Duration.ofMinutes(realWall ? traversalMinutes + 10 : 5)
+    // The timeout has to cover whichever profile was requested. A stress run is long by definition and
+    // was previously cut off at the flat five-minute mark, so the ceiling is derived from the stress
+    // duration when the stress switch is on, from the traversal budget for the real-wall fixture, and
+    // keeps the short default otherwise. The margin covers world load, drain and the final report.
+    def stressMinutesProp = providers.gradleProperty('s5StressMinutes').getOrElse('0').toLong()
+    def stressSelected = providers.gradleProperty('s5Stress').getOrElse('false').toBoolean()
+    timeout = java.time.Duration.ofMinutes(
+            stressSelected ? stressMinutesProp + 20
+                           : realWall ? traversalMinutes + 10
+                                      : 5)
     dependsOn tasks.named('prepareServerSmoke'), tasks.named('remapJar'), remappedSmoke
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(runtimeJava) }
     workingDir = directory.get().asFile
