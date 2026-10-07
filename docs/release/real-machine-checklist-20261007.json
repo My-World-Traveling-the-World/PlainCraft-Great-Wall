@@ -1,6 +1,7 @@
 {
     "document":  "real-machine verification checklist (consolidated)",
     "date":  "2026-10-07",
+    "revision":  "3 - the visual-check entry now carries an executable procedure",
     "status":  "PARTIAL - automated verification complete for 5 of 6 items; the 24h profile is still running",
     "purpose":  "One place listing everything that automated verification cannot establish, so the real-machine pass has an explicit scope instead of an implied one.",
     "alreadyProvenByAutomation":  [
@@ -23,7 +24,11 @@
                                        {
                                            "item":  "client visual and rendering check",
                                            "why":  "SmokeVisualChecklist states that neither case creation nor state observation certifies visuals, and its observer must be human",
-                                           "source":  "traversal certificate and report section 4"
+                                           "source":  "traversal certificate and report section 4",
+                                           "howToRunIt":  "gradlew runWallPreview: prepareWallPreview writes the two markers plus preview-runtime.json into build/run/wallPreview and starts a real client with -Dgreatwall.s1c.productionFixture=true; the client opens at the main menu, so a person creates a single-player world by hand and watches generation begin.",
+                                           "verifiedRunnable":  "The task refuses to download assets, so its preconditions were checked: the 1.21.1-17 index is present at 439 KB and all 3911 declared objects are present at the declared size, zero missing and zero size mismatches.",
+                                           "stillNotAcceptance":  "It stays a preview: the directory must remain inside build/run, production stays false, and the manifest labels itself manual-client-preview-not-acceptance.",
+                                           "correction":  "An earlier note in this session said there was no way to see a wall at all. That was incomplete - it is true of the player-facing path and the acceptance path, but a developer preview path exists."
                                        },
                                        {
                                            "item":  "the dedicated biome actually taking effect",
@@ -68,5 +73,5 @@
                                    "full GameTest re-run (129 methods; inventory recorded beforehand so the count can be checked independently)",
                                    "tools/Test-S5Release.ps1 two clean builds (now guarded so it cannot delete a live profile)"
                                ],
-    "head":  "3952cc3"
+    "head":  "14c1e72"
 }
