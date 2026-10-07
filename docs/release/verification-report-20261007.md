@@ -181,7 +181,8 @@ trace 缓冲上限、退出码不可见、30 秒排空窗口、压力 stop 超�
 |---|---|---|
 | **人工步行穿越长城** | `NOT_RUN` | 只能程序化遍历 505 个 owner，不能代替真人走一遍 |
 | **客户端视觉/画质检查** | `NOT_RUN` | `runClientSmoke` 会启动真实客户端，`SmokeVisualChecklist` 自我声明「Neither case creation nor state observations certify visuals」，`observer` 必须是 `human` |
-| **专属群系实际生效** | `NOT_RUN` | 数据包为 **NORMAL（需手动启用）**；`ForcePlacement` 仅做过静态证明，**真实 RegistryOps 解码从未跑过** |
+| **专属群系实际生效** | `NOT_RUN` | 数据包为 **NORMAL（需手动启用）**；`ForcePlacement` 仅做过静态证明，**真实 RegistryOps 解码从未跑过**。见下方「群系着色的证据边界」 |
+| **群系着色路径（`GreatWallBiomeWriter`）** | `NOT_RUN` | 无任何单元测试；且 505-owner 遍历与 24h 压测**都没有执行到它**（见下） |
 | **height6000 / 非默认 minY** | `NOT_RUN` | 未测的配置组合 |
 | **Golden 对照种子** | `NOT_RUN` | 未跑 |
 | **integration-matrix 其余 profile** | `NOT_RUN` | 只跑过 `vanilla`。**并且这三个 profile 无法用当前 harness 补齐**：smoke 运行只装载 3 个 jar（fabric-api + 本 mod + smoke harness），`smokeProfile` 只改运行目录名、`expectedAdapter`、堆大小与 `-Dgreatwall.smoke.profile`，**不会**把 Tectonic / C2ME / OpenCL pack 加进 classpath —— 传 `-PsmokeProfile=tectonic` 只会得到一个「标签是 tectonic、实际装载相同 3 个 jar」的运行。Tectonic 与 full-pack OpenCL 两行**必须靠真机实例** |
@@ -193,6 +194,31 @@ trace 缓冲上限、退出码不可见、30 秒排空窗口、压力 stop 超�
 
 数据包默认 **NORMAL（opt-in）**。手动启用后，世界指纹变化，**旧存档会按设计拒绝加载**。
 这是有意行为，但需在真机上确认一次。
+
+### 群系着色的证据边界（重要）
+
+已完成的两次长时间运行**都没有执行到群系着色代码**，原因是两道各自独立、且**同时**为真的门禁：
+
+1. `ChunkGeneratorBiomeMixin:58` 要求 `services.productionFixture()`，而遍历以
+   `production=OFF` 运行 → 直接 `return`
+2. `ChunkGeneratorBiomeMixin:60` 要求 `runtime.identityBound()`，而 smoke 运行目录只装载
+   **3 个 jar**（fabric-api + 本 mod + smoke harness），**没有 Lithostitched** → holder
+   从未绑定 → 即使门禁 1 通过也会 `return`
+
+HUD 日志的印证：`Applied 0 biome modifications to 0 of 64 new biomes`。
+
+**因此**：
+
+- 505-owner 遍历验证的是**墙体几何与写入**（28046 个方块、2537 walkway），**不是**群系着色
+- 这两次运行**顺带证明了 fail-soft 设计正确**：holder 缺失时 mixin 静默降级为原版行为，
+  服务器不崩、遍历照常通过；而真正需要 holder 的调用方走 `requireIdentity()`，会以
+  `UNSUPPORTED_ADAPTER` fail closed
+- `GreatWallBiomeWriter`（真正调用 `fillBiomesFromNoise` 的写入器）**没有任何单元测试**
+- 群系着色的可验证覆盖是**间接**的：`RouteBiomeMaskTest`（8 例，遮罩几何/半开边界/保守
+  quart 上色）与 `GreatWallBiomeRuntimeTest`（8 例，fail-closed/维度隔离/重复发布）
+
+**结论**：群系着色在真机上是否真的改变地形群系，**目前没有任何执行证据**，必须由用户在
+启用数据包的实例里确认。这是本次验证**最大的证据缺口**。
 
 ---
 
