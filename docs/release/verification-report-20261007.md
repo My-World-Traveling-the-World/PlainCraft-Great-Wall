@@ -39,6 +39,23 @@
 已提前复制到 `docs/evidence/`（不受 `build/` 清理影响）。**全量 GameTest 会在 24h 压测结束后
 重跑并重新落盘**，届时上述条目将指向真实存在的文件。本报告不再引用已消失的路径。
 
+### 尚未运行：`tools/Test-S5Release.ps1`（两轮干净构建比对）
+
+`tools/Test-S5Release.ps1` 是**验收规格形态的可复现性验证**：两轮
+`--offline --dependency-verification=strict clean build verifyReleaseArtifacts`，
+比对 remapJar SHA，结果写入 `docs/evidence/s5/s5-release-<profile>-<date>-<id>/`。
+**它从未运行过**（`docs/evidence/s5` 下无 `s5-release-*` 目录）。
+
+**当前不能运行**：脚本第 30 行在 Gradle 参数里传了 `clean`，会删除整个 `build/` ——
+其中含正在进行的 24h 压测的 7.32 GB 运行数据。**在压测期间运行它会直接杀掉压测。**
+
+**已排除的风险**：曾担心 60 分钟超时不够，因为 `build` 可能拖入 3h22m 的 `runGameTest`。
+已核实**不会**：`runGameTest` 只被显式注册的 `runS2RoadTests` / `runS3FtbTests` / `runS4Gallery`
+依赖，`check`/`build` 未绑定它。加上本轮已单独验证过「同一源码可产出同一 SHA」
+（`remapJar --rerun-tasks` 与「删 `build/libs` 后重建」三次一致），该脚本是**同一断言更严格的形式**。
+
+**排入队列**：24h 压测结束后运行，预期产出 `docs/evidence/s5/s5-release-*` 证据。
+
 ### ① 发布门禁
 
 门禁**已能完整运行**（此前因 `File.digest('SHA-256')` 不是 JDK API 而从未跑成功过）。
