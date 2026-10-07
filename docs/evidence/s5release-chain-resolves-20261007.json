@@ -1,0 +1,19 @@
+{
+    "check":  "does the final release-verification task chain resolve, checked before it is needed",
+    "date":  "2026-10-07",
+    "why":  "A configuration-phase error in that chain would surface only after the profile ended, when it is the last step of a long sequence. A dry run costs nothing and needs no compilation, so it is safe to run alongside the profile.",
+    "command":  "gradlew clean build verifyReleaseArtifacts --dry-run --no-daemon --console=plain",
+    "result":  {
+                   "tasksInChain":  33,
+                   "configurationErrors":  0,
+                   "cleanPresent":  true,
+                   "compileJavaPresent":  true,
+                   "remapJarPresent":  true,
+                   "remapSourcesJarPresent":  true,
+                   "verifyReleaseArtifactsPresent":  true
+               },
+    "interpretation":  "The chain is intact and includes the clean that makes this the destructive step, so the ordering discipline established earlier remains the thing to get right rather than the task graph.",
+    "profileUnaffected":  "Checked immediately after: the sample sequence advanced to 537 with the newest written 21 seconds before reading, threads still 33, and the log tail carries neither a watchdog line nor an ERROR line. A dry run resolves configuration without compiling or running anything, so this is the expected outcome rather than a pleasant surprise.",
+    "whatItDoesNotProve":  "That the build will succeed - the version gate will make verifyReleaseArtifacts throw, as traced two rounds ago. This only establishes that the graph resolves and the tasks exist.",
+    "head":  "c1a66fb"
+}
