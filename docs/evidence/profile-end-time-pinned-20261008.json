@@ -1,0 +1,22 @@
+{
+    "check":  "pin when the profile is expected to end, so the closing round recognises the moment rather than polling for it",
+    "date":  "2026-10-08",
+    "derivedFrom":  "The newest sample's elapsedSeconds subtracted from the current time, cross-checked against the process start time read earlier from the OS, 2026-10-07 08:47:37.",
+    "timeline":  {
+                     "inferredStart":  "2026-10-07 08:48 local",
+                     "twentyFourHourMark":  "2026-10-08 08:48 local",
+                     "latestEndIncludingDrain":  "2026-10-08 08:58 local, allowing the 600-second drain ceiling",
+                     "atTheTimeOfWriting":  "2026-10-08 04:26, so 4.36 hours remained"
+                 },
+    "healthAtNineteenPointSixHours":  {
+                                          "refills":  57,
+                                          "error":  0,
+                                          "watchdog":  0,
+                                          "outOfMemory":  0,
+                                          "fatal":  0,
+                                          "positiveControls":  "STRESS_REFILL appears 57 times and Can't keep up 1015 times, so the zero counts are real rather than a failed search."
+                                      },
+    "aReportingErrorToNote":  "The status line in round 208 printed ERROR= with a blank value because the pattern used a malformed unicode escape. The count was recomputed correctly as 0. The conclusion was unchanged, but the line should not have been reported as if it had been measured.",
+    "howToRecogniseTheEnd":  "stress-report.json appears under the run's stress-reports directory, and build/s5-stress-24h2.log can be opened exclusively - the running profile holds it locked, so a successful open proves the writer is gone.",
+    "head":  "be14d40"
+}
