@@ -1,0 +1,30 @@
+{
+    "sourceCommit":  "3ff01dbb9439dfd0fdc3d4af6b27ccb577892c80",
+    "workspace":  "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+    "runId":  "s5-faults-halt-20261006-623a795f",
+    "faultMode":  "halt",
+    "repeats":  10,
+    "points":  [
+                   "CACHE_HALF_WRITE",
+                   "MANIFEST_BEFORE_MOVE",
+                   "MANIFEST_AFTER_MOVE",
+                   "T0_BEFORE_FORCE",
+                   "T0_AFTER_FORCE",
+                   "HISTORY_BEFORE_APPEND",
+                   "HISTORY_AFTER_APPEND",
+                   "HISTORY_BEFORE_FORCE",
+                   "HISTORY_AFTER_FORCE",
+                   "HEAD_BEFORE_MOVE",
+                   "HEAD_AFTER_MOVE",
+                   "GATE_BEFORE_FIRST_WRITE",
+                   "GATE_MID_CHUNK",
+                   "GATE_BEFORE_ACK",
+                   "GATE_AFTER_ACK",
+                   "WORLD_AFTER_CLOSE",
+                   "DISK_FULL",
+                   "QOS_FEATURE_SKIP"
+               ],
+    "testRoot":  "D:\\云游四海-Mod源码\\plaincraft-great-wall\\build\\fault-runs\\s5-matrix",
+    "passed":  true,
+    "productionWiring":  "OFF"
+}
