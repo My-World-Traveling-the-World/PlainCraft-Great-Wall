@@ -112,6 +112,6 @@
                          "4. Before anything else touches the build directory, copy the whole of build/test-results/test into docs/evidence/ as a dated archive. Gradle's test task clears and rewrites that directory, so any later filtered run - a spot check of one or two classes - destroys the full set. This step exists because that happened on 2026-10-07: two filtered runs replaced 103 XML files covering 629 tests with a single file covering 2, and no archived copy was complete enough to restore them.",
                          "5. Only now run Test-S5Release.ps1 - its first gradle argument is clean, twice, which deletes build/ entirely",
                          "6. Read execution.json rather than the exit status, since the version gate makes it throw",
-                         "7. Update the six-item table, the acceptance ledger and the evidence index"
+                         "7. Update the six-item table, the acceptance ledger and the evidence index. When updating the ledger, also repoint the stress-24h entry's log field: it currently reads build/s5-stress-24h2.log, which step 5's clean deletes, so leaving it would create a dead reference. Point it at the copy made in step 2. The top-level evidenceNote calls the log fields live locations that regenerate each run, which is true for the JUnit and gametest paths but not for the stress log - that one does not regenerate and must be archived."
                      ]
 }
