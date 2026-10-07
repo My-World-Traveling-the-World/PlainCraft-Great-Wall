@@ -1,0 +1,11 @@
+{
+    "check":  "whether the name-based completeness check has blind spots that would make it report a false result on the pending run",
+    "date":  "2026-10-07",
+    "why":  "The check compares expected names against reported names. Duplicate method names would collapse two cases into one, and a suite-level name carrying a dot would inflate the reported side. Both would produce a wrong verdict on the run it exists to judge.",
+    "duplicateNames":  "None. Extracting all 129 full names gives 129 distinct values with no group larger than one.",
+    "nameFormatMatches":  "The results file uses lowercase dotted names such as coldcaptureallocationtests.cancelledcoldviewdoesnotcancelitspeerorreleasetheforecastpin, which is the same class.method form the script builds from the source.",
+    "noSuiteNameContamination":  "The results file's testsuite element carries no name attribute, and a run of the script against the 2026-10-03 file reports 108 while that file holds exactly 108 testcase elements. So the reported side counts only cases.",
+    "whatTheCheckWillCatch":  "A class registered but not scheduled, a case renamed without the old one removed, and a case lost to a crash partway through the run. It compares names rather than only totals, which is what makes those visible.",
+    "whatItCannotCatch":  "A case that runs but asserts nothing, or one that passes without exercising its subject. Those were addressed separately - the filtered-stream assertions were given non-empty guards and the suite was checked for trivially-true assertions, empty lambdas, assertion-free methods and skip or retry mechanisms.",
+    "head":  "c7f4100"
+}
