@@ -1,0 +1,17 @@
+{
+    "check":  "whether any of the 129 GameTests needs an external mod on the classpath, which the smoke classpath does not provide",
+    "date":  "2026-10-07",
+    "why":  "The integration matrix is NOT_RUN precisely because the smoke harness loads only three jars - fabric-api, the mod and the harness - so a GameTest depending on Tectonic, C2ME, FTB, RoadWeaver, Xaero, Voxy or OpenCL would fail for want of the mod rather than for a code reason. The 23 never-run cases make that worth checking before rather than after.",
+    "result":  "None does. Searching the whole gametest source set for those seven names returns no match in any file.",
+    "scanValidated":  "The same search finds GameTest 493 times, Fixture 379 and assert 500, so the absence is real rather than a broken pattern.",
+    "theCaseThatLookedLikeItMight":  {
+                                         "class":  "NegotiatedGateGameTests",
+                                         "whyItLookedRisky":  "Its name refers to gate negotiation, a RoadWeaver interop concept, and the integration matrix lists a RoadWeaver patched row",
+                                         "whatItActuallyImports":  "local.plaincraft.greatwall.compat.road.RoadTypes, WallArchBackfill, DeterministicHash and its own WallTypes - all in-mod types",
+                                         "itsOwnDescription":  "Driven against the real GateLedger and the pure RoadTypes DTOs",
+                                         "verdict":  "It exercises this mod's own compatibility types, so no external jar is needed."
+                                     },
+    "alsoConfirmed":  "No class named Stress, Fault or Smoke sits in the gametest source set, so the harness classes stay out of the suite.",
+    "whatThisAdds":  "Discovery is now checked four ways for the pending run: every class is a registered entrypoint, none carries a batch attribute so all fall in defaultBatch, none needs a structure template beyond the API-provided empty one, and none needs an external mod. The 23 first-time cases have no known obstacle to running.",
+    "head":  "55c49a1"
+}
