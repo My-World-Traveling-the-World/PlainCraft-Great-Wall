@@ -1,0 +1,14 @@
+{
+    "check":  "cross-checking the derived tick rate revealed that one of my two methods was tautological",
+    "date":  "2026-10-07",
+    "whatIReported":  "I derived about 17.1 ticks per second from the sampling interval and then tried to confirm it from the Can't keep up lines, whose figures 'Running Nms or M ticks behind' give M/(N/1000). That method returned 19.9, which I first read as agreement.",
+    "whyMethod1IsNotAMeasurement":  {
+                                        "vanillaRelationship":  "The behind count is derived from the elapsed milliseconds at the nominal rate, so M is N/50 by construction and M/(N/1000) is always 20.",
+                                        "empiricalProof":  "Across 168 warnings, milliseconds per tick averaged 50.16 with a range of 50 to 51.22. A quantity that tracks the nominal 50 ms per tick that closely is not reporting the server's actual speed.",
+                                        "consequence":  "Method 1 returns about 20 by identity. It could never have disagreed with the nominal value, so treating it as corroboration was circular."
+                                    },
+    "whyMethod2Stands":  "The sampling interval is an independent observation: 457 samples spanning 4.53 hours is 35.7 seconds per sample, and the trigger is 600 ticks. 600 ticks in 35.7 seconds is about 16.8 to 17.1 ticks per second, which is a genuine measurement of how long the ticks took.",
+    "correctConclusion":  "The profile runs at roughly 17 ticks per second rather than 20, which is the deliberate overload showing up as a number.",
+    "lesson":  "Before treating a second figure as confirmation, check that it can vary. A derived quantity that is algebraically pinned to the first one adds no evidence, and reporting it as agreement makes a single observation look like two.",
+    "head":  "266d06d"
+}
