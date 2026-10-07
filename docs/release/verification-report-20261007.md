@@ -81,8 +81,9 @@
 |---|---|
 | `build/gametest-v2.log`（全量 119 项） | **已缺失** —— 被后续 `--rerun-tasks` 覆盖 |
 | `build/verify-release.log` | **已缺失** —— 同上 |
+| `build/test-results/test/`（629 项全量 JUnit） | **已被覆盖** —— 2026-10-07 为核验两处断言守卫跑了两次 `--tests` 过滤测试，Gradle 的 `test` 任务清空并重写了该目录，103 个 XML 变成 1 个。`docs/evidence` 下 1531 个归档 XML 中最多的一个只有 86 个文件，无完整副本可还原。**629 这个数字本身不受影响**（它来自 `src/test` 的声明计数，不依赖 XML），受影响的是「从产物重新核验逐类数字」的能力 |
 
-**补救**：JUnit 结果每次重跑都会重新落地在 `build/test-results/test/`；故障矩阵与遍历的证据
+**补救**：JUnit 结果会在**全量**重跑后重新落地在 `build/test-results/test/`（注意：只跑 `--tests` 过滤的抽查会覆盖而非重建全量集合）；故障矩阵与遍历的证据
 已提前复制到 `docs/evidence/`（不受 `build/` 清理影响）。**全量 GameTest 会在 24h 压测结束后
 重跑并重新落盘**，届时上述条目将指向真实存在的文件。本报告不再引用已消失的路径。
 
