@@ -1,0 +1,11 @@
+{
+  "profile": "MIXED_24H",
+  "requestedMinutes": 60,
+  "observedSeconds": 3616,
+  "completedChunks": 52320,
+  "peakHeapBytes": 7995922760,
+  "checkpoints": 121,
+  "ticks": 72000,
+  "failure": null,
+  "passed": true
+}
