@@ -1,0 +1,27 @@
+{
+    "check":  "whether the acceptance ledger hardcodes HEAD the way the report did, and a sweep for any remaining stale figure",
+    "date":  "2026-10-07",
+    "ledgerHeadPolicy":  {
+                             "conclusion":  "It does not hardcode HEAD, and needs no change on that point.",
+                             "fieldsPresent":  "schemaVersion, mod, version, status, note, hardware, environmentLimits, evidenceNote, acceptance",
+                             "commitReferences":  "Exactly one, cad3f7e, cited as the commit that fixed a specific defect in the changed-dimension case. That is the correct use - naming where a fix landed - rather than a claim about the current tree."
+                         },
+    "butTwoStaleFiguresWereFound":  {
+                                        "whatItSaid":  "'JUnit 562/562 and the 5-source-set compile are prerequisites, not acceptance entries.'",
+                                        "whatIsTrue":  "629/629 and six source sets",
+                                        "whyItMattered":  "This line states what the acceptance prerequisites are. Left stale it understates the suite by 67 tests and the source sets by one.",
+                                        "fixed":  "Yes, in evidenceNote."
+                                    },
+    "sweepOfEveryRemainingOldFigure":  {
+                                           "subject":  "562, 794, five-source, 5 源集, and 119 across all three release documents",
+                                           "verdict":  "Every remaining occurrence sits in a historical frame and none is an unqualified current claim.",
+                                           "examples":  [
+                                                            "the report's comparison table shows 562 in the 'session start' column against 629 in the 'now' column, which is what that table is for",
+                                                            "the sentence about 20 defects escaping 562 unit tests describes the suite as it was when those defects existed",
+                                                            "the three 794s all sit inside the correction note that explains the move to 798, so they are the explanation rather than a stale claim",
+                                                            "the root-cause table's '5 源集编译（目标原文如此；实为 6 个源集，见下）' deliberately preserves the goal's wording and points at the correction",
+                                                            "the ledger's two 119s quote the historical run's own output line verbatim"
+                                                        ]
+                                       },
+    "head":  "229427f"
+}
