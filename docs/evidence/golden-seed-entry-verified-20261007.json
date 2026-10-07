@@ -1,0 +1,17 @@
+{
+    "check":  "verify the Golden seed checklist entry's method is executable, after the height6000 entry turned out not to be",
+    "date":  "2026-10-07",
+    "why":  "One entry's howToRunIt described a configuration route that does not exist here. That makes the others worth the same check rather than the same trust.",
+    "theEntrySays":  "Drive the S1C traversal with a fixed non-default seed via -Ps1cSeed and -Ps1cRealWall, the same path the certified seed 17 run took.",
+    "bothFlagsExist":  "-Ps1cSeed is read at smoke-tests.gradle line 27 with a default of 9282026, and -Ps1cRealWall at line 25 with a default of false. Both are real properties.",
+    "theMechanismWorksAsDescribed":  "Line 200 appends level-seed with the actual seed to server.properties when realWall is set. In a properties file the last occurrence wins, so the appended value overrides the template's level-seed=9282026 - which is how a non-default seed takes effect.",
+    "aRecordedRunUsedExactlyThis":  {
+                                        "file":  "docs/evidence/s1c/entrance-ab-20261002/entrance-ab17-final-20261002-134025/execution.json",
+                                        "command":  "gradlew.bat --offline --dependency-verification=strict runServerSmoke -PsmokeProfile=vanilla -PsmokeRunId=entrance-ab17-final-20261002-134025 -Ps1cRealWall=true -Ps1cSeed=17 -Ps1cRepresentativeBlocks=100 -Ps1cProtectionTrace=true --no-daemon --console=plain",
+                                        "recordedSeed":  17,
+                                        "verdict":  "The entry names both flags and they appear together in a recorded command, so the method is executable as written."
+                                    },
+    "aDiscrepancyThatResolved":  "The traversal certificate records seed 17 while the gradle default is 9282026, which looked like a contradiction. It is not: the run passed -Ps1cSeed=17, and seed 17 also appears in the sibling inputs and execution files for that run, so the certificate is reporting the seed actually used rather than the default.",
+    "contrastWithTheHeightEntry":  "That entry described selecting a world height, for which no property exists. This one describes selecting a seed, for which one does and has been used. The difference is only visible by checking each against the code.",
+    "head":  "ff81c22"
+}
