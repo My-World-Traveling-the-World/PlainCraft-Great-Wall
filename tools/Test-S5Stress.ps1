@@ -84,12 +84,41 @@ foreach ($relative in @('logs\latest.log', 'server-smoke-passed.txt')) {
 }
 $crash = Join-Path $root 'crash-reports'
 if (Test-Path -LiteralPath $crash) { Copy-Item -LiteralPath $crash -Destination $evidence -Recurse }
-$passed = $code -eq 0 -and !$timeout
+
+# The profile's own verdict is the authority, not the process exit code.
+#
+# StressFixture ends a failed profile with server.halt(false), which shuts the server down
+# gracefully and leaves the JVM exiting 0. Only FaultProcessMain signals through an exit
+# code (Runtime.halt(137)); nothing on the stress path does. So "exit code 0" only means
+# the process ended, and a run that recorded passed=false - as build/s5-stress-before-fix
+# did, with a CancellationException while draining - would still have been reported here as
+# a pass. The report written by the fixture is therefore read and required.
+$reportPath = $null
+$reportsRoot = Join-Path $root 'build\stress-reports'
+if (Test-Path -LiteralPath $reportsRoot) {
+    $reportPath = Get-ChildItem -LiteralPath $reportsRoot -Recurse -Filter 'stress-report.json' -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1 -ExpandProperty FullName
+}
+$report = $null
+if ($reportPath) {
+    Copy-Item -LiteralPath $reportPath -Destination (Join-Path $evidence 'stress-report.json') -Force
+    $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+}
+$reportPassed = $null -ne $report -and $report.passed -eq $true
+$reportDurationMet = $null -ne $report -and $report.durationMet -eq $true
+$passed = $code -eq 0 -and !$timeout -and $reportPassed
+if (!$reportPassed) {
+    $why = if ($null -eq $report) { "no stress-report.json was produced under $reportsRoot" }
+        else { "the profile recorded passed=$($report.passed), durationMet=$($report.durationMet), failure=$($report.failure)" }
+    Write-Warning "S5 stress profile did not certify: $why"
+}
 [IO.File]::WriteAllText((Join-Path $evidence 'execution.json'), ([ordered]@{
     sourceCommit = $commit; workspace = $project; runId = $id; profile = $Profile
     seed = $Seed; hours = $Hours; concurrency = $Concurrency; durationSeconds = $durationSeconds
     command = $command; startedUtc = $start.ToString('o'); finishedUtc = [DateTime]::UtcNow.ToString('o')
     seconds = $timer.Elapsed.TotalSeconds; exitCode = $code; timedOut = $timeout; passed = $passed
+    reportPassed = $reportPassed; reportDurationMet = $reportDurationMet; report = $report
+    exitCodeIsNotAVerdict = 'StressFixture halts with server.halt(false), so a failed profile still exits 0; the report is what decides.'
     productionWiring = 'OFF'
 } | ConvertTo-Json -Depth 8), $utf8)
 $outputs = @(Get-ChildItem -LiteralPath $evidence -File -Recurse | Sort-Object FullName | ForEach-Object {
