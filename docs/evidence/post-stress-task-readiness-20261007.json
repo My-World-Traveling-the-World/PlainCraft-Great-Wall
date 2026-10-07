@@ -1,0 +1,25 @@
+{
+    "check":  "post-stress task chains resolve, and the protective guard still refuses",
+    "date":  "2026-10-07",
+    "method":  "gradle --dry-run, which configures and resolves every dependency chain without executing a single task, so nothing can disturb the profile",
+    "tasksResolve":  {
+                         "runGameTest":  true,
+                         "verifyReleaseArtifacts":  true,
+                         "remapJar":  true,
+                         "sourcesJar":  true,
+                         "runS2RoadTests":  true,
+                         "runS3FtbTests":  true,
+                         "runS4Gallery":  true,
+                         "runS5Faults":  true,
+                         "runServerSmokeProduction":  true,
+                         "prepareS5Stress":  "resolves only for the stress chain, correctly absent from the GameTest and release plan"
+                     },
+    "whyThisMatters":  "These are the tasks that run after the profile. A configuration error in any of them would only appear after the wait, so resolving the chains now costs seconds and removes that class of delay.",
+    "guardStillRefuses":  {
+                              "liveLog":  "s5-stress-24h2.log, written 1.6 minutes ago",
+                              "finishedLog":  "s5-stress-24h.log, written 240 minutes ago",
+                              "behaviour":  "The guard identifies the first as live and refuses, and treats the second as finished - so it discriminates rather than blocking on any leftover log",
+                              "conclusion":  "Test-S5Release.ps1 still cannot start while the profile is writing, which was the fix that prevents its initial gradle clean from deleting the run"
+                          },
+    "head":  "1b3e172"
+}
