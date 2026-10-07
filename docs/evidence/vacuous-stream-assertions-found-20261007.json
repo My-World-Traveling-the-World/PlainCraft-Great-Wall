@@ -1,0 +1,29 @@
+{
+    "check":  "hunt for assertions that can never fail, the shape already found three times this session",
+    "date":  "2026-10-07",
+    "why":  "A check that always passes is worse than no check, because it is counted. Three instances surfaced earlier - a gate threshold too strict to ever pass a failure through, an offline-build claim that could not go stale, and a jar selection that would have hashed the sources jar consistently. This looked for a fourth in the test suite.",
+    "whatWasRuledOut":  {
+                            "triviallyTrueAssertions":  "Searching for assertTrue(true), assertFalse(false) and assertEquals with identical arguments returns nothing across all four test source sets.",
+                            "scanValidated":  "assertTrue( appears 843 times, so the search works and the zero is real."
+                        },
+    "whatWasFound":  {
+                         "shape":  "Filtered-stream assertions whose filtered subset is never asserted non-empty",
+                         "locations":  [
+                                           "GateCapTest line 71: c.voxels().stream().filter(VoxelIntent::walkable).allMatch(v -\u003e v.pos().x() \u003c -8)",
+                                           "WallDecayTest line 21: c.voxels().stream().filter(VoxelIntent::walkable).allMatch(v -\u003e v.pos().x() \u003c 0)"
+                                       ],
+                         "whyTheyCanPassVacuously":  "allMatch on an empty stream is true. If the compiled component contains no walkable voxels, both assertions hold without examining anything.",
+                         "theGuardsPresentDoNotCoverIt":  "GateCapTest asserts c.voxels() is non-empty, and WallDecayTest asserts both that and that some solid voxel has x \u003e 0. Neither pins the walkable subset. SupportGraph.reachable, the assertion above GateCapTest line 71, works from occupancy rather than from VoxelIntent.walkable, so it does not imply any walkable voxel exists.",
+                         "whyItMattersForGateCapTestSpecifically":  "The test is named capHasGroundEgressAndDoesNotKeepAnIsolatedTip. Its subject is that a ground egress exists, which is a walkable path - so if the filter selected nothing, the test would pass while asserting nothing about the very thing it is named for."
+                     },
+    "whatWouldCloseIt":  "An assertion that the walkable subset is non-empty, or that at least one walkable voxel sits on each side the assertion cares about. That would make the allMatch test something.",
+    "severity":  "Low as a product matter and moderate as an evidence matter. Nothing here suggests the two tests currently pass vacuously, since both components are expected to have walkable voxels. The gap is that a regression removing them would not be caught, and the test would still be counted as coverage.",
+    "head":  "61a9650",
+    "theKeyQuestionSettled":  {
+                                  "question":  "In GateCapTest, the assertion above line 71 is that SupportGraph.reachable holds between two points. Does that imply at least one walkable voxel exists, which would make line 71 meaningful after all?",
+                                  "answer":  "No.",
+                                  "evidence":  "standable, which reachable walks over, tests the floor voxel against structural(floor) and checks clearance above. It never consults VoxelIntent.walkable. The two predicates are different, so a component can be traversable in the support graph while containing no voxel the filter at line 71 would select.",
+                                  "consequence":  "The assertion at line 71 can pass on an empty stream with no help from the surrounding assertions."
+                              },
+    "whatRemainsOpen":  "Whether the two components currently produce walkable voxels. Nothing in the results distinguishes a real pass from a vacuous one - both tests report zero failures either way. That is exactly the gap: the tests are counted as coverage for behaviour they would not notice losing."
+}
