@@ -1,0 +1,22 @@
+{
+    "check":  "whether any test method contains no assertion, re-run because the suite grew by 76 tests since the last check",
+    "date":  "2026-10-07",
+    "why":  "An assertion-free test is counted as coverage while checking nothing - the same shape as the filtered-stream assertions fixed last round. The suite gained 76 tests this session, so the earlier clean result needed re-running rather than re-citing.",
+    "method":  "Walked every @Test and @GameTest method body by brace depth and flagged those containing no assert, require, fail, rejects or assertThrows call.",
+    "rawResult":  "25 methods flagged",
+    "andAllTwentyFiveAreDelegationsRatherThanGaps":  {
+                                                         "checked":  "Each flagged body's called methods were extracted, and the callee inspected for assertions in its own file",
+                                                         "examples":  [
+                                                                          "MulDivFastPathTest.integerFastPathAndWideFallbackMatchIndependentFloorDivision loops over edge values and random inputs calling a private verify(a,b,d) that asserts",
+                                                                          "LootResourceTest's four flagged methods each call a private chest(name, min, max, items) helper that asserts weights and counts",
+                                                                          "CurvedGateRegressionTests and CurvedSiteMatrixTests are one-line wrappers delegating to AdjacentComponentMatrixTests.curvedGateRegression and curvedHeightSitePairs",
+                                                                          "FringeOwnerCoverageTests delegates to a ProductionPipeline path, HydroBoundaryRegressionTests to touchingNarrowWaterRegression",
+                                                                          "WallArchPreparationGameTests delegates through its fixture builder, which is the same class whose other cases assert directly"
+                                                                      ],
+                                                         "theHeaviestCallee":  "AdjacentComponentMatrixTests holds 158 assertion statements and is the target of several of these wrappers, which is why its wrappers look bare"
+                                                     },
+    "conclusion":  "No test in the suite is assertion-free. The flagged set is a delegation pattern: thin named cases that exist so each matrix or helper appears as a discrete, individually reported test.",
+    "whyThePatternIsReasonable":  "It gives the failure output a meaningful test name rather than one matrix case reporting under a generic method, at the cost that reading a single file no longer shows what is checked.",
+    "whatThisRoundsOut":  "Together with the trivially-true assertion search, which found nothing, and the filtered-stream fix, the suite now has no known way for a test to be counted while checking nothing.",
+    "head":  "25afd0c"
+}
