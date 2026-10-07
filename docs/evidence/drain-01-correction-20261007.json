@@ -1,0 +1,20 @@
+{
+    "check":  "correct my own round-94 conclusion about S1C-DRAIN-01, which I was about to propagate into a delivered document",
+    "date":  "2026-10-07",
+    "whatIConcludedAtRound94":  "The specific symptom the item names no longer reproduces: the newest available STOPPING snapshot shows all counters at zero, and the documents still calling it OPEN predate the close-then-export ordering.",
+    "whyThatWasTooStrong":  {
+                                "theSnapshotComesFromAFailedRun":  "The 2026-10-06 snapshot I cited records state failed true and closed true, with the failure 'creation token required for history'.",
+                                "whyThatUnderminesIt":  "A run that fails performs a full teardown, and teardown zeroes the counters by construction. So an all-zero snapshot from a failed run says nothing about whether the drain completes correctly on a successful one - which is exactly the case the item is about.",
+                                "whatWouldActuallySettleIt":  "A STOPPING snapshot from a run that reached its goal and shut down normally."
+                            },
+    "theProjectHadAlreadyReasonedThisOut":  {
+                                                "source":  "docs/S1C-OwnerCoverage-A+C状态.md line 53",
+                                                "text":  "The item stays OPEN: this STOPPING ended with flights, admitted and leases all zero, but this run ended through a validation failure and a watchdog, so it cannot be used to close the existing drain gap.",
+                                                "significance":  "The same observation I made had already been considered and explicitly declined as insufficient. It is written down, which is why the OPEN status persisted rather than being quietly closed at the time."
+                                            },
+    "whatIWasAboutToDo":  "I opened preview-status.md intending to correct its line reading that S1C-DRAIN-01 continues OPEN, on the strength of my round-94 file. That would have propagated my error into a delivered document and contradicted the project's own reasoning.",
+    "whatSurvivesFromRound94":  "The definition of the item - STOPPING-time non-zero flights and leases - and the finding that WorldServices now runs close before export so the snapshot is taken after the maps are cleared. Both remain accurate and useful. What does not survive is the claim that this closes the item.",
+    "lesson":  "An all-zero counter after a failure is not evidence of correct draining; it is evidence that teardown ran. Distinguishing 'the mechanism works' from 'the failure path cleaned up' needs the run to have succeeded, and I read a zero without asking which path produced it.",
+    "previewStatusIsCorrect":  "Its line stands. No edit is needed, and the reconnaissance that produced this correction was worth more than the edit would have been.",
+    "head":  "10fb7e8"
+}
