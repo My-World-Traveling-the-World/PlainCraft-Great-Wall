@@ -30,9 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Command/diagnostics S5 tests. DiagnosticExporter does not exist in the source tree yet
- * (the {@code command} package is spec-planned only), so the range/path half is asserted against
- * the pure-IO confinement primitives it would reuse, and the payload half against DebugPayload
+ * Command/diagnostics S5 tests. These assert the range/path half against
+ * the pure-IO confinement primitives DiagnosticExporter reuses, and the payload half against DebugPayload
  * directly (Minecraft is on the test classpath — see diagnostics/DebugPayloadTest).
  */
 class DiagnosticsTest {
