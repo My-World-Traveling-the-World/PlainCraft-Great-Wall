@@ -1,0 +1,20 @@
+{
+    "check":  "could the integration matrix be run by passing a profile flag",
+    "date":  "2026-10-07",
+    "question":  "integration-matrix is NOT_RUN with the reason that smokeProfile cannot substitute for the real pack. That is the kind of claim that could also be an excuse, so it was tested by reading what profile actually controls.",
+    "profileControls":  [
+                            "validation rules, restricting which fixture may be combined with which profile (lines 14, 34, 38, 42-43, 45, 124-125)",
+                            "the expected adapter string passed to the fixture (line 73)",
+                            "the run directory path build/run/serverSmoke/{profile}/{runId} (line 18)",
+                            "the heap size, 8G for pack-opencl and 4G otherwise (line 136)",
+                            "the smoke.profile property the fixture uses to check it was selected deliberately"
+                        ],
+    "profileDoesNotControl":  "Which mods are loaded. No modImplementation, modRuntime or classpath line in the file refers to profile.",
+    "evidence":  [
+                     "All five uses are validation rules, an expected-adapter string, the run directory path, the heap size, and a smoke.profile property for the fixture's own self-check. The expected-adapter one is the giveaway: it sets an expectation rather than causing a load.",
+                     "The four compile and runtime classpath lines in the file are all source-set wiring at lines 4, 5, 9 and 10, with no reference to profile."
+                 ],
+    "conclusion":  "The consequence is that -PsmokeProfile=tectonic would change the expected adapter and the run directory while loading no Tectonic. A strict assertion would then fail, and a lax one would pass against a world Tectonic never touched. Neither is verification, so the NOT_RUN classification is correct rather than a gap that could be closed by passing a flag.",
+    "independentlyCorroborated":  "The live stress header lists the loaded mods as fabricloader, mixinextras, plaincraft_great_wall and the smoke harness, with no tectonic, c2me or opencl - which is what the profile mechanism would produce either way.",
+    "head":  "11a09ce"
+}
