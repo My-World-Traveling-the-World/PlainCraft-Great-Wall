@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.persistence.HistoryIndexTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-07T21:57:37.485Z" hostname="CAIMEO" time="0.278">
+  <properties/>
+  <testcase name="missingCompleteBadHashAndWrongLengthAreNotAbsence()" classname="local.plaincraft.greatwall.persistence.HistoryIndexTest" time="0.019"/>
+  <testcase name="unsortedLeavesOverlapsFalseRangesAndWrongLevelsAreCorrupt()" classname="local.plaincraft.greatwall.persistence.HistoryIndexTest" time="0.071"/>
+  <testcase name="pathsCannotEscapeOrUseAliases()" classname="local.plaincraft.greatwall.persistence.HistoryIndexTest" time="0.002"/>
+  <testcase name="emptyTreeHasNoFileAndByteSortedKeysStayExact()" classname="local.plaincraft.greatwall.persistence.HistoryIndexTest" time="0.016"/>
+  <testcase name="longKeysSplitInternalPagesByBytesAndSeekSkipsEarlierLeaves()" classname="local.plaincraft.greatwall.persistence.HistoryIndexTest" time="0.168"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

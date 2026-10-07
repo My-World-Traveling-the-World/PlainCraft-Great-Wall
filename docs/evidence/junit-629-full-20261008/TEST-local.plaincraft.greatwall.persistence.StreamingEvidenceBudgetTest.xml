@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-07T21:57:59.578Z" hostname="CAIMEO" time="1.095">
+  <properties/>
+  <testcase name="exitCertificateBytesIncludeLegacyModifiedUtfAndCapFootprints()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.01"/>
+  <testcase name="absentReadsLeaveNoPathHashOrWrapperCharges()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.004"/>
+  <testcase name="persistenceStillRejectsMapKeysThatCollideAfterLegacyUtf8Replacement()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.003"/>
+  <testcase name="tileForecastCoversDecodedRetainedAllowanceEvenForTinyPalettes()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.012"/>
+  <testcase name="planDecodeRetainsExactlyTheReturnedObjectGraph()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.003"/>
+  <testcase name="t0StreamingPersistenceAndReadKeepStableHashAndNoScratch()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.177"/>
+  <testcase name="componentAndPlanHashesMatchIndependentLegacyBytes()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.005"/>
+  <testcase name="metadataForecastCoversProtectedPointRetainedAllowance()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.016"/>
+  <testcase name="malformedDecodeCanRetryInsideTheSameArenaWithoutAccumulation()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.005"/>
+  <testcase name="metadataBytesAndStreamingHashMatchIndependentLegacyProtocol()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.005"/>
+  <testcase name="largeComponentHashDoesNotRequirePayloadSizedCapacity()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.38"/>
+  <testcase name="repeatedExitProofVerificationReleasesEachCertificateScratch()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.087"/>
+  <testcase name="dimensionValidationFailureDoesNotRetainDecodedResult()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.003"/>
+  <testcase name="repeatedLargePlanPersistenceUsesBoundedScratchAndNeverOverwrites()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.373"/>
+  <testcase name="storeReadRetainsOnlyOptionalAndDecodedPlanNotPayloadBytes()" classname="local.plaincraft.greatwall.persistence.StreamingEvidenceBudgetTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,18 @@
+{
+    "check":  "re-run the full JUnit suite to confirm the two assertion guards added this session did not break anything, and archive the results before they can be overwritten again",
+    "date":  "2026-10-08",
+    "why":  "Two rounds before this one, two filtered spot-check runs overwrote the full JUnit results - 103 XML files covering 629 tests became one file covering two. That loss is recoverable by re-running the suite, which takes about 2 minutes 41 seconds, and doing it now both re-establishes the evidence and confirms the guards are harmless.",
+    "result":  {
+                   "wallClock":  "161 seconds",
+                   "xmlFiles":  103,
+                   "tests":  629,
+                   "failures":  0,
+                   "errors":  0,
+                   "skipped":  0
+               },
+    "theTwoEditedClassesPass":  "GateCapTest reports 5 tests and WallDecayTest 2, both with zero failures and zero errors, so the non-empty guards added to their filtered-stream assertions hold against the real fixtures rather than only compiling.",
+    "archivedImmediately":  "Copied all 103 XML files to docs/evidence/junit-629-full-20261008/ and re-counted there: 629 tests, zero failures. Archiving before anything else touches build/ is the point - the previous loss happened because the results lived only in build/.",
+    "whatThisRestores":  "The per-class numbers that round 163 recorded but could no longer be re-derived. A reader can now check any class's count and outcome directly.",
+    "whatItAlsoSettles":  "That this session's source edits - two comment corrections and two assertion guards - left the suite green, which the closing sequence would otherwise discover during or after the GameTest run.",
+    "head":  "e97b21d"
+}

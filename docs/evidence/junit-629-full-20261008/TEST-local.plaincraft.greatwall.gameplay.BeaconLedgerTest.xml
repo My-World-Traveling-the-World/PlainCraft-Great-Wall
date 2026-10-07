@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.gameplay.BeaconLedgerTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-07T21:57:19.615Z" hostname="CAIMEO" time="0.012">
+  <properties/>
+  <testcase name="anAcceptedIgnitionCommitsAndCounts()" classname="local.plaincraft.greatwall.gameplay.BeaconLedgerTest" time="0.007"/>
+  <testcase name="aFailedAppendDefersWithoutCounting()" classname="local.plaincraft.greatwall.gameplay.BeaconLedgerTest" time="0.001"/>
+  <testcase name="theCountOnlyMovesOnADurableReceipt()" classname="local.plaincraft.greatwall.gameplay.BeaconLedgerTest" time="0.0"/>
+  <testcase name="theSameBeaconIsNeverCreditedTwice()" classname="local.plaincraft.greatwall.gameplay.BeaconLedgerTest" time="0.001"/>
+  <testcase name="aConcurrentSecondCreditForTheSameBeaconIsReportedNotDuplicated()" classname="local.plaincraft.greatwall.gameplay.BeaconLedgerTest" time="0.0"/>
+  <testcase name="anUnreadBeaconReportsUnknownRatherThanUncredited()" classname="local.plaincraft.greatwall.gameplay.BeaconLedgerTest" time="0.001"/>
+  <testcase name="aBeaconFromAnotherWallIsRefused()" classname="local.plaincraft.greatwall.gameplay.BeaconLedgerTest" time="0.0"/>
+  <testcase name="closingRefusesFurtherCreditsAndSettlesInFlightOnes()" classname="local.plaincraft.greatwall.gameplay.BeaconLedgerTest" time="0.0"/>
+  <testcase name="anIgnitionThatWasNotAnAcceptedLitPitIsRefused()" classname="local.plaincraft.greatwall.gameplay.BeaconLedgerTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
