@@ -1,0 +1,18 @@
+{
+    "check":  "is runWallPreview actually runnable, so the human visual check can be performed",
+    "date":  "2026-10-07",
+    "why":  "The preview path exists, but prepareWallPreview refuses to download assets and throws if the local index or any object is missing. A path that cannot start is no path, so its preconditions were checked.",
+    "preconditions":  {
+                          "assetIndexExists":  true,
+                          "assetIndexPath":  "%USERPROFILE%/.gradle/caches/fabric-loom/assets/indexes/1.21.1-17.json",
+                          "assetIndexSizeKB":  439,
+                          "assetsChecked":  3911,
+                          "assetsMissing":  0,
+                          "assetsWithWrongSize":  0
+                      },
+    "verdict":  "runnable",
+    "interpretation":  "Every object the index declares is present at the declared size, so the task's own integrity checks will pass and it will not need the network it is forbidden to use.",
+    "whatThisUnblocks":  "The human visual check that the real-machine checklist lists as not automatable. gradlew runWallPreview starts a real client against an isolated directory with the fixture enabled, which is how a person can look at a generating wall.",
+    "caveat":  "It remains a preview rather than acceptance: the directory stays inside build/run, production stays false, and the manifest labels itself manual-client-preview-not-acceptance.",
+    "head":  "dcfc62a"
+}
