@@ -99,7 +99,7 @@
       "expected": "same frozen gate transaction; no wider hole; no third-party block chiseling",
       "status": "PASS",
       "log": "build/reports/gametest/ (rebuilt on each full run; see evidenceNote)",
-      "actual": "NegotiatedGateGameTests covers roadBeforeWallUsesSameFrozenGate, differentRoadsShareNegotiatedCell and noCandidatePreservesProtectedGap; GateFreezeSolverTest and RoadWeaverAllowlistTest cover the solver and the interop allowlist. All passed in the full run. The missing GateFreezeSolver was itself a real defect found during red-teaming (M3).",
+      "actual": "NegotiatedGateGameTests covers roadBeforeWallUsesSameFrozenGate, differentRoadsShareNegotiatedCell and noCandidatePreservesProtectedGap; GateFreezeSolverTest and RoadWeaverAllowlistTest cover the solver and the interop allowlist. All passed in the full run. The missing GateFreezeSolver was itself a real defect found during red-teaming (M3). Supporting coverage added 2026-10-07: WallObstacleGeometryTest pins the continuous XZ geometry that decides whether a road may pass a wall (long edges and sparse polylines cannot skip an obstacle), and SiteRuntimeIndexGameTests pins the index every spawn query reads. Neither had any test before.",
       "startedUtc": "2026-10-06T18:01:00Z",
       "finishedUtc": "2026-10-06T21:15:00Z"
     },
