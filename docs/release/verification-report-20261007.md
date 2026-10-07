@@ -24,13 +24,13 @@
 | ⑤ | S5 压力 profile（1 小时） | **passed=true** | 1 h | `build/s5-stress-1h-evidence/` |
 | ⑤ | S5 压力 profile（24 小时） | **运行中** | — | `build/s5-stress-24h2.log` |
 | ⑥ | 5 源集编译 | **全绿，797 个 class** | 12 s | — |
-| — | JUnit 单测 | **617/617，强制重跑全绿** | 3 m 18 s | `build/test-results/test/` |
+| — | JUnit 单测 | **628/628，强制重跑全绿** | 2 m 31 s | `build/test-results/test/` |
 
 **计数随时间推移的变化**（本会话内新增测试所致，均为增长而非替换）：
 
 | 项 | 会话初 | 现在 |
 |---|---|---|
-| JUnit 单测 | 562 | **617** |
+| JUnit 单测 | 562 | **628** |
 | GameTest 声明 | 119 | **129**（待全量重跑确认） |
 | 5 源集 class | 782 | **797**（main 469 / test 181 / gametest 88 / serverSmoke 49 / clientSmoke 6，另含内部类） |
 
@@ -179,7 +179,7 @@ watchdog 为 0 —— 泄漏修复有效。磁盘亦收敛（首轮填充约 8.8
 
 ---
 
-## 1b. 本会话补齐的零覆盖类（56 个新测试）
+## 1b. 本会话补齐的零覆盖类（67 个新测试）
 
 审计发现 `src/main` 有 41 个类在 `src/test` + `src/gametest` 中**零引用**。mixin 只能在真机
 走到，但下列**非 mixin 逻辑类**是可自动化的真实缺口，本会话已逐个补齐：
@@ -194,10 +194,12 @@ watchdog 为 0 —— 泄漏修复有效。磁盘亦收敛（首轮填充约 8.8
 | `ComponentComposer` | 50 | 单测 ×10 | 失败是**静默**的：外来 child 会被拼成看似合理的组件 |
 | `SiteRuntimeIndex` | 170 | GameTest ×7 | 每个刷怪查询都经过它；错误答案是静默的 |
 | `LootInitializer.assignment` | 89 | 单测 ×9 | 承诺「可复现、战利品箱不会在重载后补货」；破坏时会静默补货 |
+| `BarrierFixtureLayout` | 39 | 单测 ×11 | `round()` 与 `owners()` 若失去互逆，S0 轮次会操作别人的区块**却仍显示已运行** |
 
-**仍未覆盖的同类缺口**（按价值排序）：`IgnitionService`（117 行）、`FeaturesLease`、
-`StructureLease`、`FtbIntegration`、`WallSpawnerGuard`（只被 mixin 调用 → 只能真机）、
-`C2meTerrainEngine`（需 C2ME 环境）。
+**仍未覆盖的同类缺口**（按价值排序）：`IgnitionService`（117 行 —— 三个入口都需要
+`ServerPlayer`，而现有测试基线**从不构造玩家**，补测它需要先新建玩家夹具这一新基建，
+成本明显高于上表各类）、`FeaturesLease`、`StructureLease`、`FtbIntegration`、
+`WallSpawnerGuard`（只被 mixin 调用 → 只能真机）、`C2meTerrainEngine`（需 C2ME 环境）。
 
 ---
 
