@@ -53,7 +53,7 @@
 | ④ | S5 故障矩阵 halt | **180/180 通过** | — | `docs/evidence/s5/s5-faults-halt-20261006-623a795f/` |
 | ⑤ | S5 压力 profile（1 小时） | **passed=true** | 1 h | `build/s5-stress-1h-evidence/` |
 | ⑤ | S5 压力 profile（24 小时） | **运行中** | — | `build/s5-stress-24h2.log` |
-| ⑥ | **6** 源集编译 | **全绿，798 个 class**（强制重编译 26 s） | 26 s | `build/classes/java/`，每次运行重建 |
+| ⑥ | **6** 源集编译 | **全绿，798 个 class**（强制重编译 33 s） | 33 s | `docs/evidence/compile/five-source-sets-pass-20261007.json` |
 | — | JUnit 单测 | **629/629，强制重跑全绿** | 2 m 20 s | `build/test-results/test/` |
 
 **计数随时间推移的变化**（本会话内新增测试所致，均为增长而非替换）：
