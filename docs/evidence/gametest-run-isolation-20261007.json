@@ -1,0 +1,22 @@
+{
+    "check":  "whether runGameTest can disturb the 24h evidence, and whether the closing order already protects the GameTest report",
+    "date":  "2026-10-07",
+    "why":  "The closing sequence runs runGameTest after the profile ends but before Test-S5Release. If that run shared a directory with the profile, or if its own report were left in build/ to be destroyed by the later clean, a step would silently produce nothing.",
+    "directoryIsolation":  {
+                               "gameTest":  "build\\run\\gameTest",
+                               "stress":  "build\\run\\serverSmoke\\vanilla\\s5stress24h20261007084723",
+                               "sharedPrefix":  "build\\run",
+                               "divergence":  "the third path segment, gameTest against serverSmoke",
+                               "verdict":  "Neither contains the other, so the GameTest run cannot overwrite or remove the profile's data.",
+                               "alsoRelevant":  "clearRunDirectory is false inside the loom gameTest configuration, so the GameTest run does not wipe its own directory either - which matches the earlier finding that the residual world is harmless because each case runs in its own template structure."
+                           },
+    "theGameTestReportIsAtRiskAndTheOrderHandlesIt":  {
+                                                          "path":  "build/reports/gametest/results.xml, relative to the run directory as ../../reports/gametest/results.xml",
+                                                          "hazard":  "It lives under build/, so Test-S5Release's clean deletes it twice.",
+                                                          "protection":  "The closing procedure already copies it in step 3, before the clean in step 4. That ordering was written from the profile's case and turns out to cover this one too."
+                                                      },
+    "switchingTasksCompilesNothingExtra":  "A dry run earlier showed the GameTest prerequisites are compileJava through gametestClasses plus the loom launch tasks. With the tree already compiled those are up-to-date, so the run does not spend time recompiling before it starts.",
+    "copyingCostIsNegligible":  "The stress-reports directory is 4.79 MB, so the step-2 copy into docs/evidence costs essentially nothing.",
+    "conclusion":  "The two runs are isolated by directory, the GameTest report is copied out before anything deletes it, and the copy is small. No step in the closing sequence silently produces nothing.",
+    "head":  "59cdaf4"
+}
