@@ -1,0 +1,20 @@
+{
+    "check":  "what header.json's modSHA actually identifies, since it does not match any jar",
+    "date":  "2026-10-08",
+    "why":  "Step 2 archives header.json as evidence. A hash field that does not match the deployed jar looks like a mismatch until you know what it hashes - and a reader comparing modSHA against the jar SHA would conclude the wrong jar was tested.",
+    "whatItIs":  "A fingerprint of the loaded mod set, not a jar checksum. StressController writes it from modSetSha(), which takes RuntimeVersions.capture(), maps each entry to id=version, sorts, joins with newlines and SHA-256s the UTF-8 bytes.",
+    "soItShouldReproduceFromTheSameFile":  "header.json carries both the mods array and the hash, so the hash can be recomputed from the file itself.",
+    "itReproducesExactly":  {
+                                "recorded":  "cadb374e73a6d909ef5c3a5d125fea883d2f5b31f8a8dac544bd726b3e5cbac7",
+                                "recomputed":  "cadb374e73a6d909ef5c3a5d125fea883d2f5b31f8a8dac544bd726b3e5cbac7",
+                                "method":  "Sorting the 44 mod entries with StringComparer.Ordinal, joining with LF and hashing the UTF-8 bytes"
+                            },
+    "theTrapInReproducingIt":  {
+                                   "firstAttempt":  "Sorted with PowerShell's Sort-Object, which is culture-aware, and got dc2ce194... instead",
+                                   "secondAttempt":  "Forced explicit LF joining to rule out line-ending differences - same wrong value, so line endings were not the cause",
+                                   "thirdAttempt":  "Sorted with StringComparer.Ordinal to match Java's String.sorted(), which gave the recorded value exactly",
+                                   "whyItMattersBeyondThisCheck":  "Culture-aware sorting orders strings differently from ordinal sorting for some inputs, so any hash over a sorted list is only reproducible if both sides agree on the comparator. Java's sorted() is ordinal; PowerShell's Sort-Object is not."
+                               },
+    "theJarQuestionResolved":  "The main jar in the study's mods directory is plaincraft-great-wall-0.1.0-s1c-preview.2.jar with SHA 80506fe5..., identical to build/libs. A separate -server-smoke.jar sits beside it at 4cb3700e.... Neither is what modSHA records, and neither should be - modSHA is not about jars.",
+    "head":  "535e50f"
+}
