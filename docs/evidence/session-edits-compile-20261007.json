@@ -1,0 +1,24 @@
+{
+    "check":  "the session's source edits compile, verified before the run that needs them",
+    "date":  "2026-10-07",
+    "risk":  "Two source changes were made during the 24h profile and deliberately left uncompiled, to avoid disturbing the run. That meant a compile error introduced by them would not surface until after the profile finished - wasting the 20 remaining hours of waiting before the GameTest re-run and Test-S5Release.ps1, both of which compile these source sets.",
+    "resolved":  {
+                     "javaCompiles":  true,
+                     "command":  "gradlew compileServerSmokeJava, a javac-only step that never starts a server",
+                     "seconds":  11,
+                     "classFileRefreshed":  true,
+                     "stringsPresentInBytecode":  [
+                                                      "greatwall.stress.concurrency",
+                                                      "greatwall.stress.seed",
+                                                      "greatwall.stress.minutes",
+                                                      "must be 1, 2, 8 or 16"
+                                                  ],
+                     "note":  "Reading the class constant pool confirms the new property names and the validation message are present, so the forwarded concurrency and seed are actually read.",
+                     "gradleConfigures":  true,
+                     "negativeCase":  "gradlew help -PgreatwallStressSeed=99999 fails with the intended message: greatwallStressSeed=99999 does not match the world seed that server.properties will carry (s1cSeed=9282026)."
+                 },
+    "stressRunUnaffected":  true,
+    "stressNote":  "The profile holds classes loaded at startup, so recompiling the source set cannot change its behaviour; verified afterwards that refills and a zero watchdog count continued as before.",
+    "costOfChecking":  "11 seconds of javac, versus discovering the problem after a 20-hour wait. The step spawns no server, so it does not disturb the profile the way runGameTest would.",
+    "head":  "4a7b784"
+}
