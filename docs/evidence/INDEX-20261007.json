@@ -1,0 +1,120 @@
+{
+    "document":  "index of the evidence written during the 2026-10-07 automated-verification session",
+    "date":  "2026-10-07",
+    "purpose":  "The session wrote 22 small evidence files. This maps each to the claim it supports so a reader can find the right one instead of opening all of them.",
+    "grouped":  {
+                    "goal item 1 - release gate":  [
+                                                       {
+                                                           "file":  "release-gate-check3-reproduced-20261007.json",
+                                                           "claim":  "the gate's jar-contents check holds, reproduced by hand: all eight forbidden patterns absent from 545 entries"
+                                                       },
+                                                       {
+                                                           "file":  "dependency-lock-and-reproducibility-20261007.json",
+                                                           "claim":  "verification-metadata.xml untouched (273 components, 605 artifacts) and the two settings that make the jar reproducible are present"
+                                                       }
+                                                   ],
+                    "goal item 2 - GameTest":  [
+                                                   {
+                                                       "file":  "gametest/suite-inventory-before-full-run-20261007.json",
+                                                       "claim":  "129 methods across 34 classes, nothing unregistered, and why the 119 baseline is invalid"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-count-method-validated-20261007.json",
+                                                       "claim":  "the counting method reproduces Fabric's own count exactly (33) on a known subset"
+                                                   }
+                                               ],
+                    "goal item 3 - real-terrain traversal":  [
+                                                                 {
+                                                                     "file":  "s1c/real-wall-traversal-pass-20261007.json",
+                                                                     "claim":  "REAL_WALL_TRAVERSAL_PASS owners=505, red-line counters clean"
+                                                                 }
+                                                             ],
+                    "goal item 4 - fault matrix":  [
+                                                       {
+                                                           "file":  "s5/fault-matrix-reverification-20261007.json",
+                                                           "claim":  "180 records per mode, exit codes 1 and 137, all 18 points covered, sets mutually distinct"
+                                                       }
+                                                   ],
+                    "goal item 5 - stress profile":  [
+                                                         {
+                                                             "file":  "s5/stress-24h-refill-liveness-20261007.json",
+                                                             "claim":  "refill is unbounded by design and six refills show the window counting down, so the run will not drain early"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-drain-path-analysis-20261007.json",
+                                                             "claim":  "the drain that killed the previous attempt now has a 600s window and cannot block the server thread"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-24h-pass-conditions-20261007.json",
+                                                             "claim":  "three of the four pass conditions already hold; durationMet is pending"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-24h-health-at-hour3-8.json",
+                                                             "claim":  "mid-run snapshot; log growth cannot lose the evidence"
+                                                         },
+                                                         {
+                                                             "file":  "s5/slice-timing-scope-20261007.json",
+                                                             "claim":  "slice timing mechanism works (a 56.9ms call captured with its stack); the N/A gauges are scope, not absence"
+                                                         },
+                                                         {
+                                                             "file":  "s5/disk-budget-and-reclaimable-logs-20261007.json",
+                                                             "claim":  "38 GB reclaimable after the run; the cited log is already transcribed"
+                                                         }
+                                                     ],
+                    "goal item 6 - five source sets":  [
+                                                           {
+                                                               "file":  "compile/five-source-sets-pass-20261007.json",
+                                                               "claim":  "forced recompile green, 794 class files"
+                                                           },
+                                                           {
+                                                               "file":  "clientsmoke-source-set-20261007.json",
+                                                               "claim":  "clientSmoke content, and the checklist that structurally cannot record an automated visual pass"
+                                                           }
+                                                       ],
+                    "real-machine readiness":  [
+                                                   {
+                                                       "file":  "deployment-matches-build-20261007.json",
+                                                       "claim":  "the installed jar is byte-identical to the verified build"
+                                                   },
+                                                   {
+                                                       "file":  "deployment-environment-loadable-20261007.json",
+                                                       "claim":  "no duplicate mod id among 522 jars; every pinned dependency present at the pinned version"
+                                                   },
+                                                   {
+                                                       "file":  "roadweaver-interop-gate-real-machine-20261007.json",
+                                                       "claim":  "the allowlisted SHA matches the deployed RoadWeaver jar and its interop ABI exposes the four entry points called"
+                                                   },
+                                                   {
+                                                       "file":  "../release/real-machine-checklist-20261007.json",
+                                                       "claim":  "the consolidated list of what still needs a machine or a human"
+                                                   }
+                                               ],
+                    "integrity and hygiene checks":  [
+                                                         {
+                                                             "file":  "three-red-lines-reverified-20261007.json",
+                                                             "claim":  "all three architectural red lines hold"
+                                                         },
+                                                         {
+                                                             "file":  "no-vacuous-or-skipped-tests-20261007.json",
+                                                             "claim":  "nothing disabled, nothing unconditional, nothing swallowed"
+                                                         },
+                                                         {
+                                                             "file":  "shipping-readiness-scan-20261007.json",
+                                                             "claim":  "zero unfinished markers; five empty catches all justified"
+                                                         },
+                                                         {
+                                                             "file":  "ledger-timeline-integrity-20261007.json",
+                                                             "claim":  "the ledger's timestamps order correctly and the fault matrix's duration is plausible"
+                                                         },
+                                                         {
+                                                             "file":  "no-lang-file-by-design-20261007.json",
+                                                             "claim":  "no lang file is needed: no registered content and no translatable components"
+                                                         },
+                                                         {
+                                                             "file":  "deployment-documents-audit-20261007.json",
+                                                             "claim":  "which of the four deployment documents apply, and the three README errors fixed"
+                                                         }
+                                                     ]
+                },
+    "head":  "bfb97b5"
+}
