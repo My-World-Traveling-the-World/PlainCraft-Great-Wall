@@ -32,7 +32,7 @@
 | ⑤ | 压力 profile | 排空等待阻塞 server 线程 → 单 tick 120 秒 → 被杀 | 早期实现用 stop().get() 同步等待。现改为非阻塞轮询 draining.isDone() |
 | ⑤ | 压力 profile | 5 分钟固定超时切断长压 | unServerSmokeProduction 的超时未考虑 stress profile。现按 stress 时长 + 20 分钟推导 |
 | ⑤ | 压力 profile | 目录预建致 profile 无法启动 | StressController 要求报告目录**不存在**（防覆盖），而 StressFixture 预建了它。改为只建父目录 |
-| ⑥ | 5 源集编译 | 无 | 未出现过失败 |
+| ⑥ | 5 源集编译（目标原文如此；实为 6 个源集，见下） | 无 | 未出现过失败 |
 | — | JUnit 单测 | 无 | 未出现过失败（585 → 629 全程全绿） |
 
 **四类反复出现的模式**（详见第 3 节）：①**门禁阈值过紧，把成功报成失败**（出现 4 次）；
@@ -49,7 +49,7 @@
 | ④ | S5 故障矩阵 halt | **180/180 通过** | — | `docs/evidence/s5/s5-faults-halt-20261006-623a795f/` |
 | ⑤ | S5 压力 profile（1 小时） | **passed=true** | 1 h | `build/s5-stress-1h-evidence/` |
 | ⑤ | S5 压力 profile（24 小时） | **运行中** | — | `build/s5-stress-24h2.log` |
-| ⑥ | 5 源集编译 | **全绿，794 个 class**（强制重编译 26 s） | 26 s | `build/classes/java/`，每次运行重建 |
+| ⑥ | **6** 源集编译 | **全绿，798 个 class**（强制重编译 26 s） | 26 s | `build/classes/java/`，每次运行重建 |
 | — | JUnit 单测 | **629/629，强制重跑全绿** | 2 m 20 s | `build/test-results/test/` |
 
 **计数随时间推移的变化**（本会话内新增测试所致，均为增长而非替换）：
@@ -58,7 +58,7 @@
 |---|---|---|
 | JUnit 单测 | 562 | **629** |
 | GameTest 声明 | 119 | **129**（待全量重跑确认） |
-| 5 源集 class | 782 | **794**（main 469 / test 182 / gametest 88 / serverSmoke 49 / clientSmoke 6；**此数为 `*.class` 文件总数，已含内部类**） |
+| 源集 class | 782 | **798**（main 469 / test 182 / gametest 88 / serverSmoke 49 / clientSmoke 6 / client 4；**此数为 `*.class` 文件总数，已含内部类**） |
 
 > 上表的 794 是逐源集实测值（`--rerun-tasks` 强制重编译后统计）。此前写的 797 有两处错：
 > 一是把「另含内部类」当成额外增量（实际 794 本身就含内部类），二是 `test` 记成 181
