@@ -1,0 +1,20 @@
+{
+    "check":  "is the durationMet tolerance load-bearing, and what tick rate is the profile running at",
+    "date":  "2026-10-07",
+    "durationMetAnalysis":  {
+                                "drainStartsOnlyWhen":  "lastElapsedSeconds \u003e= durationSeconds, i.e. 86400, and there is exactly one such path in StressFixture.tick",
+                                "verdictRequires":  "lastElapsedSeconds \u003e= durationSeconds - 120, i.e. 86280",
+                                "consequence":  "Because the drain cannot start below 86400, durationMet is guaranteed true on every path that reaches the verdict without a failure. The 120-second tolerance cannot be exercised by the current structure.",
+                                "whyItStillBelongs":  "It is a guard against a future change to the drain condition rather than dead code, and the historical case shows why one is wanted: a 24h request was once on course to end at about 4.5h, which should fail durationMet - and would still do so, since 16200 is far below 86280."
+                            },
+    "tickRateFinding":  {
+                            "samplingTrigger":  "every 600 ticks, which is 30 seconds at the nominal 20 ticks per second",
+                            "observedSampleCount":  457,
+                            "observedElapsedHours":  4.53,
+                            "secondsPerSample":  35.7,
+                            "impliedTicksPerSecond":  17.1,
+                            "interpretation":  "The profile deliberately overloads the server, and the shortfall shows up here as a measurable figure: 600 ticks take about 35.7 seconds rather than 30, so the server is running at roughly 17 ticks per second. That is consistent with the Can't keep up warnings and with the class comment that the profile deliberately overloads the server.",
+                            "whyItDoesNotBreakTiming":  "The sample trigger uses tick counts while elapsedSeconds is read from System.nanoTime, so the interval stretches but the elapsed figure stays a true wall-clock measure. The verdict therefore compares real time against the requested window, not a tick-derived approximation."
+                        },
+    "head":  "5bafb32"
+}
