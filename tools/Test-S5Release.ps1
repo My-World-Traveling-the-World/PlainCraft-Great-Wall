@@ -105,8 +105,15 @@ $buildA = Invoke-GradleBuild 'build-a' @()
 $buildB = Invoke-GradleBuild 'build-b' @()
 
 # Compare the remapJar (plaincraft-great-wall-0.1.0.jar) SHA across the two builds.
-$remapA = @($buildA.jars | Where-Object { $_.name -like 'plaincraft-great-wall-*.jar' } | Sort-Object name)
-$remapB = @($buildB.jars | Where-Object { $_.name -like 'plaincraft-great-wall-*.jar' } | Sort-Object name)
+#
+# The main jar is selected by excluding the classifier jars rather than by taking the
+# first name in sort order. Sorting currently happens to put the main jar first, but only
+# because '.' precedes '-' under the default culture-aware comparison; that is an
+# accident of punctuation, not a property of the names, and it would silently start
+# hashing the sources jar if a classifier ever sorted earlier. Excluding what is not
+# wanted states the intent.
+$remapA = @($buildA.jars | Where-Object { $_.name -like 'plaincraft-great-wall-*.jar' -and $_.name -notlike '*-sources.jar' -and $_.name -notlike '*-dev.jar' } | Sort-Object name)
+$remapB = @($buildB.jars | Where-Object { $_.name -like 'plaincraft-great-wall-*.jar' -and $_.name -notlike '*-sources.jar' -and $_.name -notlike '*-dev.jar' } | Sort-Object name)
 $shaMatch = $false
 if ($remapA.Count -gt 0 -and $remapB.Count -gt 0) {
     $shaMatch = $remapA[0].sha256 -ceq $remapB[0].sha256
