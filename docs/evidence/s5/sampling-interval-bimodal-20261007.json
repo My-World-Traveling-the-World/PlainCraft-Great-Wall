@@ -1,0 +1,23 @@
+{
+    "check":  "the sampling interval stretched to 65 seconds on one reading, which needed explaining rather than noting",
+    "date":  "2026-10-07",
+    "why":  "The interval is nominally 600 ticks, about 30 seconds. A single 65-second gap could mean the server was falling behind, which precedes a stalled run, or it could be the profile's normal load oscillation. Distinguishing them matters because one is a warning and the other is the design.",
+    "whatTheDistributionShows":  {
+                                     "window":  "the last 40 samples",
+                                     "minimumSeconds":  27,
+                                     "maximumSeconds":  80,
+                                     "meanSeconds":  42,
+                                     "shape":  "bimodal: 24 samples at 27 to 31 seconds, and 15 stretched to 53 to 80 seconds",
+                                     "interpretation":  "Two regimes rather than a drift. The nominal regime means the server is keeping the 20 ticks per second pace; the stretched one means it is not, which is what a deliberately overloaded server does."
+                                 },
+    "theLagRateRisesButDoesNotDrift":  {
+                                           "fiveHourReading":  "168 events over 5.12 hours, 32.8 per hour",
+                                           "twelveHourReading":  "582 events over 12.4 hours, 47 per hour",
+                                           "naiveConclusion":  "The rate increased by 43 percent, which would suggest degradation.",
+                                           "segmentComparison":  "Segment 1 ran 42 per hour and segment 34 ran 42 per hour; segment 2 ran 71 and segment 35 ran 81. Fourteen hours apart, the same positions in the cycle give the same rates.",
+                                           "correctConclusion":  "The rate oscillates with the workload cycle rather than trending upward. The whole-run average differs between the two readings only because each covers a different mix of cycle phases."
+                                       },
+    "whyTheRefillCadenceIsTheStrongerSignal":  "Refill intervals stayed between 17 and 22 minutes across segments 31 to 36, the same band as segments 1 to 6. A server genuinely falling behind would slow its refills too; a flat refill cadence alongside an oscillating lag rate is steady state under load.",
+    "recordOfMyOwnCaution":  "This is the third time this session that a whole-window average disagreed with the segmented view, after the build-interference and sampling-cadence cases. The pattern is consistent: the average hides the cycle, and the cycle is the finding.",
+    "head":  "4c393a5"
+}
