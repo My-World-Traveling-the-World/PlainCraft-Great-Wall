@@ -1,0 +1,33 @@
+{
+    "check":  "24h pass conditions and checkpoint integrity (goal item 5)",
+    "date":  "2026-10-07",
+    "passFormula":  "passed = failure == null \u0026\u0026 completed \u003e 0 \u0026\u0026 !checkpoints.isEmpty() \u0026\u0026 durationMet",
+    "conditionStatusAtHour3_3":  {
+                                     "failureIsNull":  true,
+                                     "failureNote":  "No STRESS_STOP line yet, so no failure has been recorded; the run is still in its window.",
+                                     "completedGreaterThanZero":  true,
+                                     "completedChunks":  451355,
+                                     "checkpointsNotEmpty":  true,
+                                     "checkpointCount":  342,
+                                     "durationMet":  "pending",
+                                     "durationDetail":  "11911s of the required 86280s (86400 minus the 120s tolerance); about 20.7 hours remain."
+                                 },
+    "checkpointMechanism":  {
+                                "intervalSeconds":  35,
+                                "first":  "sample-000000.json at 0s",
+                                "last":  "sample-000341.json at 11911s",
+                                "note":  "Samples are written throughout rather than only at the end, so the run leaves a continuous record that survives a late crash."
+                            },
+    "timingSanity":  {
+                         "metric":  "worldgen.applyMs",
+                         "count":  451355,
+                         "matchesCompletedChunks":  true,
+                         "binSumEqualsCount":  true,
+                         "totalSeconds":  59030,
+                         "meanMs":  130.78,
+                         "maxSeconds":  14.96,
+                         "maxAsPercentOfWatchdog":  24.9,
+                         "interpretation":  "The histogram bins sum exactly to the recorded count, which is what makes the timing data trustworthy rather than decorative. The worst single chunk apply is 14.96s, about a quarter of the 60s watchdog line, so the margin is real even at this load."
+                     },
+    "head":  "fe4b758"
+}
