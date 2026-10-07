@@ -49,15 +49,6 @@
                                         "theRenameHistory":  "Verified across all eight gametest commits since the 10-03 run: seven are pure additions and only b90f5fc removed anything, so no other class hides a rename."
                                     },
     "stepCountNote":  "Seven steps. The archive step was inserted as step 4 after the JUnit results were overwritten during the session.",
-    "orderedSteps":  [
-                         "1. Confirm the profile ended and stress-report.json exists under the run's stress-reports directory",
-                         "2. Copy into docs/evidence/: stress-report.json, the whole samples directory, header.json, and build/s5-stress-24h2.log",
-                         "3. Run gradlew test runGameTest. Both are needed: they are independent tasks, and runGameTest writes only build/reports/gametest/results.xml while the JUnit results in build/test-results/test come from test alone. Verified with a dry run - the test task's dependency graph does not include runGameTest. Then copy build/reports/gametest/results.xml into docs/evidence/.",
-                         "4. Before anything else touches the build directory, copy the whole of build/test-results/test into docs/evidence/ as a dated archive. Gradle's test task clears and rewrites that directory, so any later filtered run - a spot check of one or two classes - destroys the full set. This step exists because that happened on 2026-10-07: two filtered runs replaced 103 XML files covering 629 tests with a single file covering 2, and no archived copy was complete enough to restore them.",
-                         "5. Only now run Test-S5Release.ps1 - its first gradle argument is clean, twice, which deletes build/ entirely",
-                         "6. Read execution.json rather than the exit status, since the version gate makes it throw",
-                         "7. Update the six-item table, the acceptance ledger and the evidence index"
-                     ],
     "theTwentyThreeNamesToConfirm":  {
                                          "note":  "Post-run verification should confirm these appear in results.xml, not just that the total is 129. A count alone cannot show a class was skipped while another gained cases.",
                                          "neverExecutedUnderAnyName":  [
@@ -113,5 +104,14 @@
                           "step5StressVerdict":  "Do NOT run tools/Test-S5Stress.ps1 here. It is a launcher, not a verifier: it starts gradlew runS5Stress with -Hours defaulting to 24 and blocks until that profile ends, so using it at closing time would begin a second 24-hour run and contend with the first. Instead read the report the finished profile wrote, at build/run/serverSmoke/vanilla/s5stress24h20261007084723/build/stress-reports/run-*/stress-report.json, and judge it by the same rule the script uses: passed requires passed==true and durationMet==true in that report, since the fixture halts with server.halt(false) and therefore exits 0 even when the profile failed.",
                           "warningAboutStep5":  "If Test-S5Stress.ps1 is ever run deliberately, its TestRoot must include serverSmoke\\vanilla and must sit under build\\run; a path like build\\run\\s5stress24h... passes the guard but holds no stress-reports directory, which yields a fail-closed passed=false that looks like a profile failure.",
                           "warningAboutStep4":  "Test-S5Release throws by design because the version gate fails; read execution.json for remapJarShaMatch rather than the exit status."
-                      }
+                      },
+    "orderedSteps":  [
+                         "1. Confirm the profile ended, and confirm it by a test rather than by reading the time. stress-report.json appearing under the run's stress-reports directory is the signal, but the decisive check is that build/s5-stress-24h2.log can be opened exclusively - the running profile holds it locked, so a successful exclusive open proves the writer is gone. Copying the log while it is still locked fails, and this is the step where that would be discovered.",
+                         "2. Copy into docs/evidence/: stress-report.json, the whole samples directory, header.json, and build/s5-stress-24h2.log",
+                         "3. Run gradlew test runGameTest. Both are needed: they are independent tasks, and runGameTest writes only build/reports/gametest/results.xml while the JUnit results in build/test-results/test come from test alone. Verified with a dry run - the test task's dependency graph does not include runGameTest. Then copy build/reports/gametest/results.xml into docs/evidence/.",
+                         "4. Before anything else touches the build directory, copy the whole of build/test-results/test into docs/evidence/ as a dated archive. Gradle's test task clears and rewrites that directory, so any later filtered run - a spot check of one or two classes - destroys the full set. This step exists because that happened on 2026-10-07: two filtered runs replaced 103 XML files covering 629 tests with a single file covering 2, and no archived copy was complete enough to restore them.",
+                         "5. Only now run Test-S5Release.ps1 - its first gradle argument is clean, twice, which deletes build/ entirely",
+                         "6. Read execution.json rather than the exit status, since the version gate makes it throw",
+                         "7. Update the six-item table, the acceptance ledger and the evidence index"
+                     ]
 }
