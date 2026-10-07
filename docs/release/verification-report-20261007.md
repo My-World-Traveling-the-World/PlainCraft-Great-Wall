@@ -2,7 +2,11 @@
 
 - 日期：2026-10-07
 - 工程：`plaincraft-great-wall`，分支 `main`
-- HEAD：`953ac85`（本次会话共 19 个提交）
+- HEAD：**按需查询**（见本仓库 `git log -1`；本报告刻意不写死哈希，避免过时）。
+- 报告首次定稿于 `953ac85`（计时为本次会话第 19 个提交）；其后文档与测试持续增补，
+  定稿时已至 `25a99a8`（第 163 个提交）。**六项验证的结论不随这些提交改变** —— 后 144 个提交
+  只改动 `docs/`、`src/test`、`src/gametest`、`src/serverSmoke` 与 `tools/`，`src/main` 自
+  `6e67cc2` 起零改动，故已发货 jar 的 SHA 亦不变。
 - 部署 jar：`plaincraft-great-wall-0.1.0-s1c-preview.2.jar`
 - jar SHA-256：`80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456`（`build/libs` 与客户端 mods 目录一致）
 - 机器：AMD Ryzen 7 5700X（8C/16T）/ 31.9 GB / Windows 11 Pro / Oracle JDK 21.0.5
