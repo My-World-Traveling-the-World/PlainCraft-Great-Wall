@@ -25,9 +25,9 @@ import net.minecraft.gametest.framework.GameTestHelper;
 
 /**
  * S5 negotiated-gate tests driven against the real {@link GateLedger} and the pure
- * {@link RoadTypes} DTOs. {@code NegotiatedGateService} does not exist in the source tree yet
- * (spec-planned only), so its candidate-selection formula is asserted as the documented contract
- * and the durable gate semantics are verified on the ledger it would drive.
+ * {@link RoadTypes} DTOs. {@code NegotiatedGateService} now exists in the compat.road package, but these tests do not
+ * call it: they assert its candidate-selection formula as the documented contract and verify the
+ * durable gate semantics on the ledger it drives.
  */
 public final class NegotiatedGateGameTests implements FabricGameTest {
 
