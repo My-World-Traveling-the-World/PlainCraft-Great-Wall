@@ -1,0 +1,26 @@
+{
+    "check":  "nine untracked documents in docs/, and whether anything depends on them",
+    "date":  "2026-10-07",
+    "whatTheyAre":  [
+                        "_完整报告-长城群系方案-20261006.md, 12 KB",
+                        "_完整方案-长城群系-选项A-20261006.md, 11.2 KB",
+                        "_查证-圣域群系模板-20261006.md, 77.7 KB",
+                        "_查证-群系时序与注入点-20261006.md, 57.1 KB",
+                        "_查证-群系资源需求-20261006.md, 37.6 KB",
+                        "_查证-路线时序-20261006.md, 41.1 KB",
+                        "全工程红队审查-20261006.md, 29.9 KB",
+                        "长城专属群系可实施方案-20261006.md, 75.7 KB",
+                        "长城专属群系方案独立审查-20261006.md, 60.3 KB"
+                    ],
+    "totalSize":  "about 400 KB",
+    "findings":  {
+                     "neverCommitted":  "git log --diff-filter=A for each returns nothing, so they were never tracked rather than committed and removed",
+                     "notReferenced":  "No committed document under docs/ references any of them, checked by name with git grep against HEAD, so their absence creates no dead reference",
+                     "contentRelation":  "Several describe the biome work that did ship: they mention force_placement, registration_zero and lithostitched, which are exactly the mechanisms in the committed resourcepack, so their subject matter is implemented rather than hypothetical",
+                     "theUnderscorePrefix":  "Six are prefixed with an underscore, which in this project marks working material expected to be temporary"
+                 },
+    "judgement":  "They are background planning material for shipped work, not evidence and not deliverables. They are untracked but present, which is a coherent state - nothing is broken by it, and committing 400 KB of superseded planning would add noise to a repository whose docs/ already carries the settled designs.",
+    "whatIDidNotDo":  "I did not delete them and did not commit them. Deleting working material that produced shipped code is not mine to decide unilaterally, and committing it is a scope change rather than a fix. Recorded so the state is known rather than surprising.",
+    "recommendation":  "Either commit or remove them deliberately, by their author. If removed, capture the rationale first, since the shipped resourcepack is the artefact that matters and it is already committed.",
+    "head":  "eef0eca"
+}
