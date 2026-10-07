@@ -265,7 +265,16 @@ public final class StressController implements AutoCloseable {
                         failed(t);
                     }
                 }, server);
+        // Only unsettled futures are retained, and each removes itself on completion.
+        //
+        // The list is drained by stop() to await in-flight work, so it must hold exactly the work that is
+        // still running. Adding every future and never removing it leaked one entry per chunk forever:
+        // harmless for a short run, but the long profile refills its position list and revisits terrain
+        // for its whole window, which would have accumulated roughly a million retained futures and the
+        // chunk references they hold. That is what pushed the heap to the 8G ceiling, and the resulting
+        // GC pressure stalled a chunk-save tick past the 60s watchdog limit and killed the run.
         inFlightFutures.add(future);
+        future.whenComplete((ignored, error) -> inFlightFutures.remove(future));
     }
 
     private Checkpoint captureSample() throws IOException {
