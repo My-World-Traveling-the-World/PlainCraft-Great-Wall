@@ -1,0 +1,35 @@
+{
+    "check":  "refill cadence stability across the whole run, and whether the chunk counter reconciles with the refill count",
+    "date":  "2026-10-07",
+    "why":  "Refills are the profile's liveness signal, and the earlier work established that a run which stops refilling has drained its queue and will end early. With 37 observed and 11.5 hours still to run, the cadence is now a large enough sample to test for drift rather than assume stability.",
+    "cadence":  {
+                    "refills":  37,
+                    "firstRefillAtMinutes":  85.2,
+                    "minimumGapMinutes":  15.7,
+                    "maximumGapMinutes":  23.1,
+                    "meanGapMinutes":  18.4,
+                    "firstSixGaps":  "18.7, 22.8, 18.2, 21.4, 18.6, 17.1",
+                    "lastSixGaps":  "17.8, 17, 18.9, 17.2, 22.2, 19.7"
+                },
+    "driftTest":  {
+                      "firstHalfMeanMinutes":  18.7,
+                      "secondHalfMeanMinutes":  18,
+                      "difference":  0.7,
+                      "verdict":  "No slowing trend. The two halves differ by 42 seconds against a spread of 7.4 minutes between individual gaps, so the cadence is flat rather than degrading.",
+                      "whyItMatters":  "A cadence that lengthened over time would suggest the server falling behind, which is the precursor to a stalled run. A flat one over 12.5 hours and 37 cycles is evidence the profile is in steady state."
+                  },
+    "chunkAccounting":  {
+                            "sampleCompletedChunks":  2431793,
+                            "refillsTimesPending":  "37 times 65536 is 2424832",
+                            "difference":  6961,
+                            "explanation":  "The difference is the 38th round already in progress: 6961 of 65536 chunks, or 10.6 percent.",
+                            "verdict":  "Exact. The chunk counter decomposes into whole refills plus the partial one, so the two independent figures agree rather than merely both being plausible."
+                        },
+    "projection":  {
+                       "hoursRemaining":  11.54,
+                       "expectedFurtherRefills":  "about 38 at the measured mean",
+                       "expectedTotal":  "about 75",
+                       "caveat":  "A projection from a flat cadence, not a commitment - the drain at the end will add no refills because the window will have closed."
+                   },
+    "head":  "5b614ac"
+}
