@@ -1,0 +1,15 @@
+{
+    "check":  "whether Test-S5Release would refuse to run while the profile is live, since its first gradle argument is clean",
+    "date":  "2026-10-07",
+    "why":  "Steps 5 and 6 run that script, and clean deletes the whole build tree - including build/run/serverSmoke/vanilla/s5stress24h20261007084723 and build/s5-stress-24h2.log. The procedure's own warning says nothing else regenerates them, so the guard is what stands between the archive and silent loss.",
+    "theGuardExists":  "tools/Test-S5Release.ps1 lines 33 to 39 collect build/s5-stress-*.log and throw if any was written less than 5 minutes ago.",
+    "itDetectsThisProfile":  {
+                                 "logName":  "s5-stress-24h2.log, which matches the s5-stress-*.log filter",
+                                 "lastWriteAtCheck":  "01:27:18, 0.05 minutes earlier",
+                                 "verdict":  "Under the 5-minute threshold, so the guard fires and the script refuses to start"
+                             },
+    "whyTheSignalIsChosenWell":  "The comment in the script explains it: a live profile appends a tick-lag or refill line continuously, so a recent write means it is still running, whereas the presence of the directory alone proves nothing because a finished profile leaves its directory behind. The stale s5-stress-24h.log from an earlier run sits at 1008 minutes and is correctly ignored.",
+    "whatThisMeansForTheProcedure":  "Steps 5 and 6 cannot accidentally destroy the archive, because the script stops itself. The ordering still matters - steps 2, 3 and 4 must run first so the copies exist - but the failure mode is a refusal rather than a deletion.",
+    "oneResidualRisk":  "The guard only covers this one script. Any other gradle invocation with clean, including a manual one, has no such check, which is why the procedure states the ordering explicitly rather than relying on the guard.",
+    "head":  "e58617e"
+}
