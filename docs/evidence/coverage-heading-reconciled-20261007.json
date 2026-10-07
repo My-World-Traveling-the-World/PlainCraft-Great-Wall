@@ -1,0 +1,14 @@
+{
+    "check":  "reconcile the zero-coverage section's heading against its own table",
+    "date":  "2026-10-07",
+    "whatWasWrong":  "The heading read '76 个新测试' as '67 个新测试', while the nine rows beneath it total 76.",
+    "howEachRowWasVerified":  "Every row's figure was counted from its actual test file rather than summed on trust: BarrierFixtureLayoutTest 11, BeaconLedgerTest 9, BiomeWriterGameTests 3, ComponentComposerTest 10, GarrisonControllerPolicyTest 8, LootInitializerTest 9, SanctuaryAvoidanceTest 6, SiteRuntimeIndexGameTests 7, WallObstacleGeometryTest 13. All nine match, and 8+9+6+13+10+9+11 plus 3+7 is 76.",
+    "howTheStaleFigureArose":  "The heading was written when the table was smaller and was not updated when two rows were added - SanctuaryAvoidanceTest at 6 and BiomeWriterGameTests at 3, which is 9, exactly the difference.",
+    "aCoincidenceThatCouldMislead":  {
+                                         "observation":  "629 minus 562 is also 67, and the report records 562 as the session-start JUnit figure.",
+                                         "butTheTwoAreUnrelated":  "The heading describes its own table, not the suite-wide delta. The table's 9 classes are not the only tests added this session - 13 test files were added, and counting declarations at commit 3447428 gives 527 rather than 562, so 562 was a figure from a different moment than the commit I treated as the session start.",
+                                         "consequence":  "Correcting the heading to 76 is right because the heading labels the section's table. Substituting 67 would have been right for a different sentence that the report does not contain."
+                                     },
+    "methodNote":  "My first attempt to sum the rows used a hashtable literal that PowerShell parsed differently, returning a blank. Recomputed as plain arithmetic rather than trusting the failed form.",
+    "head":  "4c1c96c"
+}
