@@ -105,15 +105,6 @@
                           "warningAboutStep5":  "If Test-S5Stress.ps1 is ever run deliberately, its TestRoot must include serverSmoke\\vanilla and must sit under build\\run; a path like build\\run\\s5stress24h... passes the guard but holds no stress-reports directory, which yields a fail-closed passed=false that looks like a profile failure.",
                           "warningAboutStep4":  "Test-S5Release throws by design because the version gate fails; read execution.json for remapJarShaMatch rather than the exit status."
                       },
-    "step3ExactCommand":  {
-                              "command":  "gradlew test runGameTest --console=plain",
-                              "whyTestIsIncluded":  "They are independent tasks; runGameTest writes only build/reports/gametest/results.xml, and step 4 archives build/test-results/test which only test produces.",
-                              "heapNote":  "Do not pass -PgreatwallTestHeap unless needed. build.gradle only adds -Xmx when that property is set, otherwise the gameTest JVM uses the JVM default, which on this 31.9 GB machine is about 8 GB. Note that gradle.properties sets org.gradle.jvmargs=-Xmx2G for the Gradle daemon, which is a different JVM and does not bound the test run.",
-                              "resultsPath":  "build/reports/gametest/results.xml, from the vmArg -Dfabric-api.gametest.report-file=../../reports/gametest/results.xml relative to the run directory.",
-                              "expectedCases":  129,
-                              "verifyWith":  "powershell -NoProfile -ExecutionPolicy Bypass -File tools/Test-GameTestCompleteness.ps1 -ResultsXml build\\reports\\gametest\\results.xml",
-                              "whyVerifyByName":  "A pass message reports a total, and a total cannot show that one class was skipped while another gained cases. The script reads the expected names from the source and reports missing and unexpected entries, exiting non-zero unless the sets match."
-                          },
     "orderedSteps":  [
                          "1. Confirm the profile ended, and confirm it by a test rather than by reading the time. stress-report.json appearing under the run's stress-reports directory is the signal, but the decisive check is that build/s5-stress-24h2.log can be opened exclusively - the running profile holds it locked, so a successful exclusive open proves the writer is gone. Copying the log while it is still locked fails, and this is the step where that would be discovered.",
                          "2. Copy into docs/evidence/: stress-report.json, the whole samples directory, header.json, and build/s5-stress-24h2.log. Two further items under build/ also have no durable copy and are destroyed by step 5's clean: build/s5-stress-1h-evidence/stress-report-passed.json, the only record of the 1-hour profile, and build/smoke-pass.log. The 1-hour report has been archived to docs/evidence/s5/s5-stress-1h-20261007/stress-report.json. The smoke log is 17.68 GB and cannot be copied; its decisive lines are already transcribed verbatim into docs/evidence/s1c/real-wall-traversal-pass-20261007.json and were verified character for character, so losing it costs no evidence.",
@@ -130,5 +121,16 @@
                                                      "whatToDoInstead":  "To estimate a clean build's cost, use --dry-run alone and count tasks, or wait until the profile has ended. The cost stays unmeasured until then, which is acceptable - the script's own 60-minute per-build timeout bounds it.",
                                                      "whereThisIsEnforced":  "Test-S5Release.ps1 already refuses to start while a stress log was written in the last five minutes, so the guarded script cannot do this. The exposure is a manual gradle invocation, which the guard cannot cover - hence the rule.",
                                                      "theTimingQuestionRemainsOpen":  "gradle clean build resolves to 32 tasks, but its wall-clock duration is unmeasured. A note in gametest-runtime-budget-20261007.json says the two clean builds add up to two hours; that is consistent with the 60-minute per-build timeout being generous rather than tight, but it is a note rather than a measurement and should not be cited as one."
-                                                 }
+                                                 },
+    "step3ExactCommand":  {
+                              "command":  "gradlew test runGameTest --console=plain",
+                              "whyTestIsIncluded":  "They are independent tasks; runGameTest writes only build/reports/gametest/results.xml, and step 4 archives build/test-results/test which only test produces.",
+                              "heapNote":  "Do not pass -PgreatwallTestHeap unless needed. build.gradle only adds -Xmx when that property is set, otherwise the gameTest JVM uses the JVM default, which on this 31.9 GB machine is about 8 GB. Note that gradle.properties sets org.gradle.jvmargs=-Xmx2G for the Gradle daemon, which is a different JVM and does not bound the test run.",
+                              "resultsPath":  "build/reports/gametest/results.xml, from the vmArg -Dfabric-api.gametest.report-file=../../reports/gametest/results.xml relative to the run directory.",
+                              "expectedCases":  129,
+                              "verifyWith":  "powershell -NoProfile -ExecutionPolicy Bypass -File tools/Test-GameTestCompleteness.ps1 -ResultsXml build\\reports\\gametest\\results.xml",
+                              "whyVerifyByName":  "A pass message reports a total, and a total cannot show that one class was skipped while another gained cases. The script reads the expected names from the source and reports missing and unexpected entries, exiting non-zero unless the sets match.",
+                              "bewareOfAStaleReportAtThatPath":  "build/reports/gametest/results.xml already exists, dated 2026-10-07 11:26, holding 33 cases from a diagnostic subset. If runGameTest fails to write, the old file stays and would be archived as though it were the run's output. Two guards: run tools/Test-GameTestCompleteness.ps1 first, which reports expected=129 against a stale file's reported=33 and exits non-zero; and note the old file's SHA-256 prefix E743AB3A before starting, so an unchanged file is detectable without relying on the count alone.",
+                              "verifyBeforeArchiving":  "Run the completeness check, confirm it prints completeness=True, and only then copy results.xml into docs/evidence. Archiving first and checking later is how a stale file becomes the record."
+                          }
 }
