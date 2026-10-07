@@ -41,12 +41,13 @@
                      ],
     "verifyBeforeRunningS5Release":  "Confirm the step 2 and 3 copies are present in docs/evidence/. If they are not, stop: that script's clean removes build/run/serverSmoke/vanilla/\u003crunId\u003e/ and build/s5-stress-24h2.log, and nothing else will regenerate them.",
     "roundBudgetConstraint":  {
-                                  "measured":  "6.5 minutes per round, measured between rounds 119 and 131 rather than estimated",
-                                  "consequence":  "The profile alone consumes about every remaining round, with roughly a 10-round gap once the post-profile work is counted",
+                                  "measured":  "6.5 minutes per round, measured between rounds 119 and 131",
+                                  "correctedPosition":  "Re-measured at 11.62 hours remaining with 167 rounds left: 108 rounds for the profile plus about 10 for the post-profile steps is 118 needed against 167 available, leaving 49 rounds of slack.",
+                                  "correctionNote":  "An earlier version of this note claimed a 10-round shortfall. That was arithmetic error - it charged the post-profile wall clock against the round budget as well as the fixed round cost. The operational guidance below is unchanged because it is what makes the post-profile work cost 10 rounds rather than 55.",
                                   "therefore":  [
                                                     "Start the post-profile steps as background jobs in the round the profile ends, not in a later one",
                                                     "Do not spend a round waiting for a long task; start it and collect it in a subsequent round",
-                                                    "Keep each round to one substantive action rather than several, so no round is wasted on bookkeeping"
+                                                    "Keep each round to one substantive action rather than several"
                                                 ],
                                   "theShapeThatFits":  "Round A starts runGameTest as a background job. Round B collects it and starts Test-S5Release the same way. Round C collects that and writes the closing summary."
                               }
