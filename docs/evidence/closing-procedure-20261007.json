@@ -24,5 +24,11 @@
                              "Refresh docs/evidence/INDEX-20261007.json once no further files will be added",
                              "Distinguish clearly what automation proved from the nine real-machine items, which do not change"
                          ],
-    "head":  "60e5c47"
+    "head":  "60e5c47",
+    "s5ReleaseExpectation":  {
+                                 "expectedOutcome":  "The script will throw, because verifyReleaseArtifacts throws on the version string and the script treats a non-zero exit as failure.",
+                                 "thisIsCorrect":  "The gate is refusing to sign a preview. The ledger already records this under version-lock and full-package.",
+                                 "readThisInsteadOfExitStatus":  "execution.json in the evidence directory: remapJarShaMatch is the reproducibility answer, and passed false is the version gate.",
+                                 "stillWorthRunning":  "Yes. Both builds run with the offline and strict flags, which re-exercises the offline path at current source and dates that item, and the SHA comparison is a genuine reproducibility result."
+                             }
 }
