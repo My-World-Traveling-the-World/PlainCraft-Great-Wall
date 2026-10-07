@@ -1,0 +1,15 @@
+{
+    "check":  "what production OFF means on the real machine",
+    "date":  "2026-10-07",
+    "question":  "Every acceptance entry says production OFF. For a user who installs the jar, that needs to mean something concrete rather than a label.",
+    "answer":  "The mod is completely inert unless specific -D flags are passed. On an ordinary client and server those flags are absent, so the wall never generates and every mixin falls through to vanilla.",
+    "chain":  [
+                  "SERVER_STARTING checks greatwall.production: if it were set, it throws 'Formal production remains OFF until S1C acceptance'. With it unset, nothing happens.",
+                  "The same handler then returns immediately unless greatwall.s0.probe or greatwall.s1c.productionFixture is set, so no session is ever registered for a normal server.",
+                  "WorldServices.find returns null, because it is a plain SESSIONS.get with a null-server guard.",
+                  "Every mixin null-checks that result and returns: WallSpawnerMixin, IgnitionUseMixin, TorchIgnitionMixin and ChunkGeneratorBiomeMixin all do this before touching anything."
+              ],
+    "implication":  "Installing the jar changes nothing about world generation on its own. The wall is reachable only through an explicitly armed probe or fixture, which is why none of the automated runs could have produced a wall by accident.",
+    "verifiedBy":  "Reading the guard at WorldServices:92-95 and the null-checks in the four mixins, plus confirming find is a literal SESSIONS.get.",
+    "head":  "2a2bfb8"
+}
