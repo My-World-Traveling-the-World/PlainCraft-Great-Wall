@@ -50,5 +50,13 @@
                                                     "Keep each round to one substantive action rather than several"
                                                 ],
                                   "theShapeThatFits":  "Round A starts runGameTest as a background job. Round B collects it and starts Test-S5Release the same way. Round C collects that and writes the closing summary."
-                              }
+                              },
+    "exactCommands":  {
+                          "step2CopyEvidence":  "Copy stress-report.json, the samples directory and header.json from build/run/serverSmoke/vanilla/s5stress24h20261007084723/build/stress-reports/run-1791334079847/ into docs/evidence/, plus build/s5-stress-24h2.log",
+                          "step3GameTest":  "gradlew runGameTest --no-daemon --console=plain, then copy build/reports/gametest/results.xml into docs/evidence/",
+                          "step4Release":  "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/Test-S5Release.ps1 -TestRoot build\\run\\s5release",
+                          "step5StressVerdict":  "tools/Test-S5Stress.ps1 -TestRoot build\\run\\serverSmoke\\vanilla\\s5stress24h20261007084723",
+                          "warningAboutStep5":  "The root must include serverSmoke\\vanilla. A path like build\\run\\s5stress24h20261007084723 passes the script's guard but has no stress-reports directory beneath it, so the script would report passed=false with a message about no report being found - a fail-closed outcome that would nonetheless look like a profile failure.",
+                          "warningAboutStep4":  "Test-S5Release throws by design because the version gate fails; read execution.json for remapJarShaMatch rather than the exit status."
+                      }
 }
