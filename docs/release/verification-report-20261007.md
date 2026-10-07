@@ -182,7 +182,7 @@ trace 缓冲上限、退出码不可见、30 秒排空窗口、压力 stop 超�
 | **人工步行穿越长城** | `NOT_RUN` | 只能程序化遍历 505 个 owner，不能代替真人走一遍 |
 | **客户端视觉/画质检查** | `NOT_RUN` | `runClientSmoke` 会启动真实客户端，`SmokeVisualChecklist` 自我声明「Neither case creation nor state observations certify visuals」，`observer` 必须是 `human` |
 | **专属群系实际生效** | `NOT_RUN` | 数据包为 **NORMAL（需手动启用）**；`ForcePlacement` 仅做过静态证明，**真实 RegistryOps 解码从未跑过**。见下方「群系着色的证据边界」 |
-| **群系着色路径（`GreatWallBiomeWriter`）** | `NOT_RUN` | 无任何单元测试；且 505-owner 遍历与 24h 压测**都没有执行到它**（见下） |
+| **群系写入器 `GreatWallBiomeWriter`** | **已补测并通过** | 新增 `BiomeWriterGameTests`（3 例），见下 |
 | **height6000 / 非默认 minY** | `NOT_RUN` | 未测的配置组合 |
 | **Golden 对照种子** | `NOT_RUN` | 未跑 |
 | **integration-matrix 其余 profile** | `NOT_RUN` | 只跑过 `vanilla`。**并且这三个 profile 无法用当前 harness 补齐**：smoke 运行只装载 3 个 jar（fabric-api + 本 mod + smoke harness），`smokeProfile` 只改运行目录名、`expectedAdapter`、堆大小与 `-Dgreatwall.smoke.profile`，**不会**把 Tectonic / C2ME / OpenCL pack 加进 classpath —— 传 `-PsmokeProfile=tectonic` 只会得到一个「标签是 tectonic、实际装载相同 3 个 jar」的运行。Tectonic 与 full-pack OpenCL 两行**必须靠真机实例** |
@@ -213,12 +213,16 @@ HUD 日志的印证：`Applied 0 biome modifications to 0 of 64 new biomes`。
 - 这两次运行**顺带证明了 fail-soft 设计正确**：holder 缺失时 mixin 静默降级为原版行为，
   服务器不崩、遍历照常通过；而真正需要 holder 的调用方走 `requireIdentity()`，会以
   `UNSUPPORTED_ADAPTER` fail closed
-- `GreatWallBiomeWriter`（真正调用 `fillBiomesFromNoise` 的写入器）**没有任何单元测试**
-- 群系着色的可验证覆盖是**间接**的：`RouteBiomeMaskTest`（8 例，遮罩几何/半开边界/保守
-  quart 上色）与 `GreatWallBiomeRuntimeTest`（8 例，fail-closed/维度隔离/重复发布）
+- **已补上写入器自身的执行证据**（2026-10-07，commit `a338ce9`）：新增
+  `BiomeWriterGameTests`（3 例，`All 3 required tests passed`，连跑 3 次稳定）真正调用
+  `GreatWallBiomeWriter.paint`，覆盖 ①`[H-8, H+32)` 半开带内画/带下保留原群系、
+  ②无可用地表高度时拒绝绘制、③遮罩排除的列保持原群系
+- 群系着色的其余可验证覆盖仍是**间接**的：`RouteBiomeMaskTest`（8 例，遮罩几何/半开边界/
+  保守 quart 上色）与 `GreatWallBiomeRuntimeTest`（8 例，fail-closed/维度隔离/重复发布）
 
-**结论**：群系着色在真机上是否真的改变地形群系，**目前没有任何执行证据**，必须由用户在
-启用数据包的实例里确认。这是本次验证**最大的证据缺口**。
+**仍未验证的部分**：写入器测试证明的是**「给定 holder 与遮罩时，写入器行为正确」**，
+**不证明** Lithostitched 能注册该身份、也不证明 mixin 在真实客户端里会走到写入器。
+后者**必须由用户在启用数据包的实例里确认**。这是本次验证**剩余的缺口**。
 
 ---
 
