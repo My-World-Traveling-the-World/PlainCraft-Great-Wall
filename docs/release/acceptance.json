@@ -49,7 +49,7 @@
       "expected": "each profile verified; unauthenticated C2ME hooks refuse generation; OpenCL menu is not worldgen",
       "status": "NOT_RUN",
       "log": null,
-      "actual": "Only the vanilla profile was executed (repeatedly, including a full 505-owner real-terrain traversal). tectonic, tectonic-c2me and pack-opencl were not run, so the C2ME-hook and OpenCL claims are unverified. Requires the user's real instance for the pack-opencl profile.",
+      "actual": "Only the vanilla profile was executed. Investigating why the others are not automatable: the smoke run loads exactly three jars (fabric-api, the mod, the smoke harness) and `smokeProfile` only changes the run directory, the expectedAdapter property, the heap size and -Dgreatwall.smoke.profile. It does NOT add Tectonic, C2ME or the OpenCL pack to the classpath, so passing -PsmokeProfile=tectonic would produce a run labelled tectonic while loading the same three jars. The Tectonic and full-pack OpenCL rows of this entry therefore cannot be satisfied by this harness and require the user's real instance. The C2ME row is reachable only via the disableRewrite path, which is restricted to the tectonic-c2me profile and was not exercised.",
       "startedUtc": null,
       "finishedUtc": null
     },
