@@ -55,6 +55,3 @@
 
 `S1C-DRAIN-01` 继续 OPEN；STOPPING 瞬间的非零 leases/reservation 不当作已排空。
 完整 GameTest 若通过，仍不自动关闭这些项目或将本预览改名为正式发行版。
-
-`S1C-DRAIN-01` 继续 OPEN；STOPPING 瞬间的非零 leases/reservation 不当作已排空。
-完整 GameTest 若通过，仍不自动关闭这些项目或将本预览改名为正式发行版。
