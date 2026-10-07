@@ -1,0 +1,27 @@
+{
+    "check":  "cross-confirm the no-enable-path finding against the project's own documentation",
+    "date":  "2026-10-07",
+    "why":  "Concluding from code alone that a feature cannot be enabled risks missing a documented route, so the documents were searched for any instruction on setting greatwall.production.",
+    "result":  "The documentation agrees with the code rather than contradicting it.",
+    "citations":  [
+                      {
+                          "file":  "docs/S1C-1C-1.md line 402",
+                          "meaning":  "formal production=true is explicitly refused; the isolated fixture needs productionFixture=true plus two disk markers, and is mutually exclusive with the S0 probe"
+                      },
+                      {
+                          "file":  "docs/S1C-WIDE收头收尾.md line 63",
+                          "meaning":  "the isolated fixture may be enabled; formal production=true is still refused at the production entry"
+                      },
+                      {
+                          "file":  "docs/S1C-交接-GPT.md line 202",
+                          "meaning":  "production wiring stays OFF until final acceptance"
+                      },
+                      {
+                          "file":  "docs/SUMMARY.md line 5",
+                          "meaning":  "the summary states GreatWall production remains OFF"
+                      }
+                  ],
+    "noDocumentedRoute":  "No document gives a procedure for setting greatwall.production to true as a user action. It appears only as something that is refused.",
+    "conclusion":  "Code and documents say the same thing in different words, so this is not a reading error on my part. Installing the jar cannot produce a wall, and that is the intended state rather than a defect.",
+    "head":  "9b16980"
+}
