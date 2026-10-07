@@ -47,6 +47,66 @@ class BuildContractTest {
         assertTrue(formats.get("max_inclusive").getAsInt() >= BuildContract.DATA_PACK_VERSION);
     }
 
+    /**
+     * Every mixin class must be reachable, either from the config's {@code mixins} list or from the
+     * plugin that loads the C2ME ones conditionally.
+     *
+     * <h2>Why this exists</h2>
+     * A mixin class that no configuration names is never applied and never reported: the build stays
+     * green, the class ships inside the jar, and the behaviour it was written to add simply does not
+     * happen. That is the same silent-gap shape as an unregistered GameTest entrypoint, and the count
+     * makes it concrete - at the time of writing there are 20 mixin classes, 18 named in the config and
+     * 2 returned by {@code ProbeMixinPlugin.getMixins()} only when the certified C2ME version is
+     * present.
+     *
+     * <p>The reverse direction is checked too: a name in the config with no class behind it would fail
+     * at load time, which is loud, but a test that only checks one direction would not notice the pair
+     * drifting apart.
+     */
+    @Test
+    void everyMixinClassIsNamedByAConfiguration() throws IOException {
+        JsonObject config = resource("plaincraft_great_wall.mixins.json");
+        assertEquals("local.plaincraft.greatwall.mixin", config.get("package").getAsString(),
+                "the mixin package must match the source tree the names are relative to");
+        var declared = new java.util.HashSet<String>();
+        for (var element : config.getAsJsonArray("mixins")) declared.add(element.getAsString());
+
+        // The two C2ME mixins are applied by the plugin rather than listed, because they target classes
+        // that only exist when that mod is installed.
+        var pluginLoaded = java.util.Set.of("C2meGateMixin", "C2meFeatureSkipMixin");
+        for (String name : pluginLoaded) {
+            assertFalse(declared.contains(name),
+                    name + " must be plugin-loaded, not listed: listing it would apply it unconditionally");
+            declared.add(name);
+        }
+
+        // The plugin is what makes those two reachable, so it must remain wired in.
+        assertEquals("local.plaincraft.greatwall.compat.c2me.ProbeMixinPlugin",
+                config.get("plugin").getAsString(),
+                "the conditional mixins are unreachable without their plugin");
+        assertEquals(1, config.getAsJsonObject("injectors").get("defaultRequire").getAsInt(),
+                "injectors must default to required, so a missing target fails loudly");
+
+        var onDisk = new java.util.HashSet<String>();
+        var directory = java.nio.file.Path.of("src/main/java/local/plaincraft/greatwall/mixin");
+        assertTrue(java.nio.file.Files.isDirectory(directory),
+                "the mixin source directory must exist; run this from the project root");
+        try (var files = java.nio.file.Files.list(directory)) {
+            files.filter(path -> path.toString().endsWith(".java"))
+                    .forEach(path -> onDisk.add(path.getFileName().toString().replace(".java", "")));
+        }
+
+        var unregistered = new java.util.TreeSet<>(onDisk);
+        unregistered.removeAll(declared);
+        assertTrue(unregistered.isEmpty(),
+                "these mixin classes would never be applied: " + unregistered);
+
+        var dangling = new java.util.TreeSet<>(declared);
+        dangling.removeAll(onDisk);
+        assertTrue(dangling.isEmpty(),
+                "these names are configured but have no class behind them: " + dangling);
+    }
+
     private static JsonObject resource(String name) throws IOException {
         var stream = BuildContractTest.class.getClassLoader().getResourceAsStream(name);
         assertNotNull(stream, name);
