@@ -1,0 +1,28 @@
+{
+    "document":  "closing procedure for the two remaining goal items",
+    "date":  "2026-10-07",
+    "purpose":  "Written in advance so the steps are deterministic rather than improvised when the profile ends. The ledger already states the exact condition for item 5, and this makes the rest explicit.",
+    "item5_stress24h":  {
+                            "authoritativeSource":  "build/run/serverSmoke/vanilla/\u003crunId\u003e/build/stress-reports/run-*/stress-report.json",
+                            "currentlyMissing":  "zero such files, which is correct while the profile is still running",
+                            "decisionRule":  "The ledger already says it stays NOT_RUN until a 24h run reports passed=true with durationMet=true. That is the rule: read the report rather than infer, and set PASS only if both fields are true.",
+                            "ifPassed":  "Set the entry to PASS, fill finishedUtc, and record observedSeconds, requestedSeconds, completedChunks, refills and peak heap from the report.",
+                            "ifFailed":  "Leave it NOT_RUN and record the failure verbatim, including the failure field. Nothing is smoothed over.",
+                            "eitherWay":  "Copy stress-report.json into docs/evidence/ before anything else touches build/, because a later build or clean removes it."
+                        },
+    "item2_gameTest":  {
+                           "command":  "gradlew runGameTest --no-daemon --console=plain",
+                           "expectedLine":  "All 129 required tests passed",
+                           "independentCheck":  "Compare that count against the inventory recorded before the run: 129 methods across 34 classes. The two figures come from different sources, so agreement is a check rather than a restatement.",
+                           "evidence":  "build/reports/gametest/results.xml, which is rebuilt each run - copy it to docs/evidence/ as well.",
+                           "budget":  "About 3.65 hours, with no gradle timeout and an 8 GB default heap."
+                       },
+    "stepsNotToForget":  [
+                             "Test-S5Release.ps1 afterwards: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/Test-S5Release.ps1 -TestRoot build\\run\\s5release",
+                             "Update the six-item table in the report with the item 2 and item 5 results",
+                             "Update acceptance.json for stress-24h",
+                             "Refresh docs/evidence/INDEX-20261007.json once no further files will be added",
+                             "Distinguish clearly what automation proved from the nine real-machine items, which do not change"
+                         ],
+    "head":  "60e5c47"
+}
