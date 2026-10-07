@@ -141,8 +141,15 @@ public final class NegotiatedGateGameTests implements FabricGameTest {
                 && conflict.contract().apertureHeight() == 5,
                 "no wider gate may be invented when every candidate fails");
 
-        // Backfill refuses to carve anything without a frozen gate, and never force-loads a chunk
-        // (getChunkNow, WallArchBackfill.java:81). This proves no third-party block is removed.
+        // Backfill refuses to carve anything without a frozen gate, and never force-loads a chunk:
+        // it reads only already-loaded chunks via getChunkNow. This proves no third-party block is
+        // removed.
+        //
+        // The line number is deliberately not cited. An earlier revision pointed at
+        // "WallArchBackfill.java:81", which stopped being the getChunkNow call as soon as the file was
+        // edited; a stale line reference is worse than none because it looks authoritative. The
+        // property is pinned by the assertion below plus OwnershipGuard, which TerrainEvidenceTest
+        // exercises directly (a foreign block is rejected, an owned one is allowed).
         var backfill = new WallArchBackfill(helper.getLevel(), gates);
         helper.assertTrue(backfill.prepare(conflict).toCompletableFuture().isCompletedExceptionally(),
                 "a non-frozen gate must not authorize any backfill write");
