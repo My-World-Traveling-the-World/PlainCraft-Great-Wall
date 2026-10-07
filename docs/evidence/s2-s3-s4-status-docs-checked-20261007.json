@@ -1,0 +1,33 @@
+{
+    "check":  "are the S2, S3 and S4 status documents still accurate",
+    "date":  "2026-10-07",
+    "why":  "S5-状态.md was found stale earlier and updated. The other three were last touched on 10-03 and 10-04, four days before this session, so the same question applies.",
+    "verdict":  "All three remain substantially accurate rather than stale in the way S5-status was.",
+    "s2":  {
+               "date":  "2026-10-04",
+               "lines":  202,
+               "stillTrue":  "S2 remains unsigned, production is OFF, and the GW-011 twelve-item matrix, real production calls on both sides and real road construction are all still NOT_RUN. Nothing in this session changed any of that.",
+               "detail":  "The document describes its own checkpoint rather than the current one, which it says explicitly."
+           },
+    "s3":  {
+               "date":  "2026-10-03",
+               "lines":  50,
+               "stillTrue":  "S3 remains unsigned and the GW-010 combinations it lists are still NOT_RUN.",
+               "oneChangeFound":  "It lists LootInitializer among the unfinished production wiring. That class's table-decision logic now has nine unit tests added during this session, so that part is covered - though the wiring it names may be a wider claim than the logic the tests exercise.",
+               "stillUncovered":  [
+                                      "IgnitionService - 9 main references, 0 test references",
+                                      "WallSpawnerGuard - 10 and 0, reachable only through a mixin",
+                                      "FtbIntegration - 10 and 0, needs the optional mod present",
+                                      "BeaconCountTask - 6 and 0",
+                                      "BeaconSpecificTask - 6 and 0"
+                                  ]
+           },
+    "s4":  {
+               "date":  "2026-10-03",
+               "lines":  35,
+               "stillTrue":  "S4 remains unsigned, the 96+32 production gallery is unfinished, and link_cases is NOT_RUN because Windows cannot create symbolic links without Developer Mode - which this session re-verified directly by attempting it.",
+               "note":  "Its NOT_RUN list matches the real-machine checklist, so the two agree."
+           },
+    "conclusion":  "These documents describe their own checkpoints and say so, so they are historical records rather than drift. Two things have moved since: LootInitializer gained tests this session, and the S4 symlink limitation was independently re-confirmed. Neither changes their overall NOT_RUN status.",
+    "head":  "a9d711e"
+}
