@@ -90,7 +90,7 @@
 **它从未运行过**（`docs/evidence/s5` 下无 `s5-release-*` 目录）。
 
 **当前不能运行**：脚本第 30 行在 Gradle 参数里传了 `clean`，会删除整个 `build/` ——
-其中含正在进行的 24h 压测的 7.32 GB 运行数据。**在压测期间运行它会直接杀掉压测。**
+其中含正在进行的 24h 压测的运行数据（写作时为 7.32 GB，现已增至约 8.97 GB）。**在压测期间运行它会直接杀掉压测。**
 
 **已排除的风险**：曾担心 60 分钟超时不够，因为 `build` 可能拖入 3h22m 的 `runGameTest`。
 已核实**不会**：`runGameTest` 只被显式注册的 `runS2RoadTests` / `runS3FtbTests` / `runS4Gallery`
@@ -208,9 +208,9 @@ truncated」）两侧都有实测覆盖：矩阵侧是 360 次运行，CRC 侧�
 **24 小时版（运行中）已过的关键验证点**：首次 refill 于 `elapsedSeconds=5110` 发生，
 而上一版正是在首次 refill 后 14 分钟被 watchdog 杀死（`inFlightFutures` 泄漏导致堆触顶、
 GC 压力使一次区块保存 tick 卡 60.01 秒）。本次 refill 后堆**会回落**
-（如 7.23 GB → 2.19 GB），序列在 2.19..7.45 GB 间震荡无上升趋势，refills 已 3 次且
+（如 7.23 GB → 2.19 GB），序列在 2.19..7.45 GB 间震荡无上升趋势，截至该次观测 refills 已 3 次（后续持续增长，定稿时已达 13 次）且
 watchdog 为 0 —— 泄漏修复有效。磁盘亦收敛（首轮填充约 8.8 GB，此后约 0.09 GB/小时，
-剩余 22 小时仅需约 2.1 GB），详见 `docs/evidence/s5/s5-stress-24h-inprogress-20261007/MILESTONE-refill.md`。
+写作时剩余 22 小时，估算仅需约 2.1 GB），详见 `docs/evidence/s5/s5-stress-24h-inprogress-20261007/MILESTONE-refill.md`。
 
 ---
 
