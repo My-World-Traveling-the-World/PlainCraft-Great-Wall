@@ -1,0 +1,28 @@
+{
+    "check":  "verify the integration-matrix entry's claim that no method in this repository can add Tectonic, C2ME or the pack",
+    "date":  "2026-10-07",
+    "theClaim":  "No method exists within this repository: the smoke classpath loads three jars, so a profile flag cannot add Tectonic, C2ME or the pack. It requires a real instance with those mods installed.",
+    "whatTheRunActuallyLoaded":  {
+                                     "totalModEntries":  44,
+                                     "fabricSubmodules":  39,
+                                     "ours":  "plaincraft_great_wall 0.1.0-s1c-preview.2 and plaincraft_great_wall_server_smoke 1.0.0",
+                                     "nonJar":  "mixinextras, java and minecraft entries, which are not mod jars",
+                                     "tectonic":  "absent",
+                                     "c2me":  "absent",
+                                     "ftb":  "absent",
+                                     "create":  "absent",
+                                     "opencl":  "absent",
+                                     "verdict":  "The 39 fabric entries all come from the single fabric-api jar, so the classpath carries three mod jars: fabric-api, this mod, and the smoke harness. The entry's figure is accurate rather than approximate."
+                                 },
+    "whatProfileActuallyControls":  {
+                                        "occurrences":  3,
+                                        "line12":  "read from the gradle property, defaulting to vanilla",
+                                        "line137":  "passed as a system property to the server smoke JVM",
+                                        "line328":  "passed the same way to a second task",
+                                        "directoryUse":  "lines 18 and 135 place the run directory at build/run/serverSmoke/\u003cprofile\u003e/\u003crunId\u003e, and lines 177 and 178 write the profile name into the two marker files",
+                                        "whatItNeverDoes":  "It never appears in a classpath expression. The classpath is assembled from the source sets at lines 4, 5, 9 and 10, so no value of this property can add a jar."
+                                    },
+    "whyTheClaimHolds":  "Changing the profile changes where the run happens and what string the mod sees, not what it loads. A run labelled tectonic would still load the same three jars, which is precisely what the entry says.",
+    "theSecondHalfIsAlsoRight":  "Tectonic, C2ME and the pack have to be installed in a real instance, because that is the only way they enter a classpath here.",
+    "head":  "d2706d0"
+}
