@@ -1,0 +1,31 @@
+{
+    "check":  "cross-check the traversal certificate's own exclusions against the real-machine checklist",
+    "date":  "2026-10-07",
+    "why":  "A certificate that claims a PASS is most likely to overstate in what it does not say. This one carries explicit notRun and blocked lists, so those were checked against the document that consolidates what remains - if the certificate excludes something the checklist omits, the item would fall between the two.",
+    "theCertificatesExclusions":  {
+                                      "notRun":  [
+                                                     "human walking",
+                                                     "height6000",
+                                                     "nondefaultMinY",
+                                                     "Golden",
+                                                     "S5/24h"
+                                                 ],
+                                      "blocked":  [
+                                                      "Tan's Huge Trees",
+                                                      "TYG write-set certification"
+                                                  ]
+                                  },
+    "everyOneMapsToAChecklistEntry":  {
+                                          "humanWalking":  "walking the wall by hand - the same item, worded differently",
+                                          "height6000":  "height6000 and non-default minY",
+                                          "nondefaultMinY":  "part of that same checklist entry, which names both",
+                                          "Golden":  "Golden seed",
+                                          "S5_24h":  "integration matrix and the run in progress; the 24-hour profile is also tracked in the acceptance ledger as stress-24h",
+                                          "TanAndTYG":  "Tan's Huge Trees and TYG write-set certification"
+                                      },
+    "result":  "All seven exclusions correspond to checklist entries. Two looked absent only because of wording: 'human walking' against 'walking the wall by hand', and 'nondefaultMinY' against an entry that names both height6000 and non-default minY.",
+    "whyThisMatters":  "Nothing falls between the two documents. The certificate is careful about what it does not cover, and the checklist is the place those exclusions surface - which is what makes the PASS safe to cite.",
+    "alsoVerified":  "The source log it transcribes, build/smoke-pass.log at 17.68 GB, is still present, so the transcription remains checkable rather than being the only surviving record.",
+    "whatCouldNotBeChecked":  "The run directory that held the owner data was deleted to reclaim disk, so the 505 figure cannot be re-derived independently. That is why the certificate is a verbatim transcription, and why its sourceFreshness field records when the run happened relative to the source freeze.",
+    "head":  "74901c9"
+}
