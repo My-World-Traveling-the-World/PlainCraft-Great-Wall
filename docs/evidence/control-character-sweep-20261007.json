@@ -1,0 +1,19 @@
+{
+    "check":  "did the escape-character bug that hit one insertion contaminate any other file",
+    "date":  "2026-10-07",
+    "origin":  "A here-string written in double quotes let PowerShell interpret backtick sequences as escapes, turning the literal text verifyReleaseArtifacts into a vertical tab followed by erifyReleaseArtifacts, and doing the same to 0.1.0 and fault-hit.json. Four control characters entered the report and were repaired.",
+    "whyItWasWorthSweeping":  "The same mechanism could have damaged any earlier here-string insertion, and a silent control character in an evidence file would be nearly invisible in review while corrupting the text.",
+    "sweep":  {
+                  "workingTreeFiles":  1660,
+                  "jsonFiles":  1563,
+                  "markdownFiles":  97,
+                  "controlCharactersFound":  0,
+                  "committedFilesChangedThisSession":  281,
+                  "committedFilesActuallyOpened":  281,
+                  "contaminated":  0
+              },
+    "scanValidatedByPositiveControl":  "A temporary file with U+000B injected was detected as one match, so the pattern finds what it looks for and the zero results are not an empty scan.",
+    "methodNote":  "The first pass let git quote the Chinese filenames, so some paths failed Test-Path and were skipped silently - the count of 281 checked versus 281 listed only came out right after switching to -z with core.quotepath=false. A sweep that silently skips files is the failure mode this kind of check exists to prevent.",
+    "conclusion":  "No other file was affected. The escape bug was confined to the one insertion where it occurred and has been repaired.",
+    "head":  "4a28ea8"
+}
