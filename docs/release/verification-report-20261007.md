@@ -527,7 +527,7 @@ HUD 日志的印证：`Applied 0 biome modifications to 0 of 64 new biomes`。
 | 状态 | 数量 | 项目 |
 |---|---|---|
 | **PASS** | 6 | artifact-contents、reproducible-build、pack-format、lifecycle-evidence、fault-matrix、negotiated-gate |
-| **FAIL** | 2 | version-lock（版本号仍是 preview）、full-package（同一版本号阻塞；严格离线构建已通过） |
+| **FAIL** | 2 | version-lock（版本号仍是 preview）、full-package（同一版本号阻塞；离线构建已在 2026-09-29 通过，本会话未在当前源码重跑） |
 | **NOT_RUN** | 2 | integration-matrix（仅 vanilla）、stress-24h（运行中） |
 
 顶层 `status` 保持 `NOT_READY`。按账本自身的规则，**只有全部 PASS 才能签「全 S5 通过」**，
