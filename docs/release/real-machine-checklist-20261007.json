@@ -1,7 +1,7 @@
 {
     "document":  "real-machine verification checklist (consolidated)",
     "date":  "2026-10-07",
-    "revision":  "7 - the height6000 entry no longer implies a configuration route that does not exist",
+    "revision":  "8 - the Tan's entry now names its reason and cites it, and distinguishes a refusal from an untested path",
     "status":  "PARTIAL - automated verification complete for 5 of 6 items; the 24h profile is still running",
     "purpose":  "One place listing everything that automated verification cannot establish, so the real-machine pass has an explicit scope instead of an implied one.",
     "willBeResolvedByTheRunInProgress":  [
@@ -81,9 +81,11 @@
                                        },
                                        {
                                            "item":  "Tan's Huge Trees and TYG write-set certification",
-                                           "why":  "Recorded as blocked rather than run",
-                                           "source":  "traversal certificate blocked",
-                                           "howToRunIt":  "Requires those mods present and their write sets certified, which is recorded as blocked rather than run."
+                                           "why":  "A profile with insufficient Tan's Huge Trees protection still refuses authorization, and the S5 full package stays BLOCKED. Recorded in docs/evidence/s1b/cross-cell/pre-fix-report.md line 133.",
+                                           "source":  "docs/evidence/s1b/cross-cell/pre-fix-report.md line 133",
+                                           "howToRunIt":  "Requires those mods present and their write sets certified. No method exists inside this repository.",
+                                           "thisIsARefusalNotAnUntestedPath":  "The block is implemented rather than pending: ProtectionSnapshot throws MISSING_FEATURES_PLAN when protection is captured before FEATURES completes and T0_CORRUPT on a snapshot hash mismatch, and OwnershipGuard throws on a write to a protected block. The source also records that no mod was deleted to fake compatibility - removing Tan's Huge Trees would have made the package load, and that was declined.",
+                                           "whyThatDistinctionMatters":  "An entry saying only 'blocked' reads the same whether the block is a deliberate refusal or an untested path. This one is the former."
                                        },
                                        {
                                            "item":  "S2: GW-011 twelve-item fixture matrix, real calls on both sides, real road construction, save replay",
