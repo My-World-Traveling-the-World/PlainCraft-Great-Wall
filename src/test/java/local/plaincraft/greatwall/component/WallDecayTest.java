@@ -18,7 +18,9 @@ class WallDecayTest {
         assertFalse(c.voxels().isEmpty());
         assertTrue(c.voxels().stream().anyMatch(v->v.pos().x()>0&&v.kind()==IntentKind.SOLID));
         assertTrue(c.voxels().stream().filter(v->v.pos().x()>=0&&v.kind()==IntentKind.SOLID).allMatch(v->v.pos().y()<68));
-        assertTrue(c.voxels().stream().filter(VoxelIntent::walkable).allMatch(v->v.pos().x()<0));
+        var walkable=c.voxels().stream().filter(VoxelIntent::walkable).toList();
+        assertFalse(walkable.isEmpty(),"the intact side of the span must contain walkable voxels, or the side check below passes vacuously");
+        assertTrue(walkable.stream().allMatch(v->v.pos().x()<0));
         assertFalse(c.requiredRoutes().isEmpty());
     }
     @Test void finalPartialCellDoesNotDemandNonexistentFutureStations() {

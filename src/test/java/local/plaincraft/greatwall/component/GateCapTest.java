@@ -68,6 +68,8 @@ class GateCapTest {
         var c=new EndCap(new DecayField(0),TemplateFixtures.PALETTE).compile(input);
         assertFalse(c.voxels().isEmpty());
         assertTrue(new SupportGraph().reachable(c,new Point3i(-9,84,0),new Point3i(-28,64,6)));
-        assertTrue(c.voxels().stream().filter(VoxelIntent::walkable).allMatch(v->v.pos().x()< -8));
+        var egress=c.voxels().stream().filter(VoxelIntent::walkable).toList();
+        assertFalse(egress.isEmpty(),"a ground egress case must contain walkable voxels, or the bounds check below passes vacuously");
+        assertTrue(egress.stream().allMatch(v->v.pos().x()< -8));
     }
 }
