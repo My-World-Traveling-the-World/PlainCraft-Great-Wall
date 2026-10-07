@@ -1,0 +1,23 @@
+{
+    "check":  "verify the S4 checklist-contract evidence the report cites for the symlink NOT_RUN",
+    "date":  "2026-10-07",
+    "why":  "The report explains the symlink case by citing this directory, its exit code and a stack trace. Those citations are the reason the NOT_RUN is read as an environment limit rather than an untested path, so each was checked against the artefact.",
+    "theReportsCitations":  {
+                                "directory":  "docs/evidence/build/s4-checklist-contract-20261003",
+                                "exitCode":  "1",
+                                "stackTrace":  "java.nio.file.FileSystemException on linked.png, through WindowsFileSystemProvider.createSymbolicLink, into SmokeVisualChecklistTests.linkedEvidenceFails"
+                            },
+    "eachCheckOut":  {
+                         "directoryExists":  "Yes, holding archived-files.sha256.json, execution.json, run.log and source-files.sha256.json",
+                         "exitCodeMatches":  "execution.json records status COMMAND_FAILED with exitCode 1, and run.log ends with BUILD FAILED in 20s",
+                         "methodExists":  "SmokeVisualChecklistTests line 224 declares private static void linkedEvidenceFails, and it does call Files.createSymbolicLink - three times, wrapped in a catch for IOException, UnsupportedOperationException and SecurityException that throws the link_cases=NOT_RUN message"
+                     },
+    "theEvidenceIsSelfContained":  {
+                                       "logSha256Recorded":  "7b06582576061b9178508196c53ed69773ab80f099bf274e73eb43d01be2b815",
+                                       "recomputed":  "7b06582576061b9178508196c53ed69773ab80f099bf274e73eb43d01be2b815",
+                                       "verdict":  "Identical, so run.log has not changed since the record was written.",
+                                       "whyItMatters":  "It hashes the copy in its own directory rather than a build/ path, so the evidence validates itself even after a clean removes build/."
+                                   },
+    "whatThisEstablishes":  "The symlink NOT_RUN rests on a real failing run with a real stack trace through a method that exists and calls the API that fails. It is an environment limit, as the report says, rather than a case nobody attempted.",
+    "head":  "d35f393"
+}
