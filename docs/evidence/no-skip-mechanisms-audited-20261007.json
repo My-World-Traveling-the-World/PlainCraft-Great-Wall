@@ -1,0 +1,20 @@
+{
+    "check":  "whether any test can be skipped, marked optional, or silently not required - completing the audit interrupted last round",
+    "date":  "2026-10-07",
+    "why":  "An audit of checks that cannot fail is incomplete without asking whether a failure can be made to not count. JUnit has @Disabled and assumptions; Minecraft's GameTest annotation has required, manualOnly, attempts and requiredSuccesses, any of which could soften a failure.",
+    "junitSide":  {
+                      "disabledOrIgnore":  "no occurrences",
+                      "assumptions":  "no assumeTrue, assumeFalse or Assumptions calls",
+                      "skippedCounterInResults":  "zero",
+                      "validated":  "@Test appears 611 times, @GameTest 129, @Timeout 1 and @TempDir 18, so the searches find what is present"
+                  },
+    "gameTestSide":  {
+                         "whatTheAnnotationOffers":  "Read from the bytecode with javap rather than from memory: timeoutTicks, batch, skyAccess, rotationSteps, required, manualOnly, template, setupTicks, attempts, requiredSuccesses",
+                         "theDefaults":  "required true, manualOnly false, rotationSteps 0, skyAccess false, attempts 1, requiredSuccesses 1, setupTicks 0, timeoutTicks 100, batch defaultBatch",
+                         "whatOurSourceSets":  "Only three attributes appear across all 129 cases: template 129 times, timeoutTicks 114 times and batch 33 times",
+                         "soTheDefaultsApply":  "required is true everywhere, so a failing case fails the suite. manualOnly is false everywhere, so no case is held back for manual invocation. rotationSteps is 0, so no case is quietly retried at another orientation. attempts is 1 and requiredSuccesses is 1, so nothing is retried until it passes."
+                     },
+    "whyTheDefaultsMatterHere":  "required=false would let a failing case be reported without failing the suite, and attempts greater than one would make a flaky case pass on a retry. Neither is in use, so the pending run's result will mean what it appears to mean.",
+    "conclusion":  "No test in this project can be skipped, marked optional, or retried into passing. Combined with the earlier checks - no trivially-true assertions, two filtered-stream assertions fixed, all 25 bare-looking methods delegating to asserting helpers, and no vacuous throw assertions - the suite has no known path by which a test is counted while checking nothing or a failure is absorbed.",
+    "head":  "79fd548"
+}
