@@ -372,6 +372,35 @@ java.nio.file.FileSystemException: ...\linked.png: 客户端没有所需的特�
 因此 tag 漂移最终会被「旧存档拒绝加载」捕捉；但那是一个**迟滞且不透明**的信号，
 上表的直接断言才是第一道防线。
 
+### 压测期间的构建干扰实测（2026-10-07）
+
+用户授权「运行 24h 压测时，不影响的工作可同步处理」。我实测确认**编译与测试并不属于
+「不影响」**，此处记录边界，避免后续重复试探：
+
+| 窗口 | 我在做什么 | `Can't keep up` 速率 | 最大单 tick |
+|---|---|---|---|
+| A 08:47–11:00 | 无构建 | **22.5 次/小时** | 28854 ms |
+| B 11:00–11:45 | 跑 `runGameTest` / `test --rerun-tasks` / `compileXxx --rerun-tasks` | **58.7 次/小时** | 24129 ms |
+
+**结论**：压测期间只做**纯只读分析**（读日志、读源码、统计）。`runGameTest` 会另起一个
+MC 服务端，与压测争抢 CPU 与内存，影响最明显。
+
+**但未导致失败**：watchdog 致命线是**单 tick 60 秒**，历史最大 28.9 秒（裕度 31 秒），
+且 `A single server tick took` 计数全程为 **0**。`Can't keep up` 本身是压测的
+**设计特征**——`StressController` 注释明写 "The profile deliberately overloads the server"，
+每 tick 最多派发 4 个 chunk、pending 上限 65536。
+
+### 压测中唯一一条 ERROR 的解释（2026-10-07）
+
+`
+[09:12:29] [Worker-Main-11/ERROR]: Failed to fetch mob spawner entity at (203577, -36, 20)
+`
+
+全程仅此 1 条。**这不是缺陷**：`WallSpawnerGuard` 的类注释写明「The wall emits no real
+`mob_spawner` block entity; its certified birth source is the `SpawnSlot` table recorded in
+the chunk marker」，即长城根本不依赖原版刷怪笼实体，出生走 `GarrisonController.tick()`。
+该错误是原版在一个未加载的刷怪笼上取实体失败，属于被本 mod 设计绕开的那条路径。
+
 ### 激活专属群系会改变世界指纹
 
 数据包默认 **NORMAL（opt-in）**。手动启用后，世界指纹变化，**旧存档会按设计拒绝加载**。
