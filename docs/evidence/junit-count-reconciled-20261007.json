@@ -1,0 +1,31 @@
+{
+    "check":  "reconcile the 629 JUnit figure by two independent methods, applying the lesson from the source-set miscount",
+    "date":  "2026-10-07",
+    "why":  "Last round showed that enumerating named items can miss one - five source sets named, six present. The same risk applies to a headline count, so 629 was reconciled rather than restated.",
+    "methodOne_authoritativeXml":  {
+                                       "source":  "build/test-results/test, 103 suite files",
+                                       "tests":  629,
+                                       "failures":  0,
+                                       "errors":  0,
+                                       "skipped":  0
+                                   },
+    "methodTwo_sourceDeclarations":  {
+                                         "atTest":  611,
+                                         "atParameterizedTest":  4,
+                                         "atRepeatedTest":  0,
+                                         "declarationBase":  615,
+                                         "difference":  14
+                                     },
+    "theDifferenceReconciled":  {
+                                    "explanation":  "Parameterized tests expand into several instances from one declaration, so the XML count exceeds the declaration count by construction.",
+                                    "perClass":  [
+                                                     "WallRampTest 9 declarations to 18 instances, plus 9",
+                                                     "SurfaceProbeTest 7 to 11, plus 4",
+                                                     "RampSpecificationTest 3 to 4, plus 1"
+                                                 ],
+                                    "sum":  14,
+                                    "arithmetic":  "615 plus 14 equals 629, which matches method one exactly"
+                                },
+    "whatThisEstablishes":  "The figure is not merely asserted: every one of the 629 is accounted for as either a plain declaration or a parameterized expansion, and none of the 103 suites reports a failure, an error or a skip.",
+    "head":  "02dfb0a"
+}
