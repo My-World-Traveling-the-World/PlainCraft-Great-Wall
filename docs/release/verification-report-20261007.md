@@ -263,6 +263,31 @@ trace 缓冲上限、退出码不可见、30 秒排空窗口、压力 stop 超�
 | **S5 24 小时** | `NOT_RUN` | 运行中，未出结果 |
 | **严格离线构建** | **已通过** | `remapJar remapSourcesJar --offline --dependency-verification=strict --rerun-tasks` 成功，`compileJava` 真的重新执行，SHA 与联网构建一致 |
 | **Tan's Huge Trees / TYG write-set** | `BLOCKED` | 依赖外部 mod |
+| **符号链接反例（S4 checklist 契约）** | `NOT_RUN` | 本机未启用 Windows 开发者模式，`Files.createSymbolicLink` 无权限。见下 |
+
+### 符号链接反例为何未通过（环境限制，非缺陷）
+
+`docs/evidence/build/s4-checklist-contract-20261003` 是一个 `exitCode=1` 的记录，根因是：
+
+```
+java.nio.file.FileSystemException: ...\linked.png: 客户端没有所需的特权
+    at WindowsFileSystemProvider.createSymbolicLink
+    at SmokeVisualChecklistTests.linkedEvidenceFails
+→ link_cases=NOT_RUN: symbolic-link fixtures unavailable; no overall PASS
+```
+
+**这是正确的行为，不是缺陷**：`SmokeVisualChecklistTests` 在无法创建符号链接时
+**明确拒绝给出总体 PASS**，而不是跳过反例后谎报通过。已核实本机
+`HKLM:\...\AppModelUnlock\AllowDevelopmentWithoutDevLicense` **未设置**（开发者模式关闭），
+因此该反例确实无法执行。
+
+该限制**并非无人知晓** —— `docs/S4-状态.md` 已如实记录：
+
+> `link_cases=NOT_RUN`（Windows 创建 symbolic-link 权限不可用）。
+> 未启用开发者模式、未提升系统权限、未跳过或删除链接反例。
+
+**本次新增**：把它补进本报告与 `acceptance.json` 的真机清单（此前只在 S4 状态文档里）。
+若要拿到该反例的证据，需在**启用开发者模式或提升权限**的环境下重跑 S4 契约。
 
 ### 其余「测试零覆盖」类（系统扫描结果）
 
