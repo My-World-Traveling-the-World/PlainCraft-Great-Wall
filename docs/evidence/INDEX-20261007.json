@@ -1,9 +1,9 @@
 {
     "document":  "index of the evidence written during the 2026-10-07 automated-verification session",
     "date":  "2026-10-07",
-    "revision":  "5 - 103 entries",
-    "purpose":  "The session wrote 103 evidence documents. This maps each to the claim it supports so a reader can find the right one instead of opening all of them.",
-    "note":  "INDEX-20261007.json is this file and is deliberately not listed among its own entries. The sample series is one glob entry rather than 205, since the samples share a single claim. The index is expected to be refreshed once more after the profile ends.",
+    "revision":  "7 - merges a duplicated goal-item-6 group created by my own edit",
+    "purpose":  "The session wrote 119 evidence documents. This maps each to the claim it supports so a reader can find the right one instead of opening all of them.",
+    "note":  "INDEX-20261007.json is this file and is deliberately not listed among its own entries. The sample series is one glob entry rather than 205, since the samples share a single claim. A final refresh is expected after the profile ends.",
     "grouped":  {
                     "goal item 1 - release gate":  [
                                                        {
@@ -123,6 +123,10 @@
                                                    {
                                                        "file":  "junit-baseline-resolved-20261007.json",
                                                        "claim":  "the 562 baseline belongs to commit 50a1245, not 3447428; both endpoints reconcile under the same model"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-run-isolation-20261007.json",
+                                                       "claim":  "build/run/gameTest and the stress run diverge at the third path segment, so neither can disturb the other"
                                                    }
                                                ],
                     "goal item 3 - real-terrain traversal":  [
@@ -253,6 +257,34 @@
                                                          {
                                                              "file":  "round-budget-corrected-20261007.json",
                                                              "claim":  "withdraws the shortfall claim: 118 rounds needed against 167 available, 49 rounds of slack"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-disk-exact-reading-20261007.json",
+                                                             "claim":  "9595407680 bytes at 5.12h with the precision limit of earlier rounded readings stated"
+                                                         },
+                                                         {
+                                                             "file":  "s5/refill-cadence-stability-20261007.json",
+                                                             "claim":  "37 refills, gaps 15.7 to 23.1 minutes, first half 18.7 against second half 18.0, and chunk accounting reconciles exactly"
+                                                         },
+                                                         {
+                                                             "file":  "s5/sampling-interval-bimodal-20261007.json",
+                                                             "claim":  "sampling is bimodal, 24 at 27-31s and 15 at 53-80s, and the lag rate oscillates with the cycle rather than drifting"
+                                                         },
+                                                         {
+                                                             "file":  "s5release-evidence-safety-20261007.json",
+                                                             "claim":  "Test-S5Release writes to docs/, so its own clean cannot destroy what it captured"
+                                                         },
+                                                         {
+                                                             "file":  "s5stress-testroot-value-20261007.json",
+                                                             "claim":  "the exact -TestRoot, and that build/run/s5stress... passes the guard but has no reports directory"
+                                                         },
+                                                         {
+                                                             "file":  "round-cap-risk-20261007.json",
+                                                             "claim":  "rounds arrive at 1.6-2.6 minutes, so 153 rounds cover about 5 hours against 11.3 needed - a shortfall of about six hours"
+                                                         },
+                                                         {
+                                                             "file":  "ledger-update-shape-20261007.json",
+                                                             "claim":  "which of the eight ledger fields change at closing, and that startedUtc converts correctly under UTC+8"
                                                          }
                                                      ],
                     "goal item 6 - five source sets":  [
@@ -263,6 +295,10 @@
                                                            {
                                                                "file":  "clientsmoke-source-set-20261007.json",
                                                                "claim":  "clientSmoke content, and the checklist that structurally cannot record an automated visual pass"
+                                                           },
+                                                           {
+                                                               "file":  "source-set-inventory-corrected-20261007.json",
+                                                               "claim":  "six source sets, not five; 798 class files, not 794; the sixth is src/client with 4 classes"
                                                            }
                                                        ],
                     "real-machine readiness":  [
@@ -333,6 +369,38 @@
                                                    {
                                                        "file":  "report-section4-aligned-20261007.json",
                                                        "claim":  "the report's section 4 gained the four stage-level items the checklist already carried"
+                                                   },
+                                                   {
+                                                       "file":  "height6000-entry-corrected-20261007.json",
+                                                       "claim":  "that entry implied a configuration route that does not exist; it now states the unit coverage and what genuinely remains"
+                                                   },
+                                                   {
+                                                       "file":  "golden-seed-entry-verified-20261007.json",
+                                                       "claim":  "-Ps1cSeed and -Ps1cRealWall both exist and appear together in a recorded command"
+                                                   },
+                                                   {
+                                                       "file":  "s4-symlink-entry-verified-20261007.json",
+                                                       "claim":  "the cited line 240 is the throw, with three exception types treated as one unavailable-fixture condition"
+                                                   },
+                                                   {
+                                                       "file":  "integration-matrix-entry-verified-20261007.json",
+                                                       "claim":  "three mod jars confirmed from a real header, and profile never appears in a classpath expression"
+                                                   },
+                                                   {
+                                                       "file":  "tans-entry-reason-traced-20261007.json",
+                                                       "claim":  "the block is a refusal on protection grounds, and removing the mod to fake compatibility was declined"
+                                                   },
+                                                   {
+                                                       "file":  "biome-entry-verified-20261007.json",
+                                                       "claim":  "NORMAL confirmed in code and in a live log line; the fingerprint consequence is stated in the code comment"
+                                                   },
+                                                   {
+                                                       "file":  "walking-and-visual-entries-verified-20261007.json",
+                                                       "claim":  "the schema rejects an automated claim of visibility rather than merely discouraging it"
+                                                   },
+                                                   {
+                                                       "file":  "strict-offline-entry-verified-20261007.json",
+                                                       "claim":  "a prior offline build succeeded under an authorized proxy; the entry correctly asks for the stronger form"
                                                    }
                                                ],
                     "integrity and hygiene checks":  [
@@ -415,6 +483,14 @@
                                                          {
                                                              "file":  "todo-sweep-all-sources-20261007.json",
                                                              "claim":  "zero TODO/FIXME/XXX/HACK/WIP across 369 files in all six source sets, tools and gradle, validated by positive control"
+                                                         },
+                                                         {
+                                                             "file":  "red-line-1-reproduced-20261007.json",
+                                                             "claim":  "36 candidate calls reduce to one guarded join; the rest are Optional.get and ThreadLocal.get"
+                                                         },
+                                                         {
+                                                             "file":  "red-lines-2-3-reproduced-20261007.json",
+                                                             "claim":  "no static mutable collection, and no possibleBiomes call in src/main"
                                                          }
                                                      ],
                     "preserved stress sample series":  [
@@ -426,13 +502,7 @@
                                                                "file":  "s5/s5-stress-24h-inprogress-20261007/stress-reports/run-1791334079847/header.json",
                                                                "claim":  "the run's inputs: seed, mode, modSHA, jvmFlags, jdk, cpu and heap ceiling"
                                                            }
-                                                       ],
-                    "goal item 6 - source sets":  [
-                                                      {
-                                                          "file":  "source-set-inventory-corrected-20261007.json",
-                                                          "claim":  "six source sets, not five; 798 class files, not 794; the sixth is src/client with 4 classes"
-                                                      }
-                                                  ]
+                                                       ]
                 },
-    "head":  "01d340f"
+    "head":  "16fb45e"
 }
