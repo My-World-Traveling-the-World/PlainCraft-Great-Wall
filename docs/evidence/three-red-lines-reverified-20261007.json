@@ -1,0 +1,25 @@
+{
+    "check":  "three architectural red lines re-verified",
+    "date":  "2026-10-07",
+    "redLine1_worldgenThreadNeverBlocks":  {
+                                               "verdict":  "held",
+                                               "search":  "src/main for .join() and Future.get()",
+                                               "findings":  1,
+                                               "onlyOccurrence":  "command/DiagnosticExporter.java:148 - plans.add(lease.future().join())",
+                                               "whySafe":  "Guarded by planner.assertOutsidePlanningThread('diagnostic export') at the top of requireWindow, and export() runs on a dedicated ioOwner executor. A call from the planner thread fails loudly instead of deadlocking, so the rule is enforced rather than merely followed.",
+                                               "note":  "Optional.get() and AtomicReference.get() matches were excluded: they are not blocking."
+                                           },
+    "redLine2_crossThreadStateImmutable":  {
+                                               "verdict":  "held",
+                                               "search":  "src/main for static mutable collections (HashMap, ArrayList, HashSet, LinkedList)",
+                                               "findings":  0,
+                                               "note":  "No static mutable collection exists, so cross-thread state is either immutable or a ConcurrentHashMap."
+                                           },
+    "redLine3_neverCallPossibleBiomes":  {
+                                             "verdict":  "held in src/main; one mention in a test comment",
+                                             "mainOccurrences":  0,
+                                             "onlyOccurrence":  "src/test/java/local/plaincraft/greatwall/decay/PaletteBlendTest.java:96, inside the comment on unknownBiomeFallsBackAndTagsWin",
+                                             "interpretation":  "The comment states that classify() never calls it and names the iteration actually used (holder keys plus tag membership). It is an assertion that the line is not crossed, in source that never ships, so the shipped code is clean. Recorded explicitly so a future scan does not report it as a violation."
+                                         },
+    "head":  "a2d38a3"
+}
