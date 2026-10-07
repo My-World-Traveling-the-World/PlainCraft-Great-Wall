@@ -25,5 +25,11 @@
                     "acceptAManualResume":  "Let the cap arrive and resume afterwards with a fresh instruction. Nothing is lost - the profile and its evidence are unaffected - but the closing steps become a separate request."
                 },
     "theEvidenceIsSafeEitherWay":  "The profile writes its report and samples to build/, and the ordered closing steps protect them. A round-cap stop does not damage anything; it only stops me from finishing without a new instruction.",
-    "head":  "addbe71"
+    "head":  "addbe71",
+    "confirmedByTwoMethods":  {
+                                  "methodOne":  "Profile elapsed between status checks: 12.52 hours at round 139 and 12.71 at round 145, so 11.4 minutes across 6 rounds, which is 1.9 minutes per round.",
+                                  "methodTwo":  "Commit timestamps for the last 10 commits span 16.25 minutes, or 1.6 minutes each, and rounds and commits run close to one to one.",
+                                  "agreement":  "Both land in the 1.6 to 2.6 minute range, so the finding does not depend on a single measurement.",
+                                  "threshold":  "Covering 11.3 hours across 153 rounds needs 4.4 minutes per round or slower, which is more than twice the measured pace."
+                              }
 }
