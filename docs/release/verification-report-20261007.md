@@ -213,6 +213,26 @@ trace 缓冲上限、退出码不可见、30 秒排空窗口、压力 stop 超�
 | **客户端视觉/画质检查** | `NOT_RUN` | `runClientSmoke` 会启动真实客户端，`SmokeVisualChecklist` 自我声明「Neither case creation nor state observations certify visuals」，`observer` 必须是 `human` |
 | **专属群系实际生效** | `NOT_RUN` | 数据包为 **NORMAL（需手动启用）**；`ForcePlacement` 仅做过静态证明，**真实 RegistryOps 解码从未跑过**。见下方「群系着色的证据边界」 |
 | **群系写入器 `GreatWallBiomeWriter`** | **已补测并通过** | 新增 `BiomeWriterGameTests`（3 例），见下 |
+
+### 群系数据包内容核对（2026-10-07，静态）
+
+对打进 jar 的 `resourcepacks/great_wall_biome/` 做了逐项核对：
+
+| 项 | 实测 | 结论 |
+|---|---|---|
+| 目录约定 | `data/<ns>/lithostitched/biome_injector/`、`worldgen/biome/`（**单数**） | ✅ 符合规格 |
+| 资源包 `pack_format` | 48 | ✅ |
+| `density_function/registration_zero.json` | 裸 `0.0`（注入器条件的不可满足形式） | ✅ 按设计 |
+| 注入器 | `lithostitched:force_placement`，`priority 1000`，条件 `registration_zero: 1.0` | ✅ 注册身份、永不自然放置 |
+| 群系 `features` **组数** | **11**（与原版 plains 相同） | ✅ |
+| 树类 feature | `tree`/`trunk`/`leaves`/`sapling`/`forest` **命中 0** | ✅ 无树 |
+| `features[9]`（VEGETAL_DECORATION）逐条对照 | 与原版 plains **仅差 `minecraft:trees_plains` 一项被移除** | ✅ 即「plains 减树」 |
+
+**注**：早前对话中我曾把组数说成 9，实际是 **11**；`features[9]` 是**下标 9**（0 起）的植被组，
+两者不是同一个数字。上面的逐条对照才是准确表述。
+
+（jar 内 `data/plaincraft_great_wall/` 的 `loot_table`、`tags`、`worldgen/biome/` 亦均为单数命名，
+无复数目录警告隐患。）
 | **height6000 / 非默认 minY** | `NOT_RUN` | 未测的配置组合 |
 | **Golden 对照种子** | `NOT_RUN` | 未跑 |
 | **integration-matrix 其余 profile** | `NOT_RUN` | 只跑过 `vanilla`。**并且这三个 profile 无法用当前 harness 补齐**：smoke 运行只装载 3 个 jar（fabric-api + 本 mod + smoke harness），`smokeProfile` 只改运行目录名、`expectedAdapter`、堆大小与 `-Dgreatwall.smoke.profile`，**不会**把 Tectonic / C2ME / OpenCL pack 加进 classpath —— 传 `-PsmokeProfile=tectonic` 只会得到一个「标签是 tectonic、实际装载相同 3 个 jar」的运行。Tectonic 与 full-pack OpenCL 两行**必须靠真机实例** |
