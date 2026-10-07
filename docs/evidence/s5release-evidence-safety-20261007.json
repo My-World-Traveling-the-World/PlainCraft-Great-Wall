@@ -1,0 +1,20 @@
+{
+    "check":  "where Test-S5Release.ps1 writes its evidence, and whether its own clean can destroy what it just captured",
+    "date":  "2026-10-07",
+    "why":  "The script runs clean twice. If it wrote evidence under build/ it would delete its own output on the second pass, and the run would end with nothing to show. This is the same hazard already identified for the 24h profile, and it applies to the tool that runs last.",
+    "evidenceLocation":  "docs\\evidence\\s5\\\u003crunId\u003e\\ with per-build subdirectories build-a and build-b, joined from the project root rather than from build/.",
+    "orderingIsSafe":  {
+                           "sequence":  "Invoke-GradleBuild waits for the process to exit, writes stdout.log and stderr.log, then reads build/release/verifyReleaseArtifacts.json and copies it, then hashes the jars in build/libs.",
+                           "whyItIsSafe":  "Every read happens after that build's own clean has already completed, so nothing removes the files mid-read.",
+                           "isolationBetweenRounds":  "Each round copies into its own build-a or build-b directory under docs/, so the second round's clean cannot reach the first round's captured evidence.",
+                           "shaComparison":  "The comparison reads the jar hashes recorded in each build's returned structure, which came from its own copy step - not from build/libs, which the second clean would have replaced."
+                       },
+    "theJarSelectionNote":  "The script excludes -sources.jar and -dev.jar explicitly and says why in a comment: the earlier version relied on sort order, which only worked because '.' precedes '-' under culture-aware comparison - an accident of punctuation rather than a property of the names. Stating the exclusion says what is wanted.",
+    "timeoutHeadroom":  {
+                            "ceiling":  "60 minutes per build, enforced by killing the process tree",
+                            "measured":  "30 seconds for a full offline build with all 18 tasks executing rather than being up-to-date",
+                            "verdict":  "About 120 times the measured cost, so the ceiling will not be the reason a run ends."
+                        },
+    "conclusion":  "The tool that runs last will not destroy its own evidence, and its timeout will not cut it short. Both were worth confirming because each would have produced an empty result in the final step of a long sequence.",
+    "head":  "234f10f"
+}
