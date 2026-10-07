@@ -1,0 +1,24 @@
+{
+    "check":  "whether assertThrows and assertDoesNotThrow can pass without the exception behaviour they claim to test",
+    "date":  "2026-10-07",
+    "why":  "Continuing the hunt for checks that cannot fail. assertDoesNotThrow around an empty lambda always passes, and assertThrows around an expression that cannot throw always fails - but the subtler risk is a loop or a broad catch that makes the assertion vacuous rather than wrong.",
+    "emptyLambdaScan":  {
+                            "assertDoesNotThrowAroundAnEmptyBody":  "no occurrences",
+                            "assertThrowsAroundAnEmptyBody":  "no occurrences",
+                            "validated":  "assertDoesNotThrow appears 16 times and assertThrows 388 times, so both searches work and the zeros are real"
+                        },
+    "exceptionTypeDistribution":  "Most are specific - IllegalArgumentException 99, IOException 70 plus 10 fully qualified, WallFailure 65 plus 3 qualified, UnsupportedOperationException 33, IllegalStateException 31.",
+    "theBroadOnesWereCheckedIndividually":  {
+                                                "count":  "4 of 388 - three asserting Exception and one asserting RuntimeException",
+                                                "ProbePlannerTest":  "assertThrows(Exception.class, () -\u003e planner.require(KEY).get(2, TimeUnit.SECONDS)) inside a loop over FAIL and CANCEL outcomes. The broad type is deliberate: CompletableFuture.get wraps the cause in ExecutionException, so naming the wrapper is the correct thing to assert.",
+                                                "PlannerSchedulerTest":  "two instances of the same CompletableFuture.get shape, same reasoning",
+                                                "WallWorldStateTest":  "assertThrows(RuntimeException.class, () -\u003e WallWorldState.load(broken, null), key) inside a loop over the saved tag's keys"
+                                            },
+    "theOneThatNeededAVacuityCheck":  {
+                                          "theRisk":  "WallWorldStateTest's assertion sits inside a loop over saved.getAllKeys(). If that set were empty the loop would never run and the assertion would never execute, while the test still passed.",
+                                          "theCheck":  "A sibling test in the same file asserts assertEquals(8, tag.getAllKeys().size()) on the same construction, so the loop runs eight times.",
+                                          "verdict":  "Not vacuous. Eight keys are each removed in turn and each load is required to throw."
+                                      },
+    "conclusion":  "No assertion in the suite is vacuous by way of an empty lambda, an unreachable body, or an empty iteration. The three broad exception assertions are broad because the wrapped type genuinely is what the future throws.",
+    "head":  "ab4aff0"
+}
