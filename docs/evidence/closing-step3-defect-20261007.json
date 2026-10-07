@@ -1,0 +1,21 @@
+{
+    "finding":  "a defect in my own closing procedure: step 3 would archive a truncated JUnit set",
+    "date":  "2026-10-07",
+    "howItSurfaced":  "Checking that each closing step's precondition was ready. Step 4 archives build/test-results/test, and the question was whether step 3's runGameTest regenerates that directory.",
+    "theAnswer":  {
+                      "method":  "gradlew test --dry-run, and reading its dependency graph",
+                      "result":  "The graph is compileTestJava, processTestResources, testClasses, testClasspathBridge, test - runGameTest is not in it",
+                      "meaning":  "test and runGameTest are independent tasks. runGameTest writes build/reports/gametest/results.xml only; the JUnit XML in build/test-results/test comes from test alone."
+                  },
+    "theDefect":  "Step 3 ran runGameTest, and step 4 then archived build/test-results/test. Since runGameTest does not run test, step 4 would have archived whatever was already there - which today is a single XML left by two filtered spot-check runs, not 103 files covering 629 tests. The procedure would have filed a truncated set as the full record, which is the same failure it was written to prevent.",
+    "theFix":  "Step 3 now runs gradlew test runGameTest, with a note saying why both are needed and that the independence was verified by dry run.",
+    "whyThisIsWorthRecording":  "The step was added two rounds ago specifically to stop a spot check from destroying the full results. It would have preserved the wreckage instead, and only a precondition check caught it - the step read correctly when I wrote it.",
+    "preconditionsVerifiedForTheOtherSteps":  {
+                                                  "step1":  "The run root and stress-reports directory exist with run-1791334079847 inside; stress-report.json is absent, which is correct while the profile runs",
+                                                  "step2":  "header.json present, 1346 samples so far, and build/s5-stress-24h2.log present at 0.2 MB",
+                                                  "step3":  "build/reports/gametest exists and is empty, which is expected before the run",
+                                                  "step5to6":  "Test-S5Release.ps1, Test-S5Stress.ps1 and Test-S5Faults.ps1 are all present",
+                                                  "step7":  "acceptance.json at 14.1 KB, INDEX-20261007.json at 48.5 KB and the verification report at 37.1 KB are all present"
+                                              },
+    "head":  "f2c1378"
+}
