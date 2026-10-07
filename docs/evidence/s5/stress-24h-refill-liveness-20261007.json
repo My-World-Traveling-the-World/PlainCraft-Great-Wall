@@ -1,0 +1,44 @@
+{
+    "check":  "24h profile will actually reach its window (goal item 5, decisive risk)",
+    "date":  "2026-10-07",
+    "risk":  "StressFixture.passed requires durationMet, and the controller stops when its pending queue drains. The position list is finite (MAX_PENDING = 65536), so without refill the run would end early and be failed for not certifying its requested duration.",
+    "codeConfirmsTheFix":  [
+                               "StressController.tick() refills when pending.isEmpty() \u0026\u0026 inFlight.isEmpty() \u0026\u0026 !windowElapsed()",
+                               "refills is a plain AtomicLong counter with no cap, so the count is unbounded by design",
+                               "the surrounding comment records the failure it fixed: a 24h request was on course to end after roughly 4.5h"
+                           ],
+    "observedRefills":  [
+                            {
+                                "remainingSeconds":  81290,
+                                "ordinal":  1,
+                                "elapsedSeconds":  5110
+                            },
+                            {
+                                "remainingSeconds":  80168,
+                                "ordinal":  2,
+                                "elapsedSeconds":  6232
+                            },
+                            {
+                                "remainingSeconds":  78800,
+                                "ordinal":  3,
+                                "elapsedSeconds":  7600
+                            },
+                            {
+                                "remainingSeconds":  77706,
+                                "ordinal":  4,
+                                "elapsedSeconds":  8694
+                            },
+                            {
+                                "remainingSeconds":  76423,
+                                "ordinal":  5,
+                                "elapsedSeconds":  9977
+                            },
+                            {
+                                "remainingSeconds":  75305,
+                                "ordinal":  6,
+                                "elapsedSeconds":  11095
+                            }
+                        ],
+    "interpretation":  "Six refills so far, roughly every 19-23 minutes, each logging a remainingSeconds that counts down from 86400. That is the behaviour that distinguishes a full-window profile from one that quietly drained its queue, and it is visible while the run is still going rather than only in the final report.",
+    "head":  "d577fb0"
+}
