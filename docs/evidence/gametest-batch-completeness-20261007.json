@@ -1,0 +1,29 @@
+{
+    "check":  "can any @GameTest silently fail to run, and does results.xml prove the full suite ran",
+    "date":  "2026-10-07",
+    "why":  "The suite splits into batches - 96 in defaultBatch plus 33 across 13 named batches - and Fabric chunks defaultBatch further, since a 33-test subset reported only defaultBatch:0. A chunk that never executes would leave tests silently unrun while the run still reported success.",
+    "directEvidenceFound":  {
+                                "resultsFile":  "docs/evidence/build/full-package-20261004/gametest-results.xml, timestamped 2026-10-03T16:01:01Z",
+                                "testcasesRecorded":  108,
+                                "failures":  0,
+                                "declaredAtThatCommit":  "git show on 4e0d5e1 and counting @GameTest across src/gametest gives exactly 108",
+                                "verdict":  "108 equals 108, so that run was complete rather than partial - the report file enumerates every declared test"
+                            },
+    "whatThisProves":  "results.xml is a reliable completeness check: its testcase count tracks the declared count. Comparing the two after the pending run therefore detects a chunk that did not execute, which a simple pass message would not.",
+    "thereforeForThePendingRun":  "The check to apply is results.xml testcase count against 129. If a batch chunk were skipped the count would fall short and the discrepancy would surface.",
+    "methodNote":  "I first asserted a Fabric default batch size of about 50 without evidence, then could not find the framework class to confirm it - the server-intermediary jar turned out to hold assets rather than classes. Rather than keep guessing, the historical results.xml settled the question by measurement, which was the stronger route anyway.",
+    "batchAccounting":  {
+                            "total":  129,
+                            "defaultBatch":  96,
+                            "namedBatches":  33,
+                            "namedBatchList":  [
+                                                   "pgw-allocation-audit 7",
+                                                   "pgw-cold-allocation 7",
+                                                   "pgw-adjacency-decision 6",
+                                                   "pgw-adjacency-fixture-diagnostic 3",
+                                                   "pgw-adjacency-matrix 2",
+                                                   "one each for pgw-ground-portals, pgw-tall-columns, pgw-production-memory, pgw-hydro-boundary, pgw-curved-gate-regression, pgw-survival-matrix, pgw-curve-matrix, pgw-curved-site-matrix"
+                                               ]
+                        },
+    "head":  "9fcb9b0"
+}
