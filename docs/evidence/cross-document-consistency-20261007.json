@@ -1,0 +1,16 @@
+{
+    "check":  "cross-document number consistency after a session of edits",
+    "date":  "2026-10-07",
+    "why":  "Several documents were edited across the session - the ledger, the report, preview-status, the README, the maintenance guide, S5-status and the real-machine checklist. Editing many files is how contradictions get introduced, so the load-bearing numbers were checked across all of them at once.",
+    "numbersChecked":  {
+                           "jarSha256":  "present in acceptance (3), preview-status (1), report (1)",
+                           "owners=505":  "present in preview-status, report and checklist; absent from acceptance, which is correct because that entry is the ledger's fault-matrix and stress rows rather than the traversal certificate",
+                           "629":  "unit count, in report (3) and checklist (2)",
+                           "129":  "GameTest count, in report (2) and checklist (2)",
+                           "794":  "class files, in report (4) and checklist (1)",
+                           "360":  "fault matrix records, in preview-status (2) and report (3)"
+                       },
+    "contradictionsFound":  0,
+    "contextCheck":  "The numbers in the checklist were read in context rather than counted: 629/629 is labelled 'unit suite', 129 as 'GameTest suite inventory confirmed at 129 methods across 34 classes', 794 as 'five-source-set compile green, 794 class files', and owners=505 with its accompanying voxels and feet figures. Each is attached to the right claim.",
+    "head":  "3c53cc0"
+}
