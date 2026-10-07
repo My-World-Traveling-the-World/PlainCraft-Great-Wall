@@ -1,0 +1,20 @@
+{
+    "check":  "slice timing: where it is measured, and what the 24h run does and does not show",
+    "date":  "2026-10-07",
+    "spec":  "docs/S1-S5实施规格/S5-恢复压测与发布.md line 450: each wall slice measured \u003c= 40ms, scheduling target 25ms, over-40ms saves the primitive call stack and counts as failure - without hiding the max behind averages or p99.",
+    "mechanismExists":  {
+                            "constant":  "WallMetrics.SLICE_LIMIT_NANOS = 40_000_000",
+                            "trackedNames":  "planner.sliceMs, planner.syncComputeMaxMs, worldgen.captureMs and other SLICE_TIMINGS entries",
+                            "behaviour":  "When a tracked timing exceeds the limit, WallMetrics stores the key with an .over40ms suffix carrying the primitive call stack"
+                        },
+    "mechanismProvenLive":  {
+                                "observedKey":  "worldgen.applyMs.over40ms",
+                                "valueLength":  1024,
+                                "containsCallStack":  true,
+                                "sample":  "metric=worldgen.applyMs elapsedNanos=56944100 class=StressController primitive=lambda scheduleChunk stack=...",
+                                "interpretation":  "This is the spec requirement working in the live run: a 56.9ms call was caught and its primitive stack recorded rather than being averaged away."
+                            },
+    "whySliceGaugesReadNA":  "In the stress profile the controller drives chunk generation directly, so planner and gameplay gauges have no producer and report N/A - 52 of 53. Wall-slice timings belong to the wall-building stages, which this profile does not exercise.",
+    "hardGateStatus":  "Removed by the 2026-10-05 authorization, recorded in RootSearch.java:140 as 'slice timing observed (no hard 40ms gate)'. The ledger scopes stress-24h accordingly. Treating the absence of a hard gate as an unverified claim would be wrong in the other direction.",
+    "head":  "c79fc0f"
+}
