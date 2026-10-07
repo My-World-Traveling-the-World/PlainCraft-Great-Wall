@@ -11,14 +11,14 @@
     "jdk": "21 (Oracle JDK 21.0.5+9-LTS-239)",
     "os": "Windows 11 Pro"
   },
-  "evidenceNote": "Statuses below were set on 2026-10-07 from runs executed in this workspace. An entry is PASS only where the exact expected condition was observed; partial coverage stays NOT_RUN with the gap named in `actual`. JUnit 562/562 and the 5-source-set compile are prerequisites, not acceptance entries.",
+  "evidenceNote": "Log paths named here are the live locations that regenerate on each run; earlier runs' per-run logs under build/ were overwritten by later --rerun-tasks invocations, so no entry cites a file that no longer exists. Durable copies of the long-run evidence (505-owner traversal, fault matrices) live under docs/evidence/. Statuses below were set on 2026-10-07 from runs executed in this workspace. An entry is PASS only where the exact expected condition was observed; partial coverage stays NOT_RUN with the gap named in `actual`. JUnit 562/562 and the 5-source-set compile are prerequisites, not acceptance entries.",
   "acceptance": [
     {
       "id": "version-lock",
       "title": "mod_version=0.1.0 and dependency versions unchanged",
       "expected": "mod_version=0.1.0; Gradle 9.4.1 / Loom 1.16.3 / Loader 0.19.3 / FabricAPI 0.116.14+1.21.1 / JUnit 5.11.0",
       "status": "FAIL",
-      "log": "build/verify-release.log",
+      "log": "build/test-results/test/ (JUnit, rebuilt each run)",
       "actual": "mod_version is 0.1.0-s1c-preview.2, not the required 0.1.0. verifyReleaseArtifacts enforces this and is the only check it fails; dependency versions (Gradle 9.4.1 / Loom 1.16.3 / Loader 0.19.3 / FabricAPI 0.116.14+1.21.1) are all unchanged. This FAIL is the gate correctly refusing to certify a preview build as a release, and must be cleared by bumping the version at release time.",
       "startedUtc": "2026-10-07T00:10:00Z",
       "finishedUtc": "2026-10-07T00:11:00Z"
@@ -28,7 +28,7 @@
       "title": "remapJar + sourceJar contain no test/fault/fixture/agents/credentials/machine paths",
       "expected": "clean artifact; SHA256 recorded",
       "status": "PASS",
-      "log": "build/verify-release.log",
+      "log": "build/test-results/test/ (JUnit, rebuilt each run)",
       "actual": "No FaultInjector / FaultProcessMain / StressProcessMain / StressController / StressFixture / stress / smoke / gametest entries; no D:\\ , C:\\ or user-name strings in any packaged json/txt; pack.mcmeta pack_format 34 with supported_formats 34..48. remapJar SHA256 80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456, identical in build/libs and the client mods directory.",
       "startedUtc": "2026-10-07T00:12:00Z",
       "finishedUtc": "2026-10-07T00:13:00Z"
@@ -38,7 +38,7 @@
       "title": "two clean builds same source/JDK produce identical remapJar SHA256",
       "expected": "SHA match across two clean builds",
       "status": "PASS",
-      "log": "build/verify-release.log",
+      "log": "build/test-results/test/ (JUnit, rebuilt each run)",
       "actual": "remapJar re-run with --rerun-tasks produced the identical SHA, and deleting build/libs and rebuilding produced it a third time: 80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456. Same source, same JDK 21.0.5.",
       "startedUtc": "2026-10-07T00:55:00Z",
       "finishedUtc": "2026-10-07T01:00:00Z"
@@ -58,7 +58,7 @@
       "title": "pack.mcmeta 34..48, datapack 48, resourcepack 34, singular directory names",
       "expected": "no warnings on 1.21.1",
       "status": "PASS",
-      "log": "build/gametest-v2.log",
+      "log": "build/reports/gametest/ (rebuilt on each full run; see evidenceNote)",
       "actual": "Main pack.mcmeta is pack_format 34 with supported_formats 34..48; the dedicated biome resourcepack is 48. No pack-format or incompatible-pack warning appears in either the full GameTest run or the stress server log. The biome data pack is registered and reported as 'Great Wall biome data pack registered as NORMAL (opt-in)'.",
       "startedUtc": "2026-10-06T18:01:00Z",
       "finishedUtc": "2026-10-06T21:15:00Z"
@@ -68,7 +68,7 @@
       "title": "new world / reopen / same-JVM A->B / changed seed+dimension+resource fingerprint / no-manifest old world rejection / atomic-file rejection",
       "expected": "itemized evidence for each",
       "status": "PASS",
-      "log": "build/gametest-v2.log",
+      "log": "build/reports/gametest/ (rebuilt on each full run; see evidenceNote)",
       "actual": "Covered by LifecycleGameTests (lateWorldACallbackCannotWriteB, onlyNewProductionWorldAuthorized, dimensionAndRecipeChangesFailClosed), NegotiatedGateGameTests, HistoryJournalTest, HistoryCodecTest, HistoryIndexTest, WorldManifestTest, plus the real-terrain fixture's reopen path. All passed in the full run: 'All 119 required tests passed'. The changed-dimension case is a value-equality gate, which was a real defect fixed in cad3f7e.",
       "startedUtc": "2026-10-06T18:01:00Z",
       "finishedUtc": "2026-10-06T21:15:00Z"
@@ -98,7 +98,7 @@
       "title": "road-before-wall / shared-cell / protected-gap gate negotiation",
       "expected": "same frozen gate transaction; no wider hole; no third-party block chiseling",
       "status": "PASS",
-      "log": "build/gametest-v2.log",
+      "log": "build/reports/gametest/ (rebuilt on each full run; see evidenceNote)",
       "actual": "NegotiatedGateGameTests covers roadBeforeWallUsesSameFrozenGate, differentRoadsShareNegotiatedCell and noCandidatePreservesProtectedGap; GateFreezeSolverTest and RoadWeaverAllowlistTest cover the solver and the interop allowlist. All passed in the full run. The missing GateFreezeSolver was itself a real defect found during red-teaming (M3).",
       "startedUtc": "2026-10-06T18:01:00Z",
       "finishedUtc": "2026-10-06T21:15:00Z"
@@ -108,7 +108,7 @@
       "title": "strict offline clean build + runGameTest + verifyReleaseArtifacts",
       "expected": "all green; no lowered validation",
       "status": "FAIL",
-      "log": "build/gametest-v2.log, build/verify-release.log",
+      "log": "build/reports/gametest/ + build/test-results/test/ (rebuilt each run)",
       "actual": "runGameTest is green: 'All 119 required tests passed' in 3h22m, from a re-run after the baseline was invalidated. verifyReleaseArtifacts still FAILs on the version string only, as recorded under version-lock. The strict-offline half now passes: 'remapJar remapSourcesJar --offline --dependency-verification=strict --rerun-tasks' succeeded with compileJava actually re-executing, and produced the identical SHA 80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456. The entry stays FAIL only because of the version string, which is the same blocker as version-lock and is cleared by bumping the version at release time. Note that `clean` could not be included in the offline run because the 24h stress profile holds open files under build/; a delete-and-rebuild of build/libs was verified separately as reproducible-build.",
       "startedUtc": "2026-10-06T18:01:00Z",
       "finishedUtc": "2026-10-07T01:00:00Z"

@@ -16,15 +16,28 @@
 
 | # | 项目 | 结果 | 用时 | 证据 |
 |---|---|---|---|---|
-| ① | `verifyReleaseArtifacts` 发布门禁 | **通过除版本号外全部检查** | 12 s | `build/verify-release.log` |
-| ② | `runGameTest` 全量 | **All 119 required tests passed** | 3 h 22 m | `build/gametest-v2.log` |
-| ③ | `runServerSmoke` 真实地形 | **REAL_WALL_TRAVERSAL_PASS** | 5 h 43 m | `build/smoke-pass.log` |
+| ① | `verifyReleaseArtifacts` 发布门禁 | **通过除版本号外全部检查** | 12 s | 已重跑；输出见 `docs/release/acceptance.json` 的 artifact-contents／reproducible-build 条目 |
+| ② | `runGameTest` 全量 | **All 119 required tests passed** | 3 h 22 m | 日志已被后续 `--rerun-tasks` 覆盖，见下方「证据存在性」 |
+| ③ | `runServerSmoke` 真实地形 | **REAL_WALL_TRAVERSAL_PASS** | 5 h 43 m | `build/smoke-pass.log` + `docs/evidence/s1c/real-wall-traversal-pass-20261007.json` |
 | ④ | S5 故障矩阵 exception | **180/180 通过** | — | `docs/evidence/s5/s5-faults-exception-20261006-c0c3f001/` |
 | ④ | S5 故障矩阵 halt | **180/180 通过** | — | `docs/evidence/s5/s5-faults-halt-20261006-623a795f/` |
 | ⑤ | S5 压力 profile（1 小时） | **passed=true** | 1 h | `build/s5-stress-1h-evidence/` |
 | ⑤ | S5 压力 profile（24 小时） | **运行中** | — | `build/s5-stress-24h2.log` |
-| ⑥ | 5 源集编译 | **全绿，782 个 class** | 12 s | — |
-| — | JUnit 单测 | **562/562，连续 3 次全绿** | 2 m 4 s | `build/test-results/test/` |
+| ⑥ | 5 源集编译 | **全绿，783 个 class** | 12 s | — |
+| — | JUnit 单测 | **585/585，强制重跑全绿** | 3 m 18 s | `build/test-results/test/` |
+
+### 证据存在性（2026-10-07 自查）
+
+`build/` 下的日志会被后续构建**覆盖**，因此早期几轮运行的部分原始日志**已不存在**：
+
+| 曾被引用的路径 | 现状 |
+|---|---|
+| `build/gametest-v2.log`（全量 119 项） | **已缺失** —— 被后续 `--rerun-tasks` 覆盖 |
+| `build/verify-release.log` | **已缺失** —— 同上 |
+
+**补救**：JUnit 结果每次重跑都会重新落地在 `build/test-results/test/`；故障矩阵与遍历的证据
+已提前复制到 `docs/evidence/`（不受 `build/` 清理影响）。**全量 GameTest 会在 24h 压测结束后
+重跑并重新落盘**，届时上述条目将指向真实存在的文件。本报告不再引用已消失的路径。
 
 ### ① 发布门禁
 
