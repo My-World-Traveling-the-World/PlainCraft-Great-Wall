@@ -1,0 +1,25 @@
+{
+    "check":  "independently verify goal item 4, the fault matrix, rather than citing the ledger row that says PASS",
+    "date":  "2026-10-07",
+    "why":  "The ledger records fault-matrix as PASS and names two directories. A PASS row is a claim; rebuilding the 18 by 10 structure from the raw results is what tests it.",
+    "structure":  {
+                      "exceptionRun":  "s5-faults-exception-20261006-c0c3f001, 180 entries",
+                      "haltRun":  "s5-faults-halt-20261006-623a795f, 180 entries",
+                      "howTheGridWasChecked":  "Grouped each run by point and by occurrence. Both give 18 distinct points and occurrences 1 through 10, with 18 entries at every occurrence, and 180 distinct point-occurrence pairs. So the grid is complete with no duplicates and no gaps.",
+                      "aNamingNote":  "The distinguishing column is called occurrence, not repeat. Grouping by repeat gave a single value and looked like a missing dimension until the field name was read."
+                  },
+    "semantics":  {
+                      "allPassed":  "180 of 180 in both runs",
+                      "faultWritten":  "faultHitWritten true in all 360 entries, so every point actually injected its fault rather than exiting early",
+                      "noTimeouts":  "timedOut false in all 360",
+                      "exitCodes":  "exception mode 1 in all 180; halt mode 137 in all 180",
+                      "whyTheCodesDiffer":  "halt is SIGKILL, so 137. The exception path leaves the JVM through a normal non-zero exit."
+                  },
+    "oneFieldThatLooksLikeAFailureAndIsNot":  {
+                                                  "observation":  "Every exception-mode entry records exitCode 1 against expectedExit -1 while still passing.",
+                                                  "resolution":  "Read the driver at tools/Test-S5Faults.ps1. Expected exit is set per mode as 137 for halt and -1 for exception, and the pass condition is code -eq 137 for halt and code -ne 0 for exception. So -1 in that column documents the expectation 'any non-zero' rather than a literal exit status, and 1 satisfies it.",
+                                                  "theRecordedCodeIsTheRealOne":  "The driver reads the child's status from the exit-code.txt witness the task writes, because the Gradle wrapper itself always exits 0. Grading on the wrapper's code would have made every point fail, which is why the witness exists."
+                                              },
+    "conclusion":  "Goal item 4 is as described. Two independent 18 by 10 runs, 360 points, every one injecting its fault with no timeout, and exit codes that match each mode's rule.",
+    "head":  "8fedbe3"
+}
