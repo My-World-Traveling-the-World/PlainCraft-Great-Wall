@@ -20,6 +20,24 @@ if (!$root.StartsWith($allowedRun, [StringComparison]::OrdinalIgnoreCase) -and
     !$root.StartsWith($allowedFault, [StringComparison]::OrdinalIgnoreCase)) {
     throw "TestRoot must resolve under build\run\ or build\fault-runs\ (got $root)."
 }
+# Refuse to start while a stress profile is writing under build/.
+#
+# Both builds below begin with gradle 'clean', which deletes the whole build/ tree -
+# including build/run/serverSmoke/<profile>/s5stress*/. A long profile lives there for
+# hours, so starting this script alongside one destroys the run it was meant to be
+# verified against, and the loss is silent until the profile is inspected afterwards.
+# Checking first is cheaper than recovering from that.
+#
+# The signal is the profile log's write time: a live profile appends a tick-lag or
+# refill line continuously, so a recent write means it is still running. Presence of the
+# directory alone is not enough - a finished profile leaves its directory behind.
+$stressLogs = @(Get-ChildItem -LiteralPath (Join-Path $project 'build') -Filter 's5-stress-*.log' -ErrorAction SilentlyContinue)
+$liveStress = @($stressLogs | Where-Object { ((Get-Date) - $_.LastWriteTime).TotalMinutes -lt 5 })
+if ($liveStress.Count -gt 0) {
+    $names = ($liveStress | ForEach-Object { "$($_.Name) (last write $([math]::Round(((Get-Date) - $_.LastWriteTime).TotalMinutes, 1)) min ago)" }) -join '; '
+    throw "A stress profile is still running ($names). This script starts with 'clean', which would delete its evidence under build/. Wait for it to finish, then rerun."
+}
+
 $id = "s5-release-$Profile-$((Get-Date).ToString('yyyyMMdd'))-$([Guid]::NewGuid().ToString('N').Substring(0,8))"
 $evidence = Join-Path $project "docs\evidence\s5\$id"
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
