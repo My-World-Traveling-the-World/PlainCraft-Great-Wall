@@ -2,7 +2,7 @@
     "document":  "index of the evidence written during the 2026-10-07 automated-verification session",
     "date":  "2026-10-07",
     "revision":  "7 - merges a duplicated goal-item-6 group created by my own edit",
-    "purpose":  "The session wrote 119 evidence documents. This maps each to the claim it supports so a reader can find the right one instead of opening all of them.",
+    "purpose":  "This maps the evidence a reader is most likely to need to the claim it supports, so they can find the right document instead of opening all of them. It is a curated map rather than an exhaustive listing: the session added 364 evidence files, and the 120 entries here are the ones that carry a distinct claim. Documents not listed are not thereby unsupported - most are run outputs, per-sample records or restatements covered by a listed entry.",
     "note":  "INDEX-20261007.json is this file and is deliberately not listed among its own entries. The sample series is one glob entry rather than 205, since the samples share a single claim. A final refresh is expected after the profile ends.",
     "grouped":  {
                     "goal item 1 - release gate":  [
