@@ -23,8 +23,16 @@
 | ④ | S5 故障矩阵 halt | **180/180 通过** | — | `docs/evidence/s5/s5-faults-halt-20261006-623a795f/` |
 | ⑤ | S5 压力 profile（1 小时） | **passed=true** | 1 h | `build/s5-stress-1h-evidence/` |
 | ⑤ | S5 压力 profile（24 小时） | **运行中** | — | `build/s5-stress-24h2.log` |
-| ⑥ | 5 源集编译 | **全绿，783 个 class** | 12 s | — |
-| — | JUnit 单测 | **585/585，强制重跑全绿** | 3 m 18 s | `build/test-results/test/` |
+| ⑥ | 5 源集编译 | **全绿，797 个 class** | 12 s | — |
+| — | JUnit 单测 | **617/617，强制重跑全绿** | 3 m 18 s | `build/test-results/test/` |
+
+**计数随时间推移的变化**（本会话内新增测试所致，均为增长而非替换）：
+
+| 项 | 会话初 | 现在 |
+|---|---|---|
+| JUnit 单测 | 562 | **617** |
+| GameTest 声明 | 119 | **129**（待全量重跑确认） |
+| 5 源集 class | 782 | **797**（main 469 / test 181 / gametest 88 / serverSmoke 49 / clientSmoke 6，另含内部类） |
 
 ### 证据存在性（2026-10-07 自查）
 
@@ -162,10 +170,38 @@ truncated」）两侧都有实测覆盖：矩阵侧是 360 次运行，CRC 侧�
 
 `ticks = 72000` 正是 3600 s × 20 tick，说明窗口跑满；堆峰值 7.99/8 GB 未 OOM。
 
+**24 小时版（运行中）已过的关键验证点**：首次 refill 于 `elapsedSeconds=5110` 发生，
+而上一版正是在首次 refill 后 14 分钟被 watchdog 杀死（`inFlightFutures` 泄漏导致堆触顶、
+GC 压力使一次区块保存 tick 卡 60.01 秒）。本次 refill 后堆**会回落**
+（如 7.23 GB → 2.19 GB），序列在 2.19..7.45 GB 间震荡无上升趋势，refills 已 3 次且
+watchdog 为 0 —— 泄漏修复有效。磁盘亦收敛（首轮填充约 8.8 GB，此后约 0.09 GB/小时，
+剩余 22 小时仅需约 2.1 GB），详见 `docs/evidence/s5/s5-stress-24h-inprogress-20261007/MILESTONE-refill.md`。
+
+---
+
+## 1b. 本会话补齐的零覆盖类（56 个新测试）
+
+审计发现 `src/main` 有 41 个类在 `src/test` + `src/gametest` 中**零引用**。mixin 只能在真机
+走到，但下列**非 mixin 逻辑类**是可自动化的真实缺口，本会话已逐个补齐：
+
+| 类 | 行数 | 新测试 | 为什么值得测 |
+|---|---|---|---|
+| `GreatWallBiomeWriter` | 116 | GameTest ×3 | 唯一调用 `fillBiomesFromNoise` 的代码；两次长跑都未执行到它 |
+| `GarrisonController.allowed` | 309 中 | 单测 ×8 | 纯策略函数，注释自称 "unit-testable with no world"；曾因规格矛盾导致驻军永不出生 |
+| `BeaconLedger` | 172 | 单测 ×9 | 核心不变量「只有持久回执才增加计数」失效时会**静默虚增** |
+| `RootSearch.crossesSanctuary` | — | 单测 ×6 | 承载**用户授权的圣域绕行**（半径 2600）；失效会让长城穿圣域 |
+| `WallObstacleGeometry` | 115 | 单测 ×13 | 类头写明「长边与稀疏折线不能跳过障碍」；漏判会让道路直接穿墙 |
+| `ComponentComposer` | 50 | 单测 ×10 | 失败是**静默**的：外来 child 会被拼成看似合理的组件 |
+| `SiteRuntimeIndex` | 170 | GameTest ×7 | 每个刷怪查询都经过它；错误答案是静默的 |
+| `LootInitializer.assignment` | 89 | 单测 ×9 | 承诺「可复现、战利品箱不会在重载后补货」；破坏时会静默补货 |
+
+**仍未覆盖的同类缺口**（按价值排序）：`IgnitionService`（117 行）、`FeaturesLease`、
+`StructureLease`、`FtbIntegration`、`WallSpawnerGuard`（只被 mixin 调用 → 只能真机）、
+`C2meTerrainEngine`（需 C2ME 环境）。
+
 ---
 
 ## 2. 本次验证挖出并修复的真实缺陷（20 个）
-
 **关键背景**：全部 20 个缺陷都**逃过了 562 个 JUnit 单测**。四个属于「真机一启动就崩」级别。
 
 ### A. 产品热路径缺陷（真机必崩）
