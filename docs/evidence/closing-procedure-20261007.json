@@ -122,5 +122,13 @@
                          "5. Only now run Test-S5Release.ps1 - its first gradle argument is clean, twice, which deletes build/ entirely",
                          "6. Read execution.json rather than the exit status, since the version gate makes it throw",
                          "7. Update the six-item table, the acceptance ledger and the evidence index. When updating the ledger, also repoint the stress-24h entry's log field: it currently reads build/s5-stress-24h2.log, which step 5's clean deletes, so leaving it would create a dead reference. Point it at the copy made in step 2. The top-level evidenceNote calls the log fields live locations that regenerate each run, which is true for the JUnit and gametest paths but not for the stress log - that one does not regenerate and must be archived."
-                     ]
+                     ],
+    "hardRuleNeverRunCleanWhileTheProfileRuns":  {
+                                                     "rule":  "Do not invoke any gradle task that includes clean until the profile has ended. Not even with --dry-run attached to a compound command, and not to measure build time.",
+                                                     "why":  "The profile's run directory is build/run/serverSmoke/vanilla/s5stress24h20261007084723, 9.01 GB of live world data inside build/. clean deletes the whole tree, so it would remove the world the profile is writing to, crash the process, and destroy 24 hours of work.",
+                                                     "howCloseICame":  "In round 213, while trying to measure how long a clean build takes, I typed gradlew clean build --dry-run. The --dry-run is what stopped it - without that flag the run would have executed clean. I recognised the danger while writing the command's own output, before it completed.",
+                                                     "whatToDoInstead":  "To estimate a clean build's cost, use --dry-run alone and count tasks, or wait until the profile has ended. The cost stays unmeasured until then, which is acceptable - the script's own 60-minute per-build timeout bounds it.",
+                                                     "whereThisIsEnforced":  "Test-S5Release.ps1 already refuses to start while a stress log was written in the last five minutes, so the guarded script cannot do this. The exposure is a manual gradle invocation, which the guard cannot cover - hence the rule.",
+                                                     "theTimingQuestionRemainsOpen":  "gradle clean build resolves to 32 tasks, but its wall-clock duration is unmeasured. A note in gametest-runtime-budget-20261007.json says the two clean builds add up to two hours; that is consistent with the 60-minute per-build timeout being generous rather than tight, but it is a note rather than a measurement and should not be cited as one."
+                                                 }
 }
