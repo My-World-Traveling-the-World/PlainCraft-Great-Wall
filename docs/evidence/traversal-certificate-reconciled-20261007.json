@@ -1,0 +1,32 @@
+{
+    "check":  "reconcile goal item 3's figures against the log line they came from",
+    "date":  "2026-10-07",
+    "why":  "The certificate transcribes from a log that gets deleted, so its numbers should be traceable to the original line and internally consistent, not merely plausible.",
+    "theSourceLine":  "REAL_WALL_OWNER_PROGRESS owners=505/505 voxels=28046 feet=2537 lastFullMs=33.1, followed by REAL_WALL_TRAVERSAL_PASS with the same owner, voxel and feet figures",
+    "aDetailTheCertificateDrops":  "The log writes owners as 505/505, a completion ratio. The certificate records ownerCount as the single number 505. Nothing is lost in substance - 505/505 is complete - but the ratio is the stronger form because it shows nothing was skipped, so it is recorded here.",
+    "internalConsistency":  {
+                                "owners":  505,
+                                "voxels":  28046,
+                                "voxelsPerOwner":  55.5,
+                                "walkwayFeet":  2537,
+                                "feetPerOwner":  5,
+                                "nonOwnerCount":  219,
+                                "totalSites":  724,
+                                "ownerShare":  "69.8 percent",
+                                "verdict":  "The per-owner averages are plausible for wall sections, and the owner and non-owner counts sum to a coherent total rather than overlapping."
+                            },
+    "theTimingFigure":  {
+                            "lastFullMs":  33.1,
+                            "policyContext":  "The 2026-10-05 authorization records that slice timing is observed and reported but is not a hard 40 ms gate.",
+                            "observation":  "33.1 ms is under 40 ms anyway, so the run would satisfy the retired threshold as well as the current reporting rule. That makes the result robust to which policy is applied rather than dependent on the relaxation."
+                        },
+    "redLineCounters":  {
+                            "WAIT_WHILE_LOCKED":  0,
+                            "STAGE_ENTER":  787727,
+                            "STAGE_EXIT":  787727,
+                            "balance":  "equal, so every entered stage also exited",
+                            "TRACE_TRUNCATED":  2321898,
+                            "traceNote":  "A 50k diagnostic-buffer bound, recorded but not gated, which the certificate states explicitly so the large number is not misread as a failure count."
+                        },
+    "head":  "77a7275"
+}
