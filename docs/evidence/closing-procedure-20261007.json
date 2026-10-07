@@ -31,14 +31,6 @@
                                  "readThisInsteadOfExitStatus":  "execution.json in the evidence directory: remapJarShaMatch is the reproducibility answer, and passed false is the version gate.",
                                  "stillWorthRunning":  "Yes. Both builds run with the offline and strict flags, which re-exercises the offline path at current source and dates that item, and the SHA comparison is a genuine reproducibility result."
                              },
-    "orderedSteps":  [
-                         "1. Confirm the profile ended and stress-report.json exists under the run's stress-reports directory",
-                         "2. Copy into docs/evidence/: stress-report.json, the whole samples directory, header.json, and build/s5-stress-24h2.log",
-                         "3. Run gradlew runGameTest, then copy build/reports/gametest/results.xml into docs/evidence/",
-                         "4. Only now run Test-S5Release.ps1 - its first gradle argument is clean, twice, which deletes build/ entirely",
-                         "5. Read execution.json rather than the exit status, since the version gate makes it throw",
-                         "6. Update the six-item table, the acceptance ledger and the evidence index"
-                     ],
     "verifyBeforeRunningS5Release":  "Confirm the step 2 and 3 copies are present in docs/evidence/. If they are not, stop: that script's clean removes build/run/serverSmoke/vanilla/\u003crunId\u003e/ and build/s5-stress-24h2.log, and nothing else will regenerate them.",
     "roundBudgetConstraint":  {
                                   "measured":  "6.5 minutes per round, measured between rounds 119 and 131",
@@ -74,5 +66,15 @@
                                                                   },
                                         "crossCheckAfterTheRun":  "Count testcase entries in build/reports/gametest/results.xml and require 129, then confirm all six classes appear. WallArchPreparationGameTests should contribute exactly four cases; anything fewer means its re-bodied pair or the new case was skipped.",
                                         "theRenameHistory":  "Verified across all eight gametest commits since the 10-03 run: seven are pure additions and only b90f5fc removed anything, so no other class hides a rename."
-                                    }
+                                    },
+    "stepCountNote":  "Seven steps. The archive step was inserted as step 4 after the JUnit results were overwritten during the session.",
+    "orderedSteps":  [
+                         "1. Confirm the profile ended and stress-report.json exists under the run's stress-reports directory",
+                         "2. Copy into docs/evidence/: stress-report.json, the whole samples directory, header.json, and build/s5-stress-24h2.log",
+                         "3. Run gradlew runGameTest, then copy build/reports/gametest/results.xml into docs/evidence/",
+                         "4. Before anything else touches the build directory, copy the whole of build/test-results/test into docs/evidence/ as a dated archive. Gradle's test task clears and rewrites that directory, so any later filtered run - a spot check of one or two classes - destroys the full set. This step exists because that happened on 2026-10-07: two filtered runs replaced 103 XML files covering 629 tests with a single file covering 2, and no archived copy was complete enough to restore them.",
+                         "5. Only now run Test-S5Release.ps1 - its first gradle argument is clean, twice, which deletes build/ entirely",
+                         "6. Read execution.json rather than the exit status, since the version gate makes it throw",
+                         "7. Update the six-item table, the acceptance ledger and the evidence index"
+                     ]
 }
