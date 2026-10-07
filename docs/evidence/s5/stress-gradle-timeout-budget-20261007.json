@@ -1,0 +1,20 @@
+{
+    "check":  "will the gradle timeout let the 24h run finish and write its report",
+    "date":  "2026-10-07",
+    "formula":  "runServerSmokeProduction derives its timeout from the request: stressSelected ? stressMinutesProp + 20 : realWall ? traversalMinutes + 10 : 5. For this run that is 1440 + 20 = 1460 minutes, so the wall-clock ceiling is 24.33 hours.",
+    "computed":  {
+                     "stressMinutes":  1440,
+                     "plus":  20,
+                     "totalMinutes":  1460,
+                     "totalHours":  24.33
+                 },
+    "overheadMeasured":  {
+                             "startupFromFirstLogLineToStressStart":  "17 seconds, 08:47:42 to 08:47:59",
+                             "drainWindow":  "600 seconds maximum by design",
+                             "remainingMarginMinutes":  8
+                         },
+    "reasoning":  "The overhead it has to cover is much smaller than it looks. Startup from the first log line to STRESS_START was 17 seconds, not minutes. The drain is the 600-second window, bounded by design. So the budget is 24 hours of profile plus roughly ten minutes of drain inside a 24 hour 20 minute ceiling.",
+    "context":  "A flat five-minute timeout is what cut off stress runs earlier in the project; the derivation is what fixed it, and this run sits on the stress branch of that derivation.",
+    "verdict":  "adequate",
+    "head":  "6b34672"
+}
