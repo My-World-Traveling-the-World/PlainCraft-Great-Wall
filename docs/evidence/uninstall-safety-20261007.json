@@ -1,0 +1,15 @@
+{
+    "check":  "uninstall safety: does the mod leave anything behind in a world",
+    "date":  "2026-10-07",
+    "question":  "The mod registers persistent chunk attachments. Persistent means written into saved chunks, which normally raises the question of what happens if the mod is later removed.",
+    "answer":  "Nothing is written, so there is nothing to leave behind.",
+    "chain":  [
+                  "ProductionSession's constructor requires all of: greatwall.s1c.productionFixture=true, greatwall.production unset, a file named greatwall_s1c_fixture in the game directory, and a file named greatwall_test_world. Any real client fails all four, so it throws rather than proceeding.",
+                  "The other construction site, WorldServices:208, only builds a WallStageCoordinator when greatwall.s0.terrain is set.",
+                  "Those two sites are the only ones, and WallStageCoordinator is the only thing that ever calls setAttached on the two persistent attachments."
+              ],
+    "whyPersistentIsStillCorrect":  "createPersistent is the right choice for the code that does use it: those attachments must survive ProtoChunk promotion and serialization, as the class doc says. The property is only risky if something writes them, and nothing does without the flags.",
+    "noBlocksOrItems":  "No Registry.register for BLOCK or ITEM exists anywhere in src/main, so there is no content id that a save could reference and then fail to resolve.",
+    "conclusion":  "Installing and later removing the jar leaves no residue: no block or item ids to dangle and no attachment ever written.",
+    "head":  "6567fa8"
+}
