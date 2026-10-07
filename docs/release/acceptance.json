@@ -109,7 +109,7 @@
       "expected": "all green; no lowered validation",
       "status": "FAIL",
       "log": "build/gametest-v2.log, build/verify-release.log",
-      "actual": "runGameTest is green: 'All 119 required tests passed' in 3h22m, from a re-run after the baseline was invalidated. verifyReleaseArtifacts still FAILs on the version string only, as recorded under version-lock. The clean build was run online rather than with --offline --dependency-verification=strict, so the strict-offline half of this entry is not satisfied.",
+      "actual": "runGameTest is green: 'All 119 required tests passed' in 3h22m, from a re-run after the baseline was invalidated. verifyReleaseArtifacts still FAILs on the version string only, as recorded under version-lock. The strict-offline half now passes: 'remapJar remapSourcesJar --offline --dependency-verification=strict --rerun-tasks' succeeded with compileJava actually re-executing, and produced the identical SHA 80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456. The entry stays FAIL only because of the version string, which is the same blocker as version-lock and is cleared by bumping the version at release time. Note that `clean` could not be included in the offline run because the 24h stress profile holds open files under build/; a delete-and-rebuild of build/libs was verified separately as reproducible-build.",
       "startedUtc": "2026-10-06T18:01:00Z",
       "finishedUtc": "2026-10-07T01:00:00Z"
     }
