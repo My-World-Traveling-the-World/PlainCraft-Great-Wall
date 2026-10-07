@@ -1,0 +1,19 @@
+{
+    "check":  "GameTest suite inventory before the full re-run (goal item 2)",
+    "date":  "2026-10-07",
+    "why":  "The full suite has not been run since the GameTest count changed from 119 to 129. This records what the suite contains BEFORE the run, so the 'All N required tests passed' line can be checked against a number derived independently rather than against itself.",
+    "gameTestMethods":  129,
+    "registeredEntrypoints":  35,
+    "classesWithGameTest":  34,
+    "entrypointWithoutGameTest":  [
+                                      "local.plaincraft.greatwall.gametest.VisualGalleryFixture"
+                                  ],
+    "entrypointWithoutGameTestNote":  "Helper used by PaletteGameTests at 7 call sites; it does not implement FabricGameTest, so listing it is harmless redundancy. The historical 119-test pass shows Fabric tolerates it.",
+    "unregisteredWithGameTest":  [
+
+                                 ],
+    "baselineNote":  "The previous baseline of 119 is invalid: corridorHalfWidth changed 192 -> 512. Every fixture now passes 512 (PlanningFixtures, AdjacentComponentMatrixTests, ProductionPipelineTests, PipelineReservationHandoffAuditTests, SiteRuntimeIndexGameTests, LootInitializerTest, CanonicalCodecTest), and no 192 remains, so the re-run measures the current configuration.",
+    "expectedFullRunLine":  "All 129 required tests passed",
+    "subsetMechanism":  "-PgreatwallGameTestClasses=Name,Name filters the generated fabric.mod.json entrypoints and reports 'DIAGNOSTIC SUBSET ONLY'; an unknown name fails with 'Unknown diagnostic GameTest classes'. A subset run is therefore never a full-stage acceptance run.",
+    "head":  "1d0c209"
+}
