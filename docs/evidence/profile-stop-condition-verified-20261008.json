@@ -1,0 +1,19 @@
+{
+    "check":  "whether the profile stops itself at the requested window, or could end early or run past it",
+    "date":  "2026-10-08",
+    "why":  "Step 1 of the closing sequence waits for the profile to end. Knowing that it ends on its own, and on what condition, is what makes that wait bounded - an early stop would mean a failed profile, and a run that never stops would mean the closing sequence never begins.",
+    "theStopCondition":  "In StressController's tick, stop() is called when pending is empty and inFlight is empty. Read on its own that would look like a queue-drain condition rather than a duration condition, and a 24-hour request once did end after about 4.5 hours for exactly that reason.",
+    "whyItCannotStopEarly":  {
+                                 "theOrderInTheTick":  "The refill runs first, guarded by pending.isEmpty() and inFlight.isEmpty() and not windowElapsed(), and only then does the stop check run",
+                                 "soWithinTheWindow":  "Whenever the queue empties, it is refilled before the stop condition is evaluated, so the empty-and-empty state that triggers stop cannot be reached while time remains",
+                                 "theSourceSaysSoToo":  "The comment above the refill states that the window is the contract, not the queue, and that the earlier 4.5-hour ending was the defect this fixes"
+                             },
+    "confirmedByTheRunsOwnLog":  {
+                                     "refillRecords":  64,
+                                     "lastFive":  "ordinals 60 to 64 at elapsed 74098, 75470, 76550, 77614 and 78759 seconds, with remaining 12302, 10930, 9850, 8786 and 7641 seconds",
+                                     "whatThatShows":  "Remaining time decreases steadily while refills continue, so the run is spending its whole window rather than draining a fixed list",
+                                     "theLoggingChoice":  "The comment explains the refill is logged precisely because it is the only thing separating a real full-window profile from one that quietly drained and stopped early - visible while running rather than only in the final report"
+                                 },
+    "whatEndsIt":  "Once the window has elapsed, the refill is skipped, the queue drains, both collections empty and stop() runs. The drain may take up to the configured ceiling, which is 600 seconds.",
+    "head":  "ddaebf7"
+}
