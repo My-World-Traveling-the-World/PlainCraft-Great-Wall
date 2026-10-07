@@ -1,0 +1,15 @@
+{
+    "check":  "the exact invocation that will run Test-S5Release.ps1 after the profile",
+    "date":  "2026-10-07",
+    "why":  "The script has a mandatory parameter and a path guard, and it is the second of the two post-stress steps. Getting the invocation wrong would waste the step, so it was resolved in advance.",
+    "parameters":  {
+                       "TestRoot":  "mandatory, and must resolve under build\\run\\ or build\\fault-runs\\. Supplying build\\run\\s5release resolves to the project's build\\run\\s5release, which passes the StartsWith check.",
+                       "Seed":  "defaults to 9282026, which is one of the seeds the oracle profile fixture lists",
+                       "Profile":  "defaults to vanilla; it appears only in the run id and evidence directory name, and in the recorded inputs, so it does not change what the build does"
+                   },
+    "command":  "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/Test-S5Release.ps1 -TestRoot build\\run\\s5release",
+    "executorNote":  "The execution policy on this machine is Restricted, so the script must be launched through powershell.exe -ExecutionPolicy Bypass rather than invoked directly.",
+    "whatItDoes":  "Two clean builds, each running verifyReleaseArtifacts, then compares the remapJar SHA across them. TestRoot is validated but not otherwise used - the script's own comment says no run directory is required.",
+    "guardStillApplies":  "It refuses to start while a stress profile is live, which is what protects the profile from its initial gradle clean. By the time this runs the profile will have finished, so the guard will allow it.",
+    "head":  "895dcf5"
+}
