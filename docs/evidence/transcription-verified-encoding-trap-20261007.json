@@ -1,0 +1,17 @@
+{
+    "check":  "verify the third transcribed line, and record the encoding trap it exposed",
+    "date":  "2026-10-07",
+    "result":  "All three lines in the traversal certificate are confirmed present in build/smoke-pass.log, so the transcription is verbatim and the certificate stands alone once the log is deleted by the final clean.",
+    "theThirdLine":  "BUILD SUCCESSFUL in 5h 43m 52s",
+    "theEncodingTrap":  {
+                            "whatHappened":  "Reading the file's tail and decoding with UTF-8 found nothing, even though the line is there. The file is UTF-16LE, so every ASCII character carries an interleaved zero byte and the text reads as spaced-out letters.",
+                            "whyItMatters":  "This is the same class of error recorded earlier for this project: a search in the wrong encoding reports absence rather than reporting an error. Here it would have looked like the certificate cited a line the log does not contain.",
+                            "correctDecoding":  "System.Text.Encoding.Unicode, after which the pattern matches immediately",
+                            "howItWasCaught":  "The tail was printed as text and showed spaced characters, which is the signature of UTF-16 read as UTF-8."
+                        },
+    "methodNote":  {
+                       "killedScan":  "The first attempt line-by-line scanned all 17.68 GB, which competes for disk I/O with the running stress profile. That job was killed; reading only the last 128 KB answers the same question.",
+                       "seekNotRead":  "Opening the file with FileShare.ReadWrite and seeking from the end avoids both the full scan and any conflict with the profile that may still hold the file."
+                   },
+    "head":  "9bfb95f"
+}
