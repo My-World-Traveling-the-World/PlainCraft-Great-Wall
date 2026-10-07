@@ -1,0 +1,28 @@
+{
+    "check":  "internal cross-references and evidence paths inside the report, after many edits",
+    "date":  "2026-10-07",
+    "why":  "The report has been edited in at least six separate commits this session. Repeated edits are where anchors and references rot, and a broken 'see below' leaves a reader without the detail it promised.",
+    "proseReferences":  {
+                            "checked":  5,
+                            "results":  [
+                                            "see section 2 resolves to '## 2. 本次验证挖出并修复的真实缺陷'",
+                                            "see section 3 resolves to '## 3. 反复出现的模式'",
+                                            "see the evidence-existence note resolves to '### 证据存在性（2026-10-07 自查）'",
+                                            "the MILESTONE-refill.md path resolves to a real file",
+                                            "see the biome shading note resolves to '### 群系着色的证据边界（重要）'"
+                                        ],
+                            "verdict":  "All five resolve."
+                        },
+    "evidencePaths":  {
+                          "checked":  11,
+                          "resolvable":  8,
+                          "theOtherThreeAreNotBroken":  [
+                                                            "docs/evidence/s5/s5-release-\u003cprofile\u003e-\u003cdate\u003e-\u003cid\u003e/ is the naming template for what the release script will write, so it is supposed to name no existing file",
+                                                            "docs/evidence/s5/s5-release-* is cited precisely to assert absence - the report says the script has never run and that no such directory exists, which is true",
+                                                            "docs/evidence/s5/s5-faults-{exception,halt}-* is a brace pattern covering two directories that both exist individually and are cited on their own lines"
+                                                        ]
+                      },
+    "whyThePlaceholdersAreCorrectRatherThanLazy":  "Two of the three are claims about something not existing. A reference that resolved would contradict the sentence containing it. The pattern form is the accurate way to write 'there is none of these'.",
+    "conclusion":  "No stale anchor and no dead path. The three non-resolving paths resolve as patterns or as deliberate statements of absence.",
+    "head":  "fb184dd"
+}
