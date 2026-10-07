@@ -290,7 +290,7 @@
                     "goal item 6 - five source sets":  [
                                                            {
                                                                "file":  "compile/five-source-sets-pass-20261007.json",
-                                                               "claim":  "forced recompile green, 794 class files"
+                                                               "claim":  "forced recompile green; 794 across the five named source sets and 798 in the directory, which also holds src/client"
                                                            },
                                                            {
                                                                "file":  "clientsmoke-source-set-20261007.json",
