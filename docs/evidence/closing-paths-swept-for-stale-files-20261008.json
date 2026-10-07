@@ -1,0 +1,11 @@
+{
+    "check":  "whether any other closing step reads a path already holding a stale file, the shape found at step 3",
+    "date":  "2026-10-08",
+    "why":  "Step 3 reads build/reports/gametest/results.xml, and a 33-case file from an earlier diagnostic run sits there. That risk was specific until checked elsewhere - a stale file read as fresh output manufactures evidence rather than losing it.",
+    "step1And2":  "Clean. build/run/serverSmoke/vanilla/s5stress24h20261007084723/build/stress-reports holds one run directory, run-1791334079847, so there is no earlier run's report to confuse with this one.",
+    "step3":  "Guarded last round: the completeness check reports expected=129 reported=33 against the stale file and exits 1, and its SHA-256 prefix E743AB3A is recorded.",
+    "step4":  "Clean and current. build/test-results/test holds 103 XML files whose write times are all 05:59:13 on 2026-10-08, so they came from one run - the full suite re-run in round 214. They are also already archived to docs/evidence/junit-629-full-20261008/, so step 4 has a durable copy even before it copies again.",
+    "step5And6":  "Clean. No docs/evidence/s5/s5-release-* directory exists yet, so Test-S5Release has never run and its output paths hold nothing stale.",
+    "whyStep4StillRuns":  "Step 3 re-runs the JUnit task, so build/test-results/test will be rewritten after the GameTest run. Step 4 archives that newer set, which is the point of having step 3 run both tasks.",
+    "head":  "4e917bf"
+}
