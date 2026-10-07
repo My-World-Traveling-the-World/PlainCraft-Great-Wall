@@ -1,7 +1,7 @@
 {
     "document":  "real-machine verification checklist (consolidated)",
     "date":  "2026-10-07",
-    "revision":  "4 - every entry states its method, or states that none exists in this repository",
+    "revision":  "5 - adds the stage-level items the per-goal list omitted",
     "status":  "PARTIAL - automated verification complete for 5 of 6 items; the 24h profile is still running",
     "purpose":  "One place listing everything that automated verification cannot establish, so the real-machine pass has an explicit scope instead of an implied one.",
     "alreadyProvenByAutomation":  [
@@ -72,6 +72,30 @@
                                            "why":  "Recorded as blocked rather than run",
                                            "source":  "traversal certificate blocked",
                                            "howToRunIt":  "Requires those mods present and their write sets certified, which is recorded as blocked rather than run."
+                                       },
+                                       {
+                                           "item":  "S2: GW-011 twelve-item fixture matrix, real calls on both sides, real road construction, save replay",
+                                           "why":  "S2-状态.md records all of these NOT_RUN; the reference candidate is not installed and the CodeSource remapped identity is unverified",
+                                           "source":  "docs/S2-状态.md",
+                                           "howToRunIt":  "Requires installing the candidate and exercising GW-011 with both sides really calling each other. No method exists inside this repository."
+                                       },
+                                       {
+                                           "item":  "S3: production wiring for IgnitionService, WallSpawnerGuard, FtbIntegration, BeaconCountTask, BeaconSpecificTask, and the first real permit and write",
+                                           "why":  "S3-状态.md lists these as unfinished; this session confirmed five of the six still have zero test references",
+                                           "source":  "docs/S3-状态.md",
+                                           "howToRunIt":  "Requires a world where production is on and a player really lights, spawns and claims. Note LootInitializer, the sixth class, gained nine tests this session, so only its table logic is covered rather than its wiring."
+                                       },
+                                       {
+                                           "item":  "S4: the 96+32 production gallery, whole-component occupancy equivalence, the cross-chunk material matrix, and 200-tick water, gravity and neighbour updates",
+                                           "why":  "S4-状态.md records these NOT_RUN; only the cache-contract half is proven",
+                                           "source":  "docs/S4-状态.md",
+                                           "howToRunIt":  "Requires the production PREPARE, CAPTURE and APPLY path driving the real gallery, plus observation over time for the fluid and neighbour cases."
+                                       },
+                                       {
+                                           "item":  "S5: real client owners, networked transport, and overlay visuals",
+                                           "why":  "S5-状态.md records these NOT_RUN and states that a cache-only test does not carry over to them",
+                                           "source":  "docs/S5-状态.md",
+                                           "howToRunIt":  "Requires a client and a server that are genuinely separate, watching owners appear over the wire. gradlew runWallPreview is a single-JVM client and does not cover the networked case."
                                        }
                                    ],
     "willBeResolvedByTheRunInProgress":  [
@@ -81,6 +105,6 @@
                                    "full GameTest re-run (129 methods; inventory recorded beforehand so the count can be checked independently)",
                                    "tools/Test-S5Release.ps1 two clean builds (now guarded so it cannot delete a live profile)"
                                ],
-    "note":  "Every entry now carries a method. Two of them record that no method exists inside this repository - the integration matrix, because the smoke classpath loads three jars so a profile flag cannot add Tectonic, C2ME or the pack, and the Tan's/TYG certification, which needs those mods present and their write sets certified. For those two the absence of a method is the finding.",
-    "head":  "3660b69"
+    "note":  "Two scopes are combined here and should be read as such. The first nine entries answer 'what does this verification goal still need a human for'. The last four answer 'what do the S2 to S5 stage documents still record as NOT_RUN' - they are wider than this goal and were missing from an earlier revision, which listed only the per-goal items and so understated what remains.",
+    "head":  "e7ff443"
 }
