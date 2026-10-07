@@ -190,6 +190,30 @@ trace 缓冲上限、退出码不可见、30 秒排空窗口、压力 stop 超�
 | **严格离线构建** | **已通过** | `remapJar remapSourcesJar --offline --dependency-verification=strict --rerun-tasks` 成功，`compileJava` 真的重新执行，SHA 与联网构建一致 |
 | **Tan's Huge Trees / TYG write-set** | `BLOCKED` | 依赖外部 mod |
 
+### 其余「测试零覆盖」类（系统扫描结果）
+
+对 `src/main` 全部 163 个类与 `src/test` + `src/gametest` 做全文比对，**41 个类零引用**。
+其中 mixin（`WallSpawnerMixin` / `IgnitionUseMixin` / `TorchIgnitionMixin` / `C2meGateMixin` 等）
+天然只能在真机走到，但下列**非 mixin 逻辑类**是真实的自动化缺口：
+
+| 类 | 行数 | main 内引用 | 备注 |
+|---|---|---|---|
+| `GarrisonController` | 309 | 12 | 缺口最大，最值得补 GameTest |
+| `IgnitionService` | 117 | 9 | 点火状态机 |
+| `WallSpawnerGuard` | 43 | 10 | 被 1 个 mixin 调用 → 只能真机验证 |
+| `SanctuaryAvoidance` | 49 | 20 | ErdTree 圣地避让 |
+| `C2meTerrainEngine` | — | 4 | C2ME 适配，需 `.405` 环境 |
+
+另有 `BeaconLedger`、`Beacon{Count,Specific}Task`、`ComponentComposer`、`FeaturesLease`、
+`StructureLease`、`SiteRuntimeIndex`、`WallObstacleGeometry`、`LootInitializer`、
+`FtbIntegration`、`ProductionInputs`、`DebugService`、`GreatWallCommands`、
+`OptionalTreePacks`、`GameplayTypes`、`BarrierFixtureLayout`、`C2meProbeAdapter`、
+`TerrainChunkAccess` 等同样零直接引用。
+
+**结论**：`GreatWallBiomeWriter` 不是孤例。补测优先级建议为
+`GarrisonController` → `IgnitionService` → `SanctuaryAvoidance`；
+`WallSpawnerGuard` 与其 mixin 只能靠真机，`C2meTerrainEngine` 需要 C2ME 环境。
+
 ### 激活专属群系会改变世界指纹
 
 数据包默认 **NORMAL（opt-in）**。手动启用后，世界指纹变化，**旧存档会按设计拒绝加载**。
