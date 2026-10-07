@@ -1,0 +1,26 @@
+{
+    "check":  "does any test still assume the old corridorHalfWidth of 192, which would invalidate the pending GameTest run",
+    "date":  "2026-10-07",
+    "why":  "The goal says the old baseline is invalid because corridorHalfWidth moved from 192 to 512. If a test still hardcoded 192 the pending run would be measuring against a stale assumption rather than the current configuration.",
+    "sweepResult":  "Seven occurrences of the literal 192 exist across src/test and src/gametest. None is the corridor value.",
+    "eachOccurrence":  [
+                           "AdjacentComponentMatrixTests line 402 - gap(96, 192), an island gap coordinate",
+                           "ColdCaptureAllocationTests line 72 - a 192-byte point allowance, a byte count in an assertion message",
+                           "CurvedWallMatrixTests line 53 - a sampling loop from -192 to 192 in x",
+                           "RampGroundPortalTests lines 21 and 22 - an index comparison and an attempted count, both iteration counts",
+                           "ReservationHeapPressureTest line 79 - compiledComponents 192, a component count in reported JSON",
+                           "GroundExitResolverTest line 66 - 192*256L, an SQ8 arc coordinate"
+                       ],
+    "positiveConfirmation":  {
+                                 "fixturesUse512":  "Four fixtures construct GenerationConfig with the seventh argument as 512: AdjacentComponentMatrixTests line 750, PipelineReservationHandoffAuditTests line 132, ProductionPipelineTests line 133 and SiteRuntimeIndexGameTests line 58",
+                                 "fieldOrderVerified":  "WallTypes declares GenerationConfig as algorithmVersion, templateVersion, segmentBlocks, stationBlocks, columnBudget, carrierAmplitude, corridorHalfWidth, maxGeometryInflight, segmentBytes, terrainBytes, compiledBytes - so the seventh argument is indeed corridorHalfWidth",
+                                 "runtimeGuard":  "RidgePlanner line 30 throws unless columnBudget is 150000 and corridorHalfWidth is 512, so anything reaching the planner must already carry 512"
+                             },
+    "anApparentContradictionPursuedAndDismissed":  {
+                                                       "observation":  "Those same fixtures pass 256 as carrierAmplitude, while AnchorField line 19 throws unless segmentBlocks is 2048 and carrierAmplitude is 384.",
+                                                       "whyItIsNotADefect":  "None of the four constructs AnchorField or RidgePlanner - each has zero such constructions - so the frozen 384 guard is never reached. They exercise the pipeline, reservation and allocation layers using a synthetic config where that field is not load-bearing.",
+                                                       "methodNote":  "This looked like a genuine contradiction, and the check that settled it was counting constructor calls in the tests rather than reasoning about the numbers."
+                                                   },
+    "conclusion":  "No stale 192 assumption remains. The fixtures carry 512, and the planner enforces it at runtime, so the pending run will measure the current configuration.",
+    "head":  "9cf5767"
+}
