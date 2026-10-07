@@ -1,0 +1,24 @@
+{
+    "check":  "reproduce red lines 2 and 3 independently, and fix a mismatch in my own commit",
+    "date":  "2026-10-07",
+    "selfCorrection":  "My previous commit's message described reproducing red lines 2 and 3, but the file it added covered red line 1. The findings for 2 and 3 existed only in the message text, which is not a durable place for evidence. This file records them.",
+    "redLine2_noStaticMutableCollections":  {
+                                                "strictSearch":  "static, optionally final, HashMap or ArrayList or HashSet or LinkedList or TreeMap or LinkedHashMap with a generic parameter",
+                                                "hits":  1,
+                                                "theHit":  "HeightContractPlanner line 145",
+                                                "whyItIsNotAField":  "The declaration takes SegmentGeometry, PrefixSummary and List\u003cSiteRecord\u003e as parameters, so it is a method signature. Each call constructs a local TreeMap and returns it, so nothing is shared across threads.",
+                                                "looserSearch":  "static without final, over HashMap, ArrayList, HashSet, List, Map and Set",
+                                                "looserHits":  56,
+                                                "whyThoseAreAlsoFalse":  "They are method return types such as private static List\u003cRoadTypes.Approach\u003e convert, the same shape of false positive as the blocking-call search.",
+                                                "verdict":  "Held. No static mutable collection exists, so cross-thread state is immutable or a ConcurrentHashMap."
+                                            },
+    "redLine3_neverCallPossibleBiomes":  {
+                                             "mainOccurrences":  0,
+                                             "allOtherSourceSets":  1,
+                                             "theOccurrence":  "PaletteBlendTest line 96, inside a comment that states classify never calls it and names the iteration actually used: holder keys plus tag membership",
+                                             "whyItIsNotAViolation":  "It is an assertion that the line is not crossed, in a source set that never ships.",
+                                             "verdict":  "Held. The shipped code contains no call."
+                                         },
+    "theCommonShape":  "Both searches returned a large candidate set that collapsed to nothing once each hit was read in context - 1 of 1 for red line 2's strict search being a method, and 56 of 56 in the looser one, and 1 of 1 for red line 3 being a comment. That is the same pattern the repository's own note describes for red line 1, where a 36-hit search reduced to a single guarded call.",
+    "head":  "794a16b"
+}
