@@ -1,0 +1,31 @@
+{
+    "check":  "language files: is the absence of assets/ a gap or by design?",
+    "date":  "2026-10-07",
+    "finding":  "There is no assets/ directory and therefore no lang/*.json, which on first look resembles a missing resource. It is correct for this mod.",
+    "evidence":  {
+                     "registersNoItemsOrBlocks":  true,
+                     "noteOnRegistration":  "No Registry.register call for ITEM or BLOCK exists, so there is no item or block name that would fall back to a raw translation key in the client.",
+                     "commandsUseLiteralNames":  true,
+                     "commandNames":  [
+                                          "greatwall",
+                                          "status",
+                                          "stats",
+                                          "reset-session",
+                                          "locate",
+                                          "plan",
+                                          "job",
+                                          "cancel",
+                                          "verify"
+                                      ],
+                     "feedbackIsDiagnosticEnglish":  true,
+                     "feedbackExamples":  [
+                                              "no active GreatWall session",
+                                              "S0 laboratory; production services OFF; counts=",
+                                              "history health="
+                                          ],
+                     "chineseInJavaStrings":  0,
+                     "note":  "No Chinese appears in Java string literals outside comments, so there is no half-localised surface either."
+                 },
+    "interpretation":  "Commands and their feedback are operator-facing diagnostics printed through Component.literal, which does not consult a lang file. With no registered content and no translatable component, a lang file would be dead weight rather than a fix.",
+    "head":  "84621a9"
+}
