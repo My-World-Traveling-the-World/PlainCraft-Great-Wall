@@ -1,0 +1,17 @@
+{
+    "check":  "deployed artifact matches the verified build (real-machine prerequisite)",
+    "date":  "2026-10-07",
+    "deployedPath":  "D:\\minecraft\\Plain Craft Launcher 2\\.minecraft\\versions\\【云游四海】WAYFARING\\mods\\plaincraft-great-wall-0.1.0-s1c-preview.2.jar",
+    "builtPath":  "build/libs/plaincraft-great-wall-0.1.0-s1c-preview.2.jar",
+    "sha256":  "80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456",
+    "shaMatch":  true,
+    "note":  "Byte-identical, so every automated result recorded for this SHA describes the jar that is actually installed. The built copy is dated later than the deployed one because it was rebuilt during verification; the bytes are the same.",
+    "modsDirectoryContents":  [
+                                  "plaincraft-great-wall-0.1.0-s1c-preview.1.jar.bak",
+                                  "plaincraft-great-wall-0.1.0-s1c-preview.2.jar"
+                              ],
+    "activeJarCount":  1,
+    "activeJarNote":  "One active jar plus one .bak, matching the project rule that only the newest jar is active and .bak files are kept in the client mods directory.",
+    "srcMainUnchangedNote":  "The jar does not move as HEAD advances because nothing under src/main has changed since; that is recorded here so a later reader does not expect a new SHA.",
+    "head":  "4246a6b"
+}
