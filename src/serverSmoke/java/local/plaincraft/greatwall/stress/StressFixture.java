@@ -89,8 +89,27 @@ public final class StressFixture implements AutoCloseable {
         // and the leaf is left for the controller.
         Files.createDirectories(Objects.requireNonNull(reportDir.getParent()));
         ServerLevel level = server.overworld();
+        // Concurrency and seed are read here rather than hardcoded, because the driver's
+        // -PgreatwallStressConcurrency / -PgreatwallStressSeed were reaching Gradle and then being
+        // dropped: neither was forwarded to this process, so a request for concurrency 16 silently ran
+        // at 8, and the seed recorded in the evidence was never the one used. Concurrency is the
+        // parameter the profile's whole shape depends on, so a silently ignored value is the worse half.
+        int concurrency = Integer.getInteger("greatwall.stress.concurrency", 8);
+        if (!java.util.Set.of(1, 2, 8, 16).contains(concurrency)) {
+            throw new IllegalStateException("greatwall.stress.concurrency must be 1, 2, 8 or 16, found "
+                    + concurrency);
+        }
+        // The world seed is authoritative and cannot be overridden from here: it comes from
+        // server.properties, which the smoke task writes. A mismatch is reported rather than papered
+        // over, so evidence never claims a seed the world does not have.
+        long requestedSeed = Long.getLong("greatwall.stress.seed", level.getSeed());
+        if (requestedSeed != level.getSeed()) {
+            throw new IllegalStateException("greatwall.stress.seed=" + requestedSeed
+                    + " but the world seed is " + level.getSeed()
+                    + "; the seed is set through server.properties (s1cSeed), not this property");
+        }
         var config = new StressController.Config(level.getSeed(), StressController.Mode.MIXED_24H,
-                TimeUnit.MINUTES.toSeconds(minutes), 8, List.of(), null, true);
+                TimeUnit.MINUTES.toSeconds(minutes), concurrency, List.of(), null, true);
         controller = new StressController(level, config, reportDir);
         controller.start().toCompletableFuture().join();
     }

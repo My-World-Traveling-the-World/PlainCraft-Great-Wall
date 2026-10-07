@@ -77,9 +77,25 @@ def probeArgs = [
     // S5 stress selection. Inert (false/0) for every ordinary smoke run; the runS5Stress entry point
     // requires these to be supplied, so the stress fixture is selected in exactly one place — here,
     // where all server JVM arguments are assembled — instead of by a second launcher definition.
+    //
+    // Concurrency is forwarded because -PgreatwallStressConcurrency was previously accepted by the
+    // driver and then dropped here: a request for 16 ran at the fixture's hardcoded 8 without saying
+    // so, and concurrency is the parameter the profile's shape depends on. The seed is forwarded only
+    // when the driver supplies one, and is checked against the value server.properties actually
+    // receives, so evidence cannot claim a seed the world does not have.
     "-Dgreatwall.s5.stress=${providers.gradleProperty('s5Stress').getOrElse('false')}",
-    "-Dgreatwall.stress.minutes=${providers.gradleProperty('s5StressMinutes').getOrElse('0')}"
+    "-Dgreatwall.stress.minutes=${providers.gradleProperty('s5StressMinutes').getOrElse('0')}",
+    "-Dgreatwall.stress.concurrency=${providers.gradleProperty('greatwallStressConcurrency').getOrElse('8')}"
 ]
+def requestedStressSeed = providers.gradleProperty('greatwallStressSeed').orNull
+if (requestedStressSeed != null) {
+    if (requestedStressSeed != actualSeed) {
+        throw new GradleException("greatwallStressSeed=${requestedStressSeed} does not match the world seed " +
+                "that server.properties will carry (s1cSeed=${actualSeed}); set both or neither, so the " +
+                "profile cannot record a seed it did not run on")
+    }
+    probeArgs.add("-Dgreatwall.stress.seed=${requestedStressSeed}")
+}
 def oracleMaxY = providers.gradleProperty('s1cExpectedMaxY').orNull
 if (oracleMaxY != null) {
     if (!oracleOnly || !(oracleMaxY ==~ /[1-9][0-9]*/)) throw new GradleException('S1C expected maxY requires oracle diagnostic mode')
