@@ -14,5 +14,6 @@
     "correctedCount":  "21 rather than 23: 23 minus the two renames.",
     "whatRemainsTrue":  "The substantive point stands - a group of tests has never executed, their results.xml check against six named classes is still the right verification, and none carries a stale corridor baseline. Only the number moves.",
     "lesson":  "A name-based comparison cannot distinguish a test that was renamed from one that was added. Distinguishing them needs the rename to be visible, which means looking at history rather than at two snapshots.",
-    "head":  "9d668f4"
+    "head":  "9d668f4",
+    "correctedAgainOn20261008":  "Superseded. build/reports/gametest/results.xml held a 33-case diagnostic run from 2026-10-07 11:26 in which 20 of the 21 cases described here as never executed had in fact run, all passing. Only absentDurableProof had never run under any name. The pending full run is still required, because none of these ran against the current source. See never-run-correction-20261008.json."
 }
