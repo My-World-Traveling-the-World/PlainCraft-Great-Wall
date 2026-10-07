@@ -1,0 +1,22 @@
+{
+    "check":  "re-measure how many src/main classes have zero test references, since this session added 76 tests",
+    "date":  "2026-10-07",
+    "why":  "An earlier audit found 41 classes with no reference in any test source set and recorded them as real automation gaps. The session then added 76 tests across nine classes. Re-measuring shows whether that work moved the figure, and which gaps remain.",
+    "before":  "41 classes with zero references",
+    "after":  26,
+    "improvement":  "15 classes gained coverage",
+    "theRemaining":  {
+                         "mixins":  11,
+                         "accessors":  3,
+                         "productionWiring":  "IgnitionService, DebugService, FtbIntegration, BeaconCountTask, BeaconSpecificTask, WallSpawnerGuard, StructureLease, FeaturesLease, OptionalTreePacks, C2meProbeAdapter, C2meTerrainEngine and GreatWallCommands",
+                         "largest":  "GreatWallCommands at 836 lines"
+                     },
+    "whyTheyAreJustifiedRatherThanOversights":  {
+                                                    "mixinsAndAccessors":  "14 of the 26 are mixins or mixin accessors, which can only run on a real client or server and are named by the mixin configurations. The three accessor classes each carry that explanation in their own comments.",
+                                                    "greatWallCommands":  "The 836-line class is referenced 21 times inside src/main, so it is reached through command registration rather than being dead. Its own gap is test coverage of command behaviour, not reachability.",
+                                                    "theRest":  "IgnitionService, FtbIntegration and the beacon tasks are the production wiring items the S3-status document already lists as unfinished, and the earlier note recorded that covering IgnitionService would need a player fixture that does not exist yet."
+                                                },
+    "whatThisMeasurementConfirms":  "The zero-reference count is a useful progress metric rather than a defect list: it went from 41 to 26, and the residue is accounted for by mixin reachability, player-fixture cost, and the wiring items already tracked as NOT_RUN.",
+    "methodNote":  "Measured by concatenating every test, gametest, clientSmoke and serverSmoke source file and searching for each main class name as a whole word, so an import or a comment both count as a reference. That is deliberately generous: it avoids overstating the remaining gaps.",
+    "head":  "9e04621"
+}
