@@ -71,6 +71,31 @@ SERVER_SMOKE_PASS: stopped normally
 
 18 个故障点 × 10 轮，两模式共 **360 次注入，零失败**。
 
+**这一项验证的边界（重要，避免误读）**：按规格原文（`docs/S5.md:24`），故障矩阵要求的是
+「18 个 `FaultInjector.Point` × {exception, halt} × 10 轮；halt → `Runtime.halt(137)`」，
+即**每个点在两种模式下各 10 次的注入与退出码**。`FaultProcessMain` 本身不启动服务器、
+不生成世界（它只反复调用注入器直到第 N 次命中，然后按模式抛异常或 `halt(137)`）。
+
+**恢复语义由另一组测试覆盖，不是由故障矩阵覆盖**：
+
+| 测试 | 验证内容 |
+|---|---|
+| `HistoryJournalTest.completeBadCrcIsNotTruncated` | **CRC 损坏的字节不被截断**（`assertArrayEquals` 逐字节比对）、判定为 `CORRUPT`、后续写入被拒 |
+| `HistoryJournalTest.partialTailIsArchivedReadOnlyBeforeForcedTruncate` | 残缺尾部先归档为只读证据再截断 |
+| `HistoryJournalTest.failedFsyncNeverPublishesAndVerifiedRetryReusesActualTail` | fsync 失败绝不发布 |
+| `HistoryJournalTest.checkpointFailureLeavesOriginalHeadAndRecoveryCanContinue` | 检查点失败后仍可继续恢复 |
+| `HistoryJournalTest.missingHeadRecoversOnlyAConsistentRetainedChain` | 缺失 head 只恢复一致的保留链 |
+| `HistoryJournalTest.damagedIndexMissingWalAndWrongWorldNeverBecomeEmpty` | 损坏后**不静默变成空世界** |
+| `RecoveryCoordinatorTest`（4 例） | 恢复序列包含 checkpoint 之外的 WAL、外部 manifest 不能开不同 journal root |
+
+因此验收项 `fault-matrix` 的 `expected`（「per-matrix exact results; corrupt CRC never
+truncated」）两侧都有实测覆盖：矩阵侧是 360 次运行，CRC 侧是 `completeBadCrcIsNotTruncated`。
+
+**注意**：`RecoveryTest.eachFaultPointReopensWithoutSilentReset` **名字比实现更宽** ——
+它实际验证的是枚举名往返、mock 注入器抛 `IOException`、`disabled()` 不抛异常、以及
+`fault-hit.json` 路径不逃逸；它**没有**真的在 18 个点上逐个崩溃并重开世界。真正做端到端
+恢复的是上表的 `HistoryJournalTest` / `RecoveryCoordinatorTest`。
+
 ### ⑤ 压力 profile（1 小时，已通过）
 
 ```json
