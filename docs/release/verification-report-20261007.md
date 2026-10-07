@@ -73,7 +73,31 @@ mod_version must be exactly 0.1.0 for release, found '0.1.0-s1c-preview.2'
 - 依赖版本全部未变（Gradle 9.4.1 / Loom 1.16.3 / Loader 0.19.3 / FabricAPI 0.116.14+1.21.1）
 
 **构建可复现性**：`remapJar --rerun-tasks` 与「删除 `build/libs` 后重建」三次产出
-**同一 SHA-256**。
+**同一 SHA-256**（`80506fe5…`）。
+
+**本轮（2026-10-07）复验并得到一个额外结论**：在会话新增 27 个测试/工具文件之后，
+用 `remapJar --rerun-tasks --offline --dependency-verification=strict` 重建，SHA **仍然不变**。
+这**独立印证了「测试代码不进 jar」**这条设计约束：
+
+```
+src/main 最后一次改动 = 6e67cc2
+6e67cc2..HEAD 改的是：16 个 src/test、4 个 src/gametest、7 个 src/serverSmoke、
+                     2 个 gradle、2 个 tools、4 个 docs   ← 没有一个 src/main
+→ jar SHA 不变是【正确】的，不是碰巧
+```
+
+并且逐个确认新增的 `BiomeWriterGameTests` / `GarrisonControllerPolicyTest` /
+`BeaconLedgerTest` / `SanctuaryAvoidanceTest` **均不在 jar 内**。
+
+**产物内容复核（本轮）**：
+
+| 检查 | `remapJar` | `sourcesJar` |
+|---|---|---|
+| 条目数 | 545 | 238 |
+| 禁用类（fault/stress/smoke/gametest/clientSmoke） | **0** | **0** |
+| 文本条目全量扫描机器路径（`C:\Users`、`D:\云游四海`、用户名） | 24 个扫描 / **0 命中** | 190 个扫描 / **0 命中** |
+
+（注意 `sourcesJar` 含 `.java` 源码，其注释同样无机器路径 —— 上面是**全量扫描**，不是采样。）
 
 ### ③ 真实地形遍历
 
