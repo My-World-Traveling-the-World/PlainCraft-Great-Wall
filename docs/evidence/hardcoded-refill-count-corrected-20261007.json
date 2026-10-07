@@ -1,0 +1,26 @@
+{
+    "check":  "correct a reporting error of mine: I had been printing a hardcoded refill count",
+    "date":  "2026-10-07",
+    "whatWentWrong":  "Every status line I printed for many rounds ended with 'refills=13'. That was a literal string in my command, not a read value. It was correct when first written and stayed in the template afterwards.",
+    "theTrueValue":  {
+                         "refills":  36,
+                         "latestOrdinal":  "36, at elapsedSeconds 43573 with remainingSeconds 42827",
+                         "completedChunks":  2415964,
+                         "verdict":  "The profile has refilled 36 times, not 13."
+                     },
+    "whyItMatters":  "Refills are the profile's liveness signal - the earlier work established that a run which stops refilling has quietly drained its queue and will end early. Reporting a stale count as if current is exactly the failure that signal exists to detect, and it would have hidden a healthy pattern behind a frozen number.",
+    "whatIsStillTrue":  "The health judgement was never wrong, only the number. ERROR 0, watchdog 0 and OutOfMemory 0 are all read values, and threads remain flat at 33 across five hours and 36 refills.",
+    "theCorrectedReading":  {
+                                "elapsedHours":  12.39,
+                                "hoursRemaining":  11.61,
+                                "threads":  33,
+                                "heapGB":  6.78,
+                                "sampleIntervalSeconds":  3,
+                                "errors":  0,
+                                "watchdogs":  0,
+                                "outOfMemory":  0
+                            },
+    "theFix":  "The status command now reads every figure from the log and the latest sample rather than carrying any of them as text. Nothing in the printed line is a constant.",
+    "methodNote":  "This is the second error of this kind in the session, after the hardcoded HEAD in the report. Both came from writing a value once and reusing the surrounding text afterwards. The habit worth keeping is that a status line should contain no literals at all.",
+    "head":  "855ae6d"
+}
