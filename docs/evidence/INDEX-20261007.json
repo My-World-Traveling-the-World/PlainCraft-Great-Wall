@@ -1,9 +1,9 @@
 {
     "document":  "index of the evidence written during the 2026-10-07 automated-verification session",
     "date":  "2026-10-07",
-    "revision":  "3 - extended to 54 entries",
-    "purpose":  "The session wrote 54 evidence files. This maps each to the claim it supports so a reader can find the right one instead of opening all of them.",
-    "note":  "INDEX-20261007.json is this file and is deliberately not listed among its own entries.",
+    "revision":  "4 - 82 entries, including the preserved stress sample series",
+    "purpose":  "The session wrote 82 evidence documents. This maps each to the claim it supports so a reader can find the right one instead of opening all of them.",
+    "note":  "INDEX-20261007.json is this file and is deliberately not listed among its own entries. The sample series is indexed as one glob entry rather than 205 separate ones, since the samples share a single claim.",
     "grouped":  {
                     "goal item 1 - release gate":  [
                                                        {
@@ -33,6 +33,34 @@
                                                        {
                                                            "file":  "integration-matrix-not-runnable-verified-20261007.json",
                                                            "claim":  "profile controls validation, expected-adapter, run dir and heap but never the classpath, so the NOT_RUN is correct"
+                                                       },
+                                                       {
+                                                           "file":  "offline-build-claim-dated-20261007.json",
+                                                           "claim":  "the offline-build claim rests on a 2026-09-29 run, so it shows the path works but does not certify current source; report and ledger now say when"
+                                                       },
+                                                       {
+                                                           "file":  "s5release-chain-resolves-20261007.json",
+                                                           "claim":  "clean, compileJava, remapJar, remapSourcesJar and verifyReleaseArtifacts all resolve, 33 tasks, zero configuration errors"
+                                                       },
+                                                       {
+                                                           "file":  "s5release-expected-failure-20261007.json",
+                                                           "claim":  "the release script will throw because the version gate fails; read execution.json rather than the exit status"
+                                                       },
+                                                       {
+                                                           "file":  "closing-procedure-20261007.json",
+                                                           "claim":  "the six ordered closing steps, with the evidence copy-out ahead of the destructive clean"
+                                                       },
+                                                       {
+                                                           "file":  "closing-order-discipline-20261007.json",
+                                                           "claim":  "the run directory is 9179 MB but only 2 MB of it is irreplaceable; ordering protects that"
+                                                       },
+                                                       {
+                                                           "file":  "closing-disk-budget-20261007.json",
+                                                           "claim":  "the closing sequence releases about 47 GB, and the clean creates no dead reference"
+                                                       },
+                                                       {
+                                                           "file":  "build-path-citations-audit-20261007.json",
+                                                           "claim":  "all 14 cited build/ paths accounted for: 10 resolve, 2 already marked missing, 1 under docs/evidence, 1 forward-looking"
                                                        }
                                                    ],
                     "goal item 2 - GameTest":  [
@@ -67,6 +95,22 @@
                                                    {
                                                        "file":  "gametest-loads-current-source-20261007.json",
                                                        "claim":  "gameTest/mods is empty, so the run loads compiled source rather than a possibly stale jar"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-batch-completeness-20261007.json",
+                                                       "claim":  "a preserved results.xml records 108 testcases against 108 declared, so results.xml is a completeness check"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-count-progression-20261007.json",
+                                                       "claim":  "108 to 118 to 119 to 122 to 129, each correct at its commit; the goal's 118 matches commit 3447428"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-count-labelling-audit-20261007.json",
+                                                       "claim":  "every reader-facing use of 119 sits in a historical frame, and 118 appears in none"
+                                                   },
+                                                   {
+                                                       "file":  "corridor-512-sweep-20261007.json",
+                                                       "claim":  "the seven literal 192s in tests are unrelated to the corridor; fixtures carry 512 and the planner enforces it"
                                                    }
                                                ],
                     "goal item 3 - real-terrain traversal":  [
@@ -129,6 +173,42 @@
                                                          {
                                                              "file":  "s5release-invocation-resolved-20261007.json",
                                                              "claim":  "the exact Test-S5Release command, with TestRoot resolving under build/run and Profile affecting only naming"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-report-schema-20261007.json",
+                                                             "claim":  "the final report carries passed and durationMet; header and samples carry neither"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-timeout-headroom-20261007.json",
+                                                             "claim":  "9.6 minutes of headroom, adequate because the drain is an orTimeout ceiling rather than a wait"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-disk-exact-reading-20261007.json",
+                                                             "claim":  "9595407680 bytes at 5.12h; growth under 0.01 GB/hour, with the precision limit of earlier rounded readings stated"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-sample-continuity-20261007.json",
+                                                             "claim":  "indices 0 to 513 with 514 files present, so no sample was dropped"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-process-chain-intact-20261007.json",
+                                                             "claim":  "the profile JVM, the Gradle daemon and the wrapper chain are all alive, so the verdict will be collected"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-aftergc-snapshots-20261007.json",
+                                                             "claim":  "afterGC fires strictly every thirtieth sample, about every 17.5 minutes, more often than the spec requires"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-duration-tolerance-and-tick-rate-20261007.json",
+                                                             "claim":  "durationMet is guaranteed by the drain condition, and the profile runs at about 17 ticks per second"
+                                                         },
+                                                         {
+                                                             "file":  "s5/tick-rate-cross-check-tautology-20261007.json",
+                                                             "claim":  "my tick-rate cross-check was tautological: the warning's ticks-behind figure is pinned to 20 by construction"
+                                                         },
+                                                         {
+                                                             "file":  "tick-lag-attribution-corrected-20261007.json",
+                                                             "claim":  "withdraws my claim that builds doubled the lag rate; segments show no-build periods already at 40 to 71 per hour"
                                                          }
                                                      ],
                     "goal item 6 - five source sets":  [
@@ -189,6 +269,22 @@
                                                    {
                                                        "file":  "wall-preview-workflow-20261007.json",
                                                        "claim":  "the four steps a person actually performs, including why the client appears to ignore the flag"
+                                                   },
+                                                   {
+                                                       "file":  "s1c-drain-01-status-20261007.json",
+                                                       "claim":  "DRAIN-01 is STOPPING-time non-zero flights; a 2026-10-06 snapshot shows all counters zero, so it no longer reproduces"
+                                                   },
+                                                   {
+                                                       "file":  "s1b-open-items-rechecked-20261007.json",
+                                                       "claim":  "the allocation item is now covered by ReservationHeapPressureTest; the four-candidate ramp item is still open"
+                                                   },
+                                                   {
+                                                       "file":  "s2-s3-s4-status-docs-checked-20261007.json",
+                                                       "claim":  "the three stage documents remain accurate; only LootInitializer moved, gaining tests this session"
+                                                   },
+                                                   {
+                                                       "file":  "untracked-docs-assessment-20261007.json",
+                                                       "claim":  "nine untracked planning documents, never committed and referenced by nothing, deliberately left alone"
                                                    }
                                                ],
                     "integrity and hygiene checks":  [
@@ -235,8 +331,34 @@
                                                          {
                                                              "file":  "sanctuary-margin-hardcoded-safe-20261007.json",
                                                              "claim":  "the literal 384+512+64 margin is safe because AnchorField and RidgePlanner both freeze those values"
+                                                         },
+                                                         {
+                                                             "file":  "control-character-sweep-20261007.json",
+                                                             "claim":  "1660 files scanned for stray control characters after an escape bug, none found, scan validated by positive control"
+                                                         },
+                                                         {
+                                                             "file":  "transcription-verified-encoding-trap-20261007.json",
+                                                             "claim":  "all three transcribed lines confirmed present; the log is UTF-16LE, so a UTF-8 search reported false absence"
+                                                         },
+                                                         {
+                                                             "file":  "pass-claims-freshness-audit-20261007.json",
+                                                             "claim":  "the traversal ran 4.2 hours after src/main froze and nothing followed it, so it tested current source"
+                                                         },
+                                                         {
+                                                             "file":  "round-budget-vs-profile-20261007.json",
+                                                             "claim":  "201 remaining rounds cover about 36.5 hours against the 19.6 needed"
                                                          }
-                                                     ]
+                                                     ],
+                    "preserved stress sample series":  [
+                                                           {
+                                                               "file":  "s5/s5-stress-24h-inprogress-20261007/stress-reports/run-1791334079847/sample-*.json",
+                                                               "claim":  "205 samples preserved from the running profile, indices contiguous, copied out so a build cannot destroy them"
+                                                           },
+                                                           {
+                                                               "file":  "s5/s5-stress-24h-inprogress-20261007/stress-reports/run-1791334079847/header.json",
+                                                               "claim":  "the run's inputs: seed, mode, modSHA, jvmFlags, jdk, cpu and heap ceiling"
+                                                           }
+                                                       ]
                 },
-    "head":  "4fbdc9c"
+    "head":  "997fb87"
 }
