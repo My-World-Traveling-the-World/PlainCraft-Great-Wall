@@ -1,0 +1,18 @@
+{
+    "check":  "correct my round-164 claim that 23 tests have never run",
+    "date":  "2026-10-07",
+    "whatIReported":  "Twenty-three of the 129 current GameTests have never been executed, derived by comparing the 129 names in the source against the 109 names in the newest full results file.",
+    "theFlaw":  "The comparison treated a renamed test as a new one. Renaming a case changes its name in the source, so it looks absent from an older results file even though the same test ran under its old name.",
+    "whatActuallyHappenedInOneClass":  {
+                                           "class":  "WallArchPreparationGameTests",
+                                           "ranOn20261003":  "ownerPlanSchemaRejectionCompletesWithoutACommonPoolHop, proposedGateIsRejectedBeforeLoadedOwnerPreparation and workerReceivesOwnerPlanSchemaRejectionWithoutWritingOrAcknowledging",
+                                           "presentNow":  "ownerPreparationFailureCompletesWithoutACommonPoolHop, absentDurableProofKeepsGatePendingWithoutThrowingOrAcknowledging, workerReceivesOwnerPreparationFailureWithoutWritingOrAcknowledging and proposedGateIsRejectedBeforeLoadedOwnerPreparation",
+                                           "renameCommit":  "b90f5fc, 2026-10-06, whose message is 'drive arch-preparation threading tests from a real failure path' and whose diff shows two lines removed and two added with the same signatures but different names, plus one genuinely new case",
+                                           "correctCount":  "One never-run test in this class, not three - two are renames and the third, absentDurableProofKeepsGatePendingWithoutThrowingOrAcknowledging, is new."
+                                       },
+    "theOtherFiveClassesAreUnaffected":  "BiomeWriterGameTests, LifecycleGameTests, NegotiatedGateGameTests, PaletteGameTests and SiteRuntimeIndexGameTests each had zero tests in the 10-03 results under any name, so for them absence really does mean never run.",
+    "correctedCount":  "21 rather than 23: 23 minus the two renames.",
+    "whatRemainsTrue":  "The substantive point stands - a group of tests has never executed, their results.xml check against six named classes is still the right verification, and none carries a stale corridor baseline. Only the number moves.",
+    "lesson":  "A name-based comparison cannot distinguish a test that was renamed from one that was added. Distinguishing them needs the rename to be visible, which means looking at history rather than at two snapshots.",
+    "head":  "9d668f4"
+}

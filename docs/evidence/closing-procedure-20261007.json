@@ -61,17 +61,18 @@
                       },
     "gameTestVerificationTargets":  {
                                         "expectedTestcases":  129,
-                                        "currentlyUnrun":  23,
-                                        "whyTheNumberMatters":  "23 of the 129 have never executed in any run. The pending run is their first, so its results.xml must carry all 129 - a smaller number means a group was skipped, which the pass message alone would not reveal.",
-                                        "theTwentyThreeByClass":  {
-                                                                      "BiomeWriterGameTests":  3,
-                                                                      "LifecycleGameTests":  3,
-                                                                      "NegotiatedGateGameTests":  3,
-                                                                      "PaletteGameTests":  4,
-                                                                      "SiteRuntimeIndexGameTests":  7,
-                                                                      "WallArchPreparationGameTests":  3
-                                                                  },
-                                        "theOtherHundredAndSix":  "These ran on 2026-10-03, but against the pre-change corridor width, which is why their result does not carry over.",
+                                        "currentlyUnrun":  21,
+                                        "whyTheNumberMatters":  "21 of the 129 have never executed in any run. The pending run is their first, so its results.xml must carry all 129 - a smaller number means a group was skipped, which the pass message alone would not reveal.",
+                                        "theTwentyOneByClass":  {
+                                                                    "BiomeWriterGameTests":  3,
+                                                                    "LifecycleGameTests":  3,
+                                                                    "NegotiatedGateGameTests":  3,
+                                                                    "PaletteGameTests":  4,
+                                                                    "SiteRuntimeIndexGameTests":  7,
+                                                                    "WallArchPreparationGameTests":  1
+                                                                },
+                                        "correction":  "An earlier revision said 23 and attributed 3 to WallArchPreparationGameTests. Two of those three are renames made in commit b90f5fc, not new cases, so the class contributes 1.",
+                                        "theOtherHundredAndEight":  "These ran on 2026-10-03, but against the pre-change corridor width, which is why their result does not carry over.",
                                         "crossCheckAfterTheRun":  "Count testcase entries in build/reports/gametest/results.xml and require 129. Then confirm these six classes appear in it, since their absence is the specific failure a bare pass message would hide."
                                     }
 }
