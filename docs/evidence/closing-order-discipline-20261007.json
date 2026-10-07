@@ -1,0 +1,26 @@
+{
+    "check":  "the ordering discipline for the closing steps, and the size of what must be preserved",
+    "date":  "2026-10-07",
+    "theHazard":  "Test-S5Release.ps1 passes clean as its first gradle argument, twice. clean deletes the whole build/ tree - including build/run/serverSmoke/vanilla/\u003crunId\u003e/ where the 24h evidence lives, and build/s5-stress-24h2.log. Running it before copying the evidence out destroys the thing the profile was run to produce.",
+    "whatIsActuallyAtRisk":  {
+                                 "runDirectoryTotal":  "9179.43 MB",
+                                 "world":  "9149.7 MB, regenerable and disposable",
+                                 "fabricRuntime":  "20.8 MB, disposable",
+                                 "mods":  "3.7 MB, disposable",
+                                 "mixinOut":  "3.1 MB, disposable",
+                                 "samples":  "2 MB, irreplaceable - 509 periodic samples plus header.json",
+                                 "stressLog":  "90.3 KB, 479 lines, irreplaceable",
+                                 "verdictFile":  "stress-report.json, not yet written, irreplaceable"
+                             },
+    "thePoint":  "Almost all of the volume is disposable world data, which is why the directory looks precious and is not. The evidence that matters is about 2 MB, so preserving it costs nothing and losing it costs the run.",
+    "correctOrder":  [
+                         "1. Let the profile finish and produce stress-report.json",
+                         "2. Copy stress-report.json, the samples directory, header.json and build/s5-stress-24h2.log into docs/evidence/ immediately",
+                         "3. Run gradlew runGameTest, then copy build/reports/gametest/results.xml into docs/evidence/",
+                         "4. Only then run Test-S5Release.ps1, whose clean may delete everything under build/",
+                         "5. Update the report, the ledger and the evidence index"
+                     ],
+    "whyGameTestAlsoComesFirst":  "Its results.xml lives in build/reports/gametest and a later build can replace it, so it is copied out in the same pass rather than after.",
+    "theGuardOnlyCoversPartOfThis":  "Test-S5Release refuses to start while a stress profile is running, which stops it deleting a live run. It does not protect a finished run, so ordering is still required.",
+    "head":  "95813cb"
+}

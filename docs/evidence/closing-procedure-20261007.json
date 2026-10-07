@@ -30,5 +30,14 @@
                                  "thisIsCorrect":  "The gate is refusing to sign a preview. The ledger already records this under version-lock and full-package.",
                                  "readThisInsteadOfExitStatus":  "execution.json in the evidence directory: remapJarShaMatch is the reproducibility answer, and passed false is the version gate.",
                                  "stillWorthRunning":  "Yes. Both builds run with the offline and strict flags, which re-exercises the offline path at current source and dates that item, and the SHA comparison is a genuine reproducibility result."
-                             }
+                             },
+    "orderedSteps":  [
+                         "1. Confirm the profile ended and stress-report.json exists under the run's stress-reports directory",
+                         "2. Copy into docs/evidence/: stress-report.json, the whole samples directory, header.json, and build/s5-stress-24h2.log",
+                         "3. Run gradlew runGameTest, then copy build/reports/gametest/results.xml into docs/evidence/",
+                         "4. Only now run Test-S5Release.ps1 - its first gradle argument is clean, twice, which deletes build/ entirely",
+                         "5. Read execution.json rather than the exit status, since the version gate makes it throw",
+                         "6. Update the six-item table, the acceptance ledger and the evidence index"
+                     ],
+    "verifyBeforeRunningS5Release":  "Confirm the step 2 and 3 copies are present in docs/evidence/. If they are not, stop: that script's clean removes build/run/serverSmoke/vanilla/\u003crunId\u003e/ and build/s5-stress-24h2.log, and nothing else will regenerate them."
 }
