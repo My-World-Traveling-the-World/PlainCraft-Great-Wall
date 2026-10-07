@@ -1,0 +1,23 @@
+{
+    "check":  "categorise every warning in the stress log, a class I had not separately audited",
+    "date":  "2026-10-07",
+    "why":  "I had been counting ERROR, watchdog and OutOfMemory lines. Warnings were never enumerated as a class, so an unexpected warning could have been sitting in the 224 without my noticing - the same shape as an unexamined numeric claim.",
+    "levelCounts":  {
+                        "INFO":  89,
+                        "WARN":  224,
+                        "ERROR":  1,
+                        "FATAL":  0
+                    },
+    "everyWarnKind":  [
+                          "220 x Can't keep up! Is the server overloaded? Running Nms or N ticks behind - the profile's designed behaviour, since StressController documents that it deliberately overloads the server",
+                          "1 x **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!",
+                          "1 x The server will make no attempt to authenticate usernames. Beware.",
+                          "1 x While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect",
+                          "1 x To change this, set online-mode to true in server.properties"
+                      ],
+    "verdict":  "Four distinct kinds, all accounted for. The 220 are the profile working as designed and the 4 are the standard offline-mode notice, which is expected for a local test server and is a property of server.properties rather than of the mod.",
+    "noUnexpectedWarning":  "Nothing in the warning class is unexplained, so there is no latent signal hiding among the volume.",
+    "theSingleErrorIsSeparate":  "The one ERROR is the mob-spawner fetch at 09:12:29 already recorded as benign: WallSpawnerGuard documents that the wall emits no real mob_spawner block entity, so the fetch failure is expected rather than a defect.",
+    "whatThisAddsToTheEvidence":  "Together with watchdogs 0, OutOfMemory 0 and the four distinct warning kinds, every log line produced in five and a half hours falls into a known category.",
+    "head":  "c9dced8"
+}
