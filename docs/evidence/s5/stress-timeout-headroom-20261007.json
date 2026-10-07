@@ -1,0 +1,20 @@
+{
+    "check":  "is the gradle timeout sufficient for 24h plus startup and drain",
+    "date":  "2026-10-07",
+    "budget":  {
+                   "gradleTimeoutSeconds":  87600,
+                   "gradleTimeoutHours":  24.33,
+                   "startupSeconds":  26,
+                   "windowSeconds":  86400,
+                   "drainCeilingSeconds":  600,
+                   "requiredSeconds":  87026,
+                   "headroomSeconds":  574,
+                   "headroomMinutes":  9.6
+               },
+    "measurementOfStartup":  "The run directory was created at 08:47:33 and header.json with sample-000000 were written at 08:47:59, so startup cost 26 seconds.",
+    "theDrainIsACeilingNotAWait":  "drainSeconds is passed to orTimeout, so it bounds how long the stop may take rather than how long it always takes. Completed futures satisfy allOf immediately, and the class comment says a short profile drains quickly while a long one is allowed proportionally longer, bounded at both ends so the grace period is never zero and never hides a genuinely stuck future.",
+    "drainValueForThisRun":  "max(120, min(600, 86400/6 + 60)) = 600 seconds",
+    "realisticAssessment":  "The 9.6 minutes of headroom only has to cover writing a small report, shutting the server down and saving, and JVM exit. Writing the report is milliseconds and the drain normally finishes well inside its ceiling, so the margin is adequate even though it looks thin.",
+    "whatWouldConsumeIt":  "Only a drain that ran to its full 600-second ceiling and was followed by a slow shutdown. That combination would mean in-flight chunks genuinely stalled, which is itself a failure the profile should report rather than hide.",
+    "head":  "a66f803"
+}
