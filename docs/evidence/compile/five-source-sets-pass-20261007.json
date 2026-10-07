@@ -1,0 +1,18 @@
+{
+    "check":  "five-source-set compile (goal item 6)",
+    "date":  "2026-10-07",
+    "command":  "gradlew compileJava compileTestJava compileGametestJava compileServerSmokeJava compileClientSmokeJava --rerun-tasks",
+    "result":  "BUILD SUCCESSFUL",
+    "wallClockSeconds":  26,
+    "note":  "The non-rerun invocation finished in 10s because every task was UP-TO-DATE, which is not evidence of anything; only this forced form was recorded.",
+    "classFiles":  {
+                       "main":  469,
+                       "test":  182,
+                       "gametest":  88,
+                       "serverSmoke":  49,
+                       "clientSmoke":  6,
+                       "total":  794
+                   },
+    "noteOnTotal":  "This total already includes nested/inner classes.",
+    "head":  "d72c077"
+}
