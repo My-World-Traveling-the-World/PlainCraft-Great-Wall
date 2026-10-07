@@ -1,0 +1,20 @@
+{
+    "check":  "verify that Test-S5Stress.ps1 correctly rejects a failed profile, using the preserved failed report as a fixture",
+    "date":  "2026-10-07",
+    "why":  "The script is the tool that will read the 24-hour verdict. If it judged by exit code alone it would accept anything, since StressFixture halts with server.halt(false) and a failed profile still exits 0. That exact defect was found earlier in this session, so the repaired version deserves testing against a real failure rather than a reading.",
+    "fixtureUsed":  {
+                        "report":  "build/s5-stress-before-fix/stress-report.json",
+                        "passed":  false,
+                        "durationMet":  "absent",
+                        "failure":  "java.util.concurrent.CancellationException: stress stop timed out waiting for in-flight chunks"
+                    },
+    "result":  "The script computes reportPassed as false and therefore passed as false regardless of exit code, so it rejects the failed profile. The preserved failure is usable as a regression fixture.",
+    "anApparentGapThatIsNotOne":  {
+                                      "observation":  "reportDurationMet is computed at line 108 and recorded at line 120 but never appears in the pass decision at line 109, which looks like an unchecked condition.",
+                                      "whyItIsFine":  "StressFixture line 179 defines passed as failure being null, completed chunks exceeding zero, checkpoints being non-empty, and durationMet - so durationMet is already inside the field the script reads. The script cannot accept a run that failed the duration check.",
+                                      "endToEnd":  "scriptPassed true implies report.passed true implies durationMet true, necessarily. And when durationMet is false the fixture records a failure note and sets passed false, which the script rejects.",
+                                      "whyItIsRecordedAnyway":  "Keeping reportDurationMet in execution.json makes the reasoning auditable - a reader can see the duration condition was considered rather than having to infer it from the fixture's source."
+                                  },
+    "theExitCodeNoteIsInTheScript":  "execution.json carries an exitCodeIsNotAVerdict field stating that StressFixture halts with server.halt(false) so a failed profile still exits 0, and that the report is what decides. That is the defect documented where the next reader will see it.",
+    "head":  "b618502"
+}
