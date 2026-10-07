@@ -1,0 +1,35 @@
+{
+    "check":  "reconcile goal item 4's 180/180 by structure, and explain the extra fault-matrix directories",
+    "date":  "2026-10-07",
+    "why":  "Applying the same discipline as the JUnit count: a headline figure was reconciled against its structure rather than restated. Five fault-matrix directories exist, and only two are cited, so the others needed explaining.",
+    "citedRuns":  {
+                      "exception":  {
+                                        "directory":  "s5-faults-exception-20261006-c0c3f001",
+                                        "entries":  180,
+                                        "distinctPoints":  18,
+                                        "pointsWithTenRounds":  "18 of 18",
+                                        "passed":  180,
+                                        "faultHitWritten":  180,
+                                        "timedOut":  0,
+                                        "exitCodes":  "1 on all 180"
+                                    },
+                      "halt":  {
+                                   "directory":  "s5-faults-halt-20261006-623a795f",
+                                   "entries":  180,
+                                   "distinctPoints":  18,
+                                   "pointsWithTenRounds":  "18 of 18",
+                                   "passed":  180,
+                                   "faultHitWritten":  180,
+                                   "timedOut":  0,
+                                   "exitCodes":  "137 on all 180"
+                               }
+                  },
+    "reconciliation":  "180 equals 18 points times 10 rounds exactly in both modes, with no point short of ten and no extra entries. The two modes are independent: exit 1 for exception, exit 137 for halt, no overlap.",
+    "theThreeUncitedDirectories":  [
+                                       "s5-faults-exception-20261006-b66899d9 - 180 entries, 0 passed, and 175 with exitCode 0 against an expected -1. This is the run made before the exit-code capture was fixed, when the child's exit code did not reach the driver, so every point read as a clean exit. Preserved rather than deleted, which is why the failure is still auditable.",
+                                       "s5-faults-exception-20261006-c4bed180 - 36 entries, a partial run, exit 1 throughout",
+                                       "s5-faults-halt-20261006-a02ac426 - 18 entries, a partial run, exit 137 throughout"
+                                   ],
+    "whyThisMatters":  "The cited runs are the ones that passed, and the report names them explicitly. But the presence of a fully failed run alongside them is the evidence that the defect was real and was fixed, rather than that nothing ever went wrong.",
+    "head":  "3172b50"
+}
