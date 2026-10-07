@@ -1,0 +1,43 @@
+{
+    "check":  "clientSmoke source set content (part of goal item 6)",
+    "date":  "2026-10-07",
+    "files":  [
+                  {
+                      "path":  "smoke/ClientSmoke.java",
+                      "lines":  44,
+                      "role":  "the runnable client smoke: waits for a stable title screen, captures client-smoke.png, writes client-smoke-passed.txt, then stops the client. Throws rather than passing silently if the title screen does not appear within 120s."
+                  },
+                  {
+                      "path":  "client/debug/SmokeVisualChecklist.java",
+                      "lines":  186,
+                      "role":  "evidence ledger for visual checks"
+                  },
+                  {
+                      "path":  "client/debug/SmokeVisualChecklistTests.java",
+                      "lines":  323,
+                      "role":  "standalone verifier with a main(), not JUnit"
+                  },
+                  {
+                      "path":  "client/debug/GreatWallDebugClientCacheTests.java",
+                      "lines":  280,
+                      "role":  "debug cache checks"
+                  }
+              ],
+    "theChecklistRefusesToOverclaim":  {
+                                           "classDoc":  "Test-only evidence ledger. Neither case creation nor state observations certify visuals.",
+                                           "observerValues":  [
+                                                                  "human",
+                                                                  "automated_state"
+                                                              ],
+                                           "guard":  "An entry with observer=automated_state is rejected if it claims visible or merged, with the message 'state evidence cannot attest visibility or smoke merging'",
+                                           "pathGuards":  [
+                                                              "screenshot paths cannot traverse parent directories",
+                                                              "screenshot paths cannot contain symbolic links, junctions or special files"
+                                                          ],
+                                           "whyItMatters":  "This is the mechanism behind the report's statement that visuals need a human: the ledger cannot be used to record an automated visual pass even by mistake."
+                                       },
+    "registeredRuns":  [
+                           "loom run clientSmoke, inheriting the client run, runDir build/run/clientSmoke, launched with --username GreatWallSmoke --width 854 --height 480"
+                       ],
+    "head":  "6fccca8"
+}
