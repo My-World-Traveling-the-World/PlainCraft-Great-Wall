@@ -310,6 +310,12 @@ trace 缓冲上限、退出码不可见、30 秒排空窗口、压力 stop 超�
 | **客户端视觉/画质检查** | `NOT_RUN` | `runClientSmoke` 会启动真实客户端，`SmokeVisualChecklist` 自我声明「Neither case creation nor state observations certify visuals」，`observer` 必须是 `human` |
 | **专属群系实际生效** | `NOT_RUN` | 数据包为 **NORMAL（需手动启用）**；`ForcePlacement` 仅做过静态证明，**真实 RegistryOps 解码从未跑过**。见下方「群系着色的证据边界」 |
 | **群系写入器 `GreatWallBiomeWriter`** | **已补测并通过** | 新增 `BiomeWriterGameTests`（3 例），见下 |
+| **S2：GW-011 十二项 fixture 矩阵、双方真实调用、真实道路施工、存档回放** | `NOT_RUN` | `S2-状态.md` 记为全部 NOT_RUN；候选未安装，remapped 身份未验证。仓库内**无方法**补齐 |
+| **S3：`IgnitionService`/`WallSpawnerGuard`/`FtbIntegration`/`BeaconCountTask`/`BeaconSpecificTask` 的生产接线，及首次真实许可与写入** | `NOT_RUN` | `S3-状态.md` 列为未完成；本会话核实六类中**五类测试引用为 0**（第六类 `LootInitializer` 已补 9 例，但只覆盖其表决策逻辑，不含接线） |
+| **S4：96+32 生产图册、全构件占用等价、跨 chunk 材质矩阵、200 tick 水/重力/邻更新** | `NOT_RUN` | `S4-状态.md` 记为 NOT_RUN；只有缓存契约一侧已证 |
+| **S5：真实客户端 owner、联网传输、overlay 视觉** | `NOT_RUN` | `S5-状态.md` 记为 NOT_RUN，并明示纯缓存测试的 PASS 不继承。⚠️ `runWallPreview` 是**单 JVM 客户端**，**不覆盖联网情形** |
+
+**关于上表范围**：前 9 行回答「本验证目标还需人工做什么」，后 4 行回答「S2–S5 阶段文档仍记录哪些 NOT_RUN」。两者范围不同，合并阅读会同时低估两边。完整版见 `docs/release/real-machine-checklist-20261007.json`（13 项）。
 
 ### 群系数据包内容核对（2026-10-07，静态）
 
