@@ -1,0 +1,22 @@
+{
+    "check":  "whether the S1B items recorded as unfinished are still unfinished",
+    "date":  "2026-10-07",
+    "whyItMatters":  "Several documents are annotated with items that were open when written. Left unqualified they read as current gaps, and the previous round showed one of them - S1C-DRAIN-01 - no longer reproduces.",
+    "itemTheAllocationWhichWasCalledUnfinished":  {
+                                                      "docText":  "T0/compiled byte limits are checked, but peak object occupancy, full reservation before allocation, and long-term pin behaviour still need pressure verification; do not substitute a logical estimate for a measured memory ceiling.",
+                                                      "whatCoversItNow":  "ReservationHeapPressureTest, 107 lines, one @Test with a 180-second timeout",
+                                                      "howItMatchesPointByPoint":  [
+                                                                                       "peak occupancy: samples heap usage through a scheduled sampler while eight concurrent pins hold real payloads, and reads pool peak usage via getPeakUsage",
+                                                                                       "full reservation before allocation: asserts terrain.reserved() is 64 MiB and compiled.reserved() is 32 MiB while the payloads are live, not after",
+                                                                                       "long-term pin behaviour: eight pins are held simultaneously and the record type Pinned keeps real tiles and component voxels alive, with the assertions checking they are non-empty rather than stubs",
+                                                                                       "release: asserts both reservations return to zero after the pins close"
+                                                                                   ],
+                                                      "measuredNotEstimated":  "The test records sampledHeapPeak and heapPoolPeakSumNonSimultaneous alongside the reserved ceilings, which is a measurement rather than an estimate - the distinction the doc text explicitly asks for."
+                                                  },
+    "itemStillGenuinelyOpen":  {
+                                   "rampFourCandidates":  "S1B records that fixed four-candidate ramp selection and the full outer-edge guard are unfinished. No four-candidate concept exists anywhere in src/main, and the three RampSpecificationTest cases cover geometry rather than candidate selection, so this remains open as described.",
+                                   "waterGateRemainderMerging":  "Recorded unfinished and not contradicted by anything found."
+                               },
+    "conclusion":  "One of the two items checked has been closed by later work and the documents do not say so; the other is still open exactly as described. Distinguishing them requires reading the tests, not the annotations.",
+    "head":  "442e698"
+}
