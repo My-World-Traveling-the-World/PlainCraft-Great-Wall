@@ -58,5 +58,20 @@
                           "step5StressVerdict":  "tools/Test-S5Stress.ps1 -TestRoot build\\run\\serverSmoke\\vanilla\\s5stress24h20261007084723",
                           "warningAboutStep5":  "The root must include serverSmoke\\vanilla. A path like build\\run\\s5stress24h20261007084723 passes the script's guard but has no stress-reports directory beneath it, so the script would report passed=false with a message about no report being found - a fail-closed outcome that would nonetheless look like a profile failure.",
                           "warningAboutStep4":  "Test-S5Release throws by design because the version gate fails; read execution.json for remapJarShaMatch rather than the exit status."
-                      }
+                      },
+    "gameTestVerificationTargets":  {
+                                        "expectedTestcases":  129,
+                                        "currentlyUnrun":  23,
+                                        "whyTheNumberMatters":  "23 of the 129 have never executed in any run. The pending run is their first, so its results.xml must carry all 129 - a smaller number means a group was skipped, which the pass message alone would not reveal.",
+                                        "theTwentyThreeByClass":  {
+                                                                      "BiomeWriterGameTests":  3,
+                                                                      "LifecycleGameTests":  3,
+                                                                      "NegotiatedGateGameTests":  3,
+                                                                      "PaletteGameTests":  4,
+                                                                      "SiteRuntimeIndexGameTests":  7,
+                                                                      "WallArchPreparationGameTests":  3
+                                                                  },
+                                        "theOtherHundredAndSix":  "These ran on 2026-10-03, but against the pre-change corridor width, which is why their result does not carry over.",
+                                        "crossCheckAfterTheRun":  "Count testcase entries in build/reports/gametest/results.xml and require 129. Then confirm these six classes appear in it, since their absence is the specific failure a bare pass message would hide."
+                                    }
 }
