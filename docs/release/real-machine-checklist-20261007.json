@@ -5,7 +5,7 @@
     "status":  "PARTIAL - automated verification complete for 5 of 6 items; the 24h profile is still running",
     "purpose":  "One place listing everything that automated verification cannot establish, so the real-machine pass has an explicit scope instead of an implied one.",
     "willBeResolvedByTheRunInProgress":  [
-                                             "stress-24h: currently at hour 3.4 of 24, refills proceeding every 19-23 minutes, watchdog and OOM both zero"
+                                             "stress-24h: at hour 17.14 of 24 as of 2026-10-07 late evening, 50 refills completed, watchdog and OOM both zero throughout. Not yet final - the entry stays NOT_RUN until the profile reports passed=true with durationMet=true."
                                          ],
     "pendingAfterTheProfile":  [
                                    "full GameTest re-run (129 methods; inventory recorded beforehand so the count can be checked independently)",
