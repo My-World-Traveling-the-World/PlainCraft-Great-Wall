@@ -1,0 +1,18 @@
+{
+    "check":  "the GameTest run produces its evidence at a path that actually works",
+    "date":  "2026-10-07",
+    "why":  "Goal item 2's evidence is a report file. If the configured path did not resolve, a correct 3.65-hour run would leave nothing behind, and the failure would be in the plumbing rather than the code.",
+    "configured":  "-Dfabric-api.gametest.report-file=../../reports/gametest/results.xml, passed as a vmArg on loom.runs.gameTest",
+    "resolution":  "The path is relative to the run directory, which is build/run/gameTest. Going up two levels lands on build/, so the file resolves to build/reports/gametest/results.xml - the same directory that the task's doFirst block creates with mkdirs.",
+    "confirmed":  {
+                      "fileExists":  true,
+                      "bytes":  4479,
+                      "wellFormed":  "JUnit XML, with an outer testsuite wrapping a timestamped inner one",
+                      "testcases":  33,
+                      "failures":  0,
+                      "timestamp":  "2026-10-07T03:24:53Z, matching the 33-test diagnostic subset run at 11:24 local",
+                      "note":  "The counts agree with the batch line that run printed, 'Running test batch defaultBatch:0 (33 tests)', which is a second source confirming the report describes that run."
+                  },
+    "interpretation":  "The plumbing works, so the full run's evidence will land where it is expected. The existing file is a subset report and will be replaced by the full run, which is why the acceptance record should cite it as rebuilt each time rather than as a fixed artifact.",
+    "head":  "1eebf83"
+}
