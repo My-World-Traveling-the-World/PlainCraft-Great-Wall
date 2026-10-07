@@ -23,16 +23,20 @@
 | ④ | S5 故障矩阵 halt | **180/180 通过** | — | `docs/evidence/s5/s5-faults-halt-20261006-623a795f/` |
 | ⑤ | S5 压力 profile（1 小时） | **passed=true** | 1 h | `build/s5-stress-1h-evidence/` |
 | ⑤ | S5 压力 profile（24 小时） | **运行中** | — | `build/s5-stress-24h2.log` |
-| ⑥ | 5 源集编译 | **全绿，797 个 class** | 12 s | — |
-| — | JUnit 单测 | **628/628，强制重跑全绿** | 2 m 31 s | `build/test-results/test/` |
+| ⑥ | 5 源集编译 | **全绿，794 个 class**（强制重编译 26 s） | 26 s | `build/classes/java/`，每次运行重建 |
+| — | JUnit 单测 | **629/629，强制重跑全绿** | 2 m 20 s | `build/test-results/test/` |
 
 **计数随时间推移的变化**（本会话内新增测试所致，均为增长而非替换）：
 
 | 项 | 会话初 | 现在 |
 |---|---|---|
-| JUnit 单测 | 562 | **628** |
+| JUnit 单测 | 562 | **629** |
 | GameTest 声明 | 119 | **129**（待全量重跑确认） |
-| 5 源集 class | 782 | **797**（main 469 / test 181 / gametest 88 / serverSmoke 49 / clientSmoke 6，另含内部类） |
+| 5 源集 class | 782 | **794**（main 469 / test 182 / gametest 88 / serverSmoke 49 / clientSmoke 6；**此数为 `*.class` 文件总数，已含内部类**） |
+
+> 上表的 794 是逐源集实测值（`--rerun-tasks` 强制重编译后统计）。此前写的 797 有两处错：
+> 一是把「另含内部类」当成额外增量（实际 794 本身就含内部类），二是 `test` 记成 181
+> 而实际为 182。数字对不上时以实测为准。
 
 ### 证据存在性（2026-10-07 自查）
 
