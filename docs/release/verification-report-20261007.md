@@ -14,6 +14,32 @@
 
 ## 1. 六项可自动化验证
 
+**失败根因汇总**（目标明确要求「记录每项的真实结果与失败根因」；本节集中列出，
+逐项详情见第 2 节）：
+
+| # | 项目 | 曾出现的失败 | 根因 |
+|---|---|---|---|
+| ① | 发布门禁 | 门禁**从未成功运行过** | verifyReleaseArtifacts 调用了 File.digest('SHA-256') —— 该 API 在普通 JDK 的 File 上不存在，故每次到达该行即抛异常。改为自实现 sha256(File)。**这是「门禁存在但从未生效」型缺陷** |
+| ① | 发布门禁 | 当前仅版本号 FAIL | **不是缺陷**：门禁要求恰为 0.1.0，而版本是 0.1.0-s1c-preview.2，门禁**正确地拒绝**为 preview 签发布 |
+| ② | 全量 GameTest | 早期 119 项曾报失败 | 门禁把「trace 缓冲满」误判为失败 —— 505 owner 全跑完却被报失败，而真红线 WAIT_WHILE_LOCKED=0、STAGE_ENTER==STAGE_EXIT。**「阈值过紧把成功报成失败」型缺陷** |
+| ② | 全量 GameTest | 基线失效 | corridorHalfWidth 由 192 改为 **512**，旧基线不再描述当前配置，故必须重跑。现已确认全部 fixture 均为 512 |
+| ③ | 真实地形遍历 | 39 分钟预算不够 505 owner | 实测约 19–26 秒/owner。改为 -Ps1cTraversalMinutes 可配置 |
+| ④ | 故障矩阵 | **每个点都报失败** | 两个独立根因：①ignoreExitValue=true 使子进程退出码对驱动不可见；②fault-hit.json 写到共享 root，第二次运行必崩于 FileAlreadyExistsException（后修为按 mode 分目录） |
+| ④ | 故障矩阵 | **所有 production 运行起不来** | intermediary 缓存名假设过时：Loom 现产出 intermediary-1.21.1-v2.jar，脚本却硬编码找 -1.21.1.jar |
+| ⑤ | 压力 profile | 24h 版曾被 watchdog 杀死（首次 refill 后 14 分钟） | inFlightFutures 内存泄漏：future 完成后不从列表移除，累积约 100 万个 future 及其区块引用，堆顶到 8G，GC 压力使一次区块保存 tick 卡 60.01 秒 |
+| ⑤ | 压力 profile | 24h 曾「4.5 小时就结束」 | 位置列表有限（MAX_PENDING=65536），队列排空即 stop。修法：窗口未到就 refill（无上限），重进已生成地形 |
+| ⑤ | 压力 profile | 30 秒排空窗口把成功报失败 | 窗口短于实际排空需求。现按请求时长推导，下限 120 秒、上限 600 秒 |
+| ⑤ | 压力 profile | 排空等待阻塞 server 线程 → 单 tick 120 秒 → 被杀 | 早期实现用 stop().get() 同步等待。现改为非阻塞轮询 draining.isDone() |
+| ⑤ | 压力 profile | 5 分钟固定超时切断长压 | unServerSmokeProduction 的超时未考虑 stress profile。现按 stress 时长 + 20 分钟推导 |
+| ⑤ | 压力 profile | 目录预建致 profile 无法启动 | StressController 要求报告目录**不存在**（防覆盖），而 StressFixture 预建了它。改为只建父目录 |
+| ⑥ | 5 源集编译 | 无 | 未出现过失败 |
+| — | JUnit 单测 | 无 | 未出现过失败（585 → 629 全程全绿） |
+
+**四类反复出现的模式**（详见第 3 节）：①**门禁阈值过紧，把成功报成失败**（出现 4 次）；
+②**接口存在但从未被执行**（门禁的 File.digest、intermediary 缓存名）；
+③**失败信号不可见**（子进程退出码被 ignoreExitValue 吞掉）；
+④**短跑通过 ≠ 长跑稳定**（1h 压测连过 3 次，24h 版在 refill 后死于泄漏）。
+
 | # | 项目 | 结果 | 用时 | 证据 |
 |---|---|---|---|---|
 | ① | `verifyReleaseArtifacts` 发布门禁 | **通过除版本号外全部检查** | 12 s | 已重跑；输出见 `docs/release/acceptance.json` 的 artifact-contents／reproducible-build 条目 |
