@@ -1,8 +1,8 @@
 {
     "document":  "index of the evidence written during the 2026-10-07 automated-verification session",
     "date":  "2026-10-07",
-    "revision":  "2 - extended after 11 more evidence files were added",
-    "purpose":  "The session wrote 35 small evidence files. This maps each to the claim it supports so a reader can find the right one instead of opening all of them.",
+    "revision":  "3 - extended to 54 entries",
+    "purpose":  "The session wrote 54 evidence files. This maps each to the claim it supports so a reader can find the right one instead of opening all of them.",
     "note":  "INDEX-20261007.json is this file and is deliberately not listed among its own entries.",
     "grouped":  {
                     "goal item 1 - release gate":  [
@@ -13,6 +13,26 @@
                                                        {
                                                            "file":  "dependency-lock-and-reproducibility-20261007.json",
                                                            "claim":  "verification-metadata.xml untouched (273 components, 605 artifacts) and the two settings that make the jar reproducible are present"
+                                                       },
+                                                       {
+                                                           "file":  "pack-format-entry-verified-20261007.json",
+                                                           "claim":  "five pack-format claims read against the shipped mcmeta files and the live log: 34 with 34..48, the biome pack at 48, zero warnings"
+                                                       },
+                                                       {
+                                                           "file":  "lifecycle-evidence-entry-verified-20261007.json",
+                                                           "claim":  "the three named LifecycleGameTests cases opened and their assertions read, plus the cad3f7e defect traced to its commit"
+                                                       },
+                                                       {
+                                                           "file":  "negotiated-gate-entry-verified-20261007.json",
+                                                           "claim":  "the gate cases assert order independence, and the missing GateFreezeSolver traces to red-team M3 in 0c36bdb"
+                                                       },
+                                                       {
+                                                           "file":  "negotiated-gate-expected-properties-20261007.json",
+                                                           "claim":  "no wider hole is asserted as aperture 4x5 at three points; no third-party chiselling has both an allowlist test and a six-condition runtime refusal"
+                                                       },
+                                                       {
+                                                           "file":  "integration-matrix-not-runnable-verified-20261007.json",
+                                                           "claim":  "profile controls validation, expected-adapter, run dir and heap but never the classpath, so the NOT_RUN is correct"
                                                        }
                                                    ],
                     "goal item 2 - GameTest":  [
@@ -23,6 +43,30 @@
                                                    {
                                                        "file":  "gametest-count-method-validated-20261007.json",
                                                        "claim":  "the counting method reproduces Fabric's own count exactly (33) on a known subset"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-runtime-budget-20261007.json",
+                                                       "claim":  "why 119 tests took 3h22m: combinatorial matrices, and 129 projects to about 3.65 hours"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-no-gradle-timeout-safe-20261007.json",
+                                                       "claim":  "runGameTest has no gradle timeout, and Fabric's per-case timeoutTicks stops any hung case"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-heap-decision-20261007.json",
+                                                       "claim":  "the historical full pass used 1 GB; omitting the property yields 8 GB, so the decision is to omit it"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-report-path-verified-20261007.json",
+                                                       "claim":  "the report resolves to build/reports/gametest/results.xml, where a 33-case subset report already exists"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-residual-world-safe-20261007.json",
+                                                       "claim":  "residual world data cannot affect a verdict because each case runs in its own template structure"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-loads-current-source-20261007.json",
+                                                       "claim":  "gameTest/mods is empty, so the run loads compiled source rather than a possibly stale jar"
                                                    }
                                                ],
                     "goal item 3 - real-terrain traversal":  [
@@ -73,6 +117,18 @@
                                                          {
                                                              "file":  "s5/stress-thread-and-handle-trend-20261007.json",
                                                              "claim":  "threads flat at 33 across four hours and nine refills, so the refill loop leaks no threads"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-gradle-timeout-budget-20261007.json",
+                                                             "claim":  "the gradle ceiling is 1460 minutes against a 24-hour profile, and startup measured 17 seconds"
+                                                         },
+                                                         {
+                                                             "file":  "s5/stress-termination-logic-20261007.json",
+                                                             "claim":  "one condition rules out both early stop and hang; the logged countdown is the termination arithmetic itself"
+                                                         },
+                                                         {
+                                                             "file":  "s5release-invocation-resolved-20261007.json",
+                                                             "claim":  "the exact Test-S5Release command, with TestRoot resolving under build/run and Profile affecting only naming"
                                                          }
                                                      ],
                     "goal item 6 - five source sets":  [
@@ -113,6 +169,26 @@
                                                    {
                                                        "file":  "uninstall-safety-20261007.json",
                                                        "claim":  "the persistent attachments are never written and no block or item is registered, so removal leaves no residue"
+                                                   },
+                                                   {
+                                                       "file":  "no-user-facing-enable-path-20261007.json",
+                                                       "claim":  "no config file, no command, and production=true is refused: there is no player-facing route"
+                                                   },
+                                                   {
+                                                       "file":  "no-enable-path-cross-confirmed-20261007.json",
+                                                       "claim":  "four documents agree, and none gives a procedure for enabling production"
+                                                   },
+                                                   {
+                                                       "file":  "wall-preview-path-exists-20261007.json",
+                                                       "claim":  "correction to the above: runWallPreview starts a real client with the fixture on, so a preview path does exist"
+                                                   },
+                                                   {
+                                                       "file":  "wall-preview-runnable-20261007.json",
+                                                       "claim":  "its preconditions hold: the asset index is present and all 3911 objects are at the declared size"
+                                                   },
+                                                   {
+                                                       "file":  "wall-preview-workflow-20261007.json",
+                                                       "claim":  "the four steps a person actually performs, including why the client appears to ignore the flag"
                                                    }
                                                ],
                     "integrity and hygiene checks":  [
@@ -155,8 +231,12 @@
                                                          {
                                                              "file":  "post-stress-task-readiness-20261007.json",
                                                              "claim":  "every post-stress gradle task chain resolves, and the stress guard still refuses"
+                                                         },
+                                                         {
+                                                             "file":  "sanctuary-margin-hardcoded-safe-20261007.json",
+                                                             "claim":  "the literal 384+512+64 margin is safe because AnchorField and RidgePlanner both freeze those values"
                                                          }
                                                      ]
                 },
-    "head":  "c224fc1"
+    "head":  "4fbdc9c"
 }
