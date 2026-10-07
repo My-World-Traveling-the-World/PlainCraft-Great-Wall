@@ -1,7 +1,7 @@
 {
     "document":  "real-machine verification checklist (consolidated)",
     "date":  "2026-10-07",
-    "revision":  "3 - the visual-check entry now carries an executable procedure",
+    "revision":  "4 - every entry states its method, or states that none exists in this repository",
     "status":  "PARTIAL - automated verification complete for 5 of 6 items; the 24h profile is still running",
     "purpose":  "One place listing everything that automated verification cannot establish, so the real-machine pass has an explicit scope instead of an implied one.",
     "alreadyProvenByAutomation":  [
@@ -19,7 +19,8 @@
                                        {
                                            "item":  "walking the wall by hand",
                                            "why":  "Programmatic traversal of 505 owners cannot substitute for a person walking it",
-                                           "source":  "traversal certificate notRun"
+                                           "source":  "traversal certificate notRun",
+                                           "howToRunIt":  "After a wall exists in a reachable world - which currently means the runWallPreview path or an opened production path - walk its length and judge it, since programmatic traversal of 505 owners cannot substitute."
                                        },
                                        {
                                            "item":  "client visual and rendering check",
@@ -33,37 +34,44 @@
                                        {
                                            "item":  "the dedicated biome actually taking effect",
                                            "why":  "The datapack is NORMAL (opt-in) and force_placement was only proven statically; a real RegistryOps decode has never run. Enabling it also changes the world fingerprint, so an existing save will refuse to load by design",
-                                           "source":  "report section 4 and the biome evidence-boundary note"
+                                           "source":  "report section 4 and the biome evidence-boundary note",
+                                           "howToRunIt":  "Enable the great_wall_biome datapack in a new world (it is NORMAL, so it is opt-in) and confirm the biome resolves through a real RegistryOps decode. A new world is required: enabling the pack changes the world fingerprint, so an existing save will refuse to load by design."
                                        },
                                        {
                                            "item":  "height6000 and non-default minY",
                                            "why":  "Never exercised; the smoke worlds use the default height",
-                                           "source":  "traversal certificate notRun"
+                                           "source":  "traversal certificate notRun",
+                                           "howToRunIt":  "Drive the S1C traversal against a world configured for the height and minimum-Y variants, rather than the default heights the smoke worlds use."
                                        },
                                        {
                                            "item":  "Golden seed",
                                            "why":  "Not run",
-                                           "source":  "traversal certificate notRun"
+                                           "source":  "traversal certificate notRun",
+                                           "howToRunIt":  "Drive the S1C traversal with a fixed non-default seed via -Ps1cSeed and -Ps1cRealWall, the same path the certified seed 17 run took."
                                        },
                                        {
                                            "item":  "integration matrix: FTB absent/present, RoadWeaver absent/patched, Tectonic, C2ME CPU, fullpack OpenCL",
                                            "why":  "The smoke classpath loads only three jars, so smokeProfile cannot stand in for the real pack - passing it would be falsely green",
-                                           "source":  "acceptance ledger integration-matrix"
+                                           "source":  "acceptance ledger integration-matrix",
+                                           "howToRunIt":  "No method exists within this repository: the smoke classpath loads three jars, so a profile flag cannot add Tectonic, C2ME or the pack. It requires a real instance with those mods installed."
                                        },
                                        {
                                            "item":  "strict-offline build",
                                            "why":  "Network access is currently permitted by the user, so the offline path has not been re-exercised",
-                                           "source":  "report section 4"
+                                           "source":  "report section 4",
+                                           "howToRunIt":  "Run the same two clean builds that tools/Test-S5Release.ps1 performs but with the network genuinely unavailable: the script already passes --offline --dependency-verification=strict, so the open question is only whether the local caches suffice without the network access the session currently has."
                                        },
                                        {
                                            "item":  "S4 symlink anti-case",
                                            "why":  "Blocked by the environment, not by code: Developer Mode is off and creating a symbolic link fails with a privilege error. Needs Developer Mode or elevation",
-                                           "source":  "acceptance ledger environmentLimits"
+                                           "source":  "acceptance ledger environmentLimits",
+                                           "howToRunIt":  "Enable Windows Developer Mode (or run elevated), then re-run the S4 checklist task. SmokeVisualChecklistTests hits this at line 240; the test currently reports link_cases=NOT_RUN and refuses an overall PASS, which is the correct behaviour while the platform cannot create symbolic links."
                                        },
                                        {
                                            "item":  "Tan's Huge Trees and TYG write-set certification",
                                            "why":  "Recorded as blocked rather than run",
-                                           "source":  "traversal certificate blocked"
+                                           "source":  "traversal certificate blocked",
+                                           "howToRunIt":  "Requires those mods present and their write sets certified, which is recorded as blocked rather than run."
                                        }
                                    ],
     "willBeResolvedByTheRunInProgress":  [
@@ -73,5 +81,6 @@
                                    "full GameTest re-run (129 methods; inventory recorded beforehand so the count can be checked independently)",
                                    "tools/Test-S5Release.ps1 two clean builds (now guarded so it cannot delete a live profile)"
                                ],
-    "head":  "14c1e72"
+    "note":  "Every entry now carries a method. Two of them record that no method exists inside this repository - the integration matrix, because the smoke classpath loads three jars so a profile flag cannot add Tectonic, C2ME or the pack, and the Tan's/TYG certification, which needs those mods present and their write sets certified. For those two the absence of a method is the finding.",
+    "head":  "3660b69"
 }
