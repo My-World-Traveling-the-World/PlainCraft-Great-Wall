@@ -1,0 +1,26 @@
+{
+    "check":  "RoadWeaver interop gate will pass on the real machine",
+    "date":  "2026-10-07",
+    "why":  "The mod refuses to initialise the soft-dependency bridge unless the loaded RoadWeaver jar matches an allowlisted SHA. If it did not match, the wall would fail to initialise on the user's client - a real-machine failure that no amount of local testing would show.",
+    "allowlistFile":  "src/main/resources/plaincraft_great_wall/roadweaver-interop.sha256",
+    "allowlistedSha":  "bed13208658438dcc27efe965155958d2e3b0386488ab9023432b6db9a854dd1",
+    "deployedJar":  "roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.8.406-perf-batch.jar",
+    "deployedSha":  "bed13208658438dcc27efe965155958d2e3b0386488ab9023432b6db9a854dd1",
+    "shaMatches":  true,
+    "abiClassesPresent":  [
+                              "WallInteropTypes",
+                              "WallInteropTypes\\",
+                              "ObstacleSnapshot",
+                              "PlanningInteropRegistry",
+                              "EndpointHeightAgreementApi"
+                          ],
+    "abiMethodsVerified":  [
+                               "register(PlanningObstacleProvider)",
+                               "registerHeight(UUID, EndpointHeightAgreementApi)",
+                               "prepare(Request, BooleanSupplier)",
+                               "height(UUID) -\u003e Optional\u003cEndpointHeightAgreementApi\u003e"
+                           ],
+    "interpretation":  "The exact jar that will load on the real machine carries the allowlisted SHA and exposes every interop entry point the adapter calls, so the bridge initialises rather than refusing.",
+    "falseAlarmRecorded":  "A first listing reported the localisation pack as sharing the main jar's SHA. That was a shell artefact: a failed Get-FileHash left the previous loop's variable in place. Re-read per file, the two differ (6395395 vs 47813 bytes), as they must.",
+    "head":  "794cd41"
+}
