@@ -76,5 +76,36 @@
                          "5. Only now run Test-S5Release.ps1 - its first gradle argument is clean, twice, which deletes build/ entirely",
                          "6. Read execution.json rather than the exit status, since the version gate makes it throw",
                          "7. Update the six-item table, the acceptance ledger and the evidence index"
-                     ]
+                     ],
+    "theTwentyThreeNamesToConfirm":  {
+                                         "note":  "Post-run verification should confirm these appear in results.xml, not just that the total is 129. A count alone cannot show a class was skipped while another gained cases.",
+                                         "neverExecutedUnderAnyName":  [
+                                                                           "biomewritergametests.columnsoutsidethemaskkeeptheiroriginalbiome",
+                                                                           "biomewritergametests.paintrefuseswhennosurfaceisusable",
+                                                                           "biomewritergametests.paintrespectsthesurfacerelativeband",
+                                                                           "lifecyclegametests.dimensionandrecipechangesfailclosed",
+                                                                           "lifecyclegametests.lateworldacallbackcannotwriteb",
+                                                                           "lifecyclegametests.onlynewproductionworldauthorized",
+                                                                           "negotiatedgategametests.differentroadssharenegotiatedcell",
+                                                                           "negotiatedgategametests.nocandidatepreservesprotectedgap",
+                                                                           "negotiatedgategametests.roadbeforewallusessamefrozengate",
+                                                                           "palettegametests.gallerycontainsall96plus32",
+                                                                           "palettegametests.gravityandwaterupdatesremainstable",
+                                                                           "palettegametests.reloadrejectsgeometrypalettemutation",
+                                                                           "palettegametests.sameworldpositionsamematerial",
+                                                                           "siteruntimeindexgametests.aclosedindexrefusesfurtheruseratherthanansweringstaledata",
+                                                                           "siteruntimeindexgametests.amarkerforanotherrecipeisignoredratherthanindexed",
+                                                                           "siteruntimeindexgametests.amatchingcompletemarkerisindexedanditsslotsbecomequeryable",
+                                                                           "siteruntimeindexgametests.anincompletemarkerisignoredratherthanindexed",
+                                                                           "siteruntimeindexgametests.anoutofrangeradiusisrejectedratherthansilentlyunbounded",
+                                                                           "siteruntimeindexgametests.thesamemarkerisidempotentsoareloaddoesnotduplicatethebucket",
+                                                                           "siteruntimeindexgametests.unloadingremovesthechunkanditsslotstogether",
+                                                                           "wallarchpreparationgametests.absentdurableproofkeepsgatependingwithoutthrowingoracknowledging"
+                                                                       ],
+                                         "renamedWithRewrittenBodies":  [
+                                                                            "wallarchpreparationgametests.ownerpreparationfailurecompleteswithoutacommonpoolhop",
+                                                                            "wallarchpreparationgametests.workerreceivesownerpreparationfailurewithoutwritingoracknowledging"
+                                                                        ],
+                                         "expectedTotalWhenCheckedAgainstTheSuite":  129
+                                     }
 }
