@@ -1,0 +1,15 @@
+{
+    "check":  "resolve where the report's session-start JUnit figure of 562 came from, left open last round",
+    "date":  "2026-10-07",
+    "why":  "Last round I found that 629 minus 562 is 67 while counting declarations at the session-start commit 3447428 gives 527. Those cannot both be the session start, so one of my assumptions was wrong and the report's baseline was under suspicion.",
+    "resolution":  {
+                       "theBaselineIsCorrect":  "562 belongs to commit 50a1245, which is where the report first wrote it, not to 3447428",
+                       "at50a1245":  "544 @Test plus 4 @ParameterizedTest is 548 declarations, and parameterized expansion adds 14, giving 562 - exactly the recorded figure",
+                       "atHEAD":  "611 plus 4 is 615 declarations, and the same 14 expansion gives 629, matching the XML",
+                       "myError":  "I assumed 3447428 was the baseline because it is the first commit of this session's work. The report's baseline was taken at a later commit, 50a1245, which is a different and equally defensible reference point."
+                   },
+    "theCoincidenceExplained":  "The growth is 67 either way - 548 to 615 declarations, and 562 to 629 instances - because the number of parameterized tests did not change across the period. That is why both figures move by the same amount, and why 67 appeared to be the table's total as well.",
+    "conclusion":  "Nothing is wrong with the report's baseline. Both endpoints reconcile under the same model: declarations plus parameterized expansions, with expansion constant at 14.",
+    "methodNote":  "The previous round recorded this as an unresolved coincidence. Tracing it to the commit that first contains the figure, rather than the commit I assumed was the start, settled it.",
+    "head":  "2b2a03e"
+}
