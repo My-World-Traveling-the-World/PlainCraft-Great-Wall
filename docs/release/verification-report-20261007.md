@@ -48,10 +48,10 @@
 |---|---|---|---|---|
 | ① | `verifyReleaseArtifacts` 发布门禁 | **通过除版本号外全部检查** | 12 s | 已重跑；输出见 `docs/release/acceptance.json` 的 artifact-contents／reproducible-build 条目 |
 | ② | `runGameTest` 全量 | **All 119 required tests passed** | 3 h 22 m | 日志已被后续 `--rerun-tasks` 覆盖，见下方「证据存在性」 |
-| ③ | `runServerSmoke` 真实地形 | **REAL_WALL_TRAVERSAL_PASS** | 5 h 43 m | `build/smoke-pass.log` + `docs/evidence/s1c/real-wall-traversal-pass-20261007.json` |
+| ③ | `runServerSmoke` 真实地形 | **REAL_WALL_TRAVERSAL_PASS** | 5 h 43 m | `docs/evidence/s1c/real-wall-traversal-pass-20261007.json` |
 | ④ | S5 故障矩阵 exception | **180/180 通过** | — | `docs/evidence/s5/s5-faults-exception-20261006-c0c3f001/` |
 | ④ | S5 故障矩阵 halt | **180/180 通过** | — | `docs/evidence/s5/s5-faults-halt-20261006-623a795f/` |
-| ⑤ | S5 压力 profile（1 小时） | **passed=true** | 1 h | `build/s5-stress-1h-evidence/` |
+| ⑤ | S5 压力 profile（1 小时） | **passed=true** | 1 h | `docs/evidence/s5/s5-stress-1h-20261007/stress-report.json` |
 | ⑤ | S5 压力 profile（24 小时） | **运行中** | — | `build/s5-stress-24h2.log` |
 | ⑥ | **6** 源集编译 | **全绿，798 个 class**（强制重编译 33 s） | 33 s | `docs/evidence/compile/five-source-sets-pass-20261007.json` |
 | — | JUnit 单测 | **629/629，强制重跑全绿** | 2 m 20 s | `build/test-results/test/` |
