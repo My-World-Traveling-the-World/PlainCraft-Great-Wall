@@ -54,4 +54,9 @@
   取该证据需在开发者模式或提权环境重跑 S4。
 
 `S1C-DRAIN-01` 继续 OPEN；STOPPING 瞬间的非零 leases/reservation 不当作已排空。
+**为何零计数也不能关单**：已有快照中出现过 `flights=0/admitted=0/leases=0`，但那次运行是
+**以失败结束**的（`state.failed=true`），失败会走完整 teardown，计数按构造归零 —— 因此它
+**不能证明成功路径上排空正常**，而后者正是该项所问。`README.md:32`（2026-10-04）与
+`S1C-OwnerCoverage-A+C状态.md:53` 均以同一理由拒绝用该快照关单。结清它需要一次【成功运行】
+的 STOPPING 快照。
 完整 GameTest 若通过，仍不自动关闭这些项目或将本预览改名为正式发行版。
