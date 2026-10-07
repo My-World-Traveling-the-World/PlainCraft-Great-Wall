@@ -329,7 +329,7 @@ trace 缓冲上限、退出码不可见、30 秒排空窗口、压力 stop 超�
 | **Golden 对照种子** | `NOT_RUN` | 未跑 |
 | **integration-matrix 其余 profile** | `NOT_RUN` | 只跑过 `vanilla`。**并且这三个 profile 无法用当前 harness 补齐**：smoke 运行只装载 3 个 jar（fabric-api + 本 mod + smoke harness），`smokeProfile` 只改运行目录名、`expectedAdapter`、堆大小与 `-Dgreatwall.smoke.profile`，**不会**把 Tectonic / C2ME / OpenCL pack 加进 classpath —— 传 `-PsmokeProfile=tectonic` 只会得到一个「标签是 tectonic、实际装载相同 3 个 jar」的运行。Tectonic 与 full-pack OpenCL 两行**必须靠真机实例** |
 | **S5 24 小时** | `NOT_RUN` | 运行中，未出结果 |
-| **严格离线构建** | **已通过** | `remapJar remapSourcesJar --offline --dependency-verification=strict --rerun-tasks` 成功，`compileJava` 真的重新执行，SHA 与联网构建一致 |
+| **严格离线构建** | **已在 2026-09-29 通过；未在当前源码重跑** | `remapJar remapSourcesJar --offline --dependency-verification=strict --rerun-tasks` 曾在 `docs/evidence/s0-01/metadata-repair/offline-build-strict-rerun.txt` 取得 `BUILD SUCCESSFUL`（30 秒，18 个任务全部 executed，非 UP-TO-DATE）。**⚠️ 该证据早于 `corridorHalfWidth` 192→512 及本会话全部改动**，故只证明离线路径可行，**不构成对当前源码的离线证明**。`Test-S5Release.ps1` 的两轮 clean build 本身就带 `--offline --dependency-verification=strict`，跑一次即可在当前源码上结清此项 |
 | **Tan's Huge Trees / TYG write-set** | `BLOCKED` | 依赖外部 mod |
 | **符号链接反例（S4 checklist 契约）** | `NOT_RUN` | 本机未启用 Windows 开发者模式，`Files.createSymbolicLink` 无权限。见下 |
 
