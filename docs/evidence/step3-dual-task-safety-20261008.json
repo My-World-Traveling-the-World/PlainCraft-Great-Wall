@@ -1,0 +1,22 @@
+{
+    "check":  "whether running test and runGameTest in one gradle invocation is safe, since step 3 depends on it and the wrong answer costs three and a half hours",
+    "date":  "2026-10-08",
+    "why":  "Step 3 was changed to run both tasks because they are independent - runGameTest writes only the gametest report while test produces the JUnit XML that step 4 archives. If invoking them together caused a conflict, the failure would appear deep into a multi-hour run.",
+    "theTaskGraphIsCoherent":  {
+                                   "dryRunTaskCount":  22,
+                                   "order":  "compileJava through testClasspathBridge and test, then compileGametestJava through gametestClasses and runGameTest",
+                                   "sharedPrerequisites":  "Five compile tasks appear once each, so Gradle deduplicates them rather than building twice"
+                               },
+    "outputsDoNotCollide":  {
+                                "test":  "build/test-results/test/ and build/reports/tests/test/",
+                                "runGameTest":  "build/reports/gametest/ and build/run/gameTest/",
+                                "verdict":  "No shared path, so neither can overwrite the other's results"
+                            },
+    "aFlagThatLookedAlarmingAndIsNot":  {
+                                            "observation":  "gradle.properties sets org.gradle.parallel=true, which would suggest the two tasks could run concurrently if they were independent",
+                                            "whyItIsInert":  "Gradle's parallel flag parallelises execution across projects. settings.gradle declares only rootProject.name, and no subdirectory holds a build.gradle, so this is a single-project build with nothing to parallelise across.",
+                                            "additionalReassurance":  "Even if they did run concurrently, their output paths are disjoint, so neither writes what the other reads."
+                                        },
+    "conclusion":  "Invoking gradlew test runGameTest together is safe, and step 3 keeps both tasks.",
+    "head":  "330a66e"
+}
