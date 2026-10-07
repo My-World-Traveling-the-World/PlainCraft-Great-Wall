@@ -1,0 +1,14 @@
+{
+    "check":  "sampling continuity, as evidence integrity for the 24h profile",
+    "date":  "2026-10-07",
+    "reading":  {
+                    "samplesPresent":  514,
+                    "lowestIndex":  0,
+                    "highestIndex":  513,
+                    "expectedIfContiguous":  514,
+                    "gaps":  0
+                },
+    "whyItMatters":  "The samples are the profile's time series, and the closing step copies them out as evidence. A missing index would mean either a dropped write or a silent sampling failure, and either would weaken claims made from the series - for instance that heap oscillates rather than climbs. Contiguity is the cheap check that rules both out.",
+    "methodNote":  "Checked by parsing the numeric suffix of each name rather than counting files, since a count alone cannot distinguish 514 contiguous samples from 514 with holes.",
+    "head":  "bfc7145"
+}
