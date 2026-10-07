@@ -1,0 +1,29 @@
+{
+    "check":  "whether the remaining goal rounds will span the remaining stress-profile wall clock",
+    "date":  "2026-10-07",
+    "why":  "Rounds are consumed by my own work, and the profile runs on wall clock. If rounds run out first, the objective stops before the profile ends and the closing steps never run. An earlier estimate assumed 6.5 minutes per round; measurement now suggests rounds are much faster, which moves this from comfortable to short.",
+    "measurement":  {
+                        "method":  "compared profile elapsed time between status checks, which advances in real time",
+                        "round139":  "12.52 hours elapsed",
+                        "round142":  "12.65 hours elapsed, so 7.8 minutes across 3 rounds",
+                        "round145":  "12.71 hours elapsed, so 3.6 minutes across 3 rounds",
+                        "impliedCadence":  "1.2 to 2.6 minutes per round, against the 6.5 assumed earlier"
+                    },
+    "theArithmetic":  {
+                          "roundsUsed":  147,
+                          "roundsRemaining":  153,
+                          "hoursAtTwoMinutesPerRound":  5.1,
+                          "profileHoursRemaining":  11.3,
+                          "shortfall":  "about 6.2 hours",
+                          "cadenceNeededToCover":  "4.4 minutes per round or slower"
+                      },
+    "whatThisMeans":  "At the present pace the round cap is reached roughly six hours before the profile ends, so the GameTest run, Test-S5Release and the closing summary would never be reached automatically.",
+    "whatICannotDo":  "maxGoalRounds is 300 and raising it requires a direct top-level human request, so it is not mine to change unilaterally.",
+    "options":  {
+                    "extendTheCap":  "Raise max_goal_rounds so the rounds span the profile. This is the only option that preserves the automatic close.",
+                    "doMorePerRound":  "Make each round carry more work so the same 153 rounds span longer. Partially effective, but the ratio needed is over twice the current pace and the work available during the profile is finite.",
+                    "acceptAManualResume":  "Let the cap arrive and resume afterwards with a fresh instruction. Nothing is lost - the profile and its evidence are unaffected - but the closing steps become a separate request."
+                },
+    "theEvidenceIsSafeEitherWay":  "The profile writes its report and samples to build/, and the ordered closing steps protect them. A round-cap stop does not damage anything; it only stops me from finishing without a new instruction.",
+    "head":  "addbe71"
+}
