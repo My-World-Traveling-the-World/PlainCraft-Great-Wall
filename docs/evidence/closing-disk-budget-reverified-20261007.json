@@ -1,0 +1,14 @@
+{
+    "check":  "re-verify the closing disk budget before the profile ends, since that analysis was written when the profile was hours younger",
+    "date":  "2026-10-07",
+    "found":  "The analysis already exists in closing-disk-budget-20261007.json and holds. Its figures were re-measured rather than re-derived.",
+    "reVerified":  {
+                       "reclaimableLogsGB":  "38.29 GB claimed, 38.29 GB measured - smoke-full.log 18.64, smoke-pass.log 17.68 and smoke-pathfix.log 1.97",
+                       "diskFree":  "78.6 GB claimed, 78.4 GB measured; the small drop is the running profile appending to its world",
+                       "buildTotal":  "47.43 GB across 17038 files, of which the run directory is 9.12 GB and those three logs are 38.29 GB"
+                   },
+    "itsConclusionStillStands":  "The clean removes material that is unreferenced, self-described as reclaimable, or already transcribed. smoke-pass.log has seven references and is the load-bearing one, because the traversal certificate transcribes its decisive lines verbatim - verified character for character in round 185 - so the certificate survives the log.",
+    "whatRound203Added":  "That sweep found two items the earlier analysis had not covered: the 1-hour profile report, now archived to docs/evidence/s5/s5-stress-1h-20261007/, and the fact that step 2 did not name it.",
+    "noActionNeededNow":  "The clean is step 5 and the archive steps run first. Nothing needs deleting beforehand, and freeing the space earlier would only risk removing something the closing sequence still reads.",
+    "head":  "fc7dfca"
+}
