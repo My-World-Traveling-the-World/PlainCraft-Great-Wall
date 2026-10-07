@@ -1,0 +1,72 @@
+{
+    "document":  "real-machine verification checklist (consolidated)",
+    "date":  "2026-10-07",
+    "status":  "PARTIAL - automated verification complete for 5 of 6 items; the 24h profile is still running",
+    "purpose":  "One place listing everything that automated verification cannot establish, so the real-machine pass has an explicit scope instead of an implied one.",
+    "alreadyProvenByAutomation":  [
+                                      "release gate runs; its only FAIL is the version string, which is a correct refusal to sign a preview",
+                                      "five-source-set compile green, 794 class files",
+                                      "GameTest suite inventory confirmed at 129 methods across 34 classes (full re-run pending the 24h profile)",
+                                      "real-terrain traversal REAL_WALL_TRAVERSAL_PASS owners=505 voxels=28046 feet=2537",
+                                      "fault matrix 180/180 in each of exception and halt mode, exit codes 1 and 137 respectively",
+                                      "1h stress profile passed=true",
+                                      "unit suite 629/629",
+                                      "three architectural red lines held",
+                                      "deployed jar byte-identical to the verified build"
+                                  ],
+    "requiresRealMachineOrHuman":  [
+                                       {
+                                           "item":  "walking the wall by hand",
+                                           "why":  "Programmatic traversal of 505 owners cannot substitute for a person walking it",
+                                           "source":  "traversal certificate notRun"
+                                       },
+                                       {
+                                           "item":  "client visual and rendering check",
+                                           "why":  "SmokeVisualChecklist states that neither case creation nor state observation certifies visuals, and its observer must be human",
+                                           "source":  "traversal certificate and report section 4"
+                                       },
+                                       {
+                                           "item":  "the dedicated biome actually taking effect",
+                                           "why":  "The datapack is NORMAL (opt-in) and force_placement was only proven statically; a real RegistryOps decode has never run. Enabling it also changes the world fingerprint, so an existing save will refuse to load by design",
+                                           "source":  "report section 4 and the biome evidence-boundary note"
+                                       },
+                                       {
+                                           "item":  "height6000 and non-default minY",
+                                           "why":  "Never exercised; the smoke worlds use the default height",
+                                           "source":  "traversal certificate notRun"
+                                       },
+                                       {
+                                           "item":  "Golden seed",
+                                           "why":  "Not run",
+                                           "source":  "traversal certificate notRun"
+                                       },
+                                       {
+                                           "item":  "integration matrix: FTB absent/present, RoadWeaver absent/patched, Tectonic, C2ME CPU, fullpack OpenCL",
+                                           "why":  "The smoke classpath loads only three jars, so smokeProfile cannot stand in for the real pack - passing it would be falsely green",
+                                           "source":  "acceptance ledger integration-matrix"
+                                       },
+                                       {
+                                           "item":  "strict-offline build",
+                                           "why":  "Network access is currently permitted by the user, so the offline path has not been re-exercised",
+                                           "source":  "report section 4"
+                                       },
+                                       {
+                                           "item":  "S4 symlink anti-case",
+                                           "why":  "Blocked by the environment, not by code: Developer Mode is off and creating a symbolic link fails with a privilege error. Needs Developer Mode or elevation",
+                                           "source":  "acceptance ledger environmentLimits"
+                                       },
+                                       {
+                                           "item":  "Tan's Huge Trees and TYG write-set certification",
+                                           "why":  "Recorded as blocked rather than run",
+                                           "source":  "traversal certificate blocked"
+                                       }
+                                   ],
+    "willBeResolvedByTheRunInProgress":  [
+                                             "stress-24h: currently at hour 3.4 of 24, refills proceeding every 19-23 minutes, watchdog and OOM both zero"
+                                         ],
+    "pendingAfterTheProfile":  [
+                                   "full GameTest re-run (129 methods; inventory recorded beforehand so the count can be checked independently)",
+                                   "tools/Test-S5Release.ps1 two clean builds (now guarded so it cannot delete a live profile)"
+                               ],
+    "head":  "3952cc3"
+}
