@@ -39,5 +39,15 @@
                          "5. Read execution.json rather than the exit status, since the version gate makes it throw",
                          "6. Update the six-item table, the acceptance ledger and the evidence index"
                      ],
-    "verifyBeforeRunningS5Release":  "Confirm the step 2 and 3 copies are present in docs/evidence/. If they are not, stop: that script's clean removes build/run/serverSmoke/vanilla/\u003crunId\u003e/ and build/s5-stress-24h2.log, and nothing else will regenerate them."
+    "verifyBeforeRunningS5Release":  "Confirm the step 2 and 3 copies are present in docs/evidence/. If they are not, stop: that script's clean removes build/run/serverSmoke/vanilla/\u003crunId\u003e/ and build/s5-stress-24h2.log, and nothing else will regenerate them.",
+    "roundBudgetConstraint":  {
+                                  "measured":  "6.5 minutes per round, measured between rounds 119 and 131 rather than estimated",
+                                  "consequence":  "The profile alone consumes about every remaining round, with roughly a 10-round gap once the post-profile work is counted",
+                                  "therefore":  [
+                                                    "Start the post-profile steps as background jobs in the round the profile ends, not in a later one",
+                                                    "Do not spend a round waiting for a long task; start it and collect it in a subsequent round",
+                                                    "Keep each round to one substantive action rather than several, so no round is wasted on bookkeeping"
+                                                ],
+                                  "theShapeThatFits":  "Round A starts runGameTest as a background job. Round B collects it and starts Test-S5Release the same way. Round C collects that and writes the closing summary."
+                              }
 }
