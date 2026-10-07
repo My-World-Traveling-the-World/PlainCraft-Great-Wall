@@ -1,0 +1,24 @@
+{
+    "check":  "the source-set inventory behind goal item 6, and a correction to my own earlier figure",
+    "date":  "2026-10-07",
+    "whatWasReported":  "794 class files across five source sets: main 469, test 182, gametest 88, serverSmoke 49, clientSmoke 6. That total and those five figures appear in the report.",
+    "whatIsActuallyThere":  {
+                                "main":  469,
+                                "test":  182,
+                                "gametest":  88,
+                                "serverSmoke":  49,
+                                "clientSmoke":  6,
+                                "client":  4,
+                                "directoryTotal":  798
+                            },
+    "theDiscrepancy":  "The five named sets sum to 794, which is what I reported, but build/classes/java also contains a sixth directory, client, holding four classes. The 798 directory total is the true count.",
+    "whyTheSixthWasMissed":  "The goal names five sets - gametest, serverSmoke and clientSmoke among them - and I enumerated those rather than listing the directory. Listing the directory is what exposed it.",
+    "isClientAGenuineSourceSet":  {
+                                      "srcDirectory":  "src/client exists alongside the other five",
+                                      "contents":  "GreatWallClient at 9 lines, GreatWallDebugClient at 198, OverlayRenderer at 140",
+                                      "testCoverage":  "referenced 24 times by tests for GreatWallDebugClient and 13 times for OverlayRenderer, so it is not untested scaffolding",
+                                      "verdict":  "A genuine sixth source set, not a stray output directory."
+                                  },
+    "whatThisChanges":  "Goal item 6 asks that five source sets compile. They do - all six do, and the sixth was simply not named. The compilation result stands; the count in my report was one set short.",
+    "head":  "d041369"
+}
