@@ -1,10 +1,11 @@
 {
     "check":  "compile coverage for goal item 6",
     "date":  "2026-10-07",
-    "command":  "gradlew compileJava compileClientJava compileTestJava compileGametestJava compileServerSmokeJava compileClientSmokeJava --rerun-tasks",
-    "result":  "BUILD SUCCESSFUL",
-    "wallClockSeconds":  26,
-    "note":  "The non-rerun invocation finishes in about 10s because every task is UP-TO-DATE, which is not evidence of anything; only the forced form is recorded. An earlier revision of this file omitted compileClientJava from the command it named; it has been added, since src/client is a real source set and the directory count below includes its output.",
+    "executedCommand":  "gradlew compileJava compileClientJava compileTestJava compileGametestJava compileServerSmokeJava compileClientSmokeJava --rerun-tasks",
+    "executedAt":  "2026-10-07 22:54 local",
+    "result":  "BUILD SUCCESSFUL in 33s",
+    "wallClockSeconds":  33,
+    "note":  "Run for real rather than as a dry run, after the earlier revision's command had omitted compileClientJava. The non-rerun invocation finishes in about 10s because every task is UP-TO-DATE, which is not evidence of anything, so only the forced form is recorded.",
     "classFiles":  {
                        "main":  469,
                        "test":  182,
@@ -13,9 +14,11 @@
                        "clientSmoke":  6,
                        "client":  4,
                        "namedSourceSetsSum":  794,
-                       "directoryTotal":  798
+                       "directoryTotal":  798,
+                       "countedAfterTheForcedRecompile":  "Yes - the directory was re-counted after this run and gives the same 798, with each source set matching the value recorded here."
                    },
-    "whySixNotFive":  "build.gradle calls splitEnvironmentSourceSets and names sourceSets.client alongside main, and src/client holds GreatWallClient, GreatWallDebugClient and OverlayRenderer. Those compile to four classes because GreatWallDebugClient has a PageCache inner class, which is why the directory holds four under client.",
-    "correction":  "An earlier revision recorded five named sets and a total of 794. Re-counting the directory found a sixth set, and the command now names compileClientJava so the recorded command matches what the count covers.",
-    "head":  "4c27275"
+    "itAlsoCarriedTheSessionEdits":  "This forced recompile absorbed the two assertion guards committed as 25afd0c. Confirmed by disassembling GateCapTest.class and finding the guard message 'a ground egress case must contain walkable voxels, or the bounds check below passes vacuously' present in the bytecode, so the figures above describe the current source rather than a stale tree.",
+    "whySixNotFive":  "build.gradle calls splitEnvironmentSourceSets and names sourceSets.client alongside main, and src/client holds GreatWallClient, GreatWallDebugClient and OverlayRenderer. Those compile to four classes because GreatWallDebugClient has a PageCache inner class.",
+    "correction":  "An earlier revision recorded five named sets, a total of 794 and a command without compileClientJava. All three are fixed here.",
+    "head":  "a45b95b"
 }
