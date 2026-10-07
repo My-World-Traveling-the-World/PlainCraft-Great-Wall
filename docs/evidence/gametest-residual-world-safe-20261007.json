@@ -1,0 +1,15 @@
+{
+    "check":  "can a residual GameTest world contaminate the re-run",
+    "date":  "2026-10-07",
+    "configuration":  "fabricApi.configureTests sets clearRunDirectory = false, so the run directory is not wiped between runs",
+    "residualEvidence":  "build/run/gameTest holds 147 files and 73 MB of world data",
+    "resolvedAs":  "not a risk",
+    "reasoning":  [
+                      "The concern was that build/run/gameTest carries 73 MB of world data from an earlier run, and clearRunDirectory is false, so the re-run would inherit it.",
+                      "GameTest places each case in its own template structure - the new cases use EMPTY_STRUCTURE - so the surrounding terrain is not part of what a case asserts against. Residual world data cannot change a verdict.",
+                      "The setting is also longstanding: the 119-test pass was recorded with clearRunDirectory already false, so the same residual world was present then."
+                  ],
+    "incidentalCorrection":  "The run directory's own timestamp read as 09:16 and suggested the 11:02 and 11:24 runs had not touched it. Its region files are dated 11:26:55, so the directory timestamp was simply stale. Checking the contents rather than the parent's mtime is what settled it.",
+    "note":  "Left in place rather than cleared. Deleting a build/run directory would be the kind of unforced destructive step this session already learned to avoid, and nothing here needs it.",
+    "head":  "fc93532"
+}
