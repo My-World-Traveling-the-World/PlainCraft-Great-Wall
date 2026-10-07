@@ -186,7 +186,13 @@ public final class BiomeWriterGameTests implements FabricGameTest {
             }
         }
 
-        GreatWallBiomeWriter.paint(chunk, sampler(helper), mask, identity);
+        boolean painted = GreatWallBiomeWriter.paint(chunk, sampler(helper), mask, identity);
+        // Without this the test could pass vacuously: if the painter declined, every column would be
+        // unchanged and the "excluded columns are unchanged" assertion below would hold for the wrong
+        // reason. That is the same trap this test already fell into once by asserting coverage in a way
+        // that was true regardless of the mask.
+        helper.assertTrue(painted, "the painter must actually have painted the covered columns; otherwise "
+                + "the unchanged-column assertion below cannot distinguish correct behaviour from doing nothing");
 
         for (int[] column : excluded) {
             int quartX = QuartPos.fromBlock(column[0]);
@@ -199,6 +205,9 @@ public final class BiomeWriterGameTests implements FabricGameTest {
                     Holder<Biome> actual = section.getBiomes()
                             .get(QuartPos.quartLocal(quartX), local, QuartPos.quartLocal(quartZ));
                     Holder<Biome> original = wasExcluded.get(columnKey(quartX, quartZ, base + local));
+                    helper.assertTrue(original != null,
+                            "the pre-paint snapshot must cover quart (" + column[0] + "," + (base + local)
+                                    + "," + column[1] + "), otherwise the comparison is vacuous");
                     helper.assertTrue(actual.equals(original),
                             "a column the mask excludes must keep its biome, but quart ("
                                     + column[0] + "," + (base + local) + "," + column[1] + ") changed from "
