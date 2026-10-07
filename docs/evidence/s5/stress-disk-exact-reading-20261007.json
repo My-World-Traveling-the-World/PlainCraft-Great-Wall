@@ -1,0 +1,24 @@
+{
+    "check":  "disk growth over the second half of the profile, with exact bytes",
+    "date":  "2026-10-07",
+    "reading":  {
+                    "worldBytes":  9595407680,
+                    "worldGigabytes":  8.9364,
+                    "regionFiles":  13519,
+                    "meanRegionFileMB":  0.68,
+                    "diskFreeGB":  78.6,
+                    "elapsedHours":  5.12
+                },
+    "earlierRoundedReadings":  [
+                                   "1.79h 8.78 GB",
+                                   "2.05h 8.83 GB",
+                                   "3.86h 8.94 GB",
+                                   "4.40h 8.94 GB"
+                               ],
+    "whatTheFlatnessMeans":  "Between 3.86h and 5.12h the rounded figure did not move, which over 1.26 hours is consistent with convergence. But two of those readings are rounded to two decimals, so they cannot prove a change smaller than 0.01 GB either way.",
+    "honestPrecisionLimit":  "I do not have an exact byte count from an earlier moment, so the strongest claim supported is that growth is well under 0.01 GB per hour. Recording exact bytes now so the next comparison is real rather than apparent.",
+    "whyItConverges":  "The refill cycles deterministically through the same coordinates - MIXED_24H rotates on i%3 - so each pass rewrites terrain that already exists rather than opening new regions. 13519 region files averaging 0.68 MB fits that: the area is bounded and being revisited.",
+    "thatRegionFilesAreStillWrittenIsNotGrowth":  "The newest region file was written seconds before this reading. That is rewriting, not expanding, which is exactly what a re-entry profile should look like.",
+    "projectionIfItHeld":  "At under 0.01 GB/hour the remaining 18.9 hours would add under 0.2 GB against 78.6 GB free, so disk is not a risk. This is a projection from the converged phase rather than an extrapolation of the cold-start rate, which was 4.31 GB/hour and would have been badly misleading.",
+    "head":  "023e981"
+}
