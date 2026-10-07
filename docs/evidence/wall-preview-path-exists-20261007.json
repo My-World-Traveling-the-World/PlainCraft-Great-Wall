@@ -1,0 +1,25 @@
+{
+    "check":  "correction: there IS a way to see the wall, but only as a developer preview",
+    "date":  "2026-10-07",
+    "previousRoundSaid":  "There is no user-facing way to enable generation, based on searching the code for config files and commands.",
+    "correction":  "That was incomplete. The code has no such path - no config file, no command, and production=true is refused - but Gradle provides one: runWallPreview starts a real Minecraft client against an isolated directory with the fixture switched on.",
+    "runWallPreview":  {
+                           "mainClass":  "net.fabricmc.loader.impl.launch.knot.KnotClient, a real client rather than a headless server",
+                           "jvmArgs":  [
+                                           "-Dgreatwall.production=false",
+                                           "-Dgreatwall.s1c.productionFixture=true",
+                                           "-Dgreatwall.s0.probe=false"
+                                       ],
+                           "gameDir":  "an isolated directory under build/run",
+                           "purposeField":  "the preview manifest it writes labels itself manual-client-preview-not-acceptance"
+                       },
+    "whatItCanShow":  "A wall actually generating, in front of a human, which is exactly what the real-machine checklist lists as needing a person rather than a program.",
+    "constraintsThatKeepItFromBeingRealMachineAcceptance":  [
+                                                                "the directory must stay inside build/run, so it can never point at a real save",
+                                                                "production stays false, so this is the isolated fixture path rather than the production path",
+                                                                "the manifest records production false, isolatedFixture true and networkUsed false, and labels itself not acceptance"
+                                                            ],
+    "guardWorthNoting":  "prepareWallPreview refuses an existing directory that lacks the marker file, with the message 'Refusing an existing unmarked preview directory'. It will not adopt a directory it did not create.",
+    "whyTheCorrectionMatters":  "Saying there is no way to see the wall would have been wrong in a way that matters to the user: a developer preview exists and is the natural way to do the human visual check that remains NOT_RUN. The accurate statement is that there is no player-facing path and no acceptance path, but there is a preview path.",
+    "head":  "b3385a4"
+}
