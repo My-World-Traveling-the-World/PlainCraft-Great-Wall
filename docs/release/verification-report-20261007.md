@@ -328,7 +328,6 @@ java.nio.file.FileSystemException: ...\linked.png: 客户端没有所需的特�
 若要拿到该反例的证据，需在**启用开发者模式或提升权限**的环境下重跑 S4 契约。
 
 ### 其余「测试零覆盖」类（系统扫描结果）
-
 对 `src/main` 全部 163 个类与 `src/test` + `src/gametest` 做全文比对，**41 个类零引用**。
 其中 mixin（`WallSpawnerMixin` / `IgnitionUseMixin` / `TorchIgnitionMixin` / `C2meGateMixin` 等）
 天然只能在真机走到，但下列**非 mixin 逻辑类**是真实的自动化缺口：
@@ -350,6 +349,24 @@ java.nio.file.FileSystemException: ...\linked.png: 客户端没有所需的特�
 **结论**：`GreatWallBiomeWriter` 不是孤例。补测优先级建议为
 `GarrisonController` → `IgnitionService` → `SanctuaryAvoidance`；
 `WallSpawnerGuard` 与其 mixin 只能靠真机，`C2meTerrainEngine` 需要 C2ME 环境。
+
+### 资源引用完整性核对（2026-10-07，结论：**无缺口**）
+
+对「代码是否引用了不存在的资源」做了双向核对，结论是**没有缺口**，此处记录以
+避免后续重复排查：
+
+| 项 | 结果 |
+|---|---|
+| 战利品表 | 代码引用的 4 张（`chests/armory`、`supplies`、`ordinary`、`weathered`）**全部存在**；另有实体表 `entities/garrison` |
+| block tags | 4 个均**有真实代码引用**（`BlockCatalog` 的 `TagKey`），非孤儿：`foundation_support`(32 条)、`natural_replaceable`(19 条)、`protected`(5 条)、`replaceable_vegetation`(17 条) |
+| tag 内容 | `protected` 的全部 5 条（bedrock / end_portal_frame / end_portal / nether_portal / lava）**均被 `CatalogGameTests` 显式断言**，另含 magma |
+| 性质断言 | `vegetationAndProtectionAreDisjointAndUnknownFailsClosed` 已钉住「植被与保护互斥」及「未知状态 fail closed」 |
+| worldgen biome tags | 3 个 palette tag 均有引用 |
+| mixin 配置 | 20 个 mixin 类 = 18 个 config 声明 + 2 个 `ProbeMixinPlugin` 条件加载，**无未登记、无悬空**，并已由 `BuildContractTest.everyMixinClassIsNamedByAConfiguration` 钉住（经变异测试验证：移除一个声明即失败） |
+
+**注意**：`BlockCatalog` 的 tag 内容会流入世界指纹（`catalog.hash()` → `paletteHash`），
+因此 tag 漂移最终会被「旧存档拒绝加载」捕捉；但那是一个**迟滞且不透明**的信号，
+上表的直接断言才是第一道防线。
 
 ### 激活专属群系会改变世界指纹
 
