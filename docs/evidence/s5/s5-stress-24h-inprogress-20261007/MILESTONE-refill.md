@@ -23,6 +23,10 @@ future 及其区块引用，堆顶到 8G 上限，GC 压力使一次区块保存
 - refills：1
 - watchdog：0     OutOfMemory：0
 - 本目录同时保存了当时的 stress-reports 采样（header.json + sample-*.json）
+  **⚠️ 该采样系列止于 elapsed 6359s（1.77h），共 205 个**，是运行【早期】的快照，不是完整
+  序列。它防的是压测运行期间 `build/` 被意外清理。**完整序列**由收官第 2 步在 `Test-S5Release`
+  的 `clean` 之前复制（届时约 1500+ 个采样，覆盖至 24h）。截至 2026-10-07 12.99h，实时目录已
+  有 1253 个采样 —— 不要把这个快照当作全量。
 ## refill 频率与磁盘收敛（2026-10-07 补充实测）
 
 三次 refill 的日志：
