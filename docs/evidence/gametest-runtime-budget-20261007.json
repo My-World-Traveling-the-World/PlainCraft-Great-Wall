@@ -1,0 +1,36 @@
+{
+    "check":  "why the full GameTest run takes hours, and how long to budget after the stress profile",
+    "date":  "2026-10-07",
+    "observedDiscrepancy":  "A 33-test diagnostic subset finished in 140 seconds, about 4.2 seconds per test. The recorded full run of 119 tests took 3h22m, about 102 seconds per test - a 24-fold difference that needed explaining before it could be used for planning.",
+    "explanation":  "The suite is not uniform. A handful of cases are combinatorial matrices rather than single assertions, and those dominate the wall-clock time.",
+    "heavyCases":  {
+                       "AdjacentComponentMatrixTests":  "8 cases with timeoutTicks=1000000; one enumerates 256 combinations from 8 kinds x 8 kinds x 2 profiles x 2 boundaries, asserted as cases.size() == 256",
+                       "OracleGameTests":  "5 cases, one with timeoutTicks=20000000, two orders of magnitude above the smallest",
+                       "ComponentGameTests":  "13 cases at timeoutTicks=1000000",
+                       "others":  "AdjacentFixtureDiagnosticTests, ComponentSurvivalMatrixTests, CurvedGateRegressionTests, CurvedSiteMatrixTests, CurvedWallMatrixTests, FringeOwnerCoverageTests, GroundEntranceContractGameTests, HydroBoundaryRegressionTests, NoiseBridgeGameTests, ProductionPipelineTests and RampGroundPortalTests all carry the same large timeout"
+                   },
+    "batches":  {
+                    "count":  11,
+                    "names":  [
+                                  "pgw-adjacency-matrix",
+                                  "pgw-adjacency-decision",
+                                  "pgw-adjacency-fixture-diagnostic",
+                                  "pgw-survival-matrix",
+                                  "pgw-curved-gate-regression",
+                                  "pgw-curved-site-matrix",
+                                  "pgw-curve-matrix",
+                                  "pgw-hydro-boundary",
+                                  "pgw-tall-columns",
+                                  "pgw-production-memory",
+                                  "pgw-ground-portals"
+                              ],
+                    "note":  "11 explicitly named batches beyond the default, which is why the suite runs in a defined order rather than one flat pool."
+                },
+    "budget":  {
+                   "measuredAt119":  "202 minutes",
+                   "projectedAt129":  "about 219 minutes, roughly 3.65 hours",
+                   "method":  "scaled by count, which is a rough estimate rather than a measurement; the new cases are cheap ones, so the true figure may be slightly lower"
+               },
+    "whyThisMatters":  "The post-stress schedule is GameTest then Test-S5Release.ps1, and Test-S5Release's two clean builds add up to two hours. Knowing the first is about 3.65 hours rather than tens of minutes is what makes the sequencing realistic.",
+    "head":  "61284b5"
+}
