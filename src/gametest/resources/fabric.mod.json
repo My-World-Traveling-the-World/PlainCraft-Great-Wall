@@ -39,7 +39,8 @@
       "local.plaincraft.greatwall.gametest.PaletteGameTests",
       "local.plaincraft.greatwall.gametest.NegotiatedGateGameTests",
       "local.plaincraft.greatwall.gametest.LifecycleGameTests",
-      "local.plaincraft.greatwall.gametest.BiomeWriterGameTests"
+      "local.plaincraft.greatwall.gametest.BiomeWriterGameTests",
+      "local.plaincraft.greatwall.gametest.SiteRuntimeIndexGameTests"
     ]
   },
   "depends": {
