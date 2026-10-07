@@ -437,6 +437,30 @@ HUD 日志的印证：`Applied 0 biome modifications to 0 of 64 new biomes`。
 
 ---
 
+### 逐条复核账本的 10 个条目（2026-10-07，只读核对）
+
+对 `acceptance.json` 的每一条做了独立复核，方式是**实测**而非重读文档：
+
+| 条目 | 状态 | 复核方式与结果 |
+|---|---|---|
+| version-lock | FAIL | 实测 `gradle.properties:7` = `0.1.0-s1c-preview.2`，门禁要求恰为 `0.1.0` → **FAIL 属实** |
+| full-package | FAIL | 同一版本号原因 |
+| stress-24h | NOT_RUN | `log` 指向 `build/s5-stress-24h2.log` **存在**；本次运行仍在进行 |
+| fault-matrix | PASS | `log` 指向的两个日志**均存在**；持久证据在 `docs/evidence/s5/s5-faults-{exception,halt}-*` |
+| artifact-contents / reproducible-build | PASS | 持久证据 `docs/evidence/compile/` |
+| pack-format / lifecycle-evidence / negotiated-gate | PASS | 均有 `docs/evidence/` 下的持久证据 |
+| integration-matrix | NOT_RUN | 核实「smokeProfile 不引入真实 mod」：压测 header 的 `mods` 实测仅含 `fabricloader` / `mixinextras` / `plaincraft_great_wall` / `server_smoke`，**无 tectonic / c2me / opencl** → **阻塞理由属实** |
+
+**另核实硬件与环境限制两处描述**：
+
+- `hardware` 声称 Ryzen 7 5700X (8C/16T) / 31.9 GB / Windows 11 Pro / Oracle JDK 21.0.5 —— 实测
+  `Win32_Processor`、逻辑核 16、`TotalVisibleMemorySize` 31.9 GB 均**一致**。
+- `environmentLimits` 声称符号链接不可用（Developer Mode 关闭）。实测：注册表键
+  `HKLM\...\AppModelUnlock` **不存在**（等价于关闭），且直接调用 `New-Item -ItemType SymbolicLink`
+  **失败并报「此操作需要管理员权限」** → **该环境限制属实**，S4 `link_cases=NOT_RUN` 是正确结论。
+
+**结论**：账本 10 条的状态、原因与证据**均可复核且属实**，未发现虚报或过时描述。
+
 ## 5. 验收账本
 
 机器可读账本在 `docs/release/acceptance.json`，当前为：
