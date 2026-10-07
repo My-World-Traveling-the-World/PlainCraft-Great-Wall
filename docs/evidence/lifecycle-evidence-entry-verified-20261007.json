@@ -1,0 +1,23 @@
+{
+    "check":  "independent verification of the lifecycle-evidence acceptance entry",
+    "date":  "2026-10-07",
+    "method":  "Opened each named test and read its assertions, rather than accepting the names as evidence.",
+    "namedCasesExist":  {
+                            "lateWorldACallbackCannotWriteB":  "line 69, with substantive assertions",
+                            "onlyNewProductionWorldAuthorized":  "line 97, asserts the EXISTING_WORLD_WITHOUT_MANIFEST code",
+                            "dimensionAndRecipeChangesFailClosed":  "line 128, four independent rejections"
+                        },
+    "otherClassesExist":  [
+                              "NegotiatedGateGameTests",
+                              "HistoryJournalTest",
+                              "HistoryCodecTest",
+                              "HistoryIndexTest",
+                              "WorldManifestTest"
+                          ],
+    "detail":  [
+                   "LifecycleGameTests contains all three named cases at lines 69, 97 and 128, and each asserts the property rather than merely being named for it. lateWorldACallbackCannotWriteB builds two distinct frozen identities, asserts their hashes differ, then has a late callback from world A attempt to write through world B's guard. onlyNewProductionWorldAuthorized asserts the exact failure code EXISTING_WORLD_WITHOUT_MANIFEST. dimensionAndRecipeChangesFailClosed rejects seed, terrain and template changes independently, then rejects a Nether dimension with NO_WALL.",
+                   "The other five named test classes all exist.",
+                   "The claim that the changed-dimension case was a real defect fixed in cad3f7e checks out: that commit is titled 'biome pack is opt-in; value-equality dimension gate', and its message states that ChunkGeneratorBiomeMixin now compares the dimension registry key by value."
+               ],
+    "head":  "177046c"
+}
