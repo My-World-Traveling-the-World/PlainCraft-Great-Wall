@@ -5,42 +5,43 @@
   "status": "NOT_READY",
   "note": "Machine-readable release acceptance. Every entry is PASS|FAIL|NOT_RUN|BLOCKED with a relative log path, expected/actual result, hardware, and start/end times. The release may only be signed 'all S5 passed' when every entry is PASS (no FAIL / NOT_RUN / BLOCKED).",
   "hardware": {
-    "cpu": "NOT_RECORDED",
-    "ram": "NOT_RECORDED",
+    "cpu": "AMD Ryzen 7 5700X 8-Core (8C/16T)",
+    "ram": "31.9 GB",
     "gpu": "NOT_RECORDED",
-    "jdk": "21 (core)",
-    "os": "Windows"
+    "jdk": "21 (Oracle JDK 21.0.5+9-LTS-239)",
+    "os": "Windows 11 Pro"
   },
+  "evidenceNote": "Statuses below were set on 2026-10-07 from runs executed in this workspace. An entry is PASS only where the exact expected condition was observed; partial coverage stays NOT_RUN with the gap named in `actual`. JUnit 562/562 and the 5-source-set compile are prerequisites, not acceptance entries.",
   "acceptance": [
     {
       "id": "version-lock",
       "title": "mod_version=0.1.0 and dependency versions unchanged",
       "expected": "mod_version=0.1.0; Gradle 9.4.1 / Loom 1.16.3 / Loader 0.19.3 / FabricAPI 0.116.14+1.21.1 / JUnit 5.11.0",
-      "status": "NOT_RUN",
-      "log": null,
-      "actual": null,
-      "startedUtc": null,
-      "finishedUtc": null
+      "status": "FAIL",
+      "log": "build/verify-release.log",
+      "actual": "mod_version is 0.1.0-s1c-preview.2, not the required 0.1.0. verifyReleaseArtifacts enforces this and is the only check it fails; dependency versions (Gradle 9.4.1 / Loom 1.16.3 / Loader 0.19.3 / FabricAPI 0.116.14+1.21.1) are all unchanged. This FAIL is the gate correctly refusing to certify a preview build as a release, and must be cleared by bumping the version at release time.",
+      "startedUtc": "2026-10-07T00:10:00Z",
+      "finishedUtc": "2026-10-07T00:11:00Z"
     },
     {
       "id": "artifact-contents",
       "title": "remapJar + sourceJar contain no test/fault/fixture/agents/credentials/machine paths",
       "expected": "clean artifact; SHA256 recorded",
-      "status": "NOT_RUN",
-      "log": null,
-      "actual": null,
-      "startedUtc": null,
-      "finishedUtc": null
+      "status": "PASS",
+      "log": "build/verify-release.log",
+      "actual": "No FaultInjector / FaultProcessMain / StressProcessMain / StressController / StressFixture / stress / smoke / gametest entries; no D:\\ , C:\\ or user-name strings in any packaged json/txt; pack.mcmeta pack_format 34 with supported_formats 34..48. remapJar SHA256 80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456, identical in build/libs and the client mods directory.",
+      "startedUtc": "2026-10-07T00:12:00Z",
+      "finishedUtc": "2026-10-07T00:13:00Z"
     },
     {
       "id": "reproducible-build",
       "title": "two clean builds same source/JDK produce identical remapJar SHA256",
       "expected": "SHA match across two clean builds",
-      "status": "NOT_RUN",
-      "log": null,
-      "actual": null,
-      "startedUtc": null,
-      "finishedUtc": null
+      "status": "PASS",
+      "log": "build/verify-release.log",
+      "actual": "remapJar re-run with --rerun-tasks produced the identical SHA, and deleting build/libs and rebuilding produced it a third time: 80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456. Same source, same JDK 21.0.5.",
+      "startedUtc": "2026-10-07T00:55:00Z",
+      "finishedUtc": "2026-10-07T01:00:00Z"
     },
     {
       "id": "integration-matrix",
@@ -48,7 +49,7 @@
       "expected": "each profile verified; unauthenticated C2ME hooks refuse generation; OpenCL menu is not worldgen",
       "status": "NOT_RUN",
       "log": null,
-      "actual": null,
+      "actual": "Only the vanilla profile was executed (repeatedly, including a full 505-owner real-terrain traversal). tectonic, tectonic-c2me and pack-opencl were not run, so the C2ME-hook and OpenCL claims are unverified. Requires the user's real instance for the pack-opencl profile.",
       "startedUtc": null,
       "finishedUtc": null
     },
@@ -56,61 +57,61 @@
       "id": "pack-format",
       "title": "pack.mcmeta 34..48, datapack 48, resourcepack 34, singular directory names",
       "expected": "no warnings on 1.21.1",
-      "status": "NOT_RUN",
-      "log": null,
-      "actual": null,
-      "startedUtc": null,
-      "finishedUtc": null
+      "status": "PASS",
+      "log": "build/gametest-v2.log",
+      "actual": "Main pack.mcmeta is pack_format 34 with supported_formats 34..48; the dedicated biome resourcepack is 48. No pack-format or incompatible-pack warning appears in either the full GameTest run or the stress server log. The biome data pack is registered and reported as 'Great Wall biome data pack registered as NORMAL (opt-in)'.",
+      "startedUtc": "2026-10-06T18:01:00Z",
+      "finishedUtc": "2026-10-06T21:15:00Z"
     },
     {
       "id": "lifecycle-evidence",
       "title": "new world / reopen / same-JVM A->B / changed seed+dimension+resource fingerprint / no-manifest old world rejection / atomic-file rejection",
       "expected": "itemized evidence for each",
-      "status": "NOT_RUN",
-      "log": null,
-      "actual": null,
-      "startedUtc": null,
-      "finishedUtc": null
+      "status": "PASS",
+      "log": "build/gametest-v2.log",
+      "actual": "Covered by LifecycleGameTests (lateWorldACallbackCannotWriteB, onlyNewProductionWorldAuthorized, dimensionAndRecipeChangesFailClosed), NegotiatedGateGameTests, HistoryJournalTest, HistoryCodecTest, HistoryIndexTest, WorldManifestTest, plus the real-terrain fixture's reopen path. All passed in the full run: 'All 119 required tests passed'. The changed-dimension case is a value-equality gate, which was a real defect fixed in cad3f7e.",
+      "startedUtc": "2026-10-06T18:01:00Z",
+      "finishedUtc": "2026-10-06T21:15:00Z"
     },
     {
       "id": "stress-24h",
       "title": "24h stress / far-jump / Chunky corridor / CPU-GPU matrix / slice timing observed (no hard 40ms gate) / heap plateau",
       "expected": "every performance gate PASS with real data; slice timing is recorded and reported, but a slow batch caused by other mods competing for CPU does not fail the release",
       "status": "NOT_RUN",
-      "log": null,
-      "actual": null,
-      "startedUtc": null,
+      "log": "build/s5-stress-24h2.log",
+      "actual": "A 1-hour MIXED_24H profile PASSED with real data (72000 ticks, 52320 chunks, 121 checkpoints, peak heap 7.99/8GB, passed=true). The 24h run is in progress; two earlier attempts failed and each exposed a real defect: a drain timeout judged a completed profile as failed, and an inFlightFutures leak exhausted the heap so a chunk-save tick tripped the 60s watchdog 14 minutes after the first refill. It stays NOT_RUN until a 24h run reports passed=true with durationMet=true.",
+      "startedUtc": "2026-10-07T00:47:00Z",
       "finishedUtc": null
     },
     {
       "id": "fault-matrix",
       "title": "18 fault points x {exception,halt} x 10 rounds recovery",
       "expected": "per-matrix exact results; corrupt CRC never truncated",
-      "status": "NOT_RUN",
-      "log": null,
-      "actual": null,
-      "startedUtc": null,
-      "finishedUtc": null
+      "status": "PASS",
+      "log": "build/s5-ex-full.log, build/s5-halt-full.log",
+      "actual": "exception: 180/180 passed=true, exit code 1 on every run. halt: 180/180 passed=true, exit code 137 on every run. 18 points x 10 rounds per mode, evidence in docs/evidence/s5/. Reaching this required fixing three driver defects: the witness file was written to the shared root instead of the per-run directory, the Gradle task's ignoreExitValue hid the child's real status so every point scored as failed, and the per-run directory was not keyed by mode so halt runs collided with exception runs.",
+      "startedUtc": "2026-10-06T22:19:00Z",
+      "finishedUtc": "2026-10-06T23:40:00Z"
     },
     {
       "id": "negotiated-gate",
       "title": "road-before-wall / shared-cell / protected-gap gate negotiation",
       "expected": "same frozen gate transaction; no wider hole; no third-party block chiseling",
-      "status": "NOT_RUN",
-      "log": null,
-      "actual": null,
-      "startedUtc": null,
-      "finishedUtc": null
+      "status": "PASS",
+      "log": "build/gametest-v2.log",
+      "actual": "NegotiatedGateGameTests covers roadBeforeWallUsesSameFrozenGate, differentRoadsShareNegotiatedCell and noCandidatePreservesProtectedGap; GateFreezeSolverTest and RoadWeaverAllowlistTest cover the solver and the interop allowlist. All passed in the full run. The missing GateFreezeSolver was itself a real defect found during red-teaming (M3).",
+      "startedUtc": "2026-10-06T18:01:00Z",
+      "finishedUtc": "2026-10-06T21:15:00Z"
     },
     {
       "id": "full-package",
       "title": "strict offline clean build + runGameTest + verifyReleaseArtifacts",
       "expected": "all green; no lowered validation",
-      "status": "NOT_RUN",
-      "log": null,
-      "actual": null,
-      "startedUtc": null,
-      "finishedUtc": null
+      "status": "FAIL",
+      "log": "build/gametest-v2.log, build/verify-release.log",
+      "actual": "runGameTest is green: 'All 119 required tests passed' in 3h22m, from a re-run after the baseline was invalidated. verifyReleaseArtifacts still FAILs on the version string only, as recorded under version-lock. The clean build was run online rather than with --offline --dependency-verification=strict, so the strict-offline half of this entry is not satisfied.",
+      "startedUtc": "2026-10-06T18:01:00Z",
+      "finishedUtc": "2026-10-07T01:00:00Z"
     }
   ]
 }
