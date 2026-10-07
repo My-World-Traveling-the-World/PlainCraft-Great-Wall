@@ -1,0 +1,19 @@
+{
+    "check":  "the profile's position relative to its durationMet threshold, as it approaches 24 hours",
+    "date":  "2026-10-08",
+    "why":  "This is the moment the session has been waiting for. Recording where it stands relative to the threshold means the closing round starts from a known position rather than re-deriving one.",
+    "atCheck":  {
+                    "elapsedSeconds":  82757,
+                    "elapsedHours":  22.988,
+                    "durationMetThreshold":  86280,
+                    "remainingSeconds":  3523,
+                    "remainingMinutes":  58.7,
+                    "reportWritten":  false,
+                    "logStillLocked":  true,
+                    "soTheProcessIsAlive":  "Yes - the exclusive-open test fails, meaning the writer still holds the file"
+                },
+    "whatHappensNext":  "Once elapsed passes 86280 seconds the refill stops, the queue drains within the 600-second ceiling, StressFixture writes stress-report.json and halts. The report should carry passed=true and durationMet=true.",
+    "whatTheClosingDoesThen":  "Step 1's exclusive-open test confirms the end; step 2 copies the report, the whole samples directory, header.json and the stress log into docs/evidence.",
+    "whatWouldMakeItFail":  "A teardown failure recorded in the report, or elapsed falling short of 86280. At 82757 with steady progress neither is expected, and the report names which if either occurs.",
+    "aNoteOnThisFile":  "Its first version was committed empty because PowerShell parsed a bare false as a command name and aborted before writing. The file has been rewritten and the commit amended."
+}
