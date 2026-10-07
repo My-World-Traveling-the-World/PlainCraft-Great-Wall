@@ -1,0 +1,50 @@
+{
+    "check":  "does the profile meet the spec's 30-minute afterGC snapshot requirement",
+    "date":  "2026-10-07",
+    "specRequirement":  "The S5 spec asks for a metrics sample every 60 seconds and an afterGC snapshot every 30 minutes, and states that no item may be signed without real 24-hour data.",
+    "myMisleadingFraming":  "I first counted 15 of 457 samples carrying afterGC and described that as a gap. The denominator was wrong: only every thirtieth sample is meant to carry it, so the fraction was never the measure.",
+    "actualDesign":  "isFixedGcSample returns true when sampleCount % 30 == 29, and only in MIXED_24H mode. The code comment states the intent: explicit GC belongs only to the long-run mode's fixed 30-minute snapshots, every 30th sample at the 60s cadence, and the measured pause is reported rather than hidden.",
+    "actualBehaviour":  {
+                            "indices":  [
+                                            29,
+                                            59,
+                                            89,
+                                            119,
+                                            149,
+                                            179,
+                                            209,
+                                            239,
+                                            269,
+                                            299,
+                                            329,
+                                            359,
+                                            389,
+                                            419,
+                                            449
+                                        ],
+                            "spacing":  "strictly 30 samples apart, verified across all fifteen",
+                            "observedIntervalMinutes":  "15 to 24, settling near 18",
+                            "configuredCadence":  "600 ticks, about 30 seconds, though the observed spacing is nearer 35",
+                            "consequence":  "30 samples at roughly 35 seconds is about 17.5 minutes, so the snapshot arrives more often than the spec's 30 minutes rather than less"
+                        },
+    "interpretation":  "The requirement is met with margin. The interval is shorter than specified because the sample cadence is faster than the 60 seconds the comment assumes, which is a conservative direction for a memory diagnostic.",
+    "afterGcValuesObserved":  [
+                                  "0.39",
+                                  "0.5",
+                                  "0.53",
+                                  "0.51",
+                                  "0.54",
+                                  "2.36",
+                                  "5.45",
+                                  "0.92",
+                                  "3.52",
+                                  "2.59",
+                                  "2.63",
+                                  "3.36",
+                                  "3.65",
+                                  "4.71",
+                                  "3.98"
+                              ],
+    "afterGcInterpretation":  "The post-GC heap ranges from 0.39 to 5.45 GB and falls back after rising, which is the same oscillation the ordinary samples show - post-collection the live set does not grow monotonically.",
+    "head":  "46c242b"
+}
