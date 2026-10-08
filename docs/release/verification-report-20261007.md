@@ -46,7 +46,7 @@
 
 | # | 项目 | 结果 | 用时 | 证据 |
 |---|---|---|---|---|
-| ① | `verifyReleaseArtifacts` 发布门禁 | **通过除版本号外全部检查** | 12 s | 已重跑；输出见 `docs/release/acceptance.json` 的 artifact-contents／reproducible-build 条目 |
+| ① | `verifyReleaseArtifacts` 发布门禁 | **通过除版本号外全部检查**；两次干净构建 jar SHA 一致（`80506fe5…`）且与已部署一致 | 11.6 s / 11.2 s | `docs/evidence/s5/s5-release-20261008-manual/`（build-a/build-b 各含 stdout.log、jars.json、verifyReleaseArtifacts.json） |
 | ② | `runGameTest` 全量 | **All 129 required tests passed**（按名字核验：expected=129 reported=129 missing=0 unexpected=0） | 2 h 55 m | `docs/evidence/gametest-129-20261008/`（results.xml + 运行日志） |
 | ③ | `runServerSmoke` 真实地形 | **REAL_WALL_TRAVERSAL_PASS** | 5 h 43 m | `docs/evidence/s1c/real-wall-traversal-pass-20261007.json` |
 | ④ | S5 故障矩阵 exception | **180/180 通过** | — | `docs/evidence/s5/s5-faults-exception-20261006-c0c3f001/` |
@@ -87,7 +87,7 @@
 已提前复制到 `docs/evidence/`（不受 `build/` 清理影响）。**全量 GameTest 会在 24h 压测结束后
 重跑并重新落盘**，届时上述条目将指向真实存在的文件。本报告不再引用已消失的路径。
 
-### 尚未运行：`tools/Test-S5Release.ps1`（两轮干净构建比对）
+### `tools/Test-S5Release.ps1`：**按原样无法跑完**，已用等价方式完成比对
 
 `tools/Test-S5Release.ps1` 是**验收规格形态的可复现性验证**：两轮
 `--offline --dependency-verification=strict clean build verifyReleaseArtifacts`，
@@ -97,12 +97,23 @@
 **当前不能运行**：脚本第 30 行在 Gradle 参数里传了 `clean`，会删除整个 `build/` ——
 其中含正在进行的 24h 压测的运行数据（写作时为 7.32 GB，现已增至约 8.97 GB）。**在压测期间运行它会直接杀掉压测。**
 
-**已排除的风险**：曾担心 60 分钟超时不够，因为 `build` 可能拖入 3h22m 的 `runGameTest`。
-已核实**不会**：`runGameTest` 只被显式注册的 `runS2RoadTests` / `runS3FtbTests` / `runS4Gallery`
-依赖，`check`/`build` 未绑定它。加上本轮已单独验证过「同一源码可产出同一 SHA」
-（`remapJar --rerun-tasks` 与「删 `build/libs` 后重建」三次一致），该脚本是**同一断言更严格的形式**。
+**2026-10-08 实测更正**：此前本小节断言 `check`/`build` 未绑定 `runGameTest`。**该断言是错的。**
 
-**排入队列**：24h 压测结束后运行，预期产出 `docs/evidence/s5/s5-release-*` 证据。
+实测 `gradlew clean build verifyReleaseArtifacts --dry-run` 输出 33 个任务，`:runGameTest` 位于
+`:remapJar` 与 `:check` 之间 —— 因为 `build.gradle:70` 设了 `enableGameTests = true`，Loom 会把
+GameTest 运行挂进 `check`，而 `build` 依赖 `check`。
+
+**后果**：每次构建会在 `runGameTest` 上阻塞约 2h55m（第 236 轮实测），而脚本 60 分钟即 Kill；
+`verifyReleaseArtifacts` 是最后一个任务，**永不执行**，其报告文件也不会写出。两次构建同样如此 ——
+脚本会耗掉两小时却既不产出门禁报告也不产出 SHA 比对。**这是工具缺陷，不是产物缺陷。**
+
+**已用等价方式完成**：跑同样两次干净构建并排除冗余套件 ——
+`gradlew --offline --dependency-verification=strict clean build verifyReleaseArtifacts -x runGameTest`。
+排除是正当的：129 项套件已在同一 commit 上完整跑过并通过，在每次构建内重跑只是重复验证同一源码。
+结果：两次构建各约 11 秒，jar SHA 同为 `80506fe5…`、sources SHA 同为 `0f848032…`，
+两份门禁报告**字节一致**，且主 jar 与**已部署产物完全一致**。证据在
+`docs/evidence/s5/s5-release-20261008-manual/`，缺陷本身记录在
+`docs/evidence/s5release-cannot-complete-20261008.json`。
 
 ### ① 发布门禁
 
