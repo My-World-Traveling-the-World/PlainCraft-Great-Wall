@@ -1,0 +1,20 @@
+{
+    "check":  "the GameTest run's in-game progress, since the suite is invisible from the report files until it ends",
+    "date":  "2026-10-08",
+    "atCheck":  {
+                    "time":  "10:45:42",
+                    "runningForMinutes":  117,
+                    "logLines":  34109,
+                    "logSizeKB":  5860.4
+                },
+    "whatTheLogShows":  {
+                            "adjacencyCase":  "560 occurrences, and the newest lines show CURVED_SITES progressing through index 3 to 9 in sequence between 10:40 and 10:45",
+                            "rampGroundPortalCase":  192,
+                            "adjacencyConnectivity":  "43, each reporting checked=2 broken=0 withdrawn=0",
+                            "others":  "S1B_ADJACENCY_HYDRO 4, S1B_ADJACENCY_CHEST_ENUM 3, S1B_CURVED_GATE_WITNESS 3, S1B_ADJACENCY_CURVED_SITES 3, S1B_ADJACENCY_CONFLICT 2"
+                        },
+    "andNoFailuresSoFar":  "Zero matches for FAILED, FAIL, Exception, broken= with a non-zero digit, or withdrawn= with a non-zero digit across all 34109 lines.",
+    "whyThisIsBetterEvidenceThanTheProcessState":  "CPU time proves the process is computing; the log proves the suite is advancing through named cases in order and that each adjacency check it reports is intact. Neither the stale report file nor the process counters show that.",
+    "theHeavyCasesExplainTheDuration":  "The dominant markers are the adjacency matrices - 560 cases so far against a suite of 129 test methods - because a few methods enumerate hundreds of combinations each. That is why the run takes hours while the method count is small.",
+    "head":  "bc6b25b"
+}
