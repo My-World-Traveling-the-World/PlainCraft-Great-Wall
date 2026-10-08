@@ -1,0 +1,20 @@
+{
+    "check":  "a git warning about long filenames, and whether it means evidence is quietly uncommitted",
+    "date":  "2026-10-08",
+    "why":  "Committing the stress archive produced 'Filename too long' warnings. A warning during a commit is worth resolving rather than scrolling past, because the failure mode is silent exclusion - the files stay on disk, so the tree looks complete while the repository does not hold them.",
+    "whatGitCannotCommit":  {
+                                "count":  52,
+                                "whereTheyLive":  "Four pre-existing S1C directories under docs/evidence: owner-coverage-20261002 with 15, entrance-ab-20261002/entrance-ab17-final with 15, fort0-revised-foundation-17 with 12, and entrance-ab-20261002/entrance-ab17-20261002-122705 with 10",
+                                "whatTheyAre":  "world/ cache files - terrain cache blobs, not evidence documents",
+                                "whyTheyFail":  "Their absolute paths run from 261 to about 350 characters against a 260-character limit, and core.longpaths is not set"
+                            },
+    "howIEstablishedIt":  {
+                              "firstAttempt":  "PowerShell's Get-ChildItem missed files, returning 25 where robocopy finds 52 - long-path handling differs between them",
+                              "reliableMethod":  "robocopy /L, which enumerates natively past the limit. It reports 19699 files under docs/evidence, of which 52 exceed 260 characters.",
+                              "crossCheck":  "git ls-files reports 19640 tracked files there, and the 52 long ones are not among them"
+                          },
+    "isItMyDoing":  "No. The paths belong to commits e9c3578 from 2026-10-05 and e2959de, whose message says it set out to include long-path cache files. Nothing this session touched those directories.",
+    "doesItAffectTheGoal":  "No. All six goal items draw on documents and run outputs whose paths are well within the limit, and the stress archive committed cleanly. The uncommittable files are terrain cache blobs inside older S1C run directories.",
+    "whatWouldFixIt":  "Setting core.longpaths to true would let git commit them. That is a repository configuration change rather than a code change, and it was not made here - it is recorded so the choice is visible rather than accidental.",
+    "head":  "e37a149"
+}
