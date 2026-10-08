@@ -1,0 +1,14 @@
+{
+    "check":  "step 5 progress, and whether the clean-build measurement question from round 213 is being answered",
+    "date":  "2026-10-08",
+    "evidenceDirectoryCreated":  "docs/evidence/s5/s5-release-vanilla-20261008-0861910e",
+    "theCommandRecorded":  "gradlew.bat --offline --dependency-verification=strict clean build verifyReleaseArtifacts --console=plain --no-daemon, on source commit 15c8b2b",
+    "buildAFacts":  {
+        "startedUtc":  "2026-10-08T03:45:22Z",
+        "jarsWrittenAt":  "11:45:43 local, about 22 seconds after start",
+        "significance":  "The jars exist, so the clean build completed quickly rather than taking the 60-minute timeout. This answers the timing question left open in round 213, when I could not measure a clean build because the stress profile was writing inside build/."
+    },
+    "networkUsedIsRecorded":  "false, and the command carries --offline --dependency-verification=strict, so this is the strict-offline path the release protocol asks for.",
+    "whatRemains":  "Build B, then the script compares the remapJar SHA across the two builds and writes execution.json with buildA, buildB and remapJarShaMatch. The script will throw on the version gate by design, so its record is what gets read rather than its exit status.",
+    "head":  "c7ed09b"
+}
