@@ -1,0 +1,23 @@
+{
+    "check":  "the exact behaviour of steps 5 and 6, read from tools/Test-S5Release.ps1 and the gate task rather than recalled",
+    "date":  "2026-10-08",
+    "why":  "The closing sequence runs this script once and reads its record rather than its exit status. Knowing precisely what it writes, to where, and what it does before writing is what makes that reading reliable.",
+    "theInvocation":  "-TestRoot build\\run\\s5release. That resolves under build\\run, so it passes the guard, and the directory does not exist yet.",
+    "itIsSafeByConstruction":  {
+                                   "evidenceDestination":  "docs/evidence/s5/s5-release-\u003cprofile\u003e-\u003cdate\u003e-\u003cguid8\u003e/, created before any gradle runs",
+                                   "whyThatMatters":  "Each build begins with gradle clean, which deletes build/. The script's own evidence lives outside build/, so its clean cannot destroy what it is creating.",
+                                   "twoBuilds":  "build-a and build-b, each running --offline --dependency-verification=strict clean build verifyReleaseArtifacts with a 60-minute timeout"
+                               },
+    "whatEachBuildRecords":  {
+                                 "stdoutAndStderr":  "stdout.log and stderr.log in the build's directory",
+                                 "gateReport":  "A copy of build/release/verifyReleaseArtifacts.json, plus the parsed copy inline. The gate writes that file and then throws a GradleException on errors, so the file exists even when the task fails - which is why it can be read afterwards.",
+                                 "jarHashes":  "Every jar in build/libs with its SHA-256, so the two builds can be compared",
+                                 "executionJson":  "sourceCommit, workspace, tag, startedUtc, finishedUtc, seconds, exitCode, timedOut, passed, the parsed verify report, and the jar hashes"
+                             },
+    "whatToExpect":  {
+                         "theGateWillFail":  "On the version string, since mod_version is 0.1.0-s1c-preview.2 rather than 0.1.0. That is the gate refusing to certify a preview build.",
+                         "soExitCodeIsNotTheVerdict":  "passed is computed as exitCode 0 and not timed out, so it will read false. The value to read is remapJarShaMatch, plus the jar hashes in both builds.",
+                         "whereToReadIt":  "The script's final line writes an execution.json at the evidence root carrying buildA, buildB and remapJarShaMatch."
+                     },
+    "head":  "2909ac6"
+}
