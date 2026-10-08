@@ -1,6 +1,7 @@
 package local.plaincraft.greatwall.client.mixin;
 
 import local.plaincraft.greatwall.client.config.GreatWallConfigScreen;
+import local.plaincraft.greatwall.client.config.WorldCreationButtonHolder;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -17,22 +18,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Adds a "Great Wall config" button to the world creation screen's Game tab.
  *
  * <h2>Why the Game tab's constructor</h2>
- * The Game tab lays its own buttons out through a {@code GridLayout}, and that
- * layout runs after the screen's {@code init}. Adding a widget to the screen
- * directly therefore places a button that the tab's next layout pass immediately
- * overwrites — which is why an earlier attempt injected into
+ * The Game tab lays its children out through a {@code GridLayout} that runs after
+ * the screen's {@code init}. A button added to the screen directly is therefore
+ * overwritten by the tab's next layout pass — an earlier attempt injected into
  * {@code CreateWorldScreen.init} and produced no visible button at all. Attaching
- * to the layout itself, at the moment the tab is constructed, is what survives.
+ * to the layout is what survives.
  *
- * <p>This mirrors the approach the Streams config mod already uses successfully
- * in this pack, including the row index and the stable/unstable version check
- * that keeps the button clear of the world-type buttons on snapshots.
- *
- * <h2>Why the injection is defensive</h2>
- * This runs inside vanilla's screen construction. A failure here must not stop a
- * player from creating a world, so the mixin config sets {@code required: false}
- * and {@code require = 0}: a changed vanilla signature skips the injection rather
- * than failing the game.
+ * <p>The grid position below is only a starting point. The Game tab is a
+ * {@code Tab}, not a {@code Screen}, and declares no render method, so a tab mixin
+ * cannot reposition anything per frame; {@link GreatWallCreateWorldLayoutMixin}
+ * does that from the screen, which is where the Streams mod does it too.
  */
 @Mixin(targets = "net.minecraft.client.gui.screens.worldselection.CreateWorldScreen$GameTab")
 public abstract class CreateWorldConfigButtonMixin extends GridLayoutTab {
@@ -56,8 +51,9 @@ public abstract class CreateWorldConfigButtonMixin extends GridLayoutTab {
                             })
                     .width(210)
                     .build();
-            // Same row the Streams config button occupies plus one, so the two sit in a
-            // predictable order instead of racing for the same cell.
+            WorldCreationButtonHolder.set(button);
+            // Starts one row below the Streams button. The screen-side layout pass
+            // re-anchors it every frame, so this only decides where it first appears.
             int streamsRow = SharedConstants.getCurrentVersion().isStable() ? 4 : 5;
             this.layout.addChild(button, streamsRow + 2, 0,
                     this.layout.newCellSettings().alignHorizontallyCenter());

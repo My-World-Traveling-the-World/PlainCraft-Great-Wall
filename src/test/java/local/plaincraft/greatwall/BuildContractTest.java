@@ -167,6 +167,69 @@ class BuildContractTest {
                         + "Move them to a non-mixin package: " + foreign);
     }
 
+    /**
+     * Every translation key the code asks for must exist in every shipped language.
+     *
+     * <h2>The failure this prevents</h2>
+     * A missing key does not throw. Minecraft renders the key itself, so the button
+     * or label simply shows {@code text.plaincraft_great_wall.configButton} on
+     * screen, and nothing in the build or the log says a word about it. A one-letter
+     * typo is enough, and one was made here: the button asked for
+     * {@code config_button} while the language files carried {@code configButton}.
+     *
+     * <p>Only keys this mod owns are checked, so vanilla and other mods' keys
+     * referenced in passing are not reported.
+     */
+    @Test
+    void everyOwnedTranslationKeyExistsInEveryLanguage() throws IOException {
+        var sourceRoots = java.util.List.of(
+                java.nio.file.Path.of("src/main/java"),
+                java.nio.file.Path.of("src/client/java"));
+        var referenced = new java.util.TreeSet<String>();
+        var pattern = java.util.regex.Pattern.compile("translatable\\(\\\"([^\\\"]+)\\\"\\)");
+        for (var root : sourceRoots) {
+            if (!java.nio.file.Files.isDirectory(root)) continue;
+            try (var files = java.nio.file.Files.walk(root)) {
+                for (var file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
+                    var matcher = pattern.matcher(java.nio.file.Files.readString(file, StandardCharsets.UTF_8));
+                    while (matcher.find()) {
+                        String key = matcher.group(1);
+                        if (key.startsWith("screen.plaincraft_great_wall")
+                                || key.startsWith("option.plaincraft_great_wall")
+                                || key.startsWith("text.plaincraft_great_wall")) {
+                            referenced.add(key);
+                        }
+                    }
+                }
+            }
+        }
+        assertFalse(referenced.isEmpty(), "no owned translation keys were found; the source layout moved");
+
+        var languageDirectory = java.nio.file.Path.of(
+                "src/client/resources/assets/plaincraft_great_wall/lang");
+        assertTrue(java.nio.file.Files.isDirectory(languageDirectory),
+                "the language directory must exist; run this from the project root");
+
+        var languages = new java.util.TreeSet<String>();
+        try (var files = java.nio.file.Files.list(languageDirectory)) {
+            files.filter(path -> path.toString().endsWith(".json"))
+                    .forEach(path -> languages.add(path.getFileName().toString()));
+        }
+        assertFalse(languages.isEmpty(), "no language files were found");
+
+        for (String language : languages) {
+            var json = JsonParser.parseString(java.nio.file.Files.readString(
+                    languageDirectory.resolve(language), StandardCharsets.UTF_8)).getAsJsonObject();
+            var missing = new java.util.TreeSet<String>();
+            for (String key : referenced) {
+                if (!json.has(key)) missing.add(key);
+            }
+            assertTrue(missing.isEmpty(),
+                    language + " is missing keys the code asks for, which would render as the raw key on "
+                            + "screen with nothing logged: " + missing);
+        }
+    }
+
     private static JsonObject resource(String name) throws IOException {
         var stream = BuildContractTest.class.getClassLoader().getResourceAsStream(name);
         assertNotNull(stream, name);
