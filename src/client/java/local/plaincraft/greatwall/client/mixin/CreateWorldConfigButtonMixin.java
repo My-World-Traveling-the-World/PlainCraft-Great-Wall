@@ -1,11 +1,10 @@
 package local.plaincraft.greatwall.client.mixin;
 
-import local.plaincraft.greatwall.client.GreatWallClient;
 import local.plaincraft.greatwall.client.config.GreatWallConfigScreen;
-import local.plaincraft.greatwall.client.config.ScreenAccess;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
+import net.minecraft.SharedConstants;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.tabs.GridLayoutTab;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.network.chat.Component;
@@ -15,52 +14,55 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Adds a "Great Wall config" button to the world creation screen.
+ * Adds a "Great Wall config" button to the world creation screen's Game tab.
  *
- * <h2>Why this lives in its own package</h2>
- * A package named as a mixin config's {@code package} makes every class in it a
- * mixin candidate, and Mixin then refuses to let ordinary code reference them.
- * Keeping this file in {@code client.mixin} while the screens it opens stay in
- * {@code client.config} is what allows the button to construct a screen at all;
- * mixing the two in one package crashed the game the moment the button was
- * pressed.
+ * <h2>Why the Game tab's constructor</h2>
+ * The Game tab lays its own buttons out through a {@code GridLayout}, and that
+ * layout runs after the screen's {@code init}. Adding a widget to the screen
+ * directly therefore places a button that the tab's next layout pass immediately
+ * overwrites — which is why an earlier attempt injected into
+ * {@code CreateWorldScreen.init} and produced no visible button at all. Attaching
+ * to the layout itself, at the moment the tab is constructed, is what survives.
  *
- * <h2>Why the world creation screen</h2>
- * The wall's length is a world-generation choice. Offering it next to the other
- * world options is the only place a player can reasonably set it before the
- * wall already exists, and it puts this mod next to the other PlainCraft
- * worldgen config rows instead of hiding the option behind Mod Menu.
+ * <p>This mirrors the approach the Streams config mod already uses successfully
+ * in this pack, including the row index and the stable/unstable version check
+ * that keeps the button clear of the world-type buttons on snapshots.
  *
  * <h2>Why the injection is defensive</h2>
- * This runs inside vanilla's screen construction. If the button cannot be added
- * the player must still be able to create a world, so the whole body is guarded
- * and every failure is logged once and swallowed. The mixin config also sets
- * {@code required: false} and {@code defaultRequire: 0}, so a changed vanilla
- * signature skips the injection instead of failing the game.
+ * This runs inside vanilla's screen construction. A failure here must not stop a
+ * player from creating a world, so the mixin config sets {@code required: false}
+ * and {@code require = 0}: a changed vanilla signature skips the injection rather
+ * than failing the game.
  */
-@Environment(EnvType.CLIENT)
-@Mixin(CreateWorldScreen.class)
-public abstract class CreateWorldConfigButtonMixin {
-    @Inject(method = "init", at = @At("TAIL"))
+@Mixin(targets = "net.minecraft.client.gui.screens.worldselection.CreateWorldScreen$GameTab")
+public abstract class CreateWorldConfigButtonMixin extends GridLayoutTab {
+    protected CreateWorldConfigButtonMixin(Component title) {
+        super(title);
+    }
+
+    @Inject(method = "<init>", at = @At("TAIL"), require = 0)
     private void greatwall$addConfigButton(CallbackInfo callback) {
         try {
-            var self = (Screen) (Object) this;
-            var minecraft = ScreenAccess.greatwall$minecraft(self);
-            if (minecraft == null) return;
-            // Vanilla lays the creation screen out from its own fields; a fixed
-            // anchor near the bottom-left keeps the button clear of the tab
-            // layout at every GUI scale.
-            int x = 8;
-            int y = self.height - 28;
             var button = Button.builder(
                             Component.translatable("text.plaincraft_great_wall.configButton"),
-                            pressed -> minecraft.setScreen(new GreatWallConfigScreen(self)))
-                    .bounds(x, y, 130, 20)
+                            pressed -> {
+                                // Minecraft.getInstance() rather than the screen's protected
+                                // field: the field is remapped in production, and reflection on
+                                // it silently returns null there.
+                                var minecraft = Minecraft.getInstance();
+                                if (minecraft != null && minecraft.screen instanceof CreateWorldScreen screen) {
+                                    minecraft.setScreen(new GreatWallConfigScreen((Screen) screen));
+                                }
+                            })
+                    .width(210)
                     .build();
-            // The cast is valid here: this mixin's target is a Screen subclass.
-            ((ScreenAccessor) self).greatwall$addRenderableWidget(button);
+            // Same row the Streams config button occupies plus one, so the two sit in a
+            // predictable order instead of racing for the same cell.
+            int streamsRow = SharedConstants.getCurrentVersion().isStable() ? 4 : 5;
+            this.layout.addChild(button, streamsRow + 2, 0,
+                    this.layout.newCellSettings().alignHorizontallyCenter());
         } catch (Throwable unavailable) {
-            GreatWallClient.reportConfigButtonFailure(unavailable);
+            local.plaincraft.greatwall.client.GreatWallClient.reportConfigButtonFailure(unavailable);
         }
     }
 }

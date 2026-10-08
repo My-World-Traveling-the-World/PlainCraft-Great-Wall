@@ -3,8 +3,7 @@
   "package": "local.plaincraft.greatwall.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "CreateWorldConfigButtonMixin",
-    "ScreenAccessor"
+    "CreateWorldConfigButtonMixin"
   ],
   "injectors": {
     "defaultRequire": 0
