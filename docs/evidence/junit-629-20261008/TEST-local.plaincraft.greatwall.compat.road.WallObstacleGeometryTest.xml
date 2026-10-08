@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-07T21:56:58.199Z" hostname="CAIMEO" time="0.005">
+  <properties/>
+  <testcase name="anEdgeEntirelyOnOneSideOfTheGateDoesNotCrossIt()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.0"/>
+  <testcase name="aLongEdgeCannotStepOverANarrowBox()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.0"/>
+  <testcase name="halfWidthAloneCanReachABoxTheCenterlineMisses()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.0"/>
+  <testcase name="sweptUsesTheSegmentNotJustItsEndpoints()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.0"/>
+  <testcase name="aZeroGateTangentIsRejectedRatherThanProducingNaN()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.001"/>
+  <testcase name="sweptDetectsACloseWallSegment()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.0"/>
+  <testcase name="sweptUsesTheSquareOfTheReachSoTheBoundaryIsExact()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.001"/>
+  <testcase name="boxEdgesAreHalfOpenAtTheHighCorner()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.0"/>
+  <testcase name="aSparsePolylineIsTestedEverySegmentNotJustItsEndpoints()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.0"/>
+  <testcase name="anEmptyCenterlineIsRejectedAtConstructionRatherThanIntersectingSilently()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.001"/>
+  <testcase name="aZeroLengthSegmentIsHandledRatherThanDividingByZero()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.0"/>
+  <testcase name="aStripWellClearOfABoxDoesNotIntersectIt()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.0"/>
+  <testcase name="aStripCrossingABoxIntersectsIt()" classname="local.plaincraft.greatwall.compat.road.WallObstacleGeometryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

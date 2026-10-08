@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.generation.ProductionWallPipelineAccumulatorTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-07T21:57:28.803Z" hostname="CAIMEO" time="0.012">
+  <properties/>
+  <testcase name="fiftySevenOwnersAndDuplicateKeysMatchTheLegacyOrderedPutAllFold()" classname="local.plaincraft.greatwall.generation.ProductionWallPipelineAccumulatorTest" time="0.006"/>
+  <testcase name="serialFutureHandoffsPublishMergesAndDoNotFreezeAFailedPrefix()" classname="local.plaincraft.greatwall.generation.ProductionWallPipelineAccumulatorTest" time="0.004"/>
+  <testcase name="sourceMapsAndLaterAccumulatorMutationCannotAliasTheFrozenOutput()" classname="local.plaincraft.greatwall.generation.ProductionWallPipelineAccumulatorTest" time="0.0"/>
+  <testcase name="emptyCellAndIndependentCellsDoNotShareMutableMaps()" classname="local.plaincraft.greatwall.generation.ProductionWallPipelineAccumulatorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

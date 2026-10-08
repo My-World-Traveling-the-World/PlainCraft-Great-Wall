@@ -1,0 +1,25 @@
+{
+    "result":  "PASS",
+    "item":  "goal item 2 - the full GameTest re-run",
+    "date":  "2026-10-08",
+    "theRun":  {
+        "started":  "2026-10-08 08:49:09",
+        "finished":  "2026-10-08 11:44:09",
+        "wallClock":  "2h 55m 10s of gradle time, 175.2 minutes",
+        "finalLine":  "All 129 required tests passed :)",
+        "buildResult":  "BUILD SUCCESSFUL"
+    },
+    "theCompletenessCheck":  {
+        "command":  "tools/Test-GameTestCompleteness.ps1 -ResultsXml build/reports/gametest/results.xml",
+        "output":  "expected=129 reported=129 missing=0 unexpected=0 failures=0 errors=0",
+        "exitCode":  0,
+        "whyItMatters":  "It compares names rather than totals, so it would catch a class skipped while another gained cases. A bare pass message cannot."
+    },
+    "theStaleReportGuardFired":  "The recorded SHA-256 prefix was E743AB3A for the old 33-case diagnostic file. The new file hashes to 6CC21CA0 and is 18787 bytes, written at 11:44:08 - so the run genuinely replaced it rather than leaving it in place.",
+    "distribution":  "129 cases across 34 classes. The largest are componentgametests 13, paletteresourcevalidatorgametests 9, walkwayspawngametests 9, adjacentcomponentmatrixtests 8 and coldcaptureallocationtests 7.",
+    "whyTheMatrixCasesDominate":  "adjacentcomponentmatrixtests declares 8 test methods but enumerates hundreds of combinations inside them. The log records S1B_ADJACENCY_CURVED_SITES attempted=64 passed=64, S1B_SURVIVAL_MATRIX attempted=960 failed=0 and S1B_ADJACENCY_HYDRO attempted=72 passed=72 - which is why 129 methods took nearly three hours.",
+    "noFailuresAnywhere":  "zero failure elements, zero error elements, and zero FAILED or Exception lines across the 5884 KB run log.",
+    "archivedTo":  "docs/evidence/gametest-129-20261008/ - gametest-results.xml at 18.3 KB and gradle-run.log at 5884.3 KB",
+    "step4ResolvedAsPredicted":  "The JUnit test task was UP-TO-DATE and skipped, so build/test-results/test still held the 05:59:13 files. The round-235 guard said to check the write time and confirm the sources were unchanged since - git log --since=2026-10-08 05:59:13 over src/test and src/main returns no commits, so those results remain valid for the current source. Archived to docs/evidence/junit-629-20261008/ with 103 files, 629 tests, zero failures.",
+    "head":  "d964f9b"
+}

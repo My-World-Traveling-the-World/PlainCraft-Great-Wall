@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="local.plaincraft.greatwall.persistence.HistoryJournalTest" tests="22" skipped="0" failures="0" errors="0" timestamp="2026-10-07T21:57:37.765Z" hostname="CAIMEO" time="14.855">
+  <properties/>
+  <testcase name="cancelledCallerDoesNotCancelAcceptedWrite()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.052"/>
+  <testcase name="pagedHistoryKeepsHeadAndResidentMemoryBounded()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="12.795"/>
+  <testcase name="sequenceGapAndInvalidLengthAreHardFailures()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.136"/>
+  <testcase name="blobCopiesAtAdmissionAndChecksLengthHashAndKind()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.059"/>
+  <testcase name="damagedIndexMissingWalAndWrongWorldNeverBecomeEmpty()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.304"/>
+  <testcase name="secondJournalWriterIsRejectedWithoutDisturbingFirst()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.056"/>
+  <testcase name="completeBadCrcIsNotTruncated()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.065"/>
+  <testcase name="reopenedJournalReportsTheReplayedBeaconCountNotJustTheCheckpoint()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.111"/>
+  <testcase name="checkpointDoesNotDropConcurrentTail()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.119"/>
+  <testcase name="twoCallerOwnersSerializeWithoutDuplicateSequence()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.041"/>
+  <testcase name="unauthorizedAndLegacyHistoriesAreRejectedWithoutMigration()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.033"/>
+  <testcase name="constructorDoesNotTouchDiskAndUnopenedCallsFailClosed()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.003"/>
+  <testcase name="failedFsyncNeverPublishesAndVerifiedRetryReusesActualTail()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.061"/>
+  <testcase name="replayOnlyRunsOnIoOwnerAndStrictlyChecksLimits()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.08"/>
+  <testcase name="missingHeadRecoversOnlyAConsistentRetainedChain()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.103"/>
+  <testcase name="entryLimitIs64KiBNotThePublicAbsoluteLimit()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.038"/>
+  <testcase name="partialTailIsArchivedReadOnlyBeforeForcedTruncate()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.078"/>
+  <testcase name="queueIsBoundedAndCloseDrainsAcceptedWritesWithoutBlocking()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.206"/>
+  <testcase name="concurrentAdmissionCancellationFlushAndRepeatedCloseSettleExactlyAcceptedRequests()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.187"/>
+  <testcase name="recoveryWithoutATailReportsTheCheckpointUnchanged()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.095"/>
+  <testcase name="checkpointFailureLeavesOriginalHeadAndRecoveryCanContinue()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.154"/>
+  <testcase name="appendIsDurableAndIdempotent()" classname="local.plaincraft.greatwall.persistence.HistoryJournalTest" time="0.07"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
