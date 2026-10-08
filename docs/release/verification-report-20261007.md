@@ -52,7 +52,7 @@
 | ④ | S5 故障矩阵 exception | **180/180 通过** | — | `docs/evidence/s5/s5-faults-exception-20261006-c0c3f001/` |
 | ④ | S5 故障矩阵 halt | **180/180 通过** | — | `docs/evidence/s5/s5-faults-halt-20261006-623a795f/` |
 | ⑤ | S5 压力 profile（1 小时） | **passed=true** | 1 h | `docs/evidence/s5/s5-stress-1h-20261007/stress-report.json` |
-| ⑤ | S5 压力 profile（24 小时） | **运行中** | — | `build/s5-stress-24h2.log` |
+| ⑤ | S5 压力 profile（24 小时） | **PASS**：`passed=true`、`durationMet=true`、`observedSeconds=86400`、`completedChunks=4629095`、`failure=null` | 24 h | `docs/evidence/s5/s5-stress-24h-20261008/stress-report.json`（+ 2187 采样、header、日志） |
 | ⑥ | **6** 源集编译 | **全绿，798 个 class**（强制重编译 33 s） | 33 s | `docs/evidence/compile/five-source-sets-pass-20261007.json` |
 | — | JUnit 单测 | **629/629，强制重跑全绿** | 2 m 20 s | `build/test-results/test/` |
 

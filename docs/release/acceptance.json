@@ -80,11 +80,11 @@
                            "id":  "stress-24h",
                            "title":  "24h stress / far-jump / Chunky corridor / CPU-GPU matrix / slice timing observed (no hard 40ms gate) / heap plateau",
                            "expected":  "every performance gate PASS with real data; slice timing is recorded and reported, but a slow batch caused by other mods competing for CPU does not fail the release",
-                           "status":  "NOT_RUN",
-                           "log":  "build/s5-stress-24h2.log",
-                           "actual":  "A 1-hour MIXED_24H profile PASSED with real data (72000 ticks, 52320 chunks, 121 checkpoints, peak heap 7.99/8GB, passed=true). The 24h run is in progress; two earlier attempts failed and each exposed a real defect: a drain timeout judged a completed profile as failed, and an inFlightFutures leak exhausted the heap so a chunk-save tick tripped the 60s watchdog 14 minutes after the first refill. It stays NOT_RUN until a 24h run reports passed=true with durationMet=true.",
+                           "status":  "PASS",
+                           "log":  "docs/evidence/s5/s5-stress-24h-20261008/stress-report.json",
+                           "actual":  "A 24-hour MIXED_24H profile PASSED: passed=true, durationMet=true, observedSeconds=86400 against requestedSeconds=86400, completedChunks=4629095, peakHeapBytes=8402050160 against a 8589934592 ceiling, checkpoints=2187, ticks=1311600, failure=null. The run completed 67 refills with zero ERROR, zero watchdog and zero OutOfMemory. Evidence archived to docs/evidence/s5/s5-stress-24h-20261008/ - the report, header.json, 2187 samples and the stress log. Earlier attempts failed three ways and each exposed a real defect: an inFlightFutures leak that let the heap reach 8 GB so a chunk-save tick tripped the 60-second watchdog 14 minutes after the first refill; a finite position list that drained and stopped a 24-hour request after about 4.5 hours; and a 30-second drain window that judged a completed profile as failed. The fixes were self-removing whenComplete on the in-flight futures, refilling while the window remains, and deriving the drain window from the requested duration with 120 and 600 second bounds.",
                            "startedUtc":  "2026-10-07T00:47:00Z",
-                           "finishedUtc":  null
+                           "finishedUtc":  "2026-10-08T00:48:37Z"
                        },
                        {
                            "id":  "fault-matrix",
