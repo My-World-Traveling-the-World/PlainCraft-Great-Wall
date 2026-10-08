@@ -63,6 +63,25 @@ loom {
     }
 }
 
+// Soft dependency: Mod Menu is referenced only by the `modmenu` entrypoint and by
+// the client config screen's factory. compileOnly keeps it out of the jar, so a
+// session without Mod Menu simply never loads the entrypoint class.
+//
+// `modClientCompileOnly` rather than a plain file dependency: the published jar is
+// in intermediary names, and this project compiles against Mojang mappings. Loom
+// must remap it, or `ConfigScreenFactory` would expose `class_437` instead of
+// `Screen` and the entrypoint would not type-check.
+//
+// This must stay AFTER the loom block: `splitEnvironmentSourceSets()` creates the
+// `client` source set, and it does not exist while the earlier `dependencies`
+// block is evaluated.
+dependencies {
+    def modMenu = file('libs/modmenu-compile-only.jar')
+    if (modMenu.isFile()) {
+        modClientCompileOnly files(modMenu)
+    }
+}
+
 fabricApi {
     configureTests {
         createSourceSet = true

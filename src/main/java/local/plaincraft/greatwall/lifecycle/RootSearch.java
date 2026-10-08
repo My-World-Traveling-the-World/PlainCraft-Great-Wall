@@ -325,6 +325,23 @@ public final class RootSearch {
     }
 
     private ColumnSample read(NaturalTerrainOracle oracle, int x, int z, boolean requireFoundation) {
+        // A prefetched column answers in one call instead of many. The values are
+        // identical: every lane's oracle is constructed from the same frozen inputs
+        // and verified against the same terrain fingerprint, so the noise is a pure
+        // function of (x, z). Selection therefore cannot change.
+        Prefetched hit = prefetched.remove(new ColumnKey(x, z, requireFoundation));
+        if (hit != null) {
+            if (column != null) {
+                // A prefetch arrived for a position whose serial cursor is still open.
+                // Dropping it keeps the serial path authoritative rather than mixing
+                // two samplers for one column.
+                prefetched.put(new ColumnKey(x, z, requireFoundation), hit);
+            } else {
+                if (++columns > 150000) throw new WallFailure(FailureCode.BUDGET_EXHAUSTED, "root column budget exceeds 150000");
+                lastSupport = hit.lastSupport();
+                return hit.sample();
+            }
+        }
         if (column == null) {
             if (++columns > 150000) throw new WallFailure(FailureCode.BUDGET_EXHAUSTED, "root column budget exceeds 150000");
             column = oracle.begin(x, z, SampleKind.REFERENCE);
@@ -335,6 +352,79 @@ public final class RootSearch {
         lastSupport = !requireFoundation || foundation.test(oracle, column);
         column = null;
         return result;
+    }
+
+    /**
+     * A column sampled ahead of time on some lane, with the foundation verdict that
+     * {@link #read} would have computed alongside it.
+     *
+     * <p>{@code lastSupport} is carried because it is a side effect of the serial
+     * read: {@code footprintStep} counts a column as a failed foundation from it, so
+     * a prefetched column that omitted the verdict would silently change the
+     * accept/reject decision.
+     */
+    private record Prefetched(ColumnSample sample, boolean lastSupport) {}
+
+    /** Identity of one column request. {@code requireFoundation} is part of it: the serial path computes two different things for the same coordinates. */
+    public record ColumnKey(int x, int z, boolean requireFoundation) {}
+
+    private final java.util.concurrent.ConcurrentHashMap<ColumnKey, Prefetched> prefetched =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Positions the current footprint candidate will still request.
+     *
+     * <p>Phase 1 is the only phase whose coordinates are pure arithmetic over the
+     * candidate origin and {@code sampleIndex}, with no early-exit state in
+     * between, so it is the one phase that can be enumerated exactly. The returned
+     * list starts one past the in-flight column when a serial cursor is open,
+     * because that column is already being sampled.
+     *
+     * <p>Deliberately does NOT call {@link #claimOwner()}: it is called from the
+     * root pump to hand work to the other lanes, before lane 0 gets a turn. Taking
+     * ownership here would bind the search to the pump thread and make every later
+     * {@code advance} on lane 0 fail the ownership check.
+     */
+    public List<ColumnKey> pendingFootprintReads() {
+        if (phase != 1 || shortlisted.isEmpty()) return List.of();
+        var current = shortlisted.get(selectedIndex);
+        int from = column == null ? sampleIndex : sampleIndex + 1;
+        var result = new ArrayList<ColumnKey>(Math.max(0, 48 * 48 - from));
+        for (int i = from; i < 48 * 48; i++) {
+            result.add(new ColumnKey(current.origin().x() + i / 48 - 24,
+                    current.origin().z() + i % 48 - 24, true));
+        }
+        return List.copyOf(result);
+    }
+
+    /**
+     * Samples one column to completion on the calling lane and caches it.
+     *
+     * <p>Deliberately does NOT call {@link #claimOwner()}: this runs on the other
+     * lanes, while the search state itself stays owned by lane 0. The only shared
+     * object touched is the prefetch map, which is concurrent by construction, and
+     * the oracle, which belongs to the calling lane.
+     *
+     * <p>{@code advance(cursor, 64)} rather than one primitive per call: the loop
+     * inside the oracle is identical, so the finished sample is bit-for-bit the
+     * same, only reached in fewer calls.
+     */
+    public void prefetch(ColumnKey key, NaturalTerrainOracle oracle) {
+        if (prefetched.containsKey(key)) return;
+        var cursor = oracle.begin(key.x(), key.z(), SampleKind.REFERENCE);
+        while (!cursor.done()) oracle.advance(cursor, 64);
+        // The foundation test reads the cursor's support evidence and must run
+        // before finish(), which releases it. The serial path does the same.
+        boolean support = !key.requireFoundation() || foundation.test(oracle, cursor);
+        var sample = oracle.finish(cursor);
+        prefetched.put(key, new Prefetched(sample, support));
+    }
+
+    /** Columns sampled by a prefetch but never consumed, e.g. because the candidate was rejected early. */
+    public int discardPrefetched() {
+        int count = prefetched.size();
+        prefetched.clear();
+        return count;
     }
 
     private void acceptHeight(ColumnSample value) {
@@ -349,7 +439,25 @@ public final class RootSearch {
         invalidSamples = 0; failedFoundations = 0;
         sampleIndex = 0; wet = 0; min = Integer.MAX_VALUE; max = Integer.MIN_VALUE;
         sum = 0; axisScore = 0; invalid = false;
+        // Every candidate and phase transition passes through here, which makes it
+        // the one place that reliably drops samples the search has moved past. A
+        // rejected candidate can leave thousands of prefetched columns behind, and
+        // holding them would trade the outage this fixes for a memory leak.
+        int dropped = prefetched.size();
+        if (dropped > 0) {
+            prefetched.clear();
+            discardedPrefetched.addAndGet(dropped);
+        }
     }
+
+    private final java.util.concurrent.atomic.AtomicLong discardedPrefetched =
+            new java.util.concurrent.atomic.AtomicLong();
+
+    /** Columns sampled by a prefetch that the search then moved past; pure diagnostics. */
+    public long discardedPrefetchedCount() { return discardedPrefetched.get(); }
+
+    /** Columns currently held in the prefetch cache; pure diagnostics. */
+    public int prefetchedCount() { return prefetched.size(); }
 
     public Point3i ringPoint(int radiusIndex, int angleIndex) {
         if (radiusIndex < 0 || radiusIndex >= 4 || angleIndex < 0 || angleIndex >= 36) throw new IllegalArgumentException("root ring index");

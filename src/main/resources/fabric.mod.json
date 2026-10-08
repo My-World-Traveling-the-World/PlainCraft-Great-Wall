@@ -5,16 +5,21 @@
   "name": "PlainCraft Great Wall",
   "description": "Great Wall infrastructure prototype. World generation is not implemented or enabled.",
   "environment": "*",
-  "mixins": ["plaincraft_great_wall.mixins.json"],
+  "mixins": ["plaincraft_great_wall.mixins.json",
+    {"config": "plaincraft_great_wall.client.mixins.json", "environment": "client"}],
   "accessWidener": "plaincraft_great_wall.accesswidener",
   "entrypoints": {
     "main": ["local.plaincraft.greatwall.GreatWallMod"],
-    "client": ["local.plaincraft.greatwall.client.GreatWallClient"]
+    "client": ["local.plaincraft.greatwall.client.GreatWallClient"],
+    "modmenu": ["local.plaincraft.greatwall.client.config.GreatWallModMenu"]
   },
   "depends": {
     "fabricloader": "=${loader_version}",
     "minecraft": "=1.21.1",
     "java": ">=21",
     "fabric-api": "=${fabric_version}"
+  },
+  "suggests": {
+    "modmenu": "*"
   }
 }

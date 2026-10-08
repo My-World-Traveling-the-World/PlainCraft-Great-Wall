@@ -12,6 +12,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
+import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallFailure;
@@ -90,6 +91,13 @@ public final class WorldBootstrap implements AutoCloseable {
             thread.setDaemon(true); return thread;
         });
         rootPump.setRemoveOnCancelPolicy(true);
+        // One shared timer for every bounded beforeRecipe wait: a per-chunk timer
+        // would allocate a scheduled task per chunk load, and there can be tens of
+        // thousands of those.
+        recipeTimeoutTimer = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(task -> {
+            var thread = new Thread(task, "pgw-recipe-timeout-" + UUID.randomUUID());
+            thread.setDaemon(true); return thread;
+        });
         authorized = io(() -> new Authorized(manifest.authorize(originallyInitialized, seed,
                 WorldManifest.configHash(defaultConfig())), manifest.read()));
         authorized.whenComplete((value, error) -> {
@@ -123,15 +131,75 @@ public final class WorldBootstrap implements AutoCloseable {
                 && earlyDomain.contains(requested);
     }
 
-    /** Authorization is checked BEFORE deciding to await ready, avoiding an early-spawn dependency cycle. */
+    /**
+     * Upper bound on how long an ordinary chunk may wait for the recipe.
+     *
+     * <h2>Why this exists</h2>
+     * A real session showed the whole world's chunk generation stopping for
+     * seven minutes and forty-seven seconds while the root search sampled
+     * foundations on a single lane. Every overworld chunk's FEATURES and
+     * INITIALIZE_LIGHT step is gated on {@link #ready}, so an unbounded wait
+     * here does not merely delay the wall — it stalls the world, and it turns
+     * every unrelated mod (Chunky, RoadWeaver, Streams) into a victim of this
+     * one stage.
+     *
+     * <p>The wall is an optional structure, not a correctness prerequisite for
+     * terrain. Once this budget expires the chunk is released unprotected and
+     * the wall simply is absent from it; the alternative — holding the entire
+     * world hostage to one planner stage — is strictly worse.
+     *
+     * <p>Measured cost of the alternative: a normal root search completes in
+     * seconds. A stall past this budget means something is wrong, and the
+     * session records {@code PRE_RECIPE_TIMEOUT} so the cause is diagnosable
+     * instead of presenting as an unexplained freeze.
+     */
+    private static final long PRE_RECIPE_TIMEOUT_SECONDS =
+            Math.max(5L, Long.getLong("greatwall.beforeRecipe.timeoutSeconds", 90L));
+    private final java.util.concurrent.ScheduledExecutorService recipeTimeoutTimer;
+    private final java.util.concurrent.atomic.AtomicLong preRecipeTimeouts = new java.util.concurrent.atomic.AtomicLong();
+
+    /**
+     * Authorization is checked BEFORE deciding to await ready, avoiding an early-spawn dependency cycle.
+     *
+     * <p>The wait is bounded. See {@link #PRE_RECIPE_TIMEOUT_SECONDS} for why an
+     * unbounded wait here is a whole-world outage rather than a local delay.
+     */
     public CompletableFuture<Void> beforeRecipe(ChunkKey requested) {
         if (!requested.dimension().equals("minecraft:overworld")) return CompletableFuture.completedFuture(null);
         return authorized.thenCompose(value -> {
             active();
             if (mayPassBeforeRecipe(requested)) return CompletableFuture.completedFuture(null);
-            return ready.thenApply(recipe -> (Void) null);
+            var gate = new CompletableFuture<Void>();
+            // Whichever arrives first wins: the recipe, or the budget. `ready` is
+            // shared, so this must not be completed by cancelling it.
+            ready.whenComplete((recipe, error) -> {
+                if (error != null) gate.completeExceptionally(error); else gate.complete(null);
+            });
+            try {
+                recipeTimeoutTimer.schedule(() -> {
+                    if (gate.complete(null)) {
+                        long total = preRecipeTimeouts.incrementAndGet();
+                        // Log the first occurrence and then powers of two, so a
+                        // sustained stall is visible without flooding the log.
+                        if (total == 1L || (total & (total - 1L)) == 0L) {
+                            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PRE_RECIPE_TIMEOUT no={} budget={}s "
+                                            + "chunk={},{} — releasing the chunk unprotected; the wall will be "
+                                            + "absent there rather than stalling world generation",
+                                    total, PRE_RECIPE_TIMEOUT_SECONDS, requested.x(), requested.z());
+                        }
+                    }
+                }, PRE_RECIPE_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (java.util.concurrent.RejectedExecutionException stopping) {
+                // Session closing: fall back to the unbounded wait so a shutdown
+                // cannot silently mark chunks as passed.
+                return ready.thenApply(recipe -> (Void) null);
+            }
+            return gate;
         }).copy();
     }
+
+    /** Chunks released by the bounded wait instead of by a ready recipe. */
+    public long preRecipeTimeoutCount() { return preRecipeTimeouts.get(); }
 
     public void spawnChosen(ServerLevel level, Point3i chosen) {
         owner(); active();
@@ -231,8 +299,93 @@ public final class WorldBootstrap implements AutoCloseable {
         }
     }
 
+    /**
+     * Distributes the footprint's remaining column samples across the idle lanes.
+     *
+     * <h2>Why this is the fix and not an optimisation</h2>
+     * A real session showed the root search sampling foundations for seven minutes
+     * and forty-seven seconds on a single lane while fifteen sat idle. During that
+     * window every chunk in the overworld waits on the recipe, so the search's
+     * wall-clock time is a whole-world outage. Parallelising it is therefore the
+     * difference between "the wall takes a while to appear" and "the world does not
+     * generate".
+     *
+     * <h2>Why the result is unchanged</h2>
+     * Only phase 1 is enumerated, and only its coordinates — the accept/reject
+     * decision, the candidate order and the axis choice all still run on lane 0 in
+     * the same sequence. Each lane builds its oracle from the same frozen inputs and
+     * verifies the same terrain fingerprint, so a column's sample is a pure
+     * function of its coordinates. Lane 0 consumes the cached value if it is there
+     * and samples it itself if it is not, which means a prefetch that loses the
+     * race costs nothing and one that arrives late is simply dropped.
+     *
+     * <h2>Bounded by construction</h2>
+     * Work is handed out in chunks so a rejected candidate does not leave fifteen
+     * lanes sampling thousands of columns nobody will read. Failures here are
+     * swallowed on purpose: prefetching is best-effort acceleration, and lane 0
+     * remains fully able to finish the search alone.
+     */
+    private void schedulePrefetch(RootSearch search, OracleLane primary) {
+        List<OracleLane> lanes;
+        try {
+            lanes = laneSnapshot.get("lanes");
+        } catch (RuntimeException unavailable) {
+            return;
+        }
+        if (lanes == null || lanes.size() < 2) return;
+        List<RootSearch.ColumnKey> pending;
+        try {
+            pending = search.pendingFootprintReads();
+        } catch (RuntimeException notOwnerOrWrongPhase) {
+            return;
+        }
+        if (pending.isEmpty()) return;
+        // One chunk per idle lane keeps a rejected candidate from wasting a full
+        // sweep, and keeps the queue shallow when lane 0 is already ahead.
+        int perLane = Math.max(64, (pending.size() + lanes.size() - 1) / lanes.size());
+        int cursor = 0;
+        for (var lane : lanes) {
+            if (lane == primary) continue;
+            if (cursor >= pending.size()) break;
+            int end = Math.min(pending.size(), cursor + perLane);
+            var slice = List.copyOf(pending.subList(cursor, end));
+            cursor = end;
+            try {
+                lane.submit(oracle -> {
+                    for (var key : slice) {
+                        if (state.containsKey("closed") || state.containsKey("failed")) break;
+                        search.prefetch(key, oracle);
+                    }
+                    return null;
+                });
+            } catch (RuntimeException laneRefused) {
+                // A closed or saturated lane just does not help this round.
+                prefetchLaneRefusals.incrementAndGet();
+            }
+        }
+        prefetchBatches.incrementAndGet();
+        prefetchLastSize = pending.size();
+    }
+
+    /** Best-effort prefetch counters; they never gate the search itself. */
+    private final java.util.concurrent.atomic.AtomicLong prefetchBatches = new java.util.concurrent.atomic.AtomicLong();
+    private final java.util.concurrent.atomic.AtomicLong prefetchLaneRefusals = new java.util.concurrent.atomic.AtomicLong();
+    private volatile int prefetchLastSize;
+
+    /** Prefetch activity, for diagnostics and for measuring the parallel speedup. */
+    public Map<String, Long> prefetchDiagnostics() {
+        return Map.of("prefetch-batches", prefetchBatches.get(),
+                "prefetch-lane-refusals", prefetchLaneRefusals.get(),
+                "prefetch-last-size", (long) prefetchLastSize);
+    }
+
     private void advance(RootSearch search, OracleLane lane, WorldManifest.Creation creation, Frozen inputs) {
         active();
+        // Widen the search across the idle lanes before asking lane 0 to continue.
+        // The root search itself is a serial state machine and stays on lane 0; what
+        // parallelises is the column sampling, which is a pure function of the
+        // coordinates and therefore produces identical values on every lane.
+        schedulePrefetch(search, lane);
         lane.submit(oracle -> {
             try {
                 var status = search.advance(oracle, 64);
@@ -329,6 +482,9 @@ public final class WorldBootstrap implements AutoCloseable {
         ready.completeExceptionally(new WallFailure(FailureCode.CLOSED, "bootstrap closed"));
         var planner = transferred.computeIfPresent("planner", (key, value) -> { value.close(); return value; });
         rootPump.shutdown();
+        // Closing the session releases every bounded beforeRecipe wait through the
+        // shared `ready` future above, so no chunk is left parked on the timer.
+        recipeTimeoutTimer.shutdown();
         var inputs=frozen.get("inputs");
         if(inputs!=null&&inputs.structures()!=null)inputs.structures().close();
         var captured = new java.util.concurrent.atomic.AtomicReference<List<OracleLane>>(List.of());

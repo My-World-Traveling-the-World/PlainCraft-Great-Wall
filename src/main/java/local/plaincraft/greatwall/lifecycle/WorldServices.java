@@ -313,6 +313,36 @@ public final class WorldServices {
         var services = find(server);
         if (services != null && services.production != null) services.production.afterRoadReached();
     }
+
+    /**
+     * Called from RoadWeaver's river-prewarm return, i.e. once the rivers exist and
+     * before any road is built.
+     *
+     * <h2>Where this sits in the startup order</h2>
+     * <pre>
+     *   rivers -> wall prewarm (here) -> roads
+     * </pre>
+     * The wall's bulk prewarm used to be released at {@code prepareLevels} TAIL,
+     * which is after RoadWeaver has finished generating roads. That ordering made
+     * the wall the last stage to start even though its own prerequisites — the
+     * frozen recipe and the native lanes — are ready far earlier. Releasing it as
+     * soon as the rivers are in place is both earlier and safer: Streams has
+     * stopped competing for the terrain samplers by then, and the roads have not
+     * started yet, so the wall prewarm overlaps neither.
+     *
+     * <p>RoadWeaver is optional, so this is a best-effort early release. The
+     * {@code prepareLevels} TAIL path still calls
+     * {@link #afterRoadReached(MinecraftServer)} and remains the fallback for a
+     * session without RoadWeaver; {@code ProductionSession.afterRoadReached} is
+     * idempotent, so at most one of the two actually starts the prewarm.
+     */
+    public static void riversPrewarmed() {
+        for (var server : SESSIONS.keySet()) {
+            var services = SESSIONS.get(server);
+            if (services == null || services.production == null) continue;
+            services.production.riversPrewarmed();
+        }
+    }
     public void assertActiveSession() {
         if (production != null) {
             if (SESSIONS.get(server) != this) throw new CancellationException("Stale production session");

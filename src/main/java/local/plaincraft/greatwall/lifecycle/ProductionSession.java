@@ -130,11 +130,21 @@ final class ProductionSession implements AutoCloseable {
                 installBiomeRuntime(level, recipe);
                 // Phase split: the pump starts demand-only so a blocking startup peer (RoadWeaver
                 // blocks inside prepareLevels and asks the wall for recipe and plans) is never
-                // competing with the wall's own bulk prewarm. The bulk is released by
-                // afterRoadReached(), which is driven from prepareLevels TAIL -- guaranteed to run
-                // after the road's HEAD blocking work returns.
+                // competing with the wall's own bulk prewarm.
+                //
+                // Target order is rivers -> wall prewarm -> roads. The prewarm is released by
+                // whichever of the two startup events arrives once the recipe exists:
+                //   * riversPrewarmed()  - RoadWeaver reports the river plates are built; this is
+                //                          the intended release point and fires before any road.
+                //   * afterRoadReached() - prepareLevels TAIL; the fallback for a session without
+                //                          RoadWeaver, and the late release when the recipe only
+                //                          became durable after the rivers were already done.
+                // Both are idempotent, so checking both here cannot double-start the prewarm.
                 planner.startupPump();
-                if (state.containsKey("after-road-reached")) {
+                if (state.containsKey("rivers-prewarmed")) {
+                    planner.afterRoadBulk();
+                    trace.record("PRODUCTION_RIVERS_BULK", recipe.dimension(), 0, 0, "rivers-finished-before-install", "none");
+                } else if (state.containsKey("after-road-reached")) {
                     planner.afterRoadBulk();
                     trace.record("PRODUCTION_AFTER_ROAD_BULK", recipe.dimension(), 0, 0, "road-finished-before-install", "none");
                 }
@@ -374,6 +384,39 @@ final class ProductionSession implements AutoCloseable {
         if (snapshot == null) return;
         snapshot.planner().afterRoadBulk();
         trace.record("PRODUCTION_AFTER_ROAD_BULK", snapshot.recipe().dimension(), 0, 0, "post-road-startup", "none");
+    }
+
+    /**
+     * Releases the bulk prewarm when RoadWeaver reports the rivers are ready.
+     *
+     * <h2>Target order</h2>
+     * <pre>
+     *   rivers -> wall prewarm -> roads
+     * </pre>
+     *
+     * <p>Separate from {@link #afterRoadReached()} because the two fire at
+     * different moments and mean different things: this one says "the rivers are
+     * done", the other says "RoadWeaver's blocking startup work has returned".
+     * This one is the earlier of the two and is where the wall belongs.
+     *
+     * <p>Two guards matter here. The prewarm can only start once a recipe is
+     * installed, and the two release paths must not both start it; the planner's
+     * {@code afterRoadBulk()} is idempotent, but recording which path won keeps
+     * the diagnostics honest about the startup order that actually happened.
+     */
+    void riversPrewarmed() {
+        if (state.putIfAbsent("rivers-prewarmed", true) != null) return;
+        trace.record("PRODUCTION_RIVERS_PREWARMED", "minecraft:overworld", 0, 0, "roadweaver-river-prewarm-returned", "none");
+        var snapshot = snapshots.get("installed");
+        if (snapshot == null) {
+            // Recipe not installed yet. The install path checks this flag and
+            // releases the prewarm as soon as it runs, so the ordering is kept
+            // without waiting for the road stage.
+            trace.record("PRODUCTION_RIVERS_PREWARM_DEFERRED", "minecraft:overworld", 0, 0, "recipe-not-installed", "none");
+            return;
+        }
+        snapshot.planner().afterRoadBulk();
+        trace.record("PRODUCTION_RIVERS_BULK", snapshot.recipe().dimension(), 0, 0, "post-river-startup", "none");
     }
     void tick() {
         if (state.containsKey("closed") || state.containsKey("failed")) return;

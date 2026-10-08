@@ -1,0 +1,12 @@
+{
+  "required": false,
+  "package": "local.plaincraft.greatwall.client.config",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "CreateWorldConfigButtonMixin",
+    "ScreenAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

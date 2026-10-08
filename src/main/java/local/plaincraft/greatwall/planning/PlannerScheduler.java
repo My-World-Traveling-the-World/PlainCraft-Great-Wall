@@ -13,6 +13,8 @@ import java.util.PriorityQueue;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
+import local.plaincraft.greatwall.GreatWallMod;
+import local.plaincraft.greatwall.config.GreatWallConfig;
 import local.plaincraft.greatwall.diagnostics.BudgetCache;
 import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
@@ -249,28 +251,88 @@ public final class PlannerScheduler implements AutoCloseable {
             // Demand-only: readiness means "the pump is running", not "the first segments are done".
             // Spawn preparation can still require a segment, and it is served from this pump.
             state.put("startup-ready", 1L);
+            // Take over as a self-driving pump the moment server ticks stop arriving,
+            // so the server thread and this scheduler can never starve each other.
+            startWatchdog();
         });
     }
 
     /**
      * Enqueues the bulk prewarm of the opening segments. Call only after any blocking startup peer
      * has finished, so the two never contend for the same native lanes.
+     *
+     * <p>The count comes from {@link GreatWallConfig#prewarmSegmentsTarget()}: an unbounded wall
+     * prewarms only its opening segments, while a bounded wall short enough to finish prewarms
+     * every segment it will ever build. That is what makes "start the game with the wall already
+     * planned" achievable without ever waiting on an unbounded amount of work.
      */
     public void afterRoadBulk() {
         if (closed()) throw closedFailure();
         if (state.putIfAbsent("after-road-bulk", 1L) != null) return;
         pump.execute(() -> {
+            long target = prewarmTargetSegments();
+            long started = System.nanoTime();
+            state.put("prewarm-target-segments", target);
+            state.put("prewarm-start-nanos", started);
             var prewarm = new ArrayList<PlanLease<SegmentPlan>>();
-            for (long i = 0; i < STARTUP_PREWARM_SEGMENTS && safeSegment(i); i++) {
-                prewarm.add(requirePlan(i, Priority.PLAYER_PREFETCH));
+            for (long i = 0; i < target && safeSegment(i); i++) {
+                // Per-segment timing is logged individually: an operator measuring
+                // how long one segment takes needs the segments separated, and a
+                // single total would hide whether the cost is front-loaded.
+                long segmentStarted = System.nanoTime();
+                var lease = requirePlan(i, Priority.PLAYER_PREFETCH);
+                long segment = i;
+                lease.future().whenCompleteAsync((plan, error) -> {
+                    long elapsedMs = Math.round((System.nanoTime() - segmentStarted) / 1_000_000.0D);
+                    if (error == null) {
+                        GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_SEGMENT segment={} elapsedMs={}",
+                                segment, elapsedMs);
+                    } else {
+                        GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_SEGMENT_FAILED segment={} elapsedMs={} reason={}",
+                                segment, elapsedMs, error.toString());
+                    }
+                }, pump);
+                prewarm.add(lease);
             }
+            state.put("prewarm-requested-segments", (long) prewarm.size());
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_BEGIN requested={} target={}",
+                    prewarm.size(), target);
             CompletableFuture.allOf(prewarm.stream().map(PlanLease::future).toArray(CompletableFuture[]::new))
                     .whenCompleteAsync((value, error) -> {
+                        long totalMs = Math.round((System.nanoTime() - started) / 1_000_000.0D);
                         prewarm.forEach(PlanLease::close);
                         state.put(error == null ? "bulk-ready" : "bulk-failed", 1L);
+                        state.put("prewarm-total-millis", totalMs);
+                        if (error == null) {
+                            GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_COMPLETE segments={} totalMs={} "
+                                            + "avgMsPerSegment={}", prewarm.size(), totalMs,
+                                    prewarm.isEmpty() ? 0L : totalMs / prewarm.size());
+                        } else {
+                            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_FAILED segments={} totalMs={} reason={}",
+                                    prewarm.size(), totalMs, error.toString());
+                        }
                         if (error != null && startupTimer != null) startupTimer.cancel(false);
                     }, pump);
         });
+    }
+
+    /**
+     * Segments to prewarm.
+     *
+     * <p>The configured value wins when set; otherwise a bounded wall at or below
+     * the full-prewarm threshold is prewarmed completely and everything else keeps
+     * the historical opening-segment count. The config is read here rather than at
+     * construction so a Mod Menu edit applies to the next world without a restart.
+     */
+    private long prewarmTargetSegments() {
+        try {
+            long configured = GreatWallConfig.get().prewarmSegmentsTarget();
+            return configured > 0L ? configured : STARTUP_PREWARM_SEGMENTS;
+        } catch (RuntimeException | LinkageError unavailable) {
+            // A broken client config must not stop planning; fall back to the opening segments.
+            state.put("prewarm-config-unavailable", 1L);
+            return STARTUP_PREWARM_SEGMENTS;
+        }
     }
 
     public void tick(SliceBudget budget) {
@@ -278,6 +340,7 @@ public final class PlannerScheduler implements AutoCloseable {
         if (closed()) return;
         // Only the most recent server budget is retained; a stalled pump cannot queue unbounded ticks.
         state.put("tick-operations", (long) budget.maxOperations()); state.put("tick-deadline", budget.deadlineNanos());
+        state.put("last-tick-nanos", System.nanoTime());
         if (state.putIfAbsent("tick-enqueued", 1L) != null) return;
         pump.execute(() -> {
             state.remove("tick-enqueued");
@@ -298,6 +361,63 @@ public final class PlannerScheduler implements AutoCloseable {
             }
             dispatch();
         });
+    }
+
+    /**
+     * Upper bound on how long the scheduler may go without a server tick before
+     * it re-arms its own timer.
+     *
+     * <h2>Why this exists</h2>
+     * {@link #tick} cancels {@code startupTimer} on its first call and takes over
+     * as the only source of {@code credits}/{@code deadline}. That is fine while
+     * the server thread keeps ticking, but the server thread is also the thread
+     * that blocks on a synchronous chunk load. A real session showed the two
+     * starving each other: the server waited for a chunk whose features step was
+     * parked on this scheduler, while this scheduler waited for a server tick
+     * that could not arrive until that chunk resolved. Neither side has a
+     * timeout, so the pair stayed stuck for as long as the session lived.
+     *
+     * <p>The watchdog restores the self-driving pump that {@code startupTimer}
+     * originally provided, but only while ticks have actually stopped, so the
+     * normal case keeps using the server's own budget rather than competing with
+     * it for the native lanes.
+     */
+    private static final long WATCHDOG_STALL_NANOS =
+            java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
+                    Math.max(500L, Long.getLong("greatwall.planner.watchdogStallMs", 3_000L)));
+    private ScheduledFuture<?> watchdogTimer;
+
+    /**
+     * Starts the stall watchdog. Called once the scheduler is installed.
+     *
+     * <p>Cheap by construction: the task only inspects a timestamp and returns
+     * unless ticks have genuinely stopped.
+     */
+    public void startWatchdog() {
+        if (closed()) throw closedFailure();
+        if (state.putIfAbsent("watchdog", 1L) != null) return;
+        pump.execute(() -> {
+            try {
+                watchdogTimer = pump.scheduleWithFixedDelay(this::watchdogCheck, 1, 1,
+                        java.util.concurrent.TimeUnit.SECONDS);
+            } catch (java.util.concurrent.RejectedExecutionException stopped) {
+                if (!closed()) state.put("watchdog-rejected", 1L);
+            }
+        });
+    }
+
+    private void watchdogCheck() {
+        if (closed()) return;
+        long last = state.getOrDefault("last-tick-nanos", 0L);
+        // Before the first tick the startup timer is still the driver, so there is
+        // nothing to rescue yet.
+        if (last == 0L) return;
+        if (System.nanoTime() - last < WATCHDOG_STALL_NANOS) return;
+        // Ticks have stopped. Supply the budget ourselves until they resume.
+        state.merge("watchdog-rescues", 1L, Long::sum);
+        credits = 4096;
+        deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25);
+        dispatch();
     }
 
     public Map<UUID, JobProgress> progress() { return Map.copyOf(progress); }
@@ -588,8 +708,25 @@ public final class PlannerScheduler implements AutoCloseable {
         return new SegmentKey(recipe.recipeHash(), recipe.dimension(), segment);
     }
 
+    /**
+     * Whether a segment index is inside the region this world may build.
+     *
+     * <h2>Two limits, both required</h2>
+     * The frozen envelope is a generation-semantics boundary: past it the
+     * projection and carrier maths would leave the dimension's horizontal limit,
+     * so it can never be relaxed.
+     *
+     * <p>The configured length is a player choice, applied here because this
+     * method is the single gate every segment access passes through — planning,
+     * background prewarm, neighbour lookups and the terminal check all call it.
+     * Enforcing the length anywhere else would leave paths that bypass it.
+     *
+     * <p>An unconfigured wall keeps the historical behaviour exactly: the whole
+     * frozen envelope is buildable, and no configured terminal is ever produced.
+     */
     private boolean safeSegment(long segment) {
         if (segment < 0) return false;
+        if (!withinConfiguredLength(segment)) return false;
         try {
             // 512 carrier + 512 ridge + 96 component + 48 reference side-column envelope.
             long radius = 1168L * 256, limit = recipe.bounds().horizontalLimit() * 256L;
@@ -602,6 +739,43 @@ public final class PlannerScheduler implements AutoCloseable {
             return true;
         } catch (ArithmeticException overflow) { return false; }
     }
+
+    /**
+     * Configured length gate.
+     *
+     * <p>{@code configuredSegments} is the number of whole 2048-block segments the
+     * requested length spans, so segment {@code n} starts at {@code n * 2048}
+     * blocks along the axis. Segment {@code configuredSegments} is therefore the
+     * first one entirely past the requested length and is refused.
+     *
+     * <p>A configuration that cannot be read leaves the wall unbounded rather
+     * than silently truncating it: a missing file must never shorten a world.
+     */
+    private boolean withinConfiguredLength(long segment) {
+        long allowed = configuredSegmentLimit();
+        return allowed <= 0L || segment < allowed;
+    }
+
+    /** Cached because this is called for every segment access on the planner's hot path. */
+    private volatile long configuredSegmentLimitCache = Long.MIN_VALUE;
+
+    private long configuredSegmentLimit() {
+        long cached = configuredSegmentLimitCache;
+        if (cached != Long.MIN_VALUE) return cached;
+        long limit;
+        try {
+            limit = GreatWallConfig.get().configuredSegments();
+        } catch (RuntimeException | LinkageError unavailable) {
+            // Fail open: an unreadable config must not shorten an existing wall.
+            state.put("wall-length-config-unavailable", 1L);
+            limit = 0L;
+        }
+        configuredSegmentLimitCache = limit;
+        return limit;
+    }
+
+    /** Segments this wall will build; {@code 0} when unbounded. Exposed for diagnostics. */
+    public long configuredSegmentLimitForDiagnostics() { return configuredSegmentLimit(); }
 
     private <T> CompletableFuture<Optional<T>> ioRead(IoRead<T> operation) {
         if (state.containsKey("cache-disabled")) return CompletableFuture.completedFuture(Optional.empty());
@@ -732,6 +906,7 @@ public final class PlannerScheduler implements AutoCloseable {
         prefixes.close(); callerLeases.forEach((id, lease) -> lease.close()); memory.close();
         pump.execute(() -> {
             if (startupTimer != null) startupTimer.cancel(false);
+            if (watchdogTimer != null) watchdogTimer.cancel(false);
             pending.forEach(job -> job.result.completeExceptionally(closedFailure()));
             pending.clear(); geometryQueue.clear(); ioQueue.clear(); planAdmissions.clear(); geometryAdmissions.clear();
             activeJobs.clear(); progress.clear();

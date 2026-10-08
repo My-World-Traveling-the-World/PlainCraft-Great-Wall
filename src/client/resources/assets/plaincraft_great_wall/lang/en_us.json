@@ -1,1 +1,14 @@
-{}
+{
+  "screen.plaincraft_great_wall.config": "Great Wall Configuration",
+  "option.plaincraft_great_wall.lengthMode": "Wall length",
+  "option.plaincraft_great_wall.lengthMode.unlimited": "Unlimited (runs to the world border)",
+  "option.plaincraft_great_wall.lengthMode.bounded": "Limited length",
+  "option.plaincraft_great_wall.wallLength": "Length in blocks",
+  "option.plaincraft_great_wall.prewarmSegments": "Prewarm segments (0 = all)",
+  "option.plaincraft_great_wall.fullPrewarm": "Full prewarm for short walls",
+  "option.plaincraft_great_wall.fullPrewarm.on": "Full prewarm: ON",
+  "option.plaincraft_great_wall.fullPrewarm.off": "Full prewarm: OFF",
+  "option.plaincraft_great_wall.summary": "Length %s blocks (%s segments); prewarming %s segments",
+  "option.plaincraft_great_wall.bodyHint": "Applies to newly created worlds. Set the length before the wall is generated.",
+  "text.plaincraft_great_wall.configButton": "Great Wall config..."
+}
