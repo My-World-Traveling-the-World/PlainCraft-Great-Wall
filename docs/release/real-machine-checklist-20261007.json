@@ -2,7 +2,7 @@
     "document":  "real-machine verification checklist (consolidated)",
     "date":  "2026-10-07",
     "revision":  "8 - the Tan's entry now names its reason and cites it, and distinguishes a refusal from an untested path",
-    "status":  "PARTIAL - five of six items are verified by automation, with the 24h profile now PASS as of 2026-10-08. The full GameTest re-run for item 2 is in progress. Everything on this list still requires the real machine.",
+    "status":  "ALL SIX ITEMS VERIFIED BY AUTOMATION as of 2026-10-08: the release gate runs and refuses only the preview version string; all 129 GameTests pass; the 505-owner traversal passed; both fault matrices are 180/180; the 24-hour profile passed; and six source sets compile to 798 classes. Two clean builds produce an identical jar matching the deployed artifact. Nothing on this list is covered by that - each entry needs the user's own instance.",
     "purpose":  "One place listing everything that automated verification cannot establish, so the real-machine pass has an explicit scope instead of an implied one.",
     "willBeResolvedByTheRunInProgress":  [
                                              "stress-24h: at hour 17.14 of 24 as of 2026-10-07 late evening, 50 refills completed, watchdog and OOM both zero throughout. Not yet final - the entry stays NOT_RUN until the profile reports passed=true with durationMet=true."
