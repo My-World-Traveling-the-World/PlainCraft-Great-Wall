@@ -1,6 +1,8 @@
-package local.plaincraft.greatwall.client.config;
+package local.plaincraft.greatwall.client.mixin;
 
 import local.plaincraft.greatwall.client.GreatWallClient;
+import local.plaincraft.greatwall.client.config.GreatWallConfigScreen;
+import local.plaincraft.greatwall.client.config.ScreenAccess;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.components.Button;
@@ -14,6 +16,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Adds a "Great Wall config" button to the world creation screen.
+ *
+ * <h2>Why this lives in its own package</h2>
+ * A package named as a mixin config's {@code package} makes every class in it a
+ * mixin candidate, and Mixin then refuses to let ordinary code reference them.
+ * Keeping this file in {@code client.mixin} while the screens it opens stay in
+ * {@code client.config} is what allows the button to construct a screen at all;
+ * mixing the two in one package crashed the game the moment the button was
+ * pressed.
  *
  * <h2>Why the world creation screen</h2>
  * The wall's length is a world-generation choice. Offering it next to the other

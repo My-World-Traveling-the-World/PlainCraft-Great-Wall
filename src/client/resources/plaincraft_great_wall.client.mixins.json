@@ -1,6 +1,6 @@
 {
   "required": false,
-  "package": "local.plaincraft.greatwall.client.config",
+  "package": "local.plaincraft.greatwall.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
     "CreateWorldConfigButtonMixin",

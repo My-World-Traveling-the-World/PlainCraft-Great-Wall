@@ -15,13 +15,13 @@ import net.minecraft.client.gui.screens.Screen;
  * <p>The field is looked up on {@code Screen} and then on the concrete class, so
  * a subclass that re-declares it is still handled.
  */
-final class ScreenAccess {
+public final class ScreenAccess {
     private static volatile java.lang.reflect.Field screenMinecraft;
 
     private ScreenAccess() {
     }
 
-    static Minecraft greatwall$minecraft(Screen screen) {
+    public static Minecraft greatwall$minecraft(Screen screen) {
         if (screen == null) return null;
         try {
             var field = screenMinecraft;

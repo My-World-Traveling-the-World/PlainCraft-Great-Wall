@@ -107,6 +107,66 @@ class BuildContractTest {
                 "these names are configured but have no class behind them: " + dangling);
     }
 
+    /**
+     * Every class in a mixin config's package must itself be named by that config.
+     *
+     * <h2>The failure this prevents</h2>
+     * Mixin treats a config's {@code package} as owned by that config: any class
+     * inside it becomes a mixin candidate, and Mixin then refuses to let ordinary
+     * code reference it. Putting an ordinary class there does not fail the build —
+     * it fails at the moment something first loads that class, with
+     * {@code IllegalClassLoadError: ... is in a defined mixin package ... and
+     * cannot be referenced directly}. A real session hit exactly this: the client
+     * config screen sat in the same package as the world-creation mixin, so
+     * pressing the button crashed the game.
+     *
+     * <p>The existing test above checks this in one direction only — that every
+     * declared mixin has a class. This one checks the other: that the package
+     * holds nothing <em>but</em> declared mixins. Together they pin the invariant
+     * that makes the package safe to reference from outside.
+     *
+     * <p>Client and server configs are both checked, because the crash came from
+     * the client one and there is no reason the server one could not drift next.
+     */
+    @Test
+    void mixinPackagesContainOnlyNamedMixins() throws IOException {
+        assertMixinPackageIsClosed("plaincraft_great_wall.mixins.json", "src/main/java");
+        assertMixinPackageIsClosed("plaincraft_great_wall.client.mixins.json", "src/client/java");
+    }
+
+    private void assertMixinPackageIsClosed(String configName, String sourceRoot) throws IOException {
+        JsonObject config = resource(configName);
+        String packageName = config.get("package").getAsString();
+        var declared = new java.util.HashSet<String>();
+        for (String key : java.util.List.of("mixins", "client", "server")) {
+            if (!config.has(key)) continue;
+            for (var element : config.getAsJsonArray(key)) declared.add(element.getAsString());
+        }
+        // The C2ME mixins live in the server package but are applied by a plugin,
+        // which the server config names through ProbeMixinPlugin.getMixins().
+        if ("local.plaincraft.greatwall.mixin".equals(packageName)) {
+            declared.add("C2meGateMixin");
+            declared.add("C2meFeatureSkipMixin");
+        }
+
+        var directory = java.nio.file.Path.of(sourceRoot,
+                packageName.replace('.', java.io.File.separatorChar));
+        assertTrue(java.nio.file.Files.isDirectory(directory),
+                configName + " declares " + packageName + " but " + directory + " does not exist");
+
+        var foreign = new java.util.TreeSet<String>();
+        try (var files = java.nio.file.Files.list(directory)) {
+            files.filter(path -> path.toString().endsWith(".java")).forEach(path -> {
+                String simple = path.getFileName().toString().replace(".java", "");
+                if (!declared.contains(simple)) foreign.add(simple);
+            });
+        }
+        assertTrue(foreign.isEmpty(),
+                "these classes sit in the mixin package " + packageName + " but are not mixins; Mixin will "
+                        + "refuse to let ordinary code reference them, which crashes the moment they load. "
+                        + "Move them to a non-mixin package: " + foreign);
+    }
+
     private static JsonObject resource(String name) throws IOException {
         var stream = BuildContractTest.class.getClassLoader().getResourceAsStream(name);
         assertNotNull(stream, name);
