@@ -1,0 +1,21 @@
+{
+    "status": "PASS",
+    "errors": [
+        
+    ],
+    "report": {
+        "version": "0.1.0",
+        "minecraft_version": "1.21.1",
+        "loader_version": "0.19.3",
+        "fabric_version": "0.116.14+1.21.1",
+        "junit_version": "5.11.0",
+        "junit_platform_version": "1.11.0",
+        "plaincraft-great-wall-0.1.0.jar.sha256": "9eedb91f580e955b901f6a63fdd8bb7ab3d2e442f39d8539587e4283516cfcc1",
+        "plaincraft-great-wall-0.1.0-sources.jar.sha256": "3514df6e06eddd212eb7cc596789ea3827cf95edbc5b44b142f7d02b59e87000",
+        "pack_format": 34,
+        "supported_formats": {
+            "min_inclusive": 34,
+            "max_inclusive": 48
+        }
+    }
+}

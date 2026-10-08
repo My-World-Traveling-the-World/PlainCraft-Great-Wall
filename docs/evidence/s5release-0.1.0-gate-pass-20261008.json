@@ -1,0 +1,26 @@
+{
+    "result":  "PASS",
+    "item":  "goal item 1 - the release gate, now cleared",
+    "date":  "2026-10-08",
+    "theChange":  "gradle.properties line 7 changed from mod_version=0.1.0-s1c-preview.2 to mod_version=0.1.0. That is the single source: build.gradle line 5 reads project.mod_version, and fabric.mod.json carries the placeholder ${version}, which resolves at build time.",
+    "scopeCheckBeforeEditing":  "git grep for the old string over HEAD returns 20 files - gradle.properties plus 19 under docs. The 19 are evidence and release documents recording what was true at the time, so they were left alone deliberately. Changing them would rewrite history rather than record it.",
+    "theGateNowPasses":  {
+        "reportStatus":  "PASS",
+        "errors":  "empty",
+        "version":  "0.1.0",
+        "previousVerdict":  "FAIL with one error, mod_version must be exactly 0.1.0 for release, found 0.1.0-s1c-preview.2"
+    },
+    "reproducibilityHoldsAtTheNewVersion":  {
+        "buildAWallClock":  "12.7 seconds, exit code 0",
+        "buildBWallClock":  "13.1 seconds, exit code 0",
+        "mainJar":  "9eedb91f580e955b901f6a63fdd8bb7ab3d2e442f39d8539587e4283516cfcc1 in both builds",
+        "sourcesJar":  "0f848032e8b1a215 in both builds",
+        "gateReportsByteIdentical":  true
+    },
+    "theJarShaChangedAndWhy":  "The main jar moved from 80506fe5... to 9eedb91f..., because fabric.mod.json inside it carries the version string. The sources jar is unchanged at 0f848032..., consistent with a metadata-only difference. So the new SHA is expected rather than a sign of a different build.",
+    "whatWasVerifiedInsideTheJar":  "Read fabric.mod.json out of the built jar: version resolves to 0.1.0, confirming the placeholder expanded rather than staying literal.",
+    "whatThisUnblocks":  "The ledger s version-lock and full-package entries were both blocked on this string. The gate itself now certifies the artifact.",
+    "whatItDoesNotDo":  "It does not deploy the new jar. The client mods directory still holds the preview.2 build at 80506fe5..., and the new 0.1.0 jar is only in build/libs and this evidence archive.",
+    "archivedTo":  "docs/evidence/s5/s5-release-0.1.0-20261008/ with build-a and build-b, each holding stdout.log, jars.json and verifyReleaseArtifacts.json",
+    "head":  "bdcd25b"
+}
