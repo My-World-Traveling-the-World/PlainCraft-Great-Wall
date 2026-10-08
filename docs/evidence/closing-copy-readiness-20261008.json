@@ -1,0 +1,20 @@
+{
+    "check":  "whether the closing sequence's copy step is ready to run the moment the profile ends",
+    "date":  "2026-10-08",
+    "why":  "Step 2 copies from a directory that must be unambiguous and to a destination that must not already exist. Checking both now means the closing round copies rather than investigates.",
+    "theSourceIsUnambiguous":  "build/run/serverSmoke/vanilla/s5stress24h20261007084723/build/stress-reports holds exactly one run directory, run-1791334079847, with 2127 files. There is no earlier run to select by mistake.",
+    "theDestinationIsFree":  "docs/evidence/s5/s5-stress-24h-20261008 does not exist, so the copy creates it rather than merging into anything.",
+    "theInterimSnapshotWillNotBeConfused":  {
+                                                "interim":  "docs/evidence/s5/s5-stress-24h-inprogress-20261007 holds 205 samples stopping at 1.77 hours, and its name carries 'inprogress'",
+                                                "final":  "docs/evidence/s5/s5-stress-24h-20261008 carries no such qualifier",
+                                                "differentPaths":  "So the final copy neither overwrites the interim snapshot nor can be mistaken for it. The interim one was taken so a build cleanup could not lose the evidence before the run finished; now that the run is ending, the full series supersedes it."
+                                            },
+    "theSequenceAhead":  {
+                             "profileEnds":  "about 08:48, or 36 minutes after this check",
+                             "step2":  "copy the report, samples, header and log - roughly 10 MB",
+                             "step3":  "gradlew test runGameTest, about 3.65 hours",
+                             "steps4to7":  "archive the JUnit set, run Test-S5Release, read its execution record, update the three documents",
+                             "expectedCompletion":  "around 12:30, with about 8 rounds of 30 minutes needed against 80 remaining"
+                         },
+    "head":  "70b2932"
+}
