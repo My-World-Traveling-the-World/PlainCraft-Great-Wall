@@ -1,0 +1,17 @@
+{
+    "check":  "whether the GameTest run stalled, since its world files had not been written for 48 minutes",
+    "date":  "2026-10-08",
+    "why":  "The run is invisible until it ends, and a stall would look exactly like progress from the report files. World-file writes are not a reliable liveness signal on their own, because a case can compute for a long time before touching disk.",
+    "theWorldFilesLookedStalled":  "946 files under build/run/gameTest, newest written at 08:55:58, which was 47.9 minutes before the check at 09:43:54",
+    "theDecisiveSignalIsCpuTime":  {
+                                       "method":  "Sampled the test JVM's CPU time twice, thirty seconds apart",
+                                       "first":  "3943 seconds",
+                                       "second":  "3987 seconds",
+                                       "delta":  "44.1 seconds of CPU in 30 seconds of wall clock",
+                                       "reading":  "More than one core's worth, so the process is computing in parallel rather than blocked. A stalled process would show a delta near zero."
+                                   },
+    "soTheRunIsHealthy":  "It started at 08:49:09, has accumulated over an hour of CPU time, sits at 1371 MB, and is still consuming CPU. The absence of recent world writes reflects what the current test is doing, not a hang.",
+    "theSuiteExplainsLongQuietSpells":  "The heavy cases are combinatorial matrices with timeoutTicks set to 1000000, one of which enumerates 256 combinations. Those run for a long time without needing to write chunks, which is why world activity is a poor progress indicator here.",
+    "theReportIsStillStale":  "build/reports/gametest/results.xml remains the 33-case file dated 2026-10-07 11:26. Its SHA-256 prefix E743AB3A is recorded, so the completeness check will catch it if it is still unchanged when the run reports finished.",
+    "head":  "e151539"
+}
