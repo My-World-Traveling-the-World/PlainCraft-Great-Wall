@@ -47,7 +47,7 @@
 | # | 项目 | 结果 | 用时 | 证据 |
 |---|---|---|---|---|
 | ① | `verifyReleaseArtifacts` 发布门禁 | **通过除版本号外全部检查** | 12 s | 已重跑；输出见 `docs/release/acceptance.json` 的 artifact-contents／reproducible-build 条目 |
-| ② | `runGameTest` 全量 | **All 119 required tests passed** | 3 h 22 m | 日志已被后续 `--rerun-tasks` 覆盖，见下方「证据存在性」 |
+| ② | `runGameTest` 全量 | **All 129 required tests passed**（按名字核验：expected=129 reported=129 missing=0 unexpected=0） | 2 h 55 m | `docs/evidence/gametest-129-20261008/`（results.xml + 运行日志） |
 | ③ | `runServerSmoke` 真实地形 | **REAL_WALL_TRAVERSAL_PASS** | 5 h 43 m | `docs/evidence/s1c/real-wall-traversal-pass-20261007.json` |
 | ④ | S5 故障矩阵 exception | **180/180 通过** | — | `docs/evidence/s5/s5-faults-exception-20261006-c0c3f001/` |
 | ④ | S5 故障矩阵 halt | **180/180 通过** | — | `docs/evidence/s5/s5-faults-halt-20261006-623a795f/` |
@@ -61,7 +61,7 @@
 | 项 | 会话初 | 现在 |
 |---|---|---|
 | JUnit 单测 | 562 | **629** |
-| GameTest 声明 | 119 | **129**（待全量重跑确认） |
+| GameTest 声明 | 119 | **129**（2026-10-08 全量重跑确认：`All 129 required tests passed`，按名字核验无缺失） |
 | 源集 class | 782 | **798**（main 469 / test 182 / gametest 88 / serverSmoke 49 / clientSmoke 6 / client 4；**此数为 `*.class` 文件总数，已含内部类**） |
 
 > 上表的 794 是逐源集实测值（`--rerun-tasks` 强制重编译后统计）。此前写的 797 有两处错：
