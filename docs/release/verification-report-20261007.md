@@ -46,7 +46,7 @@
 
 | # | 项目 | 结果 | 用时 | 证据 |
 |---|---|---|---|---|
-| ① | `verifyReleaseArtifacts` 发布门禁 | **通过除版本号外全部检查**；两次干净构建 jar SHA 一致（`80506fe5…`）且与已部署一致 | 11.6 s / 11.2 s | `docs/evidence/s5/s5-release-20261008-manual/`（build-a/build-b 各含 stdout.log、jars.json、verifyReleaseArtifacts.json） |
+| ① | `verifyReleaseArtifacts` 发布门禁 | **PASS，errors 为空**（版本号升至 0.1.0 后）；两次干净构建 jar SHA 一致（`9eedb91f…`），门禁报告字节一致 | 12.7 s / 13.1 s | `docs/evidence/s5/s5-release-0.1.0-20261008/`（build-a/build-b 各含 stdout.log、jars.json、verifyReleaseArtifacts.json） |
 | ② | `runGameTest` 全量 | **All 129 required tests passed**（按名字核验：expected=129 reported=129 missing=0 unexpected=0） | 2 h 55 m | `docs/evidence/gametest-129-20261008/`（results.xml + 运行日志） |
 | ③ | `runServerSmoke` 真实地形 | **REAL_WALL_TRAVERSAL_PASS** | 5 h 43 m | `docs/evidence/s1c/real-wall-traversal-pass-20261007.json` |
 | ④ | S5 故障矩阵 exception | **180/180 通过** | — | `docs/evidence/s5/s5-faults-exception-20261006-c0c3f001/` |
