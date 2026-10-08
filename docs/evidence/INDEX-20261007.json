@@ -1,7 +1,7 @@
 {
     "document":  "index of the evidence written during the 2026-10-07 automated-verification session",
-    "date":  "2026-10-07",
-    "revision":  "7 - merges a duplicated goal-item-6 group created by my own edit",
+    "date":  "2026-10-08",
+    "revision":  "8 - adds this session's closing evidence: the passing 129-test run, the 24-hour profile pass, and the two-build reproducibility result",
     "purpose":  "This maps the evidence a reader is most likely to need to the claim it supports, so they can find the right document instead of opening all of them. It is a curated map rather than an exhaustive listing: the session added 364 evidence files, and the 120 entries here are the ones that carry a distinct claim. Documents not listed are not thereby unsupported - most are run outputs, per-sample records or restatements covered by a listed entry.",
     "note":  "INDEX-20261007.json is this file and is deliberately not listed among its own entries. The sample series is one glob entry rather than 205, since the samples share a single claim. A final refresh is expected after the profile ends.",
     "grouped":  {
@@ -61,6 +61,18 @@
                                                        {
                                                            "file":  "build-path-citations-audit-20261007.json",
                                                            "claim":  "all 14 cited build/ paths accounted for: 10 resolve, 2 already marked missing, 1 under docs/evidence, 1 forward-looking"
+                                                       },
+                                                       {
+                                                           "file":  "s5release-reproducible-two-builds-20261008.json",
+                                                           "claim":  "two clean builds produce the identical jar SHA 80506fe5..., sources SHA 0f848032..., and byte-identical gate reports; the main jar also matches the deployed artifact"
+                                                       },
+                                                       {
+                                                           "file":  "s5release-cannot-complete-20261008.json",
+                                                           "claim":  "tools/Test-S5Release.ps1 cannot complete as written: build depends on runGameTest through enableGameTests, so each build blocks past the 60-minute timeout and verifyReleaseArtifacts never runs"
+                                                       },
+                                                       {
+                                                           "file":  "release-gate-checks-reproduced-20261007.json",
+                                                           "claim":  "the four gate check groups reproduced against the real jar rather than cited from the gate output"
                                                        }
                                                    ],
                     "goal item 2 - GameTest":  [
@@ -127,6 +139,42 @@
                                                    {
                                                        "file":  "gametest-run-isolation-20261007.json",
                                                        "claim":  "build/run/gameTest and the stress run diverge at the third path segment, so neither can disturb the other"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-129-pass-20261008.json",
+                                                       "claim":  "all 129 GameTests passed in 2h55m, confirmed by name with expected=129 reported=129 missing=0 unexpected=0"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-counts-reverified-20261008.json",
+                                                       "claim":  "the goal 118, the report 119 and the tree 129 all hold, verified against the commits themselves"
+                                                   },
+                                                   {
+                                                       "file":  "never-run-correction-20261008.json",
+                                                       "claim":  "20 of the 21 cases reported as never-run had in fact run in a diagnostic subset; only absentDurableProof had never run under any name"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-structure-dependency-checked-20261007.json",
+                                                       "claim":  "every case uses the API-provided EMPTY_STRUCTURE, so no case can skip for want of a template"
+                                                   },
+                                                   {
+                                                       "file":  "gametest-external-mod-check-20261007.json",
+                                                       "claim":  "no GameTest depends on Tectonic, C2ME, FTB, RoadWeaver or any external mod"
+                                                   },
+                                                   {
+                                                       "file":  "no-assertion-free-tests-20261007.json",
+                                                       "claim":  "the 25 methods that look assertion-free all delegate to asserting helpers"
+                                                   },
+                                                   {
+                                                       "file":  "vacuous-stream-assertions-found-20261007.json",
+                                                       "claim":  "two filtered-stream assertions could pass on an empty stream; both were given non-empty guards"
+                                                   },
+                                                   {
+                                                       "file":  "no-skip-mechanisms-audited-20261007.json",
+                                                       "claim":  "no @Disabled, no assumptions, and required defaults to true with attempts 1, so a failure cannot be absorbed"
+                                                   },
+                                                   {
+                                                       "file":  "completeness-check-blind-spots-20261007.json",
+                                                       "claim":  "the completeness check has no duplicate-name or suite-name blind spot"
                                                    }
                                                ],
                     "goal item 3 - real-terrain traversal":  [
@@ -285,6 +333,30 @@
                                                          {
                                                              "file":  "ledger-update-shape-20261007.json",
                                                              "claim":  "which of the eight ledger fields change at closing, and that startedUtc converts correctly under UTC+8"
+                                                         },
+                                                         {
+                                                             "file":  "s5/s5-stress-24h-pass-20261008.json",
+                                                             "claim":  "the 24-hour MIXED_24H profile passed: durationMet true, observedSeconds 86400, 4629095 chunks, failure null, 67 refills with zero error, watchdog or OOM"
+                                                         },
+                                                         {
+                                                             "file":  "s5/s5-stress-24h-20261008/",
+                                                             "claim":  "the archived report, header, 2187 samples and stress log for the passing 24-hour profile"
+                                                         },
+                                                         {
+                                                             "file":  "s5/s5-stress-1h-20261007/stress-report.json",
+                                                             "claim":  "the 1-hour MIXED_24H profile passed with 52320 chunks and 121 checkpoints"
+                                                         },
+                                                         {
+                                                             "file":  "profile-stop-condition-verified-20261008.json",
+                                                             "claim":  "the profile stops at the window rather than at queue drain, because the refill runs before the stop check"
+                                                         },
+                                                         {
+                                                             "file":  "profile-pass-conditions-read-20261008.json",
+                                                             "claim":  "the four pass conditions read from StressFixture, including the 120-second duration tolerance"
+                                                         },
+                                                         {
+                                                             "file":  "profile-processes-identified-20261007.json",
+                                                             "claim":  "the profile process identified by its command line, with elapsed time cross-checked against process lifetime"
                                                          }
                                                      ],
                     "goal item 6 - five source sets":  [
@@ -504,5 +576,5 @@
                                                            }
                                                        ]
                 },
-    "head":  "16fb45e"
+    "head":  "57c5dc3"
 }

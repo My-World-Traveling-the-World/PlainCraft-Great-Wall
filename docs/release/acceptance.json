@@ -31,20 +31,20 @@
                            "title":  "remapJar + sourceJar contain no test/fault/fixture/agents/credentials/machine paths",
                            "expected":  "clean artifact; SHA256 recorded",
                            "status":  "PASS",
-                           "log":  "build/test-results/test/ (JUnit, rebuilt each run)",
-                           "actual":  "No FaultInjector / FaultProcessMain / StressProcessMain / StressController / StressFixture / stress / smoke / gametest entries; no D:\\ , C:\\ or user-name strings in any packaged json/txt; pack.mcmeta pack_format 34 with supported_formats 34..48. remapJar SHA256 80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456, identical in build/libs and the client mods directory.",
+                           "log":  "docs/evidence/s5/s5-release-20261008-manual/ (build-a and build-b, each with stdout.log, jars.json and verifyReleaseArtifacts.json)",
+                           "actual":  "Two clean builds on 2026-10-08 with 'gradlew --offline --dependency-verification=strict clean build verifyReleaseArtifacts -x runGameTest' produced the identical jar SHA 80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456 and sources SHA 0f848032e8b1a215, in 11.6 and 11.2 seconds. Their gate reports are byte-identical and confirm pack_format 34, supported_formats 34..48, every dependency version unchanged, and no forbidden class or machine path in either jar. The main jar SHA also matches the deployed artifact in the client mods directory. The suite is excluded via -x runGameTest because build depends on it and would otherwise block each build for hours inside the script's timeout; the 129-test suite already passed against this same commit in the same session. Note that tools/Test-S5Release.ps1 as written cannot complete - that is recorded in docs/evidence/s5release-cannot-complete-20261008.json.",
                            "startedUtc":  "2026-10-07T00:12:00Z",
-                           "finishedUtc":  "2026-10-07T00:13:00Z"
+                           "finishedUtc":  "2026-10-08T04:55:00Z"
                        },
                        {
                            "id":  "reproducible-build",
                            "title":  "two clean builds same source/JDK produce identical remapJar SHA256",
                            "expected":  "SHA match across two clean builds",
                            "status":  "PASS",
-                           "log":  "build/test-results/test/ (JUnit, rebuilt each run)",
-                           "actual":  "remapJar re-run with --rerun-tasks produced the identical SHA, and deleting build/libs and rebuilding produced it a third time: 80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456. Same source, same JDK 21.0.5.",
+                           "log":  "docs/evidence/s5/s5-release-20261008-manual/ (build-a and build-b, each with stdout.log, jars.json and verifyReleaseArtifacts.json)",
+                           "actual":  "Two clean builds on 2026-10-08 with 'gradlew --offline --dependency-verification=strict clean build verifyReleaseArtifacts -x runGameTest' produced the identical jar SHA 80506fe57a6379b151ef3dab4ce7b83ec62b5ad74e631d0049777f5c4d08f456 and sources SHA 0f848032e8b1a215, in 11.6 and 11.2 seconds. Their gate reports are byte-identical and confirm pack_format 34, supported_formats 34..48, every dependency version unchanged, and no forbidden class or machine path in either jar. The main jar SHA also matches the deployed artifact in the client mods directory. The suite is excluded via -x runGameTest because build depends on it and would otherwise block each build for hours inside the script's timeout; the 129-test suite already passed against this same commit in the same session. Note that tools/Test-S5Release.ps1 as written cannot complete - that is recorded in docs/evidence/s5release-cannot-complete-20261008.json.",
                            "startedUtc":  "2026-10-07T00:55:00Z",
-                           "finishedUtc":  "2026-10-07T01:00:00Z"
+                           "finishedUtc":  "2026-10-08T04:55:00Z"
                        },
                        {
                            "id":  "integration-matrix",
