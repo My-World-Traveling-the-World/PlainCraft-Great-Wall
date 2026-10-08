@@ -5,4 +5,20 @@
 # Regenerate this file after rebuilding/upgrading RoadWeaver and re-reviewing
 # its interop ABI (PlanningInteropRegistry / WallInteropTypes / RoadNetworkApi
 # registerStructureEndpointOnce signature).
-bed13208658438dcc27efe965155958d2e3b0386488ab9023432b6db9a854dd1
+#
+# Exactly one digest is admitted, and RoadWeaverAllowlistTest pins that: a jar
+# whose SHA is absent makes RoadWeaverAdapter refuse to initialise, and
+# docs/release/compatibility.json must name this same digest.
+#
+# 2026-10-08: moved from 0.8.406-perf-batch (bed13208...) back to
+# 0.8.405-audit-io-degradation-and-counter-cleanup, rebuilt from RoadWeaver
+# commit eaf9892, which reverts 821511c. ABI re-reviewed before switching, as
+# the header above requires: the four interop types this adapter touches are
+# byte-identical between the two builds - EndpointHeightAgreementApi 1056 B,
+# PlanningInteropRegistry 12395 B, WallInteropTypes 1168 B, RoadNetworkApi
+# 20604 B in both. 821511c's diff is confined to pathfinding and storage
+# internals (RoadGradePlanner, StructureAvoidanceService,
+# RoadGenerationService, the four pathfinders, CoarseTerrainRegion,
+# StructureFileStorage, CoarseHeightAwarePlanner) and touches no interop type,
+# so the reviewed contract still holds.
+6ec2c41db402de8fc697de398cc36803b518819c554f232b944121e00dd2e9e3
