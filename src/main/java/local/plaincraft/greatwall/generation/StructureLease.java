@@ -59,7 +59,14 @@ public final class StructureLease implements AutoCloseable {
         });
     }
     private java.util.concurrent.Executor executor() {
-        return ((ChunkMapAccess)level.getChunkSource().chunkMap).greatwall$chunkMainExecutor();
+        // The world-local chunk executor is the wrong target during startup: the road side
+        // parks the server thread in managedBlock while it waits for this prewarm, and that
+        // pump drains the *global* MinecraftServer queue but skips the per-level chunk queue
+        // (haveTime() is false before the tick loop starts). A task posted to the chunk
+        // executor therefore never runs and the wall deadlocks waiting on its own chunk
+        // request. The global server is both the thread-safe place for addTicket/request and
+        // the queue managedBlock actually drains.
+        return level.getServer();
     }
     public CompletableFuture<Map<ChunkPos,ChunkAccess>> ready(){return ready.copy();}
     public CompletableFuture<Void> drained(){return drained.copy();}

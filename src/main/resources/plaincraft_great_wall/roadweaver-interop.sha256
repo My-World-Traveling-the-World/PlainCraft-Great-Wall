@@ -54,4 +54,14 @@
 # blocking again, as the user requires - the player stays on the loading screen
 # until the wall finishes - via managedBlock so the server still drains its own
 # queue. The four interop types are re-checked a fourth time and are unchanged.
-1a64ba3bb80b57c37e2fb10c223b2d282938556817cf9ea47884a99d599edae5
+#
+# 2026-10-09 (fifth build): the real deadlock was two event loops on the server
+# thread. The wall posted addTicket/request to the world-local chunk executor
+# (ServerChunkCache$MainThreadExecutor), while the road side's managedBlock drains
+# only the global MinecraftServer queue and skips the chunk queues before the tick
+# loop starts (haveTime() false), so the wall starved waiting on its own chunk
+# request. The wall now posts to level.getServer() (the global queue), and the
+# road side's wait explicitly pumps server.pollTask() plus every level's
+# chunkSource().pollTask(). The four interop types are re-checked a fifth time and
+# are unchanged.
+781a7613482024e4b8880848bbf6d5c9d1207dc088e5f30cec0cb317d4a374fc
