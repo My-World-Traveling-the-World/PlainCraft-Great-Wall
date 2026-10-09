@@ -122,6 +122,40 @@ public final class PrewarmProgress {
         STATE.put("root-search", true);
     }
 
+    /**
+     * Marks the wall's startup phase as active while the root is still being chosen.
+     *
+     * <h2>Why a separate entry point</h2>
+     * {@link #begin} is called only once the first segment is planned, and it sets active
+     * from a segment count - so the whole root search, which runs for minutes between the
+     * rivers finishing and that first segment, had no active state. The loading card
+     * therefore skipped that window entirely, and the wall's longest invisible phase
+     * looked exactly like a hang: no title, no bar, no elapsed time. A session that spent
+     * most of its startup there appeared frozen to the player.
+     *
+     * <p>This marks the phase active with a zero segment total and the root-search label, so
+     * the card shows "choosing the root position" with a live elapsed time. Once the search
+     * lands and {@link #begin} runs, the segment count and percentage take over; the two are
+     * the same lifecycle and {@link #finish} closes whichever one was entered.
+     */
+    public static void beginRootSearch(int lanes) {
+        synchronized (LATCH_LOCK) {
+            if (settled == null || settled.getCount() == 0L) {
+                settled = new CountDownLatch(1);
+            }
+        }
+        TOTAL_SEGMENTS.set(0);
+        COMPLETED_SEGMENTS.set(0);
+        LANES.set(Math.max(1, lanes));
+        STARTED_AT_NANOS.set(System.nanoTime());
+        FAILED.set(false);
+        STATE.clear();
+        STATE.put("root-search", true);
+        ACTIVE.set(true);
+        REQUESTED.set(true);
+        EVER_STARTED.set(true);
+    }
+
     /** Selects the label shown once segments are being planned. */
     public static void enterPlanning() {
         STATE.remove("root-search");

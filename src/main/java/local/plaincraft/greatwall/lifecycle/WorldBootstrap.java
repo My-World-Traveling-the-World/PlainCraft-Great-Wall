@@ -276,6 +276,12 @@ public final class WorldBootstrap implements AutoCloseable {
                 var inputs = frozen.get("inputs");
                 if (inputs == null || authorization.saved().isEmpty() && !spawn.containsKey("chosen")) return;
                 if (state.putIfAbsent("root-started", true) != null) return;
+                // The root search is the wall's first visible stage: from here until the
+                // first segment is planned it has no count to show, so the loading card
+                // reports "choosing the root position" with an elapsed time rather than
+                // disappearing for minutes and looking like a hang.
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.beginRootSearch(
+                        local.plaincraft.greatwall.terrain.LanePolicy.resolve().startupLaneCount());
                 try {
                     var lanes = laneSnapshot.compute("lanes", (key, previous) -> {
                         active();
