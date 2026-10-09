@@ -20,21 +20,32 @@ import net.minecraft.network.chat.Component;
  * creation screen.
  *
  * <h2>Layout</h2>
- * A two-column grid: every label sits in the left column and its control in the
- * right, on the same row. An earlier revision drew the labels manually at
- * offsets derived from the control positions and the two overlapped. Vanilla's
- * button rows are 24 pixels apart, so the rows below use the same pitch.
+ * Every row is positioned from one running {@code y}, and the same value is stored
+ * in fields so {@link #render} draws each label against the control it belongs to.
+ * An earlier revision recomputed the label rows in {@code render} with a different
+ * formula than {@code init} used, and the two drifted apart — labels sat off their
+ * controls and the summary collided with the buttons.
+ *
+ * <p>Rows are laid out as: four settings, then the summary block, then a gap, then
+ * the action buttons. The gap is what keeps the buttons clear of the summary text.
  *
  * <h2>Why the widgets are plain</h2>
- * Only vanilla widgets are used. A config screen that fails to build must not
- * take the game down with it, and Cloth Config is not required.
+ * Only vanilla widgets are used. A config screen that fails to build must not take
+ * the game down with it, and Cloth Config is not required.
  */
 public final class GreatWallConfigScreen extends Screen {
-    private static final int ROW_HEIGHT = 24;
+    private static final int ROW_HEIGHT = 20;
+    private static final int ROW_STEP = 26;
     private static final int LABEL_WIDTH = 110;
     private static final int CONTROL_WIDTH = 180;
     private static final int COLUMN_GAP = 8;
-    private static final int ROW_GAP = 6;
+    /** Space between the last setting and the summary, and between summary and buttons. */
+    private static final int SECTION_GAP = 16;
+    private static final int SUMMARY_BLOCK = 28;
+    private static final int BUTTON_HEIGHT = 20;
+    private static final int LABEL_COLOUR = 0xFFFFFF;
+    private static final int SUMMARY_COLOUR = 0x55FF55;
+    private static final int HINT_COLOUR = 0xA0A0A0;
     private final Screen parent;
     private final GreatWallConfig draft;
     private EditBox lengthField;
@@ -43,6 +54,10 @@ public final class GreatWallConfigScreen extends Screen {
     private Button fullPrewarmButton;
     private int left;
     private int top;
+    /** Top of each of the four setting rows, filled by {@link #init} and read by {@link #render}. */
+    private final int[] settingRows = new int[4];
+    private int summaryY;
+    private int buttonY;
 
     public GreatWallConfigScreen(Screen parent) {
         super(Component.translatable("screen.plaincraft_great_wall.config"));
@@ -54,12 +69,12 @@ public final class GreatWallConfigScreen extends Screen {
     protected void init() {
         int totalWidth = LABEL_WIDTH + COLUMN_GAP + CONTROL_WIDTH;
         this.left = (this.width - totalWidth) / 2;
-        // Six rows: four settings plus the summary and the two action buttons.
-        int totalHeight = ROW_HEIGHT * 4 + ROW_GAP * 3 + 40;
-        this.top = Math.max(32, (this.height - totalHeight) / 2);
+        int totalHeight = ROW_STEP * 4 + SECTION_GAP + SUMMARY_BLOCK + SECTION_GAP + BUTTON_HEIGHT;
+        this.top = Math.max(28, (this.height - totalHeight) / 2);
         int controlX = left + LABEL_WIDTH + COLUMN_GAP;
 
-        int row = top;
+        for (int i = 0; i < settingRows.length; i++) settingRows[i] = top + i * ROW_STEP;
+
         this.lengthModeButton = addRenderableWidget(Button.builder(lengthModeLabel(), button -> {
             draft.setWallLengthBlocks(draft.bounded()
                     ? GreatWallConfig.UNLIMITED_LENGTH
@@ -69,10 +84,9 @@ public final class GreatWallConfigScreen extends Screen {
             // screen would show a stale number next to the new mode.
             if (lengthField != null) lengthField.setValue(Long.toString(draft.wallLengthBlocks()));
             refreshEnabledStates();
-        }).bounds(controlX, row, CONTROL_WIDTH, 20).build());
-        row += ROW_HEIGHT + ROW_GAP;
+        }).bounds(controlX, settingRows[0], CONTROL_WIDTH, ROW_HEIGHT).build());
 
-        this.lengthField = new EditBox(this.font, controlX, row, CONTROL_WIDTH, 20,
+        this.lengthField = new EditBox(this.font, controlX, settingRows[1], CONTROL_WIDTH, ROW_HEIGHT,
                 Component.translatable("option.plaincraft_great_wall.wallLength"));
         this.lengthField.setValue(Long.toString(draft.wallLengthBlocks()));
         this.lengthField.setResponder(text -> {
@@ -80,9 +94,8 @@ public final class GreatWallConfigScreen extends Screen {
             if (parsed != null) draft.setWallLengthBlocks(parsed);
         });
         addRenderableWidget(this.lengthField);
-        row += ROW_HEIGHT + ROW_GAP;
 
-        this.prewarmField = new EditBox(this.font, controlX, row, CONTROL_WIDTH, 20,
+        this.prewarmField = new EditBox(this.font, controlX, settingRows[2], CONTROL_WIDTH, ROW_HEIGHT,
                 Component.translatable("option.plaincraft_great_wall.prewarmSegments"));
         this.prewarmField.setValue(Integer.toString(draft.prewarmSegments()));
         this.prewarmField.setResponder(text -> {
@@ -90,19 +103,20 @@ public final class GreatWallConfigScreen extends Screen {
             if (parsed != null) draft.setPrewarmSegments(parsed);
         });
         addRenderableWidget(this.prewarmField);
-        row += ROW_HEIGHT + ROW_GAP;
 
         this.fullPrewarmButton = addRenderableWidget(Button.builder(fullPrewarmLabel(), button -> {
             draft.setPrewarmAllWhenBounded(!draft.prewarmAllWhenBounded());
             button.setMessage(fullPrewarmLabel());
-        }).bounds(controlX, row, CONTROL_WIDTH, 20).build());
-        row += ROW_HEIGHT + 12;
+        }).bounds(controlX, settingRows[3], CONTROL_WIDTH, ROW_HEIGHT).build());
+
+        this.summaryY = top + ROW_STEP * 4 + SECTION_GAP;
+        this.buttonY = summaryY + SUMMARY_BLOCK + SECTION_GAP;
 
         int half = (totalWidth - COLUMN_GAP) / 2;
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> saveAndClose())
-                .bounds(left, row, half, 20).build());
+                .bounds(left, buttonY, half, BUTTON_HEIGHT).build());
         addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, button -> onClose())
-                .bounds(left + half + COLUMN_GAP, row, half, 20).build());
+                .bounds(left + half + COLUMN_GAP, buttonY, half, BUTTON_HEIGHT).build());
 
         refreshEnabledStates();
     }
@@ -138,35 +152,31 @@ public final class GreatWallConfigScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, top - 24, 0xFFFFFF);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, top - 20, LABEL_COLOUR);
 
-        int controlX = left + LABEL_WIDTH + COLUMN_GAP;
-        int row = top;
-        // Labels are drawn in the left column, vertically centred against their own
-        // row's control, which is what keeps text and widget from overlapping.
-        drawLabel(graphics, "option.plaincraft_great_wall.lengthMode", row);
-        row += ROW_HEIGHT + ROW_GAP;
-        drawLabel(graphics, "option.plaincraft_great_wall.wallLength", row);
-        row += ROW_HEIGHT + ROW_GAP;
-        drawLabel(graphics, "option.plaincraft_great_wall.prewarmSegments", row);
-        row += ROW_HEIGHT + ROW_GAP;
-        drawLabel(graphics, "option.plaincraft_great_wall.fullPrewarm", row);
+        // Positions come from the fields init() filled, so a label can never be drawn
+        // against a different row than its control.
+        drawLabel(graphics, "option.plaincraft_great_wall.lengthMode", settingRows[0]);
+        drawLabel(graphics, "option.plaincraft_great_wall.wallLength", settingRows[1]);
+        drawLabel(graphics, "option.plaincraft_great_wall.prewarmSegments", settingRows[2]);
+        drawLabel(graphics, "option.plaincraft_great_wall.fullPrewarm", settingRows[3]);
 
-        int summaryY = top + (ROW_HEIGHT + ROW_GAP) * 4 + 2;
         var summary = Component.translatable("option.plaincraft_great_wall.summary",
                 Long.toString(draft.wallLengthBlocks()),
                 Long.toString(draft.configuredSegments()),
                 Long.toString(draft.prewarmSegmentsTarget()));
-        graphics.drawCenteredString(this.font, summary, this.width / 2, summaryY, 0x55FF55);
+        graphics.drawCenteredString(this.font, summary, this.width / 2, summaryY, SUMMARY_COLOUR);
         graphics.drawCenteredString(this.font,
                 Component.translatable("option.plaincraft_great_wall.bodyHint"),
-                this.width / 2, summaryY + 14, 0x808080);
+                this.width / 2, summaryY + 12, HINT_COLOUR);
     }
 
-    /** Draws a label in the left column, centred vertically against a control at {@code row}. */
-    private void drawLabel(GuiGraphics graphics, String key, int row) {
-        var text = Component.translatable(key);
-        graphics.drawString(this.font, text, left, row + 6, 0xA0A0A0);
+    /** Draws a label in the left column, centred against a control at {@code rowY}. */
+    private void drawLabel(GuiGraphics graphics, String key, int rowY) {
+        // Centred on the control's own height rather than offset by a constant, so the
+        // text stays aligned whatever ROW_HEIGHT becomes.
+        int textY = rowY + (ROW_HEIGHT - this.font.lineHeight) / 2;
+        graphics.drawString(this.font, Component.translatable(key), left, textY, LABEL_COLOUR);
     }
 
     private Component lengthModeLabel() {
