@@ -21,4 +21,15 @@
 # RoadGenerationService, the four pathfinders, CoarseTerrainRegion,
 # StructureFileStorage, CoarseHeightAwarePlanner) and touches no interop type,
 # so the reviewed contract still holds.
-6ec2c41db402de8fc697de398cc36803b518819c554f232b944121e00dd2e9e3
+#
+# 2026-10-09: 0.8.405-audit-io-degradation-and-counter-cleanup ->
+# 0.8.407-wall-prewarm-gate. The change is additive to startup ordering only:
+# InitialGenManager calls a new WallPrewarmBridge between finishing the rivers
+# and beginning road generation, so the wall's prewarm no longer runs alongside
+# road generation. ABI re-reviewed before switching, as the header requires, and
+# all four interop types this adapter touches are again byte-identical -
+# EndpointHeightAgreementApi 1056 B, PlanningInteropRegistry 12395 B,
+# WallInteropTypes 1168 B, RoadNetworkApi 20604 B in both builds. The new bridge
+# lives in net.shiroha233.roadweaver.generation and reaches the wall by
+# reflection, so it adds no type this adapter depends on.
+1832df0ee01e5b225b4a2d201c6c3b9d2a66f6a32e96e70daf250c6d369295fc

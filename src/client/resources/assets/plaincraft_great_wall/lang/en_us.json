@@ -9,5 +9,9 @@
   "option.plaincraft_great_wall.prewarmSegments.unlimited": "Unbounded, prewarming the first %s segments",
   "option.plaincraft_great_wall.bodyHint": "The segment count is derived from the length; there is nothing to fill in.",
   "option.plaincraft_great_wall.bodyHint2": "Applies to newly created worlds.",
-  "text.plaincraft_great_wall.configButton": "Great Wall config"
+  "text.plaincraft_great_wall.configButton": "Great Wall config",
+  "plaincraft.great_wall.loading_progress.title": "Great Wall prewarm",
+  "plaincraft.great_wall.loading_progress.searching": "Choosing the root position...",
+  "plaincraft.great_wall.loading_progress.summary": "%s/%s segments (%s%%)",
+  "plaincraft.great_wall.loading_progress.detail": "%s lanes   %ss elapsed"
 }

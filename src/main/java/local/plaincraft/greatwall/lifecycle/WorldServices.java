@@ -343,6 +343,36 @@ public final class WorldServices {
             services.production.riversPrewarmed();
         }
     }
+
+    /**
+     * Waits for the wall's startup prewarm to finish, for a startup peer to call.
+     *
+     * <h2>Why a peer calls this</h2>
+     * Rivers, then the wall, then roads is the intended order. RoadWeaver owns the last
+     * two, so it asks here between them rather than beginning road generation while the
+     * wall is still planning. Running the two together was measured to hurt both: the
+     * wall's scheduler recorded 257 watchdog rescues, meaning the server thread stopped
+     * delivering ticks for three seconds at a time while the other stage held it.
+     *
+     * <h2>Contract</h2>
+     * Returns immediately when no wall session exists, when no prewarm has started, or when
+     * one has already finished, so a session without wall generation is not delayed at all.
+     * On timeout it returns false and the caller is expected to proceed: a stage that never
+     * reports must not turn a slow startup into a hang.
+     *
+     * @return true if the prewarm settled, false if the wait timed out or was interrupted
+     */
+    public static boolean awaitPrewarm(long timeout, java.util.concurrent.TimeUnit unit) {
+        // No session means no wall generation in this world, which is a normal state:
+        // report ready so the caller is never delayed by a stage that will not run.
+        if (SESSIONS.isEmpty()) return true;
+        return PrewarmProgress.awaitCompletion(timeout, unit);
+    }
+
+    /** The wall's current prewarm progress, for diagnostics and for a progress display. */
+    public static PrewarmProgress.Snapshot prewarmSnapshot() {
+        return PrewarmProgress.snapshot();
+    }
     public void assertActiveSession() {
         if (production != null) {
             if (SESSIONS.get(server) != this) throw new CancellationException("Stale production session");

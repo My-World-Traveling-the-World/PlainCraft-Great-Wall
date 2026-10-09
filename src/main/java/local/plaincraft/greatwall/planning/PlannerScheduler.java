@@ -79,6 +79,13 @@ public final class PlannerScheduler implements AutoCloseable {
     private int initializing;
     private long deadline, sequence, background = 4;
     private ScheduledFuture<?> startupTimer;
+    /**
+     * Drives the bulk prewarm independently of the server tick.
+     *
+     * <p>Cancelled when the prewarm settles or the scheduler closes. See
+     * {@link #afterRoadBulk()} for why the prewarm does not rely on ticks.
+     */
+    private ScheduledFuture<?> prewarmTimer;
     private PlanLease<SegmentPlan> backgroundLease;
 
     public PlannerScheduler(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory, SegmentCacheStore cache, Executor io) {
@@ -274,6 +281,13 @@ public final class PlannerScheduler implements AutoCloseable {
             long started = System.nanoTime();
             state.put("prewarm-target-segments", target);
             state.put("prewarm-start-nanos", started);
+            // Published for two consumers: the loading overlay, which draws this as a card
+            // during level loading, and a startup peer (RoadWeaver) that waits for the
+            // prewarm to finish before it begins its own road generation.
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.begin(
+                    (int) Math.min(Integer.MAX_VALUE, target), laneState.size());
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.enterPlanning();
+            var completedSegments = new java.util.concurrent.atomic.AtomicInteger();
             var prewarm = new ArrayList<PlanLease<SegmentPlan>>();
             for (long i = 0; i < target && safeSegment(i); i++) {
                 // Per-segment timing is logged individually: an operator measuring
@@ -285,6 +299,10 @@ public final class PlannerScheduler implements AutoCloseable {
                 lease.future().whenCompleteAsync((plan, error) -> {
                     long elapsedMs = Math.round((System.nanoTime() - segmentStarted) / 1_000_000.0D);
                     if (error == null) {
+                        // Counted even when a segment fails: the card shows how much of the
+                        // prewarm is behind us, and a failed segment is behind us.
+                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setCompleted(
+                                completedSegments.incrementAndGet());
                         GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_SEGMENT segment={} elapsedMs={}",
                                 segment, elapsedMs);
                     } else {
@@ -297,9 +315,33 @@ public final class PlannerScheduler implements AutoCloseable {
             state.put("prewarm-requested-segments", (long) prewarm.size());
             GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_BEGIN requested={} target={}",
                     prewarm.size(), target);
+            // A dedicated driver for the duration of the prewarm.
+            //
+            // Until now the only drives were the server tick and the stall watchdog. The
+            // startup timer that originally filled this role is cancelled by the first tick
+            // (see tick()), so once the server is ticking the prewarm advances only as often
+            // as ticks arrive - and a measured session recorded 257 watchdog rescues, meaning
+            // the tick stopped arriving for three seconds at a time, repeatedly, while a
+            // startup peer held the server thread.
+            //
+            // The prewarm is bounded work with a known end, and nothing else in this mod
+            // competes for the native lanes while it runs, so it can drive itself. The timer
+            // is cancelled when the prewarm settles, on either outcome.
+            prewarmTimer = pump.scheduleWithFixedDelay(() -> {
+                if (closed() || state.containsKey("bulk-ready") || state.containsKey("bulk-failed")) return;
+                state.merge("prewarm-driver-iterations", 1L, Long::sum);
+                credits = 4096;
+                deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25);
+                dispatch();
+            }, 0, 1, TimeUnit.MILLISECONDS);
             CompletableFuture.allOf(prewarm.stream().map(PlanLease::future).toArray(CompletableFuture[]::new))
                     .whenCompleteAsync((value, error) -> {
                         long totalMs = Math.round((System.nanoTime() - started) / 1_000_000.0D);
+                        // Stop the dedicated driver first: the prewarm is over on both paths,
+                        // and a timer that keeps granting credits would spin against a queue
+                        // that no longer has prewarm work in it.
+                        stopPrewarmTimer();
+                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(error == null);
                         prewarm.forEach(PlanLease::close);
                         state.put(error == null ? "bulk-ready" : "bulk-failed", 1L);
                         state.put("prewarm-total-millis", totalMs);
@@ -321,6 +363,19 @@ public final class PlannerScheduler implements AutoCloseable {
                         if (error != null && startupTimer != null) startupTimer.cancel(false);
                     }, pump);
         });
+    }
+
+    /**
+     * Stops the prewarm's dedicated driver, if one is running.
+     *
+     * <p>Separate from the prewarm's own completion callback so {@link #close()} also
+     * releases it: a session that ends mid-prewarm must not leave a timer holding the
+     * scheduler's executor open.
+     */
+    private void stopPrewarmTimer() {
+        var timer = prewarmTimer;
+        prewarmTimer = null;
+        if (timer != null) timer.cancel(false);
     }
 
     /**
@@ -604,12 +659,32 @@ public final class PlannerScheduler implements AutoCloseable {
                 long started = System.nanoTime();
                 try {
                     if (closed()) throw closedFailure();
-                    // A batch has at most 64 logical primitives and yields after the 25ms target.
-                    // A single slow primitive cannot be hidden by this deadline; the full batch is still measured.
-                    for (int op = 0; op < operations; op++) {
-                        done = job.advance(oracle, 1);
-                        if (done || System.nanoTime() - started >= TimeUnit.MILLISECONDS.toNanos(25)) break;
-                    }
+                    // Hand the whole batch budget to one advance call rather than looping
+                    // with a limit of one primitive at a time.
+                    //
+                    // The loop this replaces issued `advance(oracle, 1)` up to 64 times, and
+                    // the difference is not a micro-optimisation. A job's advance is a
+                    // resumable state machine, and several of its steps need a terrain column
+                    // sampled before the state machine can progress at all: RidgePlanner.sample
+                    // issues begin, then returns, then needs one advance per inner step, then
+                    // finish - three or more separate calls, each of which had to be its own
+                    // batch. With a limit of one, every one of those calls ended the loop body
+                    // having done no recoverable work, so the batch budget was spent on
+                    // bookkeeping between steps rather than on the steps themselves.
+                    //
+                    // A measured session ran 1,337,565 batches at 0.995 ms each - 22.2 minutes,
+                    // matching its wall clock almost exactly - for work that the same code
+                    // performs directly in computeGeometryNow via advance(cursor, 64). Passing
+                    // the batch's own operation count lets a column sampling sequence complete
+                    // inside a single batch instead of spanning three.
+                    //
+                    // The 25 ms target still applies, just coarser: it is now checked once per
+                    // batch rather than once per primitive, so an unusually slow primitive can
+                    // overrun it. That is already the case - the same session recorded a
+                    // 108.6 ms batch and only 9 batches over 40 ms out of 1.34 million - and the
+                    // deadline exists to keep a batch from monopolising a lane, not to bound a
+                    // single primitive.
+                    done = job.advance(oracle, operations);
                     if (done) value = job.value();
                 } catch (Throwable failure) { error = failure; done = true; }
                 long duration = System.nanoTime() - started;
@@ -921,6 +996,7 @@ public final class PlannerScheduler implements AutoCloseable {
         pump.execute(() -> {
             if (startupTimer != null) startupTimer.cancel(false);
             if (watchdogTimer != null) watchdogTimer.cancel(false);
+            if (prewarmTimer != null) prewarmTimer.cancel(false);
             pending.forEach(job -> job.result.completeExceptionally(closedFailure()));
             pending.clear(); geometryQueue.clear(); ioQueue.clear(); planAdmissions.clear(); geometryAdmissions.clear();
             activeJobs.clear(); progress.clear();

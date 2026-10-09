@@ -9,5 +9,9 @@
   "option.plaincraft_great_wall.prewarmSegments.unlimited": "无限长，预热前 %s 段",
   "option.plaincraft_great_wall.bodyHint": "段数由长度自动算出，无需填写。",
   "option.plaincraft_great_wall.bodyHint2": "仅对新创建的世界生效。",
-  "text.plaincraft_great_wall.configButton": "长城配置"
+  "text.plaincraft_great_wall.configButton": "长城配置",
+  "plaincraft.great_wall.loading_progress.title": "长城预热",
+  "plaincraft.great_wall.loading_progress.searching": "正在选址…",
+  "plaincraft.great_wall.loading_progress.summary": "%s/%s 段（%s%%）",
+  "plaincraft.great_wall.loading_progress.detail": "并行 %s 路　耗时 %s 秒"
 }
