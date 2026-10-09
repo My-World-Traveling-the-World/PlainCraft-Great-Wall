@@ -562,8 +562,15 @@ public final class PlannerScheduler implements AutoCloseable {
             if (slot.busy) continue;
             var nativeLane = lanes.get(lane);
             if (!slot.ready) {
-                // Initializing every lane at once would peak N native RandomState instances together.
-                // Admit only a bounded number in flight; released lanes re-enter dispatch themselves.
+                // Admission for native oracle construction.
+                //
+                // This used to be a constant of four, on the theory that it kept N native
+                // RandomState instances from peaking together. It did not: every lane retains
+                // its oracle for the life of the session, so all N exist at steady state
+                // regardless, and the cap only spread their creation across batches - measured
+                // at about 232 seconds of a startup prewarm on sixteen cores spent before any
+                // planning began. The bound is now the lane ceiling, so all lanes initialize
+                // together and the cost is paid once, concurrently.
                 if (!slot.initializing && initializing < LanePolicy.MAX_CONCURRENT_INITIALIZATIONS) {
                     slot.initializing = true;
                     initializing++;

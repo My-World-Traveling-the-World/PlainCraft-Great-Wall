@@ -23,8 +23,22 @@ public final class LanePolicy {
     public static final int MAX_LANES = 16;
     /** Never fewer than the historical pair, so behaviour cannot regress below today's baseline. */
     public static final int MIN_LANES = 2;
-    /** Concurrent per-lane initialization is capped so N RandomState instances never peak together. */
-    public static final int MAX_CONCURRENT_INITIALIZATIONS = 4;
+    /**
+     * Upper bound on how many lanes may build their native oracle at the same time.
+     *
+     * <h2>Why this is no longer a constant of four</h2>
+     * Four was chosen against the fixed lane count the scheduler used to have. With lanes
+     * now derived from the hardware, a constant of four meant a sixteen-core machine
+     * initialised sixteen lanes in four batches: measured at roughly 232 seconds of the
+     * startup prewarm, spent before any planning began.
+     *
+     * <p>It is set to the lane ceiling rather than to a hardware-derived number because the
+     * peak it guards is not proportional to cores - each lane allocates one native
+     * {@code RandomState} view, and the whole set is bounded by {@link #MAX_LANES} anyway.
+     * There is no configuration in which initialising all of them at once is worse than
+     * doing it in batches, so the bound only needs to exist, not to be tuned.
+     */
+    public static final int MAX_CONCURRENT_INITIALIZATIONS = MAX_LANES;
 
     private static final String PROPERTY = "greatwall.lanes";
     private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();

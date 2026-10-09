@@ -114,7 +114,15 @@ public final class WorldBootstrap implements AutoCloseable {
         // 256 MiB to cover a full 2048-block cell. The compiled budget is
         // raised for the same reason: componentBytes charges 256 bytes per
         // voxel and one chunk owner retains many cells. Segment stays at 64 MiB.
-        return new GenerationConfig(1, 1, 2048, 4, 150000, 384, 512, 4,
+        //
+        // Geometry in-flight is derived from the hardware instead of being the constant
+        // four it used to be. That constant was the real limit on a startup prewarm: a
+        // measured sixteen-core session ran sixteen native lanes but could never have
+        // more than four geometries in flight, so twelve lanes sat idle while four
+        // segments took twenty-two minutes. The byte budgets above remain the gate that
+        // prevents over-commitment - this number only decides how much may be attempted.
+        return new GenerationConfig(1, 1, 2048, 4, 150000, 384, 512,
+                local.plaincraft.greatwall.terrain.ConcurrencyPlan.startupGeometryInflight(),
                 64L << 20, 256L << 20, 256L << 20);
     }
 
@@ -274,51 +282,23 @@ public final class WorldBootstrap implements AutoCloseable {
                         if (previous != null) throw new IllegalStateException("bootstrap lane group already created");
                         // Root search always runs on lane 0 and stays serial; the remaining lanes
                         // only widen route/geometry parallelism once planning begins.
-                        int count = local.plaincraft.greatwall.terrain.LanePolicy.resolve().startupLaneCount();
-                        // Constructed concurrently rather than in a loop.
                         //
-                        // Each lane builds its own terrain oracle in its constructor, and a
-                        // measured session spent about 232 seconds of its prewarm doing that
-                        // for sixteen lanes one after another. The constructors are independent
-                        // - different index, same immutable inputs - so the work parallelises
-                        // directly, and the list is rebuilt in index order afterwards so lane 0
-                        // is still the root-search lane.
-                        var built = new OracleLane[count];
-                        var failed = new java.util.concurrent.atomic.AtomicReference<Throwable>();
-                        var threads = new java.util.ArrayList<Thread>(count);
+                        // Constructed serially, and that is not the bottleneck: construction only
+                        // allocates the lane's bookkeeping. The expensive part is the native
+                        // oracle, which OracleLane builds inside start() - and start() asserts it
+                        // runs on that lane's own dedicated thread, so it cannot be parallelised
+                        // from here at all. An earlier revision started these constructors on
+                        // sixteen threads expecting to save the ~232s the initialization costs;
+                        // it saved nothing, because the work is not in the constructor. Admission
+                        // of start() is what controls that cost, and PlannerScheduler already
+                        // bounds it with LanePolicy.MAX_CONCURRENT_INITIALIZATIONS.
+                        int count = local.plaincraft.greatwall.terrain.LanePolicy.resolve().startupLaneCount();
+                        var built = new java.util.ArrayList<OracleLane>(count);
                         for (int index = 0; index < count; index++) {
-                            int laneIndex = index;
-                            var thread = new Thread(() -> {
-                                try {
-                                    built[laneIndex] = new OracleLane(authorization.creation().instance(),
-                                            laneIndex, inputs.terrainHash(), inputs.factory());
-                                } catch (Throwable failure) {
-                                    failed.compareAndSet(null, failure);
-                                }
-                            }, "pgw-lane-init-" + index);
-                            thread.setDaemon(true);
-                            threads.add(thread);
-                            thread.start();
+                            built.add(new OracleLane(authorization.creation().instance(), index,
+                                    inputs.terrainHash(), inputs.factory()));
                         }
-                        for (var thread : threads) {
-                            try {
-                                thread.join();
-                            } catch (InterruptedException interrupted) {
-                                Thread.currentThread().interrupt();
-                                throw new IllegalStateException("lane initialization was interrupted", interrupted);
-                            }
-                        }
-                        var failure = failed.get();
-                        if (failure != null) {
-                            // Close whatever did start so a partial group cannot leak oracles.
-                            for (var lane : built) {
-                                if (lane != null) {
-                                    try { lane.close(); } catch (RuntimeException ignoredClose) { /* best effort */ }
-                                }
-                            }
-                            throw new IllegalStateException("lane initialization failed", failure);
-                        }
-                        return List.copyOf(java.util.Arrays.asList(built));
+                        return List.copyOf(built);
                     });
                     active();
                     if (authorization.saved().isPresent()) {
