@@ -49,6 +49,18 @@ import net.minecraft.world.level.storage.LevelResource;
 /** The mode is fixed per server: S0 laboratory or separately authorized S1C fixture, never public production. */
 public final class WorldServices {
     private static final ConcurrentHashMap<MinecraftServer, WorldServices> SESSIONS = new ConcurrentHashMap<>();
+    /**
+     * Whether the rivers reported ready, retained across the session lifecycle.
+     *
+     * <h2>Why a retained flag</h2>
+     * The river patch signals readiness the moment the rivers finish, which can race the
+     * wall's own session registration. If the signal arrives before {@code SESSIONS.put},
+     * dispatching only to current sessions would drop it, and the prewarm would never start -
+     * the exact failure a real session showed. This flag remembers the signal and replays it
+     * to a session the moment it registers, so the wall starts whether the rivers finished
+     * before or after it came up.
+     */
+    private static final java.util.concurrent.atomic.AtomicBoolean RIVERS_READY = new java.util.concurrent.atomic.AtomicBoolean();
     private final ProbePlanner planner;
     private final ProductionSession production;
     private final MinecraftServer server;
@@ -66,6 +78,12 @@ public final class WorldServices {
             if (Boolean.getBoolean("greatwall.s0.probe")) throw new IllegalStateException("S0 and S1C modes are mutually exclusive");
             planner = null;
             production = new ProductionSession(server, this);
+            // The rivers may have finished before this session registered. Replay the retained
+            // signal so the wall still starts, then the recipe-install path releases the bulk
+            // prewarm once it is durable (ProductionSession.riversPrewarmed is idempotent).
+            if (RIVERS_READY.get()) {
+                production.riversPrewarmed();
+            }
             return;
         }
         production = null;
@@ -337,9 +355,10 @@ public final class WorldServices {
      * idempotent, so at most one of the two actually starts the prewarm.
      */
     public static void riversPrewarmed() {
-        // Recorded before dispatching, and whether or not a session is installed yet: a peer
-        // gating on this may arrive before the wall's own prewarm begins, and it has to know
-        // that one is coming rather than conclude none will run.
+        // Retained so a session that registers after the rivers finish still receives the
+        // signal; the constructor replays it. request() is separate and marks the prewarm as
+        // coming so a peer polling on it waits rather than concluding none will run.
+        RIVERS_READY.set(true);
         PrewarmProgress.request();
         for (var server : SESSIONS.keySet()) {
             var services = SESSIONS.get(server);
