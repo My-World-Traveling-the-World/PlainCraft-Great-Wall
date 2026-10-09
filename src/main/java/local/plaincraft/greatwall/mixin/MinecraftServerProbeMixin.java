@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(MinecraftServer.class)
+@Mixin(value = MinecraftServer.class, priority = 950)
 public abstract class MinecraftServerProbeMixin {
     @Inject(method = "prepareLevels", at = @At("HEAD"))
     private void greatwall$startupWarmup(CallbackInfo callback) {

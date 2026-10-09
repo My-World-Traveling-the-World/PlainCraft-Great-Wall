@@ -79,4 +79,12 @@
 # the world-local chunk executor) keep making progress while the road side blocks. The
 # wall's chunk work stays on its world-local executor. The four interop types are
 # re-checked a seventh time and are unchanged.
-4848435a8c6e13cc99e999951d24897aa3597eb7cfacb71f73ab97f69486cf2e
+#
+# 2026-10-09 (eighth build): fix the mixin-order race that a third-party review found.
+# The wall and road both inject prepareLevels HEAD at the default priority; if the road
+# ran first the wall's warming() never froze its inputs and the wall threw or timed out.
+# The road's bridge now also reflectively calls WorldServices.warming(server) before it
+# waits (idempotent no-op when the wall already warmed), and the wall's probe mixin is
+# pinned to priority 950 (between rivers 900 and roads 1000). The four interop types are
+# re-checked an eighth time and are unchanged.
+4afec466c1c3603d386afea17d0cb0c4eaded643bdd050c9e4399f4258c23e41
