@@ -443,19 +443,43 @@ public final class WorldBootstrap implements AutoCloseable {
         // parallelises is the column sampling, which is a pure function of the
         // coordinates and therefore produces identical values on every lane.
         schedulePrefetch(search, lane);
-        lane.submit(oracle -> {
-            try {
-                var status = search.advance(oracle, 64);
-                return new RootBatch(status == WorkState.DONE ? Optional.of(search.finish()) : Optional.empty(), search.progress(),
-                        search.needsStructureScreen()?search.pendingStructureCandidates():List.of());
-            } finally {
-                progress.put("root", search.progress());
-                rootAudit.put("root", search.audit());
-            }
-        }).whenCompleteAsync((batch, error) -> {
+        final CompletableFuture<RootBatch> submitted;
+        try {
+            submitted = lane.submit(oracle -> {
+                try {
+                    var status = search.advance(oracle, 64);
+                    return new RootBatch(status == WorkState.DONE ? Optional.of(search.finish()) : Optional.empty(), search.progress(),
+                            search.needsStructureScreen()?search.pendingStructureCandidates():List.of());
+                } finally {
+                    progress.put("root", search.progress());
+                    rootAudit.put("root", search.audit());
+                }
+            });
+        } catch (RuntimeException rejected) {
+            // The serial advance chain is the search's only driver: if this submit is
+            // refused and the exception is allowed to propagate, the recursive
+            // whenCompleteAsync below never runs and the chain stops for good. A
+            // measured session did exactly that - the root pump and oracle threads both
+            // went idle with no queued work, the prewarm never began, and the road mod
+            // waited on it forever. Re-queue on the pump instead of dying: a saturated
+            // lane is a transient condition, and retrying keeps the search alive.
+            if (state.containsKey("closed") || state.containsKey("failed")) return;
+            rootPump.execute(() -> advance(search, lane, creation, inputs));
+            return;
+        }
+        submitted.whenCompleteAsync((batch, error) -> {
             if (state.containsKey("closed") || state.containsKey("failed")) return;
             if (error != null) { fail(error); return; }
             progress.put("root", batch.progress());
+            // The search was invisible before this: it runs for minutes without a single
+            // line, so a session that was genuinely working looked no different from one
+            // whose recursive chain had died. Logging phase and candidate once per batch
+            // makes both states obvious in the log instead of requiring a thread dump.
+            var now = batch.progress();
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SEARCH phase={} candidate={} shortlisted={} "
+                            + "footprintColumn={} axis={} columns={}",
+                    now.phase(), now.candidate(), now.shortlisted(),
+                    now.footprintColumn(), now.axisIndex(), now.columns());
             if(!batch.screen().isEmpty()){
                 state.put("structure-screen-entered",true);
                 try {
@@ -470,7 +494,20 @@ public final class WorldBootstrap implements AutoCloseable {
                 }catch(Throwable failure){fail(failure);}
                 return;
             }
-            if (batch.selected().isEmpty()) { advance(search, lane, creation, inputs); return; }
+            if (batch.selected().isEmpty()) {
+                // Same reasoning as the submit guard above: advance() is the search's
+                // only driver, and any throw here - from active(), schedulePrefetch or
+                // an unexpected runtime failure - would run inside rootPump's task,
+                // whose exception is swallowed with the queue, so the search would stop
+                // with no log and no future work. Re-queueing on failure keeps it alive.
+                try {
+                    advance(search, lane, creation, inputs);
+                } catch (RuntimeException failure) {
+                    if (state.containsKey("closed") || state.containsKey("failed")) return;
+                    rootPump.execute(() -> advance(search, lane, creation, inputs));
+                }
+                return;
+            }
             var selection = batch.selected().get();
             writeCachedAxis(creation, inputs, selection);
             publishRecipeFor(selection, creation, inputs);
