@@ -56,6 +56,16 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
             long maxAdvanceNanos, long over40msAdvances) {}
 
     private static final long FORTY_MS = 40_000_000L;
+    /**
+     * Hard ceiling on a single column's native sampling steps.
+     *
+     * <p>A reference column walks down from the top of the dimension one block per step,
+     * plus a slice-fill phase per cell. For a 384-block dimension that is well under a
+     * thousand steps. Anything past this bound is a malformed walk (empty interpolators,
+     * a cell-traversal off-by-one) and is censored rather than allowed to spin a lane
+     * forever. Generous by construction so no legitimate column is ever truncated.
+     */
+    private static final int MAX_REFERENCE_ADVANCE_STEPS = 4096;
     private final Thread owner = Thread.currentThread();
     private final UUID identity = UUID.randomUUID();
     private final RandomState randomState;
@@ -121,6 +131,18 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         long started = System.nanoTime();
         try {
             for (int step = 0; step < primitiveLimit && c.result == null; step++) {
+                // A native slice walk should finish in a small multiple of the column's
+                // height. A cursor that is still walking after this many steps has hit a
+                // malformed interpolation - an empty interpolator list or an off-by-one in
+                // the cell traversal - and would otherwise spin forever, holding a whole
+                // lane and, through the root search's serial chain, the whole startup. Censor
+                // instead: the column is treated as unbuildable, which is what an unreadable
+                // native column means anyway, and the search moves on.
+                if (++c.advanceSteps > MAX_REFERENCE_ADVANCE_STEPS) {
+                    c.censored = true;
+                    complete(c, Quality.CENSORED);
+                    break;
+                }
                 if (c.kind == SampleKind.COARSE) { coarse(c); coarsePrimitives++; }
                 else { reference(c); referencePrimitives++; }
             }
@@ -287,6 +309,8 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         private NoiseChunk chunk;
         private NoiseCursorBridge bridge;
         private ColumnSample result;
+        /** Guard against a malformed native slice walk that never terminates. */
+        private int advanceSteps;
         private Cursor(int x, int z, SampleKind kind) { this.x = x; this.z = z; this.kind = kind; }
         private CpuTerrainOracle oracle() { return CpuTerrainOracle.this; }
         @Override public boolean done() { checkOpen(); return result != null; }

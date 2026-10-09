@@ -415,6 +415,8 @@ public final class WorldBootstrap implements AutoCloseable {
     private volatile int prefetchLastSize;
     /** Set when a cached root axis was reused, so a session that skipped the search says so. */
     private final java.util.concurrent.atomic.AtomicLong rootCacheHits = new java.util.concurrent.atomic.AtomicLong();
+    /** Last logged root candidate; logging only on advance keeps the log bounded. */
+    private final java.util.concurrent.atomic.AtomicLong lastLoggedCandidate = new java.util.concurrent.atomic.AtomicLong(-1L);
 
     /**
      * The save directory, or null when this bootstrap has no server (tests and the
@@ -477,15 +479,20 @@ public final class WorldBootstrap implements AutoCloseable {
             if (state.containsKey("closed") || state.containsKey("failed")) return;
             if (error != null) { fail(error); return; }
             progress.put("root", batch.progress());
-            // The search was invisible before this: it runs for minutes without a single
-            // line, so a session that was genuinely working looked no different from one
-            // whose recursive chain had died. Logging phase and candidate once per batch
-            // makes both states obvious in the log instead of requiring a thread dump.
+            // Logged only when the candidate advances, and never more than the finite
+            // candidate set. A single column sampling takes many batches; per-batch logging
+            // flooded a session with a 134 MB log and over a million lines while a column
+            // was being sampled. The candidate index is the one monotonically-advancing
+            // signal, and there are at most 144 of them, so this is a hard bound.
             var now = batch.progress();
-            GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SEARCH phase={} candidate={} shortlisted={} "
-                            + "footprintColumn={} axis={} columns={}",
-                    now.phase(), now.candidate(), now.shortlisted(),
-                    now.footprintColumn(), now.axisIndex(), now.columns());
+            long lastCandidate = lastLoggedCandidate.get();
+            if (now.candidate() != lastCandidate && now.candidate() < 200) {
+                lastLoggedCandidate.set(now.candidate());
+                GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SEARCH phase={} candidate={} shortlisted={} "
+                                + "footprintColumn={} axis={} columns={}",
+                        now.phase(), now.candidate(), now.shortlisted(),
+                        now.footprintColumn(), now.axisIndex(), now.columns());
+            }
             if(!batch.screen().isEmpty()){
                 state.put("structure-screen-entered",true);
                 try {

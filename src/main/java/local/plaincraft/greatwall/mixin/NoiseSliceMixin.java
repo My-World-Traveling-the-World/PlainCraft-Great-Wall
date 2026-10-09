@@ -74,7 +74,7 @@ public abstract class NoiseSliceMixin implements NoiseCursorBridge {
     }
     @Unique private void greatwall$nextZ() {
         greatwall$z++;
-        if(greatwall$z<=cellCountXZ) {
+        if(greatwall$z < cellCountXZ) {
             greatwall$setupZ();return;
         }
         arrayInterpolationCounter++;
