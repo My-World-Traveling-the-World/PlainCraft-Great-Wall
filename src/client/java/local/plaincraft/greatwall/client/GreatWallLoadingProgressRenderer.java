@@ -9,34 +9,31 @@ import net.minecraft.network.chat.Component;
  * Draws the wall's startup prewarm as a card on the level loading screen.
  *
  * <h2>Why</h2>
- * The wall's prewarm is the longest single stage of a new world - measured at 22 minutes
- * before the changes alongside it - and it was invisible. The loading screen showed the
- * rivers finish and then appeared to hang, with nothing distinguishing a working prewarm
- * from a stalled one.
+ * The wall's prewarm is the longest single stage of a new world, and it was invisible - the
+ * loading screen showed the rivers finish and then appeared to hang. This card makes the two
+ * wall stages visible: choosing the root position, then prewarming segments, with a stage
+ * fraction each and one overall bar.
  *
  * <h2>Shape</h2>
- * Deliberately the same card as the river patch's progress display: same width, colours,
- * bar geometry and line layout, so the two read as one sequence of stages rather than two
- * unrelated overlays. The only differences are the strings and that this one also reports
- * how many segments are finished.
+ * The same card geometry as the river patch's progress display, but taller: it shows the two
+ * wall stages as separate lines, each with its own moving number, and one combined bar so the
+ * player always sees a number going up and never reads a stall as a freeze.
  */
 public final class GreatWallLoadingProgressRenderer {
     private static final int CARD_WIDTH = 360;
-    private static final int CARD_HEIGHT = 66;
+    private static final int CARD_HEIGHT = 88;
     private static final int CARD_BACKGROUND = 0xB010131A;
     private static final int CARD_BORDER = 0x80404B5A;
     private static final int BAR_BACKGROUND = 0x60242D38;
     private static final int BAR_FILL = 0xFF55B9E8;
+    private static final int STAGE_ACTIVE = 0xFFB7C0CC;
+    private static final int STAGE_PENDING = 0xFF6A7482;
 
     private GreatWallLoadingProgressRenderer() {
     }
 
     public static void render(GuiGraphics graphics) {
         PrewarmProgress.Snapshot snapshot = PrewarmProgress.snapshot();
-        // The root search has no segment count yet (total == 0), so it must still show:
-        // it is the wall's longest visible phase and hiding it made the loading screen look
-        // frozen. Only skip when nothing is active at all - a zero total while active means
-        // "still choosing the root", not "nothing to show".
         if (!snapshot.active()) return;
 
         Minecraft minecraft = Minecraft.getInstance();
@@ -59,20 +56,35 @@ public final class GreatWallLoadingProgressRenderer {
         graphics.fill(right - 1, top, right, bottom, CARD_BORDER);
 
         Component title = Component.translatable("plaincraft.great_wall.loading_progress.title");
-        graphics.drawString(minecraft.font, title, innerLeft, top + 9, 0xFFFFFFFF, false);
+        graphics.drawString(minecraft.font, title, innerLeft, top + 7, 0xFFFFFFFF, false);
 
-        // The root search happens before any segment exists, so it reports a stage rather
-        // than a fraction - a 0/4 bar during a thirteen-minute search reads as a stall.
-        Component progress = snapshot.rootSearch()
-                ? Component.translatable("plaincraft.great_wall.loading_progress.searching")
-                : Component.translatable("plaincraft.great_wall.loading_progress.summary",
-                        snapshot.completed(), snapshot.total(), snapshot.percent());
-        graphics.drawString(minecraft.font, progress, innerLeft, top + 23, 0xFFB7C0CC, false);
-        drawBar(graphics, innerLeft, top + 35, innerWidth, snapshot.rootSearch() ? 0 : snapshot.percent());
+        // Stage 1: choosing the root position. Active while rootSearch, dimmed after.
+        Component stage1 = snapshot.rootSearch()
+                ? (snapshot.rootTotal() > 0
+                        ? Component.translatable("plaincraft.great_wall.loading_progress.searching_n",
+                                snapshot.rootCandidate(), snapshot.rootTotal(), snapshot.rootPercent())
+                        : Component.translatable("plaincraft.great_wall.loading_progress.searching"))
+                : Component.translatable("plaincraft.great_wall.loading_progress.searching_done");
+        graphics.drawString(minecraft.font, stage1, innerLeft, top + 21,
+                snapshot.rootSearch() ? STAGE_ACTIVE : STAGE_PENDING, false);
+
+        // Stage 2: prewarming segments. Active once the root is chosen, pending before that.
+        Component stage2;
+        if (snapshot.rootSearch()) {
+            stage2 = Component.translatable("plaincraft.great_wall.loading_progress.segments_pending");
+        } else {
+            stage2 = Component.translatable("plaincraft.great_wall.loading_progress.summary",
+                    snapshot.completed(), snapshot.total(), snapshot.percent());
+        }
+        graphics.drawString(minecraft.font, stage2, innerLeft, top + 35,
+                snapshot.rootSearch() ? STAGE_PENDING : STAGE_ACTIVE, false);
+
+        // Combined bar: 30% root search + 70% segments.
+        drawBar(graphics, innerLeft, top + 51, innerWidth, snapshot.overallPercent());
 
         Component detail = Component.translatable("plaincraft.great_wall.loading_progress.detail",
-                snapshot.lanes(), snapshot.elapsedSeconds());
-        graphics.drawString(minecraft.font, detail, innerLeft, top + 49, 0xFF8D97A6, false);
+                snapshot.lanes(), snapshot.overallPercent(), snapshot.elapsedSeconds());
+        graphics.drawString(minecraft.font, detail, innerLeft, top + 65, 0xFF8D97A6, false);
     }
 
     private static void drawBar(GuiGraphics graphics, int x, int y, int width, int percent) {

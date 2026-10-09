@@ -69,6 +69,9 @@ public final class PrewarmProgress {
     private static final ConcurrentHashMap<String, Boolean> STATE = new ConcurrentHashMap<>();
     private static final Object LATCH_LOCK = new Object();
     private static volatile CountDownLatch settled = new CountDownLatch(1);
+    /** Candidate index the root search has reached, and the total it will scan. */
+    private static final AtomicInteger ROOT_CANDIDATE = new AtomicInteger();
+    private static final AtomicInteger ROOT_TOTAL = new AtomicInteger();
 
     private PrewarmProgress() {
     }
@@ -161,6 +164,19 @@ public final class PrewarmProgress {
         STATE.remove("root-search");
     }
 
+    /**
+     * Publishes the root search's candidate progress for the loading card.
+     *
+     * <p>The search scans a finite ring of candidates (4 radii x 36 angles = 144) before any
+     * segment exists. Without this number the card could only show "searching", which looks
+     * frozen for the minutes the search can take. The candidate index is the one monotonically
+     * advancing signal, so it is what the card reports.
+     */
+    public static void setRootProgress(int candidate, int total) {
+        ROOT_CANDIDATE.set(Math.max(0, candidate));
+        ROOT_TOTAL.set(Math.max(0, total));
+    }
+
     /** Records one more finished segment. */
     public static void setCompleted(int completedSegments) {
         COMPLETED_SEGMENTS.set(Math.max(0, Math.min(TOTAL_SEGMENTS.get(), completedSegments)));
@@ -185,6 +201,8 @@ public final class PrewarmProgress {
         STARTED_AT_NANOS.set(0L);
         FAILED.set(false);
         STATE.clear();
+        ROOT_CANDIDATE.set(0);
+        ROOT_TOTAL.set(0);
         // Reset with the rest: the next session's prewarm has not been requested yet, and
         // leaving this set would make a peer wait for a prewarm that may never run.
         EVER_STARTED.set(false);
@@ -244,7 +262,7 @@ public final class PrewarmProgress {
                 ? 0L
                 : TimeUnit.NANOSECONDS.toMillis(Math.max(0L, System.nanoTime() - startedAt));
         return new Snapshot(ACTIVE.get(), total, completed, LANES.get(), elapsedMillis,
-                STATE.containsKey("root-search"), FAILED.get());
+                STATE.containsKey("root-search"), FAILED.get(), ROOT_CANDIDATE.get(), ROOT_TOTAL.get());
     }
 
     /**
@@ -257,12 +275,35 @@ public final class PrewarmProgress {
      * @param elapsedMillis wall-clock time since the prewarm began
      * @param rootSearch   true while the root position is still being chosen
      * @param failed       true once a prewarm has finished unsuccessfully
+     * @param rootCandidate candidates the root search has scanned so far
+     * @param rootTotal    total candidates the root search will scan
      */
     public record Snapshot(boolean active, int total, int completed, int lanes, long elapsedMillis,
-                           boolean rootSearch, boolean failed) {
+                           boolean rootSearch, boolean failed, int rootCandidate, int rootTotal) {
         public int percent() {
             if (total <= 0) return 0;
             return Math.max(0, Math.min(100, Math.round(completed * 100.0F / total)));
+        }
+
+        /** Candidate fraction of the root search, for the searching label. */
+        public int rootPercent() {
+            if (rootTotal <= 0) return 0;
+            return Math.max(0, Math.min(100, Math.round(rootCandidate * 100.0F / rootTotal)));
+        }
+
+        /**
+         * Overall startup progress across the two wall stages.
+         *
+         * <p>The root search (choosing the position) is weighted at 30% and the segment
+         * prewarm at 70%, matching their relative measured durations. While the root is still
+         * being chosen this reports a fraction of the first 30%; once segments exist it jumps
+         * to 30 + 70% of the segment fraction.
+         */
+        public int overallPercent() {
+            if (rootSearch) {
+                return Math.round(rootPercent() * 0.30F);
+            }
+            return 30 + Math.round(percent() * 0.70F);
         }
 
         /** Seconds elapsed, formatted for the detail line. */

@@ -11,7 +11,10 @@
   "option.plaincraft_great_wall.bodyHint2": "仅对新创建的世界生效。",
   "text.plaincraft_great_wall.configButton": "长城配置",
   "plaincraft.great_wall.loading_progress.title": "长城预热",
-  "plaincraft.great_wall.loading_progress.searching": "正在选址…",
-  "plaincraft.great_wall.loading_progress.summary": "%s/%s 段（%s%%）",
-  "plaincraft.great_wall.loading_progress.detail": "并行 %s 路　耗时 %s 秒"
+  "plaincraft.great_wall.loading_progress.searching": "① 选址中…",
+  "plaincraft.great_wall.loading_progress.searching_n": "① 选址 %s/%s（%s%%）",
+  "plaincraft.great_wall.loading_progress.searching_done": "① 选址完成",
+  "plaincraft.great_wall.loading_progress.segments_pending": "② 预热（等待选址）",
+  "plaincraft.great_wall.loading_progress.summary": "② 预热 %s/%s 段（%s%%）",
+  "plaincraft.great_wall.loading_progress.detail": "并行 %s 路　总进度 %s%%　耗时 %s 秒"
 }

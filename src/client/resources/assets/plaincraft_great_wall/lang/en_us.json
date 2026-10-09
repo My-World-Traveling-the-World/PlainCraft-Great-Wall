@@ -11,7 +11,10 @@
   "option.plaincraft_great_wall.bodyHint2": "Applies to newly created worlds.",
   "text.plaincraft_great_wall.configButton": "Great Wall config",
   "plaincraft.great_wall.loading_progress.title": "Great Wall prewarm",
-  "plaincraft.great_wall.loading_progress.searching": "Choosing the root position...",
-  "plaincraft.great_wall.loading_progress.summary": "%s/%s segments (%s%%)",
-  "plaincraft.great_wall.loading_progress.detail": "%s lanes   %ss elapsed"
+  "plaincraft.great_wall.loading_progress.searching": "1. Choosing the root...",
+  "plaincraft.great_wall.loading_progress.searching_n": "1. Choosing the root %s/%s (%s%%)",
+  "plaincraft.great_wall.loading_progress.searching_done": "1. Root chosen",
+  "plaincraft.great_wall.loading_progress.segments_pending": "2. Prewarm (waiting for the root)",
+  "plaincraft.great_wall.loading_progress.summary": "2. Prewarm %s/%s segments (%s%%)",
+  "plaincraft.great_wall.loading_progress.detail": "%s lanes   overall %s%%   %ss elapsed"
 }

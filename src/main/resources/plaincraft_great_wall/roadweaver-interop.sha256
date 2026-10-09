@@ -64,4 +64,11 @@
 # road side's wait explicitly pumps server.pollTask() plus every level's
 # chunkSource().pollTask(). The four interop types are re-checked a fifth time and
 # are unchanged.
-781a7613482024e4b8880848bbf6d5c9d1207dc088e5f30cec0cb317d4a374fc
+#
+# 2026-10-09 (sixth build, plan B): blocking the server thread at all is wrong. The
+# road side no longer blocks on the wall; the prepareLevels mixin only marks a gate
+# and returns, leaving the server thread free to tick so the wall's structure screen
+# can run chunk requests, and a server-tick hook runs the real begin once the wall
+# reports done. The wall's chunk work reverts to its original world-local executor.
+# The four interop types are re-checked a sixth time and are unchanged.
+b3f603f4ee006808ecc046d76fe536b31d610333d4898977df6f938cf490c7ed

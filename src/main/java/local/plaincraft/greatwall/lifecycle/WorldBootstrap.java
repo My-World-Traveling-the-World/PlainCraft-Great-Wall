@@ -479,12 +479,12 @@ public final class WorldBootstrap implements AutoCloseable {
             if (state.containsKey("closed") || state.containsKey("failed")) return;
             if (error != null) { fail(error); return; }
             progress.put("root", batch.progress());
-            // Logged only when the candidate advances, and never more than the finite
-            // candidate set. A single column sampling takes many batches; per-batch logging
-            // flooded a session with a 134 MB log and over a million lines while a column
-            // was being sampled. The candidate index is the one monotonically-advancing
-            // signal, and there are at most 144 of them, so this is a hard bound.
+            // Publish the candidate index to the loading card, so the root search shows a
+            // moving number rather than an indeterminate "searching" that reads as frozen.
             var now = batch.progress();
+            PrewarmProgress.setRootProgress(now.candidate(), 144);
+            // Logged only when the candidate advances, and never more than the finite
+            // candidate set (at most 144 of them).
             long lastCandidate = lastLoggedCandidate.get();
             if (now.candidate() != lastCandidate && now.candidate() < 200) {
                 lastLoggedCandidate.set(now.candidate());
