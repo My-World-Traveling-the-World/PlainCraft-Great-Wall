@@ -12,3 +12,9 @@ logs/
 # for S2; regenerate it from the roadweaver checkout, see gradle/README-local-inputs.md.
 libs/
 
+# Test byproduct. GreatWallConfig.file() falls back to Path.of("config", ...) when
+# FabricLoader.getConfigDir() throws, which is what happens in a bare JUnit JVM. Any
+# test that reads or writes the config therefore creates this inside the project root,
+# and it reappears on every test run - so it is ignored rather than committed.
+config/
+
