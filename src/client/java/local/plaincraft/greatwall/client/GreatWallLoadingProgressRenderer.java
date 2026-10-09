@@ -33,7 +33,11 @@ public final class GreatWallLoadingProgressRenderer {
 
     public static void render(GuiGraphics graphics) {
         PrewarmProgress.Snapshot snapshot = PrewarmProgress.snapshot();
-        if (!snapshot.active() || snapshot.total() <= 0) return;
+        // The root search has no segment count yet (total == 0), so it must still show:
+        // it is the wall's longest visible phase and hiding it made the loading screen look
+        // frozen. Only skip when nothing is active at all - a zero total while active means
+        // "still choosing the root", not "nothing to show".
+        if (!snapshot.active()) return;
 
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft == null) return;
