@@ -71,4 +71,12 @@
 # can run chunk requests, and a server-tick hook runs the real begin once the wall
 # reports done. The wall's chunk work reverts to its original world-local executor.
 # The four interop types are re-checked a sixth time and are unchanged.
-b3f603f4ee006808ecc046d76fe536b31d610333d4898977df6f938cf490c7ed
+#
+# 2026-10-09 (seventh build): the non-blocking gate let the player enter before the
+# wall finished, because prepareLevels returned early. Restored the blocking wait, but
+# it pumps BOTH event loops - the global server queue and every level's chunk queue -
+# so the wall's chunk requests (which must run on the server thread, and are posted to
+# the world-local chunk executor) keep making progress while the road side blocks. The
+# wall's chunk work stays on its world-local executor. The four interop types are
+# re-checked a seventh time and are unchanged.
+4848435a8c6e13cc99e999951d24897aa3597eb7cfacb71f73ab97f69486cf2e
