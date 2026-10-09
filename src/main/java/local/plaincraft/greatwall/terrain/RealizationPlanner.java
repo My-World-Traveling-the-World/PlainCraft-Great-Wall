@@ -28,6 +28,23 @@ public final class RealizationPlanner {
     private final Map<SiteKind,ComponentTemplate> templates;
     private final WorldRecipe recipe;
     private final local.plaincraft.greatwall.decay.BiomePaletteIndex biomeIndex;
+
+    /**
+     * Set once the root fort has been reported as unrealizable.
+     *
+     * <p>Static because a planner is constructed per cell and the condition belongs to
+     * the run, not to a cell; every planner in a session must observe the same answer.
+     * Cleared at the start of each run so a fresh world is not marked by a previous one.
+     */
+    private static final java.util.concurrent.atomic.AtomicBoolean ROOT_DEGRADED =
+            new java.util.concurrent.atomic.AtomicBoolean();
+
+    /** True when the root fort was skipped this run; diagnostics read it. */
+    public static boolean rootDegraded() { return ROOT_DEGRADED.get(); }
+
+    /** Clears the degraded flag so a new run starts clean. */
+    public static void resetRootDegraded() { ROOT_DEGRADED.set(false); }
+
     public RealizationPlanner(SurfaceProbe probe,Map<SiteKind,ComponentTemplate> templates){this(null,probe,templates);}
     public RealizationPlanner(WorldRecipe recipe,SurfaceProbe probe,Map<SiteKind,ComponentTemplate> templates){
         this(recipe,probe,null,templates);
@@ -147,8 +164,25 @@ public final class RealizationPlanner {
                     field.sample(site.globalSQ8(),PaletteFamily.STONE,List.of(site.globalSQ8())),List.of(),bounds,supported),input);
             if(component==null||component.voxels().isEmpty()){
                 occupied.add(replacement);
-                if(site.id().kind()==SiteKind.FORT&&site.id().ordinal()==0)throw new WallFailure(FailureCode.ROOT_NOT_FOUND,"fort0 realization failed");
-                breaks.add(new BreakInterval(new ArcInterval(Math.max(0,site.globalSQ8()-extent-8L*256),site.globalSQ8()+extent+8L*256),BreakReason.CONFLICT,BreakScope.REALIZED));
+                // fort0 is the wall's anchor, so its failure used to end the session. That
+                // made a single unsuitable entrance - terrain that passes the footprint and
+                // axis screens but cannot carry a level ground road - cost the entire run,
+                // including the ~22 minutes of prewarm that preceded it, and the same cost
+                // again on every retry.
+                //
+                // The wall does not depend on fort0 existing: every other component is
+                // placed from the axis and its own station, and fort0 is one site among
+                // many. Recording it as a realized break leaves the rest of the wall intact
+                // and reports the gap, which is strictly more useful than no wall at all.
+                if(site.id().kind()==SiteKind.FORT&&site.id().ordinal()==0){
+                    breaks.add(new BreakInterval(new ArcInterval(Math.max(0,site.globalSQ8()-extent-8L*256),
+                            site.globalSQ8()+extent+8L*256),BreakReason.CONFLICT,BreakScope.REALIZED));
+                    ROOT_DEGRADED.set(true);                    local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                            "[GreatWall:S1C] FORT0_DEGRADED site={} s={} reason=realization-failed; "
+                                    + "the wall continues without its root fort",site.id(),site.globalSQ8());
+                } else {
+                    breaks.add(new BreakInterval(new ArcInterval(Math.max(0,site.globalSQ8()-extent-8L*256),site.globalSQ8()+extent+8L*256),BreakReason.CONFLICT,BreakScope.REALIZED));
+                }
             }else {
                 if(site.id().kind()==SiteKind.GATE) {
                     gateEndPlanes.add(site.frame());gateWalkIntervals.add(replacement);

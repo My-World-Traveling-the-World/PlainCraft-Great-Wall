@@ -275,12 +275,50 @@ public final class WorldBootstrap implements AutoCloseable {
                         // Root search always runs on lane 0 and stays serial; the remaining lanes
                         // only widen route/geometry parallelism once planning begins.
                         int count = local.plaincraft.greatwall.terrain.LanePolicy.resolve().startupLaneCount();
-                        var built = new java.util.ArrayList<OracleLane>(count);
+                        // Constructed concurrently rather than in a loop.
+                        //
+                        // Each lane builds its own terrain oracle in its constructor, and a
+                        // measured session spent about 232 seconds of its prewarm doing that
+                        // for sixteen lanes one after another. The constructors are independent
+                        // - different index, same immutable inputs - so the work parallelises
+                        // directly, and the list is rebuilt in index order afterwards so lane 0
+                        // is still the root-search lane.
+                        var built = new OracleLane[count];
+                        var failed = new java.util.concurrent.atomic.AtomicReference<Throwable>();
+                        var threads = new java.util.ArrayList<Thread>(count);
                         for (int index = 0; index < count; index++) {
-                            built.add(new OracleLane(authorization.creation().instance(), index,
-                                    inputs.terrainHash(), inputs.factory()));
+                            int laneIndex = index;
+                            var thread = new Thread(() -> {
+                                try {
+                                    built[laneIndex] = new OracleLane(authorization.creation().instance(),
+                                            laneIndex, inputs.terrainHash(), inputs.factory());
+                                } catch (Throwable failure) {
+                                    failed.compareAndSet(null, failure);
+                                }
+                            }, "pgw-lane-init-" + index);
+                            thread.setDaemon(true);
+                            threads.add(thread);
+                            thread.start();
                         }
-                        return List.copyOf(built);
+                        for (var thread : threads) {
+                            try {
+                                thread.join();
+                            } catch (InterruptedException interrupted) {
+                                Thread.currentThread().interrupt();
+                                throw new IllegalStateException("lane initialization was interrupted", interrupted);
+                            }
+                        }
+                        var failure = failed.get();
+                        if (failure != null) {
+                            // Close whatever did start so a partial group cannot leak oracles.
+                            for (var lane : built) {
+                                if (lane != null) {
+                                    try { lane.close(); } catch (RuntimeException ignoredClose) { /* best effort */ }
+                                }
+                            }
+                            throw new IllegalStateException("lane initialization failed", failure);
+                        }
+                        return List.copyOf(java.util.Arrays.asList(built));
                     });
                     active();
                     if (authorization.saved().isPresent()) {
@@ -289,8 +327,26 @@ public final class WorldBootstrap implements AutoCloseable {
                         publish(recipe);
                     } else {
                         if(server!=null&&inputs.structures()==null)throw new IllegalStateException("native bootstrap requires a structure screen");
-                        var search = new RootSearch(spawn.get("chosen"), inputs.bounds(), earlyDomain.snapshot(), inputs.foundation(),inputs.structures()!=null, inputs.sanctuaryAvoidance());
-                        advance(search, lanes.getFirst(), authorization.creation(), inputs);
+                        // A world that has already been searched keeps its axis on disk.
+                        // Reusing it skips the whole search: a measured session spent about
+                        // thirteen of its twenty-two prewarm minutes here, and a session that
+                        // failed later in construction paid that cost again on every retry.
+                        var cachedAxis = readCachedAxis(authorization.creation(), inputs);
+                        if (cachedAxis.isPresent()) {
+                            rootCacheHits.incrementAndGet();
+                            var cachedSelection = new RootSearch.Selection(
+                                    RootSearchCache.axisOf(cachedAxis.get()),
+                                    cachedAxis.get().radiusIndex(), cachedAxis.get().angleIndex(),
+                                    cachedAxis.get().axisIndex(), 0L, 0, 0L, 0L);
+                            GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_CACHE_HIT axis={} radiusIndex={} "
+                                            + "angleIndex={} axisIndex={}",
+                                    cachedSelection.axis(), cachedSelection.radiusIndex(),
+                                    cachedSelection.angleIndex(), cachedSelection.axisIndex());
+                            publishRecipeFor(cachedSelection, authorization.creation(), inputs);
+                        } else {
+                            var search = new RootSearch(spawn.get("chosen"), inputs.bounds(), earlyDomain.snapshot(), inputs.foundation(),inputs.structures()!=null, inputs.sanctuaryAvoidance());
+                            advance(search, lanes.getFirst(), authorization.creation(), inputs);
+                        }
                     }
                 } catch (Throwable failure) { fail(failure); }
             }, rootPump));
@@ -371,6 +427,27 @@ public final class WorldBootstrap implements AutoCloseable {
     private final java.util.concurrent.atomic.AtomicLong prefetchBatches = new java.util.concurrent.atomic.AtomicLong();
     private final java.util.concurrent.atomic.AtomicLong prefetchLaneRefusals = new java.util.concurrent.atomic.AtomicLong();
     private volatile int prefetchLastSize;
+    /** Set when a cached root axis was reused, so a session that skipped the search says so. */
+    private final java.util.concurrent.atomic.AtomicLong rootCacheHits = new java.util.concurrent.atomic.AtomicLong();
+
+    /**
+     * The save directory, or null when this bootstrap has no server (tests and the
+     * analytic fixtures). A null result disables the root-search cache rather than
+     * failing, because the cache is an optimisation and must never gate a session.
+     */
+    private java.nio.file.Path worldDirectory() {
+        if (server == null) return null;
+        try {
+            return server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT);
+        } catch (RuntimeException unavailable) {
+            return null;
+        }
+    }
+
+    /** Root-search cache activity, for diagnostics. */
+    public Map<String, Long> rootCacheDiagnostics() {
+        return Map.of("root-cache-hits", rootCacheHits.get());
+    }
 
     /** Prefetch activity, for diagnostics and for measuring the parallel speedup. */
     public Map<String, Long> prefetchDiagnostics() {
@@ -415,18 +492,74 @@ public final class WorldBootstrap implements AutoCloseable {
             }
             if (batch.selected().isEmpty()) { advance(search, lane, creation, inputs); return; }
             var selection = batch.selected().get();
-            var provisional = new WorldRecipe(creation.instance(), "0".repeat(64), seed, "minecraft:overworld",
-                    spawn.get("chosen"), selection.axis(), inputs.bounds(), defaultConfig(), inputs.terrainHash(),
-                    inputs.paletteHash(), inputs.templatesHash(), "0".repeat(64));
-            String hash = DeterministicHash.sha256(CanonicalCodec.recipe(provisional));
-            var recipe = new WorldRecipe(creation.instance(), hash, seed, provisional.dimension(), provisional.frozenSpawn(),
-                    provisional.axis(), provisional.bounds(), provisional.config(), inputs.terrainHash(),
-                    inputs.paletteHash(), inputs.templatesHash(), hash);
-            io(() -> { active(); manifest.freeze(recipe); return recipe; }).whenComplete((saved, failure) -> {
-                if (failure != null) fail(failure);
-                else if (!state.containsKey("closed") && !state.containsKey("failed")) publish(saved);
-            });
+            writeCachedAxis(creation, inputs, selection);
+            publishRecipeFor(selection, creation, inputs);
         }, rootPump);
+    }
+
+    /**
+     * Turns a selection into a frozen recipe and publishes it.
+     *
+     * <p>Shared by the searched and the cached paths so a cached axis produces exactly
+     * the same recipe hash as a searched one — the recipe is derived from the axis, so
+     * there is no second code path that could disagree.
+     */
+    private void publishRecipeFor(RootSearch.Selection selection, WorldManifest.Creation creation, Frozen inputs) {
+        var provisional = new WorldRecipe(creation.instance(), "0".repeat(64), seed, "minecraft:overworld",
+                spawn.get("chosen"), selection.axis(), inputs.bounds(), defaultConfig(), inputs.terrainHash(),
+                inputs.paletteHash(), inputs.templatesHash(), "0".repeat(64));
+        String hash = DeterministicHash.sha256(CanonicalCodec.recipe(provisional));
+        var recipe = new WorldRecipe(creation.instance(), hash, seed, provisional.dimension(), provisional.frozenSpawn(),
+                provisional.axis(), provisional.bounds(), provisional.config(), inputs.terrainHash(),
+                inputs.paletteHash(), inputs.templatesHash(), hash);
+        io(() -> { active(); manifest.freeze(recipe); return recipe; }).whenComplete((saved, failure) -> {
+            if (failure != null) fail(failure);
+            else if (!state.containsKey("closed") && !state.containsKey("failed")) publish(saved);
+        });
+    }
+
+    /**
+     * Reads the cached axis when it still matches this world's inputs.
+     *
+     * <p>Returns empty for every failure mode — absent file, unreadable file, identity
+     * mismatch — so the caller simply searches instead. The cache shortens a launch; it
+     * never decides whether one happens.
+     */
+    private Optional<RootSearchCache.Entry> readCachedAxis(WorldManifest.Creation creation, Frozen inputs) {
+        var directory = worldDirectory();
+        if (directory == null) return Optional.empty();
+        var chosen = spawn.get("chosen");
+        if (chosen == null) return Optional.empty();
+        try {
+            var identity = RootSearchCache.identityOf(seed, "minecraft:overworld", chosen,
+                    inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash());
+            var entry = RootSearchCache.read(directory, identity);
+            if (entry.isPresent()) return entry;
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_CACHE_MISS searching; no usable entry at {}",
+                    RootSearchCache.file(directory));
+            return Optional.empty();
+        } catch (RuntimeException unusable) {
+            return Optional.empty();
+        }
+    }
+
+    /** Records the searched axis for the next launch of this world. */
+    private void writeCachedAxis(WorldManifest.Creation creation, Frozen inputs, RootSearch.Selection selection) {
+        var directory = worldDirectory();
+        if (directory == null) return;
+        var chosen = spawn.get("chosen");
+        if (chosen == null) return;
+        try {
+            var identity = RootSearchCache.identityOf(seed, "minecraft:overworld", chosen,
+                    inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash());
+            RootSearchCache.write(directory, RootSearchCache.of(identity, selection.axis(),
+                    selection.radiusIndex(), selection.angleIndex(), selection.axisIndex()));
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_CACHE_STORED axis={} radiusIndex={} angleIndex={} "
+                            + "axisIndex={}",
+                    selection.axis(), selection.radiusIndex(), selection.angleIndex(), selection.axisIndex());
+        } catch (RuntimeException unwritable) {
+            // A cache write failure costs time on the next launch, never correctness now.
+        }
     }
 
     private void validateSaved(WorldRecipe recipe, Frozen inputs) {

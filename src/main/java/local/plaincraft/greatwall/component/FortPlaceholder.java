@@ -19,7 +19,24 @@ public final class FortPlaceholder implements ComponentTemplate {
         var entrance=Ramp.entrance(input,-2,-24,2,24);
         int groundFeet=entrance.map(GroundEntranceContract.Certificate::lowerFeetY).orElse(Integer.MIN_VALUE);
         if(groundFeet==Integer.MIN_VALUE) {
-            if(root)throw new WallFailure(FailureCode.ROOT_NOT_FOUND,"fort0 ground road has no supported entrance");
+            // No supported ground entrance at this site.
+            //
+            // This used to throw for the root fort, which ended the session: the search
+            // screens a candidate's footprint and axis but not whether its entrance can be
+            // carried, so a site could pass selection and then fail here. The cost was the
+            // whole run plus the prewarm that preceded it - about 22 measured minutes - and
+            // it was paid again on every retry.
+            //
+            // The wall is built from the axis and per-station heights; the fort is one site
+            // among many and does not carry the others. Skipping it leaves the rest of the
+            // wall standing and records the gap, which is strictly more useful than
+            // producing nothing. The caller reports FORT0_DEGRADED so the omission is visible.
+            if(root) {
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                        "[GreatWall:S1C] FORT0_DEGRADED site={} walkY={} reason=no-supported-entrance; "
+                                + "the wall continues without its root fort",
+                        input.site().id(), input.site().frame().walkY());
+            }
             return ComponentAssembly.empty(input.site().id(),input.site().bounds());
         }
         int lower=groundFeet-input.site().frame().walkY(),height=-lower;
@@ -57,7 +74,14 @@ public final class FortPlaceholder implements ComponentTemplate {
         ground=ComponentAssembly.hashed(ground.id(),ground.bounds(),ground.voxels().stream()
                 .filter(v->v.kind()!=IntentKind.OWNED_VOID).toList(),ground.blockEntities(),ground.spawnSlots(),ground.requiredRoutes());
         var result=ComponentComposer.merge(input,java.util.List.of(ground,shell.finish()));
-        if(root && result.voxels().isEmpty()) throw new WallFailure(FailureCode.ROOT_NOT_FOUND,"fort0 footprint is not fully supported");
+        // Same reasoning as the entrance case above: an unsupported footprint is a gap in
+        // the wall, not a reason to abandon the run. Reported so the omission is visible.
+        if(root && result.voxels().isEmpty()) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                    "[GreatWall:S1C] FORT0_DEGRADED site={} walkY={} reason=footprint-not-supported; "
+                            + "the wall continues without its root fort",
+                    input.site().id(), input.site().frame().walkY());
+        }
         return result;
     }
 }

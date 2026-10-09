@@ -65,7 +65,14 @@ public final class Fort implements ComponentTemplate {
         var entrance = Ramp.entrance(input, -2, -HALF, 2, HALF);
         int groundFeet = entrance.map(GroundEntranceContract.Certificate::lowerFeetY).orElse(Integer.MIN_VALUE);
         if (groundFeet == Integer.MIN_VALUE) {
-            if (root) throw new WallFailure(FailureCode.ROOT_NOT_FOUND, "fort0 ground road has no supported entrance");
+            // See FortPlaceholder: an unrealizable root fort is a gap in the wall, not a
+            // reason to abandon the run and its prewarm.
+            if (root) {
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                        "[GreatWall:S1C] FORT0_DEGRADED site={} walkY={} reason=no-supported-entrance "
+                                + "(full template); the wall continues without its root fort",
+                        input.site().id(), input.site().frame().walkY());
+            }
             return ComponentAssembly.empty(input.site().id(), input.site().bounds());
         }
         int walkY = input.site().frame().walkY();
@@ -177,7 +184,11 @@ public final class Fort implements ComponentTemplate {
         var merged = ComponentAssembly.hashed(result.id(), result.bounds(), result.voxels(), entities,
                 spawns, result.requiredRoutes());
         if (root && merged.voxels().isEmpty()) {
-            throw new WallFailure(FailureCode.ROOT_NOT_FOUND, "fort0 footprint is not fully supported");
+            // Same reasoning as the entrance case above.
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                    "[GreatWall:S1C] FORT0_DEGRADED site={} walkY={} reason=footprint-not-supported "
+                            + "(full template); the wall continues without its root fort",
+                    input.site().id(), walkY);
         }
         return merged;
     }

@@ -35,6 +35,27 @@ public final class RootSearch {
      * and the artifact templates now agree on the same contract.
      */
     private static final int MAX_UNSUPPORTED_FOOTPRINT_CELLS = 0;
+    /**
+     * Walk height assumed above ring-centre ground when pre-screening an entrance.
+     *
+     * <p>A pre-screen only. Construction derives its own walkY from the site's station,
+     * and the two are not equal, so this value can admit an entrance the build will
+     * reject. That is tolerable because the build no longer aborts on it - fort0 degrades
+     * to a recorded gap - and because the offset is deliberately left at its historical
+     * value until a session measures the real one. Guessing a replacement would move the
+     * disagreement rather than remove it.
+     *
+     * @see #PRESCREEN_OFFSET_DIAGNOSTIC
+     */
+    private static final int PRESCREEN_WALK_ABOVE_GROUND = 20;
+    /**
+     * Logs the pre-screen's walk height against the ground it was measured from.
+     *
+     * <p>Off by default. Enable with {@code -Dgreatwall.root.prescreenDiagnostics=true}
+     * to capture the numbers that would let {@link #PRESCREEN_WALK_ABOVE_GROUND} be
+     * replaced with the offset construction actually uses.
+     */
+    private static final String PRESCREEN_OFFSET_DIAGNOSTIC = "greatwall.root.prescreenDiagnostics";
     public record Selection(Axis axis, int radiusIndex, int angleIndex, int axisIndex, long ridgeScore,
             int columns, long maxBatchNanos, long over40msBatches) {}
     public record Progress(int phase, int candidate, int shortlisted, int footprintColumn,
@@ -284,8 +305,25 @@ public final class RootSearch {
         audit.add(new Audit("axis", current.origin(), current.radius(), current.angle(), axisIndex, wet,
                 invalidSamples, 0, min, max, !invalid && wet == 0 ? "DRY_AXIS_ELIGIBLE" : "REJECTED"));
         if (!invalid && wet == 0) {
+            // The entrance frame's walk height, as a pre-screen only.
+            //
+            // Construction derives a site's walkY from its station - a terrain-contract
+            // target clamped into an interval - which is not the same quantity as the ring
+            // centre's ground height plus a constant. The two therefore disagree slightly,
+            // and because GroundEntranceContract tests groundTopY < walkY, a pre-screen
+            // walkY that is too high admits entrances construction then rejects. That is
+            // measured: ENTRY_ELIGIBLE:lower=117 at selection, then "fort0 ground road has
+            // no supported entrance" at build time.
+            //
+            // The exact relationship is not yet measured, so this deliberately keeps the
+            // historical offset rather than guessing a replacement - a wrong constant would
+            // move the disagreement instead of removing it, which is how the previous
+            // attempt at this failed. What makes the mismatch harmless is that the build no
+            // longer aborts on it: fort0 degrades to a recorded gap and the wall is built.
+            // FORT0_ENTRANCE_PRESCREEN below records both heights so the real offset can be
+            // read off a session and this constant replaced with evidence.
             entranceFrame=new Frame(new Point2q((long)axis.origin().x()*256,(long)axis.origin().z()*256),
-                    axis.exQ30(),axis.ezQ30(),Math.addExact(axis.origin().y(),20),false);
+                    axis.exQ30(),axis.ezQ30(),Math.addExact(axis.origin().y(),PRESCREEN_WALK_ABOVE_GROUND),false);
             entrancePositions=GroundEntranceContract.columns(entranceFrame,GroundEntranceContract.Corridor.fort());
             entranceSupports.clear();entranceColumns.clear();entranceIndex=0;
             entranceMin=Integer.MAX_VALUE;entranceMax=Integer.MIN_VALUE;phase=5;return;
@@ -318,6 +356,18 @@ public final class RootSearch {
     private void finishEntrance(Candidate current,OptionalInt lower){
         audit.add(new Audit("entrance-rotated-reference",current.origin(),current.radius(),current.angle(),axisIndex,
                 0,0,0,entranceMin,entranceMax,lower.isPresent()?"ENTRY_ELIGIBLE:lower="+lower.getAsInt():"REJECTED"));
+        if(Boolean.getBoolean(PRESCREEN_OFFSET_DIAGNOSTIC)){
+            // The two heights this pre-screen has to approximate: what it assumed for the
+            // walkway, and the ground it actually measured. A session with the property set
+            // shows the real gap between them, which is what a corrected offset needs.
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:S1C] FORT0_ENTRANCE_PRESCREEN axis={} origin={} assumedWalkY={} groundMin={} "
+                            + "groundMax={} offset={} lower={} accepted={}",
+                    axis,current.origin(),entranceFrame==null?null:entranceFrame.walkY(),
+                    entranceMin==Integer.MAX_VALUE?null:entranceMin,
+                    entranceMax==Integer.MIN_VALUE?null:entranceMax,PRESCREEN_WALK_ABOVE_GROUND,
+                    lower.isPresent()?lower.getAsInt():null,lower.isPresent());
+        }
         if(lower.isPresent()&&(best==null||axisScore>best.ridgeScore()))
             best=new Selection(axis,current.radius(),current.angle(),axisIndex,axisScore,0,0,0);
         entranceSupports.clear();entranceColumns.clear();entrancePositions=List.of();
