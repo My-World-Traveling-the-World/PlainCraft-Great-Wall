@@ -512,6 +512,10 @@ final class ProductionSession implements AutoCloseable {
         state.put("failed", true);
         // A failed assembly must release waiters too, not leave them pending on a dead session.
         failGameplayWaiters(error);
+        // And any startup peer waiting for this prewarm. Without this the road mod would sit
+        // on its gate until its own timeout, thirty minutes later, on a run that already
+        // failed - turning a fast failure into a hang at the loading screen.
+        PrewarmProgress.finish(false);
         trace.record("PRODUCTION_FAILED", "*", 0, 0, "required-plan", "none");
         GreatWallMod.LOGGER.error("[GreatWall:S1C] FIXTURE_FAILED production remains OFF", error);
         installed.completeExceptionally(error);
@@ -577,6 +581,9 @@ final class ProductionSession implements AutoCloseable {
         // Release anyone waiting on gameplay assembly rather than letting them block forever on a
         // session that will never finish assembling.
         failGameplayWaiters(new WallFailure(FailureCode.CLOSED, "production session closed before gameplay assembly"));
+        // A closed session will never finish its prewarm either, so a startup peer waiting on
+        // it must be released now rather than at its own timeout.
+        PrewarmProgress.finish(false);
         for (var key : List.copyOf(featureSlots.keySet())) featureSlots.computeIfPresent(key, (position, slot) -> {
             slot.close(); admissions.compute("features", (name, count) -> count - 1); return null;
         });

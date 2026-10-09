@@ -24,12 +24,21 @@
 #
 # 2026-10-09: 0.8.405-audit-io-degradation-and-counter-cleanup ->
 # 0.8.407-wall-prewarm-gate. The change is additive to startup ordering only:
-# InitialGenManager calls a new WallPrewarmBridge between finishing the rivers
-# and beginning road generation, so the wall's prewarm no longer runs alongside
-# road generation. ABI re-reviewed before switching, as the header requires, and
-# all four interop types this adapter touches are again byte-identical -
-# EndpointHeightAgreementApi 1056 B, PlanningInteropRegistry 12395 B,
-# WallInteropTypes 1168 B, RoadNetworkApi 20604 B in both builds. The new bridge
-# lives in net.shiroha233.roadweaver.generation and reaches the wall by
-# reflection, so it adds no type this adapter depends on.
-1832df0ee01e5b225b4a2d201c6c3b9d2a66f6a32e96e70daf250c6d369295fc
+# InitialGenManager calls a new WallPrewarmBridge before any road work, and the
+# wall's prewarm is now signalled by the river patch the moment the rivers are
+# built, so the wall no longer runs alongside road generation. ABI re-reviewed
+# before switching, as the header requires, and all four interop types this
+# adapter touches are again byte-identical - EndpointHeightAgreementApi 1056 B,
+# PlanningInteropRegistry 12395 B, WallInteropTypes 1168 B, RoadNetworkApi
+# 20604 B in both builds. The new bridge lives in
+# net.shiroha233.roadweaver.generation and reaches the wall by reflection, so it
+# adds no type this adapter depends on.
+#
+# 2026-10-09 (rebuilt): same version, second build. The gate moved from
+# blockUntilDone to the top of begin(), and the wait now uses
+# MinecraftServer.managedBlock so the server thread keeps draining its queue
+# while it waits - without that the wall, whose prewarm completes through that
+# same queue, could never finish and the two would wait on each other. Only
+# InitialGenManager and WallPrewarmBridge changed; the four interop types above
+# were re-checked and are unchanged again.
+492a2232f7d9671239110dbdc5afb2d5eb0d44b4cd1aec52940982dbcbf38f08

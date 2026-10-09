@@ -363,9 +363,17 @@ public final class WorldServices {
      * @return true if the prewarm settled, false if the wait timed out or was interrupted
      */
     public static boolean awaitPrewarm(long timeout, java.util.concurrent.TimeUnit unit) {
-        // No session means no wall generation in this world, which is a normal state:
+        // No session at all means no wall generation in this world, which is a normal state:
         // report ready so the caller is never delayed by a stage that will not run.
         if (SESSIONS.isEmpty()) return true;
+        // A session without a production fixture - the S0 probe, or a client-only run - has no
+        // prewarm to wait for either. Returning ready here matters: otherwise a peer would sit
+        // on its gate for the full timeout on a world where the wall is deliberately inactive.
+        boolean awaiting = false;
+        for (var services : SESSIONS.values()) {
+            if (services.productionFixture()) { awaiting = true; break; }
+        }
+        if (!awaiting) return true;
         return PrewarmProgress.awaitCompletion(timeout, unit);
     }
 
