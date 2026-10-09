@@ -304,9 +304,16 @@ public final class PlannerScheduler implements AutoCloseable {
                         state.put(error == null ? "bulk-ready" : "bulk-failed", 1L);
                         state.put("prewarm-total-millis", totalMs);
                         if (error == null) {
+                            // The concurrency numbers are included so one session answers whether
+                            // the hardware-derived limits actually took effect. Comparing this
+                            // line against the previous 22.2-minute run is the point of the
+                            // change, and without the limits recorded here a slower run would
+                            // not say whether the scheduler or the terrain was responsible.
                             GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_COMPLETE segments={} totalMs={} "
-                                            + "avgMsPerSegment={}", prewarm.size(), totalMs,
-                                    prewarm.isEmpty() ? 0L : totalMs / prewarm.size());
+                                            + "avgMsPerSegment={} geometryInflight={} lanes={}",
+                                    prewarm.size(), totalMs,
+                                    prewarm.isEmpty() ? 0L : totalMs / prewarm.size(),
+                                    recipe.config().maxGeometryInflight(), laneState.size());
                         } else {
                             GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_FAILED segments={} totalMs={} reason={}",
                                     prewarm.size(), totalMs, error.toString());

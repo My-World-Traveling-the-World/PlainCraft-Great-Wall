@@ -429,6 +429,20 @@ final class ProductionSession implements AutoCloseable {
         if (state.containsKey("server-started") && diagnostics.containsKey("bulk-ready")
                 && state.putIfAbsent("active", true) == null) {
             trace.record("PRODUCTION_ACTIVE", snapshot.recipe().dimension(), 0, 0, "server-started-and-prewarm-ready", "none");
+            // What the run actually produced, in one line.
+            //
+            // The question this project keeps having to answer is "is the wall there?", and
+            // until now the only evidence was a dozen counters scattered across diagnostics
+            // JSON that had to be read out of the save after the fact. In particular a run
+            // where the root fort degraded - and therefore has a gap where the anchor should
+            // be - looked no different at a glance from a complete one.
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] PRODUCTION_SUMMARY wall={} axis={} rootDegraded={} "
+                            + "wallLengthBlocks={} prewarmSegments={} counts={}",
+                    snapshot.recipe().wallId(), snapshot.recipe().axis(),
+                    local.plaincraft.greatwall.terrain.RealizationPlanner.rootDegraded(),
+                    local.plaincraft.greatwall.config.GreatWallConfig.get().wallLengthBlocks(),
+                    local.plaincraft.greatwall.config.GreatWallConfig.get().prewarmSegmentsTarget(),
+                    summarizeForLog(diagnostics));
         }
         snapshot.planner().tick(new SliceBudget(4096, System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25)));
         var garrison = gameplay.get("garrison");
@@ -512,6 +526,27 @@ final class ProductionSession implements AutoCloseable {
     }
     boolean rejected() { return state.containsKey("failed"); }
     CompletableFuture<Void> drain() { return drained.copy(); }
+
+    /**
+     * The handful of planner counters that answer "did the wall get built".
+     *
+     * <p>Filtered rather than dumped. The full diagnostic map holds tens of per-lane and
+     * per-phase counters, which is right for the export and unreadable in a log line. These
+     * are the ones whose values change when something is actually wrong: how many stages ran,
+     * how many wrote, and whether the run failed.
+     */
+    private static String summarizeForLog(Map<String, Long> counts) {
+        var wanted = java.util.List.of("STAGE_ENTER", "STAGE_EXIT", "WRITE_LOCK_ACQUIRED",
+                "VEGETATION_SUPPRESSED", "TRACE_TRUNCATED", "PRODUCTION_FAILED",
+                "PRODUCTION_RIVERS_PREWARMED", "PRODUCTION_RIVERS_BULK");
+        var parts = new java.util.ArrayList<String>(wanted.size());
+        for (String name : wanted) {
+            Long value = counts.get(name);
+            if (value != null) parts.add(name + "=" + value);
+        }
+        return parts.isEmpty() ? "(none)" : String.join(" ", parts);
+    }
+
     Map<String, Object> diagnostics() {
         var result = new TreeMap<String, Object>();
         result.put("runtime", runtime); result.put("state", Map.copyOf(state)); result.put("failures", Map.copyOf(failures));

@@ -31,13 +31,32 @@ public final class FortPlaceholder implements ComponentTemplate {
             // among many and does not carry the others. Skipping it leaves the rest of the
             // wall standing and records the gap, which is strictly more useful than
             // producing nothing. The caller reports FORT0_DEGRADED so the omission is visible.
+            //
+            // The rejection reason is included because the contract returns empty for six
+            // distinct causes and the difference decides whether this is a bad site or a
+            // disagreement between the pre-screen and the build.
             if(root) {
                 local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
-                        "[GreatWall:S1C] FORT0_DEGRADED site={} walkY={} reason=no-supported-entrance; "
-                                + "the wall continues without its root fort",
-                        input.site().id(), input.site().frame().walkY());
+                        "[GreatWall:S1C] FORT0_DEGRADED site={} walkY={} reason=no-supported-entrance "
+                                + "contractRejection={} entranceSource={} supports={}",
+                        input.site().id(), input.site().frame().walkY(),
+                        GroundEntranceContract.lastRejectionReason(),
+                        input.entranceEvidence()==null?null:input.entranceEvidence().source(),
+                        input.supports().size());
             }
             return ComponentAssembly.empty(input.site().id(),input.site().bounds());
+        }
+        // Recorded on success as well as failure. The pre-screen and the build derive the
+        // walkway height differently, and a measured session had the pre-screen accept an
+        // entrance at one height that the build then rejected at another. Logging the height
+        // that worked is what makes it possible to reconcile the two with evidence instead
+        // of adjusting the pre-screen constant by guesswork.
+        if(root) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:S1C] FORT0_ENTRANCE_OK site={} walkY={} lowerFeetY={} entranceSource={} supports={}",
+                    input.site().id(), input.site().frame().walkY(), groundFeet,
+                    input.entranceEvidence()==null?null:input.entranceEvidence().source(),
+                    input.supports().size());
         }
         int lower=groundFeet-input.site().frame().walkY(),height=-lower;
         int stairStart=Math.max(-19,10-height),stairEnd=stairStart+height;

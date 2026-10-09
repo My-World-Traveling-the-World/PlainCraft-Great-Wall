@@ -98,19 +98,27 @@ public final class GroundEntranceContract {
     }
     private static Optional<Certificate> inspectAdmitted(Frame frame,Corridor corridor,
             Map<Point3i,ProbeResult> supports,Evidence evidence){
+        lastRejection.remove();
         var inside=new TreeMap<Point3i,Point3i>(ORDER);
         int lower=Integer.MIN_VALUE,w=frame.walkY(),g=Math.subtractExact(w,20);
         for(var p:columns(frame,corridor)){
             var local=Rasterizer.localCell(frame,p);
             if(!corridor.contains(local))continue;
             var probe=supports.get(p);
-            if(!valid(probe,w,g))return Optional.empty();
+            if(!valid(probe,w,g))return reject("column-invalid at "+p+" local="+local+" walkY="+w+" g="+g
+                    +" probe="+describe(probe));
             inside.put(p,local);lower=Math.max(lower,probe.groundTopY());
         }
         if(inside.isEmpty()||lower<Math.subtractExact(w,32)||lower>=w
-                ||lower<evidence.bounds().minY()||lower+2>evidence.bounds().maxYExclusive())return Optional.empty();
+                ||lower<evidence.bounds().minY()||lower+2>evidence.bounds().maxYExclusive()) {
+            return reject("lower-out-of-range inside="+inside.size()+" lower="
+                    +(inside.isEmpty()?null:lower)+" walkY="+w+" allowed=["
+                    +Math.subtractExact(w,32)+","+w+") evidenceBounds="+evidence.bounds());
+        }
         // The existing templates have a level entrance floor: natural peaks cannot be carved to fit it.
-        for(var p:inside.keySet())if(!clear(evidence,p,lower,lower+2))return Optional.empty();
+        for(var p:inside.keySet())if(!clear(evidence,p,lower,lower+2)) {
+            return reject("floor-blocked at "+p+" range=["+lower+","+(lower+2)+")");
+        }
         for(var face:corridor.exterior()){
             int declared=face==Face.MIN_Z||face==Face.MAX_Z?corridor.maxX()-corridor.minX():corridor.maxZ()-corridor.minZ();
             if(declared<corridor.width())continue;
@@ -137,7 +145,10 @@ public final class GroundEntranceContract {
                 var outsideOwners=new TreeMap<Point3i,Point3i>(ORDER);
                 boolean complete=true;
                 for(var p:expected)if(!match(p,lanes,outsideOwners,new HashSet<>())){complete=false;break;}
-                if(!complete)continue;
+                if(!complete) {
+                    return reject("lane-unmatched face="+face+" expected="+expected.size()
+                           +" matched="+lanes.size()+" corridor="+corridor);
+                }
                 var insideOrigins=new TreeMap<Point3i,Point3i>(ORDER);
                 outsideOwners.forEach((outside,insidePoint)->insideOrigins.put(insidePoint,outside));
                 var approaches=new ArrayList<List<Point3i>>();
@@ -145,18 +156,32 @@ public final class GroundEntranceContract {
                 var hashes=new TreeSet<String>();
                 for(var p:inside.keySet()){
                     var column=evidence.columns().get(new Point3i(p.x(),0,p.z()));
-                    if(column==null)return Optional.empty();hashes.add(p+":"+column.hash());
+                    if(column==null)return reject("evidence-column-missing (inside) at "+p
+                            +" source="+evidence.source());
+                    hashes.add(p+":"+column.hash());
                 }
                 for(var lane:approaches)for(var p:lane){
                     var column=evidence.columns().get(new Point3i(p.x(),0,p.z()));
-                    if(column==null)return Optional.empty();hashes.add(p+":"+column.hash());
+                    if(column==null)return reject("evidence-column-missing (lane) at "+p
+                            +" source="+evidence.source());
+                    hashes.add(p+":"+column.hash());
                 }
                 String hash=DeterministicHash.sha256((evidence.source()+"\n"+frame+"\n"+corridor+"\n"
                         +lower+"\n"+hashes+"\n"+approaches).getBytes(StandardCharsets.UTF_8));
                 return Optional.of(new Certificate(frame,lower,approaches,hash,evidence.source()));
             }
         }
-        return Optional.empty();
+        // Every declared face was either too narrow to carry the portal or had an empty
+        // expected set. Report the corridor so it is clear which faces were even considered.
+        return reject("no-exterior-face-qualified corridor="+corridor+" walkY="+w+" lower="
+                +((inside.isEmpty())?null:lower)+" inside="+inside.size());
+    }
+
+    /** Renders a probe for a rejection message without inventing values for a missing one. */
+    private static String describe(ProbeResult probe) {
+        if (probe == null) return "absent";
+        return probe.kind()+" groundTopY="+probe.groundTopY()+" drop="+probe.drop()
+                +" water="+(probe.waterTopY().isPresent()?probe.waterTopY().getAsInt():"none");
     }
     private static boolean match(Point3i inside,Map<Point3i,List<Point3i>> choices,
             Map<Point3i,Point3i> outsideOwners,Set<Point3i> seen){
@@ -169,6 +194,36 @@ public final class GroundEntranceContract {
         }
         return false;
     }
+
+    /**
+     * Why the last admission test on this thread returned empty.
+     *
+     * <h2>Why this exists</h2>
+     * {@code inspect} answers a single boolean-ish question and returns empty for six
+     * distinct reasons: a column with no support, a lower bound out of range, a blocked
+     * level floor, an incomplete portal, an unmatched lane, or missing evidence. When the
+     * root fort then reports "no supported entrance", the log says which sites failed but
+     * never which test rejected them - so every attempt to fix it has been guesswork, and
+     * a real session showed the pre-screen accepting an entrance the build then rejected
+     * with nothing recorded about the difference.
+     *
+     * <p>Thread-local rather than a field: admission runs on lane threads and on the pump,
+     * and a shared field would interleave two sites' reasons into one another. Callers read
+     * it immediately after the call that produced it, on the same thread.
+     */
+    private static final ThreadLocal<String> lastRejection = new ThreadLocal<>();
+
+    /** The reason the most recent admission test on this thread failed, or null if it did not. */
+    public static String lastRejectionReason() { return lastRejection.get(); }
+
+    /** Clears the recorded reason; call before a test whose outcome will be reported. */
+    public static void clearRejection() { lastRejection.remove(); }
+
+    private static Optional<Certificate> reject(String reason) {
+        lastRejection.set(reason);
+        return Optional.empty();
+    }
+
     private static boolean valid(ProbeResult p,int w,int g){
         return p!=null&&p.kind()==ProbeKind.SUPPORTED&&p.drop()>=0&&p.drop()<=12
                 &&p.groundTopY()>=g-12&&p.groundTopY()<w&&p.waterTopY().isEmpty();
