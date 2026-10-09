@@ -53,22 +53,12 @@ public final class GreatWallConfig {
     private static volatile GreatWallConfig instance;
 
     private long wallLengthBlocks = UNLIMITED_LENGTH;
-    private int prewarmSegments = DEFAULT_PREWARM_SEGMENTS;
-    private boolean prewarmAllWhenBounded = true;
 
     public long wallLengthBlocks() { return wallLengthBlocks; }
-    public int prewarmSegments() { return prewarmSegments; }
-    public boolean prewarmAllWhenBounded() { return prewarmAllWhenBounded; }
 
     public void setWallLengthBlocks(long value) {
         this.wallLengthBlocks = Math.max(0L, value);
     }
-
-    public void setPrewarmSegments(int value) {
-        this.prewarmSegments = Math.max(0, Math.min(4096, value));
-    }
-
-    public void setPrewarmAllWhenBounded(boolean value) { this.prewarmAllWhenBounded = value; }
 
     public boolean bounded() { return wallLengthBlocks > UNLIMITED_LENGTH; }
 
@@ -81,34 +71,35 @@ public final class GreatWallConfig {
     /**
      * Segments that must be ready before gameplay begins.
      *
-     * <p>An unbounded wall prewarms only the opening segments: asking for all of
-     * them would never terminate. A bounded wall at or below
-     * {@link #FULL_PREWARM_MAX_LENGTH} prewarms every segment it will ever build,
-     * which is the point of the setting; a longer bounded wall falls back to the
-     * opening segments for the same reason as the unbounded case.
+     * <h2>Derived, never entered</h2>
+     * This is a function of the wall's length alone. An earlier revision exposed it
+     * as a number the player typed, which let the two disagree — a length of 8189
+     * blocks with a prewarm count of 4 silently prewarmed only the first 4 of the 5
+     * segments the wall would build.
+     *
+     * <p>A bounded wall at or below {@link #FULL_PREWARM_MAX_LENGTH} is prewarmed in
+     * full: that is the whole point of setting a length, and it is achievable within
+     * the budget. Anything longer, including an unbounded wall, prewarms only the
+     * opening {@link #DEFAULT_PREWARM_SEGMENTS}: asking for all of it would never
+     * terminate.
      */
     public long prewarmSegmentsTarget() {
-        if (!bounded()) return Math.max(0, prewarmSegments);
+        if (!bounded()) return DEFAULT_PREWARM_SEGMENTS;
         long total = configuredSegments();
-        if (prewarmAllWhenBounded && wallLengthBlocks <= FULL_PREWARM_MAX_LENGTH) return total;
-        if (prewarmSegments <= 0) return total;
-        return Math.min(total, prewarmSegments);
+        if (wallLengthBlocks <= FULL_PREWARM_MAX_LENGTH) return total;
+        return Math.min(total, DEFAULT_PREWARM_SEGMENTS);
     }
 
     public GreatWallConfig copy() {
         var copy = new GreatWallConfig();
         copy.wallLengthBlocks = wallLengthBlocks;
-        copy.prewarmSegments = prewarmSegments;
-        copy.prewarmAllWhenBounded = prewarmAllWhenBounded;
         return copy;
     }
 
-    /** Never throws: an unusable value keeps its default. */
+    /** Applies another configuration's values onto this one. */
     public void applyFrom(GreatWallConfig other) {
         Objects.requireNonNull(other);
         setWallLengthBlocks(other.wallLengthBlocks);
-        setPrewarmSegments(other.prewarmSegments);
-        setPrewarmAllWhenBounded(other.prewarmAllWhenBounded);
     }
 
     public static GreatWallConfig get() {
@@ -151,14 +142,10 @@ public final class GreatWallConfig {
                 try { config.setWallLengthBlocks(json.get("wallLengthBlocks").getAsLong()); }
                 catch (RuntimeException malformed) { /* keep default */ }
             }
-            if (json.has("prewarmSegments")) {
-                try { config.setPrewarmSegments(json.get("prewarmSegments").getAsInt()); }
-                catch (RuntimeException malformed) { /* keep default */ }
-            }
-            if (json.has("prewarmAllWhenBounded")) {
-                try { config.setPrewarmAllWhenBounded(json.get("prewarmAllWhenBounded").getAsBoolean()); }
-                catch (RuntimeException malformed) { /* keep default */ }
-            }
+            // Older files also carry prewarmSegments and prewarmAllWhenBounded. They are
+            // ignored rather than read: the prewarm count is derived from the length now,
+            // and honouring a stored value would reintroduce the mismatch the derivation
+            // exists to prevent. Leaving them in the file is harmless.
         } catch (IOException | RuntimeException failure) {
             GreatWallMod.LOGGER.warn("[GreatWall:config] {} is unreadable; defaults in use", path, failure);
         }
@@ -170,8 +157,9 @@ public final class GreatWallConfig {
         Objects.requireNonNull(config);
         var json = new JsonObject();
         json.addProperty("wallLengthBlocks", config.wallLengthBlocks);
-        json.addProperty("prewarmSegments", config.prewarmSegments);
-        json.addProperty("prewarmAllWhenBounded", config.prewarmAllWhenBounded);
+        // Written for a human reading the file: the prewarm count is derived, and
+        // showing it here explains what the length implies without being read back.
+        json.addProperty("prewarmSegmentsDerived", config.prewarmSegmentsTarget());
         Path path = file();
         try {
             Files.createDirectories(path.getParent());

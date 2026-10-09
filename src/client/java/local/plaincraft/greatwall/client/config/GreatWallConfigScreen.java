@@ -14,24 +14,22 @@ import net.minecraft.network.chat.Component;
  * The wall's player-facing options.
  *
  * <h2>What this screen is for</h2>
- * The wall's two real choices — how far it runs, and how much of it is ready
- * before play starts — used to be launcher JVM arguments. They are gameplay
- * decisions, so they belong here, reachable from Mod Menu and from the world
- * creation screen.
+ * The wall's one real choice — how far it runs — used to be a launcher JVM
+ * argument. It is a gameplay decision, so it belongs here, reachable from Mod Menu
+ * and from the world creation screen.
+ *
+ * <h2>One setting, two rows</h2>
+ * Only the length is entered. The prewarm segment count is shown beside it but is
+ * derived from that length, because the two used to be independent inputs and
+ * could disagree: a length of 8189 blocks with a prewarm count of 4 prewarmed 4 of
+ * the 5 segments the wall would build, which is not what either number says on its
+ * own. Deriving it means the pair can never disagree.
  *
  * <h2>Layout</h2>
  * Every row is positioned from one running {@code y}, and the same value is stored
  * in fields so {@link #render} draws each label against the control it belongs to.
  * An earlier revision recomputed the label rows in {@code render} with a different
- * formula than {@code init} used, and the two drifted apart — labels sat off their
- * controls and the summary collided with the buttons.
- *
- * <p>Rows are laid out as: four settings, then the summary block, then a gap, then
- * the action buttons. The gap is what keeps the buttons clear of the summary text.
- *
- * <h2>Why the widgets are plain</h2>
- * Only vanilla widgets are used. A config screen that fails to build must not take
- * the game down with it, and Cloth Config is not required.
+ * formula than {@code init} used, and the two drifted.
  */
 public final class GreatWallConfigScreen extends Screen {
     private static final int ROW_HEIGHT = 20;
@@ -44,18 +42,17 @@ public final class GreatWallConfigScreen extends Screen {
     private static final int SUMMARY_BLOCK = 28;
     private static final int BUTTON_HEIGHT = 20;
     private static final int LABEL_COLOUR = 0xFFFFFF;
+    private static final int DERIVED_COLOUR = 0xA0A0A0;
     private static final int SUMMARY_COLOUR = 0x55FF55;
     private static final int HINT_COLOUR = 0xA0A0A0;
     private final Screen parent;
     private final GreatWallConfig draft;
     private EditBox lengthField;
-    private EditBox prewarmField;
     private Button lengthModeButton;
-    private Button fullPrewarmButton;
     private int left;
     private int top;
-    /** Top of each of the four setting rows, filled by {@link #init} and read by {@link #render}. */
-    private final int[] settingRows = new int[4];
+    /** Top of each setting row, filled by {@link #init} and read by {@link #render}. */
+    private final int[] settingRows = new int[3];
     private int summaryY;
     private int buttonY;
 
@@ -69,7 +66,8 @@ public final class GreatWallConfigScreen extends Screen {
     protected void init() {
         int totalWidth = LABEL_WIDTH + COLUMN_GAP + CONTROL_WIDTH;
         this.left = (this.width - totalWidth) / 2;
-        int totalHeight = ROW_STEP * 4 + SECTION_GAP + SUMMARY_BLOCK + SECTION_GAP + BUTTON_HEIGHT;
+        int totalHeight = ROW_STEP * settingRows.length + SECTION_GAP + SUMMARY_BLOCK
+                + SECTION_GAP + BUTTON_HEIGHT;
         this.top = Math.max(28, (this.height - totalHeight) / 2);
         int controlX = left + LABEL_WIDTH + COLUMN_GAP;
 
@@ -95,21 +93,10 @@ public final class GreatWallConfigScreen extends Screen {
         });
         addRenderableWidget(this.lengthField);
 
-        this.prewarmField = new EditBox(this.font, controlX, settingRows[2], CONTROL_WIDTH, ROW_HEIGHT,
-                Component.translatable("option.plaincraft_great_wall.prewarmSegments"));
-        this.prewarmField.setValue(Integer.toString(draft.prewarmSegments()));
-        this.prewarmField.setResponder(text -> {
-            Integer parsed = parseInt(text);
-            if (parsed != null) draft.setPrewarmSegments(parsed);
-        });
-        addRenderableWidget(this.prewarmField);
+        // Row 2 is the derived prewarm count: a label and a value, both drawn in
+        // render(), with no widget because there is nothing to edit.
 
-        this.fullPrewarmButton = addRenderableWidget(Button.builder(fullPrewarmLabel(), button -> {
-            draft.setPrewarmAllWhenBounded(!draft.prewarmAllWhenBounded());
-            button.setMessage(fullPrewarmLabel());
-        }).bounds(controlX, settingRows[3], CONTROL_WIDTH, ROW_HEIGHT).build());
-
-        this.summaryY = top + ROW_STEP * 4 + SECTION_GAP;
+        this.summaryY = top + ROW_STEP * settingRows.length + SECTION_GAP;
         this.buttonY = summaryY + SUMMARY_BLOCK + SECTION_GAP;
 
         int half = (totalWidth - COLUMN_GAP) / 2;
@@ -125,17 +112,15 @@ public final class GreatWallConfigScreen extends Screen {
         // The numeric length is meaningless while the wall is unbounded, so it is
         // disabled rather than silently ignored.
         if (lengthField != null) lengthField.setEditable(draft.bounded());
-        if (fullPrewarmButton != null) fullPrewarmButton.active = draft.bounded();
     }
 
     private void saveAndClose() {
         var live = GreatWallConfig.get();
         live.applyFrom(draft);
         GreatWallConfig.save();
-        GreatWallMod.LOGGER.info("[GreatWall:config] wallLength={} prewarmSegments={} prewarmAllWhenBounded={} "
-                        + "-> effectivePrewarmSegments={}",
-                live.wallLengthBlocks(), live.prewarmSegments(), live.prewarmAllWhenBounded(),
-                live.prewarmSegmentsTarget());
+        GreatWallMod.LOGGER.info("[GreatWall:config] wallLength={} -> configuredSegments={} "
+                        + "effectivePrewarmSegments={}",
+                live.wallLengthBlocks(), live.configuredSegments(), live.prewarmSegmentsTarget());
         onClose();
     }
 
@@ -156,27 +141,34 @@ public final class GreatWallConfigScreen extends Screen {
 
         // Positions come from the fields init() filled, so a label can never be drawn
         // against a different row than its control.
-        drawLabel(graphics, "option.plaincraft_great_wall.lengthMode", settingRows[0]);
-        drawLabel(graphics, "option.plaincraft_great_wall.wallLength", settingRows[1]);
-        drawLabel(graphics, "option.plaincraft_great_wall.prewarmSegments", settingRows[2]);
-        drawLabel(graphics, "option.plaincraft_great_wall.fullPrewarm", settingRows[3]);
+        drawLabel(graphics, "option.plaincraft_great_wall.lengthMode", settingRows[0], LABEL_COLOUR);
+        drawLabel(graphics, "option.plaincraft_great_wall.wallLength", settingRows[1], LABEL_COLOUR);
+        drawLabel(graphics, "option.plaincraft_great_wall.prewarmSegments", settingRows[2], LABEL_COLOUR);
 
-        var summary = Component.translatable("option.plaincraft_great_wall.summary",
-                Long.toString(draft.wallLengthBlocks()),
-                Long.toString(draft.configuredSegments()),
-                Long.toString(draft.prewarmSegmentsTarget()));
-        graphics.drawCenteredString(this.font, summary, this.width / 2, summaryY, SUMMARY_COLOUR);
+        int controlX = left + LABEL_WIDTH + COLUMN_GAP;
+        Long segments = draft.bounded() ? draft.configuredSegments() : null;
+        var derived = segments == null
+                ? Component.translatable("option.plaincraft_great_wall.prewarmSegments.unlimited",
+                        Long.toString(draft.prewarmSegmentsTarget()))
+                : Component.translatable("option.plaincraft_great_wall.prewarmSegments.value",
+                        Long.toString(segments), Long.toString(draft.prewarmSegmentsTarget()));
+        graphics.drawString(this.font, derived, controlX,
+                settingRows[2] + (ROW_HEIGHT - this.font.lineHeight) / 2, DERIVED_COLOUR);
+
         graphics.drawCenteredString(this.font,
                 Component.translatable("option.plaincraft_great_wall.bodyHint"),
+                this.width / 2, summaryY, HINT_COLOUR);
+        graphics.drawCenteredString(this.font,
+                Component.translatable("option.plaincraft_great_wall.bodyHint2"),
                 this.width / 2, summaryY + 12, HINT_COLOUR);
     }
 
     /** Draws a label in the left column, centred against a control at {@code rowY}. */
-    private void drawLabel(GuiGraphics graphics, String key, int rowY) {
+    private void drawLabel(GuiGraphics graphics, String key, int rowY, int colour) {
         // Centred on the control's own height rather than offset by a constant, so the
         // text stays aligned whatever ROW_HEIGHT becomes.
         int textY = rowY + (ROW_HEIGHT - this.font.lineHeight) / 2;
-        graphics.drawString(this.font, Component.translatable(key), left, textY, LABEL_COLOUR);
+        graphics.drawString(this.font, Component.translatable(key), left, textY, colour);
     }
 
     private Component lengthModeLabel() {
@@ -185,17 +177,7 @@ public final class GreatWallConfigScreen extends Screen {
                 : "option.plaincraft_great_wall.lengthMode.unlimited");
     }
 
-    private Component fullPrewarmLabel() {
-        return Component.translatable(draft.prewarmAllWhenBounded()
-                ? "option.plaincraft_great_wall.fullPrewarm.on"
-                : "option.plaincraft_great_wall.fullPrewarm.off");
-    }
-
     private static Long parseLong(String text) {
         try { return Long.parseLong(text.trim()); } catch (RuntimeException malformed) { return null; }
-    }
-
-    private static Integer parseInt(String text) {
-        try { return Integer.parseInt(text.trim()); } catch (RuntimeException malformed) { return null; }
     }
 }

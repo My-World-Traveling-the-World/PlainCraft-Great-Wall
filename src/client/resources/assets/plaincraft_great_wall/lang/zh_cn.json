@@ -4,11 +4,10 @@
   "option.plaincraft_great_wall.lengthMode.unlimited": "无限（一直延伸到世界边界）",
   "option.plaincraft_great_wall.lengthMode.bounded": "指定长度",
   "option.plaincraft_great_wall.wallLength": "长度（格）",
-  "option.plaincraft_great_wall.prewarmSegments": "预热段数（0 = 全部）",
-  "option.plaincraft_great_wall.fullPrewarm": "短长城开局全量预热",
-  "option.plaincraft_great_wall.fullPrewarm.on": "全量预热：开",
-  "option.plaincraft_great_wall.fullPrewarm.off": "全量预热：关",
-  "option.plaincraft_great_wall.summary": "长度 %s 格（%s 段）；将预热 %s 段",
-  "option.plaincraft_great_wall.bodyHint": "仅对新创建的世界生效。请在长城生成前设定长度。",
-  "text.plaincraft_great_wall.configButton": "长城配置…"
+  "option.plaincraft_great_wall.prewarmSegments": "开局预热",
+  "option.plaincraft_great_wall.prewarmSegments.value": "共 %s 段，预热 %s 段",
+  "option.plaincraft_great_wall.prewarmSegments.unlimited": "无限长，预热前 %s 段",
+  "option.plaincraft_great_wall.bodyHint": "段数由长度自动算出，无需填写。",
+  "option.plaincraft_great_wall.bodyHint2": "仅对新创建的世界生效。",
+  "text.plaincraft_great_wall.configButton": "长城配置"
 }
