@@ -1,7 +1,6 @@
 package local.plaincraft.greatwall.mixin;
 
 import local.plaincraft.greatwall.lifecycle.WorldServices;
-import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -50,7 +49,4 @@ public abstract class RiversPrewarmedMixin {
             // make road generation fail. The wall's own TAIL fallback still runs.
         }
     }
-
-    /** Kept so the signature above cannot silently drift away from the server type. */
-    static MinecraftServer serverTypeAnchor() { return null; }
 }

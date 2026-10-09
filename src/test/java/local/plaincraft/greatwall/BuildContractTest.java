@@ -108,6 +108,51 @@ class BuildContractTest {
     }
 
     /**
+     * A mixin may not declare a non-private static method.
+     *
+     * <h2>The failure this prevents</h2>
+     * Mixin copies a mixin class's members into its target and requires static
+     * members to be private — a static method with any other visibility is applied to
+     * the target class and changes its public surface. The check runs at APPLY time,
+     * so the build is green and the class loads fine until the transform happens;
+     * then it throws {@code InvalidMixinException} and takes the server down.
+     *
+     * <p>A real session crashed this way: a helper method kept "so the signature
+     * cannot drift" was the only thing in the file that was not private, and the
+     * server died in its tick loop the moment the target class was first loaded.
+     *
+     * <p>Only the shape is checked, not the intent — a declared helper is far more
+     * likely to be an oversight than a deliberate widening of a target's API, and if
+     * it is deliberate the annotation to say so is the fix.
+     */
+    @Test
+    void mixinsDeclareNoNonPrivateStaticMethods() throws IOException {
+        var violations = new java.util.TreeSet<String>();
+        var staticMethod = java.util.regex.Pattern.compile(
+                "(?m)^\\s*(?!private\\b)(?:public\\s+|protected\\s+)?static\\s+[\\w<>\\[\\].,?\\s]+\\s+(\\w+)\\s*\\(");
+        for (var root : java.util.List.of(
+                java.nio.file.Path.of("src/main/java/local/plaincraft/greatwall/mixin"),
+                java.nio.file.Path.of("src/client/java/local/plaincraft/greatwall/client/mixin"))) {
+            if (!java.nio.file.Files.isDirectory(root)) continue;
+            try (var files = java.nio.file.Files.list(root)) {
+                for (var file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
+                    var text = java.nio.file.Files.readString(file, StandardCharsets.UTF_8);
+                    // Strip block comments so a doc example is not mistaken for code.
+                    var code = text.replaceAll("(?s)/\\*.*?\\*/", "");
+                    var matcher = staticMethod.matcher(code);
+                    while (matcher.find()) {
+                        violations.add(file.getFileName() + "#" + matcher.group(1));
+                    }
+                }
+            }
+        }
+        assertTrue(violations.isEmpty(),
+                "these mixin methods are static but not private; Mixin applies them to the target "
+                        + "class and throws InvalidMixinException at load time, which crashes the "
+                        + "server: " + violations);
+    }
+
+    /**
      * Every class in a mixin config's package must itself be named by that config.
      *
      * <h2>The failure this prevents</h2>
