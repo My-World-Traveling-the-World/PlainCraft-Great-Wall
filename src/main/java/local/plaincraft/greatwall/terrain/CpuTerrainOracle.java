@@ -59,13 +59,18 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     /**
      * Hard ceiling on a single column's native sampling steps.
      *
-     * <p>A reference column walks down from the top of the dimension one block per step,
-     * plus a slice-fill phase per cell. For a 384-block dimension that is well under a
-     * thousand steps. Anything past this bound is a malformed walk (empty interpolators,
-     * a cell-traversal off-by-one) and is censored rather than allowed to spin a lane
-     * forever. Generous by construction so no legitimate column is ever truncated.
+     * <p>A reference column walks the native slice fill first, then down from the top of the
+     * dimension one block per step. The slice fill alone is cellCountXZ &times; cellCountY
+     * &times; 2 sides &times; interpolators - on the order of tens of thousands of advance
+     * calls for a large noise configuration. The earlier bound of 4096 was far too low and
+     * censored every column, which made the root search reject every candidate as unsupported.
+     *
+     * <p>This is set to a million, comfortably above any legitimate walk and far below an
+     * infinite one. Only a genuinely stuck cursor - an empty interpolator list or a broken
+     * cell traversal - ever reaches it, and only then is the column censored so the search
+     * can move on instead of holding a lane forever.
      */
-    private static final int MAX_REFERENCE_ADVANCE_STEPS = 4096;
+    private static final int MAX_REFERENCE_ADVANCE_STEPS = 1_000_000;
     private final Thread owner = Thread.currentThread();
     private final UUID identity = UUID.randomUUID();
     private final RandomState randomState;

@@ -48,4 +48,10 @@
 # the wall is not done, and a server-tick hook re-enters once it is. Only
 # InitialGenManager, WallPrewarmBridge and the Fabric-side mixin/hook changed.
 # The four interop types were re-checked a third time and are unchanged.
-3d3cf30b27a1156690eae0bb8bb3b57ede707888567262dfcdf627ee1d83c264
+#
+# 2026-10-09 (rebuilt once more): the deadlock was not the managedBlock wait but a
+# broken recursive driver in the wall's root search, now fixed. The gate is
+# blocking again, as the user requires - the player stays on the loading screen
+# until the wall finishes - via managedBlock so the server still drains its own
+# queue. The four interop types are re-checked a fourth time and are unchanged.
+1a64ba3bb80b57c37e2fb10c223b2d282938556817cf9ea47884a99d599edae5
