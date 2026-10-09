@@ -221,7 +221,10 @@ public final class PrewarmProgress {
         if (latch == null) return true;
         try {
             boolean finished = latch.await(timeout, unit);
-            if (!finished) {
+            if (!finished && timeout != 0L) {
+                // A zero timeout is a poll, not a wait: the caller asked "is it done?" and will
+                // ask again. Logging here would flood the log every tick the prewarm is still
+                // running. Only a real wait that expires is worth reporting.
                 GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_AWAIT_TIMEOUT waitedMs={} active={} "
                                 + "completed={}/{} ; proceeding without waiting further",
                         unit.toMillis(timeout), ACTIVE.get(), COMPLETED_SEGMENTS.get(), TOTAL_SEGMENTS.get());

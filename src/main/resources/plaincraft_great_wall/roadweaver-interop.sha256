@@ -41,4 +41,11 @@
 # same queue, could never finish and the two would wait on each other. Only
 # InitialGenManager and WallPrewarmBridge changed; the four interop types above
 # were re-checked and are unchanged again.
-492a2232f7d9671239110dbdc5afb2d5eb0d44b4cd1aec52940982dbcbf38f08
+#
+# 2026-10-09 (rebuilt again): the managedBlock wait deadlocked - it runs queued
+# server tasks but not the chunk generation the wall's root search needs. The
+# gate is now non-blocking: begin() returns immediately with a deferred flag when
+# the wall is not done, and a server-tick hook re-enters once it is. Only
+# InitialGenManager, WallPrewarmBridge and the Fabric-side mixin/hook changed.
+# The four interop types were re-checked a third time and are unchanged.
+3d3cf30b27a1156690eae0bb8bb3b57ede707888567262dfcdf627ee1d83c264
