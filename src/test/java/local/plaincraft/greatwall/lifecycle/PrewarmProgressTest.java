@@ -79,12 +79,51 @@ class PrewarmProgressTest {
     void waitingWithNoPrewarmEverStartedReturnsImmediately() {
         PrewarmProgress.clear();
         long started = System.nanoTime();
-        // No begin() was ever called: there is nothing to wait for, and a peer must not be
+        // Nothing was ever requested: there is nothing to wait for, and a peer must not be
         // delayed by a stage that will not run.
         boolean settled = PrewarmProgress.awaitCompletion(30, TimeUnit.SECONDS);
         long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
         assertTrue(settled, "a session with no prewarm must report ready");
         assertTrue(elapsedMs < 1_000, "reporting ready must not wait; took " + elapsedMs + "ms");
+    }
+
+    @Test
+    void aRequestedPrewarmThatHasNotStartedYetStillBlocks() throws Exception {
+        PrewarmProgress.clear();
+        // The rivers have reported ready, but the wall is still choosing a root position - a
+        // window measured in minutes. A peer arriving here must wait: the prewarm has been
+        // asked for and will run. Returning ready in this window is what let a real session
+        // open its gate in 1 ms while the wall's root search was only just beginning.
+        PrewarmProgress.request();
+
+        var settled = new AtomicBoolean(true);
+        var returned = new CountDownLatch(1);
+        var waiter = new Thread(() -> {
+            // Short timeout: this asserts that it blocks, not how long for.
+            settled.set(PrewarmProgress.awaitCompletion(300, TimeUnit.MILLISECONDS));
+            returned.countDown();
+        }, "test-requested-waiter");
+        waiter.start();
+
+        assertTrue(returned.await(5, TimeUnit.SECONDS), "the waiter must return via its timeout");
+        assertFalse(settled.get(), "a requested but not-yet-started prewarm must not report ready");
+
+        // And the real prewarm then releases it properly.
+        PrewarmProgress.begin(4, 16);
+        PrewarmProgress.finish(true);
+        assertTrue(PrewarmProgress.awaitCompletion(1, TimeUnit.SECONDS),
+                "once the requested prewarm finishes, waiting must report settled");
+    }
+
+    @Test
+    void clearingForgetsThatAPrewarmWasRequested() {
+        PrewarmProgress.clear();
+        PrewarmProgress.request();
+        // A new session must not inherit the previous one's request, or it would wait out the
+        // full timeout for a prewarm that this session may never run.
+        PrewarmProgress.clear();
+        assertTrue(PrewarmProgress.awaitCompletion(30, TimeUnit.SECONDS),
+                "a cleared session has no pending prewarm and must report ready");
     }
 
     @Test

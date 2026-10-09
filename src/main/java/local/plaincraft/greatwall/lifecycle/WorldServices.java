@@ -337,6 +337,10 @@ public final class WorldServices {
      * idempotent, so at most one of the two actually starts the prewarm.
      */
     public static void riversPrewarmed() {
+        // Recorded before dispatching, and whether or not a session is installed yet: a peer
+        // gating on this may arrive before the wall's own prewarm begins, and it has to know
+        // that one is coming rather than conclude none will run.
+        PrewarmProgress.request();
         for (var server : SESSIONS.keySet()) {
             var services = SESSIONS.get(server);
             if (services == null || services.production == null) continue;

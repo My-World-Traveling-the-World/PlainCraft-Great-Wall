@@ -44,11 +44,28 @@ public final class PrewarmProgress {
      * Whether a prewarm has started in this session.
      *
      * <p>Distinguishes "no prewarm will ever run" from "a prewarm is running and has not
-     * finished" - states an unreleased latch cannot tell apart. A startup peer gates as soon
-     * as its stage opens, which may be before this ever begins, and it must return
-     * immediately in a session that will never prewarm rather than waiting out its timeout.
+     * finished" - states an unreleased latch cannot tell apart.
      */
     private static final AtomicBoolean EVER_STARTED = new AtomicBoolean();
+    /**
+     * Whether a prewarm has been requested, even if it has not started planning yet.
+     *
+     * <h2>The gap this closes</h2>
+     * The rivers finishing and the first segment being planned are not the same instant.
+     * Between them the wall installs its recipe, freezes terrain inputs and searches for a
+     * root position - measured at over ten minutes on a real world. A peer that gates in
+     * that window must wait, because the prewarm has already been asked for and will run.
+     *
+     * <p>Without this the peer saw "no prewarm has started" and returned ready in about a
+     * millisecond, which is exactly what a measured session did: the gate opened at 16:20:50
+     * with {@code waitedMs=1}, the wall's root search began the same second, and road work
+     * proceeded alongside it - the very overlap the gate exists to prevent.
+     *
+     * <p>So this is set when the prewarm is requested, and a waiter waits once it is set.
+     * {@link #EVER_STARTED} still decides the different question of whether a prewarm has
+     * actually begun, which the progress display uses.
+     */
+    private static final AtomicBoolean REQUESTED = new AtomicBoolean();
     private static final ConcurrentHashMap<String, Boolean> STATE = new ConcurrentHashMap<>();
     private static final Object LATCH_LOCK = new Object();
     private static volatile CountDownLatch settled = new CountDownLatch(1);
@@ -56,8 +73,21 @@ public final class PrewarmProgress {
     private PrewarmProgress() {
     }
 
+    /**
+     * Records that a prewarm has been asked for.
+     *
+     * <p>Called the moment the rivers report ready, which is well before the first segment
+     * can be planned - the wall still has to install its recipe, freeze terrain inputs and
+     * choose a root position. Waiteres that arrive in that window must wait, so this is
+     * what {@link #awaitCompletion} tests; see {@link #REQUESTED}.
+     */
+    public static void request() {
+        REQUESTED.set(true);
+    }
+
     /** Records that a prewarm began, how many segments it will produce, and on how many lanes. */
     public static void begin(int totalSegments, int lanes) {
+        REQUESTED.set(true);
         synchronized (LATCH_LOCK) {
             // Replace the latch only once the previous one has been released.
             //
@@ -121,9 +151,10 @@ public final class PrewarmProgress {
         STARTED_AT_NANOS.set(0L);
         FAILED.set(false);
         STATE.clear();
-        // Reset with the rest: the next session's prewarm has not started yet, and leaving this
-        // set would make a peer wait for a prewarm that this session may never run.
+        // Reset with the rest: the next session's prewarm has not been requested yet, and
+        // leaving this set would make a peer wait for a prewarm that may never run.
         EVER_STARTED.set(false);
+        REQUESTED.set(false);
         synchronized (LATCH_LOCK) {
             settled = new CountDownLatch(1);
         }
@@ -145,9 +176,13 @@ public final class PrewarmProgress {
      * so it is decided from the recorded lifecycle state instead.
      */
     public static boolean awaitCompletion(long timeout, TimeUnit unit) {
-        // Nothing has ever started (or the state was cleared for a new session): there is no
-        // prewarm to wait for, so the caller must not be made to sit out a timeout for it.
-        if (!EVER_STARTED.get()) return true;
+        // Nothing has been requested: there is no prewarm to wait for, so the caller must not
+        // be made to sit out a timeout for it. Tested against REQUESTED rather than
+        // EVER_STARTED because the window between "the rivers are done" and "the first segment
+        // is planned" is where the wall spends most of its startup - a waiter arriving there
+        // would otherwise be told the work was already finished and let road generation start
+        // alongside the prewarm.
+        if (!REQUESTED.get()) return true;
         var latch = settled;
         if (latch == null) return true;
         try {
