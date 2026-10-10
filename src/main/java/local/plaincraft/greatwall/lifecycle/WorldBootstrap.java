@@ -444,6 +444,44 @@ public final class WorldBootstrap implements AutoCloseable {
                 "prefetch-last-size", (long) prefetchLastSize);
     }
 
+    /**
+     * Applies the structure votes on a lane, retrying a refused submit.
+     *
+     * <p>The structure-screen path previously called {@code lane.submit} bare inside a
+     * {@code thenCompose}: a saturated lane throws {@link java.util.concurrent.RejectedExecutionException},
+     * which became a failed future and hit {@code fail(...)}, ending the whole bootstrap on a
+     * transient condition. The main advance chain already retries; this mirrors that so the
+     * vote application is equally resilient.
+     */
+    private CompletableFuture<Void> submitVotesWithRetry(RootSearch search, OracleLane lane,
+            WorldManifest.Creation creation, Frozen inputs, List<RootStructureScreen.Vote> votes) {
+        CompletableFuture<Void> submitted;
+        try {
+            submitted = lane.submit(oracle -> {
+                active();
+                search.acceptStructureVotes(votes);
+                progress.put("root", search.progress());
+                rootAudit.put("root", search.audit());
+                return (Void) null;
+            });
+        } catch (RuntimeException rejected) {
+            if (state.containsKey("closed") || state.containsKey("failed")) {
+                return java.util.concurrent.CompletableFuture.failedFuture(
+                        new java.util.concurrent.CancellationException("bootstrap closed"));
+            }
+            // A saturated lane is transient; retry shortly on the root pump rather than
+            // failing the bootstrap. schedule() tolerates the pump being busy.
+            var retry = new CompletableFuture<Void>();
+            rootPump.schedule(() -> submitVotesWithRetry(search, lane, creation, inputs, votes)
+                    .whenComplete((ignored, error) -> {
+                        if (error != null) retry.completeExceptionally(error);
+                        else retry.complete(null);
+                    }), 50, java.util.concurrent.TimeUnit.MILLISECONDS);
+            return retry;
+        }
+        return submitted;
+    }
+
     private void advance(RootSearch search, OracleLane lane, WorldManifest.Creation creation, Frozen inputs) {
         active();
         // Widen the search across the idle lanes before asking lane 0 to continue.
@@ -496,10 +534,8 @@ public final class WorldBootstrap implements AutoCloseable {
             if(!batch.screen().isEmpty()){
                 state.put("structure-screen-entered",true);
                 try {
-                    inputs.structures().inspect(batch.screen()).thenCompose(votes->lane.submit(oracle->{
-                        active();search.acceptStructureVotes(votes);
-                        progress.put("root",search.progress());rootAudit.put("root",search.audit());return (Void)null;
-                    })).whenCompleteAsync((ignored,failure)->{
+                    inputs.structures().inspect(batch.screen()).thenCompose(votes->submitVotesWithRetry(search, lane, creation, inputs, votes))
+                            .whenCompleteAsync((ignored,failure)->{
                         if(state.containsKey("closed")||state.containsKey("failed"))return;
                         if(failure!=null){fail(failure);return;}
                         state.put("structure-screen-complete",true);advance(search,lane,creation,inputs);

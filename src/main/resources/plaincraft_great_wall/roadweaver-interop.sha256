@@ -86,4 +86,10 @@
 # the wall's probe mixin is pinned to priority 950 (before the roads' 1000), so the
 # road side needs no defensive warming() call. Reverted to the seventh build's bridge
 # (same SHA). The four interop types are re-reviewed and remain byte-identical.
-4848435a8c6e13cc99e999951d24897aa3597eb7cfacb71f73ab97f69486cf2e
+#
+# 2026-10-10 (tenth build): audit fixes. WallPrewarmBridge no longer blocks on the
+# ForkJoinPool.commonPool (a named daemon waiter thread instead), and the wall side
+# resets RIVERS_READY/PrewarmProgress across sessions, retries a refused structure-vote
+# lane submit, and hardens FeaturesLease against close-during-load. Only the bridge
+# changed on the road side; the four interop types are re-reviewed again and unchanged.
+741bec32a1b17fbfbcc3b4d68151713d89486bb87e7d30b427cf84d439196cf7

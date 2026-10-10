@@ -24,17 +24,16 @@ public final class FeaturesLease implements AutoCloseable {
     private final String id = UUID.randomUUID().toString();
     private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();
     private final CompletableFuture<Map<ChunkPos, ChunkAccess>> ready = new CompletableFuture<>();
+    private final CompletableFuture<Void> drained = new CompletableFuture<>();
 
     public FeaturesLease(ServerLevel level, List<ChunkPos> positions, StageTrace trace) {
         if (positions.isEmpty() || positions.size() > 81) throw new IllegalArgumentException("Unbounded FEATURES lease");
         this.level = level;
         this.positions = positions.stream().distinct().toList();
         trace.assertOutsideLock();
-        // Post to the global server queue, not the world-local chunk executor: the road side
-        // drains only the global queue while parked in managedBlock, so the local one would
-        // never run and this lease would hang. See StructureLease for the full reasoning.
-        level.getServer().execute(() -> {
-            if (state.containsKey("closed")) { ready.cancel(false); return; }
+        var access = (ChunkMapAccess) level.getChunkSource().chunkMap;
+        access.greatwall$chunkMainExecutor().execute(() -> {
+            if (state.containsKey("closed")) { ready.cancel(false); drained.complete(null); return; }
             var chunks = (TerrainChunkAccess) level.getChunkSource();
             int ticketLevel = ChunkLevel.byStatus(ChunkStatus.FEATURES);
             try {
@@ -47,6 +46,14 @@ public final class FeaturesLease implements AutoCloseable {
                             Map.entry(pos, result.orElseThrow(() -> new IllegalStateException("FEATURES unavailable: " + result.getError()))));
                 }).toList();
                 CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).whenComplete((ignored, error) -> {
+                    // A lease closed while its chunks were loading must not build the result map,
+                    // or it would retain all 81 ChunkAccess references long after the caller
+                    // stopped caring. Cancelling is enough: the tickets are removed by close().
+                    if (state.containsKey("closed")) {
+                        ready.cancel(false);
+                        drained.complete(null);
+                        return;
+                    }
                     if (error != null) ready.completeExceptionally(error);
                     else {
                         var result = new java.util.HashMap<ChunkPos, ChunkAccess>();
@@ -61,15 +68,18 @@ public final class FeaturesLease implements AutoCloseable {
         });
     }
     public CompletableFuture<Map<ChunkPos, ChunkAccess>> ready() { return ready.copy(); }
+    /** Completes once the lease is fully torn down, tickets included, for callers that must wait. */
+    public CompletableFuture<Void> drained() { return drained.copy(); }
     @Override public void close() {
         if (state.putIfAbsent("closed", true) != null) return;
         ready.cancel(false);
-        level.getServer().execute(() -> {
+        ((ChunkMapAccess) level.getChunkSource().chunkMap).greatwall$chunkMainExecutor().execute(() -> {
             if (state.remove("installed") != null) {
                 var chunks = (TerrainChunkAccess) level.getChunkSource();
                 for (ChunkPos pos : positions) chunks.greatwall$distanceManager()
                         .removeTicket(TYPE, pos, ChunkLevel.byStatus(ChunkStatus.FEATURES), id);
             }
+            drained.complete(null);
         });
     }
 }
