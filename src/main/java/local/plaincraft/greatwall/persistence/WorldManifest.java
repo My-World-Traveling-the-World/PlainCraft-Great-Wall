@@ -82,11 +82,14 @@ public final class WorldManifest {
     public void freeze(WorldRecipe recipe) throws IOException {
         Objects.requireNonNull(recipe);
         locked(() -> {
-            var creation = readCreation().orElseThrow(() -> corrupt("creation token required before freezing recipe", null));
-            validate(recipe, creation);
+            var creation = readCreation();
+            if (creation.isEmpty()) {
+                throw corrupt("creation token required before freezing recipe", null);
+            }
+            validate(recipe, creation.get());
             var saved = readWorld();
             if (saved.isPresent()) {
-                validate(saved.get(), creation);
+                validate(saved.get(), creation.get());
                 if (!saved.get().equals(recipe)) throw new WallFailure(FailureCode.RECIPE_MISMATCH, "frozen recipe is immutable");
                 return null;
             }

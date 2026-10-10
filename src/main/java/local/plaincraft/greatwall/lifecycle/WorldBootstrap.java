@@ -514,8 +514,17 @@ public final class WorldBootstrap implements AutoCloseable {
             return;
         }
         submitted.whenCompleteAsync((batch, error) -> {
-            if (state.containsKey("closed") || state.containsKey("failed")) return;
-            if (error != null) { fail(error); return; }
+            if (state.containsKey("closed") || state.containsKey("failed")) {
+                GreatWallMod.LOGGER.warn("[GreatWall:DIAG] advance.whenComplete ALREADY_CLOSED thread={} state={}",
+                    Thread.currentThread().getName(), Map.copyOf(state));
+                return;
+            }
+            if (error != null) {
+                GreatWallMod.LOGGER.error("[GreatWall:DIAG] advance.whenComplete ERROR thread={}",
+                    Thread.currentThread().getName(), error);
+                fail(error);
+                return;
+            }
             progress.put("root", batch.progress());
             // Publish the candidate index to the loading card, so the root search shows a
             // moving number rather than an indeterminate "searching" that reads as frozen.
@@ -533,6 +542,8 @@ public final class WorldBootstrap implements AutoCloseable {
             }
             if(!batch.screen().isEmpty()){
                 state.put("structure-screen-entered",true);
+                GreatWallMod.LOGGER.info("[GreatWall:DIAG] advance STRUCTURE_SCREEN thread={} screenSize={}",
+                    Thread.currentThread().getName(), batch.screen().size());
                 try {
                     inputs.structures().inspect(batch.screen()).thenCompose(votes->submitVotesWithRetry(search, lane, creation, inputs, votes))
                             .whenCompleteAsync((ignored,failure)->{
@@ -558,6 +569,8 @@ public final class WorldBootstrap implements AutoCloseable {
                 return;
             }
             var selection = batch.selected().get();
+            GreatWallMod.LOGGER.info("[GreatWall:DIAG] advance SELECTED thread={} axis={}",
+                Thread.currentThread().getName(), selection.axis());
             writeCachedAxis(creation, inputs, selection);
             publishRecipeFor(selection, creation, inputs);
         }, rootPump);
@@ -571,6 +584,7 @@ public final class WorldBootstrap implements AutoCloseable {
      * there is no second code path that could disagree.
      */
     private void publishRecipeFor(RootSearch.Selection selection, WorldManifest.Creation creation, Frozen inputs) {
+        GreatWallMod.LOGGER.info("[GreatWall:DIAG] publishRecipeFor ENTER thread={} state={}", Thread.currentThread().getName(), Map.copyOf(state));
         var provisional = new WorldRecipe(creation.instance(), "0".repeat(64), seed, "minecraft:overworld",
                 spawn.get("chosen"), selection.axis(), inputs.bounds(), defaultConfig(), inputs.terrainHash(),
                 inputs.paletteHash(), inputs.templatesHash(), "0".repeat(64));
@@ -578,10 +592,28 @@ public final class WorldBootstrap implements AutoCloseable {
         var recipe = new WorldRecipe(creation.instance(), hash, seed, provisional.dimension(), provisional.frozenSpawn(),
                 provisional.axis(), provisional.bounds(), provisional.config(), inputs.terrainHash(),
                 inputs.paletteHash(), inputs.templatesHash(), hash);
-        io(() -> { active(); manifest.freeze(recipe); return recipe; }).whenComplete((saved, failure) -> {
-            if (failure != null) fail(failure);
-            else if (!state.containsKey("closed") && !state.containsKey("failed")) publish(saved);
+        GreatWallMod.LOGGER.info("[GreatWall:DIAG] publishRecipeFor BEFORE_IO thread={}", Thread.currentThread().getName());
+        CompletableFuture<WorldRecipe> ioFuture;
+        try {
+            ioFuture = io(() -> { active(); manifest.freeze(recipe); return recipe; });
+            GreatWallMod.LOGGER.info("[GreatWall:DIAG] publishRecipeFor AFTER_IO thread={}", Thread.currentThread().getName());
+        } catch (Throwable ioError) {
+            GreatWallMod.LOGGER.error("[GreatWall:DIAG] publishRecipeFor IO_THREW thread={}", Thread.currentThread().getName(), ioError);
+            throw ioError;
+        }
+        ioFuture.whenComplete((saved, failure) -> {
+            GreatWallMod.LOGGER.info("[GreatWall:DIAG] publishRecipeFor WHENCOMPLETE thread={} failure={}", Thread.currentThread().getName(), failure != null);
+            if (failure != null) {
+                GreatWallMod.LOGGER.error("[GreatWall:DIAG] publishRecipeFor FAILURE_BRANCH thread={}", Thread.currentThread().getName(), failure);
+                fail(failure);
+            } else if (!state.containsKey("closed") && !state.containsKey("failed")) {
+                GreatWallMod.LOGGER.info("[GreatWall:DIAG] publishRecipeFor SUCCESS_BRANCH thread={}", Thread.currentThread().getName());
+                publish(saved);
+            } else {
+                GreatWallMod.LOGGER.warn("[GreatWall:DIAG] publishRecipeFor ALREADY_CLOSED thread={} state={}", Thread.currentThread().getName(), Map.copyOf(state));
+            }
         });
+        GreatWallMod.LOGGER.info("[GreatWall:DIAG] publishRecipeFor EXIT thread={}", Thread.currentThread().getName());
     }
 
     /**
@@ -642,26 +674,60 @@ public final class WorldBootstrap implements AutoCloseable {
     }
 
     private void fail(Throwable error) {
-        if (state.putIfAbsent("failed", true) != null) return;
+        if (state.putIfAbsent("failed", true) != null) {
+            GreatWallMod.LOGGER.warn("[GreatWall:DIAG] fail() ALREADY_FAILED thread={} newError={}",
+                Thread.currentThread().getName(), error.toString());
+            return;
+        }
+        GreatWallMod.LOGGER.error("[GreatWall:DIAG] fail() FIRST_FAILURE thread={} state={}",
+            Thread.currentThread().getName(), Map.copyOf(state), error);
         ready.completeExceptionally(error);
         close();
     }
 
     private <T> CompletableFuture<T> io(IoAction<T> action) {
-        active();
-        var result = new CompletableFuture<T>();
-        ioFlights.compute("admitted", (key, old) -> {
+        GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() ENTER thread={} state={}", Thread.currentThread().getName(), Map.copyOf(state));
+        try {
             active();
-            var pending = old == null ? new java.util.ArrayList<CompletableFuture<?>>()
-                    : new java.util.ArrayList<>(old);
-            if (pending.size() >= 128) throw new WallFailure(FailureCode.CAPACITY, "bootstrap IO admission capacity");
-            pending.add(result); return List.copyOf(pending);
-        });
+            GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() AFTER_ACTIVE thread={}", Thread.currentThread().getName());
+        } catch (Throwable activeError) {
+            GreatWallMod.LOGGER.error("[GreatWall:DIAG] io() ACTIVE_THREW thread={} state={}", Thread.currentThread().getName(), Map.copyOf(state), activeError);
+            throw activeError;
+        }
+        var result = new CompletableFuture<T>();
+        try {
+            ioFlights.compute("admitted", (key, old) -> {
+                active();
+                var pending = old == null ? new java.util.ArrayList<CompletableFuture<?>>()
+                        : new java.util.ArrayList<>(old);
+                if (pending.size() >= 128) throw new WallFailure(FailureCode.CAPACITY, "bootstrap IO admission capacity");
+                pending.add(result); return List.copyOf(pending);
+            });
+            GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() AFTER_ADMIT thread={} admitted={}", Thread.currentThread().getName(), ioFlights.get("admitted").size());
+        } catch (Throwable admitError) {
+            GreatWallMod.LOGGER.error("[GreatWall:DIAG] io() ADMIT_THREW thread={}", Thread.currentThread().getName(), admitError);
+            throw admitError;
+        }
         result.whenComplete((value, error) -> ioFlights.computeIfPresent("admitted", (key, old) ->
                 old.stream().filter(future -> future != result).toList()));
-        try { io.execute(() -> {
-            try { result.complete(action.run()); } catch (Throwable error) { result.completeExceptionally(error); }
-        }); } catch (RuntimeException error) { result.completeExceptionally(error); }
+        try {
+            GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() BEFORE_EXECUTE thread={}", Thread.currentThread().getName());
+            io.execute(() -> {
+                GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() TASK_START thread={}", Thread.currentThread().getName());
+                try {
+                    T value = action.run();
+                    GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() ACTION_SUCCESS thread={}", Thread.currentThread().getName());
+                    result.complete(value);
+                } catch (Throwable error) {
+                    GreatWallMod.LOGGER.error("[GreatWall:DIAG] io() ACTION_THREW thread={}", Thread.currentThread().getName(), error);
+                    result.completeExceptionally(error);
+                }
+            });
+            GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() AFTER_EXECUTE thread={}", Thread.currentThread().getName());
+        } catch (RuntimeException error) {
+            GreatWallMod.LOGGER.error("[GreatWall:DIAG] io() EXECUTE_REJECTED thread={}", Thread.currentThread().getName(), error);
+            result.completeExceptionally(error);
+        }
         return result;
     }
     @FunctionalInterface private interface IoAction<T> { T run() throws IOException; }
@@ -672,6 +738,10 @@ public final class WorldBootstrap implements AutoCloseable {
     }
     private void active() {
         if (state.containsKey("closed") || state.containsKey("failed")) {
+            var trace = new RuntimeException("active() check failed - stack trace");
+            GreatWallMod.LOGGER.error("[GreatWall:DIAG] active() FAILED thread={} closed={} failed={} failures={}",
+                Thread.currentThread().getName(), state.containsKey("closed"), state.containsKey("failed"),
+                Map.copyOf(state), trace);
             throw new WallFailure(FailureCode.CLOSED, "bootstrap is closed or failed");
         }
     }

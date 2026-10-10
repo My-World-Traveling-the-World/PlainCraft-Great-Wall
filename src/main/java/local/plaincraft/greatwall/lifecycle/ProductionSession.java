@@ -111,11 +111,21 @@ final class ProductionSession implements AutoCloseable {
             var thread = new Thread(task, "pgw-history-io-" + runtime); thread.setDaemon(true); return thread;
         });
         bootstrap = new WorldBootstrap(server, new WorldManifest(root.resolve("manifest")), io);
-        bootstrap.ready().whenComplete((recipe, error) -> server.execute(() -> {
-            if (state.containsKey("closed")) return;
-            if (error != null) { fail(error); return; }
-            try {
-                active();
+        bootstrap.ready().whenComplete((recipe, error) -> {
+            GreatWallMod.LOGGER.info("[GreatWall:DIAG] bootstrap.ready CALLBACK thread={} error={} closed={}",
+                Thread.currentThread().getName(), error != null, state.containsKey("closed"));
+            server.execute(() -> {
+                GreatWallMod.LOGGER.info("[GreatWall:DIAG] bootstrap.ready SERVER_EXECUTE thread={} closed={}",
+                    Thread.currentThread().getName(), state.containsKey("closed"));
+                if (state.containsKey("closed")) return;
+                if (error != null) {
+                    GreatWallMod.LOGGER.error("[GreatWall:DIAG] bootstrap.ready ERROR_BRANCH", error);
+                    fail(error);
+                    return;
+                }
+                try {
+                    GreatWallMod.LOGGER.info("[GreatWall:DIAG] bootstrap.ready INSTALL_START wallId={}", recipe.wallId());
+                    active();
                 var level = levels.get(recipe.dimension());
                 var frozen = inputs.get("frozen");
                 if (level == null || frozen == null) throw new IllegalStateException("recipe published before prepareLevels freeze");
@@ -218,8 +228,12 @@ final class ProductionSession implements AutoCloseable {
                         runtime, recipe.wallId(), recipe.frozenSpawn(), recipe.axis());
                 GreatWallMod.LOGGER.info("[GreatWall:S1C] LEASE_HALO_RADIUS={} (structure-reference aware, 9x9 lease bound)",
                         local.plaincraft.greatwall.generation.ProtectionSnapshot.leaseRadiusChunks());
-            } catch (Throwable failure) { fail(failure); }
-        }));
+            } catch (Throwable failure) {
+                GreatWallMod.LOGGER.error("[GreatWall:DIAG] bootstrap.ready INSTALL_THREW", failure);
+                fail(failure);
+            }
+        });
+        });
     }
 
     UUID runtime() { return runtime; }
@@ -508,7 +522,13 @@ final class ProductionSession implements AutoCloseable {
         if (state.containsKey("closed") || state.containsKey("failed")) throw new WallFailure(FailureCode.CLOSED, "production session is closed/failed");
     }
     void fail(Throwable error) {
-        if (state.containsKey("closed") || failures.putIfAbsent("required", error.toString()) != null) return;
+        if (state.containsKey("closed") || failures.putIfAbsent("required", error.toString()) != null) {
+            GreatWallMod.LOGGER.warn("[GreatWall:DIAG] ProductionSession.fail ALREADY_FAILED thread={} newError={}",
+                Thread.currentThread().getName(), error.toString());
+            return;
+        }
+        GreatWallMod.LOGGER.error("[GreatWall:DIAG] ProductionSession.fail FIRST_FAILURE thread={} state={}",
+            Thread.currentThread().getName(), Map.copyOf(state), error);
         state.put("failed", true);
         // A failed assembly must release waiters too, not leave them pending on a dead session.
         failGameplayWaiters(error);
