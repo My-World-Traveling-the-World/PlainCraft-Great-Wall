@@ -377,7 +377,12 @@ public final class WorldBootstrap implements AutoCloseable {
         if (lanes == null || lanes.size() < 2) return;
         List<RootSearch.ColumnKey> pending;
         try {
-            pending = search.pendingFootprintReads();
+            // Coarse phase 0 is the longest serial stretch: 144 candidates each sampling an
+            // 81-point grid on lane 0 alone. Its coordinates are pure arithmetic too, so widen
+            // it across the idle lanes exactly like the footprint phase. Either call returns
+            // an empty list for the phases it does not own.
+            pending = search.pendingCoarseReads();
+            if (pending.isEmpty()) pending = search.pendingFootprintReads();
         } catch (RuntimeException notOwnerOrWrongPhase) {
             return;
         }
@@ -530,6 +535,7 @@ public final class WorldBootstrap implements AutoCloseable {
             // moving number rather than an indeterminate "searching" that reads as frozen.
             var now = batch.progress();
             PrewarmProgress.setRootProgress(now.candidate(), 144);
+            PrewarmProgress.setRootPhase(now.phase());
             // Logged only when the candidate advances, and never more than the finite
             // candidate set (at most 144 of them).
             long lastCandidate = lastLoggedCandidate.get();

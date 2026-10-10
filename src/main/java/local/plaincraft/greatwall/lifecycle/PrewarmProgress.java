@@ -72,6 +72,11 @@ public final class PrewarmProgress {
     /** Candidate index the root search has reached, and the total it will scan. */
     private static final AtomicInteger ROOT_CANDIDATE = new AtomicInteger();
     private static final AtomicInteger ROOT_TOTAL = new AtomicInteger();
+    /** Root-search phase (0 coarse, 1 footprint, 2 axis, 4 structure, 5 entrance). */
+    private static final AtomicInteger ROOT_PHASE = new AtomicInteger();
+    /** Structure-screen candidate the wall is validating, and the total. */
+    private static final AtomicInteger STRUCTURE_CANDIDATE = new AtomicInteger();
+    private static final AtomicInteger STRUCTURE_TOTAL = new AtomicInteger();
 
     private PrewarmProgress() {
     }
@@ -177,6 +182,28 @@ public final class PrewarmProgress {
         ROOT_TOTAL.set(Math.max(0, total));
     }
 
+    /**
+     * Publishes the root-search phase for the loading card.
+     *
+     * <p>The phases are coarse (0), footprint (1), axis (2), structure screen (4) and entrance
+     * (5). The card shows the phase so the player can tell "still screening 144 candidates" from
+     * "validating structure conflicts", which otherwise all read as one long "searching".
+     */
+    public static void setRootPhase(int phase) {
+        ROOT_PHASE.set(Math.max(0, phase));
+    }
+
+    /**
+     * Publishes the structure-screen progress for the loading card.
+     *
+     * <p>The structure screen validates each shortlisted candidate against native structure
+     * starts; it can take minutes and previously showed nothing, which read as a freeze.
+     */
+    public static void setStructureProgress(int candidate, int total) {
+        STRUCTURE_CANDIDATE.set(Math.max(0, candidate));
+        STRUCTURE_TOTAL.set(Math.max(0, total));
+    }
+
     /** Records one more finished segment. */
     public static void setCompleted(int completedSegments) {
         COMPLETED_SEGMENTS.set(Math.max(0, Math.min(TOTAL_SEGMENTS.get(), completedSegments)));
@@ -203,6 +230,9 @@ public final class PrewarmProgress {
         STATE.clear();
         ROOT_CANDIDATE.set(0);
         ROOT_TOTAL.set(0);
+        ROOT_PHASE.set(0);
+        STRUCTURE_CANDIDATE.set(0);
+        STRUCTURE_TOTAL.set(0);
         // Reset with the rest: the next session's prewarm has not been requested yet, and
         // leaving this set would make a peer wait for a prewarm that may never run.
         EVER_STARTED.set(false);
@@ -262,7 +292,8 @@ public final class PrewarmProgress {
                 ? 0L
                 : TimeUnit.NANOSECONDS.toMillis(Math.max(0L, System.nanoTime() - startedAt));
         return new Snapshot(ACTIVE.get(), total, completed, LANES.get(), elapsedMillis,
-                STATE.containsKey("root-search"), FAILED.get(), ROOT_CANDIDATE.get(), ROOT_TOTAL.get());
+                STATE.containsKey("root-search"), FAILED.get(), ROOT_CANDIDATE.get(), ROOT_TOTAL.get(),
+                ROOT_PHASE.get(), STRUCTURE_CANDIDATE.get(), STRUCTURE_TOTAL.get());
     }
 
     /**
@@ -277,9 +308,13 @@ public final class PrewarmProgress {
      * @param failed       true once a prewarm has finished unsuccessfully
      * @param rootCandidate candidates the root search has scanned so far
      * @param rootTotal    total candidates the root search will scan
+     * @param rootPhase    root-search phase (0 coarse, 1 footprint, 2 axis, 4 structure, 5 entrance)
+     * @param structureCandidate structure-screen candidate being validated
+     * @param structureTotal structure-screen candidate total
      */
     public record Snapshot(boolean active, int total, int completed, int lanes, long elapsedMillis,
-                           boolean rootSearch, boolean failed, int rootCandidate, int rootTotal) {
+                           boolean rootSearch, boolean failed, int rootCandidate, int rootTotal,
+                           int rootPhase, int structureCandidate, int structureTotal) {
         public int percent() {
             if (total <= 0) return 0;
             return Math.max(0, Math.min(100, Math.round(completed * 100.0F / total)));

@@ -448,6 +448,37 @@ public final class RootSearch {
     }
 
     /**
+     * Positions the coarse phase will still sample, for the prefetch lanes.
+     *
+     * <p>Phase 0 is also pure arithmetic over the candidate ring and {@code sampleIndex}: each
+     * candidate samples an 81-point grid (9x9) around its ring origin, with no early-exit state
+     * between points. The only skip is the {@code inRing}/{@code inside} rejection of a whole
+     * candidate, which is a property of the origin alone, so an over-approximation that prefetches
+     * a skipped candidate simply wastes a lane turn - it never changes the decision.
+     *
+     * <p>Enumerates the current candidate's remaining points plus the next candidate, so the
+     * prefetch stays incremental instead of materialising all 144x81 coordinates at once.
+     * Like {@link #pendingFootprintReads} it does not call {@link #claimOwner()}: it runs on the
+     * root pump to hand work to the other lanes.
+     */
+    public List<ColumnKey> pendingCoarseReads() {
+        if (phase != 0) return List.of();
+        var result = new ArrayList<ColumnKey>(81 * 2);
+        for (int ahead = 0; ahead < 2; ahead++) {
+            int ci = candidateIndex + ahead;
+            if (ci >= RADII.length * 36) break;
+            var origin = ringPoint(ci / 36, ci % 36);
+            if (!inRing(origin) || !inside(origin.x(), origin.z(), 32)) continue;
+            int from = (ahead == 0 && column == null) ? sampleIndex : (ahead == 0 ? sampleIndex + 1 : 0);
+            for (int s = from; s < 81; s++) {
+                result.add(new ColumnKey(origin.x() + (s / 9 - 4) * 8,
+                        origin.z() + (s % 9 - 4) * 8, false));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    /**
      * Samples one column to completion on the calling lane and caches it.
      *
      * <p>Deliberately does NOT call {@link #claimOwner()}: this runs on the other

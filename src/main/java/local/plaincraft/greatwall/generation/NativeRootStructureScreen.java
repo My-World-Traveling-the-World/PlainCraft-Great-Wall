@@ -17,6 +17,14 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
 
 /** One bootstrap's asynchronous native structure proof; never borrows live RandomState or FEATURES. */
 public final class NativeRootStructureScreen implements RootStructureScreen {
+    /**
+     * How many candidates the structure screen checks in one window. Each candidate leases up
+     * to 81 chunks for STRUCTURE_REFERENCES and, when starts are found, up to 81 more for
+     * STRUCTURE_STARTS, so an unbounded window would flood the chunk ticket system with all
+     * 144 candidates at once. A window of 8 keeps the in-flight leases bounded while still
+     * letting each window's chunk generation run in parallel.
+     */
+    private static final int STRUCTURE_BATCH = 8;
     private record Fact(String id,Bounds box) {}
     private record References(Map<ChunkPos,ChunkAccess> chunks,List<ChunkPos> starts) {}
     private final ServerLevel level;
@@ -52,12 +60,35 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
         var frozen=List.copyOf(candidates);
         if(frozen.size()>144)throw new WallFailure(FailureCode.CAPACITY,"root candidate set exceeds frozen ring");
         active();producers.merge("count",1,Integer::sum);
-        CompletableFuture<List<Vote>> chain=CompletableFuture.completedFuture(List.of());
-        for(var candidate:frozen)chain=chain.thenComposeAsync(prior->check(candidate).thenApply(v->{
-            var copy=new ArrayList<>(prior);copy.add(v);return List.copyOf(copy);
-        }),nativeOwner);
-        chain.whenComplete((v,error)->{producers.compute("count",(k,n)->n-1);completeDrain();});
-        return chain.copy();
+        // Batch, don't fully chain. The old thenComposeAsync chain started candidate N+1 only
+        // after candidate N's chunk lease had fully loaded AND voted, so chunk generation was
+        // serialised one candidate at a time. Firing a bounded window of candidates up front
+        // lets their chunk requests hit the queue together and load in parallel, while the
+        // window keeps the in-flight lease count (each up to 81 chunks) bounded instead of
+        // materialising all 144 candidates' leases at once.
+        var votes=new ArrayList<Vote>(frozen.size());
+        var completed=new java.util.concurrent.atomic.AtomicInteger();
+        CompletableFuture<Void> chain=CompletableFuture.completedFuture(null);
+        for(int from=0;from<frozen.size();from+=STRUCTURE_BATCH){
+            int to=Math.min(frozen.size(),from+STRUCTURE_BATCH);
+            final int start=from;
+            chain=chain.thenComposeAsync(ignored->{
+                var window=new ArrayList<CompletableFuture<Vote>>(to-start);
+                for(int i=start;i<to;i++)window.add(check(frozen.get(i)));
+                return CompletableFuture.allOf(window.toArray(CompletableFuture[]::new))
+                        .thenAccept(done->{
+                            for(int i=start;i<to;i++){
+                                var vote=window.get(i-start).join();
+                                votes.add(vote);
+                                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStructureProgress(
+                                        completed.incrementAndGet(), frozen.size());
+                            }
+                        });
+            },nativeOwner);
+        }
+        CompletableFuture<List<Vote>> result=chain.thenApply(ignored->List.copyOf(votes));
+        result.whenComplete((v,error)->{producers.compute("count",(k,n)->n-1);completeDrain();});
+        return result.copy();
     }
     private CompletableFuture<Vote> check(Candidate candidate) {
         active();

@@ -58,13 +58,23 @@ public final class GreatWallLoadingProgressRenderer {
         Component title = Component.translatable("plaincraft.great_wall.loading_progress.title");
         graphics.drawString(minecraft.font, title, innerLeft, top + 7, 0xFFFFFFFF, false);
 
-        // Stage 1: choosing the root position. Active while rootSearch, dimmed after.
-        Component stage1 = snapshot.rootSearch()
-                ? (snapshot.rootTotal() > 0
-                        ? Component.translatable("plaincraft.great_wall.loading_progress.searching_n",
-                                snapshot.rootCandidate(), snapshot.rootTotal(), snapshot.rootPercent())
-                        : Component.translatable("plaincraft.great_wall.loading_progress.searching"))
-                : Component.translatable("plaincraft.great_wall.loading_progress.searching_done");
+        // Stage 1: choosing the root position. Active while rootSearch, dimmed after. The
+        // phase distinguishes coarse screening from the structure screen, which is the longest
+        // invisible stretch and used to read as a freeze.
+        Component stage1;
+        if (snapshot.rootSearch()) {
+            if (snapshot.rootPhase() == 4 && snapshot.structureTotal() > 0) {
+                stage1 = Component.translatable("plaincraft.great_wall.loading_progress.structure_n",
+                        snapshot.structureCandidate(), snapshot.structureTotal());
+            } else if (snapshot.rootTotal() > 0) {
+                stage1 = Component.translatable("plaincraft.great_wall.loading_progress.searching_n",
+                        snapshot.rootCandidate(), snapshot.rootTotal(), snapshot.rootPercent());
+            } else {
+                stage1 = Component.translatable("plaincraft.great_wall.loading_progress.searching");
+            }
+        } else {
+            stage1 = Component.translatable("plaincraft.great_wall.loading_progress.searching_done");
+        }
         graphics.drawString(minecraft.font, stage1, innerLeft, top + 21,
                 snapshot.rootSearch() ? STAGE_ACTIVE : STAGE_PENDING, false);
 
