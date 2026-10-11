@@ -207,9 +207,11 @@ final class ProductionSession implements AutoCloseable {
                     gameplay.put("negotiated", negotiated);
                     gameplay.put("debug", debug);
                     gameplay.put("diagnosticExporter", exporter);
-                    if (FabricLoader.getInstance().isModLoaded("roadweaver")) {
-                        gameplay.put("roadWeaverAdapter", new RoadWeaverAdapter(services, gates, backfill));
-                    }
+                    // RoadWeaver interop is disabled: the wall and the roads generate independently.
+                    // No wall obstacle provider, no gate-height agreement and no ABI allowlist are
+                    // registered, so RoadWeaver takes its plain no-wall path exactly as it did
+                    // before the integration existed. The wall still owns the main thread for its
+                    // own prewarm (see MinecraftServerProbeMixin), so startup stays serial.
                     worldState.put("world", state);
                     trace.record("PRODUCTION_GAMEPLAY_READY", recipe.dimension(), 0, 0, "history-recovered", "none");
                     GreatWallMod.LOGGER.info("[GreatWall:S1C] GAMEPLAY_READY beacons={} replayedBeyondHead={} session={}",

@@ -105,8 +105,14 @@ public final class RoadWeaverAdapter implements EndpointHeightAgreementApi, Auto
         try {
             PlanningInteropRegistry.registerHeight(session, this);
             heightRegistered = true;
-            WallObstacleProvider.bind(services, ledger);
-            registerProviderOnce();
+            // Wall obstacle provider registration is deliberately disabled. Publishing
+            // WallObstacleProvider makes RoadWeaver's hasProviders() true, which flips every
+            // road planning/generation entry onto the external-obstacle path (and throws on the
+            // synchronous generateRoad() used by initial fine generation). The roads must plan
+            // and build exactly as they do without a wall mod - the wall and the roads each
+            // generate independently - and only the gate-height agreement (registerHeight above)
+            // keeps the wall's gates and the roads' crossings aligned. The wall is never an
+            // obstacle to road planning.
         } catch (RuntimeException failure) {
             state.stop();
             if (heightRegistered) {

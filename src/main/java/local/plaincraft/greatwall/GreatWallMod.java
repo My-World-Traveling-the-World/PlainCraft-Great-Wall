@@ -21,11 +21,10 @@ public final class GreatWallMod implements ModInitializer {
         local.plaincraft.greatwall.compat.biome.OptionalTreePacks.register();
         WorldServices.register();
         local.plaincraft.greatwall.diagnostics.DebugPayload.registerType();
-        // Soft-dependency RoadWeaver bridge: guard class loading with Loader before touching
-        // the optional interop types, exactly as RoadWeaverAdapter's own docs require.
-        if (FabricLoader.getInstance().isModLoaded("roadweaver")) {
-            local.plaincraft.greatwall.compat.road.RoadWeaverAdapter.initializeIfPresent();
-        }
+        // RoadWeaver interop is disabled: the wall no longer verifies a RoadWeaver ABI allowlist
+        // and never registers a wall obstacle provider or gate-height agreement. The wall and the
+        // roads generate independently, with the wall still owning the main thread for its own
+        // prewarm so the three startup stages stay serial.
         // Process-once soft dependency: the core never references FTB types in its static
         // surface, and FtbIntegration is only reachable when the optional mod is present.
         if (FabricLoader.getInstance().isModLoaded("ftbquests")) {
