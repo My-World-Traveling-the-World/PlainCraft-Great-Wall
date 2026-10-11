@@ -32,7 +32,7 @@
     {
       "id": "roadweaver",
       "version": "2.3.1-1.21.1-plaincraft-direct-core.0.8.407-wall-prewarm-gate",
-      "sha256": "720b259b152a4cbd31602fc41c1492956f61d07aa503abb22dbd7a4ce22295c3",
+      "sha256": "ad22f0f6b9a2041e206320a4cb4b071f9bf5bfe97d799de3f406da6778acf28a",
       "source": "archive_metadata",
       "note": "Must stay identical to src/main/resources/plaincraft_great_wall/roadweaver-interop.sha256. The runtime allowlist is the ABI gate: a jar whose SHA is absent there makes RoadWeaverAdapter refuse to initialise. Documenting a different build than the one the allowlist admits would describe an artifact the mod cannot actually start with."
     },

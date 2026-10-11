@@ -103,4 +103,10 @@
 # drain) until its prewarm settles, so the roads enter and pass the gate in zero ms. The
 # road side keeps the same dual pump as a defensive fallback. The four interop types are
 # re-reviewed and unchanged.
-720b259b152a4cbd31602fc41c1492956f61d07aa503abb22dbd7a4ce22295c3
+#
+# 2026-10-11 (thirteenth build): split over-wide wall obstacle requests. The wall provider
+# caps one request at 2048 blocks, and a planning window that unions many connections can
+# exceed that, aborting the whole initial generation. The road side now plans one
+# connection per sub-request when the window is over-wide. Only RoadPlanningService
+# changed; the four interop types are re-reviewed and unchanged.
+ad22f0f6b9a2041e206320a4cb4b071f9bf5bfe97d799de3f406da6778acf28a
