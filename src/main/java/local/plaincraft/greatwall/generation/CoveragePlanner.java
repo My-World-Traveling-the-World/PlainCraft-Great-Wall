@@ -48,7 +48,18 @@ public final class CoveragePlanner {
         if(plans.plans().isEmpty())return List.of();
         var geometries=plans.plans().stream().map(SegmentPlan::geometry).toList();
         var prefixes=plans.plans().stream().map(SegmentPlan::prefix).toList();
-        var projection=Projection.nearest(chunk.x()*16+8,chunk.z()*16+8,new GeometryWindow(geometries,prefixes));
+        // A chunk that is not within the wall's projection window is a normal, expected case when
+        // the player (or a bulk pre-generator like Chunky) walks far from the wall: that chunk has
+        // no wall to build. Projection.nearest throws OUT_OF_BOUNDS for it, which must be treated
+        // as "no cells here", never as a session failure - otherwise a single far-away chunk fails
+        // the whole production pipeline and stops the server.
+        final ProjectionResult projection;
+        try {
+            projection = Projection.nearest(chunk.x()*16+8,chunk.z()*16+8,new GeometryWindow(geometries,prefixes));
+        } catch (WallFailure outOfWindow) {
+            if (outOfWindow.code() == FailureCode.OUT_OF_BOUNDS) return List.of();
+            throw outOfWindow;
+        }
         if(Math.abs(projection.lateralQ8())>196L*256)return List.of();
         long min=Math.max(0,projection.globalSQ8()-192L*256),max=projection.globalSQ8()+192L*256;
         String recipe=plans.plans().getFirst().geometry().key().recipeHash();
