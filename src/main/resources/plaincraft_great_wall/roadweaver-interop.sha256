@@ -104,9 +104,11 @@
 # road side keeps the same dual pump as a defensive fallback. The four interop types are
 # re-reviewed and unchanged.
 #
-# 2026-10-11 (thirteenth build): split over-wide wall obstacle requests. The wall provider
-# caps one request at 2048 blocks, and a planning window that unions many connections can
-# exceed that, aborting the whole initial generation. The road side now plans one
-# connection per sub-request when the window is over-wide. Only RoadPlanningService
-# changed; the four interop types are re-reviewed and unchanged.
-ad22f0f6b9a2041e206320a4cb4b071f9bf5bfe97d799de3f406da6778acf28a
+# 2026-10-11 (thirteenth build): planning is wall-agnostic. The road plans its terrain
+# path without consulting the wall obstacle provider; the wall is only consulted at
+# construction/fine-generation time, where the protection-gap machinery turns a crossing
+# span into a PROTECTED_GAP dead end. Asking the wall during planning made a single
+# over-wide planning window exceed the provider's 2048-block cap and abort the whole
+# initial generation. Only RoadPlanningService and RoadTerrainPlanningPipeline changed;
+# the four interop types are re-reviewed and unchanged.
+38f2be069707924b25627e15d934ceaaac5f6b7497b5b385d6b1ce7eddfa7fdc
