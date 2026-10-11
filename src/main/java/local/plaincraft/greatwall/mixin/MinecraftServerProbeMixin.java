@@ -11,7 +11,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MinecraftServerProbeMixin {
     @Inject(method = "prepareLevels", at = @At("HEAD"))
     private void greatwall$startupWarmup(CallbackInfo callback) {
-        WorldServices.warming((MinecraftServer) (Object) this);
+        MinecraftServer server = (MinecraftServer) (Object) this;
+        WorldServices.warming(server);
+        // The wall owns the main thread for its own stage: pump both event loops here until the
+        // prewarm settles, then return and hand the thread to the roads (priority 1000). The
+        // roads then pass the gate in zero milliseconds instead of parking here for us.
+        WorldServices.blockAndPumpUntilPrewarmSettled(server);
     }
 
     /**

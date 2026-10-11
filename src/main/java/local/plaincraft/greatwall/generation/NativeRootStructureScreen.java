@@ -42,7 +42,10 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
         var frozen=new HashMap<Structure,String>();
         registry.forEach(s->frozen.put(s,registry.getKey(s).toString()));
         ids=Map.copyOf(frozen);
-        nativeOwner=((ChunkMapAccess)level.getChunkSource().chunkMap).greatwall$chunkMainExecutor();
+        // The global server queue: the road side drains it in managedBlock (which also makes
+        // pollTask skip shouldRun()), so posting the candidate vote chain here keeps it alive
+        // during startup. See StructureLease for the full reasoning.
+        nativeOwner=level.getServer();
     }
     public static Bounds footprint(Axis axis) {
         // Planning may rotate the first wall tangent away from the projection axis.

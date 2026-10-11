@@ -31,8 +31,9 @@ public final class FeaturesLease implements AutoCloseable {
         this.level = level;
         this.positions = positions.stream().distinct().toList();
         trace.assertOutsideLock();
-        var access = (ChunkMapAccess) level.getChunkSource().chunkMap;
-        access.greatwall$chunkMainExecutor().execute(() -> {
+        // Global server queue so the road side's managedBlock (which skips shouldRun) drains it;
+        // the world-local chunk executor would starve. See StructureLease.
+        level.getServer().execute(() -> {
             if (state.containsKey("closed")) { ready.cancel(false); drained.complete(null); return; }
             var chunks = (TerrainChunkAccess) level.getChunkSource();
             int ticketLevel = ChunkLevel.byStatus(ChunkStatus.FEATURES);
@@ -73,7 +74,7 @@ public final class FeaturesLease implements AutoCloseable {
     @Override public void close() {
         if (state.putIfAbsent("closed", true) != null) return;
         ready.cancel(false);
-        ((ChunkMapAccess) level.getChunkSource().chunkMap).greatwall$chunkMainExecutor().execute(() -> {
+        level.getServer().execute(() -> {
             if (state.remove("installed") != null) {
                 var chunks = (TerrainChunkAccess) level.getChunkSource();
                 for (ChunkPos pos : positions) chunks.greatwall$distanceManager()

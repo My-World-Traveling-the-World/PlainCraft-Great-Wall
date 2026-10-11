@@ -66,7 +66,12 @@ public final class StructureLease implements AutoCloseable {
         });
     }
     private java.util.concurrent.Executor executor() {
-        return ((ChunkMapAccess)level.getChunkSource().chunkMap).greatwall$chunkMainExecutor();
+        // The global server queue, not the world-local chunk executor. The road side waits in
+        // managedBlock, which drains the global queue and - crucially - raises the in-managed-
+        // block depth so pollTask skips shouldRun(); a task posted to the world-local chunk
+        // queue is never seen by managedBlock, so the wall would deadlock waiting on its own
+        // chunk request. The global queue is also the thread-safe place for addTicket/request.
+        return level.getServer();
     }
     public CompletableFuture<Map<ChunkPos,ChunkAccess>> ready(){return ready.copy();}
     public CompletableFuture<Void> drained(){return drained.copy();}

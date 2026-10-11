@@ -412,6 +412,44 @@ public final class WorldServices {
         return PrewarmProgress.awaitCompletion(timeout, unit);
     }
 
+    /**
+     * Owns the server thread for the wall's stage, pumping both event loops until the prewarm
+     * settles.
+     *
+     * <h2>Why the wall, not the roads, owns this</h2>
+     * "To whomever owns the stage, the main thread" - each stage must hold the main thread only
+     * for itself. The wall used to hand the main thread straight back after warming(), leaving
+     * the road side to block-and-pump for it, which is a responsibility inversion: the roads
+     * were parking the server thread waiting for a stage they do not own. The wall now pumps
+     * here and returns only once its prewarm is done, so the roads enter and pass the gate in
+     * zero milliseconds.
+     *
+     * <h2>Why a managedBlock with a chunk-queue drain, not a bare poll loop</h2>
+     * managedBlock raises the in-managed-block depth, which makes {@code MinecraftServer.pollTask}
+     * skip its {@code shouldRun()} filter - the filter that, with {@code haveTime()} false during
+     * startup, rejects every {@code server.execute()} task the wall posts to install its recipe.
+     * The condition body additionally drains every level's chunk queue: vanilla ChunkMap posts
+     * its completion callbacks to that world-local queue, and a bare managedBlock never drains it,
+     * so the wall's structure-screen chunk requests would stall. Both queues must move.
+     */
+    public static void blockAndPumpUntilPrewarmSettled(MinecraftServer server) {
+        if (server == null) return;
+        if (!Boolean.getBoolean("greatwall.s1c.productionFixture") && !Boolean.getBoolean("greatwall.s0.probe")) return;
+        long timeoutMinutes = Math.max(1L, Long.getLong("greatwall.prewarmTimeoutMinutes", 30L));
+        long deadlineNanos = System.nanoTime() + java.util.concurrent.TimeUnit.MINUTES.toNanos(timeoutMinutes);
+        server.managedBlock(() -> {
+            // Drain every world-local chunk queue: ChunkMap posts its completion callbacks here
+            // and they must run for the structure screen's chunk requests to finish.
+            for (var level : server.getAllLevels()) {
+                while (level.getChunkSource().pollTask()) {
+                    // keep draining until the local queue is empty
+                }
+            }
+            if (System.nanoTime() >= deadlineNanos) return true;
+            return awaitPrewarm(0, java.util.concurrent.TimeUnit.NANOSECONDS);
+        });
+    }
+
     /** The wall's current prewarm progress, for diagnostics and for a progress display. */
     public static PrewarmProgress.Snapshot prewarmSnapshot() {
         return PrewarmProgress.snapshot();

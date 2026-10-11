@@ -97,4 +97,10 @@
 # fully migrated+sanitized instance (no concurrent half-updated read), and the initial
 # planning wait is bounded so a stalled planning future aborts instead of hanging the
 # loading screen forever. The four interop types are re-reviewed and unchanged again.
-26539e850113d9ec3b0fce4c069a40dd4b1c1a10f4cf3c52d3134479725494f0
+#
+# 2026-10-11 (twelfth build): the wall owns the main thread for its own stage. The wall
+# now pumps both event loops (managedBlock to skip shouldRun + a world-local chunk-queue
+# drain) until its prewarm settles, so the roads enter and pass the gate in zero ms. The
+# road side keeps the same dual pump as a defensive fallback. The four interop types are
+# re-reviewed and unchanged.
+720b259b152a4cbd31602fc41c1492956f61d07aa503abb22dbd7a4ce22295c3
