@@ -188,7 +188,16 @@ public final class ProductionWallPipeline implements AutoCloseable {
                 // degrade and the rest of the wall keeps generating. RealizationPlanner already
                 // records FORT0_DEGRADED for an empty/no-exit result, so surface the failure as an
                 // empty decision list instead of throwing and stopping the server.
-                if (failure instanceof WallFailure wall && wall.code() == FailureCode.ROOT_NOT_FOUND) {
+                //
+                // The failure arrives wrapped in one or more CompletionException layers because
+                // GroundExitResolver.scanLeft throws inside an async lambda. Unwrap to find the
+                // WallFailure before checking its code.
+                Throwable root = failure;
+                while ((root instanceof java.util.concurrent.CompletionException || root instanceof java.util.concurrent.ExecutionException)
+                        && root.getCause() != null) {
+                    root = root.getCause();
+                }
+                if (root instanceof WallFailure wall && wall.code() == FailureCode.ROOT_NOT_FOUND) {
                     GreatWallMod.LOGGER.warn("[GreatWall:S1C] FORT0_DEGRADED reason=no-ground-exit cell={} owner={}; "
                             + "the wall continues without its root fort", cell, owner);
                     return List.<GroundExitDecision>of();
