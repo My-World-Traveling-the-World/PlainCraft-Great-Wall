@@ -107,11 +107,11 @@ public final class WorldServices {
 
     public static void register() {
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
-            // Defensive cross-session reset: a single-player JVM that returns to the title
-            // screen and starts another world reuses these statics. If the previous world left
-            // RIVERS_READY=true or a spent PrewarmProgress latch behind, the road side would
-            // read "wall already done" and skip the wall entirely, breaking the serial order.
-            RIVERS_READY.set(false);
+            // Cross-session reset lives in SERVER_STOPPED (below): it already clears RIVERS_READY
+            // and PrewarmProgress when a world stops. Resetting RIVERS_READY here would run BEFORE
+            // the constructor replays it (the "rivers finished before this session registered"
+            // branch in WorldServices.<init>), so the replay could never fire. Only clear the latch;
+            // RIVERS_READY is left to SERVER_STOPPED so an early rivers signal is not lost.
             PrewarmProgress.clear();
             if (Boolean.getBoolean("greatwall.production")) {
                 throw new IllegalStateException("Formal production remains OFF until S1C acceptance");

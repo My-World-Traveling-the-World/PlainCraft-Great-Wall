@@ -151,13 +151,13 @@ final class ProductionSession implements AutoCloseable {
                 //                          became durable after the rivers were already done.
                 // Both are idempotent, so checking both here cannot double-start the prewarm.
                 planner.startupPump();
-                if (state.containsKey("rivers-prewarmed")) {
-                    planner.afterRoadBulk();
-                    trace.record("PRODUCTION_RIVERS_BULK", recipe.dimension(), 0, 0, "rivers-finished-before-install", "none");
-                } else if (state.containsKey("after-road-reached")) {
-                    planner.afterRoadBulk();
-                    trace.record("PRODUCTION_AFTER_ROAD_BULK", recipe.dimension(), 0, 0, "road-finished-before-install", "none");
-                }
+                // 「到谁谁占用主线程」：长城拥有 prepareLevels HEAD(950) 的独占窗口，此刻河流
+                // 已在 createLevels(900) 彻底完成，且主线程正停在 blockAndPumpUntilPrewarmSettled
+                // 里死等预热。recipe 一旦持久化就绪，必须无条件开始批量预热，绝不可依赖
+                // after-road-reached（TAIL 路径，主线程被 HEAD 阻塞永远到不了）或 rivers-prewarmed
+                // （跨阶段易失标志，道路回退 0.8.402 后传递链断裂）。afterRoadBulk 自带幂等保护。
+                planner.afterRoadBulk();
+                trace.record("PRODUCTION_RIVERS_BULK", recipe.dimension(), 0, 0, "recipe-installed-unconditional-bulk", "none");
                 trace.record("PRODUCTION_RECIPE_INSTALLED", recipe.dimension(), 0, 0, "recipe-durable-before-generation", "none");
                 // S3 gameplay service assembly. The journal is world-scoped (manifest.instance),
                 // owns a dedicated IO executor (close() shuts it down), and recovers the beacon count
