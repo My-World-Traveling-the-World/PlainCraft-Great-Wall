@@ -92,4 +92,9 @@
 # resets RIVERS_READY/PrewarmProgress across sessions, retries a refused structure-vote
 # lane submit, and hardens FeaturesLease against close-during-load. Only the bridge
 # changed on the road side; the four interop types are re-reviewed again and unchanged.
-741bec32a1b17fbfbcc3b4d68151713d89486bb87e7d30b427cf84d439196cf7
+#
+# 2026-10-11 (eleventh build): audit follow-ups. ConfigService.load now publishes a
+# fully migrated+sanitized instance (no concurrent half-updated read), and the initial
+# planning wait is bounded so a stalled planning future aborts instead of hanging the
+# loading screen forever. The four interop types are re-reviewed and unchanged again.
+26539e850113d9ec3b0fce4c069a40dd4b1c1a10f4cf3c52d3134479725494f0

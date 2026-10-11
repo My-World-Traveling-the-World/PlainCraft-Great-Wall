@@ -54,6 +54,13 @@ public final class StructureLease implements AutoCloseable {
                     if(state.containsKey("closed"))executor().execute(this::cleanup);
                 });
             }catch(Throwable error){
+                // A throw mid-addTicket (the loop above can add some positions before one
+                // fails) must not leak those tickets. cleanup() only removes tickets when the
+                // "installed" marker is present, and that marker is set AFTER the whole loop,
+                // so on this path it is missing and cleanup() would skip the removal. Mark the
+                // lease as installed here so cleanup() removes every position; removeTicket is
+                // a no-op for a position whose ticket was never added.
+                state.put("installed",true);
                 state.put("producer-done",true);ready.completeExceptionally(error);state.put("closed",true);cleanup();
             }
         });
