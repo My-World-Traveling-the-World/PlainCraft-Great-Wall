@@ -106,8 +106,14 @@ public final class RealizationPlanner {
             if(inspection!=null)inspection.accept(inspection(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHash(input)));
             return result(input,breaks,accepted,t0);
         }
-        if(from<stations.getFirst().globalSQ8())
-            throw new WallFailure(FailureCode.MISSING_FEATURES_PLAN,"cell needs complete station ribbon");
+        // A cell before the wall's first station is the mirror image of the "past the last station"
+        // case above: it has no wall to build, so it degrades to an empty cell instead of failing.
+        // Treating one side as empty and the other as a fatal MISSING_FEATURES_PLAN was asymmetric
+        // and stopped the server on an otherwise normal geometry boundary.
+        if(from<stations.getFirst().globalSQ8()) {
+            if(inspection!=null)inspection.accept(inspection(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHash(input)));
+            return result(input,breaks,accepted,t0);
+        }
         to=Math.min(to,stations.getLast().globalSQ8());
         if(inspection!=null||decisions!=null)requireRibbonColumns(input,stations,from,to);
         var bounds=recipe!=null?recipe.bounds():new DimensionBounds(
@@ -533,7 +539,11 @@ public final class RealizationPlanner {
         var values=new TreeMap<String,WaterEvidence>();
         for(var p:plans.plans())for(var w:p.geometry().water()){
             long start=p.prefix().lengthBeforeQ8()+w.crossing().fromQ8(),end=p.prefix().lengthBeforeQ8()+w.crossing().toQ8();
-            if(start<0)throw new WallFailure(FailureCode.ROOT_NOT_FOUND,"river before root has no certified bank");
+            // A river crossing whose global arc coordinate falls before the wall's start is not part of
+            // this wall; drop it. It used to throw ROOT_NOT_FOUND, which is wrong twice over: it is a
+            // normal boundary case (not a missing ground exit), and reusing that code made resolveCell
+            // misclassify it as FORT0_DEGRADED.
+            if(start<0)continue;
             var range=new ArcInterval(start,end);
             String key=range+":"+w.waterTopY()+":"+w.banks();
             var value=new WaterEvidence(range,w.classification(),w.channelWidthQ8(),w.crossingSpanQ8(),w.waterTopY(),w.banks(),w.piers(),w.inputHash());

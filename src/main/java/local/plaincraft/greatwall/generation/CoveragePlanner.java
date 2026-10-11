@@ -34,8 +34,17 @@ public final class CoveragePlanner {
                 min=Math.min(min,site.frame().walkY()-35);max=Math.max(max,site.frame().walkY()+8);
             }
         }
-        if(min==Integer.MAX_VALUE)throw new WallFailure(FailureCode.MISSING_FEATURES_PLAN,"no canonical coverage for "+chunk);
-        min=Math.max(min,bounds.minY());max=Math.min(max,bounds.maxYExclusive());
+        // An owner chunk can be admitted by realizationOwners because it falls inside a site's real
+        // Rasterizer.worldBounds (the template footprint), which can be wider than the fixed 196/128
+        // windows used above. That chunk then has no station or site.bounds() hit here, but it still
+        // must be captured for its cell. Falling back to the whole dimension Y range is the safe
+        // conservative coverage - it captures more pages, never fewer - rather than failing the
+        // session on a radius-assumption mismatch.
+        if(min==Integer.MAX_VALUE) {
+            min=bounds.minY();max=bounds.maxYExclusive();
+        } else {
+            min=Math.max(min,bounds.minY());max=Math.min(max,bounds.maxYExclusive());
+        }
         if(min>=max)throw new WallFailure(FailureCode.OUT_OF_BOUNDS,"empty vertical coverage");
         var bases=new ArrayList<Integer>();
         for(int base=Math.floorDiv(min,128)*128;base<max;base=Math.addExact(base,128))bases.add(base);
