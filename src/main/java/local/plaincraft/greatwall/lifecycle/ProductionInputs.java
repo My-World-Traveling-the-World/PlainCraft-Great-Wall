@@ -29,8 +29,10 @@ public record ProductionInputs(WorldBootstrap.Frozen bootstrap, BlockCatalog blo
                 (catalog.hash() + ":" + biomeSnapshot.hash()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
         var versions = new TreeMap<String, JsonElement>();
         versions.put("templateVersion", new JsonPrimitive(1));
-        // Actual source hashes in terrain inputs bind all compiled templates, support and exit algorithms.
-        versions.put("source", inputs.get("actual-source-sha256:plaincraft_great_wall"));
+        // The source-byte SHA is intentionally not part of templatesHash: it changes on every
+        // recompile even when the template/generation logic is untouched, which needlessly
+        // invalidates an existing world. Generation changes must bump the mod version instead,
+        // which already feeds terrainHash through actual-mod:*.
         String templatesHash = WorldRecipeGuard.fingerprint(versions);
         var root = new WorldBootstrap.Frozen(frozen.bounds(), terrainHash, paletteHash, templatesHash, frozen::createOracle,
                 (oracle, cursor) -> {

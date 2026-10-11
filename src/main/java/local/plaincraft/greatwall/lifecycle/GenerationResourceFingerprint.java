@@ -101,8 +101,13 @@ public final class GenerationResourceFingerprint {
         });
         for (var mod : FabricLoader.getInstance().getAllMods()) {
             String id = mod.getMetadata().getId();
+            // Version is part of the recipe: a mod that bumps its version must invalidate old worlds
+            // so the new version's generation is never mixed with a saved recipe. The per-mod source
+            // byte SHA is deliberately NOT frozen here - it changes on every recompile even when the
+            // generation logic is untouched (startup ordering, deadlock, far-chunk fixes), which would
+            // needlessly force a new world for a client that only wants to reuse a save across such
+            // non-generation changes. A real generation change must bump the mod version to take effect.
             inputs.put("actual-mod:" + id, new JsonPrimitive(mod.getMetadata().getVersion().getFriendlyString()));
-            if (!id.equals("java")) inputs.put("actual-source-sha256:" + id, new JsonPrimitive(sourceHash(mod)));
         }
         Path c2me = FabricLoader.getInstance().getConfigDir().resolve("c2me.toml");
         if (FabricLoader.getInstance().isModLoaded("c2me") && Files.isRegularFile(c2me)) {
