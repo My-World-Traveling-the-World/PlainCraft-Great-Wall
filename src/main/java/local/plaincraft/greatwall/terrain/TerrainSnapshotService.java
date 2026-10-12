@@ -39,7 +39,13 @@ public final class TerrainSnapshotService implements AutoCloseable {
     private final ChunkEvidenceStore store;
     private final Executor io;
     private final BlockCatalog catalog;
-    private final List<Bounds> predictedStructures;
+    /**
+     * Planning-resolved structure footprints (from the corridor scan), injected once the scan
+     * settles. Empty until then, so a capture that runs before the scan simply sees no predicted
+     * structures — matching the pre-refactor behaviour rather than failing. Volatile so the
+     * generation path observes the post-scan value without synchronizing with the scan thread.
+     */
+    private volatile List<Bounds> predictedStructures;
     public TerrainSnapshotService(ChunkEvidenceStore store,Executor io) {this(store,io,new BlockCatalog(RegistryAccess.EMPTY));}
     public TerrainSnapshotService(ChunkEvidenceStore store,Executor io,BlockCatalog catalog) {
         this(store,io,catalog,List.of());
@@ -47,6 +53,11 @@ public final class TerrainSnapshotService implements AutoCloseable {
     public TerrainSnapshotService(ChunkEvidenceStore store,Executor io,BlockCatalog catalog,List<Bounds> predictedStructures) {
         this.store=Objects.requireNonNull(store);this.io=Objects.requireNonNull(io);this.catalog=Objects.requireNonNull(catalog);
         this.predictedStructures=List.copyOf(predictedStructures);
+    }
+
+    /** Publishes the planning-resolved structure footprints once the corridor scan settles. */
+    public void setPredictedStructures(List<Bounds> structures) {
+        this.predictedStructures = List.copyOf(Objects.requireNonNull(structures, "structures"));
     }
     public BlockCatalog catalog(){return catalog;}
     public long dataProductions(){return allocationCounts.getOrDefault("data",0L);}
@@ -63,13 +74,12 @@ public final class TerrainSnapshotService implements AutoCloseable {
             if(!coverage.hash().equals(DeterministicHash.sha256(EvidenceCodec.coverage(coverage))))throw failure(FailureCode.RECIPE_MISMATCH,"coverage hash mismatch");
             ChunkAccess owner=featuresChunks.get(coverage.chunk());
             if(owner==null)throw failure(FailureCode.T0_MISSING,"owner not prepared");
-            int radius=ProtectionSnapshot.leaseRadiusChunks();
-            for(int x=-radius;x<=radius;x++)for(int z=-radius;z<=radius;z++) {
-                var key=new ChunkKey(coverage.chunk().dimension(),coverage.chunk().x()+x,coverage.chunk().z()+z);
-                var chunk=featuresChunks.get(key);
-                if(chunk==null||!chunk.getPersistedStatus().isOrAfter(ChunkStatus.FEATURES)||chunk.getPos().x!=key.x()||chunk.getPos().z!=key.z())
-                    throw failure(FailureCode.MISSING_FEATURES_PLAN,"FEATURES halo not ready: "+key);
-            }
+            // Owner-only capture: only the chunk being written must be FEATURES-ready. The historical
+            // 9x9 halo check is gone along with the cross-chunk reference walk, so a capture can never
+            // wait on a neighbour's generation.
+            if(!owner.getPersistedStatus().isOrAfter(ChunkStatus.FEATURES)
+                    ||owner.getPos().x!=coverage.chunk().x()||owner.getPos().z!=coverage.chunk().z())
+                throw failure(FailureCode.MISSING_FEATURES_PLAN,"owner not FEATURES-ready: "+coverage.chunk());
             var existing=flights.get(coverage);if(existing!=null)return captureView(existing,allocations,recipeHash);
             var keys=keys(coverage,owner.getMinBuildHeight(),owner.getMaxBuildHeight());
             admission.compute("count",(k,n)->{

@@ -166,7 +166,7 @@ final class ProductionSession implements AutoCloseable {
                 // runs after prewarm would leave the wall cutting through structures. The scan is
                 // fire-and-forget with a degraded fallback (empty index = no structure avoidance =
                 // the pre-refactor behaviour); it must never block or fail the world.
-                startStructureScanAndPrewarm(level, recipe, planner);
+                startStructureScanAndPrewarm(level, recipe, planner, terrain);
                 trace.record("PRODUCTION_RIVERS_BULK", recipe.dimension(), 0, 0, "recipe-installed-unconditional-bulk", "none");
                 trace.record("PRODUCTION_RECIPE_INSTALLED", recipe.dimension(), 0, 0, "recipe-durable-before-generation", "none");
                 // S3 gameplay service assembly. The journal is world-scoped (manifest.instance),
@@ -379,7 +379,8 @@ final class ProductionSession implements AutoCloseable {
      * obstacle index is published. The scan and the prewarm both run off the server thread; the
      * only ordering that matters is index-before-dispatch, which the completion chain guarantees.
      */
-    private void startStructureScanAndPrewarm(ServerLevel level, WorldRecipe recipe, PlannerScheduler planner) {
+    private void startStructureScanAndPrewarm(ServerLevel level, WorldRecipe recipe, PlannerScheduler planner,
+            TerrainSnapshotService terrain) {
         // Corridor half-width in blocks. The ridge jitters up to +-512 blocks laterally (searchStep
         // rejects offsets beyond 512*256 Q8), so the corridor must span that full envelope plus the
         // structure footprint; 576 blocks covers the envelope with a 64-block margin. This trades
@@ -408,6 +409,17 @@ final class ProductionSession implements AutoCloseable {
                         planner.setObstacles(StructureObstacleIndex.empty(8));
                     } else {
                         planner.setObstacles(StructureObstacleIndex.of(boxes, 8));
+                        // Publish the same planning-resolved boxes to the terrain snapshot service, so
+                        // the generation-time protection check reads them instead of the removed
+                        // cross-chunk reference walk.
+                        var bounds = new java.util.ArrayList<Bounds>(boxes.size());
+                        for (var owned : boxes) {
+                            var b = owned.box();
+                            if (b == null) continue;
+                            bounds.add(new Bounds(b.minX(), b.minY(), b.minZ(),
+                                    b.maxX() + 1, b.maxY() + 1, b.maxZ() + 1));
+                        }
+                        terrain.setPredictedStructures(bounds);
                     }
                     // The prewarm must start exactly once, after the index is settled either way.
                     planner.afterRoadBulk();

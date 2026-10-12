@@ -93,14 +93,15 @@ public record ProtectionSnapshot(List<Bounds> structures,Set<Point3i> blockEntit
     }
 
     /**
-     * Structure bounding boxes to protect, resolved from already-prepared chunks.
+     * Structure bounding boxes to protect.
      *
-     * <p>The S1 contract requires a cross-chunk reference to be resolved from the
-     * finite STRUCTURE_STARTS/FEATURES lease content that PREPARE already
-     * provided (never a synchronous getChunk), so the lease must cover the
-     * reference distance as well as the FEATURES write radius. When a reference
-     * still cannot be resolved the fail-closed answer stays "protect the read
-     * window": an unknown structure extent must never be written through.
+     * <p>Two sources: the planning-resolved {@code predicted} boxes (the corridor scan already ran
+     * {@code Structure.generate} over every structure the wall can reach, so no cross-chunk
+     * reference needs resolving here) and this owner's own {@code getAllStarts}. The historical
+     * cross-chunk {@code getAllReferences} walk — which required the 81-chunk FEATURES lease and
+     * was the source of the Chunky deadlock — is gone: an unresolved reference no longer protects
+     * the whole read window, because the corridor scan already knew about that structure and put
+     * its box in {@code predicted}.
      */
     public static List<Bounds> structureBounds(ChunkAccess owner,List<Bounds> predicted,
             Map<ChunkPos,ChunkAccess> prepared,Bounds conservativeReadBounds) {
@@ -111,15 +112,6 @@ public record ProtectionSnapshot(List<Bounds> structures,Set<Point3i> blockEntit
             var start=entry.getValue();
             traceOrigin(owner,"OWNER_START",entry.getKey().getClass().getSimpleName(),owner.getPos(),start,conservativeReadBounds);
             append(start,boxes);
-        }
-        for(var entry:owner.getAllReferences().entrySet()) {
-            for(long reference:entry.getValue()) {
-                var chunk=prepared.get(new ChunkPos(reference));
-                var start=chunk==null?null:chunk.getStartForStructure(entry.getKey());
-                traceOrigin(owner,chunk==null?"MISSING_PREPARED":start==null?"MISSING_START":!start.isValid()?"INVALID_START":"RESOLVED_REFERENCE",
-                        entry.getKey().getClass().getSimpleName(),new ChunkPos(reference),start,conservativeReadBounds);
-                if(start==null||!start.isValid())boxes.add(conservativeReadBounds);else append(start,boxes);
-            }
         }
         return boxes.stream().distinct().sorted(BOX_ORDER).toList();
     }
@@ -140,11 +132,6 @@ public record ProtectionSnapshot(List<Bounds> structures,Set<Point3i> blockEntit
         if(predictedCount<0)throw new IllegalArgumentException("negative predicted count");
         long count=predictedCount;
         for(var start:owner.getAllStarts().values())count=Math.addExact(count,boxCount(start));
-        for(var entry:owner.getAllReferences().entrySet())for(long reference:entry.getValue()) {
-            var chunk=prepared.get(new ChunkPos(reference));
-            var start=chunk==null?null:chunk.getStartForStructure(entry.getKey());
-            count=Math.addExact(count,start==null||!start.isValid()?1:boxCount(start));
-        }
         return count;
     }
 

@@ -272,56 +272,21 @@ public final class ProductionWallPipeline implements AutoCloseable {
         active();var plan=track(ports.plans().apply(key,256));
         return plan.future().thenComposeAsync(window->{
             active();Coverage c=coverage.forChunk(key,window,recipe.bounds());
-            int radius=ProtectionSnapshot.leaseRadiusChunks();
-            var positions=new ArrayList<ChunkPos>();
-            for(int x=-radius;x<=radius;x++)for(int z=-radius;z<=radius;z++)positions.add(new ChunkPos(key.x()+x,key.z()+z));
-            var features=track(ports.features().apply(List.copyOf(positions)));
-            event("PRODUCTION_PREPARE_FEATURES",key,"features","none");
+            // The corridor scan already resolved every structure the wall can reach into planning
+            // boxes (published into TerrainSnapshotService.predictedStructures), so the capture no
+            // longer needs the historical 81-chunk FEATURES halo to resolve cross-chunk structure
+            // references. Request only the owner itself — which is already FEATURES-ready when its
+            // generation runs — so the capture can never block on a neighbour and the Chunky
+            // deadlock is gone.
+            var positions=List.of(new ChunkPos(key.x(),key.z()));
+            var features=track(ports.features().apply(positions));
+            event("PRODUCTION_PREPARE_FEATURES",key,"features","owner-only");
             return features.future().thenComposeAsync(chunks->{
                 active();var map=new HashMap<ChunkKey,ChunkAccess>();
                 chunks.forEach((p,ch)->map.put(new ChunkKey(key.dimension(),p.x,p.z),ch));
-                // The S1 contract requires every cross-chunk structure reference to be
-                // resolved from lease content rather than a synchronous getChunk. A
-                // reference points at the chunk where a structure STARTS, which can sit
-                // further out than the FEATURES write radius (measured on seed 17: +4 and
-                // -2 chunks while the radius is 1), and an unresolved reference makes
-                // ProtectionSnapshot protect the whole read window - which blocked the
-                // fort0 entrance on 188/188 columns with zero terrain faults. Prepare
-                // exactly the referenced chunks instead of widening the blanket halo.
-                return withReferenceChunks(key,map).thenComposeAsync(prepared->
-                        snapshots.capture(c,prepared,engine,recipe.recipeHash(),allocations),ports.worker());
+                return snapshots.capture(c,map,engine,recipe.recipeHash(),allocations);
             },ports.worker()).whenComplete((v,e)->release(features));
         },ports.worker()).whenComplete((v,e)->release(plan));
-    }
-
-    /**
-     * Adds the chunks named by the owner's structure references to an already
-     * prepared FEATURES map. Only the chunks actually referenced are requested,
-     * and the total stays inside the frozen 81-chunk lease bound.
-     */
-    private CompletableFuture<Map<ChunkKey,ChunkAccess>> withReferenceChunks(ChunkKey key,
-            Map<ChunkKey,ChunkAccess> halo) {
-        ChunkAccess owner=halo.get(key);
-        if(owner==null)return CompletableFuture.completedFuture(Map.copyOf(halo));
-        var extra=new ArrayList<ChunkPos>();
-        for(var entry:owner.getAllReferences().entrySet())for(long reference:entry.getValue()) {
-            var pos=new ChunkPos(reference);
-            var candidate=new ChunkKey(key.dimension(),pos.x,pos.z);
-            if(halo.containsKey(candidate))continue;
-            if(extra.stream().anyMatch(p->p.x==pos.x&&p.z==pos.z))continue;
-            extra.add(pos);
-        }
-        if(extra.isEmpty())return CompletableFuture.completedFuture(Map.copyOf(halo));
-        if(Math.addExact(halo.size(),extra.size())>81)throw failure(FailureCode.CAPACITY,
-                "structure-reference lease exceeds the frozen 81-chunk bound: halo="+halo.size()
-                        +" references="+extra.size());
-        var lease=track(ports.features().apply(List.copyOf(extra)));
-        event("PRODUCTION_PREPARE_REFERENCES",key,"references",Integer.toString(extra.size()));
-        return lease.future().thenApplyAsync(chunks->{
-            active();var merged=new HashMap<>(halo);
-            chunks.forEach((p,ch)->merged.put(new ChunkKey(key.dimension(),p.x,p.z),ch));
-            return Map.copyOf(merged);
-        },ports.worker()).whenComplete((v,e)->release(lease));
     }
     public CompletableFuture<Void> verifyLoaded(ChunkAccess owner) {
         var key=new ChunkKey(recipe.dimension(),owner.getPos().x,owner.getPos().z);
