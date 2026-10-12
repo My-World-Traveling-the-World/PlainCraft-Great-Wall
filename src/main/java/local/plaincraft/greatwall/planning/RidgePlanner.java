@@ -23,6 +23,16 @@ public final class RidgePlanner {
     private static final String ZERO = "0".repeat(64);
     private final WorldRecipe recipe;
     private final AnchorField anchors;
+    /**
+     * Resolved structure footprints along the corridor, injected after the planning-time scan
+     * completes. Empty until then, so the ridge behaves exactly as before the refactor when no
+     * scan has run. Replaced wholesale (not mutated) so the detour stage always observes one
+     * immutable index.
+     */
+    private volatile StructureObstacleIndex obstacles = StructureObstacleIndex.empty(OBSTACLE_MARGIN_BLOCKS);
+    /** Wall half-width plus safety margin; a structure is a hard obstacle when the centre line
+     *  approaches within this many blocks of its footprint. */
+    private static final int OBSTACLE_MARGIN_BLOCKS = 8;
 
     public RidgePlanner(WorldRecipe recipe, AnchorField anchors) {
         this.recipe = Objects.requireNonNull(recipe, "recipe");
@@ -30,6 +40,12 @@ public final class RidgePlanner {
         if (recipe.config().columnBudget() != 150000 || recipe.config().corridorHalfWidth() != 512) {
             throw new IllegalArgumentException("requires frozen 150000/512 budget and corridor");
         }
+    }
+
+    /** Publishes the resolved obstacle index once the corridor scan settles; must precede the
+     *  bulk prewarm so the detour stage observes the final value. */
+    public void setObstacles(StructureObstacleIndex index) {
+        this.obstacles = Objects.requireNonNull(index, "index");
     }
 
     public Cursor begin(SegmentKey key, NaturalTerrainOracle oracle) {
@@ -106,6 +122,12 @@ public final class RidgePlanner {
         Point2q center;
         try {
             center = position(c, u * 256, tapered(rawOffset, u));
+            // A structure footprint is a hard obstacle: a candidate whose centre line enters (or
+            // approaches within the margin of) any resolved structure box is rejected outright, so
+            // the ridge jitters around the structure instead of cutting through it. The wall is
+            // "宁断不悬空" — never穿模. This is the only planning-time detour hook; the fine pass
+            // still re-checks the emitted polyline end-to-end.
+            if (obstacles.blocked(center.xQ8(), center.zQ8())) { rejectCandidate(c); return; }
             Point2q prior = c.lookahead == 0 ? position(c, (c.step - 1) * 16 * 256, c.controls.getLast()) : c.lookaheadPoint;
             if (!heading(prior, center)) { rejectCandidate(c); return; }
             var offset = OFFSETS.get(c.sampleIndex);

@@ -491,6 +491,15 @@ public final class PlannerScheduler implements AutoCloseable {
     }
     public CompletableFuture<Void> drain() { return drained.copy(); }
 
+    /**
+     * Publishes the resolved corridor-structure obstacle index to the ridge planner. Must be called
+     * after the planning-time structure scan settles and before {@link #afterRoadBulk()} starts the
+     * bulk prewarm, so the detour stage observes the final index.
+     */
+    public void setObstacles(StructureObstacleIndex index) {
+        ridge.setObstacles(index);
+    }
+
     public SegmentGeometry computeGeometryNow(long segment, NaturalTerrainOracle diagnosticOracle) {
         key(segment);
         if (!diagnosticOracle.supportsSynchronousDiagnostics()) {
