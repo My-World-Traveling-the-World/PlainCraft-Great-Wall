@@ -21,6 +21,10 @@ public final class GreatWallMod implements ModInitializer {
         local.plaincraft.greatwall.compat.biome.OptionalTreePacks.register();
         WorldServices.register();
         local.plaincraft.greatwall.diagnostics.DebugPayload.registerType();
+        // Register the vanilla-feature landing entry (mirrors RoadWeaver). The feature reads the
+        // planning-compiled ChunkWritePlan from WallWorldgenPlanCache and paints it; no neighbour
+        // reads, no futures.
+        local.plaincraft.greatwall.generation.WallFeatureRegistry.register();
         // RoadWeaver interop is disabled: the wall no longer verifies a RoadWeaver ABI allowlist
         // and never registers a wall obstacle provider or gate-height agreement. The wall and the
         // roads generate independently, with the wall still owning the main thread for its own
