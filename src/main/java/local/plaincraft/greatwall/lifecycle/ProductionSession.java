@@ -380,10 +380,11 @@ final class ProductionSession implements AutoCloseable {
      * only ordering that matters is index-before-dispatch, which the completion chain guarantees.
      */
     private void startStructureScanAndPrewarm(ServerLevel level, WorldRecipe recipe, PlannerScheduler planner) {
-        // Corridor half-width in blocks. Covering the common village/outpost footprint; the true
-        // jitter corridor is +-512 but a structure wider than 320 blocks would be a landmark the
-        // wall is expected to run around, not beside. Tuned against the real-machine hit-rate later.
-        int corridorHalfWidth = 160;
+        // Corridor half-width in blocks. The ridge jitters up to +-512 blocks laterally (searchStep
+        // rejects offsets beyond 512*256 Q8), so the corridor must span that full envelope plus the
+        // structure footprint; 576 blocks covers the envelope with a 64-block margin. This trades
+        // scan width (more candidates) for never missing a structure the wall can actually reach.
+        int corridorHalfWidth = 576;
         long lengthBlocks = local.plaincraft.greatwall.config.GreatWallConfig.get().wallLengthBlocks();
         if (lengthBlocks <= 0) lengthBlocks = 8190L;
         // Chunk-bounds of the axis-aligned corridor. The axis may run at an angle, so take a
