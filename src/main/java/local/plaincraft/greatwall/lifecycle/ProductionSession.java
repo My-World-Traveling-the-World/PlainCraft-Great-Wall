@@ -96,6 +96,13 @@ final class ProductionSession implements AutoCloseable {
     /** Planning-time corridor structure scan; constructed once the overworld is known and closed on
      *  session shutdown. */
     private volatile local.plaincraft.greatwall.generation.CorridorStructureScanner structureScanner;
+    /** Planning-resolved fine cross-section samples + structure boxes, published once the prewarm
+     *  settles and consumed by the planning-phase chunk compilation. */
+    private volatile local.plaincraft.greatwall.planning.FineHeightIndex fineHeightIndex;
+    private volatile java.util.List<local.plaincraft.greatwall.model.WallTypes.Bounds> planningStructures = java.util.List.of();
+    /** Realization + chunk-plan compiler, held for the planning-phase compilation. */
+    private volatile local.plaincraft.greatwall.terrain.RealizationPlanner realization;
+    private volatile local.plaincraft.greatwall.generation.ChunkPlanCompiler chunkCompiler;
 
     ProductionSession(MinecraftServer server, WorldServices services) {
         this.server = server; this.services = services;
@@ -137,8 +144,10 @@ final class ProductionSession implements AutoCloseable {
                 var store = ChunkEvidenceStore.production(root.resolve("evidence"));
                 var terrain = new TerrainSnapshotService(store, io, frozen.blocks());
                 var realization = buildRealization(level, recipe);
+                this.realization = realization;
+                this.chunkCompiler = new ChunkPlanCompiler();
                 var barrier = new WallStageCoordinator(level, services, recipe, planner, terrain, realization,
-                        new ChunkPlanCompiler(), new ChunkWallWriter());
+                        this.chunkCompiler, new ChunkWallWriter());
                 var snapshot = new Installed(recipe, planner, barrier, frozen);
                 snapshots.put("installed", snapshot);
                 installBiomeRuntime(level, recipe);
@@ -166,7 +175,7 @@ final class ProductionSession implements AutoCloseable {
                 // runs after prewarm would leave the wall cutting through structures. The scan is
                 // fire-and-forget with a degraded fallback (empty index = no structure avoidance =
                 // the pre-refactor behaviour); it must never block or fail the world.
-                startStructureScanAndPrewarm(level, recipe, planner, terrain, barrier);
+                startStructureScanAndPrewarm(level, recipe, planner);
                 trace.record("PRODUCTION_RIVERS_BULK", recipe.dimension(), 0, 0, "recipe-installed-unconditional-bulk", "none");
                 trace.record("PRODUCTION_RECIPE_INSTALLED", recipe.dimension(), 0, 0, "recipe-durable-before-generation", "none");
                 // S3 gameplay service assembly. The journal is world-scoped (manifest.instance),
@@ -379,8 +388,7 @@ final class ProductionSession implements AutoCloseable {
      * obstacle index is published. The scan and the prewarm both run off the server thread; the
      * only ordering that matters is index-before-dispatch, which the completion chain guarantees.
      */
-    private void startStructureScanAndPrewarm(ServerLevel level, WorldRecipe recipe, PlannerScheduler planner,
-            TerrainSnapshotService terrain, WallStageCoordinator barrier) {
+    private void startStructureScanAndPrewarm(ServerLevel level, WorldRecipe recipe, PlannerScheduler planner) {
         // Corridor half-width in blocks. The ridge jitters up to +-512 blocks laterally (searchStep
         // rejects offsets beyond 512*256 Q8), so the corridor must span that full envelope plus the
         // structure footprint; 576 blocks covers the envelope with a 64-block margin. This trades
@@ -418,19 +426,20 @@ final class ProductionSession implements AutoCloseable {
                             bounds.add(new Bounds(b.minX(), b.minY(), b.minZ(),
                                     b.maxX() + 1, b.maxY() + 1, b.maxZ() + 1));
                         }
-                        terrain.setPredictedStructures(bounds);
                         structures = List.copyOf(bounds);
                     }
+                    planningStructures = structures;
                     // The fine cross-section sample and the prewarm both drive off the planner's
-                    // lanes; sample first, then publish the samples to the pipeline and start the
-                    // bulk prewarm. A sample failure degrades to the historical T0 snapshot path.
+                    // lanes; sample first, publish the samples to the session, then start the bulk
+                    // prewarm. A sample failure leaves the index null and the wall simply does not
+                    // compile/paint (the new single path; no historical fallback).
                     planner.requireFineSamples(Priority.PLAYER_PREFETCH)
                             .whenComplete((fineIndex, sampleError) -> {
                                 if (sampleError != null) {
                                     GreatWallMod.LOGGER.warn("[GreatWall:corridor] fine sample failed; "
-                                            + "falling back to per-block T0 snapshot", sampleError);
+                                            + "wall will not compile", sampleError);
                                 } else {
-                                    barrier.setPlanningTerrain(fineIndex, structures);
+                                    fineHeightIndex = fineIndex;
                                 }
                                 // The prewarm must start exactly once, after both planning inputs settle.
                                 planner.afterRoadBulk();
@@ -537,13 +546,12 @@ final class ProductionSession implements AutoCloseable {
      *  has settled and the fine samples are published. This is the planning-phase compilation step
      *  that lets the WallFeature paint without any chunk read. */
     private void compilePlanningPlans(Installed snapshot) {
-        var pipeline = snapshot.barrier().production();
-        if (pipeline == null || pipeline.fineHeightIndex() == null) return;
+        var index = fineHeightIndex;
+        if (index == null || realization == null || chunkCompiler == null) return;
         var level = levels.get("minecraft:overworld");
         if (level == null) return;
         var compiler = new local.plaincraft.greatwall.planning.PlanningChunkCompiler(
-                pipeline.realization(), pipeline.compiler(),
-                pipeline.fineHeightIndex(), pipeline.planningStructures());
+                realization, chunkCompiler, index, planningStructures);
         var planner = snapshot.planner();
         long target = local.plaincraft.greatwall.config.GreatWallConfig.get().prewarmSegmentsTarget();
         if (target <= 0) target = 4;
