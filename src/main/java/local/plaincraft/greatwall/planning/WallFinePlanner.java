@@ -26,8 +26,11 @@ public final class WallFinePlanner {
     private WallFinePlanner() {
     }
 
-    /** Half-width in blocks: the wall is 10 blocks wide, so 5 columns on each side of centre. */
-    public static final int LATERAL = 5;
+    /** Half-width in blocks: the wall is 10 blocks wide, but the full footprint must also cover the
+     *  widest fixed component (FORT, whose cross-wall footprint is z in [-24,24]), so the planner
+     *  samples 24 columns on each side of centre. This lets every component's realization read a
+     *  planning column without any per-block terrain dependency. */
+    public static final int LATERAL = 24;
 
     /** One accurately-sampled column. {@code lateral} is the signed offset from the centre line,
      *  in the wall's local frame (positive = one side, negative = the other); 0 is the centre. */

@@ -32,7 +32,7 @@ class WallFinePlannerTest {
         }
     }
 
-    @Test void lateralBandSpansMinusFiveToFive() {
+    @Test void lateralBandSpansFullWidth() {
         var recipe = PlanningFixtures.recipe(9282026);
         var route = route(recipe);
         try (var oracle = AnalyticTerrainOracle.ridge(true)) {
