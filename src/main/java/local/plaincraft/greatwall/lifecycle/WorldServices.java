@@ -303,20 +303,7 @@ public final class WorldServices {
     public UUID session() { return requireProductionSession().session(); }
     public WallWorldState worldState() { return requireProductionSession().worldState(); }
     public WallStageCoordinator barrier(ServerLevel level) {
-        return production == null ? barriers.get(level) : production.barrier(level);
-    }
-    public PlanLease<Void> featureLease(String dimension, int x, int z) {
-        assertActiveSession();
-        trace("WAIT_PLAN_NO_LOCK", dimension, x, z, "production:features", "none");
-        return requireProductionSession().featureLease(new ChunkKey(dimension, x, z));
-    }
-    public CompletableFuture<Void> requireProduction(String dimension, int x, int z, String stage) {
-        var lease = featureLease(dimension, x, z);
-        return lease.future().whenComplete((value, error) -> lease.close());
-    }
-    public CompletableFuture<Void> beforeProductionLight(ChunkKey owner, ChunkAccess chunk, TerrainEngine engine) {
-        assertActiveSession();
-        return requireProductionSession().beforeLight(owner, chunk, engine);
+        return barriers.get(level);
     }
     public CompletableFuture<Void> closeProduction() {
         var value = requireProductionSession(); value.close(); return value.drain();

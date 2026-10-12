@@ -45,7 +45,6 @@ import local.plaincraft.greatwall.persistence.WorldManifest;
 import local.plaincraft.greatwall.planning.PlannerScheduler;
 import local.plaincraft.greatwall.planning.StructureObstacleIndex;
 import local.plaincraft.greatwall.terrain.RealizationPlanner;
-import local.plaincraft.greatwall.terrain.TerrainSnapshotService;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -54,7 +53,7 @@ import net.minecraft.world.level.storage.LevelResource;
 
 /** Private isolated-fixture integration. There is deliberately no enabled production-world switch. */
 final class ProductionSession implements AutoCloseable {
-    private record Installed(WorldRecipe recipe, PlannerScheduler planner, WallStageCoordinator barrier, ProductionInputs inputs) {}
+    private record Installed(WorldRecipe recipe, PlannerScheduler planner, ProductionInputs inputs) {}
     private final UUID runtime = UUID.randomUUID();
     private final MinecraftServer server;
     private final WorldServices services;
@@ -84,7 +83,6 @@ final class ProductionSession implements AutoCloseable {
     private final ConcurrentHashMap<String, ServerLevel> levels = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ProductionInputs> inputs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Installed> snapshots = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<ChunkKey, FeatureSlot> featureSlots = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Integer> admissions = new ConcurrentHashMap<>();
     private final CompletableFuture<Installed> installed = new CompletableFuture<>();
     private final CompletableFuture<Void> drained = new CompletableFuture<>();
@@ -142,13 +140,10 @@ final class ProductionSession implements AutoCloseable {
                 if (level == null || frozen == null) throw new IllegalStateException("recipe published before prepareLevels freeze");
                 var planner = bootstrap.transferToPlanner(new SegmentCacheStore(root.resolve("cache"), recipe), io);
                 var store = ChunkEvidenceStore.production(root.resolve("evidence"));
-                var terrain = new TerrainSnapshotService(store, io, frozen.blocks());
                 var realization = buildRealization(level, recipe);
                 this.realization = realization;
                 this.chunkCompiler = new ChunkPlanCompiler();
-                var barrier = new WallStageCoordinator(level, services, recipe, planner, terrain, realization,
-                        this.chunkCompiler, new ChunkWallWriter());
-                var snapshot = new Installed(recipe, planner, barrier, frozen);
+                var snapshot = new Installed(recipe, planner, frozen);
                 snapshots.put("installed", snapshot);
                 installBiomeRuntime(level, recipe);
                 // Phase split: the pump starts demand-only so a blocking startup peer (RoadWeaver
@@ -298,10 +293,6 @@ final class ProductionSession implements AutoCloseable {
         var value = inputs.get("frozen");
         if (value == null) throw new IllegalStateException("tree catalog not frozen");
         return value.trees();
-    }
-    WallStageCoordinator barrier(ServerLevel level) {
-        var value = snapshots.get("installed");
-        return value != null && value.recipe().dimension().equals(level.dimension().location().toString()) ? value.barrier() : null;
     }
     UUID session() { return runtime; }
     BeaconLedger beacons() { return requireGameplay("beacons"); }
@@ -544,7 +535,8 @@ final class ProductionSession implements AutoCloseable {
 
     /** Compiles every prewarmed segment's ChunkWritePlan into the landing cache, once the prewarm
      *  has settled and the fine samples are published. This is the planning-phase compilation step
-     *  that lets the WallFeature paint without any chunk read. */
+     *  that lets the WallFeature paint without any chunk read. It also publishes the planning
+     *  vegetation-corridor and biome masks per chunk, replacing the deleted FeatureSlot. */
     private void compilePlanningPlans(Installed snapshot) {
         var index = fineHeightIndex;
         if (index == null || realization == null || chunkCompiler == null) return;
@@ -555,66 +547,47 @@ final class ProductionSession implements AutoCloseable {
         var planner = snapshot.planner();
         long target = local.plaincraft.greatwall.config.GreatWallConfig.get().prewarmSegmentsTarget();
         if (target <= 0) target = 4;
+        // Collect every prewarmed segment into one window, so a chunk covered by two segments is
+        // compiled and published exactly once with the complete corridor (matching the old
+        // FeatureSlot's per-chunk aggregated window).
+        var leases = new java.util.ArrayList<PlanLease<SegmentPlan>>();
+        var collected = new java.util.ArrayList<SegmentPlan>();
+        var remaining = new java.util.concurrent.atomic.AtomicInteger((int) target);
         for (long i = 0; i < target; i++) {
             try {
                 var lease = planner.requirePlan(i, Priority.PLAYER_PREFETCH);
+                leases.add(lease);
                 lease.future().whenComplete((plan, error) -> {
                     try {
-                        if (error == null && plan != null) {
-                            var window = new PlanWindow(List.of(plan));
-                            var compiled = compiler.compileWindow(window, snapshot.recipe().recipeHash(),
-                                    snapshot.recipe().dimension());
-                            for (var entry : compiled.entrySet()) {
-                                local.plaincraft.greatwall.generation.WallWorldgenPlanCache.put(level, entry.getValue());
-                            }
-                        }
-                    } finally { lease.close(); }
+                        if (error == null && plan != null) synchronized (collected) { collected.add(plan); }
+                    } finally {
+                        lease.close();
+                        if (remaining.decrementAndGet() == 0) publishPlanningWindow(snapshot, level, compiler, collected);
+                    }
                 });
-            } catch (RuntimeException ignored) { /* closed or out of bounds */ }
+            } catch (RuntimeException ignored) { remaining.decrementAndGet(); }
         }
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={}", target);
+        if (target == 0) GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments=0");
     }
 
-    PlanLease<Void> featureLease(ChunkKey key) {
-        active(); trace.assertOutsideLock();
-        if (!key.dimension().equals("minecraft:overworld")) return emptyLease();
-        UUID caller = UUID.randomUUID();
-        var slot = featureSlots.compute(key, (position, previous) -> {
-            active();
-            if (previous == null) {
-                admissions.compute("features", (name, old) -> {
-                    int count = old == null ? 0 : old;
-                    if (count >= 256) throw new WallFailure(FailureCode.CAPACITY, "FEATURES owner lease admission capacity");
-                    return count + 1;
-                });
-                previous = new FeatureSlot(key);
+    private void publishPlanningWindow(Installed snapshot, ServerLevel level,
+            local.plaincraft.greatwall.planning.PlanningChunkCompiler compiler,
+            java.util.List<SegmentPlan> plans) {
+        if (plans.isEmpty()) return;
+        var window = new PlanWindow(List.copyOf(plans));
+        var compiled = compiler.compileWindow(window, snapshot.recipe().recipeHash(), snapshot.recipe().dimension());
+        for (var entry : compiled.entrySet()) {
+            local.plaincraft.greatwall.generation.WallWorldgenPlanCache.put(level, entry.getValue());
+            // Publish the planning vegetation corridor + biome mask for this chunk, replacing the
+            // deleted FeatureSlot's per-chunk publication.
+            vegetation.publish(entry.getKey(), window);
+            var biomes = biomeRuntime;
+            if (biomes != null && !biomes.closed()) {
+                biomes.publish(entry.getKey(), window, 1);
             }
-            previous.callers.put(caller, true);
-            return previous;
-        });
-        var lease = new PlanLease<Void>(caller, slot.ready, () -> releaseFeature(key, slot, caller));
-        if (slot.state.putIfAbsent("started", true) == null) slot.start();
-        return lease;
-    }
-    private void releaseFeature(ChunkKey key, FeatureSlot expected, UUID caller) {
-        featureSlots.computeIfPresent(key, (position, current) -> {
-            if (current != expected) return current;
-            current.callers.remove(caller);
-            if (!current.callers.isEmpty()) return current;
-            current.close();
-            admissions.compute("features", (name, count) -> count - 1);
-            return null;
-        });
-    }
-
-    CompletableFuture<Void> beforeLight(ChunkKey key, ChunkAccess owner, TerrainEngine engine) {
-        trace.assertOutsideLock();
-        if (!key.dimension().equals("minecraft:overworld")) return CompletableFuture.completedFuture(null);
-        return bootstrap.beforeRecipe(key).thenComposeAsync(ignored -> {
-            active();
-            if (bootstrap.mayPassBeforeRecipe(key)) return CompletableFuture.completedFuture(null);
-            return installed.thenCompose(value -> value.barrier().beforeLight(key, owner, engine));
-        }, io).whenComplete((value, error) -> { if (error != null && !state.containsKey("closed")) fail(error); });
+        }
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={} chunks={}",
+                plans.size(), compiled.size());
     }
 
     void validateReload() {
@@ -689,13 +662,12 @@ final class ProductionSession implements AutoCloseable {
         result.put("productionWiring", "OFF"); result.put("isolatedFixture", true);
         result.put("counts", counts()); result.put("root", bootstrap.progress()); result.put("bootstrap", bootstrap.diagnostics());
         result.put("rootAudit", bootstrap.rootAudit());
-        result.put("featureLeases", featureSlots.size()); result.put("vegetationLeases", vegetation.leases());
+        result.put("vegetationLeases", vegetation.leases());
         var snapshot = snapshots.get("installed");
         if (snapshot != null) {
             result.put("recipe", snapshot.recipe()); result.put("planner", snapshot.planner().diagnostics());
             result.put("plannerFailures", snapshot.planner().failures());
             result.put("plannerProgress", snapshot.planner().progress());
-            result.put("barrier", snapshot.barrier().counts());
         }
         return Map.copyOf(result);
     }
@@ -716,11 +688,6 @@ final class ProductionSession implements AutoCloseable {
         // A closed session will never finish its prewarm either, so a startup peer waiting on
         // it must be released now rather than at its own timeout.
         PrewarmProgress.finish(false);
-        for (var key : List.copyOf(featureSlots.keySet())) featureSlots.computeIfPresent(key, (position, slot) -> {
-            slot.close(); admissions.compute("features", (name, count) -> count - 1); return null;
-        });
-        var snapshot = snapshots.get("installed");
-        if (snapshot != null) snapshot.barrier().close();
         var scanner = structureScanner;
         if (scanner != null) scanner.close();
         // Stop new gameplay mutations before flushing permanent history: garrison birth and
@@ -751,9 +718,6 @@ final class ProductionSession implements AutoCloseable {
         if (snapshot == null) throw new IllegalStateException("production recipe is not installed");
         return snapshot;
     }
-    private static PlanLease<Void> emptyLease() {
-        return new PlanLease<>(UUID.randomUUID(), CompletableFuture.completedFuture(null), () -> {});
-    }
     private static void rejectUncertifiedProfiles() {
         // ═══════════════════════════════════════════════════════════════════════════
         // 【用户明确授权的保留项 — 2026-10-05 拍板，禁止在未重新授权前回退】
@@ -770,83 +734,5 @@ final class ProductionSession implements AutoCloseable {
         // 恢复条件：仅在用户重新授权后，且需先给出这四个 mod 的版本/SHA、完整冠幅与
         //   post-generation writer 证据，并单独跑整包矩阵。
         // ═══════════════════════════════════════════════════════════════════════════
-    }
-
-    private final class FeatureSlot implements AutoCloseable {
-        private final ChunkKey owner;
-        private final CompletableFuture<Void> ready = new CompletableFuture<>();
-        private final ConcurrentHashMap<UUID, Boolean> callers = new ConcurrentHashMap<>();
-        private final ConcurrentHashMap<UUID, PlanLease<PlanWindow>> children = new ConcurrentHashMap<>();
-        private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();
-        /** Native FEATURES block-state write radius, read from the live chunk pyramid. */
-        private int writeRadius;
-        private FeatureSlot(ChunkKey owner) { this.owner = owner; }
-        private void start() {
-            bootstrap.beforeRecipe(owner).thenComposeAsync(ignored -> {
-                active(); if (state.containsKey("closed")) throw new WallFailure(FailureCode.CLOSED, "FEATURES lease closed");
-                if (bootstrap.mayPassBeforeRecipe(owner)) return CompletableFuture.completedFuture((Installed) null);
-                return installed;
-            }, io).thenComposeAsync(snapshot -> {
-                if (snapshot == null) return CompletableFuture.completedFuture((PlanWindow) null);
-                int halo = net.minecraft.world.level.chunk.status.ChunkPyramid.GENERATION_PYRAMID
-                        .getStepTo(net.minecraft.world.level.chunk.status.ChunkStatus.FEATURES).blockStateWriteRadius();
-                if (halo < 0 || halo > 4) throw new WallFailure(FailureCode.UNSUPPORTED_ADAPTER, "unknown native FEATURES write halo");
-                writeRadius = halo;
-                int margin = Math.addExact(snapshot.inputs().trees().maximumRadius(), 32 + halo * 16);
-                int grid = margin <= 512 ? 0 : Math.toIntExact(Math.floorDiv((long) margin + 511, 512));
-                if (grid > 5) throw new WallFailure(FailureCode.CAPACITY, "vegetation plan subdivision exceeds finite grid");
-                CompletableFuture<Map<Long, SegmentPlan>> chain = CompletableFuture.completedFuture(Map.of());
-                for (int dx = -grid; dx <= grid; dx++) for (int dz = -grid; dz <= grid; dz++) {
-                    var query = new ChunkKey(owner.dimension(), Math.addExact(owner.x(), dx * 32), Math.addExact(owner.z(), dz * 32));
-                    chain = chain.thenComposeAsync(prior -> {
-                        active(); if (state.containsKey("closed")) throw new WallFailure(FailureCode.CLOSED, "FEATURES lease closed");
-                        var child = snapshot.planner().requireWindow(query, Math.min(margin, 512), Priority.PLAYER);
-                        children.put(child.id(), child);
-                        if (state.containsKey("closed")) { children.remove(child.id(), child); child.close(); }
-                        return child.future().thenApply(plans -> {
-                            var merged = new TreeMap<>(prior);
-                            for (var plan : plans.plans()) {
-                                var previous = merged.putIfAbsent(plan.geometry().key().index(), plan);
-                                if (previous != null && !previous.hash().equals(plan.hash())) throw new WallFailure(FailureCode.RECIPE_MISMATCH, "split vegetation plan differs");
-                            }
-                            if (merged.size() > 12) throw new WallFailure(FailureCode.CAPACITY, "combined vegetation window exceeds finite segment bound");
-                            return Map.copyOf(merged);
-                        });
-                    }, io);
-                }
-                return chain.thenApply(plans -> new PlanWindow(plans.values().stream()
-                        .sorted(java.util.Comparator.comparingLong(plan -> plan.geometry().key().index())).toList()));
-            }, io).thenAcceptAsync(plans -> {
-                active();
-                featureSlots.computeIfPresent(owner, (position, current) -> {
-                    if (current != this || state.containsKey("closed")) return current;
-                    if (plans != null) {
-                        vegetation.publish(owner, plans);
-                        // The dedicated biome mask is compiled from the very same frozen window, so
-                        // the hard domain the tree guard enforces and the domain the biome paints can
-                        // never disagree. A run without a bound identity simply skips this.
-                        var biomes = biomeRuntime;
-                        if (biomes != null && !biomes.closed()) {
-                            biomes.publish(owner, plans, writeRadius);
-                        }
-                    }
-                    state.put("published", true);
-                    return current;
-                });
-                if (!state.containsKey("published")) throw new WallFailure(FailureCode.CLOSED, "FEATURES lease lost before publication");
-                ready.complete(null);
-            }, io).whenComplete((value, error) -> {
-                if (error != null) {
-                    ready.completeExceptionally(error);
-                    if (!state.containsKey("closed") && !ProductionSession.this.state.containsKey("closed")) fail(error);
-                }
-            });
-        }
-        @Override public void close() {
-            if (state.putIfAbsent("closed", true) != null) return;
-            ready.completeExceptionally(new WallFailure(FailureCode.CLOSED, "FEATURES callers released"));
-            children.values().forEach(PlanLease::close); children.clear();
-            vegetation.release(owner);
-        }
     }
 }
