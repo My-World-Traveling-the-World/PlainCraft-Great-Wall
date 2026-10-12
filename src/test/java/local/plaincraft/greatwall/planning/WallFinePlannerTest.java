@@ -16,32 +16,38 @@ class WallFinePlannerTest {
         }
     }
 
-    @Test void samplesEveryRoutePointOnce() {
+    @Test void samplesFullWidthPerRoutePoint() {
         var recipe = PlanningFixtures.recipe(9282026);
         var route = route(recipe);
         try (var oracle = AnalyticTerrainOracle.ridge(true)) {
             var cursor = WallFinePlanner.begin(route, oracle);
             while (WallFinePlanner.advance(cursor, 1) != WorkState.DONE) { }
             var columns = WallFinePlanner.finish(cursor);
-            assertEquals(route.points().size(), columns.size(), "one fine column per route point");
+            // Each centre point yields up to 2*LATERAL+1 = 11 columns; straight runs deduplicate
+            // overlapping neighbours, so the count is bounded by points * 11 and at least points.
+            assertTrue(columns.size() >= route.points().size(),
+                    "at least one column per centre point, got " + columns.size());
+            assertTrue(columns.size() <= route.points().size() * (2 * WallFinePlanner.LATERAL + 1),
+                    "at most full width per centre point");
         }
     }
 
-    @Test void sampledCoordinatesMatchRouteFloor() {
+    @Test void lateralBandSpansMinusFiveToFive() {
         var recipe = PlanningFixtures.recipe(9282026);
         var route = route(recipe);
         try (var oracle = AnalyticTerrainOracle.ridge(true)) {
             var cursor = WallFinePlanner.begin(route, oracle);
             while (WallFinePlanner.advance(cursor, 64) != WorkState.DONE) { }
             var columns = WallFinePlanner.finish(cursor);
-            for (int i = 0; i < columns.size(); i++) {
-                var point = route.points().get(i);
-                var column = columns.get(i);
-                assertEquals(local.plaincraft.greatwall.geometry.FixedMath.floorBlock(point.xQ8()), column.x(),
-                        "column x must match route point " + i);
-                assertEquals(local.plaincraft.greatwall.geometry.FixedMath.floorBlock(point.zQ8()), column.z(),
-                        "column z must match route point " + i);
+            boolean sawCentre = false, sawMinus5 = false, sawPlus5 = false;
+            for (var c : columns) {
+                if (c.lateral() == 0) sawCentre = true;
+                if (c.lateral() == -WallFinePlanner.LATERAL) sawMinus5 = true;
+                if (c.lateral() == WallFinePlanner.LATERAL) sawPlus5 = true;
             }
+            assertTrue(sawCentre, "centre column sampled");
+            assertTrue(sawMinus5, "-5 lateral column sampled");
+            assertTrue(sawPlus5, "+5 lateral column sampled");
         }
     }
 

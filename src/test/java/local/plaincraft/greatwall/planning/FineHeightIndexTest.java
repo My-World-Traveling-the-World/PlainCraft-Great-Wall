@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 class FineHeightIndexTest {
     private static WallFinePlanner.FineColumn column(int x, int z, int ground) {
-        return new WallFinePlanner.FineColumn(x, z,
+        return new WallFinePlanner.FineColumn(x, z, 0,
                 new ColumnSample(ground, OptionalInt.empty(), OptionalInt.empty(), "minecraft:plains", Quality.REFERENCE, false));
     }
 
