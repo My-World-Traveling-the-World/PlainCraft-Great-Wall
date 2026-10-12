@@ -45,29 +45,16 @@ public final class C2meProbeAdapter {
         }
         String dimension = level.dimension().location().toString();
         var barrier = service.barrier(level);
+        // The wall now lands through the registered WallFeature, not this C2ME gate. A production
+        // fixture passes straight through; only the S0 laboratory's barrier still gates below.
+        if (service.productionFixture()) return original;
         if (status.equals("minecraft:initialize_light")) {
-            if (!service.productionFixture() && (barrier == null || !barrier.layout().owns(pos))) return original;
+            if (barrier == null || !barrier.layout().owns(pos)) return original;
             var state = ((java.util.concurrent.atomic.AtomicReference<?>) invoke(holder, "getItem")).get();
             var chunk = (net.minecraft.world.level.chunk.ChunkAccess) invoke(state, "chunk");
-            var pending = service.productionFixture()
-                    ? service.beforeProductionLight(new ChunkKey(dimension, pos.x, pos.z), chunk, new C2meTerrainEngine(manager))
-                    : barrier.beforeLight(pos, chunk, new C2meTerrainEngine(manager));
+            var pending = barrier.beforeLight(pos, chunk, new C2meTerrainEngine(manager));
             return Completable.fromCompletionStage(pending)
                     .observeOn(Schedulers.from(executor)).andThen(original).doOnError(service::failRequiredPlan);
-        }
-        if (service.productionFixture()) {
-            return Completable.defer(() -> {
-                var owned = service.featureLease(dimension, pos.x, pos.z);
-                var request = new Request(service, dimension, pos.x, pos.z, owned, new ConcurrentHashMap<>());
-                return Completable.fromCompletionStage(owned.future()).observeOn(Schedulers.from(executor))
-                        .andThen(Completable.create(emitter -> {
-                            service.assertActiveSession();
-                            SUBSCRIBING.set(request);
-                            try {
-                                emitter.setDisposable(original.subscribe(emitter::onComplete, emitter::tryOnError));
-                            } finally { SUBSCRIBING.remove(); }
-                        })).doOnError(service::failRequiredPlan).doFinally(request::finishedSubscription);
-            });
         }
         var lease = service.require(dimension, pos.x, pos.z, "c2me:features").thenCompose(plan -> barrier == null
                 ? CompletableFuture.completedFuture(null) : barrier.delayFeatures(pos));
