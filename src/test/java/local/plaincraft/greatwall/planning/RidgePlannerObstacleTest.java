@@ -42,7 +42,7 @@ class RidgePlannerObstacleTest {
         // Block only the northern half of that band (z in [-279,-100]) at x ~ 1500, leaving
         // z in (-100,0] as a corridor the ridge can jitter into. The detour must keep every emitted
         // point out of the box body itself; the 8-block obstacle margin is a scoring cushion, not an
-        // absolute keep-out zone, so擦边 the margin is acceptable and asserted separately below.
+        // absolute keep-out zone, so grazing the margin is acceptable and asserted separately below.
         var recipe = PlanningFixtures.recipe(9282026);
         var box = new OwnedBox("minecraft:village", 0L,
                 new BoundingBox(1400, 0, -279, 1600, 256, -100));
@@ -58,14 +58,17 @@ class RidgePlannerObstacleTest {
     }
 
     @Test void fullBlockedCorridorDegradesInsteadOfCuttingThrough() {
-        // A box that spans the entire corridor width forces every candidate rejection; the ridge
-        // must degrade (straight-line fallback) rather than emit points through the box.
+        // Synthetic stress: a box far wider than any real structure (20000 blocks) forces every
+        // candidate rejection, proving the obstacle rejection actually fires and the ridge degrades.
+        // Real structures never span the 1024-block jitter corridor, so this is NOT the acceptance
+        // criterion for "never穿模" — the downstream RealizationPlanner still owns the hard
+        // BreakInterval(STRUCTURE_CONFLICT) backstop for the rare case the detour cannot resolve.
         var recipe = PlanningFixtures.recipe(9282026);
         var box = new OwnedBox("minecraft:village", 0L,
                 new BoundingBox(1400, 0, -10000, 1600, 256, 10000));
         var obstacles = StructureObstacleIndex.of(List.of(box), 8);
         var route = routeWith(recipe, obstacles, 64);
-        // Degradation >= 1 signals the planner fell back rather than穿模.
+        // Degradation >= 1 signals the planner fell back rather than cutting through.
         assertTrue(route.degradation() >= 1, "full-blocked corridor should degrade, got " + route.degradation());
     }
 }

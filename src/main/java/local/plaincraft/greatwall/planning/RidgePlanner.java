@@ -287,6 +287,15 @@ public final class RidgePlanner {
         }
         Point2q point = position(c, u * 256, residual);
         if (!inside(point)) throw new WallFailure(FailureCode.OUT_OF_BOUNDS, "route leaves frozen bounds");
+        if (!c.fallback && obstacles.blocked(point.xQ8(), point.zQ8())) {
+            // A Hermite-interpolated point can graze a structure margin even when every control
+            // point cleared it (the control-point rejection in searchStep only fires once per 16
+            // blocks). Falling back to the straight carrier chord re-runs without interpolation;
+            // the chord is the minimal-deviation path and is the last resort. Skip the check while
+            // falling back so the chord cannot loop; a structure straddling the exact chord is
+            // deferred to the break-interval pass rather than failing the whole route.
+            c.fallback = true; c.degradation = 3; c.points.clear(); return;
+        }
         if (!c.points.isEmpty() && !heading(c.points.getLast(), point)) {
             if (c.fallback) throw new WallFailure(FailureCode.INVALID_RESOURCE, "carrier chord violates heading");
             c.fallback = true; c.degradation = 3; c.points.clear(); return;
