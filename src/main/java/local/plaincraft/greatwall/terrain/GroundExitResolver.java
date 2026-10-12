@@ -94,7 +94,19 @@ public final class GroundExitResolver implements AutoCloseable {
         try {inspect(cell).thenAcceptAsync(slice->{
             var exit=slice.exits().stream().filter(e->e.sQ8()<=before).max(Comparator.comparingLong(Exit::sQ8));
             if(exit.isPresent()){result.complete(exit.get());return;}
-            if(cell.arcCell()==0)throw fail(FailureCode.ROOT_NOT_FOUND,"no T0-accepted ground exit at or before requested cell");
+            if(cell.arcCell()==0) {
+                // The wall's anchor fort (FORT0) at s=0 is allowed to degrade when the terrain has
+                // no buildable ground entrance (RealizationPlanner records FORT0_DEGRADED), which
+                // leaves cell 0 with no real natural exit. s=0 is still the authoritative origin of
+                // the wall, so surface a synthetic root-anchor exit: it lets cover() seal the interval
+                // [0, nextExit) and, when a break exists, apply an EndCap. Without it, scanLeft throws
+                // ROOT_NOT_FOUND and the whole production session fails on a normal terrain boundary.
+                long extent = 24L * 256;
+                String sentinelHash = digest("root-sentinel-" + cell.recipeHash() + "-" + slice.t0Hash());
+                result.complete(new Exit(new SiteId(cell.recipeHash(), SiteKind.FORT, 0), 0L,
+                        new ArcInterval(0L, extent), sentinelHash, slice.t0Hash()));
+                return;
+            }
             long previous=cell.arcCell()-1;
             if(slice.terminal().isPresent())previous=Math.min(previous,Math.floorDiv(slice.terminal().get().range().fromQ8(),GroundExitDecision.CELL_Q8));
             scanLeft(at(cell,previous),before,result);
