@@ -46,6 +46,11 @@ public final class FineHeightIndex {
         return byXZ.size();
     }
 
+    /** All sampled columns, for callers that must enumerate the footprint. */
+    public java.util.Collection<WallFinePlanner.FineColumn> columns() {
+        return byXZ.values();
+    }
+
     private static long key(int x, int z) {
         return ((long) x << 32) ^ (z & 0xffffffffL);
     }

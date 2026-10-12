@@ -65,6 +65,15 @@ public final class ProductionWallPipeline implements AutoCloseable {
     private final ConcurrentHashMap<String,AllocationBudget> compilationAllocations=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,Long> allocationPeaks=new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,Long> costs=new ConcurrentHashMap<>();
+    /**
+     * Planning-resolved fine cross-section samples, injected once the planning prewarm settles. When
+     * present, the realization column set is built from these planning columns (never a per-block T0
+     * snapshot); when absent, the pipeline falls back to the historical T0 snapshot path so the
+     * refactor can land incrementally without a single big-bang switch.
+     */
+    private volatile local.plaincraft.greatwall.planning.FineHeightIndex fineHeightIndex;
+    private volatile java.util.List<local.plaincraft.greatwall.model.WallTypes.Bounds> planningStructures =
+            java.util.List.of();
     public ProductionWallPipeline(WorldRecipe recipe,Ports ports,TerrainSnapshotService snapshots,
             RealizationPlanner realization,ChunkPlanCompiler compiler,ChunkWallWriter writer) {
         this.recipe=Objects.requireNonNull(recipe);this.ports=Objects.requireNonNull(ports);this.snapshots=Objects.requireNonNull(snapshots);
@@ -80,6 +89,13 @@ public final class ProductionWallPipeline implements AutoCloseable {
             return lease.future().thenAccept(plans->{active();event("PRODUCTION_PLAN_READY",key,"prepare","none");})
                     .whenComplete((v,e)->release(lease));
         }catch(Throwable error){return failed(error);}
+    }
+
+    /** Publishes the planning-resolved fine samples and structure boxes, once the prewarm settles. */
+    public void setPlanningTerrain(local.plaincraft.greatwall.planning.FineHeightIndex index,
+            java.util.List<local.plaincraft.greatwall.model.WallTypes.Bounds> structures) {
+        this.fineHeightIndex = Objects.requireNonNull(index, "index");
+        this.planningStructures = java.util.List.copyOf(Objects.requireNonNull(structures, "structures"));
     }
     public CompletableFuture<Void> beforeLight(ChunkKey key,ChunkAccess owner,TerrainEngine engine) {
         try{
@@ -248,7 +264,20 @@ public final class ProductionWallPipeline implements AutoCloseable {
           catch(Throwable error){allocations.close();releasePin(pin);return CompletableFuture.<CellTerrain>failedFuture(error);}
           return lease.future().thenComposeAsync(plans->{
             active();var owners=coverage.realizationOwners(cell,plans);
-            // Serial future completion publishes each merge before the next owner; existing forecast pins cover the maps.
+            // When the planning prewarm has published the fine cross-section samples, the realization
+            // column set comes from planning data — no per-block T0 snapshot, no capture, no chunk
+            // read. The structure protection also comes from the planning-resolved boxes.
+            var index = fineHeightIndex;
+            if (index != null) {
+                var provider = new local.plaincraft.greatwall.planning.PlanningColumnProvider(index);
+                var columns = provider.columnsFor(owners);
+                var protection = new ArrayList<Bounds>(planningStructures);
+                String protectionHash = DeterministicHash.sha256(planningStructures.stream()
+                        .map(Bounds::toString).sorted().toList().toString().getBytes(StandardCharsets.UTF_8));
+                return CompletableFuture.completedFuture(new CellTerrain(new RealizationPlanner.Input(cell, plans, Map.of(), columns, protection,
+                        Map.of(), 0, protectionHash), Map.of(), pin, allocations));
+            }
+            // Fallback: historical per-block T0 snapshot path (pre-refactor behaviour).
             var accumulated=new CellCaptureAccumulator();
             CompletableFuture<Void> chain=CompletableFuture.completedFuture(null);
             for(var member:owners)chain=chain.thenComposeAsync(ignored->capture(member,engine,allocations)
