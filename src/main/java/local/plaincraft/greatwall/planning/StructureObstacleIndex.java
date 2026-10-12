@@ -51,8 +51,19 @@ public final class StructureObstacleIndex {
         }
     }
 
-    /** Whether the fixed-point column {@code (xQ8, zQ8)} collides with any structure footprint. */
+    /** Whether the fixed-point column {@code (xQ8, zQ8)} collides with any structure footprint,
+     *  ignoring height: any structure whose XZ bounds cover the column blocks it. */
     public boolean blocked(long xQ8, long zQ8) {
+        return blocked(xQ8, zQ8, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Same-horizontal-layer collision, mirroring RoadWeaver's
+     * {@code PieceOccupancy.intersects(x, z, minY, maxY, ...)}: a structure only blocks the wall when
+     * its Y-range overlaps the wall's own height band. Underground mines and floating structures are
+     * ignored, so the wall runs over/under them instead of needlessly detouring.
+     */
+    public boolean blocked(long xQ8, long zQ8, int minY, int maxY) {
         if (cells.isEmpty()) return false;
         int blockX = FixedMath.floorBlock(xQ8);
         int blockZ = FixedMath.floorBlock(zQ8);
@@ -60,7 +71,8 @@ public final class StructureObstacleIndex {
         if (cell == null) return false;
         for (BoundingBox box : cell) {
             if (blockX >= box.minX() - marginBlocks && blockX <= box.maxX() + marginBlocks
-                    && blockZ >= box.minZ() - marginBlocks && blockZ <= box.maxZ() + marginBlocks) {
+                    && blockZ >= box.minZ() - marginBlocks && blockZ <= box.maxZ() + marginBlocks
+                    && maxY >= box.minY() && minY <= box.maxY()) {
                 return true;
             }
         }
