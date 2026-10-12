@@ -191,6 +191,50 @@ public final class PlannerScheduler implements AutoCloseable {
         });
     }
 
+    /**
+     * Runs the full-width fine cross-section sampler over the opening segments and publishes the
+     * aggregate {@link FineHeightIndex} once every segment's samples are resolved. The generation
+     * stage reads this index instead of a per-block T0 snapshot, which is the last step of "planning
+     * decides the terrain, landing only paints".
+     */
+    public CompletableFuture<FineHeightIndex> requireFineSamples(Priority priority) {
+        if (closed()) return CompletableFuture.failedFuture(closedFailure());
+        var aggregate = new CompletableFuture<FineHeightIndex>();
+        var all = new ArrayList<WallFinePlanner.FineColumn>();
+        var remaining = new java.util.concurrent.atomic.AtomicInteger();
+        var started = new java.util.concurrent.atomic.AtomicBoolean();
+        // Prewarm already plans the opening segments; sample the same window so the two share the
+        // lane budget and the fine samples land together with the plans.
+        long target = prewarmTargetSegments();
+        if (target <= 0) target = STARTUP_PREWARM_SEGMENTS;
+        var leases = new ArrayList<PlanLease<RouteShape>>();
+        remaining.set((int) Math.min(Integer.MAX_VALUE, target));
+        for (long i = 0; i < target && safeSegment(i); i++) {
+            var lease = requireRoute(i, priority);
+            leases.add(lease);
+            long segment = i;
+            lease.future().whenCompleteAsync((route, error) -> {
+                try {
+                    if (error != null) { aggregate.completeExceptionally(error); return; }
+                    if (closed()) { aggregate.completeExceptionally(closedFailure()); return; }
+                    var job = new FineSampleJob(route, priority, new CompletableFuture<List<WallFinePlanner.FineColumn>>());
+                    enqueue(job);
+                    job.result.whenCompleteAsync((columns, sampleError) -> {
+                        try {
+                            if (sampleError != null) { aggregate.completeExceptionally(sampleError); return; }
+                            synchronized (all) { all.addAll(columns); }
+                            if (remaining.decrementAndGet() == 0) {
+                                aggregate.complete(FineHeightIndex.of(all));
+                            }
+                        } catch (Throwable t) { aggregate.completeExceptionally(t); }
+                    }, pump);
+                } catch (Throwable t) { aggregate.completeExceptionally(t); }
+            }, pump);
+        }
+        aggregate.whenComplete((v, e) -> leases.forEach(PlanLease::close));
+        return aggregate;
+    }
+
     public PlanLease<PlanWindow> requireWindow(ChunkKey chunk, int marginBlocks, Priority priority) {
         if (closed()) throw closedFailure();
         if (marginBlocks < 0 || marginBlocks > 512) throw new IllegalArgumentException("window margin 0..512");
@@ -1050,6 +1094,20 @@ public final class PlannerScheduler implements AutoCloseable {
             operations += limit; return ridge.advance(cursor, limit) == WorkState.DONE;
         }
         @Override RouteShape value() { return ridge.finish(cursor); }
+    }
+
+    private final class FineSampleJob extends Job<List<WallFinePlanner.FineColumn>> {
+        private final RouteShape route;
+        private WallFinePlanner.Cursor cursor;
+        private FineSampleJob(RouteShape route, Priority priority, CompletableFuture<List<WallFinePlanner.FineColumn>> result) {
+            super(priority, "FINE_SAMPLE", result); this.route = route;
+        }
+        @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
+            if (cursor == null) cursor = WallFinePlanner.begin(route, oracle);
+            operations += limit;
+            return WallFinePlanner.advance(cursor, limit) == WorkState.DONE;
+        }
+        @Override List<WallFinePlanner.FineColumn> value() { return WallFinePlanner.finish(cursor); }
     }
 
     private final class HydroJob extends Job<SegmentGeometry> {

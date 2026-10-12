@@ -166,7 +166,7 @@ final class ProductionSession implements AutoCloseable {
                 // runs after prewarm would leave the wall cutting through structures. The scan is
                 // fire-and-forget with a degraded fallback (empty index = no structure avoidance =
                 // the pre-refactor behaviour); it must never block or fail the world.
-                startStructureScanAndPrewarm(level, recipe, planner, terrain);
+                startStructureScanAndPrewarm(level, recipe, planner, terrain, barrier);
                 trace.record("PRODUCTION_RIVERS_BULK", recipe.dimension(), 0, 0, "recipe-installed-unconditional-bulk", "none");
                 trace.record("PRODUCTION_RECIPE_INSTALLED", recipe.dimension(), 0, 0, "recipe-durable-before-generation", "none");
                 // S3 gameplay service assembly. The journal is world-scoped (manifest.instance),
@@ -380,7 +380,7 @@ final class ProductionSession implements AutoCloseable {
      * only ordering that matters is index-before-dispatch, which the completion chain guarantees.
      */
     private void startStructureScanAndPrewarm(ServerLevel level, WorldRecipe recipe, PlannerScheduler planner,
-            TerrainSnapshotService terrain) {
+            TerrainSnapshotService terrain, WallStageCoordinator barrier) {
         // Corridor half-width in blocks. The ridge jitters up to +-512 blocks laterally (searchStep
         // rejects offsets beyond 512*256 Q8), so the corridor must span that full envelope plus the
         // structure footprint; 576 blocks covers the envelope with a 64-block margin. This trades
@@ -403,15 +403,14 @@ final class ProductionSession implements AutoCloseable {
         this.structureScanner = scanner;
         scanner.scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ)
                 .whenComplete((boxes, error) -> {
+                    final java.util.List<Bounds> structures;
                     if (error != null) {
                         GreatWallMod.LOGGER.warn("[GreatWall:corridor] structure scan failed; "
                                 + "falling back to no structure avoidance", error);
                         planner.setObstacles(StructureObstacleIndex.empty(8));
+                        structures = List.of();
                     } else {
                         planner.setObstacles(StructureObstacleIndex.of(boxes, 8));
-                        // Publish the same planning-resolved boxes to the terrain snapshot service, so
-                        // the generation-time protection check reads them instead of the removed
-                        // cross-chunk reference walk.
                         var bounds = new java.util.ArrayList<Bounds>(boxes.size());
                         for (var owned : boxes) {
                             var b = owned.box();
@@ -420,9 +419,22 @@ final class ProductionSession implements AutoCloseable {
                                     b.maxX() + 1, b.maxY() + 1, b.maxZ() + 1));
                         }
                         terrain.setPredictedStructures(bounds);
+                        structures = List.copyOf(bounds);
                     }
-                    // The prewarm must start exactly once, after the index is settled either way.
-                    planner.afterRoadBulk();
+                    // The fine cross-section sample and the prewarm both drive off the planner's
+                    // lanes; sample first, then publish the samples to the pipeline and start the
+                    // bulk prewarm. A sample failure degrades to the historical T0 snapshot path.
+                    planner.requireFineSamples(Priority.PLAYER_PREFETCH)
+                            .whenComplete((fineIndex, sampleError) -> {
+                                if (sampleError != null) {
+                                    GreatWallMod.LOGGER.warn("[GreatWall:corridor] fine sample failed; "
+                                            + "falling back to per-block T0 snapshot", sampleError);
+                                } else {
+                                    barrier.setPlanningTerrain(fineIndex, structures);
+                                }
+                                // The prewarm must start exactly once, after both planning inputs settle.
+                                planner.afterRoadBulk();
+                            });
                 });
     }
     void openDimension(ServerLevel level) { levels.put(level.dimension().location().toString(), level); }

@@ -99,6 +99,11 @@ public final class WallStageCoordinator implements AutoCloseable {
     }
     public Map<ChunkPos, Result> results() { return Map.copyOf(results); }
     public Map<String, Long> counts() { return production==null?trace.counts():production.diagnostics(); }
+    /** Publishes the planning fine samples + structure boxes to the production pipeline. */
+    public void setPlanningTerrain(local.plaincraft.greatwall.planning.FineHeightIndex index,
+            java.util.List<local.plaincraft.greatwall.model.WallTypes.Bounds> structures) {
+        if (production != null) production.setPlanningTerrain(index, structures);
+    }
     private void active() {
         session.assertActiveSession();
         if (state.containsKey("closed")) throw new IllegalStateException("T0 session closed");
