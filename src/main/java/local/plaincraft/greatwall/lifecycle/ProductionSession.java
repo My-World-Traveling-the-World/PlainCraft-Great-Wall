@@ -519,13 +519,6 @@ final class ProductionSession implements AutoCloseable {
         if (state.containsKey("server-started") && diagnostics.containsKey("bulk-ready")
                 && state.putIfAbsent("active", true) == null) {
             trace.record("PRODUCTION_ACTIVE", snapshot.recipe().dimension(), 0, 0, "server-started-and-prewarm-ready", "none");
-            // What the run actually produced, in one line.
-            //
-            // The question this project keeps having to answer is "is the wall there?", and
-            // until now the only evidence was a dozen counters scattered across diagnostics
-            // JSON that had to be read out of the save after the fact. In particular a run
-            // where the root fort degraded - and therefore has a gap where the anchor should
-            // be - looked no different at a glance from a complete one.
             GreatWallMod.LOGGER.info("[GreatWall:S1C] PRODUCTION_SUMMARY wall={} axis={} rootDegraded={} "
                             + "wallLengthBlocks={} prewarmSegments={} counts={}",
                     snapshot.recipe().wallId(), snapshot.recipe().axis(),
@@ -533,10 +526,45 @@ final class ProductionSession implements AutoCloseable {
                     local.plaincraft.greatwall.config.GreatWallConfig.get().wallLengthBlocks(),
                     local.plaincraft.greatwall.config.GreatWallConfig.get().prewarmSegmentsTarget(),
                     summarizeForLog(diagnostics));
+            compilePlanningPlans(snapshot);
         }
         snapshot.planner().tick(new SliceBudget(4096, System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25)));
         var garrison = gameplay.get("garrison");
         if (garrison instanceof GarrisonController controller) controller.tick();
+    }
+
+    /** Compiles every prewarmed segment's ChunkWritePlan into the landing cache, once the prewarm
+     *  has settled and the fine samples are published. This is the planning-phase compilation step
+     *  that lets the WallFeature paint without any chunk read. */
+    private void compilePlanningPlans(Installed snapshot) {
+        var pipeline = snapshot.barrier().production();
+        if (pipeline == null || pipeline.fineHeightIndex() == null) return;
+        var level = levels.get("minecraft:overworld");
+        if (level == null) return;
+        var compiler = new local.plaincraft.greatwall.planning.PlanningChunkCompiler(
+                pipeline.realization(), pipeline.compiler(),
+                pipeline.fineHeightIndex(), pipeline.planningStructures());
+        var planner = snapshot.planner();
+        long target = local.plaincraft.greatwall.config.GreatWallConfig.get().prewarmSegmentsTarget();
+        if (target <= 0) target = 4;
+        for (long i = 0; i < target; i++) {
+            try {
+                var lease = planner.requirePlan(i, Priority.PLAYER_PREFETCH);
+                lease.future().whenComplete((plan, error) -> {
+                    try {
+                        if (error == null && plan != null) {
+                            var window = new PlanWindow(List.of(plan));
+                            var compiled = compiler.compileWindow(window, snapshot.recipe().recipeHash(),
+                                    snapshot.recipe().dimension());
+                            for (var entry : compiled.entrySet()) {
+                                local.plaincraft.greatwall.generation.WallWorldgenPlanCache.put(level, entry.getValue());
+                            }
+                        }
+                    } finally { lease.close(); }
+                });
+            } catch (RuntimeException ignored) { /* closed or out of bounds */ }
+        }
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={}", target);
     }
 
     PlanLease<Void> featureLease(ChunkKey key) {

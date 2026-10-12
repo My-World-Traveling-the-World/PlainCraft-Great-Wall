@@ -97,6 +97,13 @@ public final class ProductionWallPipeline implements AutoCloseable {
         this.fineHeightIndex = Objects.requireNonNull(index, "index");
         this.planningStructures = java.util.List.copyOf(Objects.requireNonNull(structures, "structures"));
     }
+
+    /** The planning-resolved fine samples, or null before the prewarm publishes them. */
+    public local.plaincraft.greatwall.planning.FineHeightIndex fineHeightIndex() { return fineHeightIndex; }
+    /** The planning-resolved structure boxes, or empty before the prewarm publishes them. */
+    public java.util.List<local.plaincraft.greatwall.model.WallTypes.Bounds> planningStructures() { return planningStructures; }
+    public RealizationPlanner realization() { return realization; }
+    public ChunkPlanCompiler compiler() { return compiler; }
     public CompletableFuture<Void> beforeLight(ChunkKey key,ChunkAccess owner,TerrainEngine engine) {
         try{
             active();trace.assertOutsideLock();

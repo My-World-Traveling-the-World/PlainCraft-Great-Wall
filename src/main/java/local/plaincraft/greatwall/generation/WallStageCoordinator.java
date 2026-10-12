@@ -104,6 +104,8 @@ public final class WallStageCoordinator implements AutoCloseable {
             java.util.List<local.plaincraft.greatwall.model.WallTypes.Bounds> structures) {
         if (production != null) production.setPlanningTerrain(index, structures);
     }
+    /** The production pipeline, or null for the S0 laboratory strategy. */
+    public ProductionWallPipeline production() { return production; }
     private void active() {
         session.assertActiveSession();
         if (state.containsKey("closed")) throw new IllegalStateException("T0 session closed");
