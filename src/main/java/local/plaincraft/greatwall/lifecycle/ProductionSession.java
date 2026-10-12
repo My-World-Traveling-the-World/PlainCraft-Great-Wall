@@ -43,6 +43,7 @@ import local.plaincraft.greatwall.persistence.SegmentCacheStore;
 import local.plaincraft.greatwall.persistence.WallWorldState;
 import local.plaincraft.greatwall.persistence.WorldManifest;
 import local.plaincraft.greatwall.planning.PlannerScheduler;
+import local.plaincraft.greatwall.planning.StructureObstacleIndex;
 import local.plaincraft.greatwall.terrain.RealizationPlanner;
 import local.plaincraft.greatwall.terrain.TerrainSnapshotService;
 import net.fabricmc.loader.api.FabricLoader;
@@ -92,6 +93,9 @@ final class ProductionSession implements AutoCloseable {
     private final ExecutorService historyIo;
     private final ConcurrentHashMap<String, Object> gameplay = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, WallWorldState> worldState = new ConcurrentHashMap<>();
+    /** Planning-time corridor structure scan; constructed once the overworld is known and closed on
+     *  session shutdown. */
+    private volatile local.plaincraft.greatwall.generation.CorridorStructureScanner structureScanner;
 
     ProductionSession(MinecraftServer server, WorldServices services) {
         this.server = server; this.services = services;
@@ -156,7 +160,13 @@ final class ProductionSession implements AutoCloseable {
                 // 里死等预热。recipe 一旦持久化就绪，必须无条件开始批量预热，绝不可依赖
                 // after-road-reached（TAIL 路径，主线程被 HEAD 阻塞永远到不了）或 rivers-prewarmed
                 // （跨阶段易失标志，道路回退 0.8.402 后传递链断裂）。afterRoadBulk 自带幂等保护。
-                planner.afterRoadBulk();
+                //
+                // The corridor structure scan must settle BEFORE the bulk prewarm starts: the ridge
+                // detour stage reads the obstacle index while planning each segment, so a scan that
+                // runs after prewarm would leave the wall cutting through structures. The scan is
+                // fire-and-forget with a degraded fallback (empty index = no structure avoidance =
+                // the pre-refactor behaviour); it must never block or fail the world.
+                startStructureScanAndPrewarm(level, recipe, planner);
                 trace.record("PRODUCTION_RIVERS_BULK", recipe.dimension(), 0, 0, "recipe-installed-unconditional-bulk", "none");
                 trace.record("PRODUCTION_RECIPE_INSTALLED", recipe.dimension(), 0, 0, "recipe-durable-before-generation", "none");
                 // S3 gameplay service assembly. The journal is world-scoped (manifest.instance),
@@ -362,6 +372,45 @@ final class ProductionSession implements AutoCloseable {
         var palette = new PaletteResolver(recipe.seed(), catalog);
         var biome = new BiomePaletteIndex(BiomePaletteIndex.freeze(level.registryAccess(), catalog));
         return new RealizationPlanner(recipe, new SurfaceProbe(), biome, S1TemplateSet.create(recipe.seed(), palette));
+    }
+
+    /**
+     * Scans the wall corridor for structure footprints, then releases the bulk prewarm once the
+     * obstacle index is published. The scan and the prewarm both run off the server thread; the
+     * only ordering that matters is index-before-dispatch, which the completion chain guarantees.
+     */
+    private void startStructureScanAndPrewarm(ServerLevel level, WorldRecipe recipe, PlannerScheduler planner) {
+        // Corridor half-width in blocks. Covering the common village/outpost footprint; the true
+        // jitter corridor is +-512 but a structure wider than 320 blocks would be a landmark the
+        // wall is expected to run around, not beside. Tuned against the real-machine hit-rate later.
+        int corridorHalfWidth = 160;
+        long lengthBlocks = local.plaincraft.greatwall.config.GreatWallConfig.get().wallLengthBlocks();
+        if (lengthBlocks <= 0) lengthBlocks = 8190L;
+        // Chunk-bounds of the axis-aligned corridor. The axis may run at an angle, so take a
+        // generous AABB around the two endpoints and widen by the corridor half-width.
+        int originX = recipe.axis().origin().x();
+        int originZ = recipe.axis().origin().z();
+        int endX = originX + (int) (recipe.axis().exQ30() * lengthBlocks / (1L << 30));
+        int endZ = originZ + (int) (recipe.axis().ezQ30() * lengthBlocks / (1L << 30));
+        int minChunkX = Math.floorDiv(Math.min(originX, endX) - corridorHalfWidth, 16);
+        int maxChunkX = Math.floorDiv(Math.max(originX, endX) + corridorHalfWidth, 16);
+        int minChunkZ = Math.floorDiv(Math.min(originZ, endZ) - corridorHalfWidth, 16);
+        int maxChunkZ = Math.floorDiv(Math.max(originZ, endZ) + corridorHalfWidth, 16);
+
+        var scanner = new local.plaincraft.greatwall.generation.CorridorStructureScanner();
+        this.structureScanner = scanner;
+        scanner.scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ)
+                .whenComplete((boxes, error) -> {
+                    if (error != null) {
+                        GreatWallMod.LOGGER.warn("[GreatWall:corridor] structure scan failed; "
+                                + "falling back to no structure avoidance", error);
+                        planner.setObstacles(StructureObstacleIndex.empty(8));
+                    } else {
+                        planner.setObstacles(StructureObstacleIndex.of(boxes, 8));
+                    }
+                    // The prewarm must start exactly once, after the index is settled either way.
+                    planner.afterRoadBulk();
+                });
     }
     void openDimension(ServerLevel level) { levels.put(level.dimension().location().toString(), level); }
     void warming() {
@@ -611,6 +660,8 @@ final class ProductionSession implements AutoCloseable {
         });
         var snapshot = snapshots.get("installed");
         if (snapshot != null) snapshot.barrier().close();
+        var scanner = structureScanner;
+        if (scanner != null) scanner.close();
         // Stop new gameplay mutations before flushing permanent history: garrison birth and
         // beacon credits must cease, then the journal flushes and shuts down its own executor.
         for (String key : List.of("garrison", "beacons", "sites", "negotiated", "debug", "roadWeaverAdapter")) {
