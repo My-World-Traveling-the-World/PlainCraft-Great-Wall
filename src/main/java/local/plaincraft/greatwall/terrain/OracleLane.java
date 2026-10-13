@@ -92,6 +92,12 @@ public final class OracleLane implements AutoCloseable {
     public Map<String, Long> diagnostics() {
         var result = new java.util.HashMap<>(state);
         trace.counts().forEach((key, value) -> result.put("sentinel-" + key, value));
+        // Baked-chunk reuse: the fine sample only gets its benefit if hits dominate misses, and that is
+        // only observable from a real session (a unit test cannot build a live NoiseChunk).
+        if (oracle instanceof CpuTerrainOracle cpu) {
+            result.put("chunk-cache-hits", cpu.chunkCacheHits());
+            result.put("chunk-cache-misses", cpu.chunkCacheMisses());
+        }
         return Map.copyOf(result);
     }
     public CompletableFuture<Void> drain() { return drained.copy(); }

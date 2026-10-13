@@ -83,6 +83,41 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     private final long randomStateNanos;
     private Cursor active;
     private boolean closed;
+
+    /** Cells whose baked chunk is kept per lane (a width-4 sweep needs ~13). */
+    private static final int CHUNK_CACHE_LIMIT = 16;
+
+    /**
+     * Fully baked {@link NoiseChunk}s keyed by their cell origin, reused across columns.
+     *
+     * <h2>Why</h2>
+     * Every column used to build its own chunk and run the whole slice fill before walking a single
+     * block, then throw the chunk away ({@code stopInterpolation}). The fine sample walks a 49-wide
+     * cross-section one block at a time and then repeats that sweep one route point further along, so
+     * the same cells are revisited constantly - with a cell width of four, ~13 distinct cells per
+     * sweep, and almost every one of them still warm on the next sweep. Caching them removes most of
+     * the slice fill from the stage.
+     *
+     * <h2>Safety</h2>
+     * The key is the chunk's own construction origin, so a reused chunk is exactly the chunk the
+     * column would have built: same origin, same cell, same fractions. A chunk only enters the cache
+     * once its slice walk reported complete ({@code slicesReady}), because a half-baked chunk is not
+     * reusable. This map is touched from one lane thread only, like the rest of the oracle.
+     */
+    private final java.util.LinkedHashMap<Long, NoiseChunk> chunkCache =
+            new java.util.LinkedHashMap<>(32, 0.75F, true) {
+                @Override protected boolean removeEldestEntry(java.util.Map.Entry<Long, NoiseChunk> eldest) {
+                    if (size() <= CHUNK_CACHE_LIMIT) return false;
+                    // Evicted chunks are the only ones that still need their scratch arrays released.
+                    eldest.getValue().stopInterpolation();
+                    return true;
+                }
+            };
+    private long chunkCacheHits, chunkCacheMisses;
+    /** Baked-chunk reuse counters, surfaced so a real session can prove the cache is working. */
+    public long chunkCacheHits() { return chunkCacheHits; }
+    public long chunkCacheMisses() { return chunkCacheMisses; }
+
     private long maxConstructNanos, maxCellNanos, maxSlicePointNanos, maxBlockNanos, maxCoarseNanos, maxBiomeNanos;
     private long over40msPrimitives, referencePrimitives, coarsePrimitives;
     private long maxAdvanceNanos, over40msAdvances;
@@ -199,6 +234,9 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         if (closed) return;
         closed = true;
         if (active != null) { stop(active); active = null; }
+        // Cached chunks hold scratch arrays and this lane is going away: release every one.
+        for (var chunk : chunkCache.values()) chunk.stopInterpolation();
+        chunkCache.clear();
     }
 
     private void coarse(Cursor c) {
@@ -220,8 +258,21 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     private void reference(Cursor c) {
         if (c.chunk == null) {
             int width = noise.getCellWidth();
+            int cellX = Math.floorDiv(c.x, width);
+            int cellZ = Math.floorDiv(c.z, width);
+            long key = ((long) cellX << 32) ^ (cellZ & 0xffffffffL);
+            var cached = chunkCache.get(key);
+            if (cached != null) {
+                chunkCacheHits++;
+                c.chunk = cached;
+                c.bridge = (NoiseCursorBridge) (Object) cached;
+                // Already baked: skipping the slice walk is the entire point of the reuse.
+                c.slicesReady = true;
+                return;
+            }
+            chunkCacheMisses++;
             long start = System.nanoTime();
-            c.chunk = new NoiseChunk(1, randomState, Math.floorDiv(c.x, width) * width, Math.floorDiv(c.z, width) * width,
+            c.chunk = new NoiseChunk(1, randomState, cellX * width, cellZ * width,
                     noise, DensityFunctions.BeardifierMarker.INSTANCE, settings, fluidPicker, Blender.empty());
             c.bridge = (NoiseCursorBridge) (Object) c.chunk;
             c.bridge.greatwall$beginSlices();
@@ -284,7 +335,22 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     }
 
     private void stop(Cursor c) {
-        if (c.chunk != null) { c.chunk.stopInterpolation(); c.chunk = null; c.bridge = null; }
+        if (c.chunk == null) return;
+        // A fully baked chunk goes back into the cell cache instead of being torn down: the next column
+        // in the same cell - or the next route point sweeping the same band - would otherwise rebuild it
+        // and re-run the entire slice fill. Only fully baked chunks qualify; a partially baked one is not
+        // reusable and must release its scratch arrays now.
+        if (c.slicesReady && !closed) {
+            int width = noise.getCellWidth();
+            long key = ((long) Math.floorDiv(c.x, width) << 32) ^ (Math.floorDiv(c.z, width) & 0xffffffffL);
+            var displaced = chunkCache.put(key, c.chunk);
+            // An equal key holds the same chunk (it came from the cache). A different value means the
+            // entry was evicted and rebuilt while this column ran, so that one is stale.
+            if (displaced != null && displaced != c.chunk) displaced.stopInterpolation();
+            c.chunk = null; c.bridge = null;
+            return;
+        }
+        c.chunk.stopInterpolation(); c.chunk = null; c.bridge = null;
     }
     private void observe(long nanos) { if (nanos > FORTY_MS) over40msPrimitives++; }
     private Cursor own(ColumnCursor cursor) {

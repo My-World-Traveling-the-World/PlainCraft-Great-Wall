@@ -105,8 +105,12 @@ public final class PlannerScheduler implements AutoCloseable {
      *
      * <p>64 was the historical value and the prewarm showed it workable only because the prewarm had a
      * 1 ms driver (12 lanes x 64 ops x 1000 drives/s). The fine sample received the same 64 ops at tick
-     * rate instead. 256 keeps a lane busy for a useful slice of real work while staying inside one
-     * drive's credit budget (16 lanes x 256 = 4096, the driver's whole budget).
+     * rate instead.
+     *
+     * <p><b>256 is a hard ceiling, not a tuning choice.</b> Both cursor contracts reject more:
+     * {@code CpuTerrainOracle.advance} and {@code WallFinePlanner.advance} each throw on a primitive
+     * limit outside 1..256. So the only remaining levers on this stage are the drive rate (see
+     * {@link #fineSampleTimer}) and doing less work per column - not a larger batch.
      */
     private static final int LANE_BATCH_OPERATIONS = 256;
 
@@ -493,10 +497,12 @@ public final class PlannerScheduler implements AutoCloseable {
                             // change, and without the limits recorded here a slower run would
                             // not say whether the scheduler or the terrain was responsible.
                             GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_COMPLETE segments={} totalMs={} "
-                                            + "avgMsPerSegment={} geometryInflight={} lanes={}",
+                                            + "avgMsPerSegment={} geometryInflight={} lanes={} "
+                                            + "chunkCacheHits={} chunkCacheMisses={}",
                                     prewarm.size(), totalMs,
                                     prewarm.isEmpty() ? 0L : totalMs / prewarm.size(),
-                                    recipe.config().maxGeometryInflight(), laneState.size());
+                                    recipe.config().maxGeometryInflight(), laneState.size(),
+                                    laneDiagnostic("chunk-cache-hits"), laneDiagnostic("chunk-cache-misses"));
                         } else {
                             GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_FAILED segments={} totalMs={} reason={}",
                                     prewarm.size(), totalMs, error.toString());
@@ -538,6 +544,13 @@ public final class PlannerScheduler implements AutoCloseable {
         var timer = fineSampleTimer;
         fineSampleTimer = null;
         if (timer != null) timer.cancel(false);
+    }
+
+    /** Sum of one per-lane diagnostic counter across the native lanes. */
+    private long laneDiagnostic(String key) {
+        long total = 0L;
+        for (var lane : lanes) total += lane.diagnostics().getOrDefault(key, 0L);
+        return total;
     }
 
     /**
