@@ -86,6 +86,30 @@ public final class PlannerScheduler implements AutoCloseable {
      * {@link #afterRoadBulk()} for why the prewarm does not rely on ticks.
      */
     private ScheduledFuture<?> prewarmTimer;
+
+    /**
+     * The fine sample's own driver.
+     *
+     * <p>The prewarm has had a dedicated 1 ms driver for a while, but the fine sample runs <em>before</em>
+     * the prewarm and therefore ran with no driver at all: the startup timer is cancelled by the first
+     * server tick, so the stage was driven only by ticks (about 20 drives/s) plus the stall watchdog.
+     * Each drive grants every idle lane {@link #LANE_BATCH_OPERATIONS} primitive operations, so a
+     * tick-driven stage ran roughly two orders of magnitude below the lanes' capacity. A measured
+     * session spent 27 minutes in the fine sample and never finished it, with 8 of 12 lanes parked at
+     * any instant. This driver is the same shape as the prewarm's.
+     */
+    private ScheduledFuture<?> fineSampleTimer;
+
+    /**
+     * Primitive operations granted to one lane per drive.
+     *
+     * <p>64 was the historical value and the prewarm showed it workable only because the prewarm had a
+     * 1 ms driver (12 lanes x 64 ops x 1000 drives/s). The fine sample received the same 64 ops at tick
+     * rate instead. 256 keeps a lane busy for a useful slice of real work while staying inside one
+     * drive's credit budget (16 lanes x 256 = 4096, the driver's whole budget).
+     */
+    private static final int LANE_BATCH_OPERATIONS = 256;
+
     /**
      * The prewarm's segment leases, pinned until the planning compile has published them.
      *
@@ -226,6 +250,9 @@ public final class PlannerScheduler implements AutoCloseable {
         // identical, only computed concurrently.
         int slices = Math.max(4, Math.min(laneState.size(), 16));
         final int progressTotal = Math.max(1, totalSegments * slices);
+        // Drive this stage ourselves: without it the fine sample waits on server ticks, which is how
+        // a measured session spent 27 minutes here without finishing a single slice.
+        startFineSampleDriver();
         var leases = new ArrayList<PlanLease<RouteShape>>();
         // Two counters, not one. A single counter seeded with the segment count completed the
         // index after the first few slices (it was decremented once per slice, not per segment),
@@ -284,7 +311,12 @@ public final class PlannerScheduler implements AutoCloseable {
                 }
             }, pump);
         }
-        aggregate.whenComplete((v, e) -> leases.forEach(PlanLease::close));
+        aggregate.whenComplete((v, e) -> {
+            // Stop the driver first: the stage is over on both paths, and a timer that keeps granting
+            // credits would spin against a queue that no longer holds fine-sample work.
+            stopFineSampleDriver();
+            leases.forEach(PlanLease::close);
+        });
         return aggregate;
     }
 
@@ -484,6 +516,27 @@ public final class PlannerScheduler implements AutoCloseable {
     private void stopPrewarmTimer() {
         var timer = prewarmTimer;
         prewarmTimer = null;
+        if (timer != null) timer.cancel(false);
+    }
+
+    /**
+     * Starts the fine sample's dedicated driver. Idempotent: the fine sample is requested once per
+     * session, but a retry must not stack timers.
+     */
+    private void startFineSampleDriver() {
+        if (fineSampleTimer != null || closed()) return;
+        fineSampleTimer = pump.scheduleWithFixedDelay(() -> {
+            if (closed() || fineSampleTimer == null) return;
+            credits = 4096;
+            deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25);
+            dispatch();
+        }, 0, 1, TimeUnit.MILLISECONDS);
+    }
+
+    /** Stops the fine sample's driver. Idempotent, and safe to call from any completion path. */
+    private void stopFineSampleDriver() {
+        var timer = fineSampleTimer;
+        fineSampleTimer = null;
         if (timer != null) timer.cancel(false);
     }
 
@@ -791,7 +844,7 @@ public final class PlannerScheduler implements AutoCloseable {
             }
             if (slot.job == null) slot.job = pending.poll();
             if (slot.job == null) continue;
-            int operations = Math.min(64, credits); credits -= operations;
+            int operations = Math.min(LANE_BATCH_OPERATIONS, credits); credits -= operations;
             var job = slot.job; slot.busy = true;
             nativeLane.submit(oracle -> {
                 Throwable error = null; boolean done = false; Object value = null;
@@ -1140,6 +1193,7 @@ public final class PlannerScheduler implements AutoCloseable {
             if (startupTimer != null) startupTimer.cancel(false);
             if (watchdogTimer != null) watchdogTimer.cancel(false);
             if (prewarmTimer != null) prewarmTimer.cancel(false);
+            if (fineSampleTimer != null) fineSampleTimer.cancel(false);
             pending.forEach(job -> job.result.completeExceptionally(closedFailure()));
             pending.clear(); geometryQueue.clear(); ioQueue.clear(); planAdmissions.clear(); geometryAdmissions.clear();
             activeJobs.clear(); progress.clear();
