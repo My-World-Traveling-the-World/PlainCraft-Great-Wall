@@ -159,17 +159,31 @@ public final class CorridorStructureScan {
             return thread;
         });
         try {
-            int chunk = (candidates.size() + parallelism - 1) / parallelism;
+            // Dynamic work stealing, not static contiguous slices.
+            //
+            // The candidate list is grouped by structure set (predictCandidates walks
+            // possibleStructureSets in registry order) and one Structure.generate spans orders of
+            // magnitude in cost - a simple scatter versus a jigsaw village. Static slices therefore
+            // hand one worker the cheap candidates and another all the expensive ones, and the tail
+            // then runs on a single thread: a measured session finished the scan with the CPU at
+            // ~2.5 cores of 8 while the last slice ground on alone. Batches stay small so the tail is
+            // bounded by one batch instead of one slice.
+            int batch = Math.max(1, Math.min(32, candidates.size() / (parallelism * 8) + 1));
+            var cursor = new java.util.concurrent.atomic.AtomicInteger();
             for (int p = 0; p < parallelism; p++) {
-                int from = p * chunk;
-                int to = Math.min(candidates.size(), from + chunk);
-                if (from >= to) continue;
-                List<Candidate> slice = candidates.subList(from, to);
-                parts.add(java.util.concurrent.CompletableFuture.runAsync(
-                        () -> seedParts.add(resolveBoxesSerial(level, slice, count -> {
+                parts.add(java.util.concurrent.CompletableFuture.runAsync(() -> {
+                    List<OwnedBox> collected = new ArrayList<>();
+                    while (true) {
+                        int from = cursor.getAndAdd(batch);
+                        if (from >= candidates.size()) break;
+                        int to = Math.min(candidates.size(), from + batch);
+                        collected.addAll(resolveBoxesSerial(level, candidates.subList(from, to), count -> {
                             int d = done.addAndGet(count);
                             if (progress != null) progress.accept(d);
-                        })), executor));
+                        }));
+                    }
+                    seedParts.add(collected);
+                }, executor));
             }
             java.util.concurrent.CompletableFuture.allOf(parts.toArray(new java.util.concurrent.CompletableFuture[0])).join();
         } finally {
@@ -187,6 +201,16 @@ public final class CorridorStructureScan {
                 if (seen.add(key)) merged.add(box);
             }
         }
+        // Deterministic order. seedParts is appended in completion order, so the merged list would
+        // otherwise depend on thread scheduling: the same world could hand downstream planning a
+        // differently ordered obstacle list on every run. Sort by identity, then geometry.
+        merged.sort(java.util.Comparator.<OwnedBox, String>comparing(OwnedBox::structureId)
+                .thenComparingInt(box -> box.box().minX())
+                .thenComparingInt(box -> box.box().minY())
+                .thenComparingInt(box -> box.box().minZ())
+                .thenComparingInt(box -> box.box().maxX())
+                .thenComparingInt(box -> box.box().maxY())
+                .thenComparingInt(box -> box.box().maxZ()));
         return List.copyOf(merged);
     }
 
@@ -195,7 +219,7 @@ public final class CorridorStructureScan {
      * reserve cores on big machines, cap by heap so a small JVM cannot over-subscribe, and stay
      * aggressive for startup prewarm while bounded so a huge world cannot queue unbounded work.
      */
-    private static int adaptiveScanWorkers() {
+    static int adaptiveScanWorkers() {
         int processors = Math.max(1, Runtime.getRuntime().availableProcessors());
         long heapGiB = Math.max(1L, Math.max(512L, Runtime.getRuntime().maxMemory() / (1024L * 1024L)) / 1024L);
         int cpuBudget = processors >= 12 ? Math.max(2, processors - 2) : Math.max(2, processors / 3);

@@ -24,7 +24,10 @@ public final class CorridorStructureScanner implements AutoCloseable {
     private final AtomicBoolean closed = new AtomicBoolean();
 
     public CorridorStructureScanner() {
-        this(4);
+        // Adaptive rather than a fixed four. This pool bounds how many scans may run at once, and the
+        // resolve stage inside a scan already scales itself to the hardware, so a hardcoded four only
+        // capped the outer fan-out on machines that can afford more.
+        this(CorridorStructureScan.adaptiveScanWorkers());
     }
 
     public CorridorStructureScanner(int threads) {
