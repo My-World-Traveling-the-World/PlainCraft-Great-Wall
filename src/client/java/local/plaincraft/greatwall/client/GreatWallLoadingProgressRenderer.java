@@ -12,19 +12,15 @@ import net.minecraft.network.chat.Component;
  * <h2>Shape</h2>
  * The card shares its frame with the road and river cards so the three startup stages read as
  * one family: a theme dot and title, a line-art band that lights left-to-right with the overall
- * fraction, a stepper of the wall's large stages, a live status line, and a detail area that is
- * collapsed by default and expanded by clicking.
+ * fraction, a stepper of the wall's large stages, a live status line, and the detail area.
  *
- * <h2>Why collapsible</h2>
- * The wall's startup has six stages, each with its own count. Showing all of them at once made
- * a wall of text; showing none of them read as a freeze. The collapsed card keeps the one thing
- * a player needs to trust the game is alive - a stage name, a moving number and an estimate of
- * the wait - and the expanded card answers "what is it actually doing" for the curious.
- *
- * <h2>Interaction</h2>
- * The card is collapsed by default. {@link #mouseClicked} toggles the detail area when the click
- * lands on the detail toggle; the loading screen forwards its clicks to {@link #mouseClicked}
- * through {@link GreatWallLoadingProgressMixin}.
+ * <h2>Details are always shown</h2>
+ * The wall's startup has six stages, each with its own count. An earlier version hid them behind a
+ * click, which turned out worse than the wall of text it avoided: a hidden card reads as a freeze,
+ * and the click never worked anyway - the hook injected into an inherited method with an explicit
+ * descriptor, which Mixin cannot resolve, and it was declared with {@code require = 0} so it failed
+ * silently. Every stage row is therefore drawn unconditionally, and the card has no click behaviour
+ * at all: no toggle, no collapse state, and no mixin forwarding clicks.
  */
 public final class GreatWallLoadingProgressRenderer {
     private static final int PADDING = 10;
@@ -125,14 +121,6 @@ public final class GreatWallLoadingProgressRenderer {
 
         y += LINE + 4;
         drawDetail(graphics, font, snapshot, x, y, innerWidth);
-    }
-
-    /**
-     * Retained for the mixin's click hook; the card no longer collapses, so a click never changes
-     * anything and is never consumed.
-     */
-    public static boolean mouseClicked(double mouseX, double mouseY) {
-        return false;
     }
 
     // ---------------------------------------------------------------------------------------------
