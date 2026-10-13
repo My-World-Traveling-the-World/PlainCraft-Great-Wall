@@ -38,7 +38,10 @@ public final class GreatWallLoadingProgressRenderer {
     private static final int THEME_DIM = 0xFF7A6430;      // unlit line-art
     private static final int STEP_DONE = 0xFF7FD07F;      // green check
     private static final int STEP_PENDING = 0xFF5A6472;   // grey hollow
-    private static final int BAND_BG = 0x40101622;
+    // Opaque on purpose (E6): the vanilla loading screen draws its own centred percentage, and a
+    // translucent band let that text bleed through the artwork - it read as our card reporting a
+    // second, contradictory number.
+    private static final int BAND_BG = 0xFF101622;
     private static final int RIDGE_FAR = 0xFF141920;      // farthest mountain layer
     private static final int RIDGE_MID = 0xFF182029;      // middle mountain layer
     private static final int RIDGE = 0xFF1C222E;          // nearest mountain silhouette
@@ -65,7 +68,7 @@ public final class GreatWallLoadingProgressRenderer {
         // one at a time, so only one card is ever active. It takes three quarters of the screen
         // width so the line-art band has room to breathe. The detail area is always shown; there
         // is no collapsed state any more.
-        int width = Math.max(280, (screenWidth * 3) / 4);
+        int width = Math.max(280, (screenWidth * 9) / 10);
         int innerWidth = width - PADDING * 2;
 
         // Detail lines, counted so the card height fits its content.
@@ -84,7 +87,7 @@ public final class GreatWallLoadingProgressRenderer {
         int left = (screenWidth - width) / 2;
         // Lifted off the bottom edge by about an eighth of the screen height so it does not hug
         // the corner and leaves the vanilla loading text some air.
-        int top = Math.max(20, screenHeight - height - Math.max(40, (screenHeight * 12) / 100));
+        int top = Math.max(20, screenHeight - height - Math.max(40, (screenHeight * 8) / 100));
         int right = left + width;
         int bottom = top + height;
         int x = left + PADDING;
@@ -351,8 +354,9 @@ public final class GreatWallLoadingProgressRenderer {
 
     private static Component etaLine(PrewarmProgress.Snapshot snapshot) {
         // 只显示已用时间：早期阶段没有可靠的剩余估算，显示 "--" 或跳动的时间反而让人以为卡了。
+        // 走 formatDuration 而不是裸秒数：elapsedSeconds() 带小数，直接打印会得到「已用 4.1」这种缺单位读数。
         return Component.translatable("plaincraft.great_wall.loading_progress.elapsed_only",
-                snapshot.elapsedSeconds());
+                formatDuration(snapshot.elapsedMillis()));
     }
 
     private static int detailLineCount(PrewarmProgress.Snapshot snapshot) {
@@ -384,9 +388,17 @@ public final class GreatWallLoadingProgressRenderer {
             case ROOT_SEARCH -> snapshot.rootTotal() > 0
                     ? Component.translatable(key, snapshot.rootCandidate(), snapshot.rootTotal())
                     : Component.translatable(key + "_unknown");
-            case STRUCTURE_SCAN, FINE_SAMPLE, COMPILE -> snapshot.subTotal() > 0
-                    ? Component.translatable(key, snapshot.subDone(), snapshot.subTotal())
-                    : Component.translatable(key + "_unknown");
+            // These three stages share ONE sub-progress pair in PrewarmProgress, owned by whichever of
+            // them is running. Printing it from a stage that is not active made three rows show the
+            // same numbers at once, which reads as three stages running in parallel - and it did, on a
+            // real session, where 扫描结构 / 采样地形 / 编译区块 all read 3256/13085.
+            case STRUCTURE_SCAN, FINE_SAMPLE, COMPILE -> stage != snapshot.stage()
+                    ? Component.translatable(stage.ordinal() < snapshot.stage().ordinal()
+                            ? "plaincraft.great_wall.loading_progress.detail_done"
+                            : "plaincraft.great_wall.loading_progress.detail_pending")
+                    : (snapshot.subTotal() > 0
+                            ? Component.translatable(key, snapshot.subDone(), snapshot.subTotal())
+                            : Component.translatable(key + "_unknown"));
             case PREWARM -> snapshot.total() > 0
                     ? Component.translatable(key, snapshot.completed(), snapshot.total())
                     : Component.translatable(key + "_unknown");

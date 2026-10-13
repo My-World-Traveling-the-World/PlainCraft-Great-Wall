@@ -66,6 +66,8 @@
   "plaincraft.great_wall.loading_progress.eta": "已用 %s · 预计剩余 %s",
   "plaincraft.great_wall.loading_progress.eta_unknown": "已用 %s · 预计剩余 --",
   "plaincraft.great_wall.loading_progress.elapsed_only": "已用 %s",
+  "plaincraft.great_wall.loading_progress.detail_done": "✓ 完成",
+  "plaincraft.great_wall.loading_progress.detail_pending": "待处理",
   "plaincraft.great_wall.loading_progress.expand": "▸ 详情",
   "plaincraft.great_wall.loading_progress.collapse": "▾ 收起",
   "plaincraft.great_wall.loading_progress.detail.root_search": "选址　候选 %s/%s",

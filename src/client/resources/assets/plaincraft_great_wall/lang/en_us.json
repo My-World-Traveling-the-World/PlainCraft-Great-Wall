@@ -66,6 +66,8 @@
   "plaincraft.great_wall.loading_progress.eta": "Elapsed %s · remaining ~%s",
   "plaincraft.great_wall.loading_progress.eta_unknown": "Elapsed %s · remaining --",
   "plaincraft.great_wall.loading_progress.elapsed_only": "Elapsed %s",
+  "plaincraft.great_wall.loading_progress.detail_done": "✓ Done",
+  "plaincraft.great_wall.loading_progress.detail_pending": "Pending",
   "plaincraft.great_wall.loading_progress.expand": "▸ Details",
   "plaincraft.great_wall.loading_progress.collapse": "▾ Collapse",
   "plaincraft.great_wall.loading_progress.detail.root_search": "Root search  candidate %s/%s",
