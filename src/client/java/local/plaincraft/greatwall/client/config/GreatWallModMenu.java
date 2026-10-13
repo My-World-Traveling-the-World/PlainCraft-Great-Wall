@@ -4,7 +4,6 @@ import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.screens.Screen;
 
 /**
  * Mod Menu entry point.
@@ -23,6 +22,6 @@ import net.minecraft.client.gui.screens.Screen;
 public final class GreatWallModMenu implements ModMenuApi {
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
-        return (ConfigScreenFactory<Screen>) GreatWallConfigScreen::new;
+        return GreatWallConfigScreen::create;
     }
 }

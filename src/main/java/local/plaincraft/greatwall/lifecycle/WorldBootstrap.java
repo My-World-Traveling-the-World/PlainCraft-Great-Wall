@@ -388,8 +388,12 @@ public final class WorldBootstrap implements AutoCloseable {
         }
         if (pending.isEmpty()) return;
         // One chunk per idle lane keeps a rejected candidate from wasting a full
-        // sweep, and keeps the queue shallow when lane 0 is already ahead.
-        int perLane = Math.max(64, (pending.size() + lanes.size() - 1) / lanes.size());
+        // sweep, and keeps the queue shallow when lane 0 is already ahead. The
+        // per-lane slice is sized by the idle lanes only (lane 0 stays serial), so a
+        // small pending window (81 points per coarse candidate) spreads across every
+        // idle lane instead of piling 64 points on one lane and starving the rest.
+        int idleLanes = Math.max(1, lanes.size() - 1);
+        int perLane = Math.max(4, (pending.size() + idleLanes - 1) / idleLanes);
         int cursor = 0;
         for (var lane : lanes) {
             if (lane == primary) continue;

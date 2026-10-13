@@ -31,10 +31,8 @@
   "optionalIntegrations": [
     {
       "id": "roadweaver",
-      "version": "2.3.1-1.21.1-plaincraft-direct-core.0.8.407-wall-prewarm-gate",
-      "sha256": "a9954be8d6610052847778fdca8cfbece33d3212b9fe1c03d91214e56736b0a4",
-      "source": "archive_metadata",
-      "note": "Must stay identical to src/main/resources/plaincraft_great_wall/roadweaver-interop.sha256. The runtime allowlist is the ABI gate: a jar whose SHA is absent there makes RoadWeaverAdapter refuse to initialise. Documenting a different build than the one the allowlist admits would describe an artifact the mod cannot actually start with."
+      "version": "independent",
+      "note": "The wall and RoadWeaver generate independently; the wall no longer verifies a RoadWeaver artifact SHA. The historical ABI allowlist (roadweaver-interop.sha256) and its RoadWeaverAdapter verification were removed on 2026-10-12 as part of severing the wall/road interop."
     },
     {
       "id": "ftbquests",

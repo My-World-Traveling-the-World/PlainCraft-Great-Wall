@@ -58,8 +58,19 @@ public final class WallObstacleProvider implements PlanningObstacleProvider {
         default List<PlanLease<PlanWindow>> leases() { return List.of(); }
     }
 
+    private static final java.util.concurrent.ExecutorService SHARED_IO = java.util.concurrent.Executors.newFixedThreadPool(
+            Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors() / 2)), task -> {
+        Thread thread = new Thread(task, "pgw-wall-provider-io");
+        thread.setDaemon(true);
+        return thread;
+    });
+
     public WallObstacleProvider() {
-        this(java.util.concurrent.ForkJoinPool.commonPool(), WallObstacleProvider::prepareRuntime);
+        // A bounded dedicated pool, never ForkJoinPool.commonPool: the shared pool is borrowed by
+        // mod loading and other systems, and a snapshot build queued there would stall the wall's
+        // obstacle provider (and through it, road planning). RoadWeaver avoids commonPool for the
+        // same reason (see RoadChunkStore).
+        this(SHARED_IO, WallObstacleProvider::prepareRuntime);
     }
 
     static void bind(WorldServices services, GateLedger gates) {

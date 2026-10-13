@@ -25,6 +25,11 @@ public abstract class TreeFeatureMixin {
         var center = region.getCenter();
         var owner = new ChunkKey(region.getLevel().dimension().location().toString(), center.x, center.z);
         if (!owner.dimension().equals("minecraft:overworld") || services.bootstrap().mayPassBeforeRecipe(owner)) return;
+        // Spatial pre-check, and it is the load-bearing one: the guard's snapshots only exist for
+        // the prewarmed window's chunks, so asking outside that band is a guaranteed miss. A chunk
+        // that cannot reach any published corridor band (inflated by the widest tree) cannot need
+        // suppression, so it passes here and the worldgen thread never queries a missing snapshot.
+        if (!services.vegetation().mayAffect(owner, services.trees().maximumRadius() + 1)) return;
         var bounds = new DimensionBounds(region.getMinBuildHeight(), region.getMaxBuildHeight(), 29_999_000);
         if (services.vegetation().intersects(owner, services.trees().vanilla(context.origin(), context.config(), bounds))) {
             services.trace("VEGETATION_SUPPRESSED", owner.dimension(), owner.x(), owner.z(), "tree:complete-bounds", "readonly");

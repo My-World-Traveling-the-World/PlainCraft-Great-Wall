@@ -54,6 +54,17 @@ public final class CorridorStructureScan {
      */
     public static List<Candidate> predictCandidates(ServerLevel level, int minChunkX, int minChunkZ,
             int maxChunkX, int maxChunkZ) {
+        return predictCandidates(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, null);
+    }
+
+    /**
+     * Predict with an optional wall corridor segment {@code (ox,oz)->(ex,ez)} in block coords and
+     * a half-width; candidates farther than {@code corridorHalfWidth} from the segment are
+     * dropped. This trims the AABB's 3.5× overscan when the wall runs at an angle, so only chunks
+     * the wall can actually reach are generated.
+     */
+    public static List<Candidate> predictCandidates(ServerLevel level, int minChunkX, int minChunkZ,
+            int maxChunkX, int maxChunkZ, Corridor corridor) {
         if (level == null || !Level.OVERWORLD.equals(level.dimension())) return List.of();
         ChunkGeneratorStructureState state = level.getChunkSource().getGeneratorState();
         List<Candidate> result = new ArrayList<>();
@@ -65,7 +76,7 @@ public final class CorridorStructureScan {
                 if (positions == null) continue;
                 for (ChunkPos candidate : positions) {
                     addCandidate(state, holder, placement, candidate, minChunkX, minChunkZ,
-                            maxChunkX, maxChunkZ, result);
+                            maxChunkX, maxChunkZ, corridor, result);
                 }
                 continue;
             }
@@ -80,7 +91,7 @@ public final class CorridorStructureScan {
                         ChunkPos candidate = randomSpread.getPotentialStructureChunk(
                                 state.getLevelSeed(), i * spacing, j * spacing);
                         addCandidate(state, holder, placement, candidate, minChunkX, minChunkZ,
-                                maxChunkX, maxChunkZ, result);
+                                maxChunkX, maxChunkZ, corridor, result);
                     }
                 }
                 continue;
@@ -89,11 +100,31 @@ public final class CorridorStructureScan {
             for (int x = minChunkX; x <= maxChunkX; x++) {
                 for (int z = minChunkZ; z <= maxChunkZ; z++) {
                     addCandidate(state, holder, placement, new ChunkPos(x, z), minChunkX, minChunkZ,
-                            maxChunkX, maxChunkZ, result);
+                            maxChunkX, maxChunkZ, corridor, result);
                 }
             }
         }
         return List.copyOf(result);
+    }
+
+    /** The wall corridor segment in block coords plus its half-width; null means no trimming. */
+    public record Corridor(int originX, int originZ, int endX, int endZ, int halfWidth) {
+        /** Squared distance from {@code (x,z)} to the segment, or -1 when the segment degenerates. */
+        boolean within(int x, int z) {
+            long dx = (long) endX - originX, dz = (long) endZ - originZ;
+            long lenSq = dx * dx + dz * dz;
+            if (lenSq == 0) {
+                long ddx = x - originX, ddz = z - originZ;
+                return ddx * ddx + ddz * ddz <= (long) halfWidth * halfWidth;
+            }
+            long t = ((long) (x - originX) * dx + (long) (z - originZ) * dz);
+            long cx, cz;
+            if (t <= 0) { cx = originX; cz = originZ; }
+            else if (t >= lenSq) { cx = endX; cz = endZ; }
+            else { cx = originX + dx * t / lenSq; cz = originZ + dz * t / lenSq; }
+            long ddx = x - cx, ddz = z - cz;
+            return ddx * ddx + ddz * ddz <= (long) halfWidth * halfWidth;
+        }
     }
 
     /**
@@ -104,6 +135,80 @@ public final class CorridorStructureScan {
      * never touches {@code ChunkMap}, {@code distanceManager}, or a real chunk future.
      */
     public static List<OwnedBox> resolveBoxes(ServerLevel level, List<Candidate> candidates) {
+        return resolveBoxes(level, candidates, null);
+    }
+
+    /** Resolve with an optional per-candidate progress sink (done count). */
+    public static List<OwnedBox> resolveBoxes(ServerLevel level, List<Candidate> candidates,
+                                              java.util.function.IntConsumer progress) {
+        if (level == null || candidates == null || candidates.isEmpty()) return List.of();
+        // Hardware-scaled parallelism, mirroring RoadWeaver's StartupHardwareProfile.nativeWorkers:
+        // each candidate's Structure.generate is read-only here (frozen registries, generator and
+        // structure manager), and RoadWeaver runs the same call in a parallel native-structure pool,
+        // so the corridor scan uses the same adaptive budget instead of a fixed small pool.
+        int parallelism = adaptiveScanWorkers();
+        if (parallelism <= 1 || candidates.size() < 64) {
+            return resolveBoxesSerial(level, candidates, progress);
+        }
+        var done = new java.util.concurrent.atomic.AtomicInteger();
+        var seedParts = java.util.Collections.synchronizedList(new ArrayList<List<OwnedBox>>());
+        var parts = new ArrayList<java.util.concurrent.CompletableFuture<Void>>(parallelism);
+        var executor = java.util.concurrent.Executors.newFixedThreadPool(parallelism, task -> {
+            Thread thread = new Thread(task, "pgw-corridor-resolve");
+            thread.setDaemon(true);
+            return thread;
+        });
+        try {
+            int chunk = (candidates.size() + parallelism - 1) / parallelism;
+            for (int p = 0; p < parallelism; p++) {
+                int from = p * chunk;
+                int to = Math.min(candidates.size(), from + chunk);
+                if (from >= to) continue;
+                List<Candidate> slice = candidates.subList(from, to);
+                parts.add(java.util.concurrent.CompletableFuture.runAsync(
+                        () -> seedParts.add(resolveBoxesSerial(level, slice, count -> {
+                            int d = done.addAndGet(count);
+                            if (progress != null) progress.accept(d);
+                        })), executor));
+            }
+            java.util.concurrent.CompletableFuture.allOf(parts.toArray(new java.util.concurrent.CompletableFuture[0])).join();
+        } finally {
+            executor.shutdownNow();
+        }
+        // Merge per-slice results with a global seen pass (each slice already deduped internally,
+        // but the same structure box can straddle two slices' corridor edge).
+        Set<String> seen = new HashSet<>();
+        List<OwnedBox> merged = new ArrayList<>();
+        for (var sliceResult : seedParts) {
+            for (var box : sliceResult) {
+                String key = box.structureId() + ":" + box.box().minX() + "," + box.box().minY() + ","
+                        + box.box().minZ() + ":" + box.box().maxX() + "," + box.box().maxY() + ","
+                        + box.box().maxZ();
+                if (seen.add(key)) merged.add(box);
+            }
+        }
+        return List.copyOf(merged);
+    }
+
+    /**
+     * Hardware-scaled scan budget, mirroring RoadWeaver's {@code StartupHardwareProfile.resolve}:
+     * reserve cores on big machines, cap by heap so a small JVM cannot over-subscribe, and stay
+     * aggressive for startup prewarm while bounded so a huge world cannot queue unbounded work.
+     */
+    private static int adaptiveScanWorkers() {
+        int processors = Math.max(1, Runtime.getRuntime().availableProcessors());
+        long heapGiB = Math.max(1L, Math.max(512L, Runtime.getRuntime().maxMemory() / (1024L * 1024L)) / 1024L);
+        int cpuBudget = processors >= 12 ? Math.max(2, processors - 2) : Math.max(2, processors / 3);
+        int memoryBudget = heapGiB <= 4L ? 2
+                : heapGiB <= 8L ? 4
+                : heapGiB <= 16L ? 8
+                : heapGiB <= 24L ? 12
+                : 16;
+        return Math.max(2, Math.min(16, Math.min(cpuBudget, memoryBudget)));
+    }
+
+    private static List<OwnedBox> resolveBoxesSerial(ServerLevel level, List<Candidate> candidates,
+                                                      java.util.function.IntConsumer sliceProgress) {
         if (level == null || candidates == null || candidates.isEmpty()) return List.of();
         var generatorState = level.getChunkSource().getGeneratorState();
         var generator = level.getChunkSource().getGenerator();
@@ -111,7 +216,10 @@ public final class CorridorStructureScan {
         long seed = generatorState.getLevelSeed();
         List<OwnedBox> result = new ArrayList<>();
         Set<String> seen = new HashSet<>();
+        int processed = 0;
         for (Candidate candidate : candidates) {
+            processed++;
+            if (sliceProgress != null && (processed % 8) == 0) sliceProgress.accept(8);
             Holder<StructureSet> setHolder = candidate.structureSet();
             StructureSet structureSet = setHolder.value();
             ChunkPos pos = new ChunkPos(candidate.pos());
@@ -165,23 +273,35 @@ public final class CorridorStructureScan {
                 remaining.remove(selectedIndex);
             }
         }
+        // 分片末尾的余数上报（前面的按 8 批量已上报，这里补最后一段）
+        int remainder = processed % 8;
+        if (sliceProgress != null && remainder > 0) sliceProgress.accept(remainder);
         return List.copyOf(result);
     }
 
     private static void addCandidate(ChunkGeneratorStructureState state, Holder<StructureSet> setHolder,
             StructurePlacement placement, ChunkPos candidate, int minChunkX, int minChunkZ,
-            int maxChunkX, int maxChunkZ, List<Candidate> result) {
+            int maxChunkX, int maxChunkZ, Corridor corridor, List<Candidate> result) {
         if (candidate.x < minChunkX || candidate.x > maxChunkX
                 || candidate.z < minChunkZ || candidate.z > maxChunkZ) return;
         if (!placement.isStructureChunk(state, candidate.x, candidate.z)) return;
-        result.add(new Candidate(placement.getLocatePos(candidate), setHolder));
+        var locatePos = placement.getLocatePos(candidate);
+        // Drop chunks the wall can never reach: only candidates within the corridor band count.
+        if (corridor != null && !corridor.within(locatePos.getX(), locatePos.getZ())) return;
+        result.add(new Candidate(locatePos, setHolder));
     }
 
     private static boolean isSurfaceRelevant(Holder<StructureSet> structureSet) {
         if (structureSet == null) return false;
         String id = structureSet.unwrapKey().map(key -> key.location().toString()).orElse("")
                 .toLowerCase(Locale.ROOT);
-        return !id.contains("monster_room") && !id.contains("nether_fossil");
+        // Blacklist underground and underwater structures: they never touch the wall's surface
+        // ridge, so generating their boxes wastes scan time and can wrongly deflect the ridge.
+        return !id.contains("monster_room") && !id.contains("nether_fossil")
+                && !id.contains("mineshaft") && !id.contains("ancient_city")
+                && !id.contains("stronghold") && !id.contains("trial_chambers")
+                && !id.contains("buried_treasure") && !id.contains("ocean_ruin")
+                && !id.contains("shipwreck") && !id.contains("monument");
     }
 
     private static String structureId(ServerLevel level, Structure structure) {

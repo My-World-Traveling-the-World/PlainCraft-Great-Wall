@@ -46,7 +46,7 @@ public abstract class CreateWorldConfigButtonMixin extends GridLayoutTab {
                                 // it silently returns null there.
                                 var minecraft = Minecraft.getInstance();
                                 if (minecraft != null && minecraft.screen instanceof CreateWorldScreen screen) {
-                                    minecraft.setScreen(new GreatWallConfigScreen((Screen) screen));
+                                    minecraft.setScreen(GreatWallConfigScreen.create(screen));
                                 }
                             })
                     .width(210)

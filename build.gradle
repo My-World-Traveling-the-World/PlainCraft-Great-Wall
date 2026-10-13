@@ -80,6 +80,19 @@ dependencies {
     if (modMenu.isFile()) {
         modClientCompileOnly files(modMenu)
     }
+    // Soft dependency: Cloth Config is referenced only by the client config screen.
+    // It ships as a separate jar in the pack's mods folder (cloth-config-15.0.140),
+    // so compileOnly keeps it out of this jar; a session without it never loads the
+    // screen factory. The same local-file pattern as modmenu keeps this off the
+    // dependency-lock / verification-metadata.xml path entirely.
+    def clothConfig = file('libs/cloth-config-compile-only.jar')
+    if (clothConfig.isFile()) {
+        modClientCompileOnly files(clothConfig)
+    }
+    def clothMath = file('libs/cloth-basic-math-compile-only.jar')
+    if (clothMath.isFile()) {
+        modClientCompileOnly files(clothMath)
+    }
 }
 
 fabricApi {

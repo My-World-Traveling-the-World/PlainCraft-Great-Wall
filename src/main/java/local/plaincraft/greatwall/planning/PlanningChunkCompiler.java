@@ -38,8 +38,16 @@ public final class PlanningChunkCompiler {
 
     /** Compiles every wall-touched chunk of the given plan window into a {@link ChunkWritePlan}. */
     public Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash, String dimension) {
+        return compileWindow(plans, recipeHash, dimension, null);
+    }
+
+    /** Compile with an optional per-owner progress sink (done count). */
+    public Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash,
+                                                       String dimension,
+                                                       java.util.function.IntConsumer progress) {
         var result = new HashMap<ChunkKey, ChunkWritePlan>();
         var provider = new PlanningColumnProvider(index);
+        var done = new java.util.concurrent.atomic.AtomicInteger();
         for (var plan : plans.plans()) {
             // For each segment, enumerate the chunks its realization owners cover, resolve the
             // realization and clip to each owner.
@@ -52,6 +60,7 @@ public final class PlanningChunkCompiler {
                 var owners = coverage.realizationOwners(cellKey, new PlanWindow(List.of(plan)));
                 for (var owner : owners) {
                     compileOwner(cellKey, owner, new PlanWindow(List.of(plan)), recipeHash, provider, result);
+                    if (progress != null) progress.accept(done.incrementAndGet());
                 }
             }
         }

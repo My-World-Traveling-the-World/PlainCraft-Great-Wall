@@ -86,6 +86,18 @@ public final class PlannerScheduler implements AutoCloseable {
      * {@link #afterRoadBulk()} for why the prewarm does not rely on ticks.
      */
     private ScheduledFuture<?> prewarmTimer;
+    /**
+     * The prewarm's segment leases, pinned until the planning compile has published them.
+     *
+     * <p>They must outlive the prewarm: closing them releases the cached {@link SegmentPlan}s back
+     * to the memory budget, and the compile does not run until the server has started (minutes
+     * later). A measured session closed them at prewarm completion and then re-planned the whole
+     * opening window during the compile - 22 minutes of silent work that published nothing before
+     * the run ended. Released by {@link #releasePrewarmLeases()} once the compile is done, and by
+     * {@link #close()} on every other path.
+     */
+    private final java.util.List<PlanLease<SegmentPlan>> prewarmLeases =
+            java.util.Collections.synchronizedList(new java.util.ArrayList<>());
     private PlanLease<SegmentPlan> backgroundLease;
 
     public PlannerScheduler(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory, SegmentCacheStore cache, Executor io) {
@@ -201,14 +213,36 @@ public final class PlannerScheduler implements AutoCloseable {
         if (closed()) return CompletableFuture.failedFuture(closedFailure());
         var aggregate = new CompletableFuture<FineHeightIndex>();
         var all = new ArrayList<WallFinePlanner.FineColumn>();
-        var remaining = new java.util.concurrent.atomic.AtomicInteger();
-        var started = new java.util.concurrent.atomic.AtomicBoolean();
+        var sampledColumns = new java.util.concurrent.atomic.AtomicInteger();
         // Prewarm already plans the opening segments; sample the same window so the two share the
         // lane budget and the fine samples land together with the plans.
         long target = prewarmTargetSegments();
         if (target <= 0) target = STARTUP_PREWARM_SEGMENTS;
+        final int totalSegments = (int) Math.min(Integer.MAX_VALUE, target);
+        // Fan each segment's point range across the native lanes. One segment is ~2048 points x 49
+        // columns (~100k REFERENCE samples); a single job walked them serially on one lane while
+        // every other lane sat idle. The slices are point ranges of the same route, so each lane's
+        // oracle samples exactly the columns it would have sampled serially — the merged index is
+        // identical, only computed concurrently.
+        int slices = Math.max(4, Math.min(laneState.size(), 16));
+        final int progressTotal = Math.max(1, totalSegments * slices);
         var leases = new ArrayList<PlanLease<RouteShape>>();
-        remaining.set((int) Math.min(Integer.MAX_VALUE, target));
+        // Two counters, not one. A single counter seeded with the segment count completed the
+        // index after the first few slices (it was decremented once per slice, not per segment),
+        // so the compile received roughly a twelfth of the sampled columns.
+        var routesPending = new java.util.concurrent.atomic.AtomicInteger(totalSegments);
+        var slicesPending = new java.util.concurrent.atomic.AtomicInteger();
+        var slicesDone = new java.util.concurrent.atomic.AtomicInteger();
+        // The loading card's fine-sample stage ticks per finished slice, so the meter moves during
+        // the stage instead of only at its end.
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, progressTotal);
+        var completion = new Runnable() {
+            @Override public void run() {
+                if (routesPending.get() > 0 || slicesPending.get() > 0) return;
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(progressTotal, progressTotal);
+                synchronized (all) { aggregate.complete(FineHeightIndex.of(all)); }
+            }
+        };
         for (long i = 0; i < target && safeSegment(i); i++) {
             var lease = requireRoute(i, priority);
             leases.add(lease);
@@ -217,18 +251,37 @@ public final class PlannerScheduler implements AutoCloseable {
                 try {
                     if (error != null) { aggregate.completeExceptionally(error); return; }
                     if (closed()) { aggregate.completeExceptionally(closedFailure()); return; }
-                    var job = new FineSampleJob(route, priority, new CompletableFuture<List<WallFinePlanner.FineColumn>>());
-                    enqueue(job);
-                    job.result.whenCompleteAsync((columns, sampleError) -> {
-                        try {
-                            if (sampleError != null) { aggregate.completeExceptionally(sampleError); return; }
-                            synchronized (all) { all.addAll(columns); }
-                            if (remaining.decrementAndGet() == 0) {
-                                aggregate.complete(FineHeightIndex.of(all));
-                            }
-                        } catch (Throwable t) { aggregate.completeExceptionally(t); }
-                    }, pump);
-                } catch (Throwable t) { aggregate.completeExceptionally(t); }
+                    int points = route.points().size();
+                    int perSlice = Math.max(1, (points + slices - 1) / slices);
+                    for (int s = 0; s < slices; s++) {
+                        int from = s * perSlice;
+                        if (from >= points) break;
+                        int to = Math.min(points, from + perSlice);
+                        slicesPending.incrementAndGet();
+                        var job = new FineSampleJob(route, from, to, priority,
+                                new CompletableFuture<List<WallFinePlanner.FineColumn>>());
+                        enqueue(job);
+                        job.result.whenCompleteAsync((columns, sampleError) -> {
+                            try {
+                                if (sampleError != null) { aggregate.completeExceptionally(sampleError); return; }
+                                synchronized (all) {
+                                    all.addAll(columns);
+                                    sampledColumns.addAndGet(columns.size());
+                                }
+                                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                                        slicesDone.incrementAndGet(), progressTotal);
+                                slicesPending.decrementAndGet();
+                                completion.run();
+                            } catch (Throwable t) { aggregate.completeExceptionally(t); }
+                        }, pump);
+                    }
+                } catch (Throwable t) {
+                    aggregate.completeExceptionally(t);
+                } finally {
+                    // The index may only complete once every route has resolved AND every slice it
+                    // spawned has finished; either counter alone can hit zero too early.
+                    if (routesPending.decrementAndGet() == 0) completion.run();
+                }
             }, pump);
         }
         aggregate.whenComplete((v, e) -> leases.forEach(PlanLease::close));
@@ -385,8 +438,20 @@ public final class PlannerScheduler implements AutoCloseable {
                         // and a timer that keeps granting credits would spin against a queue
                         // that no longer has prewarm work in it.
                         stopPrewarmTimer();
-                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(error == null);
-                        prewarm.forEach(PlanLease::close);
+                        // The bulk prewarm is done, but the wall startup is not: the fine sample
+                        // and the chunk compile still run before the loading card closes and the
+                        // startup peer is released. ProductionSession.publishPlanningWindow owns
+                        // that final finish/signalReady; calling finish here would close the card
+                        // at 100% while the compile is still running and release RoadWeaver too
+                        // early. Do not call PrewarmProgress.finish from this spot.
+                        if (error == null) {
+                            // Pinned, not closed: the compile reuses these very plans, and closing
+                            // them here would let the memory budget evict them long before the
+                            // compile runs. Released by releasePrewarmLeases()/close().
+                            prewarmLeases.addAll(prewarm);
+                        } else {
+                            prewarm.forEach(PlanLease::close);
+                        }
                         state.put(error == null ? "bulk-ready" : "bulk-failed", 1L);
                         state.put("prewarm-total-millis", totalMs);
                         if (error == null) {
@@ -420,6 +485,27 @@ public final class PlannerScheduler implements AutoCloseable {
         var timer = prewarmTimer;
         prewarmTimer = null;
         if (timer != null) timer.cancel(false);
+    }
+
+    /**
+     * The prewarm's leases, still pinned. Empty until the bulk prewarm settles - and empty forever
+     * if it failed. The compile consumes these instead of re-requesting the plans, so the work the
+     * prewarm already did is the work the compile publishes.
+     */
+    public java.util.List<PlanLease<SegmentPlan>> prewarmLeases() {
+        synchronized (prewarmLeases) {
+            return java.util.List.copyOf(prewarmLeases);
+        }
+    }
+
+    /** Releases the pinned prewarm leases. Idempotent. */
+    public void releasePrewarmLeases() {
+        java.util.List<PlanLease<SegmentPlan>> copy;
+        synchronized (prewarmLeases) {
+            copy = java.util.List.copyOf(prewarmLeases);
+            prewarmLeases.clear();
+        }
+        copy.forEach(PlanLease::close);
     }
 
     /**
@@ -1045,7 +1131,11 @@ public final class PlannerScheduler implements AutoCloseable {
         geometryFlights.forEach((key, future) -> future.completeExceptionally(closedFailure()));
         planFlights.forEach((key, future) -> future.completeExceptionally(closedFailure()));
         acquisitions.forEach((id, future) -> future.completeExceptionally(closedFailure()));
-        prefixes.close(); callerLeases.forEach((id, lease) -> lease.close()); memory.close();
+        prefixes.close(); callerLeases.forEach((id, lease) -> lease.close());
+        // A session that ends before the compile must not leave the prewarm's leases holding the
+        // memory budget open.
+        releasePrewarmLeases();
+        memory.close();
         pump.execute(() -> {
             if (startupTimer != null) startupTimer.cancel(false);
             if (watchdogTimer != null) watchdogTimer.cancel(false);
@@ -1098,12 +1188,18 @@ public final class PlannerScheduler implements AutoCloseable {
 
     private final class FineSampleJob extends Job<List<WallFinePlanner.FineColumn>> {
         private final RouteShape route;
+        /** Point sub-range this job samples: {@code [fromPoint, toPoint)} of the route. */
+        private final int fromPoint, toPoint;
         private WallFinePlanner.Cursor cursor;
-        private FineSampleJob(RouteShape route, Priority priority, CompletableFuture<List<WallFinePlanner.FineColumn>> result) {
-            super(priority, "FINE_SAMPLE", result); this.route = route;
+        private FineSampleJob(RouteShape route, int fromPoint, int toPoint, Priority priority,
+                              CompletableFuture<List<WallFinePlanner.FineColumn>> result) {
+            super(priority, "FINE_SAMPLE", result);
+            this.route = route;
+            this.fromPoint = Math.max(0, fromPoint);
+            this.toPoint = Math.min(route.points().size(), Math.max(this.fromPoint, toPoint));
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
-            if (cursor == null) cursor = WallFinePlanner.begin(route, oracle);
+            if (cursor == null) cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint);
             operations += limit;
             return WallFinePlanner.advance(cursor, limit) == WorkState.DONE;
         }

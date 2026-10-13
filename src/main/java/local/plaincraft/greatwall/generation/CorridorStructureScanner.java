@@ -47,6 +47,13 @@ public final class CorridorStructureScanner implements AutoCloseable {
      */
     public CompletableFuture<List<CorridorStructureScan.OwnedBox>> scan(
             ServerLevel level, int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ) {
+        return scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, null);
+    }
+
+    /** Scan with an optional wall corridor; candidates outside the band are dropped up front. */
+    public CompletableFuture<List<CorridorStructureScan.OwnedBox>> scan(
+            ServerLevel level, int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ,
+            CorridorStructureScan.Corridor corridor) {
         if (closed.get() || level == null) {
             return CompletableFuture.completedFuture(List.of());
         }
@@ -55,8 +62,14 @@ public final class CorridorStructureScanner implements AutoCloseable {
             if (closed.get()) return List.<CorridorStructureScan.OwnedBox>of();
             long startedAt = System.nanoTime();
             var candidates = CorridorStructureScan.predictCandidates(
-                    level, minChunkX, minChunkZ, maxChunkX, maxChunkZ);
-            var boxes = CorridorStructureScan.resolveBoxes(level, candidates);
+                    level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor);
+            // The loading card's structure-scan stage: candidates known up front, done count ticking
+            // live as the scan walks them, total/total once resolved.
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, candidates.size());
+            var boxes = CorridorStructureScan.resolveBoxes(level, candidates,
+                    done -> local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                            done, candidates.size()));
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(boxes.size(), boxes.size());
             GreatWallMod.LOGGER.info(
                     "[GreatWall:corridor] structure scan corridor=[{},{}]..[{},{}] candidates={} boxes={} elapsedMs={}",
                     minChunkX, minChunkZ, maxChunkX, maxChunkZ, candidates.size(), boxes.size(),

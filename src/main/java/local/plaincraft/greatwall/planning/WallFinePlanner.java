@@ -42,9 +42,22 @@ public final class WallFinePlanner {
     }
 
     public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle) {
+        return begin(route, oracle, 0, route.points().size());
+    }
+
+    /**
+     * Begins a cursor over a point sub-range {@code [fromIndex, toIndex)} of the route.
+     *
+     * <p>This is what makes the fine sample parallel: the full segment is ~2048 points x 49 columns
+     * (~100k REFERENCE samples), far too much for one lane. Callers split the point range into
+     * slices, one cursor per slice, each running on its own lane with its own oracle; the sampled
+     * columns are merged afterwards by (x, z). The route points and their cross-sections are pure
+     * functions of the index, so slicing changes no sampled value — only which thread computes it.</p>
+     */
+    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex) {
         Objects.requireNonNull(route, "route");
         Objects.requireNonNull(oracle, "oracle");
-        return new Cursor(route, oracle);
+        return new Cursor(route, oracle, fromIndex, toIndex);
     }
 
     public static WorkState advance(Cursor c, int primitiveLimit) {
@@ -65,7 +78,7 @@ public final class WallFinePlanner {
     }
 
     private static void step(Cursor c) {
-        if (c.index >= c.route.points().size()) {
+        if (c.index >= c.toIndex) {
             c.completed = true;
             return;
         }
@@ -136,6 +149,8 @@ public final class WallFinePlanner {
     public static final class Cursor {
         private final RouteShape route;
         private final NaturalTerrainOracle oracle;
+        /** Point range this cursor covers: {@code [fromIndex, toIndex)}. */
+        private final int fromIndex, toIndex;
         private Thread owner;
         private final List<FineColumn> results = new ArrayList<>();
         private int index;
@@ -144,9 +159,12 @@ public final class WallFinePlanner {
         private NaturalTerrainOracle.ColumnCursor column;
         private boolean completed;
 
-        private Cursor(RouteShape route, NaturalTerrainOracle oracle) {
+        private Cursor(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex) {
             this.route = route;
             this.oracle = oracle;
+            this.fromIndex = Math.max(0, fromIndex);
+            this.toIndex = Math.min(route.points().size(), Math.max(this.fromIndex, toIndex));
+            this.index = this.fromIndex;
         }
 
         private void claimOwner() {

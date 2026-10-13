@@ -127,7 +127,8 @@ public final class RidgePlanner {
             // the ridge jitters around the structure instead of cutting through it. The wall is
             // "宁断不悬空" — never穿模. This is the only planning-time detour hook; the fine pass
             // still re-checks the emitted polyline end-to-end.
-            if (obstacles.blocked(center.xQ8(), center.zQ8())) { rejectCandidate(c); return; }
+            if (obstacles.blocked(center.xQ8(), center.zQ8(),
+                    c.previousHeight - 30, c.previousHeight + 30)) { rejectCandidate(c); return; }
             Point2q prior = c.lookahead == 0 ? position(c, (c.step - 1) * 16 * 256, c.controls.getLast()) : c.lookaheadPoint;
             if (!heading(prior, center)) { rejectCandidate(c); return; }
             var offset = OFFSETS.get(c.sampleIndex);
@@ -153,7 +154,28 @@ public final class RidgePlanner {
         long turn = Math.abs(DELTAS.get(c.candidate) * 256L - c.previousDeltaQ8) / 16;
         long wet = h.waterTopY().isPresent() || h.upperCensored() ? 256 : 0;
         long departure = Math.abs(rawOffset) / 512;
-        long score = 4 * ridge + 2 * prominence - 5 * slope - 2 * turn - 8 * wet - departure;
+        // 0.1.0 山顶宽度分界平衡：中心凸起量按「平坦山顶 / 窄刀锋」区分奖惩。
+        // 凸起（prominence）是中心相对 8 个周边的突出度；ridge 是中心相对两侧（samples[3/4]）的高度。
+        // 平坦山顶（凸起小）→ 奖励；窄刀锋（凸起大）→ 惩罚。
+        var cfg = local.plaincraft.greatwall.config.GreatWallConfig.get();
+        int flatThreshold = cfg.summitFlatThreshold();
+        long centreLift = Math.abs(ridge); // 中心相对两侧的抬升，作为「山顶宽度」的代理
+        long knifePart;
+        if (centreLift <= flatThreshold) {
+            knifePart = cfg.summitFlatReward() * centreLift;       // 平坦山顶：奖励，能走就走
+        } else {
+            knifePart = cfg.knifeRidgePenalty() * centreLift;      // 窄刀锋：惩罚，避开
+        }
+        // 对称性：中心两侧（samples[3] vs samples[4]）落差 = 斜坡，惩罚不对称。
+        long asymmetry = Math.abs(c.samples[3].groundTopY() - c.samples[4].groundTopY());
+        long score = cfg.ridgeWeight() * ridge
+                + cfg.ridgeProminenceWeight() * prominence
+                + knifePart
+                + cfg.ridgeSlopeWeight() * slope
+                + cfg.ridgeTurnWeight() * turn
+                + cfg.ridgeWetWeight() * wet
+                + cfg.ridgeDepartureWeight() * departure
+                + cfg.ridgeAsymmetryWeight() * asymmetry;
         c.candidateScore += score * (c.lookahead == 0 ? 4 : c.lookahead == 1 ? 2 : 1);
         if (c.lookahead == 0) c.candidateFirstHeight = h.groundTopY();
         c.candidatePreviousHeight = h.groundTopY(); c.lookaheadPoint = center;
@@ -287,7 +309,8 @@ public final class RidgePlanner {
         }
         Point2q point = position(c, u * 256, residual);
         if (!inside(point)) throw new WallFailure(FailureCode.OUT_OF_BOUNDS, "route leaves frozen bounds");
-        if (!c.fallback && obstacles.blocked(point.xQ8(), point.zQ8())) {
+        if (!c.fallback && obstacles.blocked(point.xQ8(), point.zQ8(),
+                c.previousHeight - 30, c.previousHeight + 30)) {
             // A Hermite-interpolated point can graze a structure margin even when every control
             // point cleared it (the control-point rejection in searchStep only fires once per 16
             // blocks). Falling back to the straight carrier chord re-runs without interpolation;

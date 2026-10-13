@@ -1,14 +1,6 @@
 package local.plaincraft.greatwall.compat.road;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,7 +27,6 @@ import net.shiroha233.roadweaver.api.interop.WallInteropTypes;
  */
 public final class RoadWeaverAdapter implements EndpointHeightAgreementApi, AutoCloseable {
     private static boolean providerRegistered;
-    private static final String ABI_ALLOWLIST = "/plaincraft_great_wall/roadweaver-interop.sha256";
 
     private final ServerLevel overworld;
     private final UUID session;
@@ -139,7 +130,6 @@ public final class RoadWeaverAdapter implements EndpointHeightAgreementApi, Auto
     /** Core must guard class loading with Loader before touching this soft-dependent class. */
     public static synchronized void initializeIfPresent() {
         if (!FabricLoader.getInstance().isModLoaded("roadweaver")) return;
-        verifyLockedAbi();
         // Provider registration moved into the adapter constructor (after bindSession).
         // Registering here would publish a provider even when the wall production is OFF,
         // making RoadWeaver take the external-planning branch and then fail with
@@ -209,35 +199,6 @@ public final class RoadWeaverAdapter implements EndpointHeightAgreementApi, Auto
             throw new IllegalStateException("RoadWeaver call failed: " + method, failure.getCause());
         } catch (ReflectiveOperationException failure) {
             throw new IllegalStateException("RoadWeaver level interop failed: " + method, failure);
-        }
-    }
-
-    private static void verifyLockedAbi() {
-        if (PlanningInteropRegistry.protocolVersion() != 1) throw new IllegalStateException("RoadWeaver protocol mismatch");
-        try (var locked = RoadWeaverAdapter.class.getResourceAsStream(ABI_ALLOWLIST)) {
-            if (locked == null) {
-                throw new IllegalStateException("S2 integration blocked: reviewed ABI SHA allowlist absent: " + ABI_ALLOWLIST);
-            }
-            var allowed = new BufferedReader(new InputStreamReader(locked, StandardCharsets.UTF_8))
-                    .lines().map(String::strip).filter(line -> !line.isEmpty() && !line.startsWith("#")).toList();
-            if (allowed.isEmpty() || allowed.stream().anyMatch(line -> !line.matches("[0-9a-f]{64}"))) {
-                throw new IllegalStateException("invalid reviewed RoadWeaver artifact SHA allowlist");
-            }
-            var source = PlanningInteropRegistry.class.getProtectionDomain().getCodeSource();
-            if (source == null || !"file".equals(source.getLocation().getProtocol())) {
-                throw new IllegalStateException("RoadWeaver artifact origin cannot be verified");
-            }
-            Path artifact = Path.of(source.getLocation().toURI());
-            if (!Files.isRegularFile(artifact)) throw new IllegalStateException("RoadWeaver origin is not a locked jar");
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            try (var input = new DigestInputStream(Files.newInputStream(artifact), digest)) {
-                input.transferTo(java.io.OutputStream.nullOutputStream());
-            }
-            if (!allowed.contains(HexFormat.of().formatHex(digest.digest()))) {
-                throw new IllegalStateException("RoadWeaver loaded jar SHA is not approved");
-            }
-        } catch (java.io.IOException | java.net.URISyntaxException | java.security.NoSuchAlgorithmException failure) {
-            throw new IllegalStateException("RoadWeaver ABI verification failed", failure);
         }
     }
 

@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import local.plaincraft.greatwall.GreatWallMod;
 
 /**
@@ -78,7 +79,43 @@ public final class PrewarmProgress {
     private static final AtomicInteger STRUCTURE_CANDIDATE = new AtomicInteger();
     private static final AtomicInteger STRUCTURE_TOTAL = new AtomicInteger();
 
+    /**
+     * The wall's startup is a sequence of large stages, each with a sub-progress. The loading card
+     * shows every stage as a line in order, highlights the active one and lights the wall line-art
+     * left-to-right with the overall fraction. ROOT_SEARCH keeps its existing phase detail; the
+     * newer stages (structure scan, fine sampling, compile) each report a done/total pair.
+     */
+    public enum Stage {
+        ROOT_SEARCH, STRUCTURE_SCAN, FINE_SAMPLE, PREWARM, COMPILE, DONE
+    }
+    /**
+     * Overall-percent weight of each stage, indexed by {@link Stage#ordinal()}. The weights
+     * are the stages' relative measured durations on a real world: the root search and the
+     * segment prewarm dominate, the structure scan and the fine sampling are minutes, and the
+     * compile is seconds. They must sum to 100.
+     */
+    private static final int[] STAGE_WEIGHT = {25, 10, 15, 40, 10, 0};
+    /** Monotonic overall peak for the loading card; reset when a new prewarm begins or clears. */
+    private static final java.util.concurrent.atomic.AtomicInteger PEAK_OVERALL_PERCENT =
+            new java.util.concurrent.atomic.AtomicInteger();
+    private static final AtomicReference<Stage> STAGE = new AtomicReference<>(Stage.ROOT_SEARCH);
+    /** Sub-progress of the active stage: done/total; total 0 means "indeterminate, still running". */
+    private static final AtomicInteger SUB_DONE = new AtomicInteger();
+    private static final AtomicInteger SUB_TOTAL = new AtomicInteger();
+
     private PrewarmProgress() {
+    }
+
+    /** Selects the active large stage; the card dims earlier stages and lights the active one. */
+    public static void setStage(Stage stage) {
+        STAGE.set(stage == null ? Stage.ROOT_SEARCH : stage);
+    }
+
+    /** Publishes the active stage's sub-progress (done/total); total 0 is an indeterminate running
+     *  stage with no countable unit. */
+    public static void setSubProgress(int done, int total) {
+        SUB_DONE.set(Math.max(0, done));
+        SUB_TOTAL.set(Math.max(0, total));
     }
 
     /**
@@ -96,6 +133,7 @@ public final class PrewarmProgress {
     /** Records that a prewarm began, how many segments it will produce, and on how many lanes. */
     public static void begin(int totalSegments, int lanes) {
         REQUESTED.set(true);
+        PEAK_OVERALL_PERCENT.set(0);
         synchronized (LATCH_LOCK) {
             // Replace the latch only once the previous one has been released.
             //
@@ -219,6 +257,20 @@ public final class PrewarmProgress {
         if (latch != null) latch.countDown();
     }
 
+    /**
+     * Releases the startup-peer latch without closing the loading card.
+     *
+     * <p>The bulk prewarm (segment planning) finishing and the whole wall startup finishing are
+     * not the same instant: the fine sample and the chunk compile still run afterwards. A startup
+     * peer (RoadWeaver) must be released when the wall is truly ready, which is the compile, so
+     * this latch is signalled only from {@code ProductionSession.publishPlanningWindow}. Calling
+     * this from anywhere else would let the peer race ahead while the card is still mid-stage.
+     */
+    public static void signalReady() {
+        var latch = settled;
+        if (latch != null) latch.countDown();
+    }
+
     /** Clears everything; used between sessions so a stale snapshot cannot be served. */
     public static void clear() {
         ACTIVE.set(false);
@@ -227,6 +279,7 @@ public final class PrewarmProgress {
         LANES.set(0);
         STARTED_AT_NANOS.set(0L);
         FAILED.set(false);
+        PEAK_OVERALL_PERCENT.set(0);
         STATE.clear();
         ROOT_CANDIDATE.set(0);
         ROOT_TOTAL.set(0);
@@ -293,7 +346,8 @@ public final class PrewarmProgress {
                 : TimeUnit.NANOSECONDS.toMillis(Math.max(0L, System.nanoTime() - startedAt));
         return new Snapshot(ACTIVE.get(), total, completed, LANES.get(), elapsedMillis,
                 STATE.containsKey("root-search"), FAILED.get(), ROOT_CANDIDATE.get(), ROOT_TOTAL.get(),
-                ROOT_PHASE.get(), STRUCTURE_CANDIDATE.get(), STRUCTURE_TOTAL.get());
+                ROOT_PHASE.get(), STRUCTURE_CANDIDATE.get(), STRUCTURE_TOTAL.get(),
+                STAGE.get(), SUB_DONE.get(), SUB_TOTAL.get());
     }
 
     /**
@@ -311,10 +365,14 @@ public final class PrewarmProgress {
      * @param rootPhase    root-search phase (0 coarse, 1 footprint, 2 axis, 4 structure, 5 entrance)
      * @param structureCandidate structure-screen candidate being validated
      * @param structureTotal structure-screen candidate total
+     * @param stage        the active large stage, for the stepper and the line-art band
+     * @param subDone      done count of the active stage's sub-progress
+     * @param subTotal     total of the active stage's sub-progress; 0 means indeterminate
      */
     public record Snapshot(boolean active, int total, int completed, int lanes, long elapsedMillis,
                            boolean rootSearch, boolean failed, int rootCandidate, int rootTotal,
-                           int rootPhase, int structureCandidate, int structureTotal) {
+                           int rootPhase, int structureCandidate, int structureTotal,
+                           Stage stage, int subDone, int subTotal) {
         public int percent() {
             if (total <= 0) return 0;
             return Math.max(0, Math.min(100, Math.round(completed * 100.0F / total)));
@@ -327,18 +385,66 @@ public final class PrewarmProgress {
         }
 
         /**
-         * Overall startup progress across the two wall stages.
+         * Fraction of the active stage, 0-100.
          *
-         * <p>The root search (choosing the position) is weighted at 30% and the segment
-         * prewarm at 70%, matching their relative measured durations. While the root is still
-         * being chosen this reports a fraction of the first 30%; once segments exist it jumps
-         * to 30 + 70% of the segment fraction.
+         * <p>Each stage picks the one count that monotonically advances while it runs: the
+         * root search scans candidates, the structure scan resolves boxes, the fine sampling
+         * measures columns, the prewarm plans segments and the compile writes chunks. A stage
+         * with no countable unit yet reports 0 rather than a lie.
+         */
+        public int stagePercent() {
+            return switch (stage) {
+                case ROOT_SEARCH -> rootTotal > 0
+                        ? rootPercent()
+                        : (subTotal > 0 ? subPercent() : 0);
+                case PREWARM -> total > 0
+                        ? percent()
+                        : (subTotal > 0 ? subPercent() : 0);
+                case STRUCTURE_SCAN, FINE_SAMPLE, COMPILE -> subPercent();
+                case DONE -> 100;
+            };
+        }
+
+        private int subPercent() {
+            if (subTotal <= 0) return 0;
+            return Math.max(0, Math.min(100, Math.round(subDone * 100.0F / subTotal)));
+        }
+
+        /**
+         * Overall startup progress across all the wall stages, 0-100.
+         *
+         * <p>Each stage owns the slice of the bar given by {@link #STAGE_WEIGHT}; the active
+         * stage fills its slice by {@link #stagePercent()}. Finished stages fill theirs
+         * completely, pending stages not at all, so the number only ever moves forward.
          */
         public int overallPercent() {
-            if (rootSearch) {
-                return Math.round(rootPercent() * 0.30F);
+            if (!active && !failed) return 100;
+            int done = 0;
+            int activeOrdinal = stage.ordinal();
+            for (int i = 0; i < activeOrdinal && i < STAGE_WEIGHT.length; i++) {
+                done += STAGE_WEIGHT[i];
             }
-            return 30 + Math.round(percent() * 0.70F);
+            if (activeOrdinal < STAGE_WEIGHT.length) {
+                done += Math.round(STAGE_WEIGHT[activeOrdinal] * stagePercent() / 100.0F);
+            }
+            final int calculated = Math.max(0, Math.min(100, done));
+            // Monotonic peak guard (mirrors RoadWeaver's PEAK_OVERALL_PERCENT): the card never
+            // walks backwards when a stage's sub-total is not ready yet or the stage flips.
+            return PEAK_OVERALL_PERCENT.updateAndGet(current -> Math.max(current, calculated));
+        }
+
+        /**
+         * Estimated remaining wall-clock milliseconds, or -1 when no estimate exists yet.
+         *
+         * <p>Derived from the elapsed time and the overall fraction: once a fifth of the
+         * startup is done the remaining time is extrapolated as elapsed * (1-f) / f. Before
+         * that the estimate swings too wildly to be worth showing.
+         */
+        public long etaMillis() {
+            if (!active || elapsedMillis <= 0L) return -1L;
+            int overall = overallPercent();
+            if (overall <= 20 || overall >= 100) return -1L;
+            return Math.round(elapsedMillis * (100.0D - overall) / overall);
         }
 
         /** Seconds elapsed, formatted for the detail line. */

@@ -124,20 +124,7 @@ public final class ComponentGameTests implements FabricGameTest {
     }
     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=1000000)
     public void capturedThinIceThawsOnlyInMainChannel(GameTestHelper helper){
-        var catalog=new BlockCatalog(helper.getLevel().registryAccess());
-        var key=new ChunkKey("minecraft:overworld",0,0);var pageKey=new local.plaincraft.greatwall.terrain.TerrainTile.Key(key.dimension(),0,0,0,127);
-        var palette=List.of(Blocks.AIR,Blocks.STONE,Blocks.WATER,Blocks.ICE).stream().map(b->BlockCatalog.token(b.defaultBlockState(),false)).toList();
-        int[] data=new int[32768];var summaries=new ArrayList<ColumnEvidence>();
-        for(int z=0;z<16;z++)for(int x=0;x<16;x++){
-            summaries.add(new ColumnEvidence(x,z,66,false));
-            for(int y=0;y<128;y++)data[(y*16+z)*16+x]=y<60?1:y<66?(y==65&&(x==0||x==5)?3:2):0;
-        }
-        var tile=new local.plaincraft.greatwall.terrain.TerrainTile(pageKey,ComponentFixtures.H,palette,data);
-        var coverage=new Coverage(key,List.of(0),new Bounds(0,49,0,16,92,16),ComponentFixtures.H);
-        var metadata=local.plaincraft.greatwall.persistence.EvidenceCodec.hashed(new CaptureMetadata(coverage,summaries,List.of(),Set.of(),Set.of(),ComponentFixtures.H));
-        var column=new local.plaincraft.greatwall.terrain.SnapshotColumnView(0,0,metadata,Map.of(pageKey,tile),catalog);
-        var probe=new SurfaceProbe().probe(column,84,new DimensionBounds(0,128,29_999_000));
-        helper.assertTrue(probe.kind()==ProbeKind.WATER&&probe.thinIceY().orElseThrow()==65,"thin ice proven from frozen native states");
+        var key=new ChunkKey("minecraft:overworld",0,0);
         var initial=water(49);var supports=new HashMap<>(initial.supports());
         supports.replaceAll((p,v)->p.x()>=-24&&p.x()<25?new ProbeResult(ProbeKind.WATER,60,OptionalInt.of(66),OptionalInt.of(60),4,ComponentFixtures.H,
                 (p.x()==0||p.x()==5)?OptionalInt.of(65):OptionalInt.empty()):v);

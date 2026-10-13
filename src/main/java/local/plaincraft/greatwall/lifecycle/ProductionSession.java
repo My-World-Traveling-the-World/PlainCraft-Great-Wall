@@ -400,16 +400,24 @@ final class ProductionSession implements AutoCloseable {
 
         var scanner = new local.plaincraft.greatwall.generation.CorridorStructureScanner();
         this.structureScanner = scanner;
-        scanner.scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ)
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.STRUCTURE_SCAN);
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
+        // The wall's true corridor band (segment endpoints + half-width): candidates outside it are
+        // dropped up front, so an angled wall no longer scans the AABB's 3.5x overscan.
+        var corridor = new local.plaincraft.greatwall.generation.CorridorStructureScan.Corridor(
+                originX, originZ, endX, endZ, corridorHalfWidth);
+        scanner.scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor)
                 .whenComplete((boxes, error) -> {
                     final java.util.List<Bounds> structures;
+                    int margin = local.plaincraft.greatwall.config.GreatWallConfig.get().obstacleMarginBlocks();
                     if (error != null) {
                         GreatWallMod.LOGGER.warn("[GreatWall:corridor] structure scan failed; "
                                 + "falling back to no structure avoidance", error);
-                        planner.setObstacles(StructureObstacleIndex.empty(8));
+                        planner.setObstacles(StructureObstacleIndex.empty(margin));
                         structures = List.of();
                     } else {
-                        planner.setObstacles(StructureObstacleIndex.of(boxes, 8));
+                        planner.setObstacles(StructureObstacleIndex.of(boxes, margin));
                         var bounds = new java.util.ArrayList<Bounds>(boxes.size());
                         for (var owned : boxes) {
                             var b = owned.box();
@@ -424,6 +432,9 @@ final class ProductionSession implements AutoCloseable {
                     // lanes; sample first, publish the samples to the session, then start the bulk
                     // prewarm. A sample failure leaves the index null and the wall simply does not
                     // compile/paint (the new single path; no historical fallback).
+                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
+                            local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE);
+                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
                     planner.requireFineSamples(Priority.PLAYER_PREFETCH)
                             .whenComplete((fineIndex, sampleError) -> {
                                 if (sampleError != null) {
@@ -431,8 +442,12 @@ final class ProductionSession implements AutoCloseable {
                                             + "wall will not compile", sampleError);
                                 } else {
                                     fineHeightIndex = fineIndex;
+                                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                                            fineIndex.size(), fineIndex.size());
                                 }
                                 // The prewarm must start exactly once, after both planning inputs settle.
+                                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
+                                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.PREWARM);
                                 planner.afterRoadBulk();
                             });
                 });
@@ -539,43 +554,100 @@ final class ProductionSession implements AutoCloseable {
      *  vegetation-corridor and biome masks per chunk, replacing the deleted FeatureSlot. */
     private void compilePlanningPlans(Installed snapshot) {
         var index = fineHeightIndex;
-        if (index == null || realization == null || chunkCompiler == null) return;
+        if (index == null || realization == null || chunkCompiler == null) {
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_SKIPPED reason=missing-inputs "
+                            + "fineIndex={} realization={} chunkCompiler={}",
+                    index != null, realization != null, chunkCompiler != null);
+            return;
+        }
         var level = levels.get("minecraft:overworld");
-        if (level == null) return;
+        if (level == null) {
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_SKIPPED reason=no-overworld");
+            return;
+        }
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.COMPILE);
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
         var compiler = new local.plaincraft.greatwall.planning.PlanningChunkCompiler(
                 realization, chunkCompiler, index, planningStructures);
         var planner = snapshot.planner();
         long target = local.plaincraft.greatwall.config.GreatWallConfig.get().prewarmSegmentsTarget();
         if (target <= 0) target = 4;
-        // Collect every prewarmed segment into one window, so a chunk covered by two segments is
-        // compiled and published exactly once with the complete corridor (matching the old
-        // FeatureSlot's per-chunk aggregated window).
-        var leases = new java.util.ArrayList<PlanLease<SegmentPlan>>();
         var collected = new java.util.ArrayList<SegmentPlan>();
-        var remaining = new java.util.concurrent.atomic.AtomicInteger((int) target);
+        // Reuse the prewarm's own leases: they stay pinned until this compile publishes, so the
+        // plans are the exact objects the prewarm produced. Re-requesting them (the previous shape)
+        // is what let a measured session spend 22 minutes silently re-planning the opening window
+        // and publish nothing: the prewarm closed its leases at completion, the memory budget
+        // dropped the plans, and the compile re-derived them from scratch after the server started.
+        var pinned = planner.prewarmLeases();
+        var remaining = new java.util.concurrent.atomic.AtomicInteger(
+                Math.max(1, pinned.isEmpty() ? (int) target : pinned.size()));
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_BEGIN pinnedPlans={} target={}",
+                pinned.size(), target);
+        if (!pinned.isEmpty()) {
+            for (var lease : pinned) {
+                lease.future().whenComplete((plan, error) -> {
+                    if (error == null && plan != null) {
+                        synchronized (collected) { collected.add(plan); }
+                    } else {
+                        GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PLAN_FAILED reason={}", error);
+                    }
+                    if (remaining.decrementAndGet() == 0) publishPlanningWindow(snapshot, level, compiler, collected);
+                });
+            }
+            return;
+        }
+        // No pinned prewarm (a session whose prewarm failed or never ran): fall back to requesting
+        // the plans, and make every failure visible - the silent catch here is why an unpublished
+        // compile left no trace in the log at all.
+        var leases = new java.util.ArrayList<PlanLease<SegmentPlan>>();
         for (long i = 0; i < target; i++) {
+            long segment = i;
             try {
-                var lease = planner.requirePlan(i, Priority.PLAYER_PREFETCH);
+                var lease = planner.requirePlan(segment, Priority.PLAYER_PREFETCH);
                 leases.add(lease);
                 lease.future().whenComplete((plan, error) -> {
                     try {
-                        if (error == null && plan != null) synchronized (collected) { collected.add(plan); }
+                        if (error == null && plan != null) {
+                            synchronized (collected) { collected.add(plan); }
+                        } else {
+                            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PLAN_FAILED segment={} reason={}",
+                                    segment, error);
+                        }
                     } finally {
                         lease.close();
                         if (remaining.decrementAndGet() == 0) publishPlanningWindow(snapshot, level, compiler, collected);
                     }
                 });
-            } catch (RuntimeException ignored) { remaining.decrementAndGet(); }
+            } catch (RuntimeException error) {
+                GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PLAN_REQUEST_FAILED segment={} reason={}",
+                        segment, error.toString());
+                if (remaining.decrementAndGet() == 0) publishPlanningWindow(snapshot, level, compiler, collected);
+            }
         }
-        if (target == 0) GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments=0");
     }
 
     private void publishPlanningWindow(Installed snapshot, ServerLevel level,
             local.plaincraft.greatwall.planning.PlanningChunkCompiler compiler,
             java.util.List<SegmentPlan> plans) {
-        if (plans.isEmpty()) return;
+        if (plans.isEmpty()) {
+            // No plan survived. The wall cannot paint, but the loading card and the startup peer
+            // must still be released rather than waiting on a compile that produced nothing.
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_EMPTY no segment plan survived; "
+                    + "wall will not paint");
+            snapshot.planner().releasePrewarmLeases();
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.signalReady();
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
+            return;
+        }
         var window = new PlanWindow(List.copyOf(plans));
-        var compiled = compiler.compileWindow(window, snapshot.recipe().recipeHash(), snapshot.recipe().dimension());
+        // Compile progress ticks per compiled owner. The total is a moving estimate (owners are
+        // discovered per cell), so the card shows a live done count and the total settles to the
+        // real number once the compile finishes.
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 1);
+        var compiled = compiler.compileWindow(window, snapshot.recipe().recipeHash(),
+                snapshot.recipe().dimension(),
+                done -> local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(done, Math.max(done, 1)));
         for (var entry : compiled.entrySet()) {
             local.plaincraft.greatwall.generation.WallWorldgenPlanCache.put(level, entry.getValue());
             // Publish the planning vegetation corridor + biome mask for this chunk, replacing the
@@ -586,8 +658,21 @@ final class ProductionSession implements AutoCloseable {
                 biomes.publish(entry.getKey(), window, 1);
             }
         }
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={} chunks={}",
-                plans.size(), compiled.size());
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={} chunks={} "
+                        + "vegetationLeases={} guardMisses={} suppressed={}",
+                plans.size(), compiled.size(), vegetation.leases(), vegetation.misses(), vegetation.suppressed());
+        // The prewarm's leases have served their purpose: this compile consumed their plans and the
+        // window is published, so the memory budget can have them back now.
+        snapshot.planner().releasePrewarmLeases();
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(compiled.size(), compiled.size());
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.DONE);
+        // The wall startup is truly over only now: the bulk prewarm, the fine sample and the
+        // chunk compile have all settled, so the loading card closes and the startup peer
+        // (RoadWeaver) is released. This is the single owner of the final finish — the bulk
+        // prewarm must not finish earlier, or the card would close at 100% mid-compile.
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.signalReady();
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(true);
     }
 
     void validateReload() {

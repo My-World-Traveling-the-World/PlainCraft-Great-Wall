@@ -54,7 +54,59 @@ public final class GreatWallConfig {
 
     private long wallLengthBlocks = UNLIMITED_LENGTH;
 
+    // ── 0.1.0 山脊规划打分参数（最细粒度奖励惩罚体系，默认值 = RidgePlanner 原硬编码）──
+    /** 刀锋山脊（中心凸起）权重：正值奖励凸起、负值惩罚凸起。默认 +4 保持原行为。 */
+    private int ridgeWeight = 4;
+    /** 突出度（中心相对周边）权重。 */
+    private int ridgeProminenceWeight = 2;
+    /** 单步坡度权重（负值惩罚）。 */
+    private int ridgeSlopeWeight = -5;
+    /** 转向权重（负值惩罚）。 */
+    private int ridgeTurnWeight = -2;
+    /** 水域权重（负值惩罚）。 */
+    private int ridgeWetWeight = -8;
+    /** 偏离中轴权重（负值惩罚）。 */
+    private int ridgeDepartureWeight = -1;
+    /** 平坦山顶阈值：中心与两侧平均落差 ≤ 此格数视为「平坦山顶」（可走，奖励）。 */
+    private int summitFlatThreshold = 2;
+    /** 平坦山顶奖励（正值）。 */
+    private int summitFlatReward = 3;
+    /** 窄刀锋惩罚（负值，中心远高于两侧时）。 */
+    private int knifeRidgePenalty = -6;
+    /** 两侧不对称（斜坡）惩罚（负值）。 */
+    private int ridgeAsymmetryWeight = -3;
+    /** 累计坡度（连续爬坡）惩罚（负值）。 */
+    private int ridgeAccumulatedSlopeWeight = -6;
+    /** 结构避让余量（格），中心线接近结构足迹此距离内视为障碍。 */
+    private int obstacleMarginBlocks = 8;
+
     public long wallLengthBlocks() { return wallLengthBlocks; }
+
+    public int ridgeWeight() { return ridgeWeight; }
+    public int ridgeProminenceWeight() { return ridgeProminenceWeight; }
+    public int ridgeSlopeWeight() { return ridgeSlopeWeight; }
+    public int ridgeTurnWeight() { return ridgeTurnWeight; }
+    public int ridgeWetWeight() { return ridgeWetWeight; }
+    public int ridgeDepartureWeight() { return ridgeDepartureWeight; }
+    public int summitFlatThreshold() { return summitFlatThreshold; }
+    public int summitFlatReward() { return summitFlatReward; }
+    public int knifeRidgePenalty() { return knifeRidgePenalty; }
+    public int ridgeAsymmetryWeight() { return ridgeAsymmetryWeight; }
+    public int ridgeAccumulatedSlopeWeight() { return ridgeAccumulatedSlopeWeight; }
+    public int obstacleMarginBlocks() { return obstacleMarginBlocks; }
+
+    public void setRidgeWeight(int v) { this.ridgeWeight = v; }
+    public void setRidgeProminenceWeight(int v) { this.ridgeProminenceWeight = v; }
+    public void setRidgeSlopeWeight(int v) { this.ridgeSlopeWeight = v; }
+    public void setRidgeTurnWeight(int v) { this.ridgeTurnWeight = v; }
+    public void setRidgeWetWeight(int v) { this.ridgeWetWeight = v; }
+    public void setRidgeDepartureWeight(int v) { this.ridgeDepartureWeight = v; }
+    public void setSummitFlatThreshold(int v) { this.summitFlatThreshold = v; }
+    public void setSummitFlatReward(int v) { this.summitFlatReward = v; }
+    public void setKnifeRidgePenalty(int v) { this.knifeRidgePenalty = v; }
+    public void setRidgeAsymmetryWeight(int v) { this.ridgeAsymmetryWeight = v; }
+    public void setRidgeAccumulatedSlopeWeight(int v) { this.ridgeAccumulatedSlopeWeight = v; }
+    public void setObstacleMarginBlocks(int v) { this.obstacleMarginBlocks = v; }
 
     public void setWallLengthBlocks(long value) {
         this.wallLengthBlocks = Math.max(0L, value);
@@ -93,6 +145,18 @@ public final class GreatWallConfig {
     public GreatWallConfig copy() {
         var copy = new GreatWallConfig();
         copy.wallLengthBlocks = wallLengthBlocks;
+        copy.ridgeWeight = ridgeWeight;
+        copy.ridgeProminenceWeight = ridgeProminenceWeight;
+        copy.ridgeSlopeWeight = ridgeSlopeWeight;
+        copy.ridgeTurnWeight = ridgeTurnWeight;
+        copy.ridgeWetWeight = ridgeWetWeight;
+        copy.ridgeDepartureWeight = ridgeDepartureWeight;
+        copy.summitFlatThreshold = summitFlatThreshold;
+        copy.summitFlatReward = summitFlatReward;
+        copy.knifeRidgePenalty = knifeRidgePenalty;
+        copy.ridgeAsymmetryWeight = ridgeAsymmetryWeight;
+        copy.ridgeAccumulatedSlopeWeight = ridgeAccumulatedSlopeWeight;
+        copy.obstacleMarginBlocks = obstacleMarginBlocks;
         return copy;
     }
 
@@ -100,6 +164,18 @@ public final class GreatWallConfig {
     public void applyFrom(GreatWallConfig other) {
         Objects.requireNonNull(other);
         setWallLengthBlocks(other.wallLengthBlocks);
+        ridgeWeight = other.ridgeWeight;
+        ridgeProminenceWeight = other.ridgeProminenceWeight;
+        ridgeSlopeWeight = other.ridgeSlopeWeight;
+        ridgeTurnWeight = other.ridgeTurnWeight;
+        ridgeWetWeight = other.ridgeWetWeight;
+        ridgeDepartureWeight = other.ridgeDepartureWeight;
+        summitFlatThreshold = other.summitFlatThreshold;
+        summitFlatReward = other.summitFlatReward;
+        knifeRidgePenalty = other.knifeRidgePenalty;
+        ridgeAsymmetryWeight = other.ridgeAsymmetryWeight;
+        ridgeAccumulatedSlopeWeight = other.ridgeAccumulatedSlopeWeight;
+        obstacleMarginBlocks = other.obstacleMarginBlocks;
     }
 
     public static GreatWallConfig get() {
@@ -142,6 +218,19 @@ public final class GreatWallConfig {
                 try { config.setWallLengthBlocks(json.get("wallLengthBlocks").getAsLong()); }
                 catch (RuntimeException malformed) { /* keep default */ }
             }
+            // 0.1.0 山脊打分参数：逐项读取，缺失或畸形回退默认值。
+            readInt(json, "ridgeWeight", v -> config.ridgeWeight = v);
+            readInt(json, "ridgeProminenceWeight", v -> config.ridgeProminenceWeight = v);
+            readInt(json, "ridgeSlopeWeight", v -> config.ridgeSlopeWeight = v);
+            readInt(json, "ridgeTurnWeight", v -> config.ridgeTurnWeight = v);
+            readInt(json, "ridgeWetWeight", v -> config.ridgeWetWeight = v);
+            readInt(json, "ridgeDepartureWeight", v -> config.ridgeDepartureWeight = v);
+            readInt(json, "summitFlatThreshold", v -> config.summitFlatThreshold = v);
+            readInt(json, "summitFlatReward", v -> config.summitFlatReward = v);
+            readInt(json, "knifeRidgePenalty", v -> config.knifeRidgePenalty = v);
+            readInt(json, "ridgeAsymmetryWeight", v -> config.ridgeAsymmetryWeight = v);
+            readInt(json, "ridgeAccumulatedSlopeWeight", v -> config.ridgeAccumulatedSlopeWeight = v);
+            readInt(json, "obstacleMarginBlocks", v -> config.obstacleMarginBlocks = v);
             // Older files also carry prewarmSegments and prewarmAllWhenBounded. They are
             // ignored rather than read: the prewarm count is derived from the length now,
             // and honouring a stored value would reintroduce the mismatch the derivation
@@ -152,6 +241,13 @@ public final class GreatWallConfig {
         return config;
     }
 
+    private static void readInt(JsonObject json, String key, java.util.function.IntConsumer setter) {
+        if (json.has(key)) {
+            try { setter.accept(json.get(key).getAsInt()); }
+            catch (RuntimeException malformed) { /* keep default */ }
+        }
+    }
+
     /** Rewrites the file from the given values; a write failure is logged, never thrown. */
     public static void write(GreatWallConfig config) {
         Objects.requireNonNull(config);
@@ -160,6 +256,18 @@ public final class GreatWallConfig {
         // Written for a human reading the file: the prewarm count is derived, and
         // showing it here explains what the length implies without being read back.
         json.addProperty("prewarmSegmentsDerived", config.prewarmSegmentsTarget());
+        json.addProperty("ridgeWeight", config.ridgeWeight);
+        json.addProperty("ridgeProminenceWeight", config.ridgeProminenceWeight);
+        json.addProperty("ridgeSlopeWeight", config.ridgeSlopeWeight);
+        json.addProperty("ridgeTurnWeight", config.ridgeTurnWeight);
+        json.addProperty("ridgeWetWeight", config.ridgeWetWeight);
+        json.addProperty("ridgeDepartureWeight", config.ridgeDepartureWeight);
+        json.addProperty("summitFlatThreshold", config.summitFlatThreshold);
+        json.addProperty("summitFlatReward", config.summitFlatReward);
+        json.addProperty("knifeRidgePenalty", config.knifeRidgePenalty);
+        json.addProperty("ridgeAsymmetryWeight", config.ridgeAsymmetryWeight);
+        json.addProperty("ridgeAccumulatedSlopeWeight", config.ridgeAccumulatedSlopeWeight);
+        json.addProperty("obstacleMarginBlocks", config.obstacleMarginBlocks);
         Path path = file();
         try {
             Files.createDirectories(path.getParent());

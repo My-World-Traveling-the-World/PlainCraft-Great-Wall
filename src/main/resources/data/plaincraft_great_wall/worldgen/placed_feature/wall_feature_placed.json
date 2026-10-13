@@ -1,0 +1,9 @@
+{
+  "feature": "plaincraft_great_wall:wall_feature",
+  "placement": [
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    }
+  ]
+}

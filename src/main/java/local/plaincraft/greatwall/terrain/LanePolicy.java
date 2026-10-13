@@ -70,10 +70,25 @@ public final class LanePolicy {
         } else {
             startup = clamp(Runtime.getRuntime().availableProcessors());
         }
+        // Heap guard (mirrors RoadWeaver's StartupHardwareProfile memory budget): each lane owns a
+        // native NoiseChunk plus a RandomState view, so a small JVM must not start as many lanes as
+        // a big one, or a 4G heap on a 16-core box would OOM before any planning begins.
+        startup = clamp(Math.min(startup, memoryBudgetLanes()));
         int gameplay = MIN_LANES;
         var policy = new LanePolicy(startup, gameplay);
         policy.state.put("lanes-from-property", override != null && !override.isBlank());
+        policy.state.put("lanes-heap-capped", startup < clamp(Runtime.getRuntime().availableProcessors()));
         return policy;
+    }
+
+    /** Heap-scaled lane ceiling, mirroring RoadWeaver's native memory budget. */
+    private static int memoryBudgetLanes() {
+        long heapGiB = Math.max(1L,
+                Math.max(512L, Runtime.getRuntime().maxMemory() / (1024L * 1024L)) / 1024L);
+        return heapGiB <= 4L ? 4
+                : heapGiB <= 8L ? 8
+                : heapGiB <= 16L ? 12
+                : MAX_LANES;
     }
 
     /** Explicit policy, used by tests and by callers that already know their budget. */
