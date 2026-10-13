@@ -109,6 +109,22 @@ public final class GreatWallConfig {
      */
     private int chunkCacheLimit = 16;
 
+    // ── 0.1.0 细采样精度档位（两级采样的"精度"旋钮）──
+    /**
+     * 横断面侧翼的采样间距（格）。**1 = 关闭抽稀**，完全等于旧行为；2 表示隔一列采一列。
+     *
+     * <p>中心带（±{@link #coreHalfWidth}）与两端永远逐格精采。抽稀只作用于侧翼，因为填充规则
+     * 看不见比间距更窄的特征：1 格宽的尖峰或水塘夹在两个已采列之间时，高差规则（两边同高）
+     * 与水规则都发现不了。
+     */
+    private int fineStep = 2;
+    /** 相邻已采列高差达到此值就把该区间整段精采（墙基正是在台阶处换层）。 */
+    private int steepThreshold = 3;
+    /** 任何已采列报水时是否把整条横断面升级为全分辨率（并传播到下一个路线点）。 */
+    private boolean refineWater = true;
+    /** 中心带半宽（格）：此范围内一律逐格精采，抽稀不进入墙主体。 */
+    private int coreHalfWidth = 12;
+
     public long wallLengthBlocks() { return wallLengthBlocks; }
 
     /** Driver interval in ms, floored at 1 so a config typo cannot stop the stage from progressing. */
@@ -125,6 +141,19 @@ public final class GreatWallConfig {
     public void setFineSampleDriverIntervalMs(int value) { this.fineSampleDriverIntervalMs = value; }
     public void setLaneBatchOperations(int value) { this.laneBatchOperations = value; }
     public void setChunkCacheLimit(int value) { this.chunkCacheLimit = value; }
+
+    /** Flank sampling stride, clamped to 1..4 so a typo cannot thin the cross-section into noise. */
+    public int fineStep() { return Math.max(1, Math.min(4, fineStep)); }
+    /** Step threshold in blocks, clamped to 1..16. */
+    public int steepThreshold() { return Math.max(1, Math.min(16, steepThreshold)); }
+    public boolean refineWater() { return refineWater; }
+    /** Core band half width, clamped to 0..LATERAL so it can never exceed the cross-section. */
+    public int coreHalfWidth() { return Math.max(0, Math.min(24, coreHalfWidth)); }
+
+    public void setFineStep(int value) { this.fineStep = value; }
+    public void setSteepThreshold(int value) { this.steepThreshold = value; }
+    public void setRefineWater(boolean value) { this.refineWater = value; }
+    public void setCoreHalfWidth(int value) { this.coreHalfWidth = value; }
 
     public int ridgeWeight() { return ridgeWeight; }
     public int ridgeProminenceWeight() { return ridgeProminenceWeight; }

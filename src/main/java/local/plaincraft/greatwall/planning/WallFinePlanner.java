@@ -88,26 +88,42 @@ public final class WallFinePlanner {
             int cx = FixedMath.floorBlock(centre.xQ8());
             int cz = FixedMath.floorBlock(centre.zQ8());
             c.pending = crossSection(c.route.points(), c.index, cx, cz);
-            c.slot = 0;
+            // The plan decides which of those columns the accurate probe must visit; the rest take a
+            // conservative fill derived from their probed neighbours.
+            c.plan = new FineSamplePlan(c.pending.size(), c.rules, c.waterCarry);
+            c.slot = -1;
+            c.emit = 0;
+            // Fall through: this same step starts the first probe, exactly like the fixed sweep did.
         }
-        if (c.slot >= c.pending.size()) {
-            c.pending = null;
-            c.index++;
+        if (c.column != null) {
+            if (!c.column.done()) {
+                c.oracle.advance(c.column, 1);
+                return;
+            }
+            var sample = c.oracle.finish(c.column);
+            c.column = null;
+            c.plan.record(c.slot, sample);
             return;
         }
-        var target = c.pending.get(c.slot);
-        if (c.column == null) {
+        int next = c.plan.nextSlot();
+        if (next >= 0) {
+            c.slot = next;
+            var target = c.pending.get(next);
             c.column = c.oracle.begin(target.x(), target.z(), SampleKind.REFERENCE);
             return;
         }
-        if (!c.column.done()) {
-            c.oracle.advance(c.column, 1);
+        // Probing is finished: emit every slot in order - probed columns carry their real sample,
+        // thinned ones their conservative fill - so the compiler still sees a complete cross-section.
+        if (c.emit >= c.pending.size()) {
+            c.waterCarry = c.plan.escalated();
+            c.pending = null;
+            c.plan = null;
+            c.index++;
             return;
         }
-        var sample = c.oracle.finish(c.column);
-        c.column = null;
-        c.results.add(new FineColumn(target.x(), target.z(), target.lateral(), sample));
-        c.slot++;
+        int slot = c.emit++;
+        var target = c.pending.get(slot);
+        c.results.add(new FineColumn(target.x(), target.z(), target.lateral(), c.plan.column(slot)));
     }
 
     /** A pending sample coordinate before the oracle resolves it. */
@@ -153,6 +169,13 @@ public final class WallFinePlanner {
         private final int fromIndex, toIndex;
         private Thread owner;
         private final List<FineColumn> results = new ArrayList<>();
+        /** Sampling rules captured once per cursor: a config edit must not change a run mid-corridor. */
+        private final FineSamplePlan.Rules rules = FineSamplePlan.Rules.fromConfig();
+        private FineSamplePlan plan;
+        /** Slot being probed (probe phase) and slot being emitted (emit phase) are different cursors. */
+        private int emit;
+        /** Water seen at the previous route point; the escalation carries one point forward. */
+        private boolean waterCarry;
         private int index;
         private List<Target> pending;
         private int slot;

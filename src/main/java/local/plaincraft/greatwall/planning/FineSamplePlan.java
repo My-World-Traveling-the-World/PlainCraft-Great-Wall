@@ -74,6 +74,20 @@ final class FineSamplePlan {
         }
 
         static Rules full() { return new Rules(Mode.FULL, 1, 1, true, Integer.MAX_VALUE); }
+
+        /**
+         * Current user settings.
+         *
+         * <p>{@code fineStep = 1} means {@link Mode#FULL}: the staging switch and the "no thinning at
+         * all" switch are the same knob, which keeps the config to four numbers and makes "behave
+         * exactly like before" reachable without a second flag.
+         */
+        static Rules fromConfig() {
+            var conf = local.plaincraft.greatwall.config.GreatWallConfig.get();
+            int step = conf.fineStep();
+            return new Rules(step <= 1 ? Mode.FULL : Mode.AUTO, step,
+                    conf.steepThreshold(), conf.refineWater(), conf.coreHalfWidth());
+        }
     }
 
     private final int size;
@@ -84,12 +98,25 @@ final class FineSamplePlan {
     private boolean refined;
     private int emitted;
 
-    FineSamplePlan(int size, Rules rules) {
+    FineSamplePlan(int size, Rules rules) { this(size, rules, false); }
+
+    /**
+     * @param carryWater true when the previous route point escalated because of water. One block along
+     *                   the route is not enough for a water body to end, so the escalation has to carry
+     *                   to the next cross-section; otherwise a river could be filled as land exactly at
+     *                   the point where its last visible column sat on the previous cross-section.
+     */
+    FineSamplePlan(int size, Rules rules, boolean carryWater) {
         if (size < 1) throw new IllegalArgumentException("cross-section must be non-empty");
         this.size = size;
         this.rules = rules;
         this.probed = new ColumnSample[size];
         if (rules.mode() == Mode.FULL) {
+            for (int slot = 0; slot < size; slot++) queue.add(slot);
+            return;
+        }
+        if (carryWater && rules.refineWater()) {
+            escalating = true;
             for (int slot = 0; slot < size; slot++) queue.add(slot);
             return;
         }
