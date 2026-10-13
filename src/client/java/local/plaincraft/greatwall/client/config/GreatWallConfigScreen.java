@@ -36,6 +36,10 @@ public final class GreatWallConfigScreen {
                 Component.translatable("config.plaincraft_great_wall.category.ridge"));
         ConfigCategory perf = builder.getOrCreateCategory(
                 Component.translatable("config.plaincraft_great_wall.category.performance"));
+        // Deliberately its own category: unlike the performance knobs above, these change what the
+        // sampler does, so they must not sit under a heading that promises "no effect on results".
+        ConfigCategory sampling = builder.getOrCreateCategory(
+                Component.translatable("config.plaincraft_great_wall.category.sampling"));
 
         // ── 长度 ──
         length.addEntry(eb
@@ -169,6 +173,37 @@ public final class GreatWallConfigScreen {
                 .setTooltip(Component.translatable("config.plaincraft_great_wall.chunk_cache_limit.tooltip"))
                 .setMin(4).setMax(64)
                 .setSaveConsumer(conf::setChunkCacheLimit)
+                .build());
+        sampling.addEntry(eb
+                .startIntField(Component.translatable("config.plaincraft_great_wall.fine_step"),
+                        conf.fineStep())
+                .setDefaultValue(def.fineStep())
+                .setTooltip(Component.translatable("config.plaincraft_great_wall.fine_step.tooltip"))
+                .setMin(1).setMax(4)
+                .setSaveConsumer(conf::setFineStep)
+                .build());
+        sampling.addEntry(eb
+                .startIntField(Component.translatable("config.plaincraft_great_wall.steep_threshold"),
+                        conf.steepThreshold())
+                .setDefaultValue(def.steepThreshold())
+                .setTooltip(Component.translatable("config.plaincraft_great_wall.steep_threshold.tooltip"))
+                .setMin(1).setMax(16)
+                .setSaveConsumer(conf::setSteepThreshold)
+                .build());
+        sampling.addEntry(eb
+                .startIntField(Component.translatable("config.plaincraft_great_wall.core_half_width"),
+                        conf.coreHalfWidth())
+                .setDefaultValue(def.coreHalfWidth())
+                .setTooltip(Component.translatable("config.plaincraft_great_wall.core_half_width.tooltip"))
+                .setMin(0).setMax(24)
+                .setSaveConsumer(conf::setCoreHalfWidth)
+                .build());
+        sampling.addEntry(eb
+                .startBooleanToggle(Component.translatable("config.plaincraft_great_wall.refine_water"),
+                        conf.refineWater())
+                .setDefaultValue(def.refineWater())
+                .setTooltip(Component.translatable("config.plaincraft_great_wall.refine_water.tooltip"))
+                .setSaveConsumer(conf::setRefineWater)
                 .build());
 
         return builder.build();
