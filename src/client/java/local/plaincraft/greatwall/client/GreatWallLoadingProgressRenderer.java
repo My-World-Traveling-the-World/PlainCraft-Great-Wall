@@ -392,13 +392,21 @@ public final class GreatWallLoadingProgressRenderer {
         int total = snapshot.subTotal();
         if (total <= 0) return Component.translatable(key + "_unknown");
         long elapsedMs = snapshot.elapsedMillis();
-        if (stage != PrewarmProgress.Stage.FINE_SAMPLE || done <= 0 || total <= done || elapsedMs < 1000L) {
+        // The two long stages report a rate and a remaining-time estimate: "how many are left" says
+        // nothing about whether the stage is moving at all, which is how a real session sat on 0/48 for
+        // 27 minutes. ROOT_SEARCH and COMPILE keep the plain form - they are short, and a rate read off
+        // a couple of hundred operations is noise.
+        boolean rateWorthy = stage == PrewarmProgress.Stage.FINE_SAMPLE
+                || stage == PrewarmProgress.Stage.STRUCTURE_SCAN;
+        if (!rateWorthy || done <= 0 || total <= done || elapsedMs < 1000L) {
             return Component.translatable(key, done, total);
         }
         long rate = Math.max(1L, done * 1000L / elapsedMs);
         long etaMs = (total - done) * 1000L / rate;
-        return Component.translatable("plaincraft.great_wall.loading_progress.detail.fine_sample_rate",
-                done, total, rate, formatDuration(etaMs));
+        String rateKey = stage == PrewarmProgress.Stage.FINE_SAMPLE
+                ? "plaincraft.great_wall.loading_progress.detail.fine_sample_rate"
+                : "plaincraft.great_wall.loading_progress.detail.structure_scan_rate";
+        return Component.translatable(rateKey, done, total, rate, formatDuration(etaMs));
     }
 
     private static Component detailLine(PrewarmProgress.Stage stage, PrewarmProgress.Snapshot snapshot) {

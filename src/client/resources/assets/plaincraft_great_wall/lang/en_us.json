@@ -85,6 +85,7 @@
   "plaincraft.great_wall.loading_progress.detail_done": "✓ Done",
   "plaincraft.great_wall.loading_progress.detail_pending": "Pending",
   "plaincraft.great_wall.loading_progress.detail.fine_sample_rate": "Fine sample %s/%s columns · %s col/s · %s left",
+  "plaincraft.great_wall.loading_progress.detail.structure_scan_rate": "Structure scan %s/%s candidates · %s/s · %s left",
   "plaincraft.great_wall.loading_progress.expand": "▸ Details",
   "plaincraft.great_wall.loading_progress.collapse": "▾ Collapse",
   "plaincraft.great_wall.loading_progress.detail.root_search": "Root search  candidate %s/%s",
