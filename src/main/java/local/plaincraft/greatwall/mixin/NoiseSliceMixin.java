@@ -74,7 +74,13 @@ public abstract class NoiseSliceMixin implements NoiseCursorBridge {
     }
     @Unique private void greatwall$nextZ() {
         greatwall$z++;
-        if(greatwall$z < cellCountXZ) {
+        // The slice arrays hold cellCountXZ + 1 Z boundary rows, mirroring the cellCountY + 1 Y values
+        // the walk above fills, and selectCellYZ reads row cellZ and row cellZ + 1. Stopping at
+        // cellCountXZ - 1 left that last row all zeroes, so every column whose Z fraction was
+        // non-zero interpolated towards zero density and disagreed with the native terrain.
+        // NoiseBridgeGameTests.slicedFullHeightMatchesNativeStatesForFourSeedsAnd128Columns is the
+        // guard: it must stay green and print sha256=c86a7f534f6e886b... (the 2026-09-30 baseline).
+        if(greatwall$z <= cellCountXZ) {
             greatwall$setupZ();return;
         }
         arrayInterpolationCounter++;
