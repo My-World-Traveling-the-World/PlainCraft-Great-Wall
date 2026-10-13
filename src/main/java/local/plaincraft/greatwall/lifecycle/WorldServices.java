@@ -15,7 +15,6 @@ import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.command.DiagnosticExporter;
 import local.plaincraft.greatwall.command.GreatWallCommands;
 import local.plaincraft.greatwall.compat.road.NegotiatedGateService;
-import local.plaincraft.greatwall.compat.road.RoadWeaverAdapter;
 import local.plaincraft.greatwall.diagnostics.DebugService;
 import local.plaincraft.greatwall.gameplay.BeaconLedger;
 import local.plaincraft.greatwall.gameplay.GarrisonController;
@@ -299,7 +298,6 @@ public final class WorldServices {
     }
     public DebugService debug() { return requireProductionSession().debug(); }
     public DiagnosticExporter diagnosticExporter() { return requireProductionSession().diagnosticExporter(); }
-    public RoadWeaverAdapter roadWeaverAdapter() { return requireProductionSession().roadWeaverAdapter(); }
     public UUID session() { return requireProductionSession().session(); }
     public WallWorldState worldState() { return requireProductionSession().worldState(); }
     public WallStageCoordinator barrier(ServerLevel level) {

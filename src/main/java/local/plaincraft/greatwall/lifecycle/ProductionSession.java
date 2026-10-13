@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.command.DiagnosticExporter;
 import local.plaincraft.greatwall.compat.road.NegotiatedGateService;
-import local.plaincraft.greatwall.compat.road.RoadWeaverAdapter;
 import local.plaincraft.greatwall.compat.road.WallArchBackfill;
 import local.plaincraft.greatwall.component.S1TemplateSet;
 import local.plaincraft.greatwall.decay.BiomePaletteIndex;
@@ -327,7 +326,6 @@ final class ProductionSession implements AutoCloseable {
     }
     DebugService debug() { return requireGameplay("debug"); }
     DiagnosticExporter diagnosticExporter() { return requireGameplay("diagnosticExporter"); }
-    RoadWeaverAdapter roadWeaverAdapter() { return requireGameplay("roadWeaverAdapter"); }
     WallWorldState worldState() {
         var value = worldState.get("world");
         if (value == null) throw new IllegalStateException("wall history header is not recovered");
@@ -336,7 +334,6 @@ final class ProductionSession implements AutoCloseable {
     /** Null-returning accessors for lifecycle events that may fire before gameplay assembly. */
     SiteRuntimeIndex sitesIfReady() { return (SiteRuntimeIndex) gameplay.get("sites"); }
     GarrisonController garrisonIfReady() { return (GarrisonController) gameplay.get("garrison"); }
-    RoadWeaverAdapter roadWeaverAdapterIfReady() { return (RoadWeaverAdapter) gameplay.get("roadWeaverAdapter"); }
     /**
      * Returns a gameplay service, refusing to answer before assembly has actually completed.
      *
@@ -777,7 +774,7 @@ final class ProductionSession implements AutoCloseable {
         if (scanner != null) scanner.close();
         // Stop new gameplay mutations before flushing permanent history: garrison birth and
         // beacon credits must cease, then the journal flushes and shuts down its own executor.
-        for (String key : List.of("garrison", "beacons", "sites", "negotiated", "debug", "roadWeaverAdapter")) {
+        for (String key : List.of("garrison", "beacons", "sites", "negotiated", "debug")) {
             var service = gameplay.get(key);
             if (service instanceof AutoCloseable closable) {
                 try { closable.close(); } catch (Exception ignored) {}
