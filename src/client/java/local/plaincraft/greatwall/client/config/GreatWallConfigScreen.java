@@ -34,6 +34,8 @@ public final class GreatWallConfigScreen {
                 Component.translatable("config.plaincraft_great_wall.category.length"));
         ConfigCategory ridge = builder.getOrCreateCategory(
                 Component.translatable("config.plaincraft_great_wall.category.ridge"));
+        ConfigCategory perf = builder.getOrCreateCategory(
+                Component.translatable("config.plaincraft_great_wall.category.performance"));
 
         // ── 长度 ──
         length.addEntry(eb
@@ -141,6 +143,32 @@ public final class GreatWallConfigScreen {
                 .setTooltip(Component.translatable("config.plaincraft_great_wall.obstacle_margin_blocks.tooltip"))
                 .setMin(0).setMax(32)
                 .setSaveConsumer(conf::setObstacleMarginBlocks)
+                .build());
+        // 性能调度：只改「什么时候算、一次算多少、复用多少」，不改变任何采样结果，
+        // 因此不进配方语义哈希 —— 改这些不会让已有世界 RECIPE_MISMATCH。
+        perf.addEntry(eb
+                .startIntField(Component.translatable("config.plaincraft_great_wall.fine_sample_driver_interval_ms"),
+                        conf.fineSampleDriverIntervalMs())
+                .setDefaultValue(def.fineSampleDriverIntervalMs())
+                .setTooltip(Component.translatable("config.plaincraft_great_wall.fine_sample_driver_interval_ms.tooltip"))
+                .setMin(1).setMax(50)
+                .setSaveConsumer(conf::setFineSampleDriverIntervalMs)
+                .build());
+        perf.addEntry(eb
+                .startIntField(Component.translatable("config.plaincraft_great_wall.lane_batch_operations"),
+                        conf.laneBatchOperations())
+                .setDefaultValue(def.laneBatchOperations())
+                .setTooltip(Component.translatable("config.plaincraft_great_wall.lane_batch_operations.tooltip"))
+                .setMin(1).setMax(256)
+                .setSaveConsumer(conf::setLaneBatchOperations)
+                .build());
+        perf.addEntry(eb
+                .startIntField(Component.translatable("config.plaincraft_great_wall.chunk_cache_limit"),
+                        conf.chunkCacheLimit())
+                .setDefaultValue(def.chunkCacheLimit())
+                .setTooltip(Component.translatable("config.plaincraft_great_wall.chunk_cache_limit.tooltip"))
+                .setMin(4).setMax(64)
+                .setSaveConsumer(conf::setChunkCacheLimit)
                 .build());
 
         return builder.build();

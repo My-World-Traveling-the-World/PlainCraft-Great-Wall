@@ -120,6 +120,12 @@ public final class GreatWallConfig {
     /** Baked-chunk cache size per lane, clamped to a sane 4..64 so it cannot be configured to zero. */
     public int chunkCacheLimit() { return Math.max(4, Math.min(64, chunkCacheLimit)); }
 
+    // Setters store the raw value on purpose: the accessors above are the single place that clamps,
+    // so a hand-edited file and the config screen cannot disagree about the legal range.
+    public void setFineSampleDriverIntervalMs(int value) { this.fineSampleDriverIntervalMs = value; }
+    public void setLaneBatchOperations(int value) { this.laneBatchOperations = value; }
+    public void setChunkCacheLimit(int value) { this.chunkCacheLimit = value; }
+
     public int ridgeWeight() { return ridgeWeight; }
     public int ridgeProminenceWeight() { return ridgeProminenceWeight; }
     public int ridgeSlopeWeight() { return ridgeSlopeWeight; }
