@@ -24,7 +24,7 @@ class HistoryJournalTest {
     private record Running(HistoryJournal journal, ExecutorService io) {}
 
     private UUID authorize(Path root) throws Exception {
-        return new WorldManifest(root.resolve("manifest")).authorize(false, 17, HASH).instance();
+        return new WorldManifest(root.resolve("manifest")).authorize(false, 17, HASH, HASH).instance();
     }
     private Running create(Path root, UUID world, HistoryJournal.IoHooks hooks) {
         var io = Executors.newSingleThreadExecutor();

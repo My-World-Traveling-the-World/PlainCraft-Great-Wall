@@ -89,7 +89,7 @@ class RealizationPlannerTest {
     private static RealizationPlanner terminalPlanner(){
         var recipe=new WorldRecipe(new UUID(0,1),"fixture",3,"minecraft:overworld",new Point3i(0,64,0),
                 new Axis(new Point3i(0,64,0),1<<30,0),new DimensionBounds(0,128,29_999_000),
-                new GenerationConfig(1,1,2048,4,150000,256,512,8,64L<<20,64L<<20,32L<<20),H,H,H,H);
+                new GenerationConfig(1,1,2048,4,150000,256,512,8,64L<<20,64L<<20,32L<<20,H),H,H,H,H);
         var d=new DecayField(3);
         return new RealizationPlanner(recipe,new SurfaceProbe(),Map.of(SiteKind.WALL,new WallSection(d,PALETTE),
                 SiteKind.END_CAP,new EndCap(d,PALETTE),SiteKind.GATE,new Gate(d,PALETTE)));

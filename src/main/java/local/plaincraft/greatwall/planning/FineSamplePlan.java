@@ -83,7 +83,10 @@ final class FineSamplePlan {
          * exactly like before" reachable without a second flag.
          */
         static Rules fromConfig() {
-            var conf = local.plaincraft.greatwall.config.GreatWallConfig.get();
+            // Frozen snapshot, not the live config: these four numbers decide which columns of a
+            // cross-section are probed and how the gaps are filled, so a mid-world edit would change the
+            // terrain the second half of the wall is built on.
+            var conf = local.plaincraft.greatwall.config.GreatWallConfig.parameters();
             int step = conf.fineStep();
             return new Rules(step <= 1 ? Mode.FULL : Mode.AUTO, step,
                     conf.steepThreshold(), conf.refineWater(), conf.coreHalfWidth());

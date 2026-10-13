@@ -41,7 +41,8 @@ class LootInitializerTest {
     private static WorldRecipe recipe(long seed) {
         return new WorldRecipe(new UUID(0, 1), "fixture", seed, "minecraft:overworld", new Point3i(0, 64, 0),
                 new Axis(new Point3i(0, 64, 0), 1 << 30, 0), new DimensionBounds(-64, 320, 29_999_000),
-                new GenerationConfig(1, 1, 2048, 4, 150000, 256, 512, 8, 64L << 20, 64L << 20, 32L << 20),
+                new GenerationConfig(1, 1, 2048, 4, 150000, 256, 512, 8, 64L << 20, 64L << 20, 32L << 20,
+                        "a".repeat(64)),
                 "a".repeat(64), "a".repeat(64), "a".repeat(64), "a".repeat(64));
     }
 

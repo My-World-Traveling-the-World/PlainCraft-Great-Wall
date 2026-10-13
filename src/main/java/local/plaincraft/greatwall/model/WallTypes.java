@@ -599,16 +599,31 @@ public final class WallTypes {
         }
     }
 
+    /**
+     * The frozen numbers that decide what a world generates, plus the identity of the parameters
+     * those numbers were produced with.
+     *
+     * <h2>Why the parameter digest lives here and not in {@link WorldRecipe}</h2>
+     * The recipe's three hashes describe inputs (terrain, palette, templates); this record describes
+     * the algorithm and the choices it was run with. Putting the digest with the config means every
+     * record that already carries a {@code GenerationConfig} — the frozen recipe, the canonical recipe
+     * hash, the creation token — carries the parameter identity too, without a new mechanism and
+     * without a second place that could forget to include it. It is a digest of the
+     * <em>parameters</em> rather than the values themselves so that adding a knob later cannot
+     * silently escape the guard: the digest changes, or {@code GreatWallConfig.Semantic.SCHEMA} is
+     * bumped on purpose.
+     */
     public record GenerationConfig(int algorithmVersion, int templateVersion,
             int segmentBlocks, int stationBlocks, int columnBudget,
             int carrierAmplitude, int corridorHalfWidth, int maxGeometryInflight,
-            long segmentBytes, long terrainBytes, long compiledBytes) {
+            long segmentBytes, long terrainBytes, long compiledBytes, String parametersHash) {
         public GenerationConfig {
             if (algorithmVersion <= 0 || templateVersion <= 0) throw new IllegalArgumentException("version>0 required");
             if (segmentBlocks <= 0 || stationBlocks <= 0 || columnBudget <= 0) throw new IllegalArgumentException("block/count>0 required");
             if (carrierAmplitude < 0 || corridorHalfWidth <= 0) throw new IllegalArgumentException("amplitude/corridor invalid");
             if (maxGeometryInflight <= 0) throw new IllegalArgumentException("maxGeometryInflight>0 required");
             if (segmentBytes <= 0 || terrainBytes <= 0 || compiledBytes <= 0) throw new IllegalArgumentException("bytes>0 required");
+            requireHash(parametersHash);
         }
     }
 

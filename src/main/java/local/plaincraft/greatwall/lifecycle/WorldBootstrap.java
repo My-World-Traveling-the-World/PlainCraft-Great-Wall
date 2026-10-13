@@ -99,12 +99,21 @@ public final class WorldBootstrap implements AutoCloseable {
             thread.setDaemon(true); return thread;
         });
         authorized = io(() -> new Authorized(manifest.authorize(originallyInitialized, seed,
-                WorldManifest.configHash(defaultConfig())), manifest.read()));
+                WorldManifest.configHash(defaultConfig()), defaultConfig().parametersHash()), manifest.read()));
         authorized.whenComplete((value, error) -> {
             if (error != null) fail(error); else requestStart();
         });
     }
 
+    /**
+     * The frozen {@link GenerationConfig} every world of this session is built with.
+     *
+     * <p>The final component is the digest of the generation parameters in effect. Reading
+     * {@code GreatWallConfig.parameters()} here is what freezes them: this method is called first at
+     * {@link #authorize} time, before any planner runs, so a config edit made later cannot reach
+     * generation. An edit made before the world loads changes the digest, and the world's creation
+     * token then refuses with a parameter-identity mismatch rather than generating a different wall.
+     */
     public static GenerationConfig defaultConfig() {
         // Measured on real terrain: loadCell() captures every owner of a cell
         // into one shared arena, and each successful capture keeps its pin
@@ -123,7 +132,8 @@ public final class WorldBootstrap implements AutoCloseable {
         // prevents over-commitment - this number only decides how much may be attempted.
         return new GenerationConfig(1, 1, 2048, 4, 150000, 384, 512,
                 local.plaincraft.greatwall.terrain.ConcurrencyPlan.startupGeometryInflight(),
-                64L << 20, 256L << 20, 256L << 20);
+                64L << 20, 256L << 20, 256L << 20,
+                local.plaincraft.greatwall.config.GreatWallConfig.parameters().digest());
     }
 
     public void authorizeSpawnProbe(ChunkKey candidate, int nativeDependencyRadius) {
@@ -671,8 +681,18 @@ public final class WorldBootstrap implements AutoCloseable {
     }
 
     private void validateSaved(WorldRecipe recipe, Frozen inputs) {
+        // Reported before the generic comparison because this is the one a player can trigger from the
+        // config screen, and "generation parameters changed" is actionable in a way that a field-by-field
+        // recipe diff is not. Both digests are printed so the log alone identifies which knob moved.
+        GenerationConfig current = defaultConfig();
+        if (!recipe.config().parametersHash().equals(current.parametersHash())) {
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] parameter identity drifted saved={} current={}",
+                    recipe.config().parametersHash(), current.parametersHash());
+            throw new WallFailure(FailureCode.RECIPE_MISMATCH,
+                    "generation parameters changed; create a new world");
+        }
         if (recipe.seed() != seed || !recipe.bounds().equals(inputs.bounds())
-                || !recipe.config().equals(defaultConfig()) || !recipe.terrainHash().equals(inputs.terrainHash())
+                || !recipe.config().equals(current) || !recipe.terrainHash().equals(inputs.terrainHash())
                 || !recipe.paletteHash().equals(inputs.paletteHash()) || !recipe.templatesHash().equals(inputs.templatesHash())) {
             throw new WallFailure(FailureCode.RECIPE_MISMATCH, "saved production recipe/settings no longer match; new world required");
         }

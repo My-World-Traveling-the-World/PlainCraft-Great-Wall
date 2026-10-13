@@ -615,7 +615,7 @@ public final class PlannerScheduler implements AutoCloseable {
      */
     private long prewarmTargetSegments() {
         try {
-            long configured = GreatWallConfig.get().prewarmSegmentsTarget();
+            long configured = GreatWallConfig.parameters().prewarmSegmentsTarget();
             return configured > 0L ? configured : STARTUP_PREWARM_SEGMENTS;
         } catch (RuntimeException | LinkageError unavailable) {
             // A broken client config must not stop planning; fall back to the opening segments.
@@ -1089,7 +1089,7 @@ public final class PlannerScheduler implements AutoCloseable {
         if (cached != Long.MIN_VALUE) return cached;
         long limit;
         try {
-            limit = GreatWallConfig.get().configuredSegments();
+            limit = GreatWallConfig.parameters().configuredSegments();
         } catch (RuntimeException | LinkageError unavailable) {
             // Fail open: an unreadable config must not shorten an existing wall.
             state.put("wall-length-config-unavailable", 1L);

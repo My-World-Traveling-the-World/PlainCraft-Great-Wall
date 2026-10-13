@@ -19,8 +19,12 @@ class ArchivedOwnerCoverageTest {
     @Test void archivedRequestsAreComparedWithActualDurableCaptureOwners() throws Exception {
         var root=Path.of("docs/evidence/s1c/entrance-ab-20261002/entrance-ab17-final-20261002-134025");
         var world=root.resolve("world/greatwall");
-        var envelope=JsonParser.parseString(Files.readString(world.resolve("manifest/world.json"))).getAsJsonObject();
-        var recipe=new Gson().fromJson(envelope.get("payload"),WorldRecipe.class);
+        var payload=JsonParser.parseString(Files.readString(world.resolve("manifest/world.json")))
+                .getAsJsonObject().getAsJsonObject("payload");
+        // The archive predates parameter identity, and WorldManifest.readWorld() refuses such worlds on
+        // purpose. This test replays only the structural plan, so stamp a placeholder before parsing.
+        payload.getAsJsonObject("config").addProperty("parametersHash","0".repeat(64));
+        var recipe=new Gson().fromJson(payload,WorldRecipe.class);
         var store=new SegmentCacheStore(world.resolve("cache"),recipe);
         var plan=store.readPlan(new SegmentKey(recipe.recipeHash(),recipe.dimension(),0)).orElseThrow();
         var window=new PlanWindow(List.of(plan));

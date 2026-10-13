@@ -382,7 +382,7 @@ final class ProductionSession implements AutoCloseable {
         // structure footprint; 576 blocks covers the envelope with a 64-block margin. This trades
         // scan width (more candidates) for never missing a structure the wall can actually reach.
         int corridorHalfWidth = 576;
-        long lengthBlocks = local.plaincraft.greatwall.config.GreatWallConfig.get().wallLengthBlocks();
+        long lengthBlocks = local.plaincraft.greatwall.config.GreatWallConfig.parameters().wallLengthBlocks();
         if (lengthBlocks <= 0) lengthBlocks = 8190L;
         // Chunk-bounds of the axis-aligned corridor. The axis may run at an angle, so take a
         // generous AABB around the two endpoints and widen by the corridor half-width.
@@ -407,7 +407,7 @@ final class ProductionSession implements AutoCloseable {
         scanner.scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor)
                 .whenComplete((boxes, error) -> {
                     final java.util.List<Bounds> structures;
-                    int margin = local.plaincraft.greatwall.config.GreatWallConfig.get().obstacleMarginBlocks();
+                    int margin = local.plaincraft.greatwall.config.GreatWallConfig.parameters().obstacleMarginBlocks();
                     if (error != null) {
                         GreatWallMod.LOGGER.warn("[GreatWall:corridor] structure scan failed; "
                                 + "falling back to no structure avoidance", error);
@@ -535,8 +535,8 @@ final class ProductionSession implements AutoCloseable {
                             + "wallLengthBlocks={} prewarmSegments={} counts={}",
                     snapshot.recipe().wallId(), snapshot.recipe().axis(),
                     local.plaincraft.greatwall.terrain.RealizationPlanner.rootDegraded(),
-                    local.plaincraft.greatwall.config.GreatWallConfig.get().wallLengthBlocks(),
-                    local.plaincraft.greatwall.config.GreatWallConfig.get().prewarmSegmentsTarget(),
+                    local.plaincraft.greatwall.config.GreatWallConfig.parameters().wallLengthBlocks(),
+                    local.plaincraft.greatwall.config.GreatWallConfig.parameters().prewarmSegmentsTarget(),
                     summarizeForLog(diagnostics));
             compilePlanningPlans(snapshot);
         }
@@ -568,7 +568,7 @@ final class ProductionSession implements AutoCloseable {
         var compiler = new local.plaincraft.greatwall.planning.PlanningChunkCompiler(
                 realization, chunkCompiler, index, planningStructures);
         var planner = snapshot.planner();
-        long target = local.plaincraft.greatwall.config.GreatWallConfig.get().prewarmSegmentsTarget();
+        long target = local.plaincraft.greatwall.config.GreatWallConfig.parameters().prewarmSegmentsTarget();
         if (target <= 0) target = 4;
         var collected = new java.util.ArrayList<SegmentPlan>();
         // Reuse the prewarm's own leases: they stay pinned until this compile publishes, so the
@@ -683,6 +683,14 @@ final class ProductionSession implements AutoCloseable {
                     || !snapshot.recipe().paletteHash().equals(next.paletteHash())
                     || !snapshot.recipe().templatesHash().equals(next.templatesHash())) {
                 throw new WallFailure(FailureCode.RECIPE_MISMATCH, "generation semantics changed; create a new world");
+            }
+            // Tuned parameters are semantics too: a reload after the screen edited them would otherwise
+            // let the second half of the wall be planned from a different ridge choice than the first,
+            // which is the exact seam the frozen parameter snapshot exists to prevent. Compared against
+            // the live digest on purpose - this is the drift detector, not a generation input.
+            if (!snapshot.recipe().config().parametersHash()
+                    .equals(local.plaincraft.greatwall.config.GreatWallConfig.parameterDigest())) {
+                throw new WallFailure(FailureCode.RECIPE_MISMATCH, "generation parameters changed; create a new world");
             }
             trace.record("PRODUCTION_RECIPE_ACCEPTED", "*", 0, 0, "reload", "none");
         } catch (Throwable error) { fail(error); }

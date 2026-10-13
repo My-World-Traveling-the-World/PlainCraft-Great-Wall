@@ -81,6 +81,9 @@ public final class CanonicalCodec {
             out.writeInt(c.stationBlocks()); out.writeInt(c.columnBudget()); out.writeInt(c.carrierAmplitude());
             out.writeInt(c.corridorHalfWidth()); out.writeInt(c.maxGeometryInflight());
             out.writeLong(c.segmentBytes()); out.writeLong(c.terrainBytes()); out.writeLong(c.compiledBytes());
+            // The parameter digest is part of the canonical recipe: it is what makes the recipe hash of a
+            // world built with different tuning a different value, which is the point of storing it.
+            string(out, c.parametersHash());
             string(out, value.terrainHash()); string(out, value.paletteHash()); string(out, value.templatesHash());
         });
     }

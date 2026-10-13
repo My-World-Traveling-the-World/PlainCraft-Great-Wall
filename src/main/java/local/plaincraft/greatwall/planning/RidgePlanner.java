@@ -157,7 +157,9 @@ public final class RidgePlanner {
         // 0.1.0 山顶宽度分界平衡：中心凸起量按「平坦山顶 / 窄刀锋」区分奖惩。
         // 凸起（prominence）是中心相对 8 个周边的突出度；ridge 是中心相对两侧（samples[3/4]）的高度。
         // 平坦山顶（凸起小）→ 奖励；窄刀锋（凸起大）→ 惩罚。
-        var cfg = local.plaincraft.greatwall.config.GreatWallConfig.get();
+        // 读冻结快照而不是当前配置：世界打开后改配置不得让后半段路线按另一套山脊权重重算
+        // （两半接缝处的路线会跳变）。摘要已随世界冻结，改了配置的世界会拒绝打开而不是生成一半。
+        var cfg = local.plaincraft.greatwall.config.GreatWallConfig.parameters();
         int flatThreshold = cfg.summitFlatThreshold();
         long centreLift = Math.abs(ridge); // 中心相对两侧的抬升，作为「山顶宽度」的代理
         long knifePart;

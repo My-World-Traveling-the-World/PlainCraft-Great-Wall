@@ -28,8 +28,21 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** Permanent new-world identity, not a reconstructible cache. All calls belong on the bounded IO lane. */
 public final class WorldManifest {
-    public record Creation(UUID instance, long seed, String configHash, boolean vanillaWasInitialized) {
-        public Creation { Objects.requireNonNull(instance); requireHash(configHash); }
+    /**
+     * Permanent identity of a world.
+     *
+     * <p>{@code configHash} covers the structural generation config; {@code parametersHash} covers the
+     * tuned generation parameters. They are stored separately rather than merged into one hash so the
+     * refusal can name which of the two moved — a player who edited the ridge weights needs a different
+     * sentence from one whose block budgets changed.
+     */
+    public record Creation(UUID instance, long seed, String configHash, String parametersHash,
+            boolean vanillaWasInitialized) {
+        public Creation {
+            Objects.requireNonNull(instance);
+            requireHash(configHash);
+            requireHash(parametersHash);
+        }
     }
     private static final Gson JSON = new Gson();
     private static final int SCHEMA = 1, MAX_FILE_BYTES = 65536;
@@ -42,8 +55,9 @@ public final class WorldManifest {
         }
     }
 
-    public Creation authorize(boolean vanillaInitialized, long seed, String configHash) throws IOException {
+    public Creation authorize(boolean vanillaInitialized, long seed, String configHash, String parametersHash) throws IOException {
         requireHash(configHash);
+        requireHash(parametersHash);
         return locked(() -> {
             var creation = readCreation();
             var world = readWorld();
@@ -53,6 +67,13 @@ public final class WorldManifest {
             }
             if (creation.isPresent()) {
                 Creation value = creation.get();
+                // Parameters are compared before the creation token so this reports the cause a player can
+                // act on. The frozen recipe is immutable, so a world whose parameters drifted cannot be
+                // migrated in place: its planned segments came from the old ridge choice.
+                if (!value.parametersHash().equals(parametersHash)) {
+                    throw new WallFailure(FailureCode.RECIPE_MISMATCH,
+                            "generation parameters changed; create a new world");
+                }
                 if (value.seed() != seed || !value.configHash().equals(configHash)) {
                     throw new WallFailure(FailureCode.RECIPE_MISMATCH, "new-world creation seed/config changed");
                 }
@@ -61,7 +82,7 @@ public final class WorldManifest {
             if (vanillaInitialized) {
                 throw new WallFailure(FailureCode.EXISTING_WORLD, "initialized world has no Great Wall creation token");
             }
-            var value = new Creation(UUID.randomUUID(), seed, configHash, false);
+            var value = new Creation(UUID.randomUUID(), seed, configHash, parametersHash, false);
             atomicCreate(root.resolve("creation.json"), envelope("creation", JSON.toJsonTree(value).getAsJsonObject()));
             return value;
         });
@@ -119,14 +140,20 @@ public final class WorldManifest {
         if (payload.isEmpty()) return Optional.empty();
         try {
             var json = payload.get();
-            keys(json, "instance", "seed", "configHash", "vanillaWasInitialized");
+            // Refused before the generic key check so the message names the cause. A token without a
+            // parameter identity cannot be compared, and guessing "same parameters" would silently keep
+            // generating a world whose frozen plans came from a different tuning.
+            if (!json.has("parametersHash")) throw new WallFailure(FailureCode.RECIPE_MISMATCH,
+                    "saved world predates parameter identity; create a new world");
+            keys(json, "instance", "seed", "configHash", "parametersHash", "vanillaWasInitialized");
             json.get("seed").getAsBigDecimal().longValueExact();
             if (!json.get("vanillaWasInitialized").isJsonPrimitive()
                     || !json.getAsJsonPrimitive("vanillaWasInitialized").isBoolean()) throw new IllegalArgumentException("boolean required");
             var creation = JSON.fromJson(json, Creation.class);
             if (creation.vanillaWasInitialized()) throw new IllegalArgumentException("creation may not authorize an already initialized world");
             return Optional.of(creation);
-        } catch (RuntimeException invalid) { throw corrupt("invalid creation payload", invalid); }
+        } catch (WallFailure refusal) { throw refusal; }
+        catch (RuntimeException invalid) { throw corrupt("invalid creation payload", invalid); }
     }
 
     private Optional<WorldRecipe> readWorld() throws IOException {
@@ -143,15 +170,19 @@ public final class WorldManifest {
             var bounds = json.getAsJsonObject("bounds"); keys(bounds, "minY", "maxYExclusive", "horizontalLimit");
             ints(bounds, "minY", "maxYExclusive", "horizontalLimit");
             var config = json.getAsJsonObject("config");
+            if (!config.has("parametersHash")) throw new WallFailure(FailureCode.RECIPE_MISMATCH,
+                    "saved world predates parameter identity; create a new world");
             keys(config, "algorithmVersion", "templateVersion", "segmentBlocks", "stationBlocks", "columnBudget",
-                    "carrierAmplitude", "corridorHalfWidth", "maxGeometryInflight", "segmentBytes", "terrainBytes", "compiledBytes");
+                    "carrierAmplitude", "corridorHalfWidth", "maxGeometryInflight", "segmentBytes", "terrainBytes", "compiledBytes",
+                    "parametersHash");
             ints(config, "algorithmVersion", "templateVersion", "segmentBlocks", "stationBlocks", "columnBudget",
                     "carrierAmplitude", "corridorHalfWidth", "maxGeometryInflight");
             for (String name : new String[] {"segmentBytes", "terrainBytes", "compiledBytes"}) {
                 config.get(name).getAsBigDecimal().longValueExact();
             }
             return Optional.of(JSON.fromJson(json, WorldRecipe.class));
-        } catch (RuntimeException invalid) { throw corrupt("invalid frozen recipe payload", invalid); }
+        } catch (WallFailure refusal) { throw refusal; }
+        catch (RuntimeException invalid) { throw corrupt("invalid frozen recipe payload", invalid); }
     }
 
     private void validate(WorldRecipe recipe, Creation creation) throws IOException {

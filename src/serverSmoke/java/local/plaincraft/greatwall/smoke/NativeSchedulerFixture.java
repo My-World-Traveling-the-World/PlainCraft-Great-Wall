@@ -21,7 +21,8 @@ final class NativeSchedulerFixture {
             throw new IllegalStateException("blocking test orchestration is confined to the diagnostic worker");
         }
         UUID session = UUID.randomUUID();
-        var config = new GenerationConfig(1, 1, 2048, 4, 150000, 384, 512, 4, 67108864, 67108864, 33554432);
+        var config = new GenerationConfig(1, 1, 2048, 4, 150000, 384, 512, 4, 67108864, 67108864, 33554432,
+                "0".repeat(64));
         String dummy = "0".repeat(64);
         var raw = new WorldRecipe(session, dummy, input.seed(), "minecraft:overworld", new Point3i(0, 64, 0),
                 new Axis(new Point3i(1000, 64, 0), 1 << 30, 0), input.bounds(), config,

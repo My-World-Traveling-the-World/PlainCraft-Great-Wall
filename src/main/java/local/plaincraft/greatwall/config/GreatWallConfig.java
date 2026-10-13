@@ -51,6 +51,14 @@ public final class GreatWallConfig {
     private static final String FILE_NAME = "greatwall.json";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static volatile GreatWallConfig instance;
+    /**
+     * The parameter snapshot an open world generates from; {@code null} until first captured.
+     *
+     * <p>Deliberately separate from {@link #instance}: the instance is "what the screen and the file
+     * say right now", the snapshot is "what this world was built with". Only {@link #parameters()}
+     * may be read by planning code.
+     */
+    private static volatile Semantic frozenParameters;
 
     private long wallLengthBlocks = UNLIMITED_LENGTH;
 
@@ -125,6 +133,123 @@ public final class GreatWallConfig {
     /** 中心带半宽（格）：此范围内一律逐格精采，抽稀不进入墙主体。 */
     private int coreHalfWidth = 12;
 
+    // ── 世界身份：会改变生成结果的参数快照 ─────────────────────────────────────
+    /**
+     * The parameter values that decide what the wall actually looks like.
+     *
+     * <h2>Why this is a separate type</h2>
+     * The knobs in this class split into two families. Performance knobs (driver interval, lane
+     * grant, chunk cache size) only decide <em>when</em> work happens. Semantic knobs decide
+     * <em>what</em> is generated: which ridge the wall follows, the height reported for every
+     * column of a cross-section, where the wall stops. Only the second family may influence a
+     * world, so only the second family is fingerprinted — and it is fingerprinted as one value
+     * rather than as seventeen fields, so adding a knob later cannot silently escape the guard.
+     *
+     * <h2>Frozen, not live</h2>
+     * {@link GreatWallConfig#parameters()} returns the snapshot taken while a world loads, and the
+     * planners read that snapshot rather than the live config. An edit made while a world is open
+     * must not change plans halfway through the wall: before this type existed, {@code ridgeWeight}
+     * and friends were read live, so a config edit left already-planned segments on the old ridge
+     * choice and every later segment on the new one, and nothing failed closed. The live values
+     * remain available for the config screen and for {@link #parameterDigest()}.
+     */
+    public record Semantic(long wallLengthBlocks, int ridgeWeight, int ridgeProminenceWeight,
+            int ridgeSlopeWeight, int ridgeTurnWeight, int ridgeWetWeight, int ridgeDepartureWeight,
+            int summitFlatThreshold, int summitFlatReward, int knifeRidgePenalty,
+            int ridgeAsymmetryWeight, int ridgeAccumulatedSlopeWeight, int obstacleMarginBlocks,
+            int fineStep, int steepThreshold, boolean refineWater, int coreHalfWidth) {
+        /**
+         * Digest schema. <b>Bump this when the field list changes.</b> A world frozen under the old
+         * schema must refuse rather than reinterpret its stored numbers under the new one.
+         */
+        public static final int SCHEMA = 1;
+
+        /** The stock parameter set: what a fresh install generates. */
+        public static final Semantic DEFAULTS = new GreatWallConfig().semantic();
+
+        public boolean bounded() { return wallLengthBlocks > UNLIMITED_LENGTH; }
+
+        /** Segments the frozen length spans; {@code 0} when unbounded. */
+        public long configuredSegments() {
+            if (!bounded()) return 0L;
+            return Math.max(1L, (wallLengthBlocks + SEGMENT_BLOCKS - 1L) / SEGMENT_BLOCKS);
+        }
+
+        /** Segments that must be ready before gameplay begins; see the accessor's notes. */
+        public long prewarmSegmentsTarget() {
+            if (!bounded()) return DEFAULT_PREWARM_SEGMENTS;
+            long total = configuredSegments();
+            if (wallLengthBlocks <= FULL_PREWARM_MAX_LENGTH) return total;
+            return Math.min(total, DEFAULT_PREWARM_SEGMENTS);
+        }
+
+        /**
+         * Canonical SHA-256 over every semantic value, in a fixed order.
+         *
+         * <p>This is the value a world stores. Two configs with the same digest generate the same
+         * wall for the same seed; any difference here is a different world recipe.
+         */
+        public String digest() {
+            var bytes = new java.io.ByteArrayOutputStream(128);
+            try (var out = new java.io.DataOutputStream(bytes)) {
+                out.writeInt(SCHEMA);
+                out.writeLong(wallLengthBlocks);
+                out.writeInt(ridgeWeight);
+                out.writeInt(ridgeProminenceWeight);
+                out.writeInt(ridgeSlopeWeight);
+                out.writeInt(ridgeTurnWeight);
+                out.writeInt(ridgeWetWeight);
+                out.writeInt(ridgeDepartureWeight);
+                out.writeInt(summitFlatThreshold);
+                out.writeInt(summitFlatReward);
+                out.writeInt(knifeRidgePenalty);
+                out.writeInt(ridgeAsymmetryWeight);
+                out.writeInt(ridgeAccumulatedSlopeWeight);
+                out.writeInt(obstacleMarginBlocks);
+                out.writeInt(fineStep);
+                out.writeInt(steepThreshold);
+                out.writeBoolean(refineWater);
+                out.writeInt(coreHalfWidth);
+            } catch (java.io.IOException impossible) {
+                throw new IllegalStateException(impossible);
+            }
+            return local.plaincraft.greatwall.geometry.DeterministicHash.sha256(bytes.toByteArray());
+        }
+    }
+
+    /** Snapshot of the values this instance holds right now, with accessor clamping applied. */
+    public Semantic semantic() {
+        return new Semantic(wallLengthBlocks, ridgeWeight, ridgeProminenceWeight, ridgeSlopeWeight,
+                ridgeTurnWeight, ridgeWetWeight, ridgeDepartureWeight, summitFlatThreshold,
+                summitFlatReward, knifeRidgePenalty, ridgeAsymmetryWeight, ridgeAccumulatedSlopeWeight,
+                obstacleMarginBlocks, fineStep(), steepThreshold(), refineWater(), coreHalfWidth());
+    }
+
+    /**
+     * Captures the current values as this session's parameter snapshot.
+     *
+     * <p>Called before any planner runs (the first identity computation does it). Later edits change
+     * the stored file and {@link #parameterDigest()}, never the snapshot a running world uses.
+     */
+    public static void freezeParameters() {
+        synchronized (GreatWallConfig.class) { frozenParameters = get().semantic(); }
+    }
+
+    /** The frozen snapshot; captured on first use so no caller can observe a half-frozen state. */
+    public static Semantic parameters() {
+        var value = frozenParameters;
+        if (value == null) { freezeParameters(); value = frozenParameters; }
+        return value;
+    }
+
+    /**
+     * Digest of the values currently configured — deliberately live.
+     *
+     * <p>This is the drift detector: compare it with {@code parameters().digest()} (the frozen
+     * snapshot) to see whether the screen edited something the open world must refuse.
+     */
+    public static String parameterDigest() { return get().semantic().digest(); }
+
     public long wallLengthBlocks() { return wallLengthBlocks; }
 
     /** Driver interval in ms, floored at 1 so a config typo cannot stop the stage from progressing. */
@@ -185,9 +310,20 @@ public final class GreatWallConfig {
         this.wallLengthBlocks = Math.max(0L, value);
     }
 
+    /**
+     * Whether the configured length is bounded.
+     *
+     * <p>Reads the live values: this is the screen's and the file writer's view. Planning code must
+     * ask {@link #parameters()} instead, so an edit made while a world is open cannot change what
+     * that world generates.
+     */
     public boolean bounded() { return wallLengthBlocks > UNLIMITED_LENGTH; }
 
-    /** Segments the configured length spans; {@code 0} when unbounded. */
+    /**
+     * Segments the configured length spans; {@code 0} when unbounded.
+     *
+     * <p>Live view, like {@link #bounded()}; planning code asks {@link #parameters()}.
+     */
     public long configuredSegments() {
         if (!bounded()) return 0L;
         return Math.max(1L, (wallLengthBlocks + SEGMENT_BLOCKS - 1L) / SEGMENT_BLOCKS);
@@ -399,13 +535,36 @@ public final class GreatWallConfig {
         }
     }
 
-    /** Persists the current values. Called by the config screens after an edit. */
+    /**
+     * Persists the current values. Called by the config screens after an edit.
+     *
+     * <p>When a world is already open, a change to a semantic value is reported: that world keeps
+     * generating from its frozen snapshot, and reopening it will refuse with {@code RECIPE_MISMATCH}
+     * because the saved parameter identity no longer matches. Saying so here is the only warning the
+     * player gets before the refusal, so it must not be silent.
+     */
     public static void save() {
         write(get());
+        var frozen = frozenParameters;
+        if (frozen == null) return;
+        String live = parameterDigest();
+        if (!frozen.digest().equals(live)) {
+            GreatWallMod.LOGGER.warn("[GreatWall:config] generation parameters changed ({} -> {}); this world "
+                    + "keeps using the frozen set, and the next time it is opened it will require a new world",
+                    frozen.digest(), live);
+        }
     }
 
-    /** Test seam: drops the cached instance so a rewritten file is re-read. */
+    /**
+     * Test seam: drops the cached instance so a rewritten file is re-read.
+     *
+     * <p>Also drops the frozen snapshot, because the point of this seam is to observe a freshly read
+     * file. Production never reloads a world's parameters mid-session.
+     */
     public static void reload() {
-        synchronized (GreatWallConfig.class) { instance = null; }
+        synchronized (GreatWallConfig.class) {
+            instance = null;
+            frozenParameters = null;
+        }
     }
 }

@@ -21,7 +21,7 @@ class GroundExitFallbackTest {
     private static Fixture fixture(){
         var recipe=new WorldRecipe(new UUID(0,8),"fixture",8,"minecraft:overworld",new Point3i(0,64,0),
                 new Axis(new Point3i(0,64,0),1<<30,0),new DimensionBounds(0,128,29_999_000),
-                new GenerationConfig(1,1,2048,4,150000,256,512,8,64L<<20,64L<<20,32L<<20),H,H,H,H);
+                new GenerationConfig(1,1,2048,4,150000,256,512,8,64L<<20,64L<<20,32L<<20,H),H,H,H,H);
         var stations=new ArrayList<Station>();
         for(int x=0;x<=480;x+=4)stations.add(new Station(x*256L,new Point2q(x*256L,0),84,0));
         var start=new Boundary(0,new Point2q(0,0),84,H);var end=new Boundary(1,new Point2q(480*256L,0),84,H);

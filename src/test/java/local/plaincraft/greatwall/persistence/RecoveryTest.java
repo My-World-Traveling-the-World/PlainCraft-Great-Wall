@@ -33,7 +33,8 @@ class RecoveryTest {
     private WorldRecipe freeze(Path root) throws Exception {
         var sample = PlanningFixtures.recipe(1);
         var manifest = new WorldManifest(root.resolve("manifest"));
-        UUID world = manifest.authorize(false, sample.seed(), WorldManifest.configHash(sample.config())).instance();
+        UUID world = manifest.authorize(false, sample.seed(), WorldManifest.configHash(sample.config()),
+                sample.config().parametersHash()).instance();
         var provisional = new WorldRecipe(world, sample.wallId(), sample.seed(), sample.dimension(),
                 sample.frozenSpawn(), sample.axis(), sample.bounds(), sample.config(), sample.terrainHash(),
                 sample.paletteHash(), sample.templatesHash(), sample.recipeHash());
