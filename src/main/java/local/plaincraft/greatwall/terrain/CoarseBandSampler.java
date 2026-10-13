@@ -26,6 +26,17 @@ import local.plaincraft.greatwall.model.WallTypes.SampleKind;
  * lattice. An unvisited cell reports {@link CoarseHeightLattice#NO_DATA} and
  * {@link CoarseHeightLattice#needsRefine} answers true for it, i.e. the accurate probe still visits it.
  * That keeps a broken coarse pass a slowdown rather than a correctness problem.
+ *
+ * <h2>Status: no caller yet (deliberate)</h2>
+ * This is a tested building block with no consumer. It was written for the two uses that were
+ * evaluated and then dropped - pre-filtering root-search candidates, and filling a second loading-card
+ * progress line - because the numbers did not support them: root search screens about 12k columns
+ * against the fine sample's roughly 400k (some 3%, i.e. seconds), its screening criterion needs water
+ * evidence that a coarse probe cannot see, and a GPU offload at that volume costs more in transfer
+ * than it saves. The full evaluation is recorded in {@code roadweaver-变更历史.md}. It is kept because
+ * it is the only place that documents what a coarse probe can and cannot answer, and because a future
+ * pass that genuinely needs bulk coarse terrain can start from a tested component. Nothing calls it,
+ * so it costs nothing at runtime.
  */
 public final class CoarseBandSampler {
 
