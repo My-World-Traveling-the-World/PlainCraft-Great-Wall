@@ -253,7 +253,11 @@ public final class PlannerScheduler implements AutoCloseable {
         // oracle samples exactly the columns it would have sampled serially — the merged index is
         // identical, only computed concurrently.
         int slices = Math.max(4, Math.min(laneState.size(), 16));
-        final int progressTotal = Math.max(1, totalSegments * slices);
+        // Progress is reported in sampled columns. A slice is roughly eight thousand columns, so a
+        // slice-counting meter only moves every few thousand columns and reads as a hang. The
+        // denominator starts at 1 and grows as slices are enqueued (their point ranges are known
+        // before they are sampled), and max() keeps the fraction monotone.
+        var expectedColumns = new java.util.concurrent.atomic.AtomicInteger(1);
         // Drive this stage ourselves: without it the fine sample waits on server ticks, which is how
         // a measured session spent 27 minutes here without finishing a single slice.
         startFineSampleDriver();
@@ -263,14 +267,12 @@ public final class PlannerScheduler implements AutoCloseable {
         // so the compile received roughly a twelfth of the sampled columns.
         var routesPending = new java.util.concurrent.atomic.AtomicInteger(totalSegments);
         var slicesPending = new java.util.concurrent.atomic.AtomicInteger();
-        var slicesDone = new java.util.concurrent.atomic.AtomicInteger();
-        // The loading card's fine-sample stage ticks per finished slice, so the meter moves during
-        // the stage instead of only at its end.
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, progressTotal);
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 1);
         var completion = new Runnable() {
             @Override public void run() {
                 if (routesPending.get() > 0 || slicesPending.get() > 0) return;
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(progressTotal, progressTotal);
+                int done = sampledColumns.get();
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(done, Math.max(1, done));
                 synchronized (all) { aggregate.complete(FineHeightIndex.of(all)); }
             }
         };
@@ -289,6 +291,9 @@ public final class PlannerScheduler implements AutoCloseable {
                         if (from >= points) break;
                         int to = Math.min(points, from + perSlice);
                         slicesPending.incrementAndGet();
+                        // Known before the slice is sampled: its point range, times the cross-section
+                        // width. This is what makes the meter a column count instead of a slice count.
+                        expectedColumns.addAndGet(Math.max(1, to - from) * (2 * WallFinePlanner.LATERAL + 1));
                         var job = new FineSampleJob(route, from, to, priority,
                                 new CompletableFuture<List<WallFinePlanner.FineColumn>>());
                         enqueue(job);
@@ -299,8 +304,9 @@ public final class PlannerScheduler implements AutoCloseable {
                                     all.addAll(columns);
                                     sampledColumns.addAndGet(columns.size());
                                 }
+                                int done = sampledColumns.get();
                                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                                        slicesDone.incrementAndGet(), progressTotal);
+                                        done, Math.max(done, expectedColumns.get()));
                                 slicesPending.decrementAndGet();
                                 completion.run();
                             } catch (Throwable t) { aggregate.completeExceptionally(t); }
