@@ -542,7 +542,7 @@ public final class PlannerScheduler implements AutoCloseable {
             credits = 4096;
             deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25);
             dispatch();
-        }, 0, 1, TimeUnit.MILLISECONDS);
+        }, 0, GreatWallConfig.get().fineSampleDriverIntervalMs(), TimeUnit.MILLISECONDS);
     }
 
     /** Stops the fine sample's driver. Idempotent, and safe to call from any completion path. */
@@ -863,7 +863,7 @@ public final class PlannerScheduler implements AutoCloseable {
             }
             if (slot.job == null) slot.job = pending.poll();
             if (slot.job == null) continue;
-            int operations = Math.min(LANE_BATCH_OPERATIONS, credits); credits -= operations;
+            int operations = Math.min(GreatWallConfig.get().laneBatchOperations(), credits); credits -= operations;
             var job = slot.job; slot.busy = true;
             nativeLane.submit(oracle -> {
                 Throwable error = null; boolean done = false; Object value = null;

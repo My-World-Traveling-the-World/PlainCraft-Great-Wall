@@ -80,7 +80,45 @@ public final class GreatWallConfig {
     /** 结构避让余量（格），中心线接近结构足迹此距离内视为障碍。 */
     private int obstacleMarginBlocks = 8;
 
+    // ── 0.1.0 性能调度参数 ──
+    // 这些值只影响「什么时候算、一次算多少、复用多少」，**不改变任何采样结果**，
+    // 因此不参与配方语义哈希（WorldManifest 的规范字段只有 carrierAmplitude /
+    // corridorHalfWidth / maxGeometryInflight 等冻结值），改动它们不会让已有世界 RECIPE_MISMATCH。
+    /**
+     * 细采样专用驱动器的间隔（毫秒）。默认 1ms（每秒 1000 次）。
+     *
+     * <p>真机教训：细采样此前没有驱动器——`startupTimer` 被首个 server tick 取消后只剩 tick 驱动
+     * （约 20 次/秒），27 分钟没跑完一个切片。调大此值会线性降低吞吐，只在需要给别的 mod 让出
+     * CPU 时才调。
+     */
+    private int fineSampleDriverIntervalMs = 1;
+
+    /**
+     * 每条 lane 每轮发放的原始操作数。默认 256。
+     *
+     * <p><b>256 是硬上限，不是建议值</b>：`CpuTerrainOracle.advance` 与 `WallFinePlanner.advance`
+     * 都强制 primitiveLimit ∈ [1,256]，超过直接抛异常，所以访问器会把配置钳到该区间内。
+     */
+    private int laneBatchOperations = 256;
+
+    /**
+     * 每条 lane 缓存多少个「已烘焙的区块」（按 chunk 构造原点区分）。默认 16。
+     *
+     * <p>横断面一次扫掠约命中 13 个 cell（cell 宽 4 时），所以低于 13 会明显开始抖动；
+     * 调大能提高命中率但按倍数占用堆内存。
+     */
+    private int chunkCacheLimit = 16;
+
     public long wallLengthBlocks() { return wallLengthBlocks; }
+
+    /** Driver interval in ms, floored at 1 so a config typo cannot stop the stage from progressing. */
+    public int fineSampleDriverIntervalMs() { return Math.max(1, fineSampleDriverIntervalMs); }
+
+    /** Lane grant, clamped to the 1..256 window both advance contracts enforce. */
+    public int laneBatchOperations() { return Math.max(1, Math.min(256, laneBatchOperations)); }
+
+    /** Baked-chunk cache size per lane, clamped to a sane 4..64 so it cannot be configured to zero. */
+    public int chunkCacheLimit() { return Math.max(4, Math.min(64, chunkCacheLimit)); }
 
     public int ridgeWeight() { return ridgeWeight; }
     public int ridgeProminenceWeight() { return ridgeProminenceWeight; }

@@ -107,7 +107,10 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     private final java.util.LinkedHashMap<Long, NoiseChunk> chunkCache =
             new java.util.LinkedHashMap<>(32, 0.75F, true) {
                 @Override protected boolean removeEldestEntry(java.util.Map.Entry<Long, NoiseChunk> eldest) {
-                    if (size() <= CHUNK_CACHE_LIMIT) return false;
+                    // Configured per lane (clamped to 4..64); see GreatWallConfig.chunkCacheLimit.
+                    if (size() <= local.plaincraft.greatwall.config.GreatWallConfig.get().chunkCacheLimit()) {
+                        return false;
+                    }
                     // Evicted chunks are the only ones that still need their scratch arrays released.
                     eldest.getValue().stopInterpolation();
                     return true;
