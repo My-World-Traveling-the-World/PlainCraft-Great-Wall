@@ -381,6 +381,26 @@ public final class GreatWallLoadingProgressRenderer {
         return y + LINE;
     }
 
+    /**
+     * The active stage's own progress line. The fine sample additionally reports its rate and a
+     * remaining-time estimate, because "how many columns are left" says nothing about whether the
+     * stage is moving at all - which is exactly how a real session sat on 0/48 for 27 minutes.
+     */
+    private static Component progressLine(PrewarmProgress.Stage stage, String key,
+                                          PrewarmProgress.Snapshot snapshot) {
+        int done = snapshot.subDone();
+        int total = snapshot.subTotal();
+        if (total <= 0) return Component.translatable(key + "_unknown");
+        long elapsedMs = snapshot.elapsedMillis();
+        if (stage != PrewarmProgress.Stage.FINE_SAMPLE || done <= 0 || total <= done || elapsedMs < 1000L) {
+            return Component.translatable(key, done, total);
+        }
+        long rate = Math.max(1L, done * 1000L / elapsedMs);
+        long etaMs = (total - done) * 1000L / rate;
+        return Component.translatable("plaincraft.great_wall.loading_progress.detail.fine_sample_rate",
+                done, total, rate, formatDuration(etaMs));
+    }
+
     private static Component detailLine(PrewarmProgress.Stage stage, PrewarmProgress.Snapshot snapshot) {
         String key = "plaincraft.great_wall.loading_progress.detail."
                 + stage.name().toLowerCase(java.util.Locale.ROOT);
@@ -396,9 +416,7 @@ public final class GreatWallLoadingProgressRenderer {
                     ? Component.translatable(stage.ordinal() < snapshot.stage().ordinal()
                             ? "plaincraft.great_wall.loading_progress.detail_done"
                             : "plaincraft.great_wall.loading_progress.detail_pending")
-                    : (snapshot.subTotal() > 0
-                            ? Component.translatable(key, snapshot.subDone(), snapshot.subTotal())
-                            : Component.translatable(key + "_unknown"));
+                    : progressLine(stage, key, snapshot);
             case PREWARM -> snapshot.total() > 0
                     ? Component.translatable(key, snapshot.completed(), snapshot.total())
                     : Component.translatable(key + "_unknown");
