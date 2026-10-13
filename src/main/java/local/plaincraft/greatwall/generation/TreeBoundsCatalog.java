@@ -47,6 +47,12 @@ public final class TreeBoundsCatalog {
                 java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
         var pending = new java.util.ArrayDeque<ConfiguredFeature<?, ?>>();
         for (var feature : configured) pending.add(feature);
+        // Log volume, not policy. A real pack reaches the unencodable-tree path about 164 times
+        // across ~30 types and every WARN carries a stack trace, which buried the rest of the freeze
+        // log (164 warnings + 77 stacks in one measured session). The first occurrence of each type
+        // keeps its WARN and stack; repeats drop to DEBUG. The skip itself is unchanged and remains
+        // the authorised behaviour documented at the catch below.
+        var warnedSkips = new java.util.HashSet<String>();
         while (!pending.isEmpty()) {
             var feature = pending.poll();
             if (!seen.add(feature)) continue;  // already visited this exact instance
@@ -72,8 +78,14 @@ public final class TreeBoundsCatalog {
                     // 恢复条件：仅在用户重新授权后，且需同时给出这些 mod 的完整冠幅与
                     //   post-generation writer 认证证据。
                     // ═══════════════════════════════════════════════════════════════════
-                    GreatWallMod.LOGGER.warn("Skipping unencodable tree feature during freeze: {}",
-                            feature.feature().toString(), failure);
+                    String skipped = feature.feature().toString();
+                    if (warnedSkips.add(skipped)) {
+                        GreatWallMod.LOGGER.warn("Skipping unencodable tree feature during freeze: {}",
+                                skipped, failure);
+                    } else {
+                        GreatWallMod.LOGGER.debug("Skipping unencodable tree feature during freeze: {}",
+                                skipped, failure);
+                    }
                     continue;
                 }
                 if (radius > 2048) throw unsupported("tree radius exceeds 2048: " + radius);
