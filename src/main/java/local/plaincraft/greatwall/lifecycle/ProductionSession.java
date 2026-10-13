@@ -638,13 +638,15 @@ final class ProductionSession implements AutoCloseable {
             return;
         }
         var window = new PlanWindow(List.copyOf(plans));
-        // Compile progress ticks per compiled owner. The total is a moving estimate (owners are
-        // discovered per cell), so the card shows a live done count and the total settles to the
-        // real number once the compile finishes.
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 1);
+        // Compile progress ticks per compiled owner. How many owners the window holds is only known
+        // once it has been walked - they are discovered cell by cell - so the total is published as
+        // indeterminate (0, the documented "still running" value) rather than as the done count.
+        // Reporting total = done made every tick read as 100 % complete, which is the one thing a
+        // progress line must not say while it is still working.
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
         var compiled = compiler.compileWindow(window, snapshot.recipe().recipeHash(),
                 snapshot.recipe().dimension(),
-                done -> local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(done, Math.max(done, 1)));
+                done -> local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(done, 0));
         for (var entry : compiled.entrySet()) {
             local.plaincraft.greatwall.generation.WallWorldgenPlanCache.put(level, entry.getValue());
             // Publish the planning vegetation corridor + biome mask for this chunk, replacing the

@@ -1,10 +1,13 @@
 package local.plaincraft.greatwall.planning;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalInt;
 import local.plaincraft.greatwall.model.WallTypes.ColumnSample;
+import local.plaincraft.greatwall.model.WallTypes.Quality;
 
 /**
  * Planning-time height lookup over the wall's centre line.
@@ -16,6 +19,42 @@ import local.plaincraft.greatwall.model.WallTypes.ColumnSample;
  * 81-chunk FEATURES snapshot.
  */
 public final class FineHeightIndex {
+    /**
+     * Order-independent conflict resolution for the same {@code (x, z)} reached by two plans.
+     *
+     * <p>Adjacent route points sit one block apart, so their cross-sections overlap by up to
+     * {@code 2 * LATERAL} columns: a slice boundary, or - with the two-tier sampler - a probed column
+     * in one point against a conservatively filled one in its neighbour, can publish two different
+     * values for one {@code (x, z)}. Picking whichever arrived last made the published index, and
+     * therefore the compiled {@code ChunkWritePlan}, depend on the order the slices finished in; that
+     * is a thread-completion order, which the determinism red line forbids. This order is a pure
+     * function of the two columns:
+     *
+     * <ol>
+     *   <li>a sample that reports water over one that does not, then higher {@code waterTopY} and
+     *       {@code bedTopY}: {@code FineSamplePlan.fill} never synthesises water (it emits a dry
+     *       column with the maximum of its two probed neighbours), so a water report can only come
+     *       from a real probe - it is the strictly better-informed of the two, and taking it also
+     *       keeps a water column from being buried by a filled neighbour;</li>
+     *   <li>higher {@code groundTopY}: for two dry samples the fill rule already takes the maximum of
+     *       its neighbours, so preferring the higher surface can only add fill, never shave terrain;</li>
+     *   <li>better {@code quality}: {@code REFERENCE} before {@code COARSE} before {@code CENSORED};</li>
+     *   <li>smaller {@code |lateral|}, then smaller {@code lateral}: the centre line is the
+     *       authoritative cross-section and {@code WallFoundationPlanner} reads {@code lateral};</li>
+     *   <li>{@code biomeKey} and finally the censored flag, which makes the order total.</li>
+     * </ol>
+     */
+    private static final Comparator<WallFinePlanner.FineColumn> CONFLICT_ORDER =
+            Comparator.comparing((WallFinePlanner.FineColumn column) -> !column.sample().waterTopY().isPresent())
+                    .thenComparingInt(column -> heightKey(column.sample().waterTopY()))
+                    .thenComparingInt(column -> heightKey(column.sample().bedTopY()))
+                    .thenComparingInt(column -> -column.sample().groundTopY())
+                    .thenComparingInt(column -> qualityRank(column.sample().quality()))
+                    .thenComparingInt(column -> Math.abs(column.lateral()))
+                    .thenComparingInt(WallFinePlanner.FineColumn::lateral)
+                    .thenComparing(column -> column.sample().biomeKey())
+                    .thenComparing(column -> column.sample().upperCensored());
+
     private final Map<Long, WallFinePlanner.FineColumn> byXZ;
 
     private FineHeightIndex(Map<Long, WallFinePlanner.FineColumn> byXZ) {
@@ -26,9 +65,36 @@ public final class FineHeightIndex {
         Objects.requireNonNull(columns, "columns");
         var map = new HashMap<Long, WallFinePlanner.FineColumn>(columns.size() * 2);
         for (var column : columns) {
-            map.put(key(column.x(), column.z()), column);
+            map.merge(key(column.x(), column.z()), column, FineHeightIndex::prefer);
         }
-        return new FineHeightIndex(Map.copyOf(map));
+        // A read-only view, deliberately not Map.copyOf: the immutable-map implementation sizes its
+        // table to the entry count and probes with the raw hashCode(), and key() packs two block
+        // coordinates into one long, so adjacent columns collide. Measured on a 192 877-column index:
+        // 53 s inside ImmutableCollections$MapN.<init> against ~0.1 s here - single-threaded, on the
+        // thread that completes the fine-sample stage and holds its aggregate future.
+        // The map is built above, never aliased, and the view keeps the read-only contract.
+        return new FineHeightIndex(java.util.Collections.unmodifiableMap(map));
+    }
+
+    /** {@return whichever of the two columns for one {@code (x, z)} {@link #CONFLICT_ORDER} ranks first} */
+    private static WallFinePlanner.FineColumn prefer(WallFinePlanner.FineColumn a, WallFinePlanner.FineColumn b) {
+        return CONFLICT_ORDER.compare(a, b) <= 0 ? a : b;
+    }
+
+    /**
+     * Negated so that "higher wins" survives an ascending chain. Block levels live in the dimension's
+     * build range, so negation cannot overflow, and an absent height sorts last.
+     */
+    private static int heightKey(OptionalInt height) {
+        return height.isPresent() ? -height.getAsInt() : Integer.MAX_VALUE;
+    }
+
+    private static int qualityRank(Quality quality) {
+        return switch (quality) {
+            case REFERENCE -> 0;
+            case COARSE -> 1;
+            case CENSORED -> 2;
+        };
     }
 
     /** The sampled column at {@code (x, z)}, or null when the centre line does not pass through it. */

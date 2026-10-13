@@ -265,62 +265,87 @@ public final class PlannerScheduler implements AutoCloseable {
         // Two counters, not one. A single counter seeded with the segment count completed the
         // index after the first few slices (it was decremented once per slice, not per segment),
         // so the compile received roughly a twelfth of the sampled columns.
-        var routesPending = new java.util.concurrent.atomic.AtomicInteger(totalSegments);
+        // Seeded at zero and incremented per *enqueued* segment, never with the configured target: the
+        // loop below stops at the first segment the frozen envelope cannot hold, and a counter seeded
+        // with the target would then never reach zero - the aggregate would never complete, the driver
+        // below would never be stopped and the startup would sit in FINE_SAMPLE forever.
+        var routesPending = new java.util.concurrent.atomic.AtomicInteger();
         var slicesPending = new java.util.concurrent.atomic.AtomicInteger();
+        // While the enqueue loop below is still running, the counters cannot speak for the segments
+        // that have not been handed to a lane yet: the first route's callback may resolve (and
+        // decrement routesPending to zero) before the loop reaches the second segment, and the index
+        // would then be published missing the columns of every later segment.
+        var enqueueing = new java.util.concurrent.atomic.AtomicBoolean(true);
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 1);
         var completion = new Runnable() {
             @Override public void run() {
+                if (enqueueing.get()) return;
                 if (routesPending.get() > 0 || slicesPending.get() > 0) return;
                 int done = sampledColumns.get();
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(done, Math.max(1, done));
                 synchronized (all) { aggregate.complete(FineHeightIndex.of(all)); }
             }
         };
-        for (long i = 0; i < target && safeSegment(i); i++) {
-            var lease = requireRoute(i, priority);
-            leases.add(lease);
-            long segment = i;
-            lease.future().whenCompleteAsync((route, error) -> {
-                try {
-                    if (error != null) { aggregate.completeExceptionally(error); return; }
-                    if (closed()) { aggregate.completeExceptionally(closedFailure()); return; }
-                    int points = route.points().size();
-                    int perSlice = Math.max(1, (points + slices - 1) / slices);
-                    for (int s = 0; s < slices; s++) {
-                        int from = s * perSlice;
-                        if (from >= points) break;
-                        int to = Math.min(points, from + perSlice);
-                        slicesPending.incrementAndGet();
-                        // Known before the slice is sampled: its point range, times the cross-section
-                        // width. This is what makes the meter a column count instead of a slice count.
-                        expectedColumns.addAndGet(Math.max(1, to - from) * (2 * WallFinePlanner.LATERAL + 1));
-                        var job = new FineSampleJob(route, from, to, priority,
-                                new CompletableFuture<List<WallFinePlanner.FineColumn>>());
-                        enqueue(job);
-                        job.result.whenCompleteAsync((columns, sampleError) -> {
-                            try {
-                                if (sampleError != null) { aggregate.completeExceptionally(sampleError); return; }
-                                synchronized (all) {
-                                    all.addAll(columns);
-                                    sampledColumns.addAndGet(columns.size());
-                                }
-                                int done = sampledColumns.get();
-                                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                                        done, Math.max(done, expectedColumns.get()));
-                                slicesPending.decrementAndGet();
-                                completion.run();
-                            } catch (Throwable t) { aggregate.completeExceptionally(t); }
-                        }, pump);
+        try {
+            for (long i = 0; i < target && safeSegment(i); i++) {
+                var lease = requireRoute(i, priority);
+                leases.add(lease);
+                // Counted before the callback is registered, because only the segments this loop
+                // actually hands to a lane can ever report back.
+                routesPending.incrementAndGet();
+                long segment = i;
+                lease.future().whenCompleteAsync((route, error) -> {
+                    try {
+                        if (error != null) { aggregate.completeExceptionally(error); return; }
+                        if (closed()) { aggregate.completeExceptionally(closedFailure()); return; }
+                        int points = route.points().size();
+                        int perSlice = Math.max(1, (points + slices - 1) / slices);
+                        for (int s = 0; s < slices; s++) {
+                            int from = s * perSlice;
+                            if (from >= points) break;
+                            int to = Math.min(points, from + perSlice);
+                            slicesPending.incrementAndGet();
+                            // Known before the slice is sampled: its point range, times the cross-section
+                            // width. This is what makes the meter a column count instead of a slice count.
+                            expectedColumns.addAndGet(Math.max(1, to - from) * (2 * WallFinePlanner.LATERAL + 1));
+                            var job = new FineSampleJob(route, from, to, priority,
+                                    new CompletableFuture<List<WallFinePlanner.FineColumn>>());
+                            enqueue(job);
+                            job.result.whenCompleteAsync((columns, sampleError) -> {
+                                try {
+                                    if (sampleError != null) { aggregate.completeExceptionally(sampleError); return; }
+                                    synchronized (all) {
+                                        all.addAll(columns);
+                                        sampledColumns.addAndGet(columns.size());
+                                    }
+                                    int done = sampledColumns.get();
+                                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                                            done, Math.max(done, expectedColumns.get()));
+                                    slicesPending.decrementAndGet();
+                                    completion.run();
+                                } catch (Throwable t) { aggregate.completeExceptionally(t); }
+                            }, pump);
+                        }
+                    } catch (Throwable t) {
+                        aggregate.completeExceptionally(t);
+                    } finally {
+                        // The index may only complete once every route has resolved AND every slice it
+                        // spawned has finished; either counter alone can hit zero too early.
+                        if (routesPending.decrementAndGet() == 0) completion.run();
                     }
-                } catch (Throwable t) {
-                    aggregate.completeExceptionally(t);
-                } finally {
-                    // The index may only complete once every route has resolved AND every slice it
-                    // spawned has finished; either counter alone can hit zero too early.
-                    if (routesPending.decrementAndGet() == 0) completion.run();
-                }
-            }, pump);
+                }, pump);
+            }
+        } catch (Throwable t) {
+            // Returning without a completed aggregate here would leave the driver from above ticking
+            // against a queue that no longer receives fine-sample work: the same permanent FINE_SAMPLE
+            // hang, reached by a different route.
+            aggregate.completeExceptionally(t);
+        } finally {
+            enqueueing.set(false);
         }
+        // Publishes the index when the loop enqueued nothing at all (no safe segment, an empty
+        // window); otherwise the callbacks above decide, and this call returns early.
+        completion.run();
         aggregate.whenComplete((v, e) -> {
             // Stop the driver first: the stage is over on both paths, and a timer that keeps granting
             // credits would spin against a queue that no longer holds fine-sample work.

@@ -387,4 +387,41 @@ class PlannerSchedulerTest {
             } finally { leases.forEach(PlanLease::close); }
         }
     }
+
+    @Test void fineSampleIndexCompletesWhenTheEnvelopeHoldsFewerSegmentsThanTheTarget() throws Exception {
+        // The frozen envelope of this fixture holds exactly two segments (the second ends at the world
+        // limit), while the prewarm target is larger. The routes to sample must therefore be counted as
+        // they are enqueued: seeding the counter with the configured target left it stuck above zero,
+        // so the aggregate never completed, the fine-sample driver never stopped and the session sat in
+        // FINE_SAMPLE forever - the startup hang this test pins down.
+        long configured = local.plaincraft.greatwall.config.GreatWallConfig.get().prewarmSegmentsTarget();
+        long effective = configured > 0L ? configured : 4; // PlannerScheduler.STARTUP_PREWARM_SEGMENTS
+        assertTrue(effective > 2, "precondition: prewarm target must exceed the two safe segments");
+        var recipe = PlanningFixtures.recipe(0, 1 << 30, 0, 7000);
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> AnalyticTerrainOracle.ridge(true), new SegmentCacheStore(directory.resolve("cache"), recipe), io);
+             var timer = ticks(scheduler)) {
+            try (var first = scheduler.requireRoute(0, Priority.PLAYER);
+                 var second = scheduler.requireRoute(1, Priority.PLAYER)) {
+                var firstRoute = first.future().get(30, TimeUnit.SECONDS);
+                var secondRoute = second.future().get(30, TimeUnit.SECONDS);
+                var future = scheduler.requireFineSamples(Priority.PLAYER);
+                // The index is published from the completion callback, so a build defect there shows up
+                // as a timeout rather than a wrong answer. The budget is generous on purpose: the walk
+                // itself is seconds, and an unbounded wait would turn a hang into a stuck test run.
+                var index = future.get(120, TimeUnit.SECONDS);
+                assertTrue(index.size() > 0, "the index must carry the sampled columns");
+                // Both enqueued segments have to be represented: the index may only be published once
+                // the enqueue loop has finished, or the last segments would be dropped silently.
+                var head = firstRoute.points().getFirst();
+                var tail = secondRoute.points().getLast();
+                assertTrue(index.contains(local.plaincraft.greatwall.geometry.FixedMath.floorBlock(head.xQ8()),
+                        local.plaincraft.greatwall.geometry.FixedMath.floorBlock(head.zQ8())),
+                        "the first segment's opening column must be sampled");
+                assertTrue(index.contains(local.plaincraft.greatwall.geometry.FixedMath.floorBlock(tail.xQ8()),
+                        local.plaincraft.greatwall.geometry.FixedMath.floorBlock(tail.zQ8())),
+                        "the last safe segment's final column must be sampled");
+            }
+        }
+    }
 }

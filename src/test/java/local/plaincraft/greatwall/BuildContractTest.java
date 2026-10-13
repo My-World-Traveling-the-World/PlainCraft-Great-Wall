@@ -222,6 +222,13 @@ class BuildContractTest {
      * typo is enough, and one was made here: the button asked for
      * {@code config_button} while the language files carried {@code configButton}.
      *
+     * <h2>Keys the code builds at runtime</h2>
+     * Not every key appears whole in the source. The loading card resolves its stage and detail
+     * lines by concatenation ({@code …loading_progress.stage." + id}, and the same family with
+     * {@code "_unknown"} appended), so only the family stem is a literal. A stem cannot be required
+     * to exist as a key; instead every language must carry the <em>same</em> set of members for it,
+     * which catches a member added to one language only - the way those keys are actually lost.
+     *
      * <p>Only keys this mod owns are checked, so vanilla and other mods' keys
      * referenced in passing are not reported.
      */
@@ -231,6 +238,7 @@ class BuildContractTest {
                 java.nio.file.Path.of("src/main/java"),
                 java.nio.file.Path.of("src/client/java"));
         var referenced = new java.util.TreeSet<String>();
+        var stems = new java.util.TreeSet<String>();
         var pattern = java.util.regex.Pattern.compile("translatable\\(\\\"([^\\\"]+)\\\"\\)");
         for (var root : sourceRoots) {
             if (!java.nio.file.Files.isDirectory(root)) continue;
@@ -239,40 +247,78 @@ class BuildContractTest {
                     var matcher = pattern.matcher(java.nio.file.Files.readString(file, StandardCharsets.UTF_8));
                     while (matcher.find()) {
                         String key = matcher.group(1);
-                        if (key.startsWith("screen.plaincraft_great_wall")
-                                || key.startsWith("option.plaincraft_great_wall")
-                                || key.startsWith("text.plaincraft_great_wall")) {
+                        if (!owned(key)) continue;
+                        if (key.endsWith(".")) {
+                            stems.add(key);
+                        } else {
                             referenced.add(key);
                         }
                     }
                 }
             }
         }
-        assertFalse(referenced.isEmpty(), "no owned translation keys were found; the source layout moved");
+        assertFalse(referenced.isEmpty() && stems.isEmpty(),
+                "no owned translation keys were found; the source layout moved");
 
         var languageDirectory = java.nio.file.Path.of(
                 "src/client/resources/assets/plaincraft_great_wall/lang");
         assertTrue(java.nio.file.Files.isDirectory(languageDirectory),
                 "the language directory must exist; run this from the project root");
 
-        var languages = new java.util.TreeSet<String>();
+        var shipped = new java.util.TreeMap<String, java.util.Set<String>>();
         try (var files = java.nio.file.Files.list(languageDirectory)) {
-            files.filter(path -> path.toString().endsWith(".json"))
-                    .forEach(path -> languages.add(path.getFileName().toString()));
+            for (var path : files.filter(path -> path.toString().endsWith(".json")).toList()) {
+                var json = JsonParser.parseString(java.nio.file.Files.readString(path, StandardCharsets.UTF_8))
+                        .getAsJsonObject();
+                shipped.put(path.getFileName().toString(), json.keySet());
+            }
         }
-        assertFalse(languages.isEmpty(), "no language files were found");
+        assertFalse(shipped.isEmpty(), "no language files were found");
 
-        for (String language : languages) {
-            var json = JsonParser.parseString(java.nio.file.Files.readString(
-                    languageDirectory.resolve(language), StandardCharsets.UTF_8)).getAsJsonObject();
+        for (var language : shipped.entrySet()) {
             var missing = new java.util.TreeSet<String>();
             for (String key : referenced) {
-                if (!json.has(key)) missing.add(key);
+                if (!language.getValue().contains(key)) missing.add(key);
             }
             assertTrue(missing.isEmpty(),
-                    language + " is missing keys the code asks for, which would render as the raw key on "
+                    language.getKey() + " is missing keys the code asks for, which would render as the raw key on "
                             + "screen with nothing logged: " + missing);
         }
+
+        for (String stem : stems) {
+            var expected = family(shipped.values().iterator().next(), stem);
+            assertFalse(expected.isEmpty(),
+                    "no shipped key belongs to " + stem + ", the family the code builds its keys from");
+            for (var language : shipped.entrySet()) {
+                assertEquals(expected, family(language.getValue(), stem),
+                        language.getKey() + " carries a different set of keys for the family " + stem);
+            }
+        }
+    }
+
+    /** {@return the shipped keys belonging to a family stem, such as {@code …loading_progress.stage.}} */
+    private static java.util.TreeSet<String> family(java.util.Set<String> keys, String stem) {
+        var members = new java.util.TreeSet<String>();
+        for (String key : keys) {
+            if (key.startsWith(stem)) members.add(key);
+        }
+        return members;
+    }
+
+    /**
+     * Whether a key belongs to this mod.
+     *
+     * <p>The five prefixes are the ones the shipped language files actually use. The earlier list
+     * stopped at {@code screen}/{@code option}/{@code text} and so quietly skipped the 47
+     * {@code plaincraft.great_wall.*} loading-card keys and the 42 {@code config.*} ones: the guard
+     * passed while covering a tenth of the surface it claimed to check.
+     */
+    private static boolean owned(String key) {
+        return key.startsWith("plaincraft.great_wall.")
+                || key.startsWith("config.plaincraft_great_wall")
+                || key.startsWith("screen.plaincraft_great_wall")
+                || key.startsWith("option.plaincraft_great_wall")
+                || key.startsWith("text.plaincraft_great_wall");
     }
 
     private static JsonObject resource(String name) throws IOException {

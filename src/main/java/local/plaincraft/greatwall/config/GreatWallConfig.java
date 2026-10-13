@@ -230,6 +230,13 @@ public final class GreatWallConfig {
         copy.ridgeAsymmetryWeight = ridgeAsymmetryWeight;
         copy.ridgeAccumulatedSlopeWeight = ridgeAccumulatedSlopeWeight;
         copy.obstacleMarginBlocks = obstacleMarginBlocks;
+        copy.fineSampleDriverIntervalMs = fineSampleDriverIntervalMs;
+        copy.laneBatchOperations = laneBatchOperations;
+        copy.chunkCacheLimit = chunkCacheLimit;
+        copy.fineStep = fineStep;
+        copy.steepThreshold = steepThreshold;
+        copy.refineWater = refineWater;
+        copy.coreHalfWidth = coreHalfWidth;
         return copy;
     }
 
@@ -249,6 +256,15 @@ public final class GreatWallConfig {
         ridgeAsymmetryWeight = other.ridgeAsymmetryWeight;
         ridgeAccumulatedSlopeWeight = other.ridgeAccumulatedSlopeWeight;
         obstacleMarginBlocks = other.obstacleMarginBlocks;
+        // Raw assignment on purpose, like the ridge weights above: the accessors clamp on read, so the
+        // value a screen staged and applied is what a reload reports.
+        fineSampleDriverIntervalMs = other.fineSampleDriverIntervalMs;
+        laneBatchOperations = other.laneBatchOperations;
+        chunkCacheLimit = other.chunkCacheLimit;
+        fineStep = other.fineStep;
+        steepThreshold = other.steepThreshold;
+        refineWater = other.refineWater;
+        coreHalfWidth = other.coreHalfWidth;
     }
 
     public static GreatWallConfig get() {
@@ -304,6 +320,15 @@ public final class GreatWallConfig {
             readInt(json, "ridgeAsymmetryWeight", v -> config.ridgeAsymmetryWeight = v);
             readInt(json, "ridgeAccumulatedSlopeWeight", v -> config.ridgeAccumulatedSlopeWeight = v);
             readInt(json, "obstacleMarginBlocks", v -> config.obstacleMarginBlocks = v);
+            // 0.1.0 性能调度与细采样精度旋钮。它们不参与配方语义哈希，但**必须**持久化：写进文件前
+            // 这些旋钮只存在于内存里，Mod Menu 里调过 fineStep 之类，重启后静默回到默认值。
+            readInt(json, "fineSampleDriverIntervalMs", v -> config.fineSampleDriverIntervalMs = v);
+            readInt(json, "laneBatchOperations", v -> config.laneBatchOperations = v);
+            readInt(json, "chunkCacheLimit", v -> config.chunkCacheLimit = v);
+            readInt(json, "fineStep", v -> config.fineStep = v);
+            readInt(json, "steepThreshold", v -> config.steepThreshold = v);
+            readBoolean(json, "refineWater", v -> config.refineWater = v);
+            readInt(json, "coreHalfWidth", v -> config.coreHalfWidth = v);
             // Older files also carry prewarmSegments and prewarmAllWhenBounded. They are
             // ignored rather than read: the prewarm count is derived from the length now,
             // and honouring a stored value would reintroduce the mismatch the derivation
@@ -317,6 +342,13 @@ public final class GreatWallConfig {
     private static void readInt(JsonObject json, String key, java.util.function.IntConsumer setter) {
         if (json.has(key)) {
             try { setter.accept(json.get(key).getAsInt()); }
+            catch (RuntimeException malformed) { /* keep default */ }
+        }
+    }
+
+    private static void readBoolean(JsonObject json, String key, java.util.function.Consumer<Boolean> setter) {
+        if (json.has(key)) {
+            try { setter.accept(json.get(key).getAsBoolean()); }
             catch (RuntimeException malformed) { /* keep default */ }
         }
     }
@@ -341,6 +373,16 @@ public final class GreatWallConfig {
         json.addProperty("ridgeAsymmetryWeight", config.ridgeAsymmetryWeight);
         json.addProperty("ridgeAccumulatedSlopeWeight", config.ridgeAccumulatedSlopeWeight);
         json.addProperty("obstacleMarginBlocks", config.obstacleMarginBlocks);
+        // Raw values, not the clamped accessors: the file is the record of what was configured, and
+        // clamping on write would silently rewrite a hand-edited out-of-range value instead of letting
+        // the accessor's window decide at read time.
+        json.addProperty("fineSampleDriverIntervalMs", config.fineSampleDriverIntervalMs);
+        json.addProperty("laneBatchOperations", config.laneBatchOperations);
+        json.addProperty("chunkCacheLimit", config.chunkCacheLimit);
+        json.addProperty("fineStep", config.fineStep);
+        json.addProperty("steepThreshold", config.steepThreshold);
+        json.addProperty("refineWater", config.refineWater);
+        json.addProperty("coreHalfWidth", config.coreHalfWidth);
         Path path = file();
         try {
             Files.createDirectories(path.getParent());

@@ -72,7 +72,11 @@ public final class CorridorStructureScanner implements AutoCloseable {
             var boxes = CorridorStructureScan.resolveBoxes(level, candidates,
                     done -> local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
                             done, candidates.size()));
-            local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(boxes.size(), boxes.size());
+            // The finished count stays in the candidate口径 even though the result is shorter: the live
+            // ticks above count candidates, so reporting boxes here would walk the displayed number
+            // backwards (13085 candidates resolving to 4262 boxes reads as a stalled meter).
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                    candidates.size(), candidates.size());
             GreatWallMod.LOGGER.info(
                     "[GreatWall:corridor] structure scan corridor=[{},{}]..[{},{}] candidates={} boxes={} elapsedMs={}",
                     minChunkX, minChunkZ, maxChunkX, maxChunkZ, candidates.size(), boxes.size(),

@@ -96,7 +96,14 @@ public final class CoarseBandSampler {
         var cursor = oracle.begin(x, z, SampleKind.COARSE);
         int steps = 0;
         while (!cursor.done()) {
-            if (++steps > MAX_STEPS_PER_COLUMN) return null;
+            if (++steps > MAX_STEPS_PER_COLUMN) {
+                // Abandoning is mandatory, not tidiness: an oracle holds one active cursor per lane and
+                // refuses the next begin() while it is unfinished, so bailing out without this would
+                // poison that lane for the rest of the pass - one hard column would take every later
+                // column with it. finish() cannot be used here because it rejects an unfinished cursor.
+                oracle.abandon(cursor);
+                return null;
+            }
             oracle.advance(cursor, STEP_GRANT);
         }
         ColumnSample sample = oracle.finish(cursor);

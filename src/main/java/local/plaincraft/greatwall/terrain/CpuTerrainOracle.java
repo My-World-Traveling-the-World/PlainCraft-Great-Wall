@@ -84,9 +84,6 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     private Cursor active;
     private boolean closed;
 
-    /** Cells whose baked chunk is kept per lane (a width-4 sweep needs ~13). */
-    private static final int CHUNK_CACHE_LIMIT = 16;
-
     /**
      * Fully baked {@link NoiseChunk}s keyed by their cell origin, reused across columns.
      *
@@ -202,6 +199,18 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         if (c.result == null) throw new IllegalStateException("natural column is unfinished");
         if (active == c) active = null;
         return c.result;
+    }
+
+    /**
+     * Drops an unfinished cursor so the lane can sample its next column.
+     *
+     * <p>{@link #finish} cannot do this - it refuses a column that never resolved - so a caller that
+     * abandons a column (the coarse sampler's step budget) has no other way to clear {@link #active},
+     * and every later {@code begin} on this lane would throw instead of sampling.
+     */
+    @Override public void abandon(ColumnCursor cursor) {
+        var c = own(cursor);
+        if (active == c) active = null;
     }
 
     /** Up to three additional native states below the top solid; missing evidence remains censored. */
