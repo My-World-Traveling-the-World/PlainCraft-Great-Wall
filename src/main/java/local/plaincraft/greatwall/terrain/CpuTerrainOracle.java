@@ -278,17 +278,38 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
 
     private void coarse(Cursor c) {
         long start = System.nanoTime();
-        double density = randomState.router().initialDensityWithoutJaggedness().compute(
-                new DensityFunction.SinglePointContext(Math.floorDiv(c.x, 4) * 4, c.y, Math.floorDiv(c.z, 4) * 4));
+        var density = randomState.router().initialDensityWithoutJaggedness();
+        int x4 = Math.floorDiv(c.x, 4) * 4;
+        int z4 = Math.floorDiv(c.z, 4) * 4;
+        int cellHeight = noise.getCellHeight();
+        int top = bounds.maxYExclusive() - 1;
+        // Binary-search the surface cell instead of walking one cell per advance step from
+        // the top. The smooth density is monotonic in Y for a fixed column, so this is
+        // bit-identical to the old top-down walk while replacing ~cellCountY evaluations
+        // with ~log2(cellCountY). This is the coarse probe's share of the root search.
+        int steps = (top - bounds.minY()) / cellHeight;
+        int lo = 0;
+        int hi = steps;
+        while (lo < hi) {
+            int mid = (lo + hi) >>> 1;
+            int y = top - mid * cellHeight;
+            if (density.compute(new DensityFunction.SinglePointContext(x4, y, z4)) > 0.390625) {
+                hi = mid;
+            } else {
+                lo = mid + 1;
+            }
+        }
+        int y = top - lo * cellHeight;
+        boolean solid = density.compute(new DensityFunction.SinglePointContext(x4, y, z4)) > 0.390625;
         long duration = System.nanoTime() - start;
         maxCoarseNanos = Math.max(maxCoarseNanos, duration); observe(duration);
-        if (density > 0.390625) {
-            c.groundTop = c.y + 1;
-            c.censored = c.y == bounds.maxYExclusive() - 1;
+        if (solid) {
+            c.groundTop = y + 1;
+            c.censored = y == top;
             complete(c, Quality.COARSE);
         } else {
-            c.y -= noise.getCellHeight();
-            if (c.y < bounds.minY()) { c.censored = true; complete(c, Quality.CENSORED); }
+            c.censored = true;
+            complete(c, Quality.CENSORED);
         }
     }
 
