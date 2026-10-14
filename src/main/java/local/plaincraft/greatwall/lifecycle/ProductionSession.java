@@ -48,6 +48,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.storage.LevelResource;
 
 /** Private isolated-fixture integration. There is deliberately no enabled production-world switch. */
@@ -395,6 +396,18 @@ final class ProductionSession implements AutoCloseable {
         int minChunkZ = Math.floorDiv(Math.min(originZ, endZ) - corridorHalfWidth, 16);
         int maxChunkZ = Math.floorDiv(Math.max(originZ, endZ) + corridorHalfWidth, 16);
 
+        // A structure scan's result is a pure function of the recipe (seed + world datapack/mods):
+        // the same recipe always resolves the same footprints. Cache it so a re-open skips the
+        // ~3 minute rescan. The cache is keyed by recipeHash, which already covers the terrain,
+        // palette and template fingerprints; changing any structure datapack changes the hash and
+        // therefore invalidates the cache.
+        final List<Bounds> cached = loadStructureScanCache(root, recipe.recipeHash());
+        if (cached != null) {
+            GreatWallMod.LOGGER.info("[GreatWall:corridor] structure scan cache hit ({} boxes); skipping rescan", cached.size());
+            installStructuresAndSample(planner, cached);
+            return;
+        }
+
         var scanner = new local.plaincraft.greatwall.generation.CorridorStructureScanner();
         this.structureScanner = scanner;
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
@@ -406,15 +419,12 @@ final class ProductionSession implements AutoCloseable {
                 originX, originZ, endX, endZ, corridorHalfWidth);
         scanner.scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor)
                 .whenComplete((boxes, error) -> {
-                    final java.util.List<Bounds> structures;
-                    int margin = local.plaincraft.greatwall.config.GreatWallConfig.parameters().obstacleMarginBlocks();
+                    final List<Bounds> structures;
                     if (error != null) {
                         GreatWallMod.LOGGER.warn("[GreatWall:corridor] structure scan failed; "
                                 + "falling back to no structure avoidance", error);
-                        planner.setObstacles(StructureObstacleIndex.empty(margin));
                         structures = List.of();
                     } else {
-                        planner.setObstacles(StructureObstacleIndex.of(boxes, margin));
                         var bounds = new java.util.ArrayList<Bounds>(boxes.size());
                         for (var owned : boxes) {
                             var b = owned.box();
@@ -423,31 +433,86 @@ final class ProductionSession implements AutoCloseable {
                                     b.maxX() + 1, b.maxY() + 1, b.maxZ() + 1));
                         }
                         structures = List.copyOf(bounds);
+                        saveStructureScanCache(root, recipe.recipeHash(), structures);
                     }
-                    planningStructures = structures;
-                    // The fine cross-section sample and the prewarm both drive off the planner's
-                    // lanes; sample first, publish the samples to the session, then start the bulk
-                    // prewarm. A sample failure leaves the index null and the wall simply does not
-                    // compile/paint (the new single path; no historical fallback).
-                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
-                            local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE);
-                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
-                    planner.requireFineSamples(Priority.PLAYER_PREFETCH)
-                            .whenComplete((fineIndex, sampleError) -> {
-                                if (sampleError != null) {
-                                    GreatWallMod.LOGGER.warn("[GreatWall:corridor] fine sample failed; "
-                                            + "wall will not compile", sampleError);
-                                } else {
-                                    fineHeightIndex = fineIndex;
-                                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                                            fineIndex.size(), fineIndex.size());
-                                }
-                                // The prewarm must start exactly once, after both planning inputs settle.
-                                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
-                                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.PREWARM);
-                                planner.afterRoadBulk();
-                            });
+                    installStructuresAndSample(planner, structures);
                 });
+    }
+
+    /** Installs the resolved structure footprints as the planner's obstacle index, then chains the
+     *  fine cross-section sample into the bulk prewarm. Reached both from a fresh scan and from a
+     *  cache hit, so it is the single place that advances the prewarm past the structure stage. */
+    private void installStructuresAndSample(PlannerScheduler planner, List<Bounds> structures) {
+        int margin = local.plaincraft.greatwall.config.GreatWallConfig.parameters().obstacleMarginBlocks();
+        if (structures.isEmpty()) {
+            planner.setObstacles(StructureObstacleIndex.empty(margin));
+        } else {
+            var boxes = new ArrayList<local.plaincraft.greatwall.generation.CorridorStructureScan.OwnedBox>(structures.size());
+            for (Bounds b : structures) {
+                boxes.add(new local.plaincraft.greatwall.generation.CorridorStructureScan.OwnedBox(
+                        "cached", 0L,
+                        new BoundingBox(b.minX(), b.minY(), b.minZ(),
+                                b.maxXExclusive() - 1, b.maxYExclusive() - 1, b.maxZExclusive() - 1)));
+            }
+            planner.setObstacles(StructureObstacleIndex.of(boxes, margin));
+        }
+        planningStructures = structures;
+        // The fine cross-section sample and the prewarm both drive off the planner's lanes; sample
+        // first, publish the samples to the session, then start the bulk prewarm. A sample failure
+        // leaves the index null and the wall simply does not compile/paint (the new single path).
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE);
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
+        planner.requireFineSamples(Priority.PLAYER_PREFETCH)
+                .whenComplete((fineIndex, sampleError) -> {
+                    if (sampleError != null) {
+                        GreatWallMod.LOGGER.warn("[GreatWall:corridor] fine sample failed; "
+                                + "wall will not compile", sampleError);
+                    } else {
+                        fineHeightIndex = fineIndex;
+                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                                fineIndex.size(), fineIndex.size());
+                    }
+                    // The prewarm must start exactly once, after both planning inputs settle.
+                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
+                            local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.PREWARM);
+                    planner.afterRoadBulk();
+                });
+    }
+
+    private static List<Bounds> loadStructureScanCache(Path root, String recipeHash) {
+        if (recipeHash == null) return null;
+        Path file = root.resolve("cache").resolve("structure-scan-" + recipeHash + ".txt");
+        if (!Files.isRegularFile(file)) return null;
+        try {
+            var out = new ArrayList<Bounds>();
+            for (String line : Files.readAllLines(file)) {
+                String[] p = line.split(",");
+                if (p.length != 6) return null;
+                out.add(new Bounds(Integer.parseInt(p[0]), Integer.parseInt(p[1]), Integer.parseInt(p[2]),
+                        Integer.parseInt(p[3]), Integer.parseInt(p[4]), Integer.parseInt(p[5])));
+            }
+            return out;
+        } catch (IOException | NumberFormatException e) {
+            GreatWallMod.LOGGER.warn("[GreatWall:corridor] structure scan cache unreadable; rescanning", e);
+            return null;
+        }
+    }
+
+    private static void saveStructureScanCache(Path root, String recipeHash, List<Bounds> structures) {
+        if (recipeHash == null) return;
+        try {
+            Path dir = root.resolve("cache");
+            Files.createDirectories(dir);
+            StringBuilder sb = new StringBuilder(structures.size() * 24);
+            for (Bounds b : structures) {
+                sb.append(b.minX()).append(',').append(b.minY()).append(',').append(b.minZ()).append(',')
+                  .append(b.maxXExclusive()).append(',').append(b.maxYExclusive()).append(',').append(b.maxZExclusive()).append('\n');
+            }
+            Files.writeString(dir.resolve("structure-scan-" + recipeHash + ".txt"), sb.toString());
+        } catch (IOException e) {
+            GreatWallMod.LOGGER.warn("[GreatWall:corridor] failed to save structure scan cache", e);
+        }
     }
     void openDimension(ServerLevel level) { levels.put(level.dimension().location().toString(), level); }
     void warming() {
