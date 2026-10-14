@@ -251,6 +251,31 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         chunkCache.clear();
     }
 
+    /**
+     * Highest solid Y for a column per the smooth terrain density (no jaggedness, no
+     * aquifer). The reference walk starts a margin above this and walks down, so a column
+     * no longer traverses the whole air column from the top of a tall dimension - the
+     * single biggest cost of the fine sample. The smooth density is monotonic in Y for a
+     * fixed column, so a binary search converges in {@code O(log height)} steps instead of
+     * the {@code O(height)} block walk it replaces.
+     */
+    private int preliminarySurface(int x, int z) {
+        var density = randomState.router().initialDensityWithoutJaggedness();
+        int x4 = Math.floorDiv(x, 4) * 4;
+        int z4 = Math.floorDiv(z, 4) * 4;
+        int lo = bounds.minY();
+        int hi = bounds.maxYExclusive() - 1;
+        while (lo < hi) {
+            int mid = lo + (hi - lo + 1) / 2;
+            if (density.compute(new DensityFunction.SinglePointContext(x4, mid, z4)) > 0.390625) {
+                lo = mid;
+            } else {
+                hi = mid - 1;
+            }
+        }
+        return lo;
+    }
+
     private void coarse(Cursor c) {
         long start = System.nanoTime();
         double density = randomState.router().initialDensityWithoutJaggedness().compute(
@@ -394,7 +419,19 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         private ColumnSample result;
         /** Guard against a malformed native slice walk that never terminates. */
         private int advanceSteps;
-        private Cursor(int x, int z, SampleKind kind) { this.x = x; this.z = z; this.kind = kind; }
+        private Cursor(int x, int z, SampleKind kind) {
+            this.x = x; this.z = z; this.kind = kind;
+            if (kind == SampleKind.REFERENCE) {
+                // Start just above the smooth terrain surface (plus a water margin covering
+                // the deepest ocean column and the jaggedness band) instead of the dimension
+                // top. The coarse probe keeps its own full top-down walk, so it is untouched.
+                int surface = preliminarySurface(x, z);
+                this.y = Math.min(surface + settings.seaLevel() - bounds.minY() + 32,
+                        bounds.maxYExclusive() - 1);
+                this.cellY = Math.floorDiv(this.y, noise.getCellHeight());
+                this.innerY = Math.floorMod(this.y, noise.getCellHeight());
+            }
+        }
         private CpuTerrainOracle oracle() { return CpuTerrainOracle.this; }
         @Override public boolean done() { checkOpen(); return result != null; }
     }

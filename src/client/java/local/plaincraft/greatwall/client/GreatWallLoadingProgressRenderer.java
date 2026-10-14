@@ -25,8 +25,8 @@ import net.minecraft.network.chat.Component;
 public final class GreatWallLoadingProgressRenderer {
     private static final int PADDING = 10;
     private static final int LINE = 12;
-    private static final int CARD_BACKGROUND = 0xC010131A;
-    private static final int CARD_BORDER = 0x80404B5A;
+    private static final int CARD_BACKGROUND = 0xFF10131A;
+    private static final int CARD_BORDER = 0xFF404B5A;
     private static final int TEXT_PRIMARY = 0xFFFFFFFF;
     private static final int TEXT_SECONDARY = 0xFFB7C0CC;
     private static final int TEXT_MUTED = 0xFF8D97A6;
