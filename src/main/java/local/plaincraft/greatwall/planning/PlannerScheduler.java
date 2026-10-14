@@ -252,7 +252,11 @@ public final class PlannerScheduler implements AutoCloseable {
         // every other lane sat idle. The slices are point ranges of the same route, so each lane's
         // oracle samples exactly the columns it would have sampled serially — the merged index is
         // identical, only computed concurrently.
-        int slices = Math.max(4, Math.min(laneState.size(), 16));
+        //
+        // 4x the lane count so the queue holds fine-grained work units: a 12-lane session measured
+        // 26% idle (9/12 RUNNABLE) because its 12 coarse slices per route (~8k columns each) left
+        // the last lane's tail unabsorbed. Smaller slices let the queue work-steal that tail away.
+        int slices = Math.max(4, Math.min(laneState.size(), 16) * 4);
         // Progress is reported in sampled columns. A slice is roughly eight thousand columns, so a
         // slice-counting meter only moves every few thousand columns and reads as a hang. The
         // denominator starts at 1 and grows as slices are enqueued (their point ranges are known
@@ -505,12 +509,19 @@ public final class PlannerScheduler implements AutoCloseable {
                         // and a timer that keeps granting credits would spin against a queue
                         // that no longer has prewarm work in it.
                         stopPrewarmTimer();
-                        // The bulk prewarm is done, but the wall startup is not: the fine sample
-                        // and the chunk compile still run before the loading card closes and the
-                        // startup peer is released. ProductionSession.publishPlanningWindow owns
-                        // that final finish/signalReady; calling finish here would close the card
-                        // at 100% while the compile is still running and release RoadWeaver too
-                        // early. Do not call PrewarmProgress.finish from this spot.
+                        // The bulk prewarm (segment sampling) is done. Release the startup-peer
+                        // latch NOW: blockAndPumpUntilPrewarmSettled parks the server thread on
+                        // this latch inside managedBlock, and the chunk compile that still follows
+                        // runs from the server tick loop - which cannot fire until that managedBlock
+                        // returns. Signalling only at publishPlanningWindow (the previous shape)
+                        // therefore deadlocked: managedBlock waits for the latch, the latch waits
+                        // for the compile, and the compile waits for a tick that managedBlock is
+                        // blocking. signalReady() releases the latch WITHOUT closing the loading
+                        // card, so the compile runs on the first post-startup ticks while the card
+                        // stays open; publishPlanningWindow later closes it via finish().
+                        // Do NOT call PrewarmProgress.finish here - that would close the card at
+                        // 100% while the compile is still running.
+                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.signalReady();
                         if (error == null) {
                             // Pinned, not closed: the compile reuses these very plans, and closing
                             // them here would let the memory budget evict them long before the

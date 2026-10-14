@@ -260,11 +260,15 @@ public final class PrewarmProgress {
     /**
      * Releases the startup-peer latch without closing the loading card.
      *
-     * <p>The bulk prewarm (segment planning) finishing and the whole wall startup finishing are
-     * not the same instant: the fine sample and the chunk compile still run afterwards. A startup
-     * peer (RoadWeaver) must be released when the wall is truly ready, which is the compile, so
-     * this latch is signalled only from {@code ProductionSession.publishPlanningWindow}. Calling
-     * this from anywhere else would let the peer race ahead while the card is still mid-stage.
+     * <p>The bulk prewarm (segment sampling) finishing and the whole wall startup finishing are
+     * not the same instant: the fine sample and the chunk compile still run afterwards. The latch
+     * is released as soon as the sampling settles - from the prewarm's completion callback in
+     * {@code PlannerScheduler} - because {@code blockAndPumpUntilPrewarmSettled} parks the server
+     * thread on this latch inside {@code managedBlock}, and the compile that still follows runs
+     * from the server tick loop, which cannot fire until that managedBlock returns. Signalling only
+     * at {@code ProductionSession.publishPlanningWindow} therefore deadlocked (latch -> compile ->
+     * tick -> managedBlock). Releasing the peer here does not close the card: {@link #finish(boolean)}
+     * still closes it at publishPlanningWindow once the compile has published.
      */
     public static void signalReady() {
         var latch = settled;

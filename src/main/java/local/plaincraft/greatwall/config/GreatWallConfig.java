@@ -110,12 +110,13 @@ public final class GreatWallConfig {
     private int laneBatchOperations = 256;
 
     /**
-     * 每条 lane 缓存多少个「已烘焙的区块」（按 chunk 构造原点区分）。默认 16。
+     * 每条 lane 缓存多少个「已烘焙的区块」（按 chunk 构造原点区分）。默认 64。
      *
      * <p>横断面一次扫掠约命中 13 个 cell（cell 宽 4 时），所以低于 13 会明显开始抖动；
-     * 调大能提高命中率但按倍数占用堆内存。
+     * 调大能提高命中率但按倍数占用堆内存。真机实测 16→64 把命中率从 72% 提到 ~85%，
+     * 细采样省约 70-100s。
      */
-    private int chunkCacheLimit = 16;
+    private int chunkCacheLimit = 64;
 
     // ── 0.1.0 细采样精度档位（两级采样的"精度"旋钮）──
     /**
@@ -123,15 +124,15 @@ public final class GreatWallConfig {
      *
      * <p>中心带（±{@link #coreHalfWidth}）与两端永远逐格精采。抽稀只作用于侧翼，因为填充规则
      * 看不见比间距更窄的特征：1 格宽的尖峰或水塘夹在两个已采列之间时，高差规则（两边同高）
-     * 与水规则都发现不了。
+     * 与水规则都发现不了。默认 4（真机提速档，把侧翼采样减半；窄于 4 格的水带可能漏检）。
      */
-    private int fineStep = 2;
+    private int fineStep = 4;
     /** 相邻已采列高差达到此值就把该区间整段精采（墙基正是在台阶处换层）。 */
     private int steepThreshold = 3;
     /** 任何已采列报水时是否把整条横断面升级为全分辨率（并传播到下一个路线点）。 */
     private boolean refineWater = true;
-    /** 中心带半宽（格）：此范围内一律逐格精采，抽稀不进入墙主体。 */
-    private int coreHalfWidth = 12;
+    /** 中心带半宽（格）：此范围内一律逐格精采，抽稀不进入墙主体。默认 8（真机提速档）。 */
+    private int coreHalfWidth = 8;
 
     // ── 世界身份：会改变生成结果的参数快照 ─────────────────────────────────────
     /**
