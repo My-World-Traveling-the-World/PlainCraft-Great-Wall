@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "CreateWorldConfigButtonMixin",
-    "GreatWallCreateWorldLayoutMixin"
+    "GreatWallCreateWorldLayoutMixin",
+    "GreatWallLoadingProgressMixin"
   ],
   "injectors": {
     "defaultRequire": 0
