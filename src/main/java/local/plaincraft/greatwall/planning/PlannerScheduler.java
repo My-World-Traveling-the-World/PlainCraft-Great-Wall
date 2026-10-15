@@ -142,6 +142,21 @@ public final class PlannerScheduler implements AutoCloseable {
         this.bulkReadyHook = hook;
     }
 
+    /**
+     * Columns an earlier session already sampled, handed in before {@link #requireFineSamples}.
+     *
+     * <p>The fine sample is the slowest stage of a cold startup and its result is a pure function of
+     * the world, so a session that reuses the previous session's columns skips every terrain walk
+     * the cache answers. The cache is off by default so tests and fixture runs sample everything.</p>
+     */
+    private volatile local.plaincraft.greatwall.terrain.FineSampleCache fineSampleCache =
+            local.plaincraft.greatwall.terrain.FineSampleCache.none();
+
+    /** Installs the fine-sample cache. Must be called before {@link #requireFineSamples}. */
+    public void setFineSampleCache(local.plaincraft.greatwall.terrain.FineSampleCache cache) {
+        this.fineSampleCache = java.util.Objects.requireNonNull(cache, "cache");
+    }
+
     public PlannerScheduler(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory, SegmentCacheStore cache, Executor io) {
         this(recipe, Objects.requireNonNull(oracleFactory), null, cache, io);
     }
@@ -255,6 +270,8 @@ public final class PlannerScheduler implements AutoCloseable {
         if (closed()) return CompletableFuture.failedFuture(closedFailure());
         var aggregate = new CompletableFuture<FineHeightIndex>();
         var all = new ArrayList<WallFinePlanner.FineColumn>();
+        /** The subset of {@code all} this run walked or read from the cache; what gets persisted. */
+        var walked = new ArrayList<WallFinePlanner.FineColumn>();
         var sampledColumns = new java.util.concurrent.atomic.AtomicInteger();
         // Prewarm already plans the opening segments; sample the same window so the two share the
         // lane budget and the fine samples land together with the plans.
@@ -302,6 +319,15 @@ public final class PlannerScheduler implements AutoCloseable {
                 if (routesPending.get() > 0 || slicesPending.get() > 0) return;
                 int done = sampledColumns.get();
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(done, Math.max(1, done));
+                // Recorded here as well as at PREWARM_COMPLETE: the fine sample is the stage whose
+                // cost scales with the cross-section width, and its cache counters are what decide
+                // whether a slow run is the terrain walk or the chunk cache.
+                GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_DONE columns={} expectedColumns={} "
+                                + "chunkCacheHits={} chunkCacheMisses={} lanes={}",
+                        done, expectedColumns.get(),
+                        laneDiagnostic("chunk-cache-hits"), laneDiagnostic("chunk-cache-misses"),
+                        laneState.size());
+                persistFineSamples(walked);
                 synchronized (all) { aggregate.complete(FineHeightIndex.of(all)); }
             }
         };
@@ -332,13 +358,14 @@ public final class PlannerScheduler implements AutoCloseable {
                                     + (to == points ? WallFinePlanner.APRON_BLOCKS : 0);
                             expectedColumns.addAndGet((Math.max(1, to - from) + apron) * (2 * WallFinePlanner.LATERAL + 1));
                             var job = new FineSampleJob(route, from, to, priority,
-                                    new CompletableFuture<List<WallFinePlanner.FineColumn>>());
+                                    new CompletableFuture<List<WallFinePlanner.FineColumn>>(), fineSampleCache);
                             enqueue(job);
                             job.result.whenCompleteAsync((columns, sampleError) -> {
                                 try {
                                     if (sampleError != null) { aggregate.completeExceptionally(sampleError); return; }
                                     synchronized (all) {
                                         all.addAll(columns);
+                                        walked.addAll(job.probed());
                                         sampledColumns.addAndGet(columns.size());
                                     }
                                     int done = sampledColumns.get();
@@ -376,6 +403,24 @@ public final class PlannerScheduler implements AutoCloseable {
             leases.forEach(PlanLease::close);
         });
         return aggregate;
+    }
+
+    /**
+     * Writes the columns this session resolved so the next session can skip the terrain walks. The
+     * verdict is logged either way: the hit ratio is what separates a slow stage that is walking
+     * terrain from one that is re-reading a file.
+     */
+    private void persistFineSamples(List<WallFinePlanner.FineColumn> walked) {
+        var cache = fineSampleCache;
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_CACHE hits={} misses={} cached={} walked={} persistent={}",
+                cache.hits(), cache.misses(), cache.size(), walked.size(), cache.persistent());
+        if (!cache.persistent() || walked.isEmpty()) return;
+        var entries = new ArrayList<local.plaincraft.greatwall.terrain.FineSampleCache.Entry>(walked.size());
+        for (var column : walked) {
+            entries.add(new local.plaincraft.greatwall.terrain.FineSampleCache.Entry(
+                    column.x(), column.z(), column.sample()));
+        }
+        cache.store(entries);
     }
 
     public PlanLease<PlanWindow> requireWindow(ChunkKey chunk, int marginBlocks, Priority priority) {
@@ -1336,20 +1381,25 @@ public final class PlannerScheduler implements AutoCloseable {
         private final RouteShape route;
         /** Point sub-range this job samples: {@code [fromPoint, toPoint)} of the route. */
         private final int fromPoint, toPoint;
+        private final local.plaincraft.greatwall.terrain.FineSampleCache cache;
         private WallFinePlanner.Cursor cursor;
         private FineSampleJob(RouteShape route, int fromPoint, int toPoint, Priority priority,
-                              CompletableFuture<List<WallFinePlanner.FineColumn>> result) {
+                              CompletableFuture<List<WallFinePlanner.FineColumn>> result,
+                              local.plaincraft.greatwall.terrain.FineSampleCache cache) {
             super(priority, "FINE_SAMPLE", result);
             this.route = route;
             this.fromPoint = Math.max(0, fromPoint);
             this.toPoint = Math.min(route.points().size(), Math.max(this.fromPoint, toPoint));
+            this.cache = cache;
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
-            if (cursor == null) cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint);
+            if (cursor == null) cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint, cache);
             operations += limit;
             return WallFinePlanner.advance(cursor, limit) == WorkState.DONE;
         }
         @Override List<WallFinePlanner.FineColumn> value() { return WallFinePlanner.finish(cursor); }
+        /** Columns this slice resolved itself, for the session's cache write. */
+        List<WallFinePlanner.FineColumn> probed() { return WallFinePlanner.probed(cursor); }
     }
 
     private final class HydroJob extends Job<SegmentGeometry> {

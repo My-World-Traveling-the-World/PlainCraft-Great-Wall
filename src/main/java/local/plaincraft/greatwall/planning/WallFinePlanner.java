@@ -7,6 +7,7 @@ import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.NaturalTerrainOracle;
+import local.plaincraft.greatwall.terrain.FineSampleCache;
 
 /**
  * Planning-time fine terrain sampler over the wall's full width.
@@ -79,13 +80,32 @@ public final class WallFinePlanner {
      * functions of the index, so slicing changes no sampled value — only which thread computes it.</p>
      */
     public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex) {
+        return begin(route, oracle, fromIndex, toIndex, FineSampleCache.none());
+    }
+
+    /**
+     * Same, but reusing the columns a previous session already sampled when {@code cache} holds
+     * them. A hit emits exactly the sample the oracle would have produced, so the merged index is
+     * identical whichever columns the cache answered - only the terrain walks are skipped.
+     */
+    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+                               FineSampleCache cache) {
         Objects.requireNonNull(route, "route");
         Objects.requireNonNull(oracle, "oracle");
-        return new Cursor(route, oracle, fromIndex, toIndex);
+        Objects.requireNonNull(cache, "cache");
+        return new Cursor(route, oracle, fromIndex, toIndex, cache);
+    }
+
+    /**
+     * The columns this cursor resolved itself (probed now, or answered from the cache): exactly the
+     * set worth persisting, since the conservative fills depend on the sampling rules instead.
+     */
+    public static List<FineColumn> probed(Cursor c) {
+        return List.copyOf(c.probed);
     }
 
     public static WorkState advance(Cursor c, int primitiveLimit) {
-        if (primitiveLimit < 1 || primitiveLimit > 256) throw new IllegalArgumentException("primitive limit 1..256");
+        if (primitiveLimit < 1 || primitiveLimit > 4096) throw new IllegalArgumentException("primitive limit 1..4096");
         c.claimOwner();
         for (int op = 0; op < primitiveLimit && !c.done(); op++) {
             if (Thread.currentThread().isInterrupted()) {
@@ -124,12 +144,29 @@ public final class WallFinePlanner {
             var sample = c.oracle.finish(c.column);
             c.column = null;
             c.plan.record(c.slot, sample);
+            // Remember the walk itself: this is what the session persists, because the conservative
+            // fills depend on the sampling rules while a probed column does not. Collected only when a
+            // session cache can write it - an unread list would cost peak heap for nothing.
+            if (c.cache.persistent()) {
+                var walked = c.pending.get(c.slot);
+                c.probed.add(new FineColumn(walked.x(), walked.z(), walked.lateral(), sample));
+            }
             return;
         }
         int next = c.plan.nextSlot();
         if (next >= 0) {
             c.slot = next;
             var target = c.pending.get(next);
+            // A column an earlier session already walked answers with the very sample the oracle
+            // would produce, so reusing it cannot change the merged index - it only skips the walk.
+            var cached = c.cache.get(target.x(), target.z());
+            if (cached != null) {
+                c.plan.record(next, cached);
+                if (c.cache.persistent()) {
+                    c.probed.add(new FineColumn(target.x(), target.z(), target.lateral(), cached));
+                }
+                return;
+            }
             c.column = c.oracle.begin(target.x(), target.z(), SampleKind.REFERENCE);
             return;
         }
@@ -219,6 +256,10 @@ public final class WallFinePlanner {
         private final int apronBefore, apronAfter;
         private Thread owner;
         private final List<FineColumn> results = new ArrayList<>();
+        /** Columns resolved by a walk or by the cache; the fills are deliberately not included. */
+        private final List<FineColumn> probed = new ArrayList<>();
+        /** Reused samples from an earlier session; {@link FineSampleCache#none()} disables reuse. */
+        private final FineSampleCache cache;
         /** Sampling rules captured once per cursor: a config edit must not change a run mid-corridor. */
         private final FineSamplePlan.Rules rules = FineSamplePlan.Rules.fromConfig();
         private FineSamplePlan plan;
@@ -232,9 +273,11 @@ public final class WallFinePlanner {
         private NaturalTerrainOracle.ColumnCursor column;
         private boolean completed;
 
-        private Cursor(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex) {
+        private Cursor(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+                       FineSampleCache cache) {
             this.route = route;
             this.oracle = oracle;
+            this.cache = cache;
             this.fromIndex = Math.max(0, fromIndex);
             this.toIndex = Math.min(route.points().size(), Math.max(this.fromIndex, toIndex));
             // Only the cursor that holds a route end samples past it, so every apron column is

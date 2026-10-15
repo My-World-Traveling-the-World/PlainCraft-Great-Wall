@@ -50,7 +50,7 @@ public final class HydrologyClassifier {
     }
 
     public WorkState advance(Cursor c, int primitiveLimit) {
-        if (primitiveLimit < 1 || primitiveLimit > 256) throw new IllegalArgumentException("primitive limit 1..256");
+        if (primitiveLimit < 1 || primitiveLimit > 4096) throw new IllegalArgumentException("primitive limit 1..4096");
         c.claimOwner();
         for (int op = 0; op < primitiveLimit && !c.done(); op++) {
             if (Thread.currentThread().isInterrupted()) throw new WallFailure(FailureCode.CLOSED, "hydrology interrupted");

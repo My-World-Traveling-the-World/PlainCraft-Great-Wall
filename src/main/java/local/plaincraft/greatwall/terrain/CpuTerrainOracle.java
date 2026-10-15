@@ -71,6 +71,18 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      * can move on instead of holding a lane forever.
      */
     private static final int MAX_REFERENCE_ADVANCE_STEPS = 1_000_000;
+    /**
+     * Blocks above the smooth density surface where a reference walk starts.
+     *
+     * <p>The smooth surface is a lower bound in practice but not a guarantee: the jagged band,
+     * the aquifer and the surface rules can lift the real top by tens of blocks. The walk
+     * therefore starts with this short lead and raises it to the full historical margin
+     * ({@code seaLevel - minY + 32}) as soon as the first walked block proves the short lead
+     * sat at or below the real surface. Columns whose estimate was right - the overwhelming
+     * majority - never pay for the margin, and every raised column is bit-identical to the
+     * old fixed-margin walk.
+     */
+    private static final int REFERENCE_LEAD_BLOCKS = 32;
     private final Thread owner = Thread.currentThread();
     private final UUID identity = UUID.randomUUID();
     private final RandomState randomState;
@@ -167,7 +179,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
 
     @Override public WorkState advance(ColumnCursor cursor, int primitiveLimit) {
         var c = own(cursor);
-        if (primitiveLimit < 1 || primitiveLimit > 256) throw new IllegalArgumentException("primitive limit 1..256");
+        if (primitiveLimit < 1 || primitiveLimit > 4096) throw new IllegalArgumentException("primitive limit 1..4096");
         long started = System.nanoTime();
         try {
             for (int step = 0; step < primitiveLimit && c.result == null; step++) {
@@ -355,10 +367,27 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         }
         long start = System.nanoTime();
         c.chunk.updateForY(c.y, (double) c.innerY / noise.getCellHeight());
-        c.chunk.updateForX(c.x, (double) Math.floorMod(c.x, noise.getCellWidth()) / noise.getCellWidth());
-        c.chunk.updateForZ(c.z, (double) Math.floorMod(c.z, noise.getCellWidth()) / noise.getCellWidth());
+        if (!c.axesReady) {
+            // The column's x/z never change, so the horizontal interpolation fractions are constant
+            // for the whole descent: they are set once instead of on every walked block, which is
+            // two fewer density-interpolation calls per block with an identical result.
+            c.chunk.updateForX(c.x, (double) Math.floorMod(c.x, noise.getCellWidth()) / noise.getCellWidth());
+            c.chunk.updateForZ(c.z, (double) Math.floorMod(c.z, noise.getCellWidth()) / noise.getCellWidth());
+            c.axesReady = true;
+        }
         BlockState state = c.bridge.greatwall$state();
         if (state == null) state = settings.defaultBlock();
+        if (!c.leadChecked && c.y == c.attemptStartY) {
+            // The first block of the walk proves whether the short lead cleared the real surface.
+            // Non-air here means the smooth estimate sat at or below the ground (or the water top),
+            // so redo the walk from the full margin. Only such columns pay the margin, and their
+            // result is identical to the fixed-margin walk the oracle used before.
+            c.leadChecked = true;
+            if (!state.isAir() && c.attemptStartY < c.highStartY) {
+                c.resetWalk(c.highStartY);
+                return;
+            }
+        }
         long duration = System.nanoTime() - start;
         maxBlockNanos = Math.max(maxBlockNanos, duration); observe(duration);
         if (c.solidFound) {
@@ -435,7 +464,13 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         private int selectedCell = -1;
         private OptionalInt waterTop = OptionalInt.empty(), bedTop = OptionalInt.empty();
         private boolean skyOpen = true, solidFound, censored, slicesReady;
+        /** Short-lead start, the full historical margin, and the start the walk is on now. */
+        private int lowStartY, highStartY, attemptStartY = -1;
+        /** Whether the current attempt's first block has already been inspected. */
+        private boolean leadChecked;
         private NoiseChunk chunk;
+        /** Whether the chunk's horizontal interpolation fractions describe this column already. */
+        private boolean axesReady;
         private NoiseCursorBridge bridge;
         private ColumnSample result;
         /** Guard against a malformed native slice walk that never terminates. */
@@ -443,15 +478,38 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         private Cursor(int x, int z, SampleKind kind) {
             this.x = x; this.z = z; this.kind = kind;
             if (kind == SampleKind.REFERENCE) {
-                // Start just above the smooth terrain surface (plus a water margin covering
-                // the deepest ocean column and the jaggedness band) instead of the dimension
-                // top. The coarse probe keeps its own full top-down walk, so it is untouched.
+                // Start with a short lead above the smooth terrain surface instead of walking the
+                // air column from the top of a tall dimension - the single biggest cost of the fine
+                // sample. The lead is raised to the full historical margin only when the first
+                // walked block shows the estimate sat at or below the real surface. The coarse probe
+                // keeps its own full top-down walk, so it is untouched.
                 int surface = preliminarySurface(x, z);
-                this.y = Math.min(surface + settings.seaLevel() - bounds.minY() + 32,
-                        bounds.maxYExclusive() - 1);
-                this.cellY = Math.floorDiv(this.y, noise.getCellHeight());
-                this.innerY = Math.floorMod(this.y, noise.getCellHeight());
+                int top = bounds.maxYExclusive() - 1;
+                this.lowStartY = Math.min(surface + REFERENCE_LEAD_BLOCKS, top);
+                this.highStartY = Math.min(surface + settings.seaLevel() - bounds.minY() + 32, top);
+                seekStart(this.lowStartY);
             }
+        }
+        /** Places the walk at {@code startY}. The noise chunk and its baked slices are kept. */
+        private void seekStart(int startY) {
+            this.y = startY;
+            this.cellY = Math.floorDiv(startY, noise.getCellHeight());
+            this.innerY = Math.floorMod(startY, noise.getCellHeight());
+            this.attemptStartY = startY;
+            this.selectedCell = -1;
+        }
+        /** Restarts the walk from a raised lead, discarding everything the short attempt saw. */
+        private void resetWalk(int startY) {
+            seekStart(startY);
+            this.leadChecked = false;
+            this.supportCount = 0;
+            this.firstSolid = null;
+            this.solidFound = false;
+            this.skyOpen = true;
+            this.censored = false;
+            this.groundTop = bounds.minY();
+            this.waterTop = OptionalInt.empty();
+            this.bedTop = OptionalInt.empty();
         }
         private CpuTerrainOracle oracle() { return CpuTerrainOracle.this; }
         @Override public boolean done() { checkOpen(); return result != null; }

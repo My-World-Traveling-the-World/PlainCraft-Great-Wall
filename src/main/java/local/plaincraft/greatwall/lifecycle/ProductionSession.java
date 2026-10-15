@@ -44,6 +44,7 @@ import local.plaincraft.greatwall.persistence.WorldManifest;
 import local.plaincraft.greatwall.planning.PlannerScheduler;
 import local.plaincraft.greatwall.planning.StructureObstacleIndex;
 import local.plaincraft.greatwall.terrain.RealizationPlanner;
+import local.plaincraft.greatwall.terrain.FineSampleCache;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -469,6 +470,14 @@ final class ProductionSession implements AutoCloseable {
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE);
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
+        // Sampled terrain columns do not change between sessions, but the stage used to re-walk every
+        // one of them on every world entry - the single most expensive thing this mod does. Hand it
+        // the previous session's columns instead. The file is bound to the recipe and terrain
+        // identity, so a world whose terrain configuration changed re-probes rather than trusting
+        // columns sampled under different terrain.
+        planner.setFineSampleCache(FineSampleCache.load(
+                root.resolve("samples").resolve("fine-columns.bin"),
+                recipe().recipeHash() + '|' + recipe().terrainHash() + '|' + recipe().dimension()));
         planner.requireFineSamples(Priority.PLAYER_PREFETCH)
                 .whenComplete((fineIndex, sampleError) -> {
                     if (sampleError != null) {
