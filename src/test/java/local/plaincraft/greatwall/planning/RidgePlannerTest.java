@@ -86,4 +86,33 @@ class RidgePlannerTest {
         oracle.close();
         assertThrows(IllegalStateException.class, () -> planner.advance(cursor, 1));
     }
+
+    /**
+     * 累计坡度权重必须真的接在评分上。0.1.0 早期这个旋钮只活在配置与摘要里（评分式里没有这一项），
+     * 改它既不改变路线、却会把世界摘要换掉 ⇒ 白白让存档作废。权重一旦掉线，这条测试必然失败。
+     */
+    @Test void accumulatedSlopeWeightIsWiredIntoTheScore() {
+        var config = local.plaincraft.greatwall.config.GreatWallConfig.get();
+        int saved = config.ridgeAccumulatedSlopeWeight();
+        try {
+            assertEquals(-6, saved, "默认值参与摘要，改了它等于换世界");
+            // 用 freezeParameters() 就地冻结内存里的值：reload() 会重读配置文件，
+            // 在测试里既会撤销 setter、也会碰到玩家的真实配置。
+            local.plaincraft.greatwall.config.GreatWallConfig.freezeParameters();
+            var withKnob = new HashMap<Integer, java.util.List<?>>();
+            for (int segment = 0; segment < 8; segment++) {
+                withKnob.put(segment, route(9282026, segment, 256, true).points());
+            }
+            config.setRidgeAccumulatedSlopeWeight(0);
+            local.plaincraft.greatwall.config.GreatWallConfig.freezeParameters();
+            int changed = 0;
+            for (int segment = 0; segment < 8; segment++) {
+                if (!withKnob.get(segment).equals(route(9282026, segment, 256, true).points())) changed++;
+            }
+            assertTrue(changed > 0, "把累计坡度权重清零后路线逐点相同——这个权重没有接进评分");
+        } finally {
+            config.setRidgeAccumulatedSlopeWeight(saved);
+            local.plaincraft.greatwall.config.GreatWallConfig.reload();
+        }
+    }
 }

@@ -114,6 +114,7 @@ public final class RidgePlanner {
                     || Math.abs(c.candidateOffset) > (2048 - c.step * 16) * 512L
                     || Math.abs(delta) > (129 - c.step) * 8) { c.candidate++; return; }
             c.lookahead = 0; c.sampleIndex = 0; c.candidateScore = 0; c.candidatePreviousHeight = c.previousHeight;
+            c.candidateClimb = 0;
             c.candidateActive = true;
         }
         int u = (c.step + c.lookahead) * 16;
@@ -151,6 +152,12 @@ public final class RidgePlanner {
         long sum = 0; for (int i = 1; i < 9; i++) sum += c.samples[i].groundTopY();
         long prominence = Math.clamp(Math.floorDiv((8L * h.groundTopY() - sum) * 256, 8 * 48), -256, 256);
         long slope = Math.min(1024, Math.abs((long) h.groundTopY() - c.candidatePreviousHeight) * 256 / 16);
+        // 累计爬升（0.1.0 补上实现）：只累加上坡，下坡不得奖励，刻度与 slope 一致（每格 16）。
+        // slope 罚的是「任何单步高差」，这一项罚的是「一直往上爬」——同样爬 5 格，
+        // 一步一歇与连爬五步在 slope 项上完全一样，靠这一项才分得开。
+        // 与其余山脊权重一样读冻结快照：世界打开后改配置不得让后半段换一套评分。
+        long climbDelta = h.groundTopY() - c.candidatePreviousHeight;
+        if (climbDelta > 0) c.candidateClimb += climbDelta * 256 / 16;
         long turn = Math.abs(DELTAS.get(c.candidate) * 256L - c.previousDeltaQ8) / 16;
         long wet = h.waterTopY().isPresent() || h.upperCensored() ? 256 : 0;
         long departure = Math.abs(rawOffset) / 512;
@@ -174,6 +181,7 @@ public final class RidgePlanner {
                 + cfg.ridgeProminenceWeight() * prominence
                 + knifePart
                 + cfg.ridgeSlopeWeight() * slope
+                + cfg.ridgeAccumulatedSlopeWeight() * c.candidateClimb
                 + cfg.ridgeTurnWeight() * turn
                 + cfg.ridgeWetWeight() * wet
                 + cfg.ridgeDepartureWeight() * departure
@@ -346,6 +354,8 @@ public final class RidgePlanner {
         private int boundaryIndex, degradation, lookaheadLimit, bestCandidate = -1, previousHeight, candidatePreviousHeight;
         private int candidateFirstHeight, bestHeight, curveIndex;
         private long previousOffsetQ8, previousDeltaQ8, bestScore = Long.MIN_VALUE, candidateScore, candidateOffset, bestOffset;
+        /** 当前候选在自己那段前瞻里的累计爬升（只算上坡，刻度同 slope：每格 16）。 */
+        private long candidateClimb;
         private boolean candidateActive, fallback;
         private Anchor first, last;
         private Boundary start, end;
