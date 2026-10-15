@@ -128,6 +128,20 @@ public final class PlannerScheduler implements AutoCloseable {
             java.util.Collections.synchronizedList(new java.util.ArrayList<>());
     private PlanLease<SegmentPlan> backgroundLease;
 
+    /**
+     * Runs once the bulk prewarm has settled successfully, on the prewarm's own completion thread.
+     *
+     * <p>Registered by the production session to post the planning compile onto the server queue.
+     * Without it the compile can only be reached from the server tick loop, which a startup peer's
+     * managedBlock holds shut - the peer would wait for a wall that can no longer finish.
+     */
+    private volatile Runnable bulkReadyHook;
+
+    /** Registers the bulk-prewarm completion hook. Replaces any previous one. */
+    public void onBulkReady(Runnable hook) {
+        this.bulkReadyHook = hook;
+    }
+
     public PlannerScheduler(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory, SegmentCacheStore cache, Executor io) {
         this(recipe, Objects.requireNonNull(oracleFactory), null, cache, io);
     }
@@ -532,6 +546,24 @@ public final class PlannerScheduler implements AutoCloseable {
                         }
                         state.put(error == null ? "bulk-ready" : "bulk-failed", 1L);
                         state.put("prewarm-total-millis", totalMs);
+                        // The compile must be able to run while somebody else holds the server
+                        // thread. A startup peer (RoadWeaver) parks that thread in its own
+                        // managedBlock waiting for this wall to publish, and the tick loop cannot
+                        // fire while it is parked - so a compile that only waits for a tick would
+                        // wait for the peer, and the peer would wait for the compile. The session
+                        // registers a hook here that posts the compile onto the server queue; the
+                        // peer's managedBlock pump executes exactly those tasks.
+                        if (error == null) {
+                            var hook = bulkReadyHook;
+                            if (hook != null) {
+                                try {
+                                    hook.run();
+                                } catch (Throwable hookFailure) {
+                                    GreatWallMod.LOGGER.warn("[GreatWall:S1C] BULK_READY_HOOK_FAILED",
+                                            hookFailure);
+                                }
+                            }
+                        }
                         if (error == null) {
                             // The concurrency numbers are included so one session answers whether
                             // the hardware-derived limits actually took effect. Comparing this

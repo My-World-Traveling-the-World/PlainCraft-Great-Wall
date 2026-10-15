@@ -36,33 +36,60 @@ public final class PlanningChunkCompiler {
         this.structures = List.copyOf(Objects.requireNonNull(structures, "structures"));
     }
 
+    /**
+     * Reports how many owners of the window have been compiled out of how many the window holds.
+     *
+     * <p>The total is a real count, not an estimate: it is the owner list discovered by the walk
+     * below. A sink that only received the done count had to publish an indeterminate total, which
+     * the loading card renders as a stage parked at 0 % - the compile then looked frozen for its
+     * whole duration and the bar jumped at the end.
+     */
+    @FunctionalInterface
+    public interface OwnerProgress {
+        void accept(int done, int total);
+    }
+
     /** Compiles every wall-touched chunk of the given plan window into a {@link ChunkWritePlan}. */
     public Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash, String dimension) {
         return compileWindow(plans, recipeHash, dimension, null);
     }
 
-    /** Compile with an optional per-owner progress sink (done count). */
+    /**
+     * Compiles the window, reporting per-owner progress against a known total.
+     *
+     * <p>Two passes: the first enumerates the owners (a pure coverage lookup, no realization and no
+     * chunk-plan work), the second compiles them. Splitting them is what makes an honest total
+     * possible - the owner set is discovered cell by cell, so a single pass cannot know its size
+     * before it has already done the expensive part.
+     */
     public Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash,
-                                                       String dimension,
-                                                       java.util.function.IntConsumer progress) {
-        var result = new HashMap<ChunkKey, ChunkWritePlan>();
-        var provider = new PlanningColumnProvider(index);
-        var done = new java.util.concurrent.atomic.AtomicInteger();
+                                                       String dimension, OwnerProgress progress) {
+        record Owned(CellKey cell, ChunkKey owner, SegmentPlan plan) { }
+        var work = new java.util.ArrayList<Owned>();
         for (var plan : plans.plans()) {
-            // For each segment, enumerate the chunks its realization owners cover, resolve the
-            // realization and clip to each owner.
+            // For each segment, enumerate the chunks its realization owners cover.
             long from = plan.prefix().lengthBeforeQ8();
             long to = from + plan.geometry().localSQ8().getLast();
             var firstCell = Math.floorDiv(from, 64L * 256);
             var lastCell = Math.floorDiv(to + 64L * 256 - 1, 64L * 256);
             for (long cell = firstCell; cell <= lastCell; cell++) {
                 var cellKey = new CellKey(recipeHash, dimension, cell);
-                var owners = coverage.realizationOwners(cellKey, new PlanWindow(List.of(plan)));
-                for (var owner : owners) {
-                    compileOwner(cellKey, owner, new PlanWindow(List.of(plan)), recipeHash, provider, result);
-                    if (progress != null) progress.accept(done.incrementAndGet());
+                for (var owner : coverage.realizationOwners(cellKey, new PlanWindow(List.of(plan)))) {
+                    work.add(new Owned(cellKey, owner, plan));
                 }
             }
+        }
+        var result = new HashMap<ChunkKey, ChunkWritePlan>();
+        var provider = new PlanningColumnProvider(index);
+        if (progress != null) progress.accept(0, work.size());
+        int done = 0;
+        for (var item : work) {
+            // Resolve the realization and clip it to this owner; each owner gets its own window
+            // instance, exactly as the single-pass shape did.
+            compileOwner(item.cell(), item.owner(), new PlanWindow(List.of(item.plan())),
+                    recipeHash, provider, result);
+            done++;
+            if (progress != null) progress.accept(done, work.size());
         }
         return Map.copyOf(result);
     }

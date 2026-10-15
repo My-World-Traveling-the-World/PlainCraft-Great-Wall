@@ -365,7 +365,7 @@ public final class WorldServices {
     }
 
     /**
-     * Waits for the wall's startup prewarm to finish, for a startup peer to call.
+     * Waits until the wall can paint, for a startup peer to call.
      *
      * <h2>Why a peer calls this</h2>
      * Rivers, then the wall, then roads is the intended order. RoadWeaver owns the last
@@ -374,13 +374,20 @@ public final class WorldServices {
      * wall's scheduler recorded 257 watchdog rescues, meaning the server thread stopped
      * delivering ticks for three seconds at a time while the other stage held it.
      *
+     * <h2>What "ready" means here</h2>
+     * The whole wall startup, not just the bulk prewarm: the chunk compile and its publication
+     * are part of the wall's own stage and are what makes a newly generated chunk actually carry
+     * the wall. A measured session released the roads in the same second the prewarm's segments
+     * completed, while the compile had not run yet and then silently failed - the player got a
+     * road network and no wall. See {@link PrewarmProgress#awaitWorldgenReady}.
+     *
      * <h2>Contract</h2>
      * Returns immediately when no wall session exists, when no prewarm has started, or when
      * one has already finished, so a session without wall generation is not delayed at all.
      * On timeout it returns false and the caller is expected to proceed: a stage that never
      * reports must not turn a slow startup into a hang.
      *
-     * @return true if the prewarm settled, false if the wait timed out or was interrupted
+     * @return true if the wall published, failed, or will not run; false if the wait timed out
      */
     public static boolean awaitPrewarm(long timeout, java.util.concurrent.TimeUnit unit) {
         // No session at all means no wall generation in this world, which is a normal state:
@@ -394,7 +401,7 @@ public final class WorldServices {
             if (services.productionFixture()) { awaiting = true; break; }
         }
         if (!awaiting) return true;
-        return PrewarmProgress.awaitCompletion(timeout, unit);
+        return PrewarmProgress.awaitWorldgenReady(timeout, unit);
     }
 
     /**
@@ -422,6 +429,11 @@ public final class WorldServices {
         if (!Boolean.getBoolean("greatwall.s1c.productionFixture") && !Boolean.getBoolean("greatwall.s0.probe")) return;
         long timeoutMinutes = Math.max(1L, Long.getLong("greatwall.prewarmTimeoutMinutes", 30L));
         long deadlineNanos = System.nanoTime() + java.util.concurrent.TimeUnit.MINUTES.toNanos(timeoutMinutes);
+        // The compile runs once, on this thread, the moment the segments settle. Doing it here rather
+        // than from the server tick loop is what makes "the wall is finished before the roads start"
+        // true rather than aspirational: this thread holds the stage, the tick loop cannot run while
+        // it is parked in managedBlock, and the road gate now waits for the compile to publish.
+        final boolean[] compiled = {false};
         server.managedBlock(() -> {
             // Drain every world-local chunk queue: ChunkMap posts its completion callbacks here
             // and they must run for the structure screen's chunk requests to finish.
@@ -431,8 +443,33 @@ public final class WorldServices {
                 }
             }
             if (System.nanoTime() >= deadlineNanos) return true;
-            return awaitPrewarm(0, java.util.concurrent.TimeUnit.NANOSECONDS);
+            // Wait on the segment latch, never on the peer gate: that one only opens once the
+            // compile below has published, so waiting on it here would wait on ourselves.
+            if (!PrewarmProgress.awaitCompletion(0, java.util.concurrent.TimeUnit.NANOSECONDS)) return false;
+            if (!compiled[0]) {
+                compiled[0] = true;
+                compileWhileBlocked(server);
+            }
+            return true;
         });
+    }
+
+    /**
+     * Runs the wall's planning compile on the thread that owns the wall's startup stage.
+     *
+     * <p>Never throws: startup must not fail because the wall could not compile. The compile itself
+     * reports its own failure loudly (see {@code ProductionSession.PLANNING_COMPILE_FAILED}) and
+     * opens the road gate either way, so a broken wall costs a warning instead of a hung server.
+     */
+    private static void compileWhileBlocked(MinecraftServer server) {
+        var services = SESSIONS.get(server);
+        if (services == null || services.production == null) return;
+        try {
+            boolean ran = services.production.compileAtStartup();
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] PRODUCTION_STARTUP_COMPILE ran={}", ran);
+        } catch (Throwable error) {
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] PRODUCTION_STARTUP_COMPILE_FAILED", error);
+        }
     }
 
     /** The wall's current prewarm progress, for diagnostics and for a progress display. */

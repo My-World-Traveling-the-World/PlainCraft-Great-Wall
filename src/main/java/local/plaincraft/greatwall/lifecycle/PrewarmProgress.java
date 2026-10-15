@@ -70,6 +70,23 @@ public final class PrewarmProgress {
     private static final ConcurrentHashMap<String, Boolean> STATE = new ConcurrentHashMap<>();
     private static final Object LATCH_LOCK = new Object();
     private static volatile CountDownLatch settled = new CountDownLatch(1);
+    /**
+     * Released once the wall can actually paint, which is later than {@link #settled}.
+     *
+     * <h2>Why the peer gate needs its own latch</h2>
+     * {@code settled} releases when the bulk prewarm's segments are planned, because
+     * {@code blockAndPumpUntilPrewarmSettled} parks the server thread on it and the compile that
+     * follows can only run once that thread is free (latch -> compile -> tick -> managedBlock).
+     * That makes {@code settled} the wrong signal to hand a startup peer: RoadWeaver gated on it
+     * and began its initial generation in the same second the prewarm completed, while the wall's
+     * compile had not run yet.
+     *
+     * <p>This latch is released by {@code publishPlanningWindow}, i.e. once the chunk plans are in
+     * {@code WallWorldgenPlanCache} and the corridor/biome masks are published - the point after
+     * which every newly generated chunk really does carry the wall. A peer that waits on it cannot
+     * overlap the wall's compile.
+     */
+    private static volatile CountDownLatch worldgenReady = new CountDownLatch(1);
     /** Candidate index the root search has reached, and the total it will scan. */
     private static final AtomicInteger ROOT_CANDIDATE = new AtomicInteger();
     private static final AtomicInteger ROOT_TOTAL = new AtomicInteger();
@@ -89,12 +106,17 @@ public final class PrewarmProgress {
         ROOT_SEARCH, STRUCTURE_SCAN, FINE_SAMPLE, PREWARM, COMPILE, DONE
     }
     /**
-     * Overall-percent weight of each stage, indexed by {@link Stage#ordinal()}. The weights
-     * are the stages' relative measured durations on a real world: the root search and the
-     * segment prewarm dominate, the structure scan and the fine sampling are minutes, and the
-     * compile is seconds. They must sum to 100.
+     * Overall-percent weight of each stage, indexed by {@link Stage#ordinal()}. The weights are the
+     * stages' relative measured durations on a real world, and they must sum to 100.
+     *
+     * <p>Measured on the 2026-10-15 world: root search 128 s, structure scan 181 s, fine sample
+     * 158 s (708 s on the session before it - it is the one stage whose cost swings with how much
+     * terrain the route crosses), segment prewarm 20.5 s, compile unknown but bounded by the owner
+     * count now that it reports a real total. The previous table gave the prewarm 40 of the 100
+     * points for those 20 seconds and the structure scan only 10 for its 181, so the bar crawled
+     * through the scan and then filled half its length at the very end.
      */
-    private static final int[] STAGE_WEIGHT = {25, 10, 15, 40, 10, 0};
+    private static final int[] STAGE_WEIGHT = {22, 30, 28, 5, 15, 0};
     /** Monotonic overall peak for the loading card; reset when a new prewarm begins or clears. */
     private static final java.util.concurrent.atomic.AtomicInteger PEAK_OVERALL_PERCENT =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -152,6 +174,11 @@ public final class PrewarmProgress {
             if (settled == null || settled.getCount() == 0L) {
                 settled = new CountDownLatch(1);
             }
+            // Same rule for the peer gate: a completed prewarm's latch must not make the next
+            // prewarm look finished, and an unreleased one must not be replaced under a waiter.
+            if (worldgenReady == null || worldgenReady.getCount() == 0L) {
+                worldgenReady = new CountDownLatch(1);
+            }
         }
         TOTAL_SEGMENTS.set(Math.max(0, totalSegments));
         COMPLETED_SEGMENTS.set(0);
@@ -188,6 +215,9 @@ public final class PrewarmProgress {
         synchronized (LATCH_LOCK) {
             if (settled == null || settled.getCount() == 0L) {
                 settled = new CountDownLatch(1);
+            }
+            if (worldgenReady == null || worldgenReady.getCount() == 0L) {
+                worldgenReady = new CountDownLatch(1);
             }
         }
         TOTAL_SEGMENTS.set(0);
@@ -255,6 +285,9 @@ public final class PrewarmProgress {
         STATE.clear();
         var latch = settled;
         if (latch != null) latch.countDown();
+        // A finished prewarm is always a settled peer gate, successful or not: a wall that cannot
+        // paint must not hold the roads behind it for the whole timeout.
+        signalWorldgenReady();
     }
 
     /**
@@ -273,6 +306,48 @@ public final class PrewarmProgress {
     public static void signalReady() {
         var latch = settled;
         if (latch != null) latch.countDown();
+    }
+
+    /**
+     * Releases the worldgen gate: every chunk generated from now on carries the wall.
+     *
+     * <p>Called once the compile has published the chunk plans and the masks. A failed or empty
+     * compile calls it too (through {@link #finish(boolean)}), because a wall that will never paint
+     * must not park the roads behind a gate that can no longer open.
+     */
+    public static void signalWorldgenReady() {
+        var latch = worldgenReady;
+        if (latch != null) latch.countDown();
+    }
+
+    /**
+     * Blocks until the whole wall startup has published, for a startup peer to call.
+     *
+     * <p>Stronger than {@link #awaitCompletion}: that one answers "have the segments been planned",
+     * which the wall needed internally to avoid its own deadlock. This answers "will a chunk
+     * generated now contain the wall", which is the question a peer - RoadWeaver's initial road
+     * generation - actually has to ask. Waiting on the weaker signal is what let a measured session
+     * start the roads in the same second the prewarm completed, while the compile had not run.
+     *
+     * @return true if the wall published, failed, or will not run at all; false on timeout
+     */
+    public static boolean awaitWorldgenReady(long timeout, TimeUnit unit) {
+        if (!REQUESTED.get()) return true;
+        var latch = worldgenReady;
+        if (latch == null) return true;
+        try {
+            boolean ready = latch.await(timeout, unit);
+            if (!ready && timeout != 0L) {
+                GreatWallMod.LOGGER.warn("[GreatWall:S1C] WORLDGEN_GATE_TIMEOUT waitedMs={} active={} "
+                                + "stage={} completed={}/{} ; proceeding without waiting further",
+                        unit.toMillis(timeout), ACTIVE.get(), STAGE.get(),
+                        COMPLETED_SEGMENTS.get(), TOTAL_SEGMENTS.get());
+            }
+            return ready;
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     /** Clears everything; used between sessions so a stale snapshot cannot be served. */
@@ -296,6 +371,11 @@ public final class PrewarmProgress {
         REQUESTED.set(false);
         synchronized (LATCH_LOCK) {
             settled = new CountDownLatch(1);
+            // Release any peer still parked on the old gate before replacing it: a session that is
+            // being torn down must not leave a waiter holding a latch nobody will ever open. The
+            // replacement is needed so the next session's gate is not born already open.
+            signalWorldgenReady();
+            worldgenReady = new CountDownLatch(1);
         }
     }
 

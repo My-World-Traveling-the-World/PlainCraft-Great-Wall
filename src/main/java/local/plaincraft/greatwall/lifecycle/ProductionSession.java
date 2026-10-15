@@ -457,6 +457,12 @@ final class ProductionSession implements AutoCloseable {
             planner.setObstacles(StructureObstacleIndex.of(boxes, margin));
         }
         planningStructures = structures;
+        // Post the compile onto the server queue the moment the prewarm settles, instead of waiting
+        // for the tick loop to notice. RoadWeaver parks the server thread in its own managedBlock
+        // while waiting for this wall to publish, and that pump is what executes these tasks - so
+        // the wall compiles inside the road's wait and the roads start only after the wall can
+        // actually paint. Waiting for a tick instead deadlocked the two against each other.
+        planner.onBulkReady(() -> server.execute(this::compileAtStartup));
         // The fine cross-section sample and the prewarm both drive off the planner's lanes; sample
         // first, publish the samples to the session, then start the bulk prewarm. A sample failure
         // leaves the index null and the wall simply does not compile/paint (the new single path).
@@ -593,8 +599,24 @@ final class ProductionSession implements AutoCloseable {
         if (diagnostics.containsKey("startup-failed") || diagnostics.containsKey("bulk-failed")) {
             fail(new IllegalStateException("production prewarm failed")); return;
         }
-        if (state.containsKey("server-started") && diagnostics.containsKey("bulk-ready")
-                && state.putIfAbsent("active", true) == null) {
+        if (state.containsKey("server-started") && diagnostics.containsKey("bulk-ready")) {
+            activate(snapshot);
+        }
+        snapshot.planner().tick(new SliceBudget(4096, System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25)));
+        var garrison = gameplay.get("garrison");
+        if (garrison instanceof GarrisonController controller) controller.tick();
+    }
+
+    /**
+     * Brings the production stage up: one summary log, one planning compile.
+     *
+     * <p>Idempotent, because it has two callers by design. {@link #compileAtStartup()} runs it from
+     * the thread that owns the wall's startup stage - before the server starts ticking - which is
+     * what makes the wall publish before RoadWeaver's road generation begins; this tick path stays
+     * for a session whose prewarm settles once the server is already running.
+     */
+    private void activate(Installed snapshot) {
+        if (state.putIfAbsent("active", true) == null) {
             trace.record("PRODUCTION_ACTIVE", snapshot.recipe().dimension(), 0, 0, "server-started-and-prewarm-ready", "none");
             GreatWallMod.LOGGER.info("[GreatWall:S1C] PRODUCTION_SUMMARY wall={} axis={} rootDegraded={} "
                             + "wallLengthBlocks={} prewarmSegments={} counts={}",
@@ -602,12 +624,30 @@ final class ProductionSession implements AutoCloseable {
                     local.plaincraft.greatwall.terrain.RealizationPlanner.rootDegraded(),
                     local.plaincraft.greatwall.config.GreatWallConfig.parameters().wallLengthBlocks(),
                     local.plaincraft.greatwall.config.GreatWallConfig.parameters().prewarmSegmentsTarget(),
-                    summarizeForLog(diagnostics));
-            compilePlanningPlans(snapshot);
+                    summarizeForLog(snapshot.planner().diagnostics()));
         }
-        snapshot.planner().tick(new SliceBudget(4096, System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25)));
-        var garrison = gameplay.get("garrison");
-        if (garrison instanceof GarrisonController controller) controller.tick();
+        if (state.putIfAbsent("compile-started", true) != null) return;
+        compilePlanningPlans(snapshot);
+    }
+
+    /**
+     * Compiles and publishes the planning window from the startup stage owner, before the server
+     * ticks, so the wall is in place before any road work starts.
+     *
+     * <p>Called by {@code WorldServices.compileWhileBlocked} from inside the wall's own
+     * managedBlock, i.e. on the thread that holds the startup stage and before RoadWeaver's gate.
+     * Returns false when there is nothing to compile yet: no session, no installed snapshot, or a
+     * prewarm that has not settled - in which case the tick path picks the compile up later.
+     *
+     * @return true when the compile ran, or had already run
+     */
+    public boolean compileAtStartup() {
+        if (state.containsKey("closed") || state.containsKey("failed")) return false;
+        var snapshot = snapshots.get("installed");
+        if (snapshot == null) return false;
+        if (!snapshot.planner().diagnostics().containsKey("bulk-ready")) return false;
+        activate(snapshot);
+        return true;
     }
 
     /** Compiles every prewarmed segment's ChunkWritePlan into the landing cache, once the prewarm
@@ -615,6 +655,38 @@ final class ProductionSession implements AutoCloseable {
      *  that lets the WallFeature paint without any chunk read. It also publishes the planning
      *  vegetation-corridor and biome masks per chunk, replacing the deleted FeatureSlot. */
     private void compilePlanningPlans(Installed snapshot) {
+        try {
+            compilePlanningPlans0(snapshot);
+        } catch (Throwable error) {
+            failCompile(snapshot, "prepare", error);
+        }
+    }
+
+    /**
+     * Reports a compile failure and releases everything that waits on it.
+     *
+     * <h2>Why this exists</h2>
+     * The compile used to run inside a {@code whenComplete} callback whose returned future was
+     * discarded. {@code CompletableFuture} captures a callback's exception into that returned
+     * future, so a failure left no trace anywhere: a measured session logged
+     * {@code PLANNING_COMPILE_BEGIN pinnedPlans=4 target=4} and then nothing - no wall, no error,
+     * no card change - while the server kept running normally. Every exit from the compile now ends
+     * in either a publication or this method, and the peer gate is opened either way so a broken
+     * wall cannot park the roads behind it.
+     */
+    private void failCompile(Installed snapshot, String phase, Throwable error) {
+        GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_FAILED phase={} reason={}; "
+                + "the wall will not paint in this session", phase, error.toString(), error);
+        try {
+            snapshot.planner().releasePrewarmLeases();
+        } catch (Throwable releaseFailure) {
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_RELEASE_FAILED reason={}",
+                    releaseFailure.toString());
+        }
+        PrewarmProgress.finish(false);
+    }
+
+    private void compilePlanningPlans0(Installed snapshot) {
         var index = fineHeightIndex;
         if (index == null || realization == null || chunkCompiler == null) {
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_SKIPPED reason=missing-inputs "
@@ -649,12 +721,22 @@ final class ProductionSession implements AutoCloseable {
         if (!pinned.isEmpty()) {
             for (var lease : pinned) {
                 lease.future().whenComplete((plan, error) -> {
-                    if (error == null && plan != null) {
-                        synchronized (collected) { collected.add(plan); }
-                    } else {
-                        GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PLAN_FAILED reason={}", error);
+                    // The whole body is guarded, and the publication is guarded on its own: an
+                    // exception thrown here would otherwise land in the future whenComplete returns
+                    // - which nobody holds - and vanish without a log line.
+                    try {
+                        if (error == null && plan != null) {
+                            synchronized (collected) { collected.add(plan); }
+                        } else {
+                            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PLAN_FAILED reason={}", error);
+                        }
+                    } catch (Throwable callbackFailure) {
+                        failCompile(snapshot, "callback", callbackFailure);
+                        return;
                     }
-                    if (remaining.decrementAndGet() == 0) publishPlanningWindow(snapshot, level, compiler, collected);
+                    if (remaining.decrementAndGet() == 0) {
+                        publishOrFail(snapshot, level, compiler, collected);
+                    }
                 });
             }
             return;
@@ -678,14 +760,25 @@ final class ProductionSession implements AutoCloseable {
                         }
                     } finally {
                         lease.close();
-                        if (remaining.decrementAndGet() == 0) publishPlanningWindow(snapshot, level, compiler, collected);
+                        if (remaining.decrementAndGet() == 0) publishOrFail(snapshot, level, compiler, collected);
                     }
                 });
             } catch (RuntimeException error) {
                 GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PLAN_REQUEST_FAILED segment={} reason={}",
                         segment, error.toString());
-                if (remaining.decrementAndGet() == 0) publishPlanningWindow(snapshot, level, compiler, collected);
+                if (remaining.decrementAndGet() == 0) publishOrFail(snapshot, level, compiler, collected);
             }
+        }
+    }
+
+    /** Publishes the window, turning any failure into a reported, released outcome. */
+    private void publishOrFail(Installed snapshot, ServerLevel level,
+            local.plaincraft.greatwall.planning.PlanningChunkCompiler compiler,
+            java.util.List<SegmentPlan> plans) {
+        try {
+            publishPlanningWindow(snapshot, level, compiler, plans);
+        } catch (Throwable failure) {
+            failCompile(snapshot, "publish", failure);
         }
     }
 
@@ -703,40 +796,62 @@ final class ProductionSession implements AutoCloseable {
             return;
         }
         var window = new PlanWindow(List.copyOf(plans));
-        // Compile progress ticks per compiled owner. How many owners the window holds is only known
-        // once it has been walked - they are discovered cell by cell - so the total is published as
-        // indeterminate (0, the documented "still running" value) rather than as the done count.
-        // Reporting total = done made every tick read as 100 % complete, which is the one thing a
-        // progress line must not say while it is still working.
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
+        // Compile progress: owners compiled out of the owners the window holds. The compiler
+        // discovers the whole owner list before it starts compiling, so this is a real fraction
+        // rather than the indeterminate 0 the single-pass shape had to publish - which the card
+        // renders as a stage parked at 0 % for the compile's entire duration.
+        long compileStartedNanos = System.nanoTime();
+        PrewarmProgress.setSubProgress(0, 0);
         var compiled = compiler.compileWindow(window, snapshot.recipe().recipeHash(),
                 snapshot.recipe().dimension(),
-                done -> local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(done, 0));
+                (done, total) -> PrewarmProgress.setSubProgress(done, total));
+        long compileMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - compileStartedNanos);
+        // Publish per owner, isolating each owner's failure: one chunk that cannot take its mask
+        // must not cost the wall every other chunk. Failures are counted and reported loudly,
+        // because a partially published wall is a state the player has to be told about.
+        int published = 0;
+        int failed = 0;
+        Throwable firstFailure = null;
         for (var entry : compiled.entrySet()) {
-            local.plaincraft.greatwall.generation.WallWorldgenPlanCache.put(level, entry.getValue());
-            // Publish the planning vegetation corridor + biome mask for this chunk, replacing the
-            // deleted FeatureSlot's per-chunk publication.
-            vegetation.publish(entry.getKey(), window);
-            var biomes = biomeRuntime;
-            if (biomes != null && !biomes.closed()) {
-                biomes.publish(entry.getKey(), window, 1);
+            try {
+                local.plaincraft.greatwall.generation.WallWorldgenPlanCache.put(level, entry.getValue());
+                // Publish the planning vegetation corridor + biome mask for this chunk, replacing the
+                // deleted FeatureSlot's per-chunk publication.
+                vegetation.publish(entry.getKey(), window);
+                var biomes = biomeRuntime;
+                if (biomes != null && !biomes.closed()) {
+                    biomes.publish(entry.getKey(), window, 1);
+                }
+                published++;
+            } catch (Throwable ownerFailure) {
+                failed++;
+                if (firstFailure == null) firstFailure = ownerFailure;
+                GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner={},{} reason={}",
+                        entry.getKey().x(), entry.getKey().z(), ownerFailure.toString());
             }
         }
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={} chunks={} "
-                        + "vegetationLeases={} guardMisses={} suppressed={}",
-                plans.size(), compiled.size(), vegetation.leases(), vegetation.misses(), vegetation.suppressed());
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={} chunks={} published={} "
+                        + "failed={} compileMs={} vegetationLeases={} guardMisses={} suppressed={}",
+                plans.size(), compiled.size(), published, failed, compileMillis,
+                vegetation.leases(), vegetation.misses(), vegetation.suppressed());
+        if (failed > 0) {
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_PARTIAL published={} failed={} of "
+                            + "{} owners; those chunks will not carry the wall",
+                    published, failed, compiled.size(), firstFailure);
+        }
         // The prewarm's leases have served their purpose: this compile consumed their plans and the
         // window is published, so the memory budget can have them back now.
         snapshot.planner().releasePrewarmLeases();
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(compiled.size(), compiled.size());
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.DONE);
+        PrewarmProgress.setSubProgress(compiled.size(), compiled.size());
+        PrewarmProgress.setStage(PrewarmProgress.Stage.DONE);
         // The wall startup is truly over only now: the bulk prewarm, the fine sample and the
-        // chunk compile have all settled, so the loading card closes and the startup peer
-        // (RoadWeaver) is released. This is the single owner of the final finish — the bulk
-        // prewarm must not finish earlier, or the card would close at 100% mid-compile.
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.signalReady();
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(true);
+        // chunk compile have all settled, so the loading card closes and the startup peers are
+        // released. This is the single owner of the final finish - the bulk prewarm must not
+        // finish earlier, or the card would close at 100 % mid-compile and RoadWeaver would start
+        // its road generation while the wall is still being compiled. finish() opens both the
+        // card's latch and the worldgen gate the roads wait on.
+        PrewarmProgress.signalReady();
+        PrewarmProgress.finish(true);
     }
 
     void validateReload() {
