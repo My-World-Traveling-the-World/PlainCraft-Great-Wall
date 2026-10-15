@@ -261,8 +261,9 @@ public final class PlannerScheduler implements AutoCloseable {
         long target = prewarmTargetSegments();
         if (target <= 0) target = STARTUP_PREWARM_SEGMENTS;
         final int totalSegments = (int) Math.min(Integer.MAX_VALUE, target);
-        // Fan each segment's point range across the native lanes. One segment is ~2048 points x 49
-        // columns (~100k REFERENCE samples); a single job walked them serially on one lane while
+        // Fan each segment's point range across the native lanes. One segment is ~2048 points plus the
+        // two end aprons, each point a full cross-section of 2 * WallFinePlanner.LATERAL + 1 columns
+        // (~230k REFERENCE samples); a single job walked them serially on one lane while
         // every other lane sat idle. The slices are point ranges of the same route, so each lane's
         // oracle samples exactly the columns it would have sampled serially — the merged index is
         // identical, only computed concurrently.
@@ -325,7 +326,11 @@ public final class PlannerScheduler implements AutoCloseable {
                             slicesPending.incrementAndGet();
                             // Known before the slice is sampled: its point range, times the cross-section
                             // width. This is what makes the meter a column count instead of a slice count.
-                            expectedColumns.addAndGet(Math.max(1, to - from) * (2 * WallFinePlanner.LATERAL + 1));
+                            // The first and last slice also sample the end aprons, exactly like the
+                            // cursor that owns each route end does (see WallFinePlanner.Cursor).
+                            int apron = (from == 0 ? WallFinePlanner.APRON_BLOCKS : 0)
+                                    + (to == points ? WallFinePlanner.APRON_BLOCKS : 0);
+                            expectedColumns.addAndGet((Math.max(1, to - from) + apron) * (2 * WallFinePlanner.LATERAL + 1));
                             var job = new FineSampleJob(route, from, to, priority,
                                     new CompletableFuture<List<WallFinePlanner.FineColumn>>());
                             enqueue(job);

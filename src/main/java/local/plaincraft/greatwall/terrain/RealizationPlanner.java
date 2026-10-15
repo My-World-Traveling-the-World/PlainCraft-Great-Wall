@@ -428,7 +428,11 @@ public final class RealizationPlanner {
             ComponentVoxels cap;
             try{cap=CompiledAllocation.component(()->template.compileAt(componentInput(input,attempt,stations,
                     new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,known)));}
-            catch(WallFailure failure){if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT)throw failure;continue;}
+            catch(WallFailure failure){
+                // Retry the next (more inward) candidate instead of failing the corridor: see compile().
+                if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT&&failure.code()!=FailureCode.T0_MISSING)throw failure;
+                continue;
+            }
             if(cap.voxels().isEmpty())continue;
             long actual=attempt.globalSQ8();
             exclusions.add(reverse?new ArcInterval(s,actual+30L*256):new ArcInterval(Math.max(0,actual-30L*256),s));
@@ -448,7 +452,24 @@ public final class RealizationPlanner {
             }
             return template.compile(candidate);
             });
-        }catch(WallFailure failure){if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT)throw failure;return null;}
+        }catch(WallFailure failure){
+            // A component that cannot be placed is one broken link, not a reason to abandon the whole
+            // corridor: the caller records the break and carries on (FORT0 logs FORT0_DEGRADED and the
+            // wall keeps its remaining segments). T0_MISSING belongs here too — it says this component's
+            // axis aligned world bounds reach terrain the fine sample never captured, which is exactly as
+            // site-local as an ownership conflict. It only happens for a corridor planned with a narrower
+            // band than this build uses (a saved plan) or a footprint wider than WallFinePlanner.LATERAL.
+            if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT&&failure.code()!=FailureCode.T0_MISSING)throw failure;
+            if(failure.code()==FailureCode.T0_MISSING){
+                // Dropping a component is the safe cushion, but it is not allowed to be quiet: a hole in
+                // the fine sample means someone is planning with a band narrower than this build widens it
+                // to, and the gap in the wall is the only other symptom.
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                        "[GreatWall:S1C] COMPONENT_SKIPPED kind={} reason={}; the wall leaves a gap here",
+                        kind, failure.getMessage());
+            }
+            return null;
+        }
     }
     private ComponentInput componentInput(Input input,SiteRecord site,List<Station> stations,DecaySample decay,List<WaterEvidence> waters,
             DimensionBounds bounds,Map<Point3i,ProbeResult> known) {

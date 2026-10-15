@@ -10,7 +10,7 @@ import local.plaincraft.greatwall.model.WallTypes.Quality;
  * remaining columns are filled with.
  *
  * <h2>Why this exists</h2>
- * A cross-section is {@code 2 * LATERAL + 1} = 49 columns per route point, and the corridor is
+ * A cross-section is {@code 2 * LATERAL + 1} columns per route point, and the corridor is
  * millions of blocks long, so the fine sample's cost is essentially the number of columns it probes.
  * This plan probes a sparse base set, then spends extra probes only where the terrain demands them.
  *

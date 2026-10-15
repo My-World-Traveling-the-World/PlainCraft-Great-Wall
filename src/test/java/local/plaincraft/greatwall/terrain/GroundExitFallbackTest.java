@@ -107,11 +107,18 @@ class GroundExitFallbackTest {
             public CompletableFuture<Void> persist(GroundExitDecision decision){return CompletableFuture.completedFuture(null);}
         },worker,1<<20);
     }
-    @Test void missingFootprintColumnFailsBeforeExitCanBeVotedDown() {
+    @Test void missingFootprintColumnDropsTheComponentAndPublishesTheGap() {
         var f=fixture();var i=at(f,0);var columns=new HashMap<>(i.columns());columns.remove(new Point3i(-20,0,-20));
         var incomplete=new RealizationPlanner.Input(i.key(),i.plans(),i.tiles(),columns,i.protectedBounds(),i.frozenGateY(),i.gateRevision(),i.protectionHash());
-        var failure=assertThrows(WallFailure.class,()->f.planner().inspect(incomplete));
-        assertEquals(FailureCode.T0_MISSING,failure.code(),"cache absence is not physical infeasibility");
+        // A cache hole is not physical infeasibility: the footprint screen refuses to place the
+        // component and the refusal is published as a realized break. It must never be read as
+        // "this component cannot prove a ground exit" and quietly replaced by an earlier exit —
+        // the gap has to be visible in the plan.
+        var slice=assertDoesNotThrow(()->f.planner().inspect(incomplete));
+        assertTrue(slice.breaks().stream().anyMatch(b->b.scope()==BreakScope.REALIZED),
+                "the dropped component must be reported as a realized break, not swallowed");
+        assertTrue(slice.exits().stream().noneMatch(e->e.site().equals(f.root().id())),
+                "a component that was not placed cannot prove a ground exit either");
     }
     private static final class RidgeColumn implements SurfaceProbe.ColumnView {
         private final int ground;

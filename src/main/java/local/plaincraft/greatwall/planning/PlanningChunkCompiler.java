@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import local.plaincraft.greatwall.generation.ChunkPlanCompiler;
 import local.plaincraft.greatwall.generation.CoveragePlanner;
+import local.plaincraft.greatwall.generation.SurfaceProbe;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.RealizationPlanner;
 
@@ -64,7 +65,7 @@ public final class PlanningChunkCompiler {
      */
     public Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash,
                                                        String dimension, OwnerProgress progress) {
-        record Owned(CellKey cell, ChunkKey owner, SegmentPlan plan) { }
+        record Owned(CellKey cell, ChunkKey owner, List<ChunkKey> owners, SegmentPlan plan) { }
         var work = new java.util.ArrayList<Owned>();
         for (var plan : plans.plans()) {
             // For each segment, enumerate the chunks its realization owners cover.
@@ -74,29 +75,41 @@ public final class PlanningChunkCompiler {
             var lastCell = Math.floorDiv(to + 64L * 256 - 1, 64L * 256);
             for (long cell = firstCell; cell <= lastCell; cell++) {
                 var cellKey = new CellKey(recipeHash, dimension, cell);
-                for (var owner : coverage.realizationOwners(cellKey, new PlanWindow(List.of(plan)))) {
-                    work.add(new Owned(cellKey, owner, plan));
+                var owners = coverage.realizationOwners(cellKey, new PlanWindow(List.of(plan)));
+                for (var owner : owners) {
+                    // The whole owner list travels with the item: a component's support table and its
+                    // ground-exit walk read every cell of its axis-aligned bounds, which reaches into
+                    // the neighbouring chunks, so the column map of one owner alone cannot serve it.
+                    work.add(new Owned(cellKey, owner, owners, plan));
                 }
             }
         }
         var result = new HashMap<ChunkKey, ChunkWritePlan>();
         var provider = new PlanningColumnProvider(index);
         if (progress != null) progress.accept(0, work.size());
+        CellKey cachedCell = null;
+        Map<Point3i, SurfaceProbe.ColumnView> cachedColumns = null;
         int done = 0;
         for (var item : work) {
+            // Every item of a cell carries the same owner list, so the column map is built once per
+            // cell and reused for each of its owners (building it is a scan over those owners).
+            if (!item.cell().equals(cachedCell)) {
+                cachedCell = item.cell();
+                cachedColumns = provider.columnsFor(item.owners());
+            }
             // Resolve the realization and clip it to this owner; each owner gets its own window
             // instance, exactly as the single-pass shape did.
-            compileOwner(item.cell(), item.owner(), new PlanWindow(List.of(item.plan())),
-                    recipeHash, provider, result);
+            compileOwner(item.cell(), item.owner(), cachedColumns, new PlanWindow(List.of(item.plan())),
+                    recipeHash, result);
             done++;
             if (progress != null) progress.accept(done, work.size());
         }
         return Map.copyOf(result);
     }
 
-    private void compileOwner(CellKey cell, ChunkKey owner, PlanWindow plans, String recipeHash,
-            PlanningColumnProvider provider, Map<ChunkKey, ChunkWritePlan> into) {
-        var columns = provider.columnsFor(List.of(owner));
+    private void compileOwner(CellKey cell, ChunkKey owner,
+            Map<Point3i, SurfaceProbe.ColumnView> columns, PlanWindow plans, String recipeHash,
+            Map<ChunkKey, ChunkWritePlan> into) {
         var protection = new ArrayList<>(structures);
         String protectionHash = local.plaincraft.greatwall.geometry.DeterministicHash.sha256(
                 structures.stream().map(Bounds::toString).sorted().toList().toString()

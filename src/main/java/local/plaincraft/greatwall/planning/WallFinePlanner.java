@@ -26,11 +26,35 @@ public final class WallFinePlanner {
     private WallFinePlanner() {
     }
 
-    /** Half-width in blocks: the wall is 10 blocks wide, but the full footprint must also cover the
-     *  widest fixed component (FORT, whose cross-wall footprint is z in [-24,24]), so the planner
-     *  samples 24 columns on each side of centre. This lets every component's realization read a
-     *  planning column without any per-block terrain dependency. */
-    public static final int LATERAL = 24;
+    /** Half-width in blocks of the sampled band.
+     *
+     *  <p>The wall is 10 blocks wide, but the band must cover more than the widest footprint: a
+     *  component's realization reads the columns of its <em>axis aligned</em> world bounds, not of
+     *  its rotated footprint ({@code RealizationPlanner.componentInput} refuses to place a component
+     *  when any column of that box is missing), and
+     *  {@code RealizationPlanner.naturalExit} additionally walks the ground out to the same box.</p>
+     *
+     *  <p>For a footprint whose local half extents are {@code A} along the wall and {@code B} across
+     *  it, turned by {@code theta}, the axis aligned box reaches {@code B + A*sin(2*theta)} blocks
+     *  sideways — worst at 45 degrees. The widest templates are FORT (A=24, B=24 -> 48),
+     *  GATE/RAMP/END_CAP (A=30, B=15 -> 45) and WallSection (A=32, B=5 -> 37); a numeric sweep of
+     *  every integer theta gives 50.22 as the true worst case. With the one-cell padding
+     *  {@code Rasterizer.worldBounds} adds, 52 covers it.</p>
+     *
+     *  <p>Cost: the emitted cross-section grows from 49 to 105 columns. The probe count grows much
+     *  less (the sparse plan strides the wings), and the columns inside the old ±24 wall band keep
+     *  their lateral parity because both bounds are even, so the wall's own planning values are
+     *  unchanged.</p> */
+    public static final int LATERAL = 52;
+
+    /** Blocks of extra cross-sections sampled past each end of the route.
+     *
+     *  <p>The terminal components sit <em>on</em> the route ends (FORT0 and GATE0 are placed at arc
+     *  0) and lean outwards, so their axis aligned boxes reach {@code A + B} blocks beyond the end
+     *  (48 worst case, see {@link #LATERAL}). The band is therefore carried past both ends along the
+     *  terminal tangent, which also gives the end caps the apron they need to find a natural ground
+     *  exit.</p> */
+    public static final int APRON_BLOCKS = 64;
 
     /** One accurately-sampled column. {@code lateral} is the signed offset from the centre line,
      *  in the wall's local frame (positive = one side, negative = the other); 0 is the centre. */
@@ -78,16 +102,13 @@ public final class WallFinePlanner {
     }
 
     private static void step(Cursor c) {
-        if (c.index >= c.toIndex) {
+        if (c.index >= c.end) {
             c.completed = true;
             return;
         }
         if (c.pending == null) {
             // Emit the cross-section sample points for the current centre point.
-            var centre = c.route.points().get(c.index);
-            int cx = FixedMath.floorBlock(centre.xQ8());
-            int cz = FixedMath.floorBlock(centre.zQ8());
-            c.pending = crossSection(c.route.points(), c.index, cx, cz);
+            c.pending = c.section();
             // The plan decides which of those columns the accurate probe must visit; the rest take a
             // conservative fill derived from their probed neighbours.
             c.plan = new FineSamplePlan(c.pending.size(), c.rules, c.waterCarry);
@@ -143,14 +164,19 @@ public final class WallFinePlanner {
             dx = points.get(index).xQ8() - prev.xQ8();
             dz = points.get(index).zQ8() - prev.zQ8();
         }
-        // Unit normal = rotate the unit tangent 90°: (-dz, dx). Scale to LATERAL blocks in Q8.
         double length = StrictMath.hypot(dx, dz);
         if (length < 1.0) {
             // Degenerate segment; fall back to a single centre column.
             return List.of(new Target(cx, cz, 0));
         }
-        double ux = dx / length, uz = dz / length;
-        double nx = -uz, nz = ux; // unit normal
+        return crossSection(dx / length, dz / length, cx, cz);
+    }
+
+    /** Emits the centre + lateral columns around {@code (cx, cz)} for unit tangent {@code (ux, uz)}.
+     *  Keeping the tangent as the argument is what lets the piece past each route end reuse the
+     *  terminal cross-section verbatim (see {@link #apron}). */
+    private static List<Target> crossSection(double ux, double uz, int cx, int cz) {
+        double nx = -uz, nz = ux; // unit normal: the unit tangent rotated 90°
         var result = new ArrayList<Target>(2 * LATERAL + 1);
         var seen = new java.util.HashSet<Long>();
         for (int lateral = -LATERAL; lateral <= LATERAL; lateral++) {
@@ -162,11 +188,35 @@ public final class WallFinePlanner {
         return result;
     }
 
+    /** A cross-section {@code alongBlocks} beyond the route end at {@code endIndex}, along the
+     *  terminal chord, keeping that end's normal — the same centre/normal rule as the route itself,
+     *  so the apron is a pure function of the route too. {@code forward} selects the tail end. */
+    private static List<Target> apron(List<Point2q> points, int endIndex, int alongBlocks, boolean forward) {
+        var end = points.get(endIndex);
+        var other = points.get(forward ? Math.max(0, endIndex - 1) : Math.min(points.size() - 1, endIndex + 1));
+        // Tangent pointing forward along the route, whichever end we are extending.
+        long dx = forward ? end.xQ8() - other.xQ8() : other.xQ8() - end.xQ8();
+        long dz = forward ? end.zQ8() - other.zQ8() : other.zQ8() - end.zQ8();
+        int cx = FixedMath.floorBlock(end.xQ8());
+        int cz = FixedMath.floorBlock(end.zQ8());
+        double length = StrictMath.hypot(dx, dz);
+        if (length < 1.0) return List.of(new Target(cx, cz, 0));
+        double ux = dx / length, uz = dz / length;
+        double sign = forward ? 1.0 : -1.0;
+        int x = (int) Math.floor(end.xQ8() / 256.0 + sign * ux * alongBlocks);
+        int z = (int) Math.floor(end.zQ8() / 256.0 + sign * uz * alongBlocks);
+        return crossSection(ux, uz, x, z);
+    }
+
     public static final class Cursor {
         private final RouteShape route;
         private final NaturalTerrainOracle oracle;
-        /** Point range this cursor covers: {@code [fromIndex, toIndex)}. */
+        /** Point range this cursor covers: {@code [fromIndex, toIndex)} plus any end apron. */
         private final int fromIndex, toIndex;
+        /** One past the last index this cursor walks; negative indices are the leading apron. */
+        private final int end;
+        /** Extra cross-sections past each route end, owned by whichever cursor holds that end. */
+        private final int apronBefore, apronAfter;
         private Thread owner;
         private final List<FineColumn> results = new ArrayList<>();
         /** Sampling rules captured once per cursor: a config edit must not change a run mid-corridor. */
@@ -187,7 +237,21 @@ public final class WallFinePlanner {
             this.oracle = oracle;
             this.fromIndex = Math.max(0, fromIndex);
             this.toIndex = Math.min(route.points().size(), Math.max(this.fromIndex, toIndex));
-            this.index = this.fromIndex;
+            // Only the cursor that holds a route end samples past it, so every apron column is
+            // produced exactly once — PlannerScheduler predicts the same split for its progress bar.
+            this.apronBefore = this.fromIndex == 0 ? APRON_BLOCKS : 0;
+            this.apronAfter = this.toIndex == route.points().size() ? APRON_BLOCKS : 0;
+            this.index = -this.apronBefore;
+            this.end = this.toIndex + this.apronAfter;
+        }
+
+        /** The current cross-section: a route point, or the apron past one of the route's ends. */
+        private List<Target> section() {
+            var points = route.points();
+            if (index < 0) return apron(points, 0, -index, false);
+            if (index >= points.size()) return apron(points, points.size() - 1, index - (points.size() - 1), true);
+            var centre = points.get(index);
+            return crossSection(points, index, FixedMath.floorBlock(centre.xQ8()), FixedMath.floorBlock(centre.zQ8()));
         }
 
         private void claimOwner() {
