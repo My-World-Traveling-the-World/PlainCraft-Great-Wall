@@ -98,6 +98,40 @@ class WallFinePlannerTest {
         }
     }
 
+    @Test void skippingRedundantSectionsNeverDropsAColumn() {
+        // The planner drops a cross-section whose columns it has already sampled: consecutive route
+        // points sit a fraction of a block apart, so their sections round to the same integers, and a
+        // column's sample is a pure function of its (x, z) - repeating the walk only costs time. This
+        // guard walks every section the planner would have walked and asserts the finished set still
+        // holds all of them, so a regression in the skip condition shows up as a missing column rather
+        // than as a component that silently refuses to compile in production.
+        var recipe = PlanningFixtures.recipe(9282026);
+        var route = route(recipe);
+        try (var oracle = AnalyticTerrainOracle.ridge(true)) {
+            var cursor = WallFinePlanner.begin(route, oracle);
+            while (WallFinePlanner.advance(cursor, 64) != WorkState.DONE) { }
+            var emitted = new java.util.HashSet<Long>();
+            for (var c : WallFinePlanner.finish(cursor)) emitted.add(key(c.x(), c.z()));
+            var missing = new java.util.ArrayList<String>();
+            for (int i = 0; i < route.points().size(); i++) {
+                var centre = route.points().get(i);
+                for (var target : WallFinePlanner.crossSection(route.points(), i,
+                        local.plaincraft.greatwall.geometry.FixedMath.floorBlock(centre.xQ8()),
+                        local.plaincraft.greatwall.geometry.FixedMath.floorBlock(centre.zQ8()))) {
+                    if (!emitted.contains(key(target.x(), target.z()))) {
+                        missing.add(target.x() + "," + target.z());
+                    }
+                }
+            }
+            assertTrue(missing.isEmpty(), "skipping lost " + missing.size()
+                    + " centre columns, e.g. " + missing.subList(0, Math.min(5, missing.size())));
+        }
+    }
+
+    private static long key(int x, int z) {
+        return ((long) x << 32) ^ (z & 0xffffffffL);
+    }
+
     @Test void unfinishableAndOwnerConfined() {
         var recipe = PlanningFixtures.recipe(9282026);
         var route = route(recipe);

@@ -240,7 +240,7 @@ public final class PrewarmProgress {
     /**
      * Publishes the root search's candidate progress for the loading card.
      *
-     * <p>The search scans a finite ring of candidates (4 radii x 36 angles = 144) before any
+     * <p>The search scans a finite ring of candidates (the rings defined in RootSearch) before any
      * segment exists. Without this number the card could only show "searching", which looks
      * frozen for the minutes the search can take. The candidate index is the one monotonically
      * advancing signal, so it is what the card reports.
@@ -254,7 +254,7 @@ public final class PrewarmProgress {
      * Publishes the root-search phase for the loading card.
      *
      * <p>The phases are coarse (0), footprint (1), axis (2), structure screen (4) and entrance
-     * (5). The card shows the phase so the player can tell "still screening 144 candidates" from
+     * (5). The card shows the phase so the player can tell "still screening ring candidates" from
      * "validating structure conflicts", which otherwise all read as one long "searching".
      */
     public static void setRootPhase(int phase) {

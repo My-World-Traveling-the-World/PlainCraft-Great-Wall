@@ -129,6 +129,16 @@ public final class WallFinePlanner {
         if (c.pending == null) {
             // Emit the cross-section sample points for the current centre point.
             c.pending = c.section();
+            if (redundant(c)) {
+                // Every column of this section is already sampled by this cursor, so walking it would
+                // add nothing but the walk. Dropping the repeat cannot lose a column (a section is only
+                // redundant when each of its columns was already sampled) and cannot change a value (a
+                // column's sample is a pure function of its (x, z)), so the merged index is identical -
+                // it just costs a fraction of the probe work.
+                c.pending = null;
+                c.index++;
+                return;
+            }
             // The plan decides which of those columns the accurate probe must visit; the rest take a
             // conservative fill derived from their probed neighbours.
             c.plan = new FineSamplePlan(c.pending.size(), c.rules, c.waterCarry);
@@ -182,15 +192,32 @@ public final class WallFinePlanner {
         int slot = c.emit++;
         var target = c.pending.get(slot);
         c.results.add(new FineColumn(target.x(), target.z(), target.lateral(), c.plan.column(slot)));
+        c.sampled.add(key(target.x(), target.z()));
     }
 
-    /** A pending sample coordinate before the oracle resolves it. */
-    private record Target(int x, int z, int lateral) {}
+    /** True when every column of the cursor's pending section has already been sampled by that cursor. */
+    private static boolean redundant(Cursor c) {
+        if (c.sampled.isEmpty()) return false;
+        for (var target : c.pending) {
+            if (!c.sampled.contains(key(target.x(), target.z()))) return false;
+        }
+        return true;
+    }
+
+    /** Packs a column coordinate the way the merged index keys it. */
+    private static long key(int x, int z) {
+        return ((long) x << 32) ^ (z & 0xffffffffL);
+    }
+
+    /** A pending sample coordinate before the oracle resolves it.
+     *  Package-private together with {@link #crossSection} so the redundant-section guard test can
+     *  walk exactly the sections the planner walks. */
+    record Target(int x, int z, int lateral) {}
 
     /** Emits the centre + lateral columns for route point {@code index}, deduplicated by (x,z).
      *  The lateral direction is the local frame of the wall: normal to the tangent, with lateral=0
      *  at the centre. We use the chord to the next point (or the previous, at the tail) as tangent. */
-    private static List<Target> crossSection(List<Point2q> points, int index, int cx, int cz) {
+    static List<Target> crossSection(List<Point2q> points, int index, int cx, int cz) {
         long dx, dz;
         if (index + 1 < points.size()) {
             var next = points.get(index + 1);
@@ -258,6 +285,14 @@ public final class WallFinePlanner {
         private final List<FineColumn> results = new ArrayList<>();
         /** Columns resolved by a walk or by the cache; the fills are deliberately not included. */
         private final List<FineColumn> probed = new ArrayList<>();
+        /**
+         * The (x, z) columns this cursor has already emitted.
+         *
+         * <p>Route points sit a fraction of a block apart, so consecutive cross-sections round to
+         * nearly the same integer columns. The merged index is keyed by (x, z), so a repeated section
+         * would be walked and then thrown away by the merge. See {@link #redundant}.
+         */
+        private final java.util.HashSet<Long> sampled = new java.util.HashSet<>();
         /** Reused samples from an earlier session; {@link FineSampleCache#none()} disables reuse. */
         private final FineSampleCache cache;
         /** Sampling rules captured once per cursor: a config edit must not change a run mid-corridor. */

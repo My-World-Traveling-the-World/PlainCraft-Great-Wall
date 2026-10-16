@@ -61,14 +61,15 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
     }
     @Override public CompletableFuture<List<Vote>> inspect(List<Candidate> candidates) {
         var frozen=List.copyOf(candidates);
-        if(frozen.size()>144)throw new WallFailure(FailureCode.CAPACITY,"root candidate set exceeds frozen ring");
+        if(frozen.size()>local.plaincraft.greatwall.lifecycle.RootSearch.RADIUS_COUNT*36)
+            throw new WallFailure(FailureCode.CAPACITY,"root candidate set exceeds frozen ring");
         active();producers.merge("count",1,Integer::sum);
         // Batch, don't fully chain. The old thenComposeAsync chain started candidate N+1 only
         // after candidate N's chunk lease had fully loaded AND voted, so chunk generation was
         // serialised one candidate at a time. Firing a bounded window of candidates up front
         // lets their chunk requests hit the queue together and load in parallel, while the
         // window keeps the in-flight lease count (each up to 81 chunks) bounded instead of
-        // materialising all 144 candidates' leases at once.
+        // materialising every ring candidate's lease at once.
         var votes=new ArrayList<Vote>(frozen.size());
         var completed=new java.util.concurrent.atomic.AtomicInteger();
         CompletableFuture<Void> chain=CompletableFuture.completedFuture(null);

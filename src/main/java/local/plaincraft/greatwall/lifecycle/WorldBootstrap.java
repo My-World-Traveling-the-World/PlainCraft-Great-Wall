@@ -548,10 +548,10 @@ public final class WorldBootstrap implements AutoCloseable {
             // Publish the candidate index to the loading card, so the root search shows a
             // moving number rather than an indeterminate "searching" that reads as frozen.
             var now = batch.progress();
-            PrewarmProgress.setRootProgress(now.candidate(), 144);
+            PrewarmProgress.setRootProgress(now.candidate(), RootSearch.RADIUS_COUNT * 36);
             PrewarmProgress.setRootPhase(now.phase());
             // Logged only when the candidate advances, and never more than the finite
-            // candidate set (at most 144 of them).
+            // candidate set (RADIUS_COUNT radii x 36 angles).
             long lastCandidate = lastLoggedCandidate.get();
             if (now.candidate() != lastCandidate && now.candidate() < 200) {
                 lastLoggedCandidate.set(now.candidate());

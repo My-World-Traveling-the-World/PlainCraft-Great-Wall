@@ -442,7 +442,17 @@ public final class WorldServices {
                     // keep draining until the local queue is empty
                 }
             }
-            if (System.nanoTime() >= deadlineNanos) return true;
+            if (System.nanoTime() >= deadlineNanos) {
+                // Historically this gave up silently: the wall stopped waiting, the road gate stayed
+                // closed until the road's own timeout expired, and nothing in the log said why the
+                // player waited twice. Report it and open the gate, so the road proceeds on a stated
+                // reason instead of a mystery.
+                GreatWallMod.LOGGER.error("[GreatWall:S1C] PREWARM_WAIT_TIMEOUT after {} minute(s); "
+                                + "the wall gives up its startup stage and the road gate is opened without it",
+                        timeoutMinutes);
+                PrewarmProgress.finish(false);
+                return true;
+            }
             // Wait on the segment latch, never on the peer gate: that one only opens once the
             // compile below has published, so waiting on it here would wait on ourselves.
             if (!PrewarmProgress.awaitCompletion(0, java.util.concurrent.TimeUnit.NANOSECONDS)) return false;

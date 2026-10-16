@@ -114,6 +114,23 @@ public final class PlannerScheduler implements AutoCloseable {
      */
     private static final int LANE_BATCH_OPERATIONS = 256;
 
+    /** How often the fine sample reports progress while it runs. */
+    private static final long FINE_SAMPLE_REPORT_MILLIS = 30_000L;
+
+    /**
+     * Live counters of the running fine sample, published by {@link #requireFineSamples} so the
+     * driver can report progress.
+     *
+     * <p>The fine sample is the longest silent stretch of the startup: it walks a cross-section per
+     * route point and logs nothing until the whole index is complete, so a slow run and a hung one
+     * look identical from the outside - the loading card only shows a column count that the player
+     * cannot tell is moving. These are the same counters the card reads.
+     */
+    private volatile java.util.concurrent.atomic.AtomicInteger fineSampleDone;
+    private volatile java.util.concurrent.atomic.AtomicInteger fineSampleTotal;
+    private volatile long fineSampleStartNanos;
+    private volatile long fineSampleLastLogNanos;
+
     /**
      * The prewarm's segment leases, pinned until the planning compile has published them.
      *
@@ -294,6 +311,11 @@ public final class PlannerScheduler implements AutoCloseable {
         // denominator starts at 1 and grows as slices are enqueued (their point ranges are known
         // before they are sampled), and max() keeps the fraction monotone.
         var expectedColumns = new java.util.concurrent.atomic.AtomicInteger(1);
+        // Publish the counters before the driver starts: the driver reports them every 30 s.
+        fineSampleDone = sampledColumns;
+        fineSampleTotal = expectedColumns;
+        fineSampleStartNanos = System.nanoTime();
+        fineSampleLastLogNanos = 0L;
         // Drive this stage ourselves: without it the fine sample waits on server ticks, which is how
         // a measured session spent 27 minutes here without finishing a single slice.
         startFineSampleDriver();
@@ -657,10 +679,39 @@ public final class PlannerScheduler implements AutoCloseable {
         if (fineSampleTimer != null || closed()) return;
         fineSampleTimer = pump.scheduleWithFixedDelay(() -> {
             if (closed() || fineSampleTimer == null) return;
+            reportFineSampleProgress();
             credits = 4096;
             deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25);
             dispatch();
         }, 0, GreatWallConfig.get().fineSampleDriverIntervalMs(), TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Logs one fine-sample progress line every {@link #FINE_SAMPLE_REPORT_MILLIS} ms while the stage
+     * runs: columns sampled, the stage's own denominator, the rate and an ETA. Called from the fine
+     * sample's own driver (once per millisecond), so it must stay cheap when it does not log.
+     */
+    private void reportFineSampleProgress() {
+        var done = fineSampleDone;
+        var total = fineSampleTotal;
+        if (done == null || total == null) return;
+        long start = fineSampleStartNanos;
+        if (start == 0L) return;
+        long now = System.nanoTime();
+        long last = fineSampleLastLogNanos;
+        if (last != 0L && now - last < TimeUnit.MILLISECONDS.toNanos(FINE_SAMPLE_REPORT_MILLIS)) return;
+        fineSampleLastLogNanos = now;
+        int columns = done.get();
+        int expected = total.get();
+        double seconds = Math.max(0.001, (now - start) / 1_000_000_000.0);
+        double rate = columns / seconds;
+        String eta = expected > columns && rate > 0.0
+                ? String.format(java.util.Locale.ROOT, "%.0f", (expected - columns) / rate)
+                : "?";
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_PROGRESS columns={} expected={} rate={}/s "
+                        + "eta={}s lanes={} chunkCacheHits={} chunkCacheMisses={}",
+                columns, expected, String.format(java.util.Locale.ROOT, "%.0f", rate), eta,
+                laneState.size(), laneDiagnostic("chunk-cache-hits"), laneDiagnostic("chunk-cache-misses"));
     }
 
     /** Stops the fine sample's driver. Idempotent, and safe to call from any completion path. */
