@@ -218,6 +218,11 @@ public final class CorridorStructureScan {
      * Hardware-scaled scan budget, mirroring RoadWeaver's {@code StartupHardwareProfile.resolve}:
      * reserve cores on big machines, cap by heap so a small JVM cannot over-subscribe, and stay
      * aggressive for startup prewarm while bounded so a huge world cannot queue unbounded work.
+     *
+     * <p>The heap tiers are deliberately generous at 16 GiB and up: a scan worker holds chunk leases
+     * and parses structure references in short-lived allocations, so the scan's own footprint is far
+     * smaller than the walk phases that run around it. Measured on the 8-core/16-thread pack machine
+     * with a 16 GiB heap, the 8-worker cap left the scan at 148-186 s while the CPU had room.
      */
     static int adaptiveScanWorkers() {
         int processors = Math.max(1, Runtime.getRuntime().availableProcessors());
@@ -225,8 +230,8 @@ public final class CorridorStructureScan {
         int cpuBudget = processors >= 12 ? Math.max(2, processors - 2) : Math.max(2, processors / 3);
         int memoryBudget = heapGiB <= 4L ? 2
                 : heapGiB <= 8L ? 4
-                : heapGiB <= 16L ? 8
-                : heapGiB <= 24L ? 12
+                : heapGiB <= 16L ? 12
+                : heapGiB <= 24L ? 14
                 : 16;
         return Math.max(2, Math.min(16, Math.min(cpuBudget, memoryBudget)));
     }

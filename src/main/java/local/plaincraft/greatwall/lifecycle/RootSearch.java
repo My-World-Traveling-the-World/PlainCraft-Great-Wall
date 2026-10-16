@@ -41,7 +41,7 @@ public final class RootSearch {
      * ring offers. Relief stays capped because a pad that spans a cliff cannot carry a fort at
      * all; the cap is now stated in blocks instead of being the historic flat 12.
      */
-    private static final int MAX_UNSUPPORTED_FOOTPRINT_CELLS = 460;
+    static final int MAX_UNSUPPORTED_FOOTPRINT_CELLS = 460;
     private static final int MAX_WET_FOOTPRINT_CELLS = 691;
     private static final int MAX_FOOTPRINT_RELIEF = 32;
     /**
@@ -267,7 +267,17 @@ public final class RootSearch {
         if (value == null) return;
         acceptHeight(value);
         if (sampleIndex == 40) centerHeight = value.groundTopY();
-        if (++sampleIndex < 81) return;
+        sampleIndex++;
+        // (A) Exact-equivalence early exit: an unusable candidate is one with invalidSamples*8 > 81,
+        // i.e. at least 11 unusable columns of 81, and that count only grows. Walking the remaining
+        // columns cannot change the verdict, it only spends the walk - the ring is already refused.
+        if (invalidSamples * 8 > 81) {
+            coarseInvalid++;
+            audit.add(new Audit("coarse", origin, candidateIndex / 36, candidateIndex % 36, -1,
+                    wet, invalidSamples, 0, min, max, "REJECTED_INVALID"));
+            candidateIndex++; resetSamples(); return;
+        }
+        if (sampleIndex < 81) return;
         boolean historic = !invalid && wet * 10 <= 81 && max - min <= 12;
         // Admission is wide, the ranking is strict. The historic gate (<=8 wet columns of 81, relief
         // <=12) rejected all 144 ring candidates once the reference walk stopped reading its density
@@ -326,26 +336,46 @@ public final class RootSearch {
         // river-cut. The bound still keeps a fort out of a lake, and off ground that cannot carry it.
         if (failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS) invalid = true;
         if (wet > MAX_WET_FOOTPRINT_CELLS) invalid = true;
-        if (++sampleIndex < 48 * 48) return;
-        boolean reliefOk = max - min <= MAX_FOOTPRINT_RELIEF;
-        boolean padOk = !invalid && reliefOk;
-        audit.add(new Audit("footprint", current.origin(), current.radius(), current.angle(), -1,
-                wet, invalidSamples, failedFoundations, min, max,
-                padOk ? "FOUNDATION_ELIGIBLE" : "REJECTED"));
-        if (!padOk) {
-            // A rejected pad has to say why it was rejected, otherwise the next session can only
-            // repeat "no site" without saying whether the water, the support or the relief did it.
-            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                    "[GreatWall:S1C] ROOT_FOOTPRINT_REJECTED radius={} angle={} unsupported={}/{} wet={}/{} spread={}/{} height={} water={} support={} relief={}",
-                    current.radius(), current.angle(), failedFoundations, 48 * 48, wet, 48 * 48,
-                    max - min, MAX_FOOTPRINT_RELIEF, current.origin().y(),
-                    wet > MAX_WET_FOOTPRINT_CELLS, failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS, !reliefOk);
-            selectedIndex++; resetSamples(); return;
+        sampleIndex++;
+        // (A) Exact-equivalence early exit: both tolerated bounds only grow while the pad is walked, so
+        // once either is crossed the pad is refused whatever the remaining cells hold.
+        if (invalid) {
+            rejectFootprint(current, wet > MAX_WET_FOOTPRINT_CELLS,
+                    failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS, false);
+            return;
         }
+        if (sampleIndex < 48 * 48) return;
+        boolean reliefOk = max - min <= MAX_FOOTPRINT_RELIEF;
+        if (!reliefOk) {
+            rejectFootprint(current, wet > MAX_WET_FOOTPRINT_CELLS,
+                    failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS, true);
+            return;
+        }
+        audit.add(new Audit("footprint", current.origin(), current.radius(), current.angle(), -1,
+                wet, invalidSamples, failedFoundations, min, max, "FOUNDATION_ELIGIBLE"));
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:S1C] ROOT_FOOTPRINT_ACCEPTED radius={} angle={} unsupported={}/{} wet={} spread={} height={}",
                 current.radius(), current.angle(), failedFoundations, 48 * 48, wet, max - min, current.origin().y());
         phase = 2; axisIndex = 0; resetSamples();
+    }
+
+    /**
+     * Records and logs a refused pad. The (A) early exit reaches it mid-walk as well, so the printed
+     * counts are the ones that decided the refusal - not always the full 48x48 totals.
+     */
+    private void rejectFootprint(Candidate current, boolean waterFired, boolean supportFired, boolean reliefFired) {
+        // Every refusal lands in the audit exactly once, whichever path reached it: the early exit
+        // mid-walk, or the full 48x48 walk that only the relief check can still refuse.
+        audit.add(new Audit("footprint", current.origin(), current.radius(), current.angle(), -1,
+                wet, invalidSamples, failedFoundations, min, max, "REJECTED"));
+        // A rejected pad has to say why it was rejected, otherwise the next session can only
+        // repeat "no site" without saying whether the water, the support or the relief did it.
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:S1C] ROOT_FOOTPRINT_REJECTED radius={} angle={} unsupported={}/{} wet={}/{} spread={}/{} height={} water={} support={} relief={}",
+                current.radius(), current.angle(), failedFoundations, 48 * 48, wet, 48 * 48,
+                max - min, MAX_FOOTPRINT_RELIEF, current.origin().y(),
+                waterFired, supportFired, reliefFired);
+        selectedIndex++; resetSamples();
     }
 
     private void axisStep(NaturalTerrainOracle oracle) {
@@ -386,7 +416,16 @@ public final class RootSearch {
         acceptHeight(value);
         if (sampleIndex % 3 == 0) centerHeight = value.groundTopY();
         else axisScore += centerHeight - (long) value.groundTopY();
-        if (++sampleIndex < 9) return;
+        sampleIndex++;
+        // (A) Exact-equivalence early exit: axisOk needs invalidSamples*3 <= 9 (at most three censored
+        // columns of nine) and wet <= 3, and both counts only grow. A line that has already spent its
+        // tolerance cannot recover, so the remaining columns would only be walk time.
+        if (invalidSamples * 3 > 9 || wet > 3) {
+            audit.add(new Audit("axis", current.origin(), current.radius(), current.angle(), axisIndex, wet,
+                    invalidSamples, 0, min, max, "REJECTED"));
+            axisIndex++; resetSamples(); return;
+        }
+        if (sampleIndex < 9) return;
         // One wet column in nine is tolerated. The axis is a line the wall can bridge - that is what
         // its water gate is for - and the pad itself was already cleared by the footprint phase.
         // Zero tolerance here is what a water-blind probe made look free.

@@ -362,9 +362,23 @@ public final class PlannerScheduler implements AutoCloseable {
                 routesPending.incrementAndGet();
                 long segment = i;
                 lease.future().whenCompleteAsync((route, error) -> {
+                    if (error != null) {
+                        aggregate.completeExceptionally(error);
+                        if (routesPending.decrementAndGet() == 0) completion.run();
+                        return;
+                    }
+                    if (closed()) {
+                        aggregate.completeExceptionally(closedFailure());
+                        if (routesPending.decrementAndGet() == 0) completion.run();
+                        return;
+                    }
+                    // The wide arcs sit at absolute stations, so the segment's starting arc has to be
+                    // resolved before its cross-sections can be sized. The prefix index answers from its
+                    // own cache and its lease closes to a no-op.
+                    prefixes.requireBefore(segment).future().whenCompleteAsync((prefix, prefixError) -> {
                     try {
-                        if (error != null) { aggregate.completeExceptionally(error); return; }
-                        if (closed()) { aggregate.completeExceptionally(closedFailure()); return; }
+                        if (prefixError != null) { aggregate.completeExceptionally(prefixError); return; }
+                        var wideAt = widePoints(route, prefix.lengthBeforeQ8());
                         int points = route.points().size();
                         int perSlice = Math.max(1, (points + slices - 1) / slices);
                         for (int s = 0; s < slices; s++) {
@@ -372,15 +386,16 @@ public final class PlannerScheduler implements AutoCloseable {
                             if (from >= points) break;
                             int to = Math.min(points, from + perSlice);
                             slicesPending.incrementAndGet();
-                            // Known before the slice is sampled: its point range, times the cross-section
-                            // width. This is what makes the meter a column count instead of a slice count.
-                            // The first and last slice also sample the end aprons, exactly like the
-                            // cursor that owns each route end does (see WallFinePlanner.Cursor).
+                            // Known before the slice is sampled: its point range, each point's own
+                            // cross-section width, plus the aprons the first and last slice carry - exactly
+                            // like the cursor that owns each route end (see WallFinePlanner.Cursor). This is
+                            // what makes the meter a column count instead of a slice count.
                             int apron = (from == 0 ? WallFinePlanner.APRON_BLOCKS : 0)
                                     + (to == points ? WallFinePlanner.APRON_BLOCKS : 0);
-                            expectedColumns.addAndGet((Math.max(1, to - from) + apron) * (2 * WallFinePlanner.LATERAL + 1));
+                            expectedColumns.addAndGet(apron * (2 * WallFinePlanner.LATERAL + 1)
+                                    + sliceColumns(route.localSQ8(), from, to, wideAt));
                             var job = new FineSampleJob(route, from, to, priority,
-                                    new CompletableFuture<List<WallFinePlanner.FineColumn>>(), fineSampleCache);
+                                    new CompletableFuture<List<WallFinePlanner.FineColumn>>(), fineSampleCache, wideAt);
                             enqueue(job);
                             job.result.whenCompleteAsync((columns, sampleError) -> {
                                 try {
@@ -405,6 +420,7 @@ public final class PlannerScheduler implements AutoCloseable {
                         // spawned has finished; either counter alone can hit zero too early.
                         if (routesPending.decrementAndGet() == 0) completion.run();
                     }
+                    }, pump);
                 }, pump);
             }
         } catch (Throwable t) {
@@ -1433,24 +1449,82 @@ public final class PlannerScheduler implements AutoCloseable {
         /** Point sub-range this job samples: {@code [fromPoint, toPoint)} of the route. */
         private final int fromPoint, toPoint;
         private final local.plaincraft.greatwall.terrain.FineSampleCache cache;
+        /** Points of this route that must carry the full band, because a component sits on them. */
+        private final java.util.function.IntPredicate wideAt;
         private WallFinePlanner.Cursor cursor;
         private FineSampleJob(RouteShape route, int fromPoint, int toPoint, Priority priority,
                               CompletableFuture<List<WallFinePlanner.FineColumn>> result,
-                              local.plaincraft.greatwall.terrain.FineSampleCache cache) {
+                              local.plaincraft.greatwall.terrain.FineSampleCache cache,
+                              java.util.function.IntPredicate wideAt) {
             super(priority, "FINE_SAMPLE", result);
             this.route = route;
             this.fromPoint = Math.max(0, fromPoint);
             this.toPoint = Math.min(route.points().size(), Math.max(this.fromPoint, toPoint));
             this.cache = cache;
+            this.wideAt = wideAt;
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
-            if (cursor == null) cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint, cache);
+            if (cursor == null) cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint, cache, wideAt);
             operations += limit;
             return WallFinePlanner.advance(cursor, limit) == WorkState.DONE;
         }
         @Override List<WallFinePlanner.FineColumn> value() { return WallFinePlanner.finish(cursor); }
         /** Columns this slice resolved itself, for the session's cache write. */
         List<WallFinePlanner.FineColumn> probed() { return WallFinePlanner.probed(cursor); }
+    }
+
+    /**
+     * The route points whose cross-section must carry the full {@link WallFinePlanner#LATERAL} band.
+     *
+     * <p>Only forts and gates read past the base width: their axis-aligned box reaches roughly 48
+     * blocks laterally once their frame is rotated. Their stations are a pure function of the absolute
+     * arc - a gate every 800 blocks with a deterministic jitter of ±100, a fort every 4000 with ±500
+     * (see {@link SiteScheduler}) - so the arcs are known before a single column is sampled. Widening a
+     * window no component ends up using costs a few extra columns; missing one would leave the contract
+     * without the columns it requires.</p>
+     */
+    private java.util.function.IntPredicate widePoints(RouteShape route, long fromQ8) {
+        var arcs = route.localSQ8();
+        int points = arcs.size();
+        var wide = new java.util.BitSet(points);
+        long toQ8 = fromQ8 + arcs.get(points - 1);
+        // A component's box reaches at most ~48 blocks along the wall; 96 blocks is slack for the
+        // station's own jitter and for the sampled route drifting off the planned one.
+        long marginQ8 = 96L * 256L;
+        for (long ordinal = Math.max(0L, (fromQ8 - marginQ8) / (800L * 256L) - 1L); ; ordinal++) {
+            long site = sites.gatePositionQ8(ordinal);
+            if (site - marginQ8 > toQ8) break;
+            markWide(wide, arcs, fromQ8, site, marginQ8);
+        }
+        for (long ordinal = Math.max(0L, (fromQ8 - marginQ8) / (4000L * 256L) - 1L); ; ordinal++) {
+            long site = sites.fortPositionQ8(ordinal);
+            if (site - marginQ8 > toQ8) break;
+            markWide(wide, arcs, fromQ8, site, marginQ8);
+        }
+        return wide::get;
+    }
+
+    /** Marks every route point whose arc lies within {@code marginQ8} of the absolute {@code siteQ8}. */
+    private static void markWide(java.util.BitSet wide, List<Long> arcs, long fromQ8, long siteQ8, long marginQ8) {
+        long lowArc = siteQ8 - marginQ8 - fromQ8;
+        long highArc = siteQ8 + marginQ8 - fromQ8;
+        int points = arcs.size();
+        int lo = 0, hi = points;
+        while (lo < hi) {
+            int mid = (lo + hi) >>> 1;
+            if (arcs.get(mid) < lowArc) lo = mid + 1; else hi = mid;
+        }
+        for (int i = lo; i < points && arcs.get(i) <= highArc; i++) wide.set(i);
+    }
+
+    /** Columns the {@code [from, to)} cross-sections emit, the wide points included. */
+    private static int sliceColumns(List<Long> localSQ8, int from, int to,
+                                    java.util.function.IntPredicate wideAt) {
+        int total = 0;
+        for (int i = from; i < to && i < localSQ8.size(); i++) {
+            total += 2 * (wideAt.test(i) ? WallFinePlanner.LATERAL : WallFinePlanner.BASE_LATERAL) + 1;
+        }
+        return total;
     }
 
     private final class HydroJob extends Job<SegmentGeometry> {

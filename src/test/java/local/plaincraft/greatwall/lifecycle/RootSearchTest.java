@@ -42,8 +42,15 @@ final class RootSearchTest {
                 "the search must not stop at the first eight candidates whose pads fail");
         assertTrue(root.progress().shortlisted()<=8);
         assertTrue(root.progress().columns()<=150000);
-        assertEquals(8,root.audit().stream().filter(a->a.stage().equals("footprint")
-                &&a.failedFoundations()==2304&&a.result().equals("REJECTED")).count());
+        // The early exit refuses a pad at the support bound, so the first eight refused pads cost far
+        // fewer foundation checks than a full 2304-cell walk used to; more than eight can therefore
+        // fail inside the same budget. What the search has to show is that it kept walking past the
+        // first eight, recorded every refusal, and recorded the pad it finally accepted.
+        long refused = root.audit().stream().filter(a -> a.stage().equals("footprint")
+                && a.result().equals("REJECTED")).count();
+        assertTrue(refused >= 8, "the first eight pads must all be refused, got " + refused);
+        assertTrue(root.audit().stream().anyMatch(a -> a.stage().equals("footprint")
+                && a.result().equals("FOUNDATION_ELIGIBLE")), "the accepted pad must be recorded");
     }
     @Test void structureScreenPausesWithoutReadingMoreColumnsAndAllConflictsFailClosed() {
         var domain=new SpawnDomain();domain.authorize(new ChunkKey("minecraft:overworld",-63,-63),11);
@@ -161,8 +168,10 @@ final class RootSearchTest {
         // A pad that cannot carry anything stays refused. The walk measures the whole ranked list in
         // batches (capped at FOOTPRINT_CANDIDATE_LIMIT) rather than stopping at the first eight, so
         // that a world whose best candidates all fail the pad still gets the ones behind them tried.
+        // Every refusal is recorded once, at the cell where the support bound was crossed.
         assertEquals(24, rejected.size());
-        assertTrue(rejected.stream().allMatch(row -> row.failedFoundations() == 2304
+        assertTrue(rejected.stream().allMatch(row ->
+                row.failedFoundations() > RootSearch.MAX_UNSUPPORTED_FOOTPRINT_CELLS
                 && row.wetColumns() == 0 && row.invalidSamples() == 0 && row.result().equals("REJECTED")));
         assertThrows(UnsupportedOperationException.class, () -> search.audit().clear());
     }
