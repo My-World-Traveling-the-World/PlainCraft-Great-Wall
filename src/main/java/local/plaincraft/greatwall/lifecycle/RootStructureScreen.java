@@ -11,14 +11,14 @@ public interface RootStructureScreen extends AutoCloseable {
         public Candidate {
             Objects.requireNonNull(origin);
             axes=List.copyOf(axes);
-            if(radiusIndex<0||radiusIndex>=4||angleIndex<0||angleIndex>=36||axes.size()!=5)
+            if(radiusIndex<0||radiusIndex>=RootSearch.RADIUS_COUNT||angleIndex<0||angleIndex>=36||axes.size()!=5)
                 throw new IllegalArgumentException("frozen root candidate indices required");
         }
     }
     record Vote(int radiusIndex, int angleIndex, List<Integer> allowedAxes, List<String> reasons) {
         public Vote {
             allowedAxes=List.copyOf(allowedAxes); reasons=List.copyOf(reasons);
-            if(radiusIndex<0||radiusIndex>=4||angleIndex<0||angleIndex>=36||reasons.size()!=5
+            if(radiusIndex<0||radiusIndex>=RootSearch.RADIUS_COUNT||angleIndex<0||angleIndex>=36||reasons.size()!=5
                     ||allowedAxes.stream().anyMatch(i->i<0||i>=5)
                     ||allowedAxes.stream().distinct().count()!=allowedAxes.size())
                 throw new IllegalArgumentException("complete five-axis structure vote required");

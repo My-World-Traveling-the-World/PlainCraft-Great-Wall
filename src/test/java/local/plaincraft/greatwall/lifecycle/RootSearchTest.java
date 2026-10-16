@@ -49,7 +49,7 @@ final class RootSearchTest {
         int columns=root.progress().columns();
         for(int n=0;n<10;n++)assertEquals(WorkState.MORE,root.advance(oracle,64));
         assertEquals(columns,root.progress().columns(),"no oracle or normal tick work while structure votes are unresolved");
-        assertTrue(pending.size()>8&&pending.size()<=144);
+        assertTrue(pending.size()>8&&pending.size()<=RootSearch.RADIUS_COUNT*36);
         var denied=pending.stream().map(c->new RootStructureScreen.Vote(c.radiusIndex(),c.angleIndex(),List.of(),
                 java.util.Collections.nCopies(5,"STRUCTURE_CONFLICT:test:registered"))).toList();
         var failure=assertThrows(WallFailure.class,()->root.acceptStructureVotes(denied));
@@ -131,7 +131,7 @@ final class RootSearchTest {
             while (search.advance(oracle, 64) != WorkState.DONE) {}
         });
         assertEquals(FailureCode.ROOT_NOT_FOUND, error.code());
-        assertTrue(search.progress().columns() <= 4 * 36 * 81);
+        assertTrue(search.progress().columns() <= RootSearch.RADIUS_COUNT * 36 * 81);
         assertTrue(search.audit().stream().allMatch(row -> row.stage().equals("coarse")
                 && row.wetColumns() == 81 && row.invalidSamples() == 0 && row.result().equals("REJECTED")));
     }

@@ -18,27 +18,32 @@ import local.plaincraft.greatwall.terrain.NaturalTerrainOracle;
 public final class RootSearch {
     private static final long BATCH_GUARD_NANOS = 5_000_000L;
     /**
-     * Footprint support tolerance: the historic 5% of 2304 columns (115).
+     * Buildability limits of the root pad (48x48 = 2304 columns), not a purity test.
      *
-     * <p>History, in both directions. An early revision tolerated 115 columns on
-     * the theory that the fort foundation backfills them; that was wrong at the
-     * time, because {@code ComponentAssembly} rejected a footprint the moment one
-     * column lacked support, so a tolerated root could never be built. The
-     * revision after it moved to <b>zero</b> tolerance - and stayed there while
-     * the reference walk read its density one cell (four blocks) low. That walk
-     * error hid every water column, which made a zero-tolerance pad look common.
+     * <p>History, in both directions. An early revision tolerated 115 unsupported columns on
+     * the theory that the fort foundation backfills them; that was wrong at the time, because
+     * {@code ComponentAssembly} rejected a footprint the moment one column lacked support. The
+     * revision after it moved to <b>zero</b> tolerance - and stayed there while the reference
+     * walk read its density one cell (four blocks) low. That walk error hid every water column,
+     * which made a perfectly dry, perfectly supported pad look common.
      *
-     * <p>With the walk corrected (the cell index is derived from the top of the
-     * chunk grid, matching {@code NoiseBridgeGameTests}' ground truth) none of the
-     * 144 ring candidates satisfies the historic triple gate any more, so the
-     * footprint phase reaches the end of its list and the wall is never sited:
-     * "all frozen 800..1500 ring/footprint/axis candidates rejected". The
-     * assembly side has changed too - an unbuildable fort0 now degrades to a
-     * recorded gap instead of failing the session - so a bounded tolerance costs
-     * at most that gap. 115 keeps the pad solid under the fort while letting a
-     * stream or a cut cross it.
+     * <p>With the walk corrected (the cell index is derived from the top of the chunk grid,
+     * matching {@code NoiseBridgeGameTests}' ground truth) the ring of a coastline world no
+     * longer offers such a pad at all: measured {@code ring=144 invalid=94 gateRejected=32
+     * historicPass=0 wet[min=0 avg=67 max=81] spread[min=13 avg=113 max=487]}. The historic
+     * triple gate would have rejected every candidate, and the tight pad gate rejected the two
+     * that survived it, so the wall was never sited on such a world.
+     *
+     * <p>A wall is not a building plot. It bridges water with its water gate, and an unbuildable
+     * fort0 now degrades to a recorded gap instead of failing the session, so water and
+     * unsupported columns only have to be <b>bounded</b> - 20% of the pad may lack support and
+     * 30% may be water - while the ranking still prefers the driest, flattest, highest pad the
+     * ring offers. Relief stays capped because a pad that spans a cliff cannot carry a fort at
+     * all; the cap is now stated in blocks instead of being the historic flat 12.
      */
-    private static final int MAX_UNSUPPORTED_FOOTPRINT_CELLS = 115;
+    private static final int MAX_UNSUPPORTED_FOOTPRINT_CELLS = 460;
+    private static final int MAX_WET_FOOTPRINT_CELLS = 691;
+    private static final int MAX_FOOTPRINT_RELIEF = 32;
     /**
      * Ring candidates whose 48x48 footprint is measured before the search gives up.
      *
@@ -76,7 +81,9 @@ public final class RootSearch {
     public record Audit(String stage, Point3i origin, int radiusIndex, int angleIndex, int axisIndex,
             int wetColumns, int invalidSamples, int failedFoundations, int minY, int maxY, String result) {}
     private record Candidate(Point3i origin, int radius, int angle, int wet, int slope, long ridge) {}
-    private static final int[] RADII = {800, 1000, 1250, 1500};
+    private static final int[] RADII = {800, 1000, 1250, 1500, 2000, 2500};
+    /** Ring count, shared with the structure screen so its candidate index check cannot drift. */
+    public static final int RADIUS_COUNT = RADII.length;
     private static final int[] AXIS_DEGREES = {-40, -20, 0, 20, 40};
     private static final int[] AXIS_DISTANCES = {256, 512, 1024};
     private static final int[] AXIS_ACROSS = {0, -48, 48};
@@ -254,13 +261,19 @@ public final class RootSearch {
         // <=12) rejected all 144 ring candidates once the reference walk stopped reading its density
         // one cell low and started seeing water at all; it is now only the head of the ranking. What
         // still rejects outright is a ring point that is mostly water or mostly relief - a wall is
-        // not sited there - and unusable samples.
-        boolean admitted = !invalid && wet * 2 <= 81 && max - min <= 32;
-        if (!invalid) noteCoarse(wet, max - min);
+        // not sited there - and samples that are individually unusable.
+        //
+        // Measured on a coastline ring: ring=144 invalid=94 ranked=2. A single unusable column out of
+        // 81 discarded a candidate, because the flag is set by any one sample. The count is the
+        // honest measure, so a rocky or cave-riddled ring point is no longer thrown away for one
+        // censored column.
+        boolean unusable = invalidSamples * 8 > 81;
+        boolean admitted = !unusable && wet * 2 <= 81 && max - min <= 32;
+        if (!unusable) noteCoarse(wet, max - min);
         if (admitted) {
             candidates.add(new Candidate(new Point3i(origin.x(), centerHeight, origin.z()), candidateIndex / 36,
                     candidateIndex % 36, wet, max - min, 81L * centerHeight - sum));
-        } else if (invalid) {
+        } else if (unusable) {
             coarseInvalid++;
         } else {
             coarseRejected++;
@@ -269,7 +282,7 @@ public final class RootSearch {
         audit.add(new Audit("coarse", origin, candidateIndex / 36, candidateIndex % 36, -1,
                 wet, invalidSamples, 0, min, max,
                 historic ? "SHORTLIST_ELIGIBLE" : admitted ? "RANKED_ONLY"
-                        : invalid ? "REJECTED_INVALID" : "REJECTED"));
+                        : unusable ? "REJECTED_INVALID" : "REJECTED"));
         candidateIndex++; resetSamples();
     }
 
@@ -297,12 +310,23 @@ public final class RootSearch {
         // gap at fort0 - instead of rejecting every candidate of a ring that happens to be
         // river-cut. The bound still keeps a fort out of a lake, and off ground that cannot carry it.
         if (failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS) invalid = true;
-        if (wet > MAX_UNSUPPORTED_FOOTPRINT_CELLS) invalid = true;
+        if (wet > MAX_WET_FOOTPRINT_CELLS) invalid = true;
         if (++sampleIndex < 48 * 48) return;
+        boolean reliefOk = max - min <= MAX_FOOTPRINT_RELIEF;
+        boolean padOk = !invalid && reliefOk;
         audit.add(new Audit("footprint", current.origin(), current.radius(), current.angle(), -1,
                 wet, invalidSamples, failedFoundations, min, max,
-                invalid || max - min > 12 ? "REJECTED" : "FOUNDATION_ELIGIBLE"));
-        if (invalid || max - min > 12) { selectedIndex++; resetSamples(); return; }
+                padOk ? "FOUNDATION_ELIGIBLE" : "REJECTED"));
+        if (!padOk) {
+            // A rejected pad has to say why it was rejected, otherwise the next session can only
+            // repeat "no site" without saying whether the water, the support or the relief did it.
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:S1C] ROOT_FOOTPRINT_REJECTED radius={} angle={} unsupported={}/{} wet={}/{} spread={}/{} height={} water={} support={} relief={}",
+                    current.radius(), current.angle(), failedFoundations, 48 * 48, wet, 48 * 48,
+                    max - min, MAX_FOOTPRINT_RELIEF, current.origin().y(),
+                    wet > MAX_WET_FOOTPRINT_CELLS, failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS, !reliefOk);
+            selectedIndex++; resetSamples(); return;
+        }
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:S1C] ROOT_FOOTPRINT_ACCEPTED radius={} angle={} unsupported={}/{} wet={} spread={} height={}",
                 current.radius(), current.angle(), failedFoundations, 48 * 48, wet, max - min, current.origin().y());
@@ -351,9 +375,14 @@ public final class RootSearch {
         // One wet column in nine is tolerated. The axis is a line the wall can bridge - that is what
         // its water gate is for - and the pad itself was already cleared by the footprint phase.
         // Zero tolerance here is what a water-blind probe made look free.
+        // The axis is the line the wall itself occupies. Water on it is bridged by its water gate and a
+        // censored column is not re-sampled anywhere else, so both are bounded rather than forbidden:
+        // three wet columns of nine is a river crossing, not a lake. The count is used instead of the
+        // flag for the same reason as in the coarse phase - one bad column must not discard a line.
+        boolean axisOk = invalidSamples * 3 <= 9 && wet <= 3;
         audit.add(new Audit("axis", current.origin(), current.radius(), current.angle(), axisIndex, wet,
-                invalidSamples, 0, min, max, !invalid && wet <= 1 ? "DRY_AXIS_ELIGIBLE" : "REJECTED"));
-        if (!invalid && wet <= 1) {
+                invalidSamples, 0, min, max, axisOk ? "DRY_AXIS_ELIGIBLE" : "REJECTED"));
+        if (axisOk) {
             // The entrance frame's walk height, as a pre-screen only.
             //
             // Construction derives a site's walkY from its station - a terrain-contract
@@ -577,7 +606,7 @@ public final class RootSearch {
      * One line per search describing what the ring actually offered.
      *
      * <p>Without it a rejected ring is invisible: the caller only ever sees "all frozen
-     * 800..1500 ring/footprint/axis candidates rejected", and there is no way to tell a wet
+     * 800..2500 ring/footprint/axis candidates rejected", and there is no way to tell a wet
      * world from a steep one from a probe that returns nothing usable.
      */
     private void logCoarseSummary(int ranked) {
@@ -622,7 +651,7 @@ public final class RootSearch {
     public int prefetchedCount() { return prefetched.size(); }
 
     public Point3i ringPoint(int radiusIndex, int angleIndex) {
-        if (radiusIndex < 0 || radiusIndex >= 4 || angleIndex < 0 || angleIndex >= 36) throw new IllegalArgumentException("root ring index");
+        if (radiusIndex < 0 || radiusIndex >= RADII.length || angleIndex < 0 || angleIndex >= 36) throw new IllegalArgumentException("root ring index");
         double angle = StrictMath.toRadians(angleIndex * 10);
         int x = Math.addExact(spawn.x(), Math.toIntExact(StrictMath.round(RADII[radiusIndex] * StrictMath.cos(angle))));
         int z = Math.addExact(spawn.z(), Math.toIntExact(StrictMath.round(RADII[radiusIndex] * StrictMath.sin(angle))));
@@ -663,7 +692,10 @@ public final class RootSearch {
 
     private boolean inRing(Point3i origin) {
         long distance = FixedMath.distanceSquared(origin.x(), origin.z(), spawn.x(), spawn.z());
-        return distance >= 800L * 800 && distance <= 1500L * 1500;
+        // The band follows RADII: the search has to be able to reach the first land outside the
+        // spawn island. Measured on a coastline world: the 800..1500 ring averages 67 wet columns
+        // out of 81, so the 1500..2500 shell is the next place a wall can stand at all.
+        return distance >= 800L * 800 && distance <= 2500L * 2500;
     }
 
     private void claimOwner() {
@@ -672,6 +704,6 @@ public final class RootSearch {
     }
 
     private static WallFailure notFound() {
-        return new WallFailure(FailureCode.ROOT_NOT_FOUND, "all frozen 800..1500 ring/footprint/axis candidates rejected");
+        return new WallFailure(FailureCode.ROOT_NOT_FOUND, "all frozen 800..2500 ring/footprint/axis candidates rejected");
     }
 }
