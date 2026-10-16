@@ -28,14 +28,20 @@ import java.nio.charset.StandardCharsets;
 public final class PlanningColumnView implements SurfaceProbe.ColumnView {
     private final int x, z;
     private final ColumnSample sample;
-    private final String hash;
+    /**
+     * Lazily computed column digest.
+     *
+     * <p>The view wraps one already-sampled column - it cannot change - but the digest was computed in
+     * the constructor, and a realisation cell builds roughly 27k of these per compile: 3.5M SHA-256
+     * calls and 3.5M 64-character strings over a session, for a value that only the evidence hash (and
+     * the surface probe that forwards it) ever reads. Lazy keeps every observable value identical.
+     */
+    private String hash;
 
     public PlanningColumnView(int x, int z, ColumnSample sample) {
         this.x = x;
         this.z = z;
         this.sample = sample;
-        this.hash = DeterministicHash.sha256((x + ":" + z + ":" + sample.groundTopY() + ":"
-                + sample.waterTopY() + ":" + sample.bedTopY()).getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
@@ -75,6 +81,9 @@ public final class PlanningColumnView implements SurfaceProbe.ColumnView {
 
     @Override
     public String hash() {
-        return hash;
+        var cached = hash;
+        if (cached != null) return cached;
+        return hash = DeterministicHash.sha256((x + ":" + z + ":" + sample.groundTopY() + ":"
+                + sample.waterTopY() + ":" + sample.bedTopY()).getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -71,6 +71,16 @@ public final class PlannerScheduler implements AutoCloseable {
     private final PriorityQueue<Job<?>> pending = new PriorityQueue<>(Comparator.<Job<?>, Priority>comparing(j -> j.priority)
             .thenComparingLong(j -> j.sequence));
     private final ArrayDeque<Runnable> geometryQueue = new ArrayDeque<>();
+    /**
+     * Guards {@link #geometryQueue}, which caller threads enqueue onto while the pump drains it.
+     *
+     * <p>{@code ArrayDeque} is not thread safe, and this queue genuinely has two producers of a race:
+     * {@code requireGeometry} runs on whatever thread asked (the server thread for a {@code /greatwall}
+     * command, the worldgen thread for a plan request), while {@code drainGeometry} also runs from the
+     * pump when a geometry flight completes. Only the queue operations are locked - the dequeued work
+     * runs outside the lock, so a slow geometry job cannot serialise the admission path.
+     */
+    private final Object geometryLock = new Object();
     private final ArrayDeque<Runnable> ioQueue = new ArrayDeque<>();
     private final ArrayDeque<Runnable> planAdmissions = new ArrayDeque<>(), geometryAdmissions = new ArrayDeque<>();
     private final Map<UUID, Job<?>> activeJobs = new HashMap<>();
@@ -107,10 +117,12 @@ public final class PlannerScheduler implements AutoCloseable {
      * 1 ms driver (12 lanes x 64 ops x 1000 drives/s). The fine sample received the same 64 ops at tick
      * rate instead.
      *
-     * <p><b>256 is a hard ceiling, not a tuning choice.</b> Both cursor contracts reject more:
+     * <p><b>4096 is a hard ceiling, not a tuning choice.</b> Both cursor contracts reject more:
      * {@code CpuTerrainOracle.advance} and {@code WallFinePlanner.advance} each throw on a primitive
-     * limit outside 1..256. So the only remaining levers on this stage are the drive rate (see
-     * {@link #fineSampleTimer}) and doing less work per column - not a larger batch.
+     * limit outside 1..4096 (the legacy 256 ceiling was raised in 7cc3124f; the batch size is clamped
+     * to the same window by {@code GreatWallConfig.laneBatchOperations}). A measured lane round with
+     * 256 ops took about 10 ms, so the batch is not the limiter either: the levers on this stage are
+     * doing less work per column and cutting the retry walks, not a larger batch.
      */
     private static final int LANE_BATCH_OPERATIONS = 256;
 
@@ -128,6 +140,11 @@ public final class PlannerScheduler implements AutoCloseable {
      */
     private volatile java.util.concurrent.atomic.AtomicInteger fineSampleDone;
     private volatile java.util.concurrent.atomic.AtomicInteger fineSampleTotal;
+    /** Published for the progress line: emitted-before-dedup, sections walked, wide sections, probes. */
+    private volatile java.util.concurrent.atomic.AtomicInteger fineSampleRaw;
+    private volatile java.util.concurrent.atomic.AtomicLong fineSampleSections;
+    private volatile java.util.concurrent.atomic.AtomicLong fineSampleWideSections;
+    private volatile java.util.concurrent.atomic.AtomicLong fineSampleProbed;
     private volatile long fineSampleStartNanos;
     private volatile long fineSampleLastLogNanos;
 
@@ -209,7 +226,7 @@ public final class PlannerScheduler implements AutoCloseable {
         }
         this.anchors = new AnchorField(recipe); this.ridge = new RidgePlanner(recipe, anchors);
         this.heights = new HeightContractPlanner(recipe); this.sites = new SiteScheduler(recipe);
-        this.pump = new ScheduledThreadPoolExecutor(1, factory("pgw-planner-" + recipe.instance()));
+        this.pump = new Pump(factory("pgw-planner-" + recipe.instance()));
         pump.setRemoveOnCancelPolicy(true);
         this.lanes = bootstrapLanes != null ? List.copyOf(bootstrapLanes)
                 : lanes(recipe, oracleFactory, LanePolicy.resolve().startupLaneCount());
@@ -242,7 +259,7 @@ public final class PlannerScheduler implements AutoCloseable {
         promote(segment, priority);
         return acquire(new CacheKey("geometry", segment), 2 * MIB, SegmentGeometry.class, () -> {
             var result = flight(geometryFlights, key);
-            geometryQueue.add(() -> startGeometry(key, priority, result));
+            synchronized (geometryLock) { geometryQueue.add(() -> startGeometry(key, priority, result)); }
             drainGeometry();
             return result.thenApply(v -> v);
         });
@@ -294,6 +311,14 @@ public final class PlannerScheduler implements AutoCloseable {
         // sampledColumns is the duplicate factor the overlapping cross-sections produce, which is the
         // number that says whether the de-duplication is doing its job on this world.
         var rawColumns = new java.util.concurrent.atomic.AtomicInteger();
+        // Sections walked, how many of them carried the full wide band, and how many REFERENCE walks
+        // they cost. A measured run emitted 1.35M columns for a corridor of ~8190 blocks, which is far
+        // more per section than the 33-column base band implies: this triple is what tells whether the
+        // wide arcs cover most route points (base band never applied) or the sampling plan's flank
+        // refinement degrades to full resolution. Both are pure "sample less" wins if confirmed.
+        var walkedSections = new java.util.concurrent.atomic.AtomicLong();
+        var wideSections = new java.util.concurrent.atomic.AtomicLong();
+        var probedColumns = new java.util.concurrent.atomic.AtomicLong();
         // Prewarm already plans the opening segments; sample the same window so the two share the
         // lane budget and the fine samples land together with the plans.
         long target = prewarmTargetSegments();
@@ -323,6 +348,10 @@ public final class PlannerScheduler implements AutoCloseable {
         // Publish the counters before the driver starts: the driver reports them every 30 s.
         fineSampleDone = sampledColumns;
         fineSampleTotal = expectedColumns;
+        fineSampleRaw = rawColumns;
+        fineSampleSections = walkedSections;
+        fineSampleWideSections = wideSections;
+        fineSampleProbed = probedColumns;
         fineSampleStartNanos = System.nanoTime();
         fineSampleLastLogNanos = 0L;
         // Drive this stage ourselves: without it the fine sample waits on server ticks, which is how
@@ -363,12 +392,30 @@ public final class PlannerScheduler implements AutoCloseable {
                 // cost scales with the cross-section width, and its cache counters are what decide
                 // whether a slow run is the terrain walk or the chunk cache.
                 GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_DONE columns={} raw={} repeatedPct={} "
-                                + "expectedColumns={} chunkCacheHits={} chunkCacheMisses={} lanes={}",
+                                + "expectedColumns={} chunkCacheHits={} chunkCacheMisses={} lanes={} "
+                                + "walkedBlocks={} blocksPerColumn={} leadRetries={} retryPct={} "
+                                + "blockMs={} sliceMs={} constructMs={} cellMs={} biomeMs={} surfaceMs={} "
+                                + "surfaceMemoHits={} sections={} wideSections={} widePct={} "
+                                + "columnsPerSection={} probesPerSection={} probesPerColumn={}",
                         done, rawColumns.get(),
                         rawColumns.get() == 0 ? 0 : Math.round(100f * (rawColumns.get() - done) / rawColumns.get()),
                         expectedColumns.get(),
                         laneDiagnostic("chunk-cache-hits"), laneDiagnostic("chunk-cache-misses"),
-                        laneState.size());
+                        laneState.size(),
+                        laneDiagnostic("walked-blocks"),
+                        done == 0 ? 0 : laneDiagnostic("walked-blocks") / done,
+                        laneDiagnostic("lead-retries"),
+                        done == 0 ? 0 : Math.round(100f * laneDiagnostic("lead-retries") / done),
+                        laneDiagnostic("block-ms"), laneDiagnostic("slice-ms"),
+                        laneDiagnostic("construct-ms"), laneDiagnostic("cell-ms"),
+                        laneDiagnostic("biome-ms"), laneDiagnostic("surface-ms"),
+                        laneDiagnostic("surface-memo-hits"),
+                        walkedSections.get(), wideSections.get(),
+                        walkedSections.get() == 0 ? 0
+                                : Math.round(100f * wideSections.get() / walkedSections.get()),
+                        walkedSections.get() == 0 ? 0 : rawColumns.get() / walkedSections.get(),
+                        walkedSections.get() == 0 ? 0 : probedColumns.get() / walkedSections.get(),
+                        done == 0 ? 0 : probedColumns.get() / done);
                 persistFineSamples(walked);
                 synchronized (all) { aggregate.complete(FineHeightIndex.of(all)); }
             }
@@ -431,6 +478,9 @@ public final class PlannerScheduler implements AutoCloseable {
                                         walked.addAll(job.probed());
                                         sampledColumns.addAndGet(columns.size());
                                         rawColumns.addAndGet(job.emittedRaw());
+                                        walkedSections.addAndGet(job.sections());
+                                        wideSections.addAndGet(job.wideSections());
+                                        probedColumns.addAndGet(job.probedColumns());
                                     }
                                     int done = sampledColumns.get();
                                     local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
@@ -727,6 +777,52 @@ public final class PlannerScheduler implements AutoCloseable {
     }
 
     /**
+     * The scheduler's pump, with a safety net for tasks whose failure would otherwise vanish.
+     *
+     * <h2>Why this exists</h2>
+     * Every task handed to {@code execute} is wrapped in a {@link java.util.concurrent.FutureTask},
+     * and {@code FutureTask.run()} hands a Throwable to {@code setException} instead of letting it
+     * reach the thread's uncaught-exception handler - deliberately, and nothing in this class ever
+     * reads that result. A task that throws therefore leaves whatever it was supposed to release
+     * unreleased. The bulk prewarm body is the one that matters: it starts the loading card, drives
+     * the prewarm and signals the startup peer, so a throw before its release chain is registered
+     * leaves {@code PrewarmProgress} open forever - the card never closes, the worldgen gate never
+     * opens, and a peer that joins on that gate without a timeout (RoadWeaver's
+     * {@code InitialGenManager.awaitGreatWallPrewarm}) parks the server thread on the loading screen
+     * with no failure and no log line. Reading the task's result here turns that silent hang into a
+     * named release.
+     *
+     * <p>Only {@code afterExecute} is overridden, and only the already-done future is read, so this
+     * costs one instanceof and one non-blocking {@code get()} per task.
+     */
+    private static final class Pump extends ScheduledThreadPoolExecutor {
+        Pump(ThreadFactory factory) { super(1, factory); }
+
+        @Override protected void afterExecute(Runnable task, Throwable failure) {
+            super.afterExecute(task, failure);
+            Throwable actual = failure;
+            if (actual == null && task instanceof java.util.concurrent.FutureTask<?> future && future.isDone()) {
+                try {
+                    future.get();
+                } catch (java.util.concurrent.CancellationException expected) {
+                    return;
+                } catch (java.util.concurrent.ExecutionException failed) {
+                    actual = failed.getCause();
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+            if (actual == null) return;
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] PUMP_TASK_FAILED the wall releases its startup gates; "
+                    + "reason={}", actual.toString(), actual);
+            // Idempotent, and the only release that every waiter on this session hangs off: the loading
+            // card, the startup peer's latch and the worldgen gate all clear here.
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
+        }
+    }
+
+    /**
      * Starts the fine sample's dedicated driver. Idempotent: the fine sample is requested once per
      * session, but a retry must not stack timers.
      */
@@ -758,15 +854,37 @@ public final class PlannerScheduler implements AutoCloseable {
         fineSampleLastLogNanos = now;
         int columns = done.get();
         int expected = total.get();
+        var raw = fineSampleRaw;
+        var sectionCounter = fineSampleSections;
+        var wideCounter = fineSampleWideSections;
+        var probeCounter = fineSampleProbed;
+        long rawColumns = raw == null ? 0L : raw.get();
+        long sections = sectionCounter == null ? 0L : sectionCounter.get();
+        long wideSections = wideCounter == null ? 0L : wideCounter.get();
+        long probes = probeCounter == null ? 0L : probeCounter.get();
         double seconds = Math.max(0.001, (now - start) / 1_000_000_000.0);
         double rate = columns / seconds;
         String eta = expected > columns && rate > 0.0
                 ? String.format(java.util.Locale.ROOT, "%.0f", (expected - columns) / rate)
                 : "?";
         GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_PROGRESS columns={} expected={} rate={}/s "
-                        + "eta={}s lanes={} chunkCacheHits={} chunkCacheMisses={}",
+                        + "eta={}s lanes={} chunkCacheHits={} chunkCacheMisses={} walkedBlocks={} "
+                        + "blocksPerColumn={} leadRetries={} retryPct={} blockMs={} sliceMs={} constructMs={} "
+                        + "cellMs={} biomeMs={} surfaceMs={} surfaceMemoHits={} sections={} wideSections={} "
+                        + "widePct={} columnsPerSection={} probesPerSection={}",
                 columns, expected, String.format(java.util.Locale.ROOT, "%.0f", rate), eta,
-                laneState.size(), laneDiagnostic("chunk-cache-hits"), laneDiagnostic("chunk-cache-misses"));
+                laneState.size(), laneDiagnostic("chunk-cache-hits"), laneDiagnostic("chunk-cache-misses"),
+                laneDiagnostic("walked-blocks"),
+                columns == 0 ? 0 : laneDiagnostic("walked-blocks") / columns,
+                laneDiagnostic("lead-retries"),
+                columns == 0 ? 0 : Math.round(100f * laneDiagnostic("lead-retries") / columns),
+                laneDiagnostic("block-ms"), laneDiagnostic("slice-ms"), laneDiagnostic("construct-ms"),
+                laneDiagnostic("cell-ms"), laneDiagnostic("biome-ms"), laneDiagnostic("surface-ms"),
+                laneDiagnostic("surface-memo-hits"),
+                sections, wideSections,
+                sections == 0 ? 0 : Math.round(100f * wideSections / sections),
+                sections == 0 ? 0 : rawColumns / sections,
+                sections == 0 ? 0 : probes / sections);
     }
 
     /** Stops the fine sample's driver. Idempotent, and safe to call from any completion path. */
@@ -979,7 +1097,15 @@ public final class PlannerScheduler implements AutoCloseable {
     }
 
     private void drainGeometry() {
-        while (!closed() && activeGeometry < recipe.config().maxGeometryInflight() && !geometryQueue.isEmpty()) geometryQueue.removeFirst().run();
+        while (!closed() && activeGeometry < recipe.config().maxGeometryInflight()) {
+            Runnable next;
+            // Dequeue under the lock, run outside it: the admission gate may be entered from the server
+            // thread while the pump is completing a flight, and running a geometry job inside the lock
+            // would serialise every later admission behind it.
+            synchronized (geometryLock) { next = geometryQueue.pollFirst(); }
+            if (next == null) return;
+            next.run();
+        }
     }
 
     private void preparePlan(SegmentKey key, Priority priority, Pair inputs, CompletableFuture<SegmentPlan> result, List<PlanLease<?>> initial) {
@@ -1438,6 +1564,10 @@ public final class PlannerScheduler implements AutoCloseable {
         planFlights.forEach((key, future) -> future.completeExceptionally(closedFailure()));
         acquisitions.forEach((id, future) -> future.completeExceptionally(closedFailure()));
         prefixes.close(); callerLeases.forEach((id, lease) -> lease.close());
+        // The lease map is a weakly consistent view: an entry inserted while that loop ran would keep its
+        // lease - and its memory pin - open forever. close() is idempotent, so sweep again now that the
+        // closed flag is up and every new acquisition is refused.
+        callerLeases.forEach((id, lease) -> lease.close());
         // A session that ends before the compile must not leave the prewarm's leases holding the
         // memory budget open.
         releasePrewarmLeases();
@@ -1448,7 +1578,12 @@ public final class PlannerScheduler implements AutoCloseable {
             if (prewarmTimer != null) prewarmTimer.cancel(false);
             if (fineSampleTimer != null) fineSampleTimer.cancel(false);
             pending.forEach(job -> job.result.completeExceptionally(closedFailure()));
-            pending.clear(); geometryQueue.clear(); ioQueue.clear(); planAdmissions.clear(); geometryAdmissions.clear();
+            // In-flight jobs are not in pending - dispatch() already polled them onto a lane - so they
+            // would otherwise only be completed by their lane callback, which the shutdown below can
+            // refuse. completeExceptionally is idempotent, so completing them twice is harmless.
+            activeJobs.values().forEach(job -> job.result.completeExceptionally(closedFailure()));
+            pending.clear(); synchronized (geometryLock) { geometryQueue.clear(); } ioQueue.clear();
+            planAdmissions.clear(); geometryAdmissions.clear();
             activeJobs.clear(); progress.clear();
             lanes.forEach(OracleLane::close);
             CompletableFuture.allOf(lanes.stream().map(OracleLane::drain).toArray(CompletableFuture[]::new))
@@ -1528,6 +1663,11 @@ public final class PlannerScheduler implements AutoCloseable {
         List<WallFinePlanner.FineColumn> probed() { return WallFinePlanner.probed(cursor); }
         /** Cross-section columns this slice emitted before repeats were collapsed, for the log. */
         int emittedRaw() { return cursor == null ? 0 : WallFinePlanner.emittedRaw(cursor); }
+        /** Cross-sections this slice walked, and how many carried the full wide band. */
+        long sections() { return cursor == null ? 0 : WallFinePlanner.sections(cursor); }
+        long wideSections() { return cursor == null ? 0 : WallFinePlanner.wideSections(cursor); }
+        /** REFERENCE walks this slice started, i.e. columns no cache or memo answered. */
+        long probedColumns() { return cursor == null ? 0 : WallFinePlanner.probedColumns(cursor); }
     }
 
     /**

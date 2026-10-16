@@ -19,7 +19,12 @@ public final class RealizationPlanner {
             long gateRevision,String protectionHash) {
         public Input {
             Objects.requireNonNull(key);Objects.requireNonNull(plans);
-            tiles=Map.copyOf(tiles);columns=Map.copyOf(columns);protectedBounds=List.copyOf(protectedBounds);frozenGateY=Map.copyOf(frozenGateY);
+            tiles=Map.copyOf(tiles);protectedBounds=List.copyOf(protectedBounds);frozenGateY=Map.copyOf(frozenGateY);
+            // A read-only view of the column map, not a second copy. It holds one entry per sampled column
+            // (about 27k on a real cell) and the provider already hands out an unmodifiable view, so
+            // Map.copyOf here was a duplicate quadratic table build per owner - the same
+            // ImmutableCollections$MapN cost FineHeightIndex.of documents at 53 s for 192k entries.
+            columns=java.util.Collections.unmodifiableMap(columns);
             if(gateRevision<0)throw new IllegalArgumentException("negative revision");
             local.plaincraft.greatwall.model.WallTypes.requireHash(protectionHash);
         }
@@ -278,9 +283,24 @@ public final class RealizationPlanner {
             if(!(template instanceof WallSection section))throw new IllegalArgumentException("WALL template must support build intervals");
             var walkExcluded=new ArrayList<>(excluded);walkMerged.forEach(b->walkExcluded.add(b.range()));
             walkExcluded.addAll(gateWalkIntervals);
-            var component=section.compileIntervals(candidate,buildable,subtract(new ArcInterval(from,to),walkExcluded),
-                    s->field.sample(s,PaletteFamily.STONE,maintained),gateEndPlanes);
-            if(!component.voxels().isEmpty())accepted.add(component);
+            ComponentVoxels component;
+            try {
+                component=section.compileIntervals(candidate,buildable,subtract(new ArcInterval(from,to),walkExcluded),
+                        s->field.sample(s,PaletteFamily.STONE,maintained),gateEndPlanes);
+            } catch (IllegalArgumentException outsideCell) {
+                // The template validates its own inputs (WallSection throws "build interval outside cell",
+                // "walkable interval outside cell", "height contract ..." as plain IllegalArgumentExceptions)
+                // and this call sits outside the WallFailure handling compile() uses, so such an interval used
+                // to escape as an anonymous owner failure that dropped EVERY component of the owner. Turn it
+                // into the same named break the WallFailure path records, so the failure keeps its reason and
+                // costs only this one component.
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                        "[GreatWall:corridor] WALL_SECTION_INTERVAL_REJECTED arc=[{},{}] reason={}",
+                        from, to, outsideCell.getMessage());
+                breaks.add(new BreakInterval(new ArcInterval(from,to),BreakReason.STRUCTURE_CONFLICT,BreakScope.REALIZED));
+                component=null;
+            }
+            if(component!=null&&!component.voxels().isEmpty())accepted.add(component);
         }
         var resolved=result(input,walkMerged,accepted,t0);
         if(decisions==null)return resolved;

@@ -156,6 +156,29 @@ public final class WallFinePlanner {
         return c.rawEmissions;
     }
 
+    /**
+     * Cross-sections this cursor actually walked, and how many of them carried the full wide band.
+     *
+     * <p>The pair answers the question a real session cannot answer after the fact: whether the base
+     * band is really narrower than the wide band. A measured run emitted 1.35M columns over a corridor
+     * of about 8190 blocks, which is far more per section than {@link #BASE_LATERAL} implies - either
+     * the wide arcs cover most route points, or the sampling plan's flank refinement degrades to full
+     * resolution. {@code emittedRaw / sections} is the average width actually walked.
+     */
+    public static long sections(Cursor c) {
+        return c.sections;
+    }
+
+    /** {@return how many of {@link #sections} carried the full {@link #LATERAL} band} */
+    public static long wideSections(Cursor c) {
+        return c.wideSections;
+    }
+
+    /** {@return REFERENCE walks this cursor started, i.e. columns no cache or memo answered} */
+    public static long probedColumns(Cursor c) {
+        return c.probedColumns;
+    }
+
     public static WorkState advance(Cursor c, int primitiveLimit) {
         if (primitiveLimit < 1 || primitiveLimit > 4096) throw new IllegalArgumentException("primitive limit 1..4096");
         c.claimOwner();
@@ -209,6 +232,8 @@ public final class WallFinePlanner {
             c.plan = new FineSamplePlan(c.pending.size(), c.rules, c.waterCarry);
             c.slot = -1;
             c.emit = 0;
+            c.sections++;
+            if (c.pending.size() > 2 * BASE_LATERAL + 1) c.wideSections++;
             // Fall through: this same step starts the first probe, exactly like the fixed sweep did.
         }
         if (c.column != null) {
@@ -452,6 +477,8 @@ public final class WallFinePlanner {
         private int emit;
         /** Slots emitted before repeats were collapsed; see {@link #emittedRaw}. */
         private int rawEmissions;
+        /** Sections walked, wide-band sections, and the REFERENCE walks they cost. */
+        private long sections, wideSections, probedColumns;
         /** Water seen at the previous route point; the escalation carries one point forward. */
         private boolean waterCarry;
         private int index;

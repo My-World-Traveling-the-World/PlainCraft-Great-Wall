@@ -104,19 +104,26 @@ public final class GreatWallConfig {
     /**
      * 每条 lane 每轮发放的原始操作数。默认 256。
      *
-     * <p><b>256 是硬上限，不是建议值</b>：`CpuTerrainOracle.advance` 与 `WallFinePlanner.advance`
-     * 都强制 primitiveLimit ∈ [1,256]，超过直接抛异常，所以访问器会把配置钳到该区间内。
+     * <p><b>4096 是硬上限，不是建议值</b>：`CpuTerrainOracle.advance`、`WallFinePlanner.advance`、
+     * `HydrologyClassifier.advance`、`RidgePlanner.advance` 都强制 primitiveLimit ∈ [1,4096]，超过直接
+     * 抛异常，所以访问器会把配置钳到该区间内（旧的 256 上限已在 7cc3124f 抬升）。
      */
     private int laneBatchOperations = 256;
 
     /**
-     * 每条 lane 缓存多少个「已烘焙的区块」（按 chunk 构造原点区分）。默认 64。
+     * 每条 lane 缓存多少个「已烘焙的区块」（按 chunk 构造原点区分）。默认 128。
      *
      * <p>横断面一次扫掠约命中 13 个 cell（cell 宽 4 时），所以低于 13 会明显开始抖动；
      * 调大能提高命中率但按倍数占用堆内存。真机实测 16→64 把命中率从 72% 提到 ~85%，
      * 细采样省约 70-100s。
+     *
+     * <p>默认由 64 提到 128：真机那一局的细采样里 **命中/未命中 = 1.49M/139k**，而走廊里
+     * 不重复的 cell 只有约 1.7 万个 ⇒ 每个 cell 平均被重建约 8 次，说明 64 条的 LRU 在同一条
+     * lane 上被交替的作业（分段预热 / 高度契约 / 水文章节 / 细采样切片）来回冲刷。一次未命中就是
+     * 一次切片填充（整条 2112 格高的 corner 采样），是这一阶段最大的单项成本之一；翻倍到 128 让
+     * 每个 cell 的重建次数下降，代价是每条 lane 多占几十 MB，堆内存吃紧时可从配置界面调回 64。
      */
-    private int chunkCacheLimit = 64;
+    private int chunkCacheLimit = 128;
 
     // ── 0.1.0 细采样精度档位（两级采样的"精度"旋钮）──
     /**

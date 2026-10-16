@@ -2,6 +2,7 @@ package local.plaincraft.greatwall.terrain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.UUID;
@@ -129,10 +130,42 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     /** Baked-chunk reuse counters, surfaced so a real session can prove the cache is working. */
     public long chunkCacheHits() { return chunkCacheHits; }
     public long chunkCacheMisses() { return chunkCacheMisses; }
+    /**
+     * Cost model of this lane's column walks.
+     *
+     * <p>Collected unconditionally - two adds per walked block - because the fine sample's bottleneck
+     * cannot be attributed after the fact. A measured session walked 1.35M emitted columns at about
+     * 1.25k columns/s over twelve lanes (9.6 ms per column) and left no evidence of where that time
+     * went: whether the descent, the slice fill of a freshly built chunk, the cell switch or the biome
+     * lookup owned it. The ceiling-margin retry alone is worth counting: a column whose short lead
+     * missed pays a walk from near the top of a 2112-block dimension, which is two orders of magnitude
+     * more blocks than a clean descent.
+     */
+    public Map<String, Long> costModel() {
+        var costs = new java.util.LinkedHashMap<String, Long>();
+        costs.put("walked-blocks", walkedBlocks);
+        costs.put("lead-retries", leadRetries);
+        costs.put("construct-ms", constructNanosTotal / 1_000_000L);
+        costs.put("slice-ms", sliceNanosTotal / 1_000_000L);
+        costs.put("cell-ms", cellNanosTotal / 1_000_000L);
+        costs.put("block-ms", blockNanosTotal / 1_000_000L);
+        costs.put("biome-ms", biomeNanosTotal / 1_000_000L);
+        costs.put("surface-ms", surfaceNanosTotal / 1_000_000L);
+        costs.put("surface-memo-hits", surfaceMemoHits);
+        return Map.copyOf(costs);
+    }
 
     private long maxConstructNanos, maxCellNanos, maxSlicePointNanos, maxBlockNanos, maxCoarseNanos, maxBiomeNanos;
     private long over40msPrimitives, referencePrimitives, coarsePrimitives;
     private long maxAdvanceNanos, over40msAdvances;
+    private long walkedBlocks, leadRetries;
+    private long constructNanosTotal, sliceNanosTotal, cellNanosTotal, blockNanosTotal, biomeNanosTotal;
+    /** Surface-estimate memo: a ring of (4x4 cell column, estimated surface). */
+    private static final int SURFACE_MEMO_ENTRIES = 128;
+    private final long[] surfaceMemoKeys = new long[SURFACE_MEMO_ENTRIES];
+    private final int[] surfaceMemoValues = new int[SURFACE_MEMO_ENTRIES];
+    private int surfaceMemoNext;
+    private long surfaceMemoHits, surfaceNanosTotal;
 
     public CpuTerrainOracle(ServerLevel level, String fingerprint) { this(freeze(level, fingerprint)); }
 
@@ -271,10 +304,37 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      * fixed column, so a binary search converges in {@code O(log height)} steps instead of
      * the {@code O(height)} block walk it replaces.
      */
+    /**
+     * The next rung of the walk's retry ladder: double the previous climb, never less than one lead.
+     *
+     * <p>Exponential search, so the number of rungs is logarithmic in the distance to clear air rather
+     * than linear in the dimension's height.
+     */
+    static int nextLeadClimb(int climb) {
+        return Math.max(REFERENCE_LEAD_BLOCKS, climb * 2);
+    }
+
     private int preliminarySurface(int x, int z) {
-        var density = randomState.router().initialDensityWithoutJaggedness();
         int x4 = Math.floorDiv(x, 4) * 4;
         int z4 = Math.floorDiv(z, 4) * 4;
+        // The estimate is a pure function of the 4x4 cell column, and the fine sample sweeps the same
+        // cell columns over and over: a cross-section is 33 to 105 blocks wide, so it visits 9 to 26
+        // cells, and the next route point - a fraction of a block along - visits the same ones. The
+        // binary search below is O(log height) evaluations of the router's initial density, which is
+        // not a scalar but the compiled noise graph, so answering from a ring memo instead is worth
+        // far more than the 128-entry scan that finds it. Pure memoisation: same (x4, z4), same value,
+        // and the walk it starts is unchanged.
+        long key = ((long) (x4 >> 2) << 32) ^ ((z4 >> 2) & 0xffffffffL);
+        for (int i = 0; i < SURFACE_MEMO_ENTRIES; i++) {
+            // Newest first: a repeated cell is almost always one of the last few the sweep touched.
+            int slot = Math.floorMod(surfaceMemoNext - 1 - i, SURFACE_MEMO_ENTRIES);
+            if (surfaceMemoValues[slot] != Integer.MIN_VALUE && surfaceMemoKeys[slot] == key) {
+                surfaceMemoHits++;
+                return surfaceMemoValues[slot];
+            }
+        }
+        var density = randomState.router().initialDensityWithoutJaggedness();
+        long started = System.nanoTime();
         int lo = bounds.minY();
         int hi = bounds.maxYExclusive() - 1;
         while (lo < hi) {
@@ -285,6 +345,10 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
                 hi = mid - 1;
             }
         }
+        surfaceNanosTotal += System.nanoTime() - started;
+        surfaceMemoKeys[surfaceMemoNext] = key;
+        surfaceMemoValues[surfaceMemoNext] = lo;
+        surfaceMemoNext = (surfaceMemoNext + 1) % SURFACE_MEMO_ENTRIES;
         return lo;
     }
 
@@ -348,6 +412,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
             c.bridge.greatwall$beginSlices();
             long duration = System.nanoTime() - start;
             maxConstructNanos = Math.max(maxConstructNanos, duration); observe(duration);
+            constructNanosTotal += duration;
             return;
         }
         if (!c.slicesReady) {
@@ -355,6 +420,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
             c.slicesReady = c.bridge.greatwall$advanceSlices(1);
             long duration = System.nanoTime() - start;
             maxSlicePointNanos = Math.max(maxSlicePointNanos, duration); observe(duration);
+            sliceNanosTotal += duration;
             return;
         }
         if (c.selectedCell != c.cellY) {
@@ -362,6 +428,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
             c.chunk.selectCellYZ(c.cellY, 0);
             long duration = System.nanoTime() - start;
             maxCellNanos = Math.max(maxCellNanos, duration); observe(duration);
+            cellNanosTotal += duration;
             c.selectedCell = c.cellY;
             return;
         }
@@ -377,19 +444,37 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         }
         BlockState state = c.bridge.greatwall$state();
         if (state == null) state = settings.defaultBlock();
+        walkedBlocks++;
         if (!c.leadChecked && c.y == c.attemptStartY) {
             // The first block of the walk proves whether the short lead cleared the real surface.
             // Non-air here means the smooth estimate sat at or below the ground (or the water top),
-            // so redo the walk from the full margin. Only such columns pay the margin, and their
-            // result is identical to the fixed-margin walk the oracle used before.
+            // so climb and try again.
+            //
+            // The climb doubles instead of jumping straight to the full historical margin. That margin
+            // is {@code seaLevel - minY + 32} above the estimate - with a 2112-block dimension that is
+            // over a thousand blocks, and the old code paid every one of them as a walked block for
+            // every column whose estimate was low. The estimate is only ever wrong by the height of the
+            // jagged band, the aquifer and the surface rules, which is tens of blocks, so an exponential
+            // search reaches clear air in O(log distance) single-block probes: 32, 64, 128, ... blocks
+            // above the short lead, and the walk then descends from the first clear start it finds.
+            //
+            // Same acceptance rule as before, applied at more candidate heights: a start is accepted
+            // only when its own first block is air, which is exactly the condition the short lead has
+            // always been trusted on. The ceiling margin stays the last rung, so a column whose terrain
+            // really does reach for the sky still walks what it always walked.
             c.leadChecked = true;
             if (!state.isAir() && c.attemptStartY < c.highStartY) {
-                c.resetWalk(c.highStartY);
+                blockNanosTotal += System.nanoTime() - start;
+                leadRetries++;
+                int climb = nextLeadClimb(c.leadClimb);
+                c.leadClimb = climb;
+                c.resetWalk(Math.min(c.attemptStartY + climb, c.highStartY));
                 return;
             }
         }
         long duration = System.nanoTime() - start;
         maxBlockNanos = Math.max(maxBlockNanos, duration); observe(duration);
+        blockNanosTotal += duration;
         if (c.solidFound) {
             c.support[c.supportCount++] = state;
             if (c.supportCount == 3) { complete(c, c.censored ? Quality.CENSORED : Quality.REFERENCE); return; }
@@ -418,6 +503,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
                 .orElseThrow(() -> new WallFailure(FailureCode.INVALID_RESOURCE, "unkeyed natural biome")).location().toString();
         long duration = System.nanoTime() - start;
         maxBiomeNanos = Math.max(maxBiomeNanos, duration); observe(duration);
+        biomeNanosTotal += duration;
         c.result = new ColumnSample(c.groundTop, c.waterTop, c.bedTop, biome, quality, c.censored);
     }
 
@@ -466,6 +552,8 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         private boolean skyOpen = true, solidFound, censored, slicesReady;
         /** Short-lead start, the full historical margin, and the start the walk is on now. */
         private int lowStartY, highStartY, attemptStartY = -1;
+        /** How far the retry ladder has climbed above the short lead, in blocks. */
+        private int leadClimb;
         /** Whether the current attempt's first block has already been inspected. */
         private boolean leadChecked;
         private NoiseChunk chunk;

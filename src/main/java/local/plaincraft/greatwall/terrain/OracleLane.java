@@ -97,6 +97,10 @@ public final class OracleLane implements AutoCloseable {
         if (oracle instanceof CpuTerrainOracle cpu) {
             result.put("chunk-cache-hits", cpu.chunkCacheHits());
             result.put("chunk-cache-misses", cpu.chunkCacheMisses());
+            // Walked blocks and per-phase milliseconds: the only way to attribute the fine sample's
+            // cost between the descent, the slice fill of a new chunk, the cell switch and the biome
+            // lookup. Summed across lanes by PlannerScheduler.laneDiagnostic.
+            result.putAll(cpu.costModel());
         }
         return Map.copyOf(result);
     }
@@ -154,14 +158,24 @@ public final class OracleLane implements AutoCloseable {
         synchronized (admission) {
             if (state.putIfAbsent("closed", 1L) != null) return;
             ready.completeExceptionally(closedFailure());
-            // Queue AFTER the actual constructor/actions; no shutdownNow/cancellation masquerading as drain.
-            executor.execute(() -> {
+            Runnable drain = () -> {
                 try {
                     if (oracle != null) { oracle.close(); oracle = null; state.merge("oracle-closes", 1L, Long::sum); }
                     state.put("drained", 1L);
                     drained.complete(null);
                 } catch (Throwable failure) { drained.completeExceptionally(failure); }
-            });
+            };
+            // Queue AFTER the actual constructor/actions; no shutdownNow/cancellation masquerading as drain.
+            // A rejected hand-off must still drain: PlannerScheduler.close() joins every lane's drained
+            // future on the world-exit path, so a lane whose executor is already stopped would otherwise
+            // hang the shutdown and leak its native oracle. Close the oracle inline instead - this thread
+            // is the caller's, and the lane is already being torn down - and complete drained either way.
+            try {
+                executor.execute(drain);
+            } catch (java.util.concurrent.RejectedExecutionException stopped) {
+                state.merge("drain-rejected", 1L, Long::sum);
+                drain.run();
+            }
             executor.shutdown();
         }
     }

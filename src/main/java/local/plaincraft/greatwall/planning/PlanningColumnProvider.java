@@ -101,7 +101,12 @@ public final class PlanningColumnProvider {
             result.put(new Point3i(column.x(), 0, column.z()),
                     new PlanningColumnView(column.x(), column.z(), column.sample()));
         }
-        return Map.copyOf(result);
+        // A read-only view, deliberately not Map.copyOf: the same quadratic table build that
+        // FineHeightIndex.of documents (a 192 877-column index spent 53 s inside
+        // ImmutableCollections$MapN.<init>) would otherwise run here once per realisation cell on a
+        // 27k-entry map, and again in RealizationPlanner.Input's compact constructor. `result` is built
+        // locally, never aliased and never mutated after this point, so the view keeps the contract.
+        return java.util.Collections.unmodifiableMap(result);
     }
 
     public FineHeightIndex index() {

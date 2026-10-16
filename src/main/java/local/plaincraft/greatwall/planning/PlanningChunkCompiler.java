@@ -91,6 +91,9 @@ public final class PlanningChunkCompiler {
         Map<Point3i, SurfaceProbe.ColumnView> cachedColumns = null;
         int done = 0;
         int failed = 0;
+        long started = System.nanoTime();
+        long lastReport = started;
+        long reportInterval = java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
         for (var item : work) {
             // Every item of a cell carries the same owner list, so the column map is built once per
             // cell and reused for each of its owners (building it is a scan over those owners).
@@ -104,26 +107,50 @@ public final class PlanningChunkCompiler {
             // owners still publish. Before this, a single failing chunk compile threw out of the whole
             // window, so a session could paint nothing at all with no line in the log to say which
             // owner failed - the exact shape the startup used to fail with.
+            // Throwable, not RuntimeException: an Error raised inside a native or linkage path (for
+            // example the road interop's NoClassDefFoundError) would otherwise abort the whole window
+            // and cost the session its wall over one owner.
             try {
                 compileOwner(item.cell(), item.owner(), cachedColumns, new PlanWindow(List.of(item.plan())),
                         recipeHash, result);
-            } catch (RuntimeException failure) {
+            } catch (Throwable failure) {
                 failed++;
                 local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
                         "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] cell={} failed={}/{}",
                         item.owner().x(), item.owner().z(), item.cell(), failed, work.size(), failure);
             }
             done++;
-            if (progress != null) progress.accept(done, work.size());
+            // Progress reporting never costs the window its result: the sink writes a loading-card
+            // counter today, but this loop is the only place that publishes the compile at all.
+            if (progress != null) {
+                try { progress.accept(done, work.size()); } catch (Throwable ignored) { }
+            }
+            // A 15 s heartbeat. The window's own timing only exists once the window finishes, and on the
+            // measured sessions the compile never finished at all, so there was no evidence of its cost at
+            // any scale. (done, total) with the elapsed time yields a per-owner rate even from a run that
+            // is interrupted - which is the only way this stage can be sized today.
+            long now = System.nanoTime();
+            if (now - lastReport >= reportInterval || done == work.size()) {
+                lastReport = now;
+                double seconds = Math.max(0.001, (now - started) / 1_000_000_000.0);
+                double perOwnerMs = 1000.0 * seconds / Math.max(1, done);
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                        "[GreatWall:S1C] PLANNING_COMPILE_PROGRESS owners={}/{} failed={} elapsedMs={} "
+                                + "msPerOwner={} etaMs={}",
+                        done, work.size(), failed, Math.round(seconds * 1000.0),
+                        String.format(java.util.Locale.ROOT, "%.1f", perOwnerMs),
+                        Math.round(perOwnerMs * Math.max(0, work.size() - done)));
+            }
         }
         if (failed > 0) {
             local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
                     "[GreatWall:S1C] PLANNING_COMPILE_PARTIAL owners={} failed={}", result.size(), failed);
         }
         // Map.copyOf rejects nulls outright, and a null here would take the whole window down with it,
-        // so drop any owner the compiler refused to produce a plan for.
+        // so drop any owner the compiler refused to produce a plan for. A read-only view rather than a
+        // second full table build: this map holds one plan per owner of the whole window.
         result.values().removeIf(java.util.Objects::isNull);
-        return Map.copyOf(result);
+        return java.util.Collections.unmodifiableMap(result);
     }
 
     private void compileOwner(CellKey cell, ChunkKey owner,

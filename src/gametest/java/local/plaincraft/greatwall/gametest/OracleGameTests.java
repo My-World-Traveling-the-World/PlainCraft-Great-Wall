@@ -110,7 +110,10 @@ public final class OracleGameTests implements FabricGameTest {
             require(rejects(() -> oracle.finish(cursor)), "unfinished finish accepted");
             require(rejects(() -> oracle.begin(0, 0, SampleKind.COARSE)), "unfinished overlap accepted");
             require(rejects(() -> oracle.advance(cursor, 0)), "zero limit accepted");
-            require(rejects(() -> oracle.advance(cursor, 257)), "oversized limit accepted");
+            // The live contract is 1..4096 (CpuTerrainOracle.advance); 257 was the old ceiling and is a
+            // legal batch today, so this assertion has to sit one past the current bound or it fails the
+            // moment this source set compiles.
+            require(rejects(() -> oracle.advance(cursor, 4097)), "oversized limit accepted");
             require(rejects(() -> oracle.begin(Integer.MIN_VALUE, 0, SampleKind.COARSE)), "int-min abs overflow");
             require(rejects(() -> CpuTerrainOracle.freeze(helper.getLevel(), HASH)), "off-owner freeze accepted");
             require(rejects(frozen::createOracle), "sampling action must not permit a second initialization");
