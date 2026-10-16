@@ -905,8 +905,27 @@ final class ProductionSession implements AutoCloseable {
         trace.record("PRODUCTION_FAILED", "*", 0, 0, "required-plan", "none");
         GreatWallMod.LOGGER.error("[GreatWall:S1C] FIXTURE_FAILED production remains OFF", error);
         installed.completeExceptionally(error);
-        MinecraftServer.setFatalException(new IllegalStateException("GreatWall production fixture required dependency failed", error));
+        // "No suitable site in this world" is not a broken installation. The recipe, the caches and
+        // the session are all intact; this world simply has no ring candidate the siting contract
+        // accepts. Killing the server over it makes the world unplayable and hides the reason in a
+        // crash report, so the wall is skipped for this session instead, with the reason logged.
+        // Every other failure stays fatal: those mean the artifact is unusable, and a half-built
+        // wall left in the world would be worse than a clean stop.
+        if (isNoSuitableSite(error)) {
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] ROOT_UNAVAILABLE no ring candidate satisfies the siting "
+                    + "contract; the wall is skipped for this session and the world loads without it");
+        } else {
+            MinecraftServer.setFatalException(new IllegalStateException("GreatWall production fixture required dependency failed", error));
+        }
         close();
+    }
+
+    /** True when the failure means "this world has no site the wall accepts". */
+    private static boolean isNoSuitableSite(Throwable error) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (cause instanceof WallFailure failure && failure.code() == FailureCode.ROOT_NOT_FOUND) return true;
+        }
+        return false;
     }
     void trace(String event, String dimension, int x, int z, String stage, String token) { trace.record(event, dimension, x, z, stage, token); }
     Map<String, Long> counts() { return trace.counts(); }

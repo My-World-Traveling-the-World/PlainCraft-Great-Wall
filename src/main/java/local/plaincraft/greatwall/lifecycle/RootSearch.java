@@ -18,23 +18,36 @@ import local.plaincraft.greatwall.terrain.NaturalTerrainOracle;
 public final class RootSearch {
     private static final long BATCH_GUARD_NANOS = 5_000_000L;
     /**
-     * Footprint support tolerance: <b>zero</b>.
+     * Footprint support tolerance: the historic 5% of 2304 columns (115).
      *
-     * <p>An earlier revision admitted up to 115 of 2304 columns without natural
-     * support, on the theory that the fort foundation backfills them. That was
-     * wrong: {@code ComponentAssembly} rejects an entire footprint the moment
-     * one column lacks support (its drop/kind check), so a tolerated root could
-     * never actually be built and construction failed later with "fort0
-     * footprint is not fully supported".
+     * <p>History, in both directions. An early revision tolerated 115 columns on
+     * the theory that the fort foundation backfills them; that was wrong at the
+     * time, because {@code ComponentAssembly} rejected a footprint the moment one
+     * column lacked support, so a tolerated root could never be built. The
+     * revision after it moved to <b>zero</b> tolerance - and stayed there while
+     * the reference walk read its density one cell (four blocks) low. That walk
+     * error hid every water column, which made a zero-tolerance pad look common.
      *
-     * <p>The measured seed-17 audit shows why zero still finds a start: the
-     * shortlist is scanned in preference order and contains a candidate with
-     * {@code failedFoundations=0} (radius 2, angle 29) carrying two
-     * {@code DRY_AXIS_ELIGIBLE} axes. Strictness makes the loop skip the
-     * partially supported candidates ahead of it and select that one, so root
-     * and the artifact templates now agree on the same contract.
+     * <p>With the walk corrected (the cell index is derived from the top of the
+     * chunk grid, matching {@code NoiseBridgeGameTests}' ground truth) none of the
+     * 144 ring candidates satisfies the historic triple gate any more, so the
+     * footprint phase reaches the end of its list and the wall is never sited:
+     * "all frozen 800..1500 ring/footprint/axis candidates rejected". The
+     * assembly side has changed too - an unbuildable fort0 now degrades to a
+     * recorded gap instead of failing the session - so a bounded tolerance costs
+     * at most that gap. 115 keeps the pad solid under the fort while letting a
+     * stream or a cut cross it.
      */
-    private static final int MAX_UNSUPPORTED_FOOTPRINT_CELLS = 0;
+    private static final int MAX_UNSUPPORTED_FOOTPRINT_CELLS = 115;
+    /**
+     * Ring candidates whose 48x48 footprint is measured before the search gives up.
+     *
+     * <p>The ranking puts the driest, flattest and highest candidates first and the
+     * footprint phase walks it in batches of eight. This cap bounds what that costs:
+     * 2304 reference columns per candidate. Candidates past the cap are never
+     * measured, which is the price of a bounded search.
+     */
+    private static final int FOOTPRINT_CANDIDATE_LIMIT = 24;
     /**
      * Walk height assumed above ring-centre ground when pre-screening an entrance.
      *
@@ -94,6 +107,11 @@ public final class RootSearch {
     private final Map<Point3i,ProbeResult> entranceSupports=new java.util.HashMap<>();
     private final Map<Point3i,local.plaincraft.greatwall.generation.SurfaceProbe.ColumnView> entranceColumns=new java.util.HashMap<>();
     private int entranceIndex,entranceMin,entranceMax;
+    /** Diagnostic-only ring counters behind {@link #logCoarseSummary(int)}; never an input to selection. */
+    private int coarseInvalid, coarseHistoric, coarseAdmitted, coarseRejected;
+    private int coarseWetMin = Integer.MAX_VALUE, coarseWetMax = Integer.MIN_VALUE;
+    private int coarseSpreadMin = Integer.MAX_VALUE, coarseSpreadMax = Integer.MIN_VALUE;
+    private long coarseWetSum, coarseSpreadSum;
 
     public RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
             BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation) {
@@ -205,12 +223,19 @@ public final class RootSearch {
             var ordered = candidates.stream().sorted(Comparator.comparingInt(Candidate::wet)
                     .thenComparingInt(Candidate::slope).thenComparing(Comparator.comparingLong(Candidate::ridge).reversed())
                     .thenComparingInt(Candidate::radius).thenComparingInt(Candidate::angle)).toList();
+            logCoarseSummary(ordered.size());
             if(screenStructures){
                 if(ordered.isEmpty())throw notFound();
                 structureCandidates=ordered;phase=4;return;
             }
+            if (ordered.isEmpty()) throw notFound();
             shortlisted=ordered.stream().limit(8).toList();
-            if (shortlisted.isEmpty()) throw notFound();
+            // The historic wet/slope gate is now the RANKING instead of a filter: every candidate
+            // that produced usable samples is measured, driest and flattest first, and the
+            // footprint phase walks the ranking in batches. The gate rejected all 144 candidates
+            // once the reference walk stopped reading its density one cell low.
+            remainingScreened=ordered.stream().limit(FOOTPRINT_CANDIDATE_LIMIT).toList();
+            screenedOffset=shortlisted.size();
             phase = 1; resetSamples(); return;
         }
         Point3i origin = ringPoint(candidateIndex / 36, candidateIndex % 36);
@@ -224,18 +249,35 @@ public final class RootSearch {
         acceptHeight(value);
         if (sampleIndex == 40) centerHeight = value.groundTopY();
         if (++sampleIndex < 81) return;
-        if (!invalid && wet * 10 <= 81 && max - min <= 12) {
+        boolean historic = !invalid && wet * 10 <= 81 && max - min <= 12;
+        // Admission is wide, the ranking is strict. The historic gate (<=8 wet columns of 81, relief
+        // <=12) rejected all 144 ring candidates once the reference walk stopped reading its density
+        // one cell low and started seeing water at all; it is now only the head of the ranking. What
+        // still rejects outright is a ring point that is mostly water or mostly relief - a wall is
+        // not sited there - and unusable samples.
+        boolean admitted = !invalid && wet * 2 <= 81 && max - min <= 32;
+        if (!invalid) noteCoarse(wet, max - min);
+        if (admitted) {
             candidates.add(new Candidate(new Point3i(origin.x(), centerHeight, origin.z()), candidateIndex / 36,
                     candidateIndex % 36, wet, max - min, 81L * centerHeight - sum));
+        } else if (invalid) {
+            coarseInvalid++;
+        } else {
+            coarseRejected++;
         }
+        if (historic) coarseHistoric++;
         audit.add(new Audit("coarse", origin, candidateIndex / 36, candidateIndex % 36, -1,
-                wet, invalidSamples, 0, min, max, !invalid && wet * 10 <= 81 && max - min <= 12 ? "SHORTLIST_ELIGIBLE" : "REJECTED"));
+                wet, invalidSamples, 0, min, max,
+                historic ? "SHORTLIST_ELIGIBLE" : admitted ? "RANKED_ONLY"
+                        : invalid ? "REJECTED_INVALID" : "REJECTED"));
         candidateIndex++; resetSamples();
     }
 
     private void footprintStep(NaturalTerrainOracle oracle) {
         if (selectedIndex == shortlisted.size()) {
-            if(best==null&&screenStructures&&screenedOffset<remainingScreened.size()){
+            // Walk the whole ranked list in batches, in both paths: the historic gate no longer
+            // pre-selects eight candidates that are known to satisfy it.
+            if(best==null&&screenedOffset<remainingScreened.size()){
                 int end=Math.min(remainingScreened.size(),screenedOffset+8);
                 shortlisted=List.copyOf(remainingScreened.subList(screenedOffset,end));
                 screenedOffset=end;selectedIndex=0;resetSamples();return;
@@ -250,16 +292,20 @@ public final class RootSearch {
         if (value == null) return;
         acceptHeight(value);
         if (!lastSupport) failedFoundations++;
-        // Bounded tolerated support, and the SAME bound is honoured by
-        // ComponentAssembly so an accepted root is always buildable. Water stays
-        // zero-tolerance: a wet column terminates or gets a water gate instead.
-        if (value.waterTopY().isPresent()) invalid = true;
+        // Bounded tolerated support and a bounded amount of water. Water is no longer an instant
+        // rejection: a stream crossing the pad now costs tolerated columns - and at worst a recorded
+        // gap at fort0 - instead of rejecting every candidate of a ring that happens to be
+        // river-cut. The bound still keeps a fort out of a lake, and off ground that cannot carry it.
         if (failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS) invalid = true;
+        if (wet > MAX_UNSUPPORTED_FOOTPRINT_CELLS) invalid = true;
         if (++sampleIndex < 48 * 48) return;
         audit.add(new Audit("footprint", current.origin(), current.radius(), current.angle(), -1,
                 wet, invalidSamples, failedFoundations, min, max,
                 invalid || max - min > 12 ? "REJECTED" : "FOUNDATION_ELIGIBLE"));
         if (invalid || max - min > 12) { selectedIndex++; resetSamples(); return; }
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:S1C] ROOT_FOOTPRINT_ACCEPTED radius={} angle={} unsupported={}/{} wet={} spread={} height={}",
+                current.radius(), current.angle(), failedFoundations, 48 * 48, wet, max - min, current.origin().y());
         phase = 2; axisIndex = 0; resetSamples();
     }
 
@@ -302,9 +348,12 @@ public final class RootSearch {
         if (sampleIndex % 3 == 0) centerHeight = value.groundTopY();
         else axisScore += centerHeight - (long) value.groundTopY();
         if (++sampleIndex < 9) return;
+        // One wet column in nine is tolerated. The axis is a line the wall can bridge - that is what
+        // its water gate is for - and the pad itself was already cleared by the footprint phase.
+        // Zero tolerance here is what a water-blind probe made look free.
         audit.add(new Audit("axis", current.origin(), current.radius(), current.angle(), axisIndex, wet,
-                invalidSamples, 0, min, max, !invalid && wet == 0 ? "DRY_AXIS_ELIGIBLE" : "REJECTED"));
-        if (!invalid && wet == 0) {
+                invalidSamples, 0, min, max, !invalid && wet <= 1 ? "DRY_AXIS_ELIGIBLE" : "REJECTED"));
+        if (!invalid && wet <= 1) {
             // The entrance frame's walk height, as a pre-screen only.
             //
             // Construction derives a site's walkY from its station - a terrain-contract
@@ -515,6 +564,38 @@ public final class RootSearch {
         min = Math.min(min, value.groundTopY()); max = Math.max(max, value.groundTopY());
         sum += value.groundTopY();
     }
+
+    private void noteCoarse(int wet, int spread) {
+        coarseAdmitted++;
+        coarseWetMin = Math.min(coarseWetMin, wet); coarseWetMax = Math.max(coarseWetMax, wet);
+        coarseWetSum += wet;
+        coarseSpreadMin = Math.min(coarseSpreadMin, spread); coarseSpreadMax = Math.max(coarseSpreadMax, spread);
+        coarseSpreadSum += spread;
+    }
+
+    /**
+     * One line per search describing what the ring actually offered.
+     *
+     * <p>Without it a rejected ring is invisible: the caller only ever sees "all frozen
+     * 800..1500 ring/footprint/axis candidates rejected", and there is no way to tell a wet
+     * world from a steep one from a probe that returns nothing usable.
+     */
+    private void logCoarseSummary(int ranked) {
+        if (ranked == 0) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
+                    "[GreatWall:S1C] ROOT_SCREEN_SUMMARY ring={} ranked=0 invalid={} gateRejected={} historicPass={} -- no ring point produced usable samples",
+                    RADII.length * 36, coarseInvalid, coarseRejected, coarseHistoric);
+            return;
+        }
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:S1C] ROOT_SCREEN_SUMMARY ring={} ranked={} invalid={} gateRejected={} historicPass={} wet[min={} avg={} max={}] spread[min={} avg={} max={}]",
+                RADII.length * 36, ranked, coarseInvalid, coarseRejected, coarseHistoric,
+                coarseWetMin, coarseWetSum / rank(coarseAdmitted), coarseWetMax,
+                coarseSpreadMin, coarseSpreadSum / rank(coarseAdmitted), coarseSpreadMax);
+    }
+
+    /** Divisor for the screen summary: the stats cover every candidate with usable samples. */
+    private int rank(int measured) { return measured == 0 ? 1 : measured; }
 
     private void resetSamples() {
         invalidSamples = 0; failedFoundations = 0;

@@ -144,10 +144,34 @@ final class RootSearchTest {
         });
         assertEquals(FailureCode.ROOT_NOT_FOUND, error.code());
         var rejected = search.audit().stream().filter(row -> row.stage().equals("footprint")).toList();
-        assertEquals(8, rejected.size());
+        // A pad that cannot carry anything stays refused. The walk measures the whole ranked list in
+        // batches (capped at FOOTPRINT_CANDIDATE_LIMIT) rather than stopping at the first eight, so
+        // that a world whose best candidates all fail the pad still gets the ones behind them tried.
+        assertEquals(24, rejected.size());
         assertTrue(rejected.stream().allMatch(row -> row.failedFoundations() == 2304
                 && row.wetColumns() == 0 && row.invalidSamples() == 0 && row.result().equals("REJECTED")));
         assertThrows(UnsupportedOperationException.class, () -> search.audit().clear());
+    }
+
+    @Test void aRingWithPondsIsStillSitedInsteadOfRejectingEveryCandidate() {
+        // Why this test exists. The historic screen admitted a ring point only if at most 8 of its 81
+        // samples were wet and its 64x64 relief stayed inside 12, and the footprint phase rejected a
+        // candidate the moment a single pad column was wet. That calibration was made while the
+        // reference walk read its density one cell (four blocks) low, which hid every water column.
+        // With the walk corrected the same gates reject all 144 ring points of a river-cut world
+        // ("all frozen 800..1500 ring/footprint/axis candidates rejected") and no wall is ever sited.
+        // Bounded water is therefore tolerated now - a fort may stand next to a pond - while a
+        // mostly-wet ring point is still refused, which is what
+        // allWetCandidatesFailVisiblyWithoutExpandingRing pins down.
+        var oracle = Fixture.wetWhere((x, z) -> Math.floorMod(x + z, 64) == 0);
+        var search = search((o, c) -> true);
+        while (search.advance(oracle, 64) != WorkState.DONE) {}
+        var selection = search.finish();
+        assertTrue(selection.axis().origin().y() > 0);
+        assertTrue(search.audit().stream().anyMatch(row -> row.stage().equals("coarse") && row.wetColumns() > 0),
+                "the ring must have offered wet samples for this test to mean anything");
+        assertTrue(search.audit().stream().anyMatch(row -> row.stage().equals("axis")
+                && row.result().equals("DRY_AXIS_ELIGIBLE")), "a bounded amount of water must not block the axis");
     }
 
     @Test void finishAndForeignLaneCannotReadPartialRoot() throws Exception {
@@ -215,17 +239,28 @@ final class RootSearchTest {
         return new RootSearch(new Point3i(-1000, 64, -1000), BOUNDS, domain.snapshot(), support);
     }
 
+    @FunctionalInterface private interface WaterAt { boolean wet(int x, int z); }
     private static final class Fixture implements NaturalTerrainOracle {
-        private final boolean wet;
+        private final WaterAt wetness;
         private final long delayMillis;
         private int delayedCalls;
-        private Fixture(boolean wet) { this(wet, 0); }
-        private Fixture(boolean wet, long delayMillis) { this(wet, delayMillis, -1); }
-        private Fixture(boolean wet, long delayMillis, int delayedCalls) {
-            this.wet = wet; this.delayMillis = delayMillis; this.delayedCalls = delayedCalls;
+        private Fixture(boolean wet) { this(wetnessOf(wet), 0, -1); }
+        private Fixture(boolean wet, long delayMillis) { this(wetnessOf(wet), delayMillis, -1); }
+        private Fixture(boolean wet, long delayMillis, int delayedCalls) { this(wetnessOf(wet), delayMillis, delayedCalls); }
+        private Fixture(WaterAt wetness, long delayMillis, int delayedCalls) {
+            this.wetness = wetness; this.delayMillis = delayMillis; this.delayedCalls = delayedCalls;
         }
-        private static final class Cursor implements ColumnCursor { private boolean done; public boolean done() { return done; } }
-        @Override public ColumnCursor begin(int x, int z, SampleKind kind) { assertEquals(SampleKind.REFERENCE, kind); return new Cursor(); }
+        /** A dry world except where the predicate says otherwise, so partial water can be exercised. */
+        private static Fixture wetWhere(WaterAt wetness) { return new Fixture(wetness, 0, -1); }
+        private static WaterAt wetnessOf(boolean wet) { return (x, z) -> wet; }
+        private static final class Cursor implements ColumnCursor {
+            private boolean done; private int x, z;
+            public boolean done() { return done; }
+        }
+        @Override public ColumnCursor begin(int x, int z, SampleKind kind) {
+            assertEquals(SampleKind.REFERENCE, kind);
+            var cursor = new Cursor(); cursor.x = x; cursor.z = z; return cursor;
+        }
         @Override public WorkState advance(ColumnCursor cursor, int limit) {
             if (delayMillis > 0 && delayedCalls != 0) {
                 if (delayedCalls > 0) delayedCalls--;
@@ -236,6 +271,8 @@ final class RootSearchTest {
         }
         @Override public ColumnSample finish(ColumnCursor cursor) {
             assertTrue(cursor.done());
+            var position = (Cursor) cursor;
+            boolean wet = wetness.wet(position.x, position.z);
             return new ColumnSample(64, wet ? OptionalInt.of(65) : OptionalInt.empty(), wet ? OptionalInt.of(64) : OptionalInt.empty(),
                     "minecraft:plains", Quality.REFERENCE, false);
         }
