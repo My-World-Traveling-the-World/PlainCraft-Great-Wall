@@ -107,11 +107,25 @@ class SanctuaryAvoidanceTest {
         // advance() caps its batch limit at 1..64, so 64 is the largest legal step; the footprint
         // screen needs 2304 samples per shortlisted candidate, hence the generous iteration count.
         for (int i = 0; i < 200_000; i++) {
-            if (search.audit().stream().anyMatch(row -> "axis".equals(row.stage()))) return search;
+            if (pastThePreSanctuaryChecks(search)) return search;
             if (search.needsStructureScreen()) return search;
             if (search.advance(new Fixture(), 64) == WorkState.DONE) return search;
         }
         return search;
+    }
+
+    /**
+     * True once an axis row exists that the pre-sanctuary checks did not already refuse.
+     *
+     * <p>Stopping at the first axis row is not enough: the heading test and the spawn-domain test run
+     * before {@code crossesSanctuary}, and because the ring ladder now starts inside the old band most
+     * of the inner candidates are refused by the domain test first. Only an axis that got past both
+     * says anything about the sanctuary rule.
+     */
+    private static boolean pastThePreSanctuaryChecks(RootSearch search) {
+        return search.audit().stream().anyMatch(row -> "axis".equals(row.stage())
+                && !"REJECTED_EARLY_DOMAIN_OR_HEADING".equals(row.result())
+                && !"REJECTED_WORLD_BOUNDS".equals(row.result()));
     }
 
     private static long countSanctuaryRejections(RootSearch search) {

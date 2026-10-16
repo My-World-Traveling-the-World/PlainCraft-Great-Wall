@@ -81,7 +81,19 @@ public final class RootSearch {
     public record Audit(String stage, Point3i origin, int radiusIndex, int angleIndex, int axisIndex,
             int wetColumns, int invalidSamples, int failedFoundations, int minY, int maxY, String result) {}
     private record Candidate(Point3i origin, int radius, int angle, int wet, int slope, long ridge) {}
-    private static final int[] RADII = {800, 1000, 1250, 1500, 2000, 2500};
+    /**
+     * Ring radii in blocks, innermost first.
+     *
+     * <p>The ladder starts at 200 because the contract is "somewhere the wall can stand", not
+     * "outside the spawn island". A river-cut coastline world has its dry, high ground <em>inside</em>
+     * the ring, and the previous ladder (800..2500) could not reach it: measured on seed
+     * 842680683514394380 the 800..1500 ring averages 67 wet columns out of 81 with a median surface
+     * of y=85 in the chunks that do exist, while the land within 800 blocks - the same land the
+     * road's villages occupy, 385..904 blocks out - stands at y=130..164 with 3.7% water. Ranking is
+     * unchanged (driest, then flattest, then most ridge-like, then nearest), so a far dry ridge still
+     * beats a near wet flat; the extra rings only widen what can be considered at all.
+     */
+    private static final int[] RADII = {200, 400, 600, 800, 1000, 1250, 1500, 2000, 2500};
     /** Ring count, shared with the structure screen so its candidate index check cannot drift. */
     public static final int RADIUS_COUNT = RADII.length;
     private static final int[] AXIS_DEGREES = {-40, -20, 0, 20, 40};
@@ -295,7 +307,10 @@ public final class RootSearch {
                 shortlisted=List.copyOf(remainingScreened.subList(screenedOffset,end));
                 screenedOffset=end;selectedIndex=0;resetSamples();return;
             }
-            if (best == null) throw notFound();
+            if (best == null) {
+                logAxisSummary();
+                throw notFound();
+            }
             phase = 3; return;
         }
         var current = shortlisted.get(selectedIndex);
@@ -606,8 +621,8 @@ public final class RootSearch {
      * One line per search describing what the ring actually offered.
      *
      * <p>Without it a rejected ring is invisible: the caller only ever sees "all frozen
-     * 800..2500 ring/footprint/axis candidates rejected", and there is no way to tell a wet
-     * world from a steep one from a probe that returns nothing usable.
+     * &lt;inner&gt;..&lt;outer&gt; ring/footprint/axis candidates rejected", and there is no way to tell a
+     * wet world from a steep one from a probe that returns nothing usable.
      */
     private void logCoarseSummary(int ranked) {
         if (ranked == 0) {
@@ -625,6 +640,23 @@ public final class RootSearch {
 
     /** Divisor for the screen summary: the stats cover every candidate with usable samples. */
     private int rank(int measured) { return measured == 0 ? 1 : measured; }
+
+    /**
+     * One line naming why the axis stage refused, so an empty-handed search says more than "no site".
+     *
+     * <p>The axis phase only writes to the in-memory audit, which nothing prints. The 2026-10-16
+     * session therefore reported two admitted candidates, no footprint rejection and no axis reason at
+     * all, and the only way to tell a wet axis from a steep one was to re-derive it by hand.
+     */
+    private void logAxisSummary() {
+        java.util.Map<String,Integer> reasons = new java.util.TreeMap<>();
+        for (Audit row : audit) {
+            if ("axis".equals(row.stage())) reasons.merge(row.result(), 1, Integer::sum);
+        }
+        if (reasons.isEmpty()) return;
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
+                "[GreatWall:S1C] ROOT_AXIS_SUMMARY screened={} reasons={}", screenedOffset, reasons);
+    }
 
     private void resetSamples() {
         invalidSamples = 0; failedFoundations = 0;
@@ -692,10 +724,11 @@ public final class RootSearch {
 
     private boolean inRing(Point3i origin) {
         long distance = FixedMath.distanceSquared(origin.x(), origin.z(), spawn.x(), spawn.z());
-        // The band follows RADII: the search has to be able to reach the first land outside the
-        // spawn island. Measured on a coastline world: the 800..1500 ring averages 67 wet columns
-        // out of 81, so the 1500..2500 shell is the next place a wall can stand at all.
-        return distance >= 800L * 800 && distance <= 2500L * 2500;
+        // The band is derived from RADII so the ladder and the band cannot drift apart, and so the
+        // innermost ring is reachable at all (it used to be hardcoded to 800..2500).
+        long inner = (long) RADII[0] * RADII[0];
+        long outer = (long) RADII[RADII.length - 1] * RADII[RADII.length - 1];
+        return distance >= inner && distance <= outer;
     }
 
     private void claimOwner() {
@@ -704,6 +737,7 @@ public final class RootSearch {
     }
 
     private static WallFailure notFound() {
-        return new WallFailure(FailureCode.ROOT_NOT_FOUND, "all frozen 800..2500 ring/footprint/axis candidates rejected");
+        return new WallFailure(FailureCode.ROOT_NOT_FOUND, "all frozen " + RADII[0] + ".."
+                + RADII[RADII.length - 1] + " ring/footprint/axis candidates rejected");
     }
 }
