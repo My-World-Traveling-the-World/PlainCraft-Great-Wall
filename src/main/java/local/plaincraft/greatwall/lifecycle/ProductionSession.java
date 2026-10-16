@@ -925,27 +925,55 @@ final class ProductionSession implements AutoCloseable {
         trace.record("PRODUCTION_FAILED", "*", 0, 0, "required-plan", "none");
         GreatWallMod.LOGGER.error("[GreatWall:S1C] FIXTURE_FAILED production remains OFF", error);
         installed.completeExceptionally(error);
-        // "No suitable site in this world" is not a broken installation. The recipe, the caches and
-        // the session are all intact; this world simply has no ring candidate the siting contract
-        // accepts. Killing the server over it makes the world unplayable and hides the reason in a
-        // crash report, so the wall is skipped for this session instead, with the reason logged.
-        // Every other failure stays fatal: those mean the artifact is unusable, and a half-built
-        // wall left in the world would be worse than a clean stop.
-        if (isNoSuitableSite(error)) {
-            GreatWallMod.LOGGER.error("[GreatWall:S1C] ROOT_UNAVAILABLE no ring candidate satisfies the siting "
-                    + "contract; the wall is skipped for this session and the world loads without it");
+        // Some failures mean "this world cannot have this wall", not "this installation is broken".
+        // Killing the server over one of those makes the world unplayable and buries the reason in a
+        // crash report, so the wall is skipped for the session instead, with the reason logged, and
+        // whatever the world already holds stays where it is. Every other failure stays fatal: those
+        // mean the artifact is unusable, and a half-built wall left in the world would be worse than a
+        // clean stop.
+        var survivable = survivableReason(error);
+        if (survivable != null) {
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] {} the wall is skipped for this session and the "
+                    + "world loads without it", survivable);
         } else {
             MinecraftServer.setFatalException(new IllegalStateException("GreatWall production fixture required dependency failed", error));
         }
         close();
     }
 
-    /** True when the failure means "this world has no site the wall accepts". */
-    private static boolean isNoSuitableSite(Throwable error) {
+    /**
+     * {@return the log line explaining why this failure is survivable, or {@code null} when it is not}
+     *
+     * <p>Two kinds of failure mean "this world cannot have this wall" rather than "this installation is
+     * broken":
+     * <ul>
+     *   <li>{@code ROOT_NOT_FOUND} - no ring candidate the siting contract accepts;</li>
+     *   <li>{@code RECIPE_MISMATCH} - the world was generated with different semantics: a semantic knob
+     *       was edited, the digest schema was bumped (a new knob whose default changes nothing still
+     *       changes the digest), or a datapack edit moved the terrain. A player causes this by playing
+     *       or by editing, and it is exactly what {@code validateReload} already handles gracefully at
+     *       runtime.</li>
+     * </ul>
+     * Both leave the recipe, the caches and the session intact; only this world's wall is refused. The
+     * same {@code RECIPE_MISMATCH} used to reach {@code MinecraftServer.setFatalException} on the
+     * startup path, so an existing world plus a changed knob crashed the game instead of loading.
+     *
+     * <p>Package-private so {@code WorldServices.failRequiredPlan} - the same decision on the path
+     * where no production session exists yet - cannot drift away from it.
+     */
+    static String survivableReason(Throwable error) {
         for (Throwable cause = error; cause != null; cause = cause.getCause()) {
-            if (cause instanceof WallFailure failure && failure.code() == FailureCode.ROOT_NOT_FOUND) return true;
+            if (cause instanceof WallFailure failure) {
+                if (failure.code() == FailureCode.ROOT_NOT_FOUND) {
+                    return "ROOT_UNAVAILABLE no ring candidate satisfies the siting contract;";
+                }
+                if (failure.code() == FailureCode.RECIPE_MISMATCH) {
+                    return "RECIPE_REJECTED this world was generated with different semantics ("
+                            + failure.getMessage() + ");";
+                }
+            }
         }
-        return false;
+        return null;
     }
     void trace(String event, String dimension, int x, int z, String stage, String token) { trace.record(event, dimension, x, z, stage, token); }
     Map<String, Long> counts() { return trace.counts(); }

@@ -557,6 +557,18 @@ public final class WorldServices {
         boolean startup = current == BootstrapState.BOOTSTRAP || current == BootstrapState.RECIPE_READY
                 || current == BootstrapState.WARMING;
         trace(startup ? "BOOTSTRAP_FAILED" : "REQUIRED_PLAN_FAILED", "*", 0, 0, "required-plan", "none");
+        // The same two survivable conditions the production path already honours - "this world has no
+        // site the wall accepts" and "this world was generated with different semantics" - are not a
+        // broken installation here either. Without this, an existing world whose stored recipe no
+        // longer matches (a semantic knob edited, the digest schema bumped, a datapack moved the
+        // terrain) took the running server down through this path instead of loading without a wall.
+        String survivable = ProductionSession.survivableReason(cause);
+        if (survivable != null) {
+            GreatWallMod.LOGGER.error("[GreatWall:S0-02] {} the wall is skipped for this session and the "
+                    + "world loads without it", survivable);
+            planner.close();
+            return;
+        }
         // C2ME reports transaction errors without completing the spawn-search future.
         // The same MARK_BROKEN path can strand new requests after a rejected reload.
         // Vanilla checks this channel both before startup ticks and in the active loop.
