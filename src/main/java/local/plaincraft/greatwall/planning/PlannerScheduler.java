@@ -290,6 +290,10 @@ public final class PlannerScheduler implements AutoCloseable {
         /** The subset of {@code all} this run walked or read from the cache; what gets persisted. */
         var walked = new ArrayList<WallFinePlanner.FineColumn>();
         var sampledColumns = new java.util.concurrent.atomic.AtomicInteger();
+        // Cross-section columns emitted before the cursor collapsed repeats. The gap between this and
+        // sampledColumns is the duplicate factor the overlapping cross-sections produce, which is the
+        // number that says whether the de-duplication is doing its job on this world.
+        var rawColumns = new java.util.concurrent.atomic.AtomicInteger();
         // Prewarm already plans the opening segments; sample the same window so the two share the
         // lane budget and the fine samples land together with the plans.
         long target = prewarmTargetSegments();
@@ -311,6 +315,11 @@ public final class PlannerScheduler implements AutoCloseable {
         // denominator starts at 1 and grows as slices are enqueued (their point ranges are known
         // before they are sampled), and max() keeps the fraction monotone.
         var expectedColumns = new java.util.concurrent.atomic.AtomicInteger(1);
+        // The sampling grid decides how many columns this stage emits, so the meter has to count the
+        // same way or the fraction runs away from one. Read from the frozen snapshot: gridStep = 1 -
+        // the default - leaves both the sampler and the meter exactly as they were.
+        final int gridStep = local.plaincraft.greatwall.config.GreatWallConfig.parameters()
+                .fineSampleGridStep();
         // Publish the counters before the driver starts: the driver reports them every 30 s.
         fineSampleDone = sampledColumns;
         fineSampleTotal = expectedColumns;
@@ -319,6 +328,14 @@ public final class PlannerScheduler implements AutoCloseable {
         // Drive this stage ourselves: without it the fine sample waits on server ticks, which is how
         // a measured session spent 27 minutes here without finishing a single slice.
         startFineSampleDriver();
+        // One memo per session, shared by every slice and every segment: a world column this run has
+        // already walked is answered from here instead of walking the terrain a second time. Slices of
+        // one segment meet at their boundaries and neighbouring cross-sections round to the same
+        // integer columns, so the same column is asked for more than once; the memo turns the repeats
+        // into map hits. Concurrent because the slices run on different lanes, and it holds only
+        // immutable samples.
+        var walks = new java.util.concurrent.ConcurrentHashMap<Long,
+                local.plaincraft.greatwall.model.WallTypes.ColumnSample>();
         var leases = new ArrayList<PlanLease<RouteShape>>();
         // Two counters, not one. A single counter seeded with the segment count completed the
         // index after the first few slices (it was decremented once per slice, not per segment),
@@ -340,13 +357,16 @@ public final class PlannerScheduler implements AutoCloseable {
                 if (enqueueing.get()) return;
                 if (routesPending.get() > 0 || slicesPending.get() > 0) return;
                 int done = sampledColumns.get();
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(done, Math.max(1, done));
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                        done, Math.max(done, expectedColumns.get()));
                 // Recorded here as well as at PREWARM_COMPLETE: the fine sample is the stage whose
                 // cost scales with the cross-section width, and its cache counters are what decide
                 // whether a slow run is the terrain walk or the chunk cache.
-                GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_DONE columns={} expectedColumns={} "
-                                + "chunkCacheHits={} chunkCacheMisses={} lanes={}",
-                        done, expectedColumns.get(),
+                GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_DONE columns={} raw={} repeatedPct={} "
+                                + "expectedColumns={} chunkCacheHits={} chunkCacheMisses={} lanes={}",
+                        done, rawColumns.get(),
+                        rawColumns.get() == 0 ? 0 : Math.round(100f * (rawColumns.get() - done) / rawColumns.get()),
+                        expectedColumns.get(),
                         laneDiagnostic("chunk-cache-hits"), laneDiagnostic("chunk-cache-misses"),
                         laneState.size());
                 persistFineSamples(walked);
@@ -392,10 +412,16 @@ public final class PlannerScheduler implements AutoCloseable {
                             // what makes the meter a column count instead of a slice count.
                             int apron = (from == 0 ? WallFinePlanner.APRON_BLOCKS : 0)
                                     + (to == points ? WallFinePlanner.APRON_BLOCKS : 0);
-                            expectedColumns.addAndGet(apron * (2 * WallFinePlanner.LATERAL + 1)
-                                    + sliceColumns(route.localSQ8(), from, to, wideAt));
+                            // An apron is a run of cross-sections one block apart along the terminal
+                            // chord; the grid keeps every gridStep-th of them, and rounding the
+                            // division is fine - the meter uses max(done, expected) so an estimate that
+                            // runs slightly low cannot show a fraction above one.
+                            expectedColumns.addAndGet(gridWidth(WallFinePlanner.LATERAL, gridStep)
+                                            * Math.max(1, apron / gridStep)
+                                    + sliceColumns(route.localSQ8(), from, to, wideAt, gridStep));
                             var job = new FineSampleJob(route, from, to, priority,
-                                    new CompletableFuture<List<WallFinePlanner.FineColumn>>(), fineSampleCache, wideAt);
+                                    new CompletableFuture<List<WallFinePlanner.FineColumn>>(), fineSampleCache,
+                                    wideAt, walks);
                             enqueue(job);
                             job.result.whenCompleteAsync((columns, sampleError) -> {
                                 try {
@@ -404,6 +430,7 @@ public final class PlannerScheduler implements AutoCloseable {
                                         all.addAll(columns);
                                         walked.addAll(job.probed());
                                         sampledColumns.addAndGet(columns.size());
+                                        rawColumns.addAndGet(job.emittedRaw());
                                     }
                                     int done = sampledColumns.get();
                                     local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
@@ -544,7 +571,19 @@ public final class PlannerScheduler implements AutoCloseable {
      * planned" achievable without ever waiting on an unbounded amount of work.
      */
     public void afterRoadBulk() {
-        if (closed()) throw closedFailure();
+        if (closed()) {
+            // A planning failure closed this session earlier. This entry point is reached from the
+            // server tick (MinecraftServer.prepareLevels TAIL -> WorldServices.afterRoadReached), and
+            // throwing here took the whole game down with a failure it had already reported and
+            // handled: a measured session crashed at 23:43 with
+            // "PlannerScheduler.closedFailure <- afterRoadBulk <- ProductionSession.afterRoadReached".
+            // The wall simply does not get its bulk prewarm; the loading overlay is told so that
+            // nothing waits for a prewarm that will never start, and the worldgen gate opens because a
+            // wall that cannot paint must not hold the roads behind it.
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_SKIPPED reason=planner-closed");
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
+            return;
+        }
         if (state.putIfAbsent("after-road-bulk", 1L) != null) return;
         pump.execute(() -> {
             long target = prewarmTargetSegments();
@@ -1097,6 +1136,16 @@ public final class PlannerScheduler implements AutoCloseable {
                     if (failure != null) {
                         recordFailure(failure, job.phase, segmentOf(job), job.operations);
                         job.result.completeExceptionally(failure);
+                        // Declare the prewarm over before the session winds down: closing the planner
+                        // fails every future, and the loading side would otherwise keep waiting for a
+                        // prewarm that can never finish. A measured session sat on the loading card for
+                        // the full 30 minute peer timeout after its hydrology job failed. finish(false)
+                        // records the failure on the card and opens the peer/worldgen gates, which is
+                        // exactly the policy already applied when the bulk is skipped on a closed
+                        // planner: a wall that cannot paint must not hold the roads behind it.
+                        GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_ABORTED phase={} segment={} reason={}",
+                                job.phase, segmentOf(job), failure.toString());
+                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
                         close();
                         return;
                     }
@@ -1451,26 +1500,34 @@ public final class PlannerScheduler implements AutoCloseable {
         private final local.plaincraft.greatwall.terrain.FineSampleCache cache;
         /** Points of this route that must carry the full band, because a component sits on them. */
         private final java.util.function.IntPredicate wideAt;
+        /** Session-wide memo of already-walked columns; see {@link WallFinePlanner#begin}. */
+        private final java.util.Map<Long, local.plaincraft.greatwall.model.WallTypes.ColumnSample> walks;
         private WallFinePlanner.Cursor cursor;
         private FineSampleJob(RouteShape route, int fromPoint, int toPoint, Priority priority,
                               CompletableFuture<List<WallFinePlanner.FineColumn>> result,
                               local.plaincraft.greatwall.terrain.FineSampleCache cache,
-                              java.util.function.IntPredicate wideAt) {
+                              java.util.function.IntPredicate wideAt,
+                              java.util.Map<Long, local.plaincraft.greatwall.model.WallTypes.ColumnSample> walks) {
             super(priority, "FINE_SAMPLE", result);
             this.route = route;
             this.fromPoint = Math.max(0, fromPoint);
             this.toPoint = Math.min(route.points().size(), Math.max(this.fromPoint, toPoint));
             this.cache = cache;
             this.wideAt = wideAt;
+            this.walks = walks;
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
-            if (cursor == null) cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint, cache, wideAt);
+            if (cursor == null) {
+                cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint, cache, wideAt, walks);
+            }
             operations += limit;
             return WallFinePlanner.advance(cursor, limit) == WorkState.DONE;
         }
         @Override List<WallFinePlanner.FineColumn> value() { return WallFinePlanner.finish(cursor); }
         /** Columns this slice resolved itself, for the session's cache write. */
         List<WallFinePlanner.FineColumn> probed() { return WallFinePlanner.probed(cursor); }
+        /** Cross-section columns this slice emitted before repeats were collapsed, for the log. */
+        int emittedRaw() { return cursor == null ? 0 : WallFinePlanner.emittedRaw(cursor); }
     }
 
     /**
@@ -1517,14 +1574,29 @@ public final class PlannerScheduler implements AutoCloseable {
         for (int i = lo; i < points && arcs.get(i) <= highArc; i++) wide.set(i);
     }
 
-    /** Columns the {@code [from, to)} cross-sections emit, the wide points included. */
+    /** Columns the {@code [from, to)} cross-sections emit, the wide points and the sampling grid included. */
     private static int sliceColumns(List<Long> localSQ8, int from, int to,
-                                    java.util.function.IntPredicate wideAt) {
+                                    java.util.function.IntPredicate wideAt, int gridStep) {
         int total = 0;
         for (int i = from; i < to && i < localSQ8.size(); i++) {
-            total += 2 * (wideAt.test(i) ? WallFinePlanner.LATERAL : WallFinePlanner.BASE_LATERAL) + 1;
+            // The same rule WallFinePlanner.step applies to a route point index, so the meter counts
+            // the cross-sections the cursor will actually walk.
+            if (gridStep > 1 && Math.floorMod(i, gridStep) != 0) continue;
+            total += gridWidth(wideAt.test(i) ? WallFinePlanner.LATERAL : WallFinePlanner.BASE_LATERAL, gridStep);
         }
         return total;
+    }
+
+    /**
+     * Columns one cross-section of half width {@code halfWidth} keeps under the sampling grid.
+     *
+     * <p>Exactly the laterals {@link WallFinePlanner} emits: it keeps the index {@code 0} and every
+     * {@code gridStep}-th lateral either side of it. Only the progress meter uses this, so it has to
+     * track the sampler rather than be exact to the column.
+     */
+    private static int gridWidth(int halfWidth, int gridStep) {
+        if (gridStep <= 1) return 2 * halfWidth + 1;
+        return 2 * (halfWidth / gridStep) + 1;
     }
 
     private final class HydroJob extends Job<SegmentGeometry> {
@@ -1537,15 +1609,31 @@ public final class PlannerScheduler implements AutoCloseable {
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
             if (cursor == null) cursor = hydrology.begin(routes, oracle, 96000);
             operations += limit;
-            // A segment whose hydrology exceeds this operation ceiling terminates
-            // its remaining unresolved water as WIDE instead of burning unbounded
-            // time certifying an island that terminates either way. Already
-            // certified NARROW/WIDE/SUPPORT_GAP evidence is preserved.
-            if (operations > HYDROLOGY_OPERATION_CEILING && !cursor.done()) {
+            try {
+                // A segment whose hydrology exceeds this operation ceiling terminates
+                // its remaining unresolved water as WIDE instead of burning unbounded
+                // time certifying an island that terminates either way. Already
+                // certified NARROW/WIDE/SUPPORT_GAP evidence is preserved.
+                if (operations > HYDROLOGY_OPERATION_CEILING && !cursor.done()) {
+                    hydrology.forceComplete(cursor);
+                    return true;
+                }
+                return hydrology.advance(cursor, limit) == WorkState.DONE;
+            } catch (WallFailure unresolved) {
+                // A column the terrain oracle cannot certify used to end the segment, and through the
+                // scheduler's failure policy the whole session with it: a measured world died with
+                // "HYDROLOGY_UNRESOLVED: reference column cannot certify ground or river bed", and the
+                // fine sample and compile that depended on the same planner died with it. The
+                // classifier already has an authorised answer for water it cannot measure - WIDE, the
+                // same terminate-into-sea policy the operation ceiling uses - so take it here instead.
+                // Safe on this lane: the classifier only refuses after its oracle column has finished,
+                // and forceComplete drains any column still open, so the lane keeps a clean oracle.
+                if (unresolved.code() != FailureCode.HYDROLOGY_UNRESOLVED || cursor.done()) throw unresolved;
+                GreatWallMod.LOGGER.warn("[GreatWall:hydro] HYDROLOGY_FORCED_COMPLETE segment={} reason={}",
+                        routes.center().key().index(), unresolved.getMessage());
                 hydrology.forceComplete(cursor);
                 return true;
             }
-            return hydrology.advance(cursor, limit) == WorkState.DONE;
         }
         @Override SegmentGeometry value() { return geometry(routes.center(), hydrology.finish(cursor), cursor.logicalColumns(), routes.next().isEmpty()); }
     }

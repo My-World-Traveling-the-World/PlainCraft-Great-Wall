@@ -331,8 +331,17 @@ public final class WorldServices {
      * prewarm without racing the peer for the same native lanes.
      */
     public static void afterRoadReached(MinecraftServer server) {
-        var services = find(server);
-        if (services != null && services.production != null) services.production.afterRoadReached();
+        try {
+            var services = find(server);
+            if (services != null && services.production != null) services.production.afterRoadReached();
+        } catch (Throwable t) {
+            // A mixin at the TAIL of prepareLevels: anything thrown here ends the server tick and takes
+            // the game down with it. Every failure inside the session is already logged and handled -
+            // the wall is what gets skipped, never the world. A measured session crashed exactly here,
+            // minutes after a planning job had closed its planner.
+            GreatWallMod.LOGGER.error("[GreatWall:S0-02] ROAD_REACHED_HOOK_FAILED; the wall is skipped, "
+                    + "the world continues", t);
+        }
     }
 
     /**

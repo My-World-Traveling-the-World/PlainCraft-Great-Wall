@@ -175,6 +175,14 @@ public final class GreatWallConfigScreen {
                 .setSaveConsumer(conf::setChunkCacheLimit)
                 .build());
         sampling.addEntry(eb
+                .startIntField(Component.translatable("config.plaincraft_great_wall.fine_sample_grid_step"),
+                        conf.fineSampleGridStep())
+                .setDefaultValue(def.fineSampleGridStep())
+                .setTooltip(Component.translatable("config.plaincraft_great_wall.fine_sample_grid_step.tooltip"))
+                .setMin(1).setMax(GreatWallConfig.MAX_FINE_SAMPLE_GRID_STEP)
+                .setSaveConsumer(conf::setFineSampleGridStep)
+                .build());
+        sampling.addEntry(eb
                 .startIntField(Component.translatable("config.plaincraft_great_wall.fine_step"),
                         conf.fineStep())
                 .setDefaultValue(def.fineStep())
@@ -195,7 +203,7 @@ public final class GreatWallConfigScreen {
                         conf.coreHalfWidth())
                 .setDefaultValue(def.coreHalfWidth())
                 .setTooltip(Component.translatable("config.plaincraft_great_wall.core_half_width.tooltip"))
-                .setMin(0).setMax(24)
+                .setMin(0).setMax(52)
                 .setSaveConsumer(conf::setCoreHalfWidth)
                 .build());
         sampling.addEntry(eb

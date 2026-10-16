@@ -82,6 +82,18 @@ public final class FineHeightIndex {
     }
 
     /**
+     * {@return whether {@code column} beats {@code existing} for the same {@code (x, z)}}
+     *
+     * <p>Strictly better only: a tie keeps {@code existing}, which is what {@link #of}'s
+     * {@code Map.merge} does with the value already in the map. {@link WallFinePlanner} uses this to
+     * collapse the repeated columns its overlapping cross-sections emit, in the very order the merged
+     * map would have seen them, so the collapsed list merges to the identical index.
+     */
+    static boolean prefers(WallFinePlanner.FineColumn column, WallFinePlanner.FineColumn existing) {
+        return CONFLICT_ORDER.compare(column, existing) < 0;
+    }
+
+    /**
      * Negated so that "higher wins" survives an ascending chain. Block levels live in the dimension's
      * build range, so negation cannot overflow, and an absent height sorts last.
      */

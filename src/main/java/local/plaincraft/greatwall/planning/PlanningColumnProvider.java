@@ -37,11 +37,34 @@ public final class PlanningColumnProvider {
      */
     private static final int FILL_RADIUS = 3;
 
+    /**
+     * The fill radius a sampling grid needs.
+     *
+     * <p>With {@code fineSampleGridStep = N} the probes form a lattice of {@code N}-block lateral
+     * spacing and about {@code N / 2} blocks along the route, and the probes of two adjacent rows are
+     * offset by the route's bearing. A cell in the middle of such a lattice is at most {@code N}
+     * blocks away from a probe in world coordinates (the worst bearing makes the offset the sum of
+     * the two half-gaps), so the scan has to reach that far. {@code N = 1} - every column sampled -
+     * keeps the historical {@link #FILL_RADIUS}, so a step of one fills byte for byte as it always
+     * has.
+     */
+    private static int fillRadiusFor(int gridStep) {
+        return Math.max(FILL_RADIUS, gridStep);
+    }
+
     private final FineHeightIndex index;
+    private final int fillRadius;
     private final Map<Long, List<WallFinePlanner.FineColumn>> byChunk = new HashMap<>();
 
+    /** Fills holes at the radius the frozen parameters' sampling grid needs. */
     public PlanningColumnProvider(FineHeightIndex index) {
+        this(index, fillRadiusFor(
+                local.plaincraft.greatwall.config.GreatWallConfig.parameters().fineSampleGridStep()));
+    }
+
+    public PlanningColumnProvider(FineHeightIndex index, int fillRadius) {
         this.index = Objects.requireNonNull(index, "index");
+        this.fillRadius = Math.max(FILL_RADIUS, fillRadius);
         for (var column : index.columns()) {
             byChunk.computeIfAbsent(chunkKey(column.x() >> 4, column.z() >> 4), key -> new ArrayList<>())
                     .add(column);
@@ -104,9 +127,11 @@ public final class PlanningColumnProvider {
      *
      * <p>A copy only ever lands where nothing was sampled, never over a real probe or a conservative
      * fill, and it is the nearest sampled column in a fixed scan order - never a copy of a copy - so
-     * the result depends on nothing but the sampled columns and the requested owners.</p>
+     * the result depends on nothing but the sampled columns and the requested owners. With a sampling
+     * grid the raw set is a lattice rather than a ladder; the radius then follows the grid step
+     * (see {@link #fillRadiusFor}) and the nearest copy still closes every cell.</p>
      */
-    private static void fillLadderHoles(Map<Long, WallFinePlanner.FineColumn> resolved,
+    private void fillLadderHoles(Map<Long, WallFinePlanner.FineColumn> resolved,
             Map<Long, WallFinePlanner.FineColumn> sources, Collection<ChunkKey> owners) {
         for (var owner : owners) {
             int minX = owner.x() << 4, minZ = owner.z() << 4;
@@ -122,12 +147,12 @@ public final class PlanningColumnProvider {
         }
     }
 
-    private static WallFinePlanner.FineColumn nearestSource(Map<Long, WallFinePlanner.FineColumn> sources,
+    private WallFinePlanner.FineColumn nearestSource(Map<Long, WallFinePlanner.FineColumn> sources,
             int x, int z) {
         WallFinePlanner.FineColumn best = null;
         int bestDistance = Integer.MAX_VALUE;
-        for (int dx = -FILL_RADIUS; dx <= FILL_RADIUS; dx++) {
-            for (int dz = -FILL_RADIUS; dz <= FILL_RADIUS; dz++) {
+        for (int dx = -fillRadius; dx <= fillRadius; dx++) {
+            for (int dz = -fillRadius; dz <= fillRadius; dz++) {
                 if (dx == 0 && dz == 0) continue;
                 var column = sources.get(pack(x + dx, z + dz));
                 if (column == null) continue;

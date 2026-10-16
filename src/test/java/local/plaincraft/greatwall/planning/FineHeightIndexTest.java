@@ -107,4 +107,41 @@ class FineHeightIndexTest {
             assertEquals(first.at(x, 0), second.at(x, 0), "column x=" + x);
         }
     }
+
+    @Test void collapsingRepeatedColumnsUpFrontMergesToTheIdenticalIndexInTheIdenticalOrder() {
+        // WallFinePlanner 现在在“发出”这一层就把重复的 (x,z) 折成一个：相邻路线点取整后压在同一个
+        // 格子上，同一列被走过好几遍（真机一次开局走了 134 万列，走廊唯一列只有约 27 万）。以前是让
+        // 合并索引再把这些拷贝 merge 一遍。这条钉死的等价是：先在游标里按「首次出现保位、只有严格更优
+        // 才原位替换」折叠，与把原始重复流整个交给 of()，必须得到逐列相同、而且 columns() 顺序也相同
+        // 的索引——Provider 的回填在并列时按扫描顺序取源，顺序变了回填出来的高度就会变。
+        var raw = new java.util.ArrayList<WallFinePlanner.FineColumn>();
+        for (int x = 0; x < 40; x++) {
+            raw.add(sample(x, 0, 0, 64 + x, Integer.MIN_VALUE, Quality.REFERENCE));
+            raw.add(sample(x, 0, 1, 64 + x + (x % 3), Integer.MIN_VALUE, Quality.COARSE));
+            raw.add(sample(x, 0, 0, 64 + x, Integer.MIN_VALUE, Quality.REFERENCE));
+            raw.add(sample(x, 0, -1, 64 + x - (x % 2), x % 5 == 0 ? 62 : Integer.MIN_VALUE, Quality.REFERENCE));
+            raw.add(sample(x, 0, 2, 64 + x + 4, Integer.MIN_VALUE, Quality.COARSE));
+        }
+        var collapsed = new java.util.ArrayList<WallFinePlanner.FineColumn>();
+        var position = new java.util.HashMap<Long, Integer>();
+        for (var column : raw) {
+            long key = ((long) column.x() << 32) ^ (column.z() & 0xffffffffL);
+            Integer previous = position.get(key);
+            if (previous == null) {
+                position.put(key, collapsed.size());
+                collapsed.add(column);
+            } else if (FineHeightIndex.prefers(column, collapsed.get(previous))) {
+                collapsed.set(previous, column);
+            }
+        }
+        assertTrue(collapsed.size() < raw.size(), "the fixture has to contain repeats");
+        var merged = FineHeightIndex.of(raw);
+        var folded = FineHeightIndex.of(collapsed);
+        assertEquals(merged.size(), folded.size());
+        assertEquals(new java.util.ArrayList<>(merged.columns()), new java.util.ArrayList<>(folded.columns()),
+                "折叠后的插入顺序必须与 merge 看到的一致");
+        for (int x = 0; x < 40; x++) {
+            assertEquals(merged.at(x, 0), folded.at(x, 0), "column x=" + x);
+        }
+    }
 }

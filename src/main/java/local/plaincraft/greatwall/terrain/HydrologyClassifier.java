@@ -373,6 +373,15 @@ public final class HydrologyClassifier {
         var value = c.oracle.finish(c.column); c.column = null;
         if (value.quality() != Quality.REFERENCE || value.upperCensored()
                 || value.waterTopY().isPresent() && value.bedTopY().isEmpty()) {
+            // Name the column before refusing: the failure itself is handled a level up (the job turns
+            // it into the authorised WIDE outcome), and "which column and why" is the only thing an
+            // operator can act on afterwards. A measured world died on this line at a wall site on a
+            // y=501 plateau, with nothing in the log but the bare sentence.
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn("[GreatWall:hydro] "
+                            + "HYDROLOGY_UNRESOLVED_COLUMN at x={} z={} quality={} upperCensored={} "
+                            + "water={} bed={}",
+                    cell.x, cell.z, value.quality(), value.upperCensored(),
+                    value.waterTopY().isPresent(), value.bedTopY().isPresent());
             throw new WallFailure(FailureCode.HYDROLOGY_UNRESOLVED, "reference column cannot certify ground or river bed");
         }
         c.cache.put(key, value); return value;

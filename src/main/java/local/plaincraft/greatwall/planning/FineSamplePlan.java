@@ -88,8 +88,13 @@ final class FineSamplePlan {
             // terrain the second half of the wall is built on.
             var conf = local.plaincraft.greatwall.config.GreatWallConfig.parameters();
             int step = conf.fineStep();
+            // The grid thins the section before this plan ever sees it (see WallFinePlanner), so core
+            // width has to be counted in grid slots to keep meaning "the wall body, plus/minus eight
+            // blocks": at a grid step of four, slot 2 is block 8.
+            int gridStep = conf.fineSampleGridStep();
+            int coreSlots = gridStep <= 1 ? conf.coreHalfWidth() : conf.coreHalfWidth() / gridStep;
             return new Rules(step <= 1 ? Mode.FULL : Mode.AUTO, step,
-                    conf.steepThreshold(), conf.refineWater(), conf.coreHalfWidth());
+                    conf.steepThreshold(), conf.refineWater(), coreSlots);
         }
     }
 

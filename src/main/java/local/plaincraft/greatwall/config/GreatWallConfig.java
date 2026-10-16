@@ -134,6 +134,25 @@ public final class GreatWallConfig {
     /** 中心带半宽（格）：此范围内一律逐格精采，抽稀不进入墙主体。默认 8（真机提速档）。 */
     private int coreHalfWidth = 8;
 
+    // ── 0.1.0 采样网格步长（玩家可填的"精度档位"）──────────────────────────────
+    /**
+     * 采样网格步长（格）。**1 = 关闭网格，完全等于旧行为**；N 表示沿路线每 N 个路点采一条断面、
+     * 横向每 N 格采一列，中间的格子由最近的真实采样列复制（{@code PlanningColumnProvider}）。
+     *
+     * <p>它与 {@link #fineStep} 的区别：{@code fineStep} 是断面<em>内部</em>的自适应抽稀（稀疏基础集
+     * ＋台阶细化＋遇水升级），{@code fineSampleGridStep} 是断面<em>之间</em>与横向的硬网格，决定
+     * "哪些格子是真的探过"。两者相乘：网格决定采样密度，自适应抽稀决定网格内还要不要补探。
+     *
+     * <p>代价（由玩家的选择承担）：采样列数约按 N² 下降，走廊细采样随之约快 N² 倍；但窄于网格的
+     * 地形尖峰与水体会被漏检——墙基可能切进山体，或把一条窄溪当成陆地跨过去。默认 1 时这一取舍
+     * 完全不生效，与既有版本逐字节一致。
+     *
+     * <p>取值 1..4，由 {@link #fineSampleGridStep()} 夹取；它进入世界身份指纹（会改变生成结果）。
+     */
+    private int fineSampleGridStep = 1;
+    /** 采样网格步长的合法上限：4 已把采样列数压到约 1/16，再粗就会让窄地形特征大面积漏检。 */
+    public static final int MAX_FINE_SAMPLE_GRID_STEP = 4;
+
     // ── 世界身份：会改变生成结果的参数快照 ─────────────────────────────────────
     /**
      * The parameter values that decide what the wall actually looks like.
@@ -158,12 +177,17 @@ public final class GreatWallConfig {
             int ridgeSlopeWeight, int ridgeTurnWeight, int ridgeWetWeight, int ridgeDepartureWeight,
             int summitFlatThreshold, int summitFlatReward, int knifeRidgePenalty,
             int ridgeAsymmetryWeight, int ridgeAccumulatedSlopeWeight, int obstacleMarginBlocks,
-            int fineStep, int steepThreshold, boolean refineWater, int coreHalfWidth) {
+            int fineStep, int steepThreshold, boolean refineWater, int coreHalfWidth,
+            int fineSampleGridStep) {
         /**
          * Digest schema. <b>Bump this when the field list changes.</b> A world frozen under the old
          * schema must refuse rather than reinterpret its stored numbers under the new one.
+         *
+         * <p>2: added {@code fineSampleGridStep} (the sampling grid). A schema-1 world refuses with
+         * {@code RECIPE_MISMATCH} and is closed gracefully instead of failing the server tick, which
+         * is the same path a changed value on any existing knob takes.
          */
-        public static final int SCHEMA = 1;
+        public static final int SCHEMA = 2;
 
         /** The stock parameter set: what a fresh install generates. */
         public static final Semantic DEFAULTS = new GreatWallConfig().semantic();
@@ -211,6 +235,7 @@ public final class GreatWallConfig {
                 out.writeInt(steepThreshold);
                 out.writeBoolean(refineWater);
                 out.writeInt(coreHalfWidth);
+                out.writeInt(fineSampleGridStep);
             } catch (java.io.IOException impossible) {
                 throw new IllegalStateException(impossible);
             }
@@ -223,7 +248,8 @@ public final class GreatWallConfig {
         return new Semantic(wallLengthBlocks, ridgeWeight, ridgeProminenceWeight, ridgeSlopeWeight,
                 ridgeTurnWeight, ridgeWetWeight, ridgeDepartureWeight, summitFlatThreshold,
                 summitFlatReward, knifeRidgePenalty, ridgeAsymmetryWeight, ridgeAccumulatedSlopeWeight,
-                obstacleMarginBlocks, fineStep(), steepThreshold(), refineWater(), coreHalfWidth());
+                obstacleMarginBlocks, fineStep(), steepThreshold(), refineWater(), coreHalfWidth(),
+                fineSampleGridStep());
     }
 
     /**
@@ -280,10 +306,21 @@ public final class GreatWallConfig {
      *  widest cross-section a fortified arc samples. */
     public int coreHalfWidth() { return Math.max(0, Math.min(52, coreHalfWidth)); }
 
+    /**
+     * Sampling grid step in blocks, clamped to 1..{@value #MAX_FINE_SAMPLE_GRID_STEP}.
+     *
+     * <p>Semantic knob: it decides which columns are actually probed, so it is part of the frozen
+     * snapshot and of the world identity digest. {@code 1} means no grid.
+     */
+    public int fineSampleGridStep() {
+        return Math.max(1, Math.min(MAX_FINE_SAMPLE_GRID_STEP, fineSampleGridStep));
+    }
+
     public void setFineStep(int value) { this.fineStep = value; }
     public void setSteepThreshold(int value) { this.steepThreshold = value; }
     public void setRefineWater(boolean value) { this.refineWater = value; }
     public void setCoreHalfWidth(int value) { this.coreHalfWidth = value; }
+    public void setFineSampleGridStep(int value) { this.fineSampleGridStep = value; }
 
     public int ridgeWeight() { return ridgeWeight; }
     public int ridgeProminenceWeight() { return ridgeProminenceWeight; }
@@ -378,6 +415,7 @@ public final class GreatWallConfig {
         copy.steepThreshold = steepThreshold;
         copy.refineWater = refineWater;
         copy.coreHalfWidth = coreHalfWidth;
+        copy.fineSampleGridStep = fineSampleGridStep;
         return copy;
     }
 
@@ -406,6 +444,7 @@ public final class GreatWallConfig {
         steepThreshold = other.steepThreshold;
         refineWater = other.refineWater;
         coreHalfWidth = other.coreHalfWidth;
+        fineSampleGridStep = other.fineSampleGridStep;
     }
 
     public static GreatWallConfig get() {
@@ -467,6 +506,7 @@ public final class GreatWallConfig {
             readInt(json, "laneBatchOperations", v -> config.laneBatchOperations = v);
             readInt(json, "chunkCacheLimit", v -> config.chunkCacheLimit = v);
             readInt(json, "fineStep", v -> config.fineStep = v);
+            readInt(json, "fineSampleGridStep", v -> config.fineSampleGridStep = v);
             readInt(json, "steepThreshold", v -> config.steepThreshold = v);
             readBoolean(json, "refineWater", v -> config.refineWater = v);
             readInt(json, "coreHalfWidth", v -> config.coreHalfWidth = v);
@@ -521,6 +561,7 @@ public final class GreatWallConfig {
         json.addProperty("laneBatchOperations", config.laneBatchOperations);
         json.addProperty("chunkCacheLimit", config.chunkCacheLimit);
         json.addProperty("fineStep", config.fineStep);
+        json.addProperty("fineSampleGridStep", config.fineSampleGridStep);
         json.addProperty("steepThreshold", config.steepThreshold);
         json.addProperty("refineWater", config.refineWater);
         json.addProperty("coreHalfWidth", config.coreHalfWidth);
