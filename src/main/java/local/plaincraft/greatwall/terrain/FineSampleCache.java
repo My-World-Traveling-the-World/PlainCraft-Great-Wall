@@ -200,17 +200,28 @@ public final class FineSampleCache {
      *
      * <p>The write goes to a sibling temp file and is moved into place, so an interrupted session
      * cannot leave a half-written cache behind.</p>
+     *
+     * <p>Entries already loaded from the file are carried over. A session that probes only a handful
+     * of new columns - a re-planned route, a new segment, a wider band - would otherwise rewrite the
+     * file with that handful and throw away everything earlier sessions paid for. Freshly probed
+     * columns win over carried-over ones for the same column.</p>
      */
     public void store(Collection<Entry> entries) {
         if (file == null || identity == null || entries.isEmpty()) return;
-        var kept = new ArrayList<Entry>(entries.size());
+        var kept = new ArrayList<Entry>(entries.size() + keys.length);
         for (var entry : entries) {
             var sample = entry.sample();
             if (sample.quality() == Quality.CENSORED || sample.upperCensored()) continue;
             kept.add(entry);
         }
         if (kept.isEmpty()) return;
+        int fresh = kept.size();
+        for (int i = 0; i < keys.length; i++) {
+            long key = keys[i];
+            kept.add(new Entry((int) (key >> 32), (int) key, sample(i)));
+        }
         kept.sort(Comparator.comparingLong(entry -> pack(entry.x(), entry.z())));
+        int carried = keys.length;
         try {
             Path parent = file.getParent();
             if (parent != null) Files.createDirectories(parent);
@@ -256,7 +267,8 @@ public final class FineSampleCache {
                 body.writeTo(out);
             }
             Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
-            GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_CACHE stored columns={} file={}", written, file);
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_CACHE stored columns={} fresh={} carried={} file={}",
+                    written, fresh, carried, file);
         } catch (IOException e) {
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] fine sample cache {} could not be written ({})", file, e.toString());
         }

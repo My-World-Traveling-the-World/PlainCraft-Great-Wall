@@ -490,12 +490,27 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
                 seekStart(this.lowStartY);
             }
         }
-        /** Places the walk at {@code startY}. The noise chunk and its baked slices are kept. */
+        /**
+         * Places the walk at {@code startY}. The noise chunk and its baked slices are kept.
+         *
+         * <p>The chunk's cell grid is indexed from its own top cell downwards, exactly as the
+         * original top-down walk did ({@code maxYExclusive - 1} sits in cell
+         * {@code height/cellHeight - 1} with {@code cellHeight - 1} walked blocks left). The cell
+         * index therefore has to be derived from that same anchor: indexing straight from the world
+         * origin runs one cell off the bottom of the slice array, because the chunk's height is not
+         * a whole number of world cells (it starts below {@code minY}).
+         */
         private void seekStart(int startY) {
-            this.y = startY;
-            this.cellY = Math.floorDiv(startY, noise.getCellHeight());
-            this.innerY = Math.floorMod(startY, noise.getCellHeight());
-            this.attemptStartY = startY;
+            int cellHeight = noise.getCellHeight();
+            int topY = bounds.maxYExclusive() - 1;
+            int topCell = noise.height() / cellHeight - 1;
+            int floorY = topY - (cellHeight * (topCell + 1) - 1);
+            int start = Math.max(floorY, Math.min(topY, startY));
+            int back = topY - start;
+            this.y = start;
+            this.cellY = topCell - Math.floorDiv(back, cellHeight);
+            this.innerY = Math.floorMod(cellHeight - 1 - back, cellHeight);
+            this.attemptStartY = start;
             this.selectedCell = -1;
         }
         /** Restarts the walk from a raised lead, discarding everything the short attempt saw. */
