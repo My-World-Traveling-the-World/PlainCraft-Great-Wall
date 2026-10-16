@@ -698,14 +698,21 @@ final class ProductionSession implements AutoCloseable {
     private void compilePlanningPlans0(Installed snapshot) {
         var index = fineHeightIndex;
         if (index == null || realization == null || chunkCompiler == null) {
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_SKIPPED reason=missing-inputs "
-                            + "fineIndex={} realization={} chunkCompiler={}",
-                    index != null, realization != null, chunkCompiler != null);
+            // A skipped compile used to return with nothing but a WARN. Nothing then released the
+            // pinned prewarm leases or opened the peer gate, so the roads waited out the wall's own
+            // thirty-minute give-up while the world sat on the loading card with one WARN to explain
+            // it. failCompile reports it, releases the leases and opens the gate, so the run ends
+            // with a world that loads and no wall instead of a silent stall.
+            failCompile(snapshot, "missing-inputs",
+                    new IllegalStateException("fineIndex=" + (index != null)
+                            + " realization=" + (realization != null)
+                            + " chunkCompiler=" + (chunkCompiler != null)));
             return;
         }
         var level = levels.get("minecraft:overworld");
         if (level == null) {
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_SKIPPED reason=no-overworld");
+            failCompile(snapshot, "no-overworld",
+                    new IllegalStateException("minecraft:overworld is not loaded"));
             return;
         }
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
@@ -882,6 +889,19 @@ final class ProductionSession implements AutoCloseable {
                 throw new WallFailure(FailureCode.RECIPE_MISMATCH, "generation parameters changed; create a new world");
             }
             trace.record("PRODUCTION_RECIPE_ACCEPTED", "*", 0, 0, "reload", "none");
+        } catch (WallFailure rejected) {
+            if (rejected.code() != FailureCode.RECIPE_MISMATCH) { fail(rejected); return; }
+            // New generation semantics on an existing world means "make a new world", not "this
+            // installation is broken". The same datapack reload without a live session already takes
+            // exactly this graceful path (WorldServices' RECIPE_REJECTED branch); routing it through
+            // fail() instead called MinecraftServer.setFatalException, so editing a datapack crashed
+            // the running server. Retiring the session stops new planning and publication, keeps the
+            // wall already in the landing cache, releases the game's waiters - close() opens the peer
+            // gate too - and says in the log which identity no longer matches.
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] RECIPE_REJECTED: new generation is disabled; "
+                    + "use a new world", rejected);
+            trace.record("PRODUCTION_RECIPE_REJECTED", "*", 0, 0, "reload", "none");
+            close();
         } catch (Throwable error) { fail(error); }
     }
     void active() {

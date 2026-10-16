@@ -157,6 +157,10 @@ public final class WallFinePlanner {
                 // redundant when each of its columns was already sampled) and cannot change a value (a
                 // column's sample is a pure function of its (x, z)), so the merged index is identical -
                 // it just costs a fraction of the probe work.
+                // c.waterCarry is deliberately left untouched: it still describes the last section this
+                // cursor actually walked, and a skipped section is built from columns that very section
+                // already sampled, so that flag is the closest available answer to "did the previous
+                // route point see water". Clearing it here could let a river be filled as land.
                 c.pending = null;
                 c.index++;
                 return;

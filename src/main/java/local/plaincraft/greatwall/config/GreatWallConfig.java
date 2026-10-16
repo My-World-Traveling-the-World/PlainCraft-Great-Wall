@@ -256,11 +256,14 @@ public final class GreatWallConfig {
     /** Driver interval in ms, floored at 1 so a config typo cannot stop the stage from progressing. */
     public int fineSampleDriverIntervalMs() { return Math.max(1, fineSampleDriverIntervalMs); }
 
-    /** Lane grant, clamped to the 1..256 window both advance contracts enforce. */
-    public int laneBatchOperations() { return Math.max(1, Math.min(256, laneBatchOperations)); }
+    /** Lane grant, clamped to the 1..4096 window both advance contracts enforce. The default stays
+     *  256: a larger grant trades scheduling fairness for fewer per-batch fixed costs, which is worth
+     *  measuring on a real session before it becomes the default. */
+    public int laneBatchOperations() { return Math.max(1, Math.min(4096, laneBatchOperations)); }
 
-    /** Baked-chunk cache size per lane, clamped to a sane 4..64 so it cannot be configured to zero. */
-    public int chunkCacheLimit() { return Math.max(4, Math.min(64, chunkCacheLimit)); }
+    /** Baked-chunk cache size per lane, clamped to 4..256 so it cannot be configured to zero. Each
+     *  entry holds a baked NoiseChunk slice, so this is a memory/fine-sample-speed trade. */
+    public int chunkCacheLimit() { return Math.max(4, Math.min(256, chunkCacheLimit)); }
 
     // Setters store the raw value on purpose: the accessors above are the single place that clamps,
     // so a hand-edited file and the config screen cannot disagree about the legal range.
@@ -273,8 +276,9 @@ public final class GreatWallConfig {
     /** Step threshold in blocks, clamped to 1..16. */
     public int steepThreshold() { return Math.max(1, Math.min(16, steepThreshold)); }
     public boolean refineWater() { return refineWater; }
-    /** Core band half width, clamped to 0..LATERAL so it can never exceed the cross-section. */
-    public int coreHalfWidth() { return Math.max(0, Math.min(24, coreHalfWidth)); }
+    /** Core band half width, clamped to 0..52 (WallFinePlanner.LATERAL) so it can never exceed the
+     *  widest cross-section a fortified arc samples. */
+    public int coreHalfWidth() { return Math.max(0, Math.min(52, coreHalfWidth)); }
 
     public void setFineStep(int value) { this.fineStep = value; }
     public void setSteepThreshold(int value) { this.steepThreshold = value; }

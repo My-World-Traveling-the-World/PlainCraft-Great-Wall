@@ -216,6 +216,12 @@ public final class WorldServices {
             // spent latch or a stale rivers-ready flag in the shared statics either.
             RIVERS_READY.set(false);
             PrewarmProgress.clear();
+            // The landing cache is keyed by ServerLevel, so it holds a strong reference into a world
+            // that has just been closed. Leaving it behind pinned that level - and its LRU of up to
+            // 4096 + 16384 compiled plans - for the rest of the JVM's life, which made every world a
+            // single-player session had entered stay reachable. Nothing in production ever called
+            // invalidate/clearAll, so this is the one place that has to.
+            local.plaincraft.greatwall.generation.WallWorldgenPlanCache.clearAll();
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, access, selection) ->
                 GreatWallCommands.register(dispatcher, access, selection));

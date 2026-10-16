@@ -100,6 +100,19 @@ class FineSamplePlanTest {
     }
 
     @Test
+    void carriedWaterEscalatesBeforeAnyProbeOfThisSectionSeesIt() {
+        // Two adjacent route points are one block apart, which is not enough for a water body to end.
+        // When the previous section escalated, the next one has to start escalated as well - even
+        // though none of its own probes has seen water yet. A skipped (redundant) section must not
+        // forget that flag, so this also pins the mechanism the skip path relies on.
+        var order = new ArrayList<Integer>();
+        var plan = new FineSamplePlan(SIZE, AUTO, true);
+        run(plan, flat(70), none(), order);
+        assertTrue(plan.escalated(), "a carried escalation must not be forgotten");
+        assertEquals(SIZE, order.size(), "a carried cross-section probes every column");
+    }
+
+    @Test
     void theScheduleIsAPureFunctionOfTheProbedValues() {
         int[] terrain = new int[SIZE];
         for (int slot = 0; slot < SIZE; slot++) terrain[slot] = 60 + (slot * slot) % 13;

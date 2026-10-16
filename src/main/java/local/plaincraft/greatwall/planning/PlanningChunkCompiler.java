@@ -90,6 +90,7 @@ public final class PlanningChunkCompiler {
         CellKey cachedCell = null;
         Map<Point3i, SurfaceProbe.ColumnView> cachedColumns = null;
         int done = 0;
+        int failed = 0;
         for (var item : work) {
             // Every item of a cell carries the same owner list, so the column map is built once per
             // cell and reused for each of its owners (building it is a scan over those owners).
@@ -98,12 +99,30 @@ public final class PlanningChunkCompiler {
                 cachedColumns = provider.columnsFor(item.owners());
             }
             // Resolve the realization and clip it to this owner; each owner gets its own window
-            // instance, exactly as the single-pass shape did.
-            compileOwner(item.cell(), item.owner(), cachedColumns, new PlanWindow(List.of(item.plan())),
-                    recipeHash, result);
+            // instance, exactly as the single-pass shape did. One owner's failure must not cost the
+            // rest of the window its wall: that owner is skipped, named in the log, and the remaining
+            // owners still publish. Before this, a single failing chunk compile threw out of the whole
+            // window, so a session could paint nothing at all with no line in the log to say which
+            // owner failed - the exact shape the startup used to fail with.
+            try {
+                compileOwner(item.cell(), item.owner(), cachedColumns, new PlanWindow(List.of(item.plan())),
+                        recipeHash, result);
+            } catch (RuntimeException failure) {
+                failed++;
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
+                        "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] cell={} failed={}/{}",
+                        item.owner().x(), item.owner().z(), item.cell(), failed, work.size(), failure);
+            }
             done++;
             if (progress != null) progress.accept(done, work.size());
         }
+        if (failed > 0) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                    "[GreatWall:S1C] PLANNING_COMPILE_PARTIAL owners={} failed={}", result.size(), failed);
+        }
+        // Map.copyOf rejects nulls outright, and a null here would take the whole window down with it,
+        // so drop any owner the compiler refused to produce a plan for.
+        result.values().removeIf(java.util.Objects::isNull);
         return Map.copyOf(result);
     }
 
