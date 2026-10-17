@@ -152,10 +152,25 @@ public final class WallFinePlanner {
     public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                                FineSampleCache cache, java.util.function.IntPredicate wideAt,
                                java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims) {
+        return begin(route, oracle, fromIndex, toIndex, cache, wideAt, walks, claims, fromIndex > 0);
+    }
+
+    /**
+     * Same, with the water carry this cursor starts from.
+     *
+     * <p>True means "the cross-section just before this slice saw water". Each slice used to start at
+     * false, so the first section after every seam was treated as dry ground and its water escalation was
+     * suppressed. The default is deliberately conservative: any slice that does not begin at the route
+     * head assumes water, which can only ever widen the probe band, never narrow it.
+     */
+    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+                               FineSampleCache cache, java.util.function.IntPredicate wideAt,
+                               java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims,
+                               boolean carryWater) {
         Objects.requireNonNull(route, "route");
         Objects.requireNonNull(oracle, "oracle");
         Objects.requireNonNull(cache, "cache");
-        return new Cursor(route, oracle, fromIndex, toIndex, cache, wideAt, walks, claims);
+        return new Cursor(route, oracle, fromIndex, toIndex, cache, wideAt, walks, claims, carryWater);
     }
 
     /**
@@ -277,7 +292,16 @@ public final class WallFinePlanner {
             }
             // The plan decides which of those columns the accurate probe must visit; the rest take a
             // conservative fill derived from their probed neighbours.
-            c.plan = new FineSamplePlan(c.pending.size(), c.rules, c.waterCarry);
+            // The centre slot, measured on the columns that survived the claim filter. size / 2 is the
+            // centre only for the untouched band; once another slice owns part of it the midpoint slides
+            // and the always-probed core band would sit on a flank instead of on the centre line.
+            int centreSlot = 0;
+            int nearest = Integer.MAX_VALUE;
+            for (int slot = 0; slot < c.pending.size(); slot++) {
+                int lateral = Math.abs(c.pending.get(slot).lateral());
+                if (lateral < nearest) { nearest = lateral; centreSlot = slot; }
+            }
+            c.plan = new FineSamplePlan(c.pending.size(), c.rules, c.waterCarry, centreSlot);
             c.slot = -1;
             c.emit = 0;
             c.sections++;
@@ -557,13 +581,19 @@ public final class WallFinePlanner {
 
         private Cursor(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                        FineSampleCache cache, java.util.function.IntPredicate wideAt,
-                       java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims) {
+                       java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims,
+                       boolean carryWater) {
             this.route = route;
             this.oracle = oracle;
             this.cache = cache;
             this.wideAt = wideAt;
             this.walks = walks;
             this.claims = claims;
+            // A slice boundary is not the end of the world: if the cross-section before this slice saw
+            // water the water can still be running here, and starting the carry at false made such a
+            // boundary read as dry land - the one place a river can be filled exactly at the seam. The
+            // caller passes true for every slice that does not begin at the route head.
+            this.waterCarry = carryWater;
             // Frozen snapshot, not the live config: the grid decides which columns are probed, so a
             // mid-world edit would change the terrain the second half of the wall is built on.
             this.gridStep = local.plaincraft.greatwall.config.GreatWallConfig.parameters().fineSampleGridStep();

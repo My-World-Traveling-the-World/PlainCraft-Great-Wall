@@ -115,6 +115,20 @@ final class FineSamplePlan {
      *                   the point where its last visible column sat on the previous cross-section.
      */
     FineSamplePlan(int size, Rules rules, boolean carryWater) {
+        this(size, rules, carryWater, size / 2);
+    }
+
+    /**
+     * Same, with the slot that is the cross-section centre.
+     *
+     * <p>The centre used to be {@code size / 2}, which is the centre only while the section is the whole
+     * {@code -halfWidth..+halfWidth} band. The session-wide claim set drops the columns another slice
+     * already owns, so {@code size} shrinks and its midpoint slides away from the real centre line: the
+     * core band - the columns that are always probed instead of filled - then starts somewhere else and
+     * the columns that matter most fall into the throttled flank. The caller knows the true centre, so it
+     * passes it.
+     */
+    FineSamplePlan(int size, Rules rules, boolean carryWater, int centreSlot) {
         if (size < 1) throw new IllegalArgumentException("cross-section must be non-empty");
         this.size = size;
         this.rules = rules;
@@ -128,7 +142,7 @@ final class FineSamplePlan {
             for (int slot = 0; slot < size; slot++) queue.add(slot);
             return;
         }
-        int centre = size / 2;
+        int centre = Math.max(0, Math.min(size - 1, centreSlot));
         for (int slot = 0; slot < size; slot++) {
             // Stride on the flanks, every column in the core, both edges always probed.
             if (slot % rules.step() == 0 || Math.abs(slot - centre) <= rules.coreHalfWidth()) {

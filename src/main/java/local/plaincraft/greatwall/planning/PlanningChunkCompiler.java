@@ -71,9 +71,17 @@ public final class PlanningChunkCompiler {
     public Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash,
                                                        String dimension, OwnerProgress progress) {
         record Owned(CellKey cell, ChunkKey owner, List<ChunkKey> owners, SegmentPlan plan) { }
-        var work = new java.util.ArrayList<Owned>();
+        // Group by owner, so a chunk that several cells admit is compiled ONCE with all of them.
+        //
+        // The old shape enumerated (cell, owner) pairs and stored each result with a plain put. A seam
+        // chunk - one whose realization every neighbouring cell clips to its own half - was therefore
+        // compiled once per cell, and the later put replaced the earlier plan, so the half the first cell
+        // had built disappeared. A wall 8,190 blocks long has about 128 such chunks and each lost roughly
+        // eight blocks of wall body: about twelve percent of the whole wall, with nothing in the log.
+        // ChunkPlanCompiler.compile already takes a List<RealizationCell> - it was simply always handed
+        // one - so the fix is to hand it every cell that admits the owner.
+        var byOwner = new java.util.LinkedHashMap<ChunkKey, java.util.ArrayList<Owned>>();
         for (var plan : plans.plans()) {
-            // For each segment, enumerate the chunks its realization owners cover.
             long from = plan.prefix().lengthBeforeQ8();
             long to = from + plan.geometry().localSQ8().getLast();
             var firstCell = Math.floorDiv(from, 64L * 256);
@@ -85,13 +93,15 @@ public final class PlanningChunkCompiler {
                     // The whole owner list travels with the item: a component's support table and its
                     // ground-exit walk read every cell of its axis-aligned bounds, which reaches into
                     // the neighbouring chunks, so the column map of one owner alone cannot serve it.
-                    work.add(new Owned(cellKey, owner, owners, plan));
+                    byOwner.computeIfAbsent(owner, ignored -> new java.util.ArrayList<>())
+                            .add(new Owned(cellKey, owner, owners, plan));
                 }
             }
         }
         var result = new HashMap<ChunkKey, ChunkWritePlan>();
         var provider = new PlanningColumnProvider(index);
-        if (progress != null) progress.accept(0, work.size());
+        int ownerCount = byOwner.size();
+        if (progress != null) progress.accept(0, ownerCount);
         // Two per-window values the per-owner path used to recompute: the sampled vertical extent (one
         // pass over every indexed column, so a hundred-owner cell paid it a hundred times) and the
         // protection hash (a sort plus a SHA-256 over every structure box, once per owner). Both are
@@ -101,80 +111,100 @@ public final class PlanningChunkCompiler {
         String protectionHash = local.plaincraft.greatwall.geometry.DeterministicHash.sha256(
                 structures.stream().map(Bounds::toString).sorted().toList().toString()
                         .getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        CellKey cachedCell = null;
-        Map<Point3i, SurfaceProbe.ColumnView> cachedColumns = null;
-        // The realization of a cell does not depend on the owner: the input the compiler builds is the cell
-        // key, the plan, the cell's column map, the window's protection, revision 0 and the same tile map,
-        // and an owner only clips the result. Resolving it once per cell instead of once per owner removes
-        // about ninety identical realizations per cell - the wall component alone is ~400 ms of work.
-        Object cachedRealizationPlan = null;
-        RealizationCell cachedRealization = null;
-        Throwable cachedRealizationFailure = null;
+        // Per-cell memo shared across owners: a cell's column map and its realization depend on the cell
+        // and the plan window it was resolved with, never on which owner is asking. One resolution per
+        // cell instead of one per (cell, owner) removes about ninety identical realizations per cell -
+        // the wall component alone is ~400 ms of work.
+        var cellColumns = new HashMap<CellKey, Map<Point3i, SurfaceProbe.ColumnView>>();
+        var cellRealizations = new HashMap<CellKey, Object>();
         int done = 0;
         int failed = 0;
         long started = System.nanoTime();
         long lastReport = started;
         long reportInterval = java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
-        for (var item : work) {
-            // Every item of a cell carries the same owner list, so the column map is built once per
-            // cell and reused for each of its owners (building it is a scan over those owners).
-            if (!item.cell().equals(cachedCell) || cachedRealizationPlan != item.plan()) {
-                if (!item.cell().equals(cachedCell)) {
-                    cachedCell = item.cell();
-                    cachedColumns = provider.columnsFor(item.owners());
+        for (var entry : byOwner.entrySet()) {
+            var owner = entry.getKey();
+            var items = entry.getValue();
+            var cells = new java.util.ArrayList<RealizationCell>();
+            var ownerPlans = new java.util.ArrayList<SegmentPlan>();
+            var seen = new java.util.LinkedHashSet<CellKey>();
+            var before = new HashMap<Point3i, String>();
+            Throwable cellFailure = null;
+            for (var item : items) {
+                if (!seen.add(item.cell())) continue;
+                ownerPlans.add(item.plan());
+                Map<Point3i, SurfaceProbe.ColumnView> columns = cellColumns.computeIfAbsent(
+                        item.cell(), ignored -> provider.columnsFor(item.owners()));
+                Object realization = cellRealizations.get(item.cell());
+                if (realization == null) {
+                    try {
+                        realization = resolveCell(item.cell(), columns,
+                                new PlanWindow(List.of(item.plan())), protectionHash);
+                    } catch (Throwable failure) {
+                        // Memoised so every owner of this cell fails the same way, instead of each paying
+                        // the realization again to hit the same failure.
+                        realization = failure;
+                    }
+                    cellRealizations.put(item.cell(), realization);
                 }
-                cachedRealizationPlan = item.plan();
-                cachedRealization = null;
-                cachedRealizationFailure = null;
-                try {
-                    cachedRealization = resolveCell(cachedCell, cachedColumns,
-                            new PlanWindow(List.of(item.plan())), protectionHash);
-                } catch (Throwable failure) {
-                    // Memoised so every owner of this cell fails the same way, instead of each paying the
-                    // realization again to hit the same failure.
-                    cachedRealizationFailure = failure;
+                if (realization instanceof Throwable failure) {
+                    cellFailure = failure;
+                    break;
+                }
+                var cellResult = (RealizationCell) realization;
+                cells.add(cellResult);
+                // The pre-write state of this owner's own cells, gathered from every cell that admits it.
+                // ChunkPlanCompiler needs it for T0_MISSING; with one cell it used to see only that cell's
+                // voxels, which is the second half of why a seam chunk lost content.
+                for (var component : cellResult.components()) {
+                    for (var v : component.voxels()) {
+                        if (Math.floorDiv(v.pos().x(), 16) != owner.x()
+                                || Math.floorDiv(v.pos().z(), 16) != owner.z()) continue;
+                        var column = columns.get(new Point3i(v.pos().x(), 0, v.pos().z()));
+                        if (column != null) before.putIfAbsent(v.pos(), column.state(v.pos().y()));
+                    }
                 }
             }
-            // Resolve the realization and clip it to this owner; each owner gets its own window
-            // instance, exactly as the single-pass shape did. One owner's failure must not cost the
-            // rest of the window its wall: that owner is skipped, named in the log, and the remaining
-            // owners still publish. Before this, a single failing chunk compile threw out of the whole
-            // window, so a session could paint nothing at all with no line in the log to say which
-            // owner failed - the exact shape the startup used to fail with.
-            // Throwable, not RuntimeException: an Error raised inside a native or linkage path (for
-            // example the road interop's NoClassDefFoundError) would otherwise abort the whole window
-            // and cost the session its wall over one owner.
+            // One owner's failure must not cost the rest of the window its wall: that owner is skipped,
+            // named in the log, and the remaining owners still publish.
             try {
-                if (cachedRealizationFailure != null) throw cachedRealizationFailure;
-                compileOwner(item.cell(), item.owner(), cachedColumns, new PlanWindow(List.of(item.plan())),
-                        recipeHash, windowBounds, protection, protectionHash, result, cachedRealization);
+                if (cellFailure != null) throw cellFailure;
+                var planWindow = new PlanWindow(List.copyOf(ownerPlans));
+                var plan = compiler.bindCoverage(
+                        compiler.compile(owner, recipeHash, List.copyOf(cells), before),
+                        coverage.forChunk(owner, planWindow, windowBounds).hash());
+                if (result.putIfAbsent(owner, plan) != null) {
+                    // Cannot happen with one entry per owner; loud if a future change reintroduces the
+                    // silent overwrite this grouping exists to remove.
+                    local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
+                            "[GreatWall:S1C] PLANNING_COMPILE_DUPLICATE_OWNER owner=[{},{}]",
+                            owner.x(), owner.z());
+                }
             } catch (Throwable failure) {
                 failed++;
                 local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
-                        "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] cell={} failed={}/{}",
-                        item.owner().x(), item.owner().z(), item.cell(), failed, work.size(), failure);
+                        "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] failed={}/{}",
+                        owner.x(), owner.z(), failed, ownerCount, failure);
             }
             done++;
             // Progress reporting never costs the window its result: the sink writes a loading-card
             // counter today, but this loop is the only place that publishes the compile at all.
             if (progress != null) {
-                try { progress.accept(done, work.size()); } catch (Throwable ignored) { }
+                try { progress.accept(done, ownerCount); } catch (Throwable ignored) { }
             }
-            // A 15 s heartbeat. The window's own timing only exists once the window finishes, and on the
-            // measured sessions the compile never finished at all, so there was no evidence of its cost at
-            // any scale. (done, total) with the elapsed time yields a per-owner rate even from a run that
-            // is interrupted - which is the only way this stage can be sized today.
+            // A 15 s heartbeat: (done, total) with the elapsed time yields a per-owner rate even from a
+            // run that is interrupted, which is the only way this stage can be sized today.
             long now = System.nanoTime();
-            if (now - lastReport >= reportInterval || done == work.size()) {
+            if (now - lastReport >= reportInterval || done == ownerCount) {
                 lastReport = now;
                 double seconds = Math.max(0.001, (now - started) / 1_000_000_000.0);
                 double perOwnerMs = 1000.0 * seconds / Math.max(1, done);
                 local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                         "[GreatWall:S1C] PLANNING_COMPILE_PROGRESS owners={}/{} failed={} elapsedMs={} "
                                 + "msPerOwner={} etaMs={}",
-                        done, work.size(), failed, Math.round(seconds * 1000.0),
+                        done, ownerCount, failed, Math.round(seconds * 1000.0),
                         String.format(java.util.Locale.ROOT, "%.1f", perOwnerMs),
-                        Math.round(perOwnerMs * Math.max(0, work.size() - done)));
+                        Math.round(perOwnerMs * Math.max(0, ownerCount - done)));
             }
         }
         if (failed > 0) {
@@ -195,27 +225,6 @@ public final class PlanningChunkCompiler {
                 List.copyOf(structures), Map.of(), 0, protectionHash));
     }
 
-    private void compileOwner(CellKey cell, ChunkKey owner,
-            Map<Point3i, SurfaceProbe.ColumnView> columns, PlanWindow plans, String recipeHash,
-            DimensionBounds windowBounds, List<Bounds> protection, String protectionHash,
-            Map<ChunkKey, ChunkWritePlan> into,
-            RealizationCell cellResult) {
-        var input = new RealizationPlanner.Input(cell, plans, Map.of(), columns, protection,
-                Map.of(), 0, protectionHash);
-        var before = new HashMap<Point3i, String>();
-        for (var component : cellResult.components()) {
-            for (var v : component.voxels()) {
-                if (Math.floorDiv(v.pos().x(), 16) != owner.x() || Math.floorDiv(v.pos().z(), 16) != owner.z()) continue;
-                var column = columns.get(new Point3i(v.pos().x(), 0, v.pos().z()));
-                if (column != null) before.putIfAbsent(v.pos(), column.state(v.pos().y()));
-            }
-        }
-        var coverageForOwner = coverage.forChunk(owner, plans, windowBounds);
-        var plan = compiler.bindCoverage(
-                compiler.compile(owner, recipeHash, List.of(cellResult), before),
-                coverageForOwner.hash());
-        into.put(owner, plan);
-    }
 
     private DimensionBounds recipeBounds() {
         // The planning compiler does not hold a WorldRecipe; derive a conservative bound from the

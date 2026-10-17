@@ -126,7 +126,9 @@ public final class PlannerScheduler implements AutoCloseable {
      * 256 ops took about 10 ms, so the batch is not the limiter either: the levers on this stage are
      * doing less work per column and cutting the retry walks, not a larger batch.
      */
-    private static final int LANE_BATCH_OPERATIONS = 256;
+    // The batch size is GreatWallConfig.laneBatchOperations (default 256, clamped 1..4096); this class
+    // used to keep a private copy that nothing read, so tuning it changed nothing.
+
 
     /** How often the fine sample reports progress while it runs. */
     private static final long FINE_SAMPLE_REPORT_MILLIS = 30_000L;
@@ -156,7 +158,7 @@ public final class PlannerScheduler implements AutoCloseable {
      */
     private volatile Runnable fineSampleAbandon;
     /** Set when the runaway guard published the index instead of waiting for the work to converge. */
-    private volatile boolean fineSampleForced;
+    private volatile java.util.concurrent.atomic.AtomicBoolean fineSampleForced = new java.util.concurrent.atomic.AtomicBoolean();
     /**
      * How far past its own estimate the fine sample may run before it is treated as a runaway.
      *
@@ -166,11 +168,13 @@ public final class PlannerScheduler implements AutoCloseable {
      * the index already holds, not of sampling new terrain. Publishing what has been sampled keeps the
      * save buildable; waiting for convergence never does.
      */
-    private static final long FINE_SAMPLE_RUNAWAY_NUMERATOR = 10L;
+    private static final long FINE_SAMPLE_RUNAWAY_NUMERATOR = 4L;
     /** How often the semantic runaway test samples the counters. */
     private static final long FINE_SAMPLE_RUNAWAY_WINDOW_NANOS = TimeUnit.SECONDS.toNanos(5);
     /** Columns that must arrive in one window before "no new terrain" means anything. */
-    private static final long FINE_SAMPLE_RUNAWAY_MIN_COLUMNS = 10_000L;
+    private static final long FINE_SAMPLE_RUNAWAY_MIN_COLUMNS = 1_000L;
+    /** Below this the denominator is still the seed value, so the ratio bound means nothing. */
+    private static final long FINE_SAMPLE_RUNAWAY_MIN_EXPECTED = 1_000L;
     /** Consecutive no-new-terrain windows before the stage is declared a runaway (5 s each). */
     private static final int FINE_SAMPLE_RUNAWAY_IDLE_WINDOWS = 3;
     private long runawayLastColumns;
@@ -384,6 +388,15 @@ public final class PlannerScheduler implements AutoCloseable {
         fineSampleProbed = probedColumns;
         fineSampleStartNanos = System.nanoTime();
         fineSampleLastLogNanos = 0L;
+        // A per-call instance, not a field that lives as long as the scheduler: a forced publish from an
+        // earlier call used to leave the flag set, and the next call then skipped the completion gates and
+        // published an index built from an empty list. This call gets its own flag and its own counters.
+        var forcedFlag = new java.util.concurrent.atomic.AtomicBoolean();
+        fineSampleForced = forcedFlag;
+        runawayLastColumns = 0L;
+        runawayLastMisses = 0L;
+        runawayLastCheckNanos = 0L;
+        runawayIdleChecks = 0;
         // Drive this stage ourselves: without it the fine sample waits on server ticks, which is how
         // a measured session spent 27 minutes here without finishing a single slice.
         startFineSampleDriver();
@@ -433,7 +446,7 @@ public final class PlannerScheduler implements AutoCloseable {
                 // gates: what has been merged so far is a superset of the columns it needs (the excess work
                 // is re-walking columns the index already holds), and waiting for `pending` to drain is
                 // exactly what never happened in the measured session.
-                if (!fineSampleForced) {
+                if (!fineSampleForced.get()) {
                     if (enqueueing.get()) return;
                     if (routesPending.get() > 0 || slicesPending.get() > 0) return;
                 }
@@ -995,7 +1008,10 @@ public final class PlannerScheduler implements AutoCloseable {
         if (abandon == null || done == null || total == null) return false;
         long expected = total.get();
         long columns = done.get();
-        if (expected > 0L && columns > FINE_SAMPLE_RUNAWAY_NUMERATOR * expected) {
+        // expected starts at 1 while the first slices are still being enqueued; comparing against it
+        // would fire on the first thousand columns of every run.
+        if (expected >= FINE_SAMPLE_RUNAWAY_MIN_EXPECTED
+                && columns > FINE_SAMPLE_RUNAWAY_NUMERATOR * expected) {
             return abandonFineSample(abandon, columns, expected, "ratio");
         }
         // The semantic test, and the one that actually catches this: a runaway keeps producing columns
@@ -1008,6 +1024,14 @@ public final class PlannerScheduler implements AutoCloseable {
         if (now - runawayLastCheckNanos < FINE_SAMPLE_RUNAWAY_WINDOW_NANOS) return false;
         runawayLastCheckNanos = now;
         long misses = laneDiagnostic("chunk-cache-misses");
+        long hits = laneDiagnostic("chunk-cache-hits");
+        if (hits + misses == 0L) {
+            // No oracle lane published cache counters, so "no new terrain" cannot be judged from them.
+            // Disabling the test is the honest answer: it is better to fall back to the ratio bound than
+            // to declare a runaway because the counter happened to read zero.
+            runawayIdleChecks = 0;
+            return false;
+        }
         long columnDelta = columns - runawayLastColumns;
         long missDelta = Math.max(0L, misses - runawayLastMisses);
         runawayLastColumns = columns;
@@ -1029,7 +1053,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private boolean abandonFineSample(Runnable abandon, long columns, long expected, String why) {
         // Cleared first: two driver ticks cannot both publish, and a second call reads null and returns.
         fineSampleAbandon = null;
-        fineSampleForced = true;
+        if (fineSampleForced != null) fineSampleForced.set(true);
         stopFineSampleDriver();
         GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_RUNAWAY reason={} columns={} expected={} ratio={} "
                         + "sections={} - the stage is re-walking columns the index already holds, so the "
