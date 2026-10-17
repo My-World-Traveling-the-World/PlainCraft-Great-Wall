@@ -341,6 +341,7 @@ public final class WorldBootstrap implements AutoCloseable {
                             publishRecipeFor(cachedSelection, authorization.creation(), inputs);
                         } else {
                             var search = new RootSearch(spawn.get("chosen"), inputs.bounds(), earlyDomain.snapshot(), inputs.foundation(),inputs.structures()!=null, inputs.sanctuaryAvoidance());
+                            rootSearchStartedAt = System.nanoTime();
                             advance(search, lanes.getFirst(), authorization.creation(), inputs);
                         }
                     }
@@ -615,9 +616,67 @@ public final class WorldBootstrap implements AutoCloseable {
             var selection = batch.selected().get();
             GreatWallMod.LOGGER.info("[GreatWall:DIAG] advance SELECTED thread={} axis={}",
                 Thread.currentThread().getName(), selection.axis());
+            logRootSearchDone(search, batch.progress());
             writeCachedAxis(creation, inputs, selection);
             publishRecipeFor(selection, creation, inputs);
         }, rootPump);
+    }
+
+    /** Wall-clock of the root search, for the cost line's parallelism ratio. */
+    private volatile long rootSearchStartedAt;
+
+    /**
+     * Reports where the root search's terrain work actually went.
+     *
+     * <p>Two sessions' worth of analysis had to reconstruct this from the wall clock and a two-equation
+     * model, because the search reported its <em>progress</em> and never its <em>cost</em> - while the oracle
+     * lanes have carried a per-lane cost model all along. Every number below is a sum over the lanes, so
+     * dividing the slice/block totals by the search's own wall clock yields the effective parallelism, which
+     * is the one measurement that says whether the prefetch lanes are earning their keep.
+     */
+    private void logRootSearchDone(RootSearch search, RootSearch.Progress progress) {
+        long elapsedNanos = rootSearchStartedAt == 0L ? 0L : System.nanoTime() - rootSearchStartedAt;
+        long sliceMs = 0L, blockMs = 0L, cellMs = 0L, biomeMs = 0L, constructMs = 0L, surfaceMs = 0L;
+        long hits = 0L, misses = 0L, walkedBlocks = 0L, leadRetries = 0L;
+        List<local.plaincraft.greatwall.terrain.OracleLane> lanes;
+        try {
+            lanes = laneSnapshot.get("lanes");
+        } catch (RuntimeException unavailable) {
+            lanes = null;
+        }
+        if (lanes != null) {
+            for (var lane : lanes) {
+                if (lane == null) continue;
+                Map<String, Long> diagnostic = lane.diagnostics();
+                sliceMs += count(diagnostic, "slice-ms");
+                blockMs += count(diagnostic, "block-ms");
+                cellMs += count(diagnostic, "cell-ms");
+                biomeMs += count(diagnostic, "biome-ms");
+                constructMs += count(diagnostic, "construct-ms");
+                surfaceMs += count(diagnostic, "surface-ms");
+                hits += count(diagnostic, "chunk-cache-hits");
+                misses += count(diagnostic, "chunk-cache-misses");
+                walkedBlocks += count(diagnostic, "walked-blocks");
+                leadRetries += count(diagnostic, "lead-retries");
+            }
+        }
+        double elapsedMs = Math.max(1.0D, elapsedNanos / 1_000_000.0D);
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SEARCH_DONE columns={} phase={} over40msBatches={} "
+                        + "maxBatchMs={} elapsedMs={} sliceMs={} blockMs={} cellMs={} biomeMs={} constructMs={} "
+                        + "surfaceMs={} walkedBlocks={} leadRetries={} chunkCacheHits={} chunkCacheMisses={} "
+                        + "effectiveParallelism={} discardedPrefetched={} {}",
+                progress.columns(), progress.phase(), progress.over40msBatches(),
+                Math.round(progress.maxBatchNanos() / 1_000_000.0D), Math.round(elapsedMs),
+                sliceMs, blockMs, cellMs, biomeMs, constructMs, surfaceMs, walkedBlocks, leadRetries,
+                hits, misses,
+                String.format(java.util.Locale.ROOT, "%.2f", (sliceMs + blockMs + cellMs + biomeMs) / elapsedMs),
+                search.discardedPrefetchedCount(),
+                new java.util.TreeMap<>(prefetchDiagnostics()));
+    }
+
+    private static long count(Map<String, Long> diagnostics, String key) {
+        Long value = diagnostics.get(key);
+        return value == null ? 0L : value;
     }
 
     /**

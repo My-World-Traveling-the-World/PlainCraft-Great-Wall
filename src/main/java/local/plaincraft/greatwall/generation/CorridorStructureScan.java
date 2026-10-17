@@ -236,6 +236,20 @@ public final class CorridorStructureScan {
         return Math.max(2, Math.min(16, Math.min(cpuBudget, memoryBudget)));
     }
 
+    /**
+     * Scan yield counters, summed over every slice: candidates that produced at least one piece, candidates
+     * that produced none, and the piece total. The scanner logs them next to its candidate/box counts, which
+     * is what makes "how much of the 128 s is wasted on candidates that die inside structure.generate" a
+     * measurement instead of a guess.
+     */
+    private static final java.util.concurrent.atomic.LongAdder STARTS = new java.util.concurrent.atomic.LongAdder();
+    private static final java.util.concurrent.atomic.LongAdder EMPTY_CANDIDATES = new java.util.concurrent.atomic.LongAdder();
+    private static final java.util.concurrent.atomic.LongAdder PIECES = new java.util.concurrent.atomic.LongAdder();
+
+    /** {@return {starts, emptyCandidates, pieces} accumulated since the process started} */
+    public static long[] scanYield() {
+        return new long[] {STARTS.sum(), EMPTY_CANDIDATES.sum(), PIECES.sum()};
+    }
     private static List<OwnedBox> resolveBoxesSerial(ServerLevel level, List<Candidate> candidates,
                                                       java.util.function.IntConsumer sliceProgress) {
         if (level == null || candidates == null || candidates.isEmpty()) return List.of();
@@ -248,6 +262,7 @@ public final class CorridorStructureScan {
         int processed = 0;
         for (Candidate candidate : candidates) {
             processed++;
+            int boxesBefore = result.size();
             if (sliceProgress != null && (processed % 8) == 0) sliceProgress.accept(8);
             Holder<StructureSet> setHolder = candidate.structureSet();
             StructureSet structureSet = setHolder.value();
@@ -290,8 +305,10 @@ public final class CorridorStructureScan {
                         structure.biomes()::contains);
                 if (start != null && start.isValid()) {
                     String id = structureId(level, structure);
+                    STARTS.increment();
                     for (var piece : start.getPieces()) {
                         var box = piece.getBoundingBox();
+                        PIECES.increment();
                         String key = id + ":" + box.minX() + "," + box.minY() + "," + box.minZ()
                                 + ":" + box.maxX() + "," + box.maxY() + "," + box.maxZ();
                         if (seen.add(key)) result.add(new OwnedBox(id, pos.toLong(), box));
@@ -301,6 +318,11 @@ public final class CorridorStructureScan {
                 if (remaining == null) break;
                 remaining.remove(selectedIndex);
             }
+            // Every path that got here without adding a box died inside structure.generate: the placement
+            // test, the biome filter, the height check, or a valid start with no pieces. Counting those tells
+            // a pre-filter's expected yield - the one number that decides whether the 128 s scan can be cut
+            // down - and it costs nothing.
+            if (result.size() == boxesBefore) EMPTY_CANDIDATES.increment();
         }
         // 分片末尾的余数上报（前面的按 8 批量已上报，这里补最后一段）
         int remainder = processed % 8;
