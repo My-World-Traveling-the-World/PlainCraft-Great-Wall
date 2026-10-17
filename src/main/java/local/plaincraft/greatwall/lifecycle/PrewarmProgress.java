@@ -370,10 +370,13 @@ public final class PrewarmProgress {
         EVER_STARTED.set(false);
         REQUESTED.set(false);
         synchronized (LATCH_LOCK) {
+            // Release any waiter still parked on the old gate before replacing it: a session that is being
+            // torn down must not leave a waiter holding a latch nobody will ever open. Both gates are
+            // released - the old shape only opened worldgenReady, so a consumer that had already read the
+            // settled latch waited out its own timeout.
+            settled.countDown();
             settled = new CountDownLatch(1);
-            // Release any peer still parked on the old gate before replacing it: a session that is
-            // being torn down must not leave a waiter holding a latch nobody will ever open. The
-            // replacement is needed so the next session's gate is not born already open.
+            // The replacement is needed so the next session's gate is not born already open.
             signalWorldgenReady();
             worldgenReady = new CountDownLatch(1);
         }

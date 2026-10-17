@@ -80,6 +80,11 @@ final class ProductionSession implements AutoCloseable {
     /** Marker type; carries no data, its completion is the signal. */
     private enum GameplayStamp { INSTANCE }
     private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();
+    /** Set while the fine sample is still in flight; the compile waits on it instead of failing. */
+    private volatile boolean fineSampleSettled;
+    /** Set when a compile attempt deferred for want of the fine sample, so the callback re-triggers it. */
+    private final java.util.concurrent.atomic.AtomicBoolean compileDeferred =
+            new java.util.concurrent.atomic.AtomicBoolean();
     private final ConcurrentHashMap<String, String> failures = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ServerLevel> levels = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ProductionInputs> inputs = new ConcurrentHashMap<>();
@@ -420,23 +425,32 @@ final class ProductionSession implements AutoCloseable {
                 originX, originZ, endX, endZ, corridorHalfWidth);
         scanner.scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor)
                 .whenComplete((boxes, error) -> {
-                    final List<Bounds> structures;
-                    if (error != null) {
-                        GreatWallMod.LOGGER.warn("[GreatWall:corridor] structure scan failed; "
-                                + "falling back to no structure avoidance", error);
-                        structures = List.of();
-                    } else {
-                        var bounds = new java.util.ArrayList<Bounds>(boxes.size());
-                        for (var owned : boxes) {
-                            var b = owned.box();
-                            if (b == null) continue;
-                            bounds.add(new Bounds(b.minX(), b.minY(), b.minZ(),
-                                    b.maxX() + 1, b.maxY() + 1, b.maxZ() + 1));
+                    // This callback's returned future is discarded, so a throw here would vanish and take
+                    // the whole startup stage with it (no prewarm, no compile, the world parked until the
+                    // thirty-minute give-up). Everything below is inside the guard for that reason.
+                    try {
+                        final List<Bounds> structures;
+                        if (error != null) {
+                            GreatWallMod.LOGGER.warn("[GreatWall:corridor] structure scan failed; "
+                                    + "falling back to no structure avoidance", error);
+                            structures = List.of();
+                        } else {
+                            var bounds = new java.util.ArrayList<Bounds>(boxes.size());
+                            for (var owned : boxes) {
+                                var b = owned.box();
+                                if (b == null) continue;
+                                bounds.add(new Bounds(b.minX(), b.minY(), b.minZ(),
+                                        b.maxX() + 1, b.maxY() + 1, b.maxZ() + 1));
+                            }
+                            structures = List.copyOf(bounds);
+                            saveStructureScanCache(root, recipe.recipeHash(), structures);
                         }
-                        structures = List.copyOf(bounds);
-                        saveStructureScanCache(root, recipe.recipeHash(), structures);
+                        installStructuresAndSample(planner, structures);
+                    } catch (Throwable failure) {
+                        GreatWallMod.LOGGER.error("[GreatWall:corridor] installing the structure scan failed; "
+                                + "the startup stage is released without a wall this session", failure);
+                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
                     }
-                    installStructuresAndSample(planner, structures);
                 });
     }
 
@@ -464,40 +478,113 @@ final class ProductionSession implements AutoCloseable {
         // the wall compiles inside the road's wait and the roads start only after the wall can
         // actually paint. Waiting for a tick instead deadlocked the two against each other.
         planner.onBulkReady(() -> server.execute(this::compileAtStartup));
-        // The fine cross-section sample and the prewarm both drive off the planner's lanes; sample
-        // first, publish the samples to the session, then start the bulk prewarm. A sample failure
-        // leaves the index null and the wall simply does not compile/paint (the new single path).
+        // The bulk prewarm starts HERE, not from the fine-sample callback: it needs nothing but the
+        // obstacle index installed above, and it is precisely what the road gate, the world's startup
+        // stage and the compile's lease release all wait for. Ordering it behind the fine sample (as this
+        // method used to) serialised a bounded stage behind an unbounded one: the measured session logged
+        // zero PREWARM_BEGIN lines because the sample never finished, so the world waited out the wall's
+        // own thirty-minute give-up instead of the two minutes this stage actually needs. The sample still
+        // runs, concurrently, and the compile waits for both (see compilePlanningPlans0).
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE);
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.PREWARM);
+        startBulkPrewarm(planner, "structures-installed");
         // Sampled terrain columns do not change between sessions, but the stage used to re-walk every
         // one of them on every world entry - the single most expensive thing this mod does. Hand it
         // the previous session's columns instead. The file is bound to the recipe and terrain
         // identity, so a world whose terrain configuration changed re-probes rather than trusting
         // columns sampled under different terrain.
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE);
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
         planner.setFineSampleCache(FineSampleCache.load(
                 root.resolve("samples").resolve("fine-columns.bin"),
                 recipe().recipeHash() + '|' + recipe().terrainHash() + '|' + recipe().dimension()));
-        planner.requireFineSamples(Priority.PLAYER_PREFETCH)
-                .whenComplete((fineIndex, sampleError) -> {
-                    if (sampleError != null) {
-                        GreatWallMod.LOGGER.warn("[GreatWall:corridor] fine sample failed; "
-                                + "wall will not compile", sampleError);
-                    } else {
-                        fineHeightIndex = fineIndex;
-                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                                fineIndex.size(), fineIndex.size());
-                    }
-                    // The prewarm must start exactly once, after both planning inputs settle.
-                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
-                            local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.PREWARM);
-                    planner.afterRoadBulk();
-                });
+        fineSampleSettled = false;
+        try {
+            planner.requireFineSamples(Priority.PLAYER_PREFETCH)
+                    .whenComplete((fineIndex, sampleError) -> onFineSampleSettled(fineIndex, sampleError));
+        } catch (Throwable couldNotStart) {
+            // Losing the sample must not take the startup stage with it: without this, a throw here would
+            // leave `fineSampleSettled` false forever and a deferred compile would never be re-triggered.
+            fineSampleSettled = true;
+            GreatWallMod.LOGGER.error("[GreatWall:corridor] fine sample could not be started; "
+                    + "the wall will not compile", couldNotStart);
+            triggerDeferredCompile();
+        }
+    }
+
+    /**
+     * Handles the fine sample's completion: publish the index, then run a compile that was waiting for it.
+     *
+     * <p>Runs inside a {@code whenComplete} whose returned future is discarded, so anything thrown here
+     * would vanish - the failure mode that once parked the world for thirty minutes. Every path ends by
+     * marking the sample settled and re-triggering a deferred compile.
+     */
+    private void onFineSampleSettled(local.plaincraft.greatwall.planning.FineHeightIndex fineIndex,
+            Throwable sampleError) {
+        try {
+            if (sampleError != null) {
+                GreatWallMod.LOGGER.warn("[GreatWall:corridor] fine sample failed; wall will not compile",
+                        sampleError);
+            } else if (fineIndex != null) {
+                fineHeightIndex = fineIndex;
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                        fineIndex.size(), fineIndex.size());
+            }
+        } catch (Throwable publishFailure) {
+            GreatWallMod.LOGGER.error("[GreatWall:corridor] publishing the fine sample failed; "
+                    + "the wall will not compile", publishFailure);
+        } finally {
+            fineSampleSettled = true;
+            triggerDeferredCompile();
+        }
+    }
+
+    /** Runs the compile if an earlier attempt deferred for want of the fine sample. */
+    private void triggerDeferredCompile() {
+        if (!compileDeferred.get()) return;
+        try {
+            server.execute(this::compileAtStartup);
+        } catch (Throwable cannotQueue) {
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_NOT_QUEUED after the fine sample; "
+                    + "releasing the startup stage", cannotQueue);
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
+        }
+    }
+
+    /**
+     * Starts the bulk prewarm without letting a throw strand the startup stage.
+     *
+     * <p>{@code afterRoadBulk} checks {@code closed()} and then submits to the pump; the two steps are not
+     * atomic, so a close in between raises {@link java.util.concurrent.RejectedExecutionException}. Inside
+     * a discarded {@code whenComplete} that exception left no trace and the prewarm simply never began.
+     */
+    private void startBulkPrewarm(PlannerScheduler planner, String reason) {
+        try {
+            planner.afterRoadBulk();
+        } catch (Throwable failure) {
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] PREWARM_START_FAILED reason={} cause={}; "
+                    + "the startup stage continues without waiting for it", reason, failure.toString(), failure);
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
+        }
+    }
+
+    /**
+     * Bumped whenever the scan's own algorithm, band or worker count changes.
+     *
+     * <p>Part of the cache FILE NAME rather than the recipe fingerprint on purpose: the fingerprint feeds
+     * every world's recipe hash, so putting this there would invalidate existing worlds' walls and demand a
+     * new world for a pure cache concern. A mismatch here costs one re-scan instead.
+     */
+    private static final String CORRIDOR_SCAN_CACHE_VERSION = "v1";
+
+    private static String cacheKey(String recipeHash) {
+        return recipeHash + '-' + CORRIDOR_SCAN_CACHE_VERSION;
     }
 
     private static List<Bounds> loadStructureScanCache(Path root, String recipeHash) {
         if (recipeHash == null) return null;
-        Path file = root.resolve("cache").resolve("structure-scan-" + recipeHash + ".txt");
+        Path file = root.resolve("cache").resolve("structure-scan-" + cacheKey(recipeHash) + ".txt");
         if (!Files.isRegularFile(file)) return null;
         try {
             var out = new ArrayList<Bounds>();
@@ -524,7 +611,7 @@ final class ProductionSession implements AutoCloseable {
                 sb.append(b.minX()).append(',').append(b.minY()).append(',').append(b.minZ()).append(',')
                   .append(b.maxXExclusive()).append(',').append(b.maxYExclusive()).append(',').append(b.maxZExclusive()).append('\n');
             }
-            Files.writeString(dir.resolve("structure-scan-" + recipeHash + ".txt"), sb.toString());
+            Files.writeString(dir.resolve("structure-scan-" + cacheKey(recipeHash) + ".txt"), sb.toString());
         } catch (IOException e) {
             GreatWallMod.LOGGER.warn("[GreatWall:corridor] failed to save structure scan cache", e);
         }
@@ -637,6 +724,12 @@ final class ProductionSession implements AutoCloseable {
         }
         if (state.putIfAbsent("compile-started", true) != null) return;
         compilePlanningPlans(snapshot);
+        if (compileDeferred.getAndSet(false)) {
+            // The prewarm now starts before the fine sample, so the first compile attempt can arrive with
+            // the column index still in flight. That is a wait, not a start: clear the guard so the
+            // fine-sample callback can run the compile when its half of the input lands.
+            state.remove("compile-started");
+        }
     }
 
     /**
@@ -697,6 +790,17 @@ final class ProductionSession implements AutoCloseable {
 
     private void compilePlanningPlans0(Installed snapshot) {
         var index = fineHeightIndex;
+        if (index == null && !fineSampleSettled) {
+            // The bulk prewarm starts as soon as the obstacle index exists (it is what the road gate and
+            // the world's own startup stage wait for, and it needs no sampled column), so the compile can
+            // now be triggered while the fine sample is still running. It needs both inputs, so it waits -
+            // the callback that publishes the index re-triggers it - instead of failing the way a null
+            // index used to be reported, which would have turned the reordering into "no wall at all".
+            compileDeferred.set(true);
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_WAIT_FOR_SAMPLE the prewarm settled "
+                    + "before the fine cross-section sample; the compile runs once the sample publishes");
+            return;
+        }
         if (index == null || realization == null || chunkCompiler == null) {
             // A skipped compile used to return with nothing but a WARN. Nothing then released the
             // pinned prewarm leases or opened the peer gate, so the roads waited out the wall's own
@@ -854,6 +958,13 @@ final class ProductionSession implements AutoCloseable {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_PARTIAL published={} failed={} of "
                             + "{} owners; those chunks will not carry the wall",
                     published, failed, compiled.size(), firstFailure);
+            // A partially published window is a failure, not a success. The gate's contract is "every chunk
+            // generated from here on carries the wall"; reporting it as a clean finish is how a hole in the
+            // wall became invisible. The owners that did publish keep painting, the session is marked
+            // failed, and the leases are released exactly as on the success path.
+            snapshot.planner().releasePrewarmLeases();
+            PrewarmProgress.finish(false);
+            return;
         }
         // The prewarm's leases have served their purpose: this compile consumed their plans and the
         // window is published, so the memory budget can have them back now.

@@ -411,17 +411,41 @@ public final class WorldBootstrap implements AutoCloseable {
             int end = Math.min(pending.size(), cursor + perLane);
             var slice = List.copyOf(pending.subList(cursor, end));
             cursor = end;
+            // Claim what this lane will sample before handing it over. The pending list is rebuilt from
+            // arithmetic on every advance, so without a claim the same column went to several lanes in
+            // several rounds and was sampled repeatedly - only the last put survived, and the measured
+            // session's search spent its twelve lanes to gain well under half of their throughput.
+            var mine = new java.util.ArrayList<RootSearch.ColumnKey>(slice.size());
+            for (var key : slice) {
+                if (search.claimPrefetch(key)) mine.add(key);
+            }
+            if (mine.isEmpty()) continue;
             try {
-                lane.submit(oracle -> {
-                    for (var key : slice) {
-                        if (state.containsKey("closed") || state.containsKey("failed")) break;
-                        search.prefetch(key, oracle);
+                var accepted = lane.submit(oracle -> {
+                    try {
+                        for (var key : mine) {
+                            if (state.containsKey("closed") || state.containsKey("failed")) break;
+                            search.prefetch(key, oracle);
+                        }
+                    } finally {
+                        // Whatever was not reached goes back to the pool of claimable columns.
+                        search.releasePrefetch(mine);
                     }
                     return null;
                 });
+                if (accepted != null) {
+                    accepted.whenComplete((ignored, failure) -> {
+                        if (failure == null) return;
+                        // A saturated lane answers with a failed future instead of a throw, which is why the
+                        // refusal counter used to stay at zero: the catch below only ever saw closed lanes.
+                        prefetchLaneRefusals.incrementAndGet();
+                        search.releasePrefetch(mine);
+                    });
+                }
             } catch (RuntimeException laneRefused) {
-                // A closed or saturated lane just does not help this round.
+                // A closed lane just does not help this round.
                 prefetchLaneRefusals.incrementAndGet();
+                search.releasePrefetch(mine);
             }
         }
         prefetchBatches.incrementAndGet();

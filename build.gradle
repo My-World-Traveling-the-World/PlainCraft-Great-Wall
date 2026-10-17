@@ -17,13 +17,16 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    // Soft dependency: the RoadWeaver interop ABI is compile-only and never
-    // bundled. The jar lives under libs/ so dependency locking stays untouched.
-    def roadWeaverInterop = file('libs/roadweaver-interop-compile-only.jar')
-    if (roadWeaverInterop.isFile()) {
-        compileOnly files(roadWeaverInterop)
-        testRuntimeOnly files(roadWeaverInterop)
-    }
+    // RoadWeaver interop is gone, and so is its compile-only ABI jar.
+    //
+    // The five compat/road classes that imported net.shiroha233.roadweaver.api.interop were compiled
+    // against libs/roadweaver-interop-compile-only.jar - a 6.3 MB copy of RoadWeaver 0.8.405 - while every
+    // shipped RoadWeaver since 0.8.406 contains no api/interop classes at all. Nothing instantiated them
+    // (WallObstacleProvider.bind had no callers), but the tests ran against that same ghost jar as
+    // testRuntimeOnly, so the suite stayed green while the contract was already dead: enabling the bridge
+    // would have thrown NoClassDefFoundError at class-link time. Both sides were removed rather than
+    // documented, because a compile-only jar that no longer matches any deployed peer is a trap, not a
+    // dependency.
 
     testImplementation "org.junit.jupiter:junit-jupiter:${project.junit_version}"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher:${project.junit_platform_version}"

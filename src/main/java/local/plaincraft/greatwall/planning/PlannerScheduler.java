@@ -612,6 +612,29 @@ public final class PlannerScheduler implements AutoCloseable {
     }
 
     /**
+     * Submits to the pump, reporting a rejection instead of throwing it at the caller.
+     *
+     * <p>{@code afterRoadBulk} checks {@code closed()} and then submits, and those two steps are not atomic:
+     * a close in between raises {@link java.util.concurrent.RejectedExecutionException}. Its only remaining
+     * caller is a {@code whenComplete} whose returned future is discarded, where that exception vanishes and
+     * leaves the startup stage waiting for a prewarm that was never queued - the exact shape of a measured
+     * session that logged no {@code PREWARM_BEGIN} at all and then parked the world for thirty minutes.
+     * Every other pump submission in this class already maps a rejection onto a failed job; this one now
+     * does the same.
+     */
+    private boolean pumpSubmit(Runnable task) {
+        try {
+            pump.execute(task);
+            return true;
+        } catch (java.util.concurrent.RejectedExecutionException stopped) {
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] PREWARM_NOT_QUEUED reason=pump-closed; the wall does "
+                    + "not prewarm in this session and the startup stage is released");
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
+            return false;
+        }
+    }
+
+    /**
      * Enqueues the bulk prewarm of the opening segments. Call only after any blocking startup peer
      * has finished, so the two never contend for the same native lanes.
      *
@@ -635,7 +658,7 @@ public final class PlannerScheduler implements AutoCloseable {
             return;
         }
         if (state.putIfAbsent("after-road-bulk", 1L) != null) return;
-        pump.execute(() -> {
+        pumpSubmit(() -> {
             long target = prewarmTargetSegments();
             long started = System.nanoTime();
             state.put("prewarm-target-segments", target);

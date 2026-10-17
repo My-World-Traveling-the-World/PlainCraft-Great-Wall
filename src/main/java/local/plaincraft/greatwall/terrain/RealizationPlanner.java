@@ -79,6 +79,9 @@ public final class RealizationPlanner {
         /** Evidence digests, per plan instance and cell: see {@link #evidenceHashFor}. */
         private final java.util.Map<SegmentPlan, java.util.Map<CellKey, String>> evidence =
                 new java.util.IdentityHashMap<>();
+        /** Station contracts, per plan instance and packed column key: see {@link #contractFor}. */
+        private final java.util.Map<SegmentPlan, java.util.Map<Long, WallSection.ColumnContract>> contracts =
+                new java.util.IdentityHashMap<>();
     }
 
     private WindowMemos memos;
@@ -117,6 +120,27 @@ public final class RealizationPlanner {
     }
 
     /**
+     * {@link WallSection#contract} memoised per plan instance and column.
+     *
+     * <p>The contract is a pure function of the station ribbon and the column's block coordinate, and the
+     * compile resolves the same cell's columns once per owner - a cell has about ninety owners, so every
+     * column paid the full ribbon walk about ninety times. That walk is the single largest item of a real
+     * owner: ~67 us over the opening segment's ~2048 stations, ~23k columns per cell, so ~1.5 s per owner
+     * of work that only varies with the column.
+     */
+    private WallSection.ColumnContract contractFor(Input input, List<Station> stations, int x, int z) {
+        if (memos == null || input.plans().plans().size() != 1) return WallSection.contract(stations, x, z);
+        var plan = input.plans().plans().getFirst();
+        var byColumn = memos.contracts.computeIfAbsent(plan, ignored -> new java.util.HashMap<>());
+        long key = ((long) x << 32) ^ (z & 0xffffffffL);
+        var cached = byColumn.get(key);
+        if (cached != null) return cached;
+        var computed = WallSection.contract(stations, x, z);
+        byColumn.put(key, computed);
+        return computed;
+    }
+
+    /**
      * {@link #evidenceHash} memoised per plan instance and cell.
      *
      * <p>The digest is taken over the cell key, the plan hashes, the tiles, every sampled column with its
@@ -125,8 +149,7 @@ public final class RealizationPlanner {
      * column list (about 27k entries, each contributing a 64-character digest) once per owner instead of
      * once per cell: the difference measured in gigabytes of transient strings for one window.
      */
-    private String evidenceHashFor(Input input) {
-        if (memos == null || input.plans().plans().size() != 1) return evidenceHash(input);
+    private String evidenceHashFor(Input input) {        if (memos == null || input.plans().plans().size() != 1) return evidenceHash(input);
         var plan = input.plans().plans().getFirst();
         var byCell = memos.evidence.computeIfAbsent(plan, ignored -> new java.util.HashMap<>());
         var cached = byCell.get(input.key());
@@ -220,7 +243,7 @@ public final class RealizationPlanner {
                 Comparator.comparingInt(Point3i::z).thenComparingInt(Point3i::x).thenComparingInt(Point3i::y))).toList();
         for(var e:columnEntries) {
             if(e.getKey().y()!=0)throw new IllegalArgumentException("column keys use y=0, independent of contract W");
-            var contract=WallSection.contract(stations,e.getKey().x(),e.getKey().z());
+            var contract=contractFor(input,stations,e.getKey().x(),e.getKey().z());
             if(contract.globalSQ8()<Math.max(0,from-160L*256)||contract.globalSQ8()>=to+160L*256)continue;
             var value=ProtectedColumnView.use(e.getValue(),e.getKey(),input.protectedBounds(),
                     column->probe.probe(column,contract.walkY(),bounds));

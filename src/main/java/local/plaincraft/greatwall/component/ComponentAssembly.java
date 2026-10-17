@@ -24,6 +24,15 @@ import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 /** Invocation-owned template buffer; inverse rasterizes full components before owner clipping. */
 final class ComponentAssembly {
     static final Comparator<Point3i> ORDER = Comparator.comparingInt(Point3i::y).thenComparingInt(Point3i::z).thenComparingInt(Point3i::x);
+    /**
+     * The air voxel, shared.
+     *
+     * <p>{@code BlockSpec} validates its resource key and copies the property map, so a fresh
+     * {@code new BlockSpec("minecraft:air", Map.of())} per air voxel costs ~1 us and ~1.7 kB of garbage. A
+     * wall section emits over a thousand of them and {@code BlockSpec} is an immutable record, so one
+     * instance is indistinguishable.
+     */
+    private static final BlockSpec AIR = new BlockSpec("minecraft:air", Map.of());
     private final ComponentInput input;
     private final Bounds localBounds;
     private final DecayField decay;
@@ -171,7 +180,7 @@ final class ComponentAssembly {
                 Point3i world = new Point3i(x,y,z);
                 CompiledAllocation.charge(256);
                 long hash = DeterministicHash.fields(componentHash,"voxel",x,y,z);
-                BlockSpec block = cell.part() == Part.AIR ? new BlockSpec("minecraft:air",Map.of())
+                BlockSpec block = cell.part() == Part.AIR ? AIR
                         : palette.resolve(input,cell.part(),local,world,column.globalS(),hash);
                 if (!cell.properties().isEmpty()) {
                     var properties = new HashMap<>(block.properties()); properties.putAll(cell.properties());

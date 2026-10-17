@@ -103,6 +103,13 @@ public final class PlanningChunkCompiler {
                         .getBytes(java.nio.charset.StandardCharsets.UTF_8));
         CellKey cachedCell = null;
         Map<Point3i, SurfaceProbe.ColumnView> cachedColumns = null;
+        // The realization of a cell does not depend on the owner: the input the compiler builds is the cell
+        // key, the plan, the cell's column map, the window's protection, revision 0 and the same tile map,
+        // and an owner only clips the result. Resolving it once per cell instead of once per owner removes
+        // about ninety identical realizations per cell - the wall component alone is ~400 ms of work.
+        Object cachedRealizationPlan = null;
+        RealizationCell cachedRealization = null;
+        Throwable cachedRealizationFailure = null;
         int done = 0;
         int failed = 0;
         long started = System.nanoTime();
@@ -111,9 +118,22 @@ public final class PlanningChunkCompiler {
         for (var item : work) {
             // Every item of a cell carries the same owner list, so the column map is built once per
             // cell and reused for each of its owners (building it is a scan over those owners).
-            if (!item.cell().equals(cachedCell)) {
-                cachedCell = item.cell();
-                cachedColumns = provider.columnsFor(item.owners());
+            if (!item.cell().equals(cachedCell) || cachedRealizationPlan != item.plan()) {
+                if (!item.cell().equals(cachedCell)) {
+                    cachedCell = item.cell();
+                    cachedColumns = provider.columnsFor(item.owners());
+                }
+                cachedRealizationPlan = item.plan();
+                cachedRealization = null;
+                cachedRealizationFailure = null;
+                try {
+                    cachedRealization = resolveCell(cachedCell, cachedColumns,
+                            new PlanWindow(List.of(item.plan())), protectionHash);
+                } catch (Throwable failure) {
+                    // Memoised so every owner of this cell fails the same way, instead of each paying the
+                    // realization again to hit the same failure.
+                    cachedRealizationFailure = failure;
+                }
             }
             // Resolve the realization and clip it to this owner; each owner gets its own window
             // instance, exactly as the single-pass shape did. One owner's failure must not cost the
@@ -125,8 +145,9 @@ public final class PlanningChunkCompiler {
             // example the road interop's NoClassDefFoundError) would otherwise abort the whole window
             // and cost the session its wall over one owner.
             try {
+                if (cachedRealizationFailure != null) throw cachedRealizationFailure;
                 compileOwner(item.cell(), item.owner(), cachedColumns, new PlanWindow(List.of(item.plan())),
-                        recipeHash, windowBounds, protection, protectionHash, result);
+                        recipeHash, windowBounds, protection, protectionHash, result, cachedRealization);
             } catch (Throwable failure) {
                 failed++;
                 local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
@@ -167,13 +188,20 @@ public final class PlanningChunkCompiler {
         return java.util.Collections.unmodifiableMap(result);
     }
 
+    /** {@return the realization of one cell, as the compile input describes it} */
+    private RealizationCell resolveCell(CellKey cell,
+            Map<Point3i, SurfaceProbe.ColumnView> columns, PlanWindow plans, String protectionHash) {
+        return realization.resolve(new RealizationPlanner.Input(cell, plans, Map.of(), columns,
+                List.copyOf(structures), Map.of(), 0, protectionHash));
+    }
+
     private void compileOwner(CellKey cell, ChunkKey owner,
             Map<Point3i, SurfaceProbe.ColumnView> columns, PlanWindow plans, String recipeHash,
             DimensionBounds windowBounds, List<Bounds> protection, String protectionHash,
-            Map<ChunkKey, ChunkWritePlan> into) {
+            Map<ChunkKey, ChunkWritePlan> into,
+            RealizationCell cellResult) {
         var input = new RealizationPlanner.Input(cell, plans, Map.of(), columns, protection,
                 Map.of(), 0, protectionHash);
-        var cellResult = realization.resolve(input);
         var before = new HashMap<Point3i, String>();
         for (var component : cellResult.components()) {
             for (var v : component.voxels()) {

@@ -550,6 +550,17 @@ public final class RootSearch {
     /** Identity of one column request. {@code requireFoundation} is part of it: the serial path computes two different things for the same coordinates. */
     public record ColumnKey(int x, int z, boolean requireFoundation) {}
 
+    /**
+     * Columns a prefetch lane has taken but not yet sampled.
+     *
+     * <p>Without this the pending list only knew about <em>finished</em> columns: it is rebuilt from
+     * arithmetic on every advance, so the same column was handed to several lanes across several rounds and
+     * sampled repeatedly, with only the last put surviving. Every claim is released on every path -
+     * prefetch's finally, a refused submission, a lane that throws mid-slice, and resetSamples - so the
+     * worst case stays "sampled twice", never "never sampled".
+     */
+    private final java.util.concurrent.ConcurrentHashMap.KeySetView<ColumnKey, Boolean> claimed =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final java.util.concurrent.ConcurrentHashMap<ColumnKey, Prefetched> prefetched =
             new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -573,8 +584,12 @@ public final class RootSearch {
         int from = column == null ? sampleIndex : sampleIndex + 1;
         var result = new ArrayList<ColumnKey>(Math.max(0, 48 * 48 - from));
         for (int i = from; i < 48 * 48; i++) {
-            result.add(new ColumnKey(current.origin().x() + i / 48 - 24,
-                    current.origin().z() + i % 48 - 24, true));
+            var key = new ColumnKey(current.origin().x() + i / 48 - 24,
+                    current.origin().z() + i % 48 - 24, true);
+            // A column a lane already took is not offered again: this list is rebuilt from arithmetic on
+            // every advance, so without the filter the same column went to several lanes and was sampled
+            // over and over, with only the last put surviving.
+            if (!claimed.contains(key)) result.add(key);
         }
         return List.copyOf(result);
     }
@@ -603,8 +618,9 @@ public final class RootSearch {
             if (!inRing(origin) || !inside(origin.x(), origin.z(), 32)) continue;
             int from = (ahead == 0 && column == null) ? sampleIndex : (ahead == 0 ? sampleIndex + 1 : 0);
             for (int s = from; s < 81; s++) {
-                result.add(new ColumnKey(origin.x() + (s / 9 - 4) * 8,
-                        origin.z() + (s % 9 - 4) * 8, false));
+                var key = new ColumnKey(origin.x() + (s / 9 - 4) * 8,
+                        origin.z() + (s % 9 - 4) * 8, false);
+                if (!claimed.contains(key)) result.add(key);
             }
         }
         return List.copyOf(result);
@@ -623,20 +639,40 @@ public final class RootSearch {
      * same, only reached in fewer calls.
      */
     public void prefetch(ColumnKey key, NaturalTerrainOracle oracle) {
-        if (prefetched.containsKey(key)) return;
-        var cursor = oracle.begin(key.x(), key.z(), SampleKind.REFERENCE);
-        while (!cursor.done()) oracle.advance(cursor, 64);
-        // The foundation test reads the cursor's support evidence and must run
-        // before finish(), which releases it. The serial path does the same.
-        boolean support = !key.requireFoundation() || foundation.test(oracle, cursor);
-        var sample = oracle.finish(cursor);
-        prefetched.put(key, new Prefetched(sample, support));
+        if (prefetched.containsKey(key)) {
+            claimed.remove(key);
+            return;
+        }
+        try {
+            var cursor = oracle.begin(key.x(), key.z(), SampleKind.REFERENCE);
+            while (!cursor.done()) oracle.advance(cursor, 64);
+            // The foundation test reads the cursor's support evidence and must run
+            // before finish(), which releases it. The serial path does the same.
+            boolean support = !key.requireFoundation() || foundation.test(oracle, cursor);
+            var sample = oracle.finish(cursor);
+            prefetched.put(key, new Prefetched(sample, support));
+        } finally {
+            // Released on every path: a claim that outlived its lane turn would hide the column from every
+            // later pending list, and the phase would wait for a sample nobody is producing.
+            claimed.remove(key);
+        }
+    }
+
+    /** {@return true when this lane now owns sampling {@code key}} */
+    public boolean claimPrefetch(ColumnKey key) {
+        return claimed.add(key);
+    }
+
+    /** Releases claims; idempotent, and harmless for keys that were sampled in the meantime. */
+    public void releasePrefetch(java.util.Collection<ColumnKey> keys) {
+        for (var key : keys) claimed.remove(key);
     }
 
     /** Columns sampled by a prefetch but never consumed, e.g. because the candidate was rejected early. */
     public int discardPrefetched() {
         int count = prefetched.size();
         prefetched.clear();
+        claimed.clear();
         return count;
     }
 
@@ -705,6 +741,7 @@ public final class RootSearch {
         // the one place that reliably drops samples the search has moved past. A
         // rejected candidate can leave thousands of prefetched columns behind, and
         // holding them would trade the outage this fixes for a memory leak.
+        claimed.clear();
         int dropped = prefetched.size();
         if (dropped > 0) {
             prefetched.clear();
