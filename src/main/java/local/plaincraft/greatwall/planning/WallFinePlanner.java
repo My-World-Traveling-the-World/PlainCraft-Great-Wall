@@ -131,10 +131,31 @@ public final class WallFinePlanner {
     public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                                FineSampleCache cache, java.util.function.IntPredicate wideAt,
                                java.util.Map<Long, ColumnSample> walks) {
+        return begin(route, oracle, fromIndex, toIndex, cache, wideAt, walks, null);
+    }
+
+    /**
+     * Same, with the session-wide set of columns some cursor has already claimed.
+     *
+     * <p>This is how RoadWeaver samples: it dedupes its columns before it walks them, one key per world
+     * column, so a column is walked once per session no matter how many slices ask for it. The wall
+     * planner instead gave every slice its own "already sampled" set, and a four-segment run measured
+     * 15,358 cross-sections for a route that holds 4,096 - 3.75 passes over the same ground. That is the
+     * "why is it sampling so much" the loading card kept showing.
+     *
+     * <p>A column sample is a pure function of the column (x, z) - the same property the memo and the
+     * on-disk cache already rely on - so the first cursor to claim a column can be the only one to walk
+     * it. Dropping the duplicates changes no value: whoever claimed the column emits it.
+     *
+     * @param claims shared by every slice of one session, or null to keep the per-cursor behaviour
+     */
+    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+                               FineSampleCache cache, java.util.function.IntPredicate wideAt,
+                               java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims) {
         Objects.requireNonNull(route, "route");
         Objects.requireNonNull(oracle, "oracle");
         Objects.requireNonNull(cache, "cache");
-        return new Cursor(route, oracle, fromIndex, toIndex, cache, wideAt, walks);
+        return new Cursor(route, oracle, fromIndex, toIndex, cache, wideAt, walks, claims);
     }
 
     /**
@@ -220,6 +241,26 @@ public final class WallFinePlanner {
             }
             // Emit the cross-section sample points for the current centre point.
             c.pending = c.section();
+            if (c.claims != null) {
+                // Road-style claim: a column belongs to the first cursor that asks for it, and every
+                // other cursor drops it. This is the piece that was missing - the planner deduped a
+                // cursor against itself and nothing else, so the 64-block overlap between neighbouring
+                // slices (and between the four segments) walked the same ground three to four times.
+                // The value cannot change: a column sample is a pure function of (x, z), and the cursor
+                // that claimed it emits it.
+                java.util.ArrayList<Target> claimed = new java.util.ArrayList<>(c.pending.size());
+                for (var target : c.pending) {
+                    if (c.claims.add(key(target.x(), target.z()))) claimed.add(target);
+                }
+                c.pending = claimed;
+                if (c.pending.isEmpty()) {
+                    // Every column of this section already belongs to another slice. c.waterCarry is left
+                    // alone on purpose, exactly like the redundant-section path below.
+                    c.pending = null;
+                    c.index++;
+                    return;
+                }
+            }
             if (redundant(c)) {
                 // Every column of this section is already sampled by this cursor, so walking it would
                 // add nothing but the walk. Dropping the repeat cannot lose a column (a section is only
@@ -315,11 +356,29 @@ public final class WallFinePlanner {
         c.sampled.add(columnKey);
     }
 
-    /** True when every column of the cursor's pending section has already been sampled by that cursor. */
+    /**
+     * True when every column of the cursor's pending section is already known.
+     *
+     * <p>"Already known" means known to <em>anybody</em>: this cursor's own emissions, or the shared
+     * {@code walks} map that every slice of the session writes to. It used to mean "already sampled by
+     * this cursor", which is why slices that meet re-walked each other's columns and why a measured run
+     * walked 8,166 cross-sections for a route that holds about 5,100: the overlap between neighbouring
+     * slices was 64 blocks (an apron), forty-seven boundaries per route, and every one of those
+     * cross-sections was walked a second time and then thrown away by the merge.
+     *
+     * <p>A column's sample is a pure function of its {@code (x, z)}, so skipping a section whose columns
+     * are all known cannot change a single value - it only removes walks.
+     */
     private static boolean redundant(Cursor c) {
-        if (c.sampled.isEmpty()) return false;
+        boolean shared = c.walks != null && !c.walks.isEmpty();
+        if (c.sampled.isEmpty() && !shared) return false;
         for (var target : c.pending) {
-            if (!c.sampled.contains(key(target.x(), target.z()))) return false;
+            long columnKey = key(target.x(), target.z());
+            if (c.sampled.contains(columnKey)) continue;
+            // Only REFERENCE-quality, uncensored samples reach the shared map, so a hit here is a sample
+            // this session can reuse verbatim.
+            if (shared && c.walks.containsKey(columnKey)) continue;
+            return false;
         }
         return true;
     }
@@ -473,6 +532,8 @@ public final class WallFinePlanner {
          * hit never reaches them.
          */
         private final java.util.Map<Long, ColumnSample> walks;
+        /** Session-wide claimed columns; null keeps the per-cursor behaviour. */
+        private final java.util.Set<Long> claims;
         /** Reused samples from an earlier session; {@link FineSampleCache#none()} disables reuse. */
         private final FineSampleCache cache;
         /** Route points that need the full {@link #LATERAL} band; {@code null} means every point. */
@@ -496,12 +557,13 @@ public final class WallFinePlanner {
 
         private Cursor(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                        FineSampleCache cache, java.util.function.IntPredicate wideAt,
-                       java.util.Map<Long, ColumnSample> walks) {
+                       java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims) {
             this.route = route;
             this.oracle = oracle;
             this.cache = cache;
             this.wideAt = wideAt;
             this.walks = walks;
+            this.claims = claims;
             // Frozen snapshot, not the live config: the grid decides which columns are probed, so a
             // mid-world edit would change the terrain the second half of the wall is built on.
             this.gridStep = local.plaincraft.greatwall.config.GreatWallConfig.parameters().fineSampleGridStep();

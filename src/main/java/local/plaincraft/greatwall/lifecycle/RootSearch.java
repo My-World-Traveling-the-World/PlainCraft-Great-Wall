@@ -45,6 +45,14 @@ public final class RootSearch {
     private static final int MAX_WET_FOOTPRINT_CELLS = 691;
     private static final int MAX_FOOTPRINT_RELIEF = 32;
     /**
+     * Coarse-phase admission bound on a ring candidate's height spread.
+     *
+     * <p>Numerically the same as {@link #MAX_FOOTPRINT_RELIEF}, deliberately a separate constant: the
+     * coarse ring and the footprint are different measurements, and the coarse one is what the early
+     * exit compares against while the columns are still being sampled.
+     */
+    private static final int MAX_COARSE_RELIEF = 32;
+    /**
      * Ring candidates whose 48x48 footprint is measured before the search gives up.
      *
      * <p>The ranking puts the driest, flattest and highest candidates first and the
@@ -277,7 +285,27 @@ public final class RootSearch {
                     wet, invalidSamples, 0, min, max, "REJECTED_INVALID"));
             candidateIndex++; resetSamples(); return;
         }
-        if (sampleIndex < 81) return;
+        if (sampleIndex < 81) {
+            // (B) The same exact-equivalence exit as (A), for the other two admission bounds.
+            //
+            // Admission needs wet*2 <= 81 and relief <= MAX_COARSE_RELIEF, and both quantities only grow
+            // as columns are sampled. A candidate that has already crossed either bound can never be
+            // admitted, so walking on to 81 columns spends a walk for a verdict that is already decided.
+            // A measured fixture ring walked 123 of its 135 fully-walked candidates to the end only to
+            // reject them on these two bounds - roughly two thirds of the whole coarse sample.
+            //
+            // The verdicts cannot change: the two bounds are precisely the complements of the admission
+            // test below and both counters are monotone, so this yields the same candidate set as walking
+            // to 81. noteCoarse is called here as well, so the summary's averages keep their denominators.
+            if (wet * 2 > 81 || max - min > MAX_COARSE_RELIEF) {
+                coarseRejected++;
+                noteCoarse(wet, max - min);
+                audit.add(new Audit("coarse", origin, candidateIndex / 36, candidateIndex % 36, -1,
+                        wet, invalidSamples, 0, min, max, "REJECTED_EARLY_WATER_OR_RELIEF"));
+                candidateIndex++; resetSamples(); return;
+            }
+            return;
+        }
         boolean historic = !invalid && wet * 10 <= 81 && max - min <= 12;
         // Admission is wide, the ranking is strict. The historic gate (<=8 wet columns of 81, relief
         // <=12) rejected all 144 ring candidates once the reference walk stopped reading its density
@@ -290,7 +318,7 @@ public final class RootSearch {
         // honest measure, so a rocky or cave-riddled ring point is no longer thrown away for one
         // censored column.
         boolean unusable = invalidSamples * 8 > 81;
-        boolean admitted = !unusable && wet * 2 <= 81 && max - min <= 32;
+        boolean admitted = !unusable && wet * 2 <= 81 && max - min <= MAX_COARSE_RELIEF;
         if (!unusable) noteCoarse(wet, max - min);
         if (admitted) {
             candidates.add(new Candidate(new Point3i(origin.x(), centerHeight, origin.z()), candidateIndex / 36,

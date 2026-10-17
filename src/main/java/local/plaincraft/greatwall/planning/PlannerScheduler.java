@@ -406,6 +406,11 @@ public final class PlannerScheduler implements AutoCloseable {
         // immutable samples.
         var walks = new java.util.concurrent.ConcurrentHashMap<Long,
                 local.plaincraft.greatwall.model.WallTypes.ColumnSample>();
+        // One claim per world column for the whole session - the way RoadWeaver dedupes its sample
+        // requests before walking them (one key per column, first requester wins). Without it every
+        // slice deduped only against itself, so the 64-block overlap between neighbouring slices, and
+        // the shared ground between the four segments, was walked three to four times over.
+        var claims = java.util.concurrent.ConcurrentHashMap.<Long>newKeySet();
         var leases = new ArrayList<PlanLease<RouteShape>>();
         // Two counters, not one. A single counter seeded with the segment count completed the
         // index after the first few slices (it was decremented once per slice, not per segment),
@@ -468,7 +473,22 @@ public final class PlannerScheduler implements AutoCloseable {
                         walkedSections.get() == 0 ? 0 : probedColumns.get() / walkedSections.get(),
                         done == 0 ? 0 : probedColumns.get() / done);
                 persistFineSamples(walked);
-                synchronized (all) { aggregate.complete(FineHeightIndex.of(all)); }
+                synchronized (all) {
+                    // Distinct (x, z) columns actually sampled, next to the emission count: the gap between
+                    // this and `columns` is the real duplication factor, which `repeatedPct` cannot see
+                    // (that one only compares a single cursor's emissions before and after its own collapse,
+                    // so cross-slice repeats read as zero).
+                    java.util.HashSet<Long> distinct = new java.util.HashSet<>(Math.max(16, all.size() * 2));
+                    for (var column : all) {
+                        distinct.add(((long) column.x() << 32) ^ (column.z() & 0xffffffffL));
+                    }
+                    GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_COLUMNS emitted={} distinct={} "
+                                    + "duplicatePct={} sections={}",
+                            all.size(), distinct.size(),
+                            all.isEmpty() ? 0 : Math.round(100f * (all.size() - distinct.size()) / all.size()),
+                            walkedSections.get());
+                    aggregate.complete(FineHeightIndex.of(all));
+                }
             }
         };
         // Published for the runaway guard; cleared on the way out so a guard that fires twice is a no-op.
@@ -481,6 +501,36 @@ public final class PlannerScheduler implements AutoCloseable {
                 // actually hands to a lane can ever report back.
                 routesPending.incrementAndGet();
                 long segment = i;
+                // Denominator, whole wall, before a single column is sampled.
+                //
+                // The meter used to add each segment's estimate only once that segment's *prefix* index
+                // had resolved - and a prefix can take minutes. A four-segment wall therefore read
+                // "columns=126638 expected=31860" (402%) for most of the stage: one segment's worth of
+                // denominator against four segments of sampling, which looks exactly like a runaway and
+                // is the reason this stage kept being reported as "sampling way too much". The route
+                // point count, unlike the prefix, is known as soon as the route is, and the full lateral
+                // band is an upper bound, so this total is complete from the first sample and can only
+                // over-state - which the 99% cap in PrewarmProgress handles correctly.
+                lease.future().thenAcceptAsync(route -> {
+                    if (route == null) return;
+                    long points = Math.max(1L, route.points().size() + 2L * WallFinePlanner.APRON_BLOCKS);
+                    // The number that explains this stage's cost: the route length this segment carries.
+                    // Four segments of an 8,190-block wall are four windows of it, so their point counts
+                    // should sum to the wall length. If every segment reports the whole wall, the wall is
+                    // sampled once per segment and that multiplier is the thing to remove.
+                    GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_SEGMENT segment={} routePoints={} "
+                                    + "sectionsExpected={} columnsExpected={}",
+                            segment, route.points().size(),
+                            (int) (points / Math.max(1, gridStep)),
+                            (int) Math.min(Integer.MAX_VALUE - 1L, (points / Math.max(1, gridStep))
+                                    * (2L * (WallFinePlanner.LATERAL / Math.max(1, gridStep)) + 1L)));
+                    // BASE_LATERAL, not LATERAL: only the fort and gate points carry the wide band, so
+                    // seeding with the wide half-width made the total 2.1x too large and the card stalled
+                    // near half at completion. The base band is what most cross-sections emit.
+                    long perPoint = 2L * (WallFinePlanner.BASE_LATERAL / Math.max(1, gridStep)) + 1L;
+                    long estimated = (points / Math.max(1, gridStep)) * perPoint;
+                    expectedColumns.addAndGet((int) Math.min(Integer.MAX_VALUE - 1L, estimated));
+                }, pump);
                 lease.future().whenCompleteAsync((route, error) -> {
                     if (error != null) {
                         aggregate.completeExceptionally(error);
@@ -506,22 +556,15 @@ public final class PlannerScheduler implements AutoCloseable {
                             if (from >= points) break;
                             int to = Math.min(points, from + perSlice);
                             slicesPending.incrementAndGet();
-                            // Known before the slice is sampled: its point range, each point's own
-                            // cross-section width, plus the aprons the first and last slice carry - exactly
-                            // like the cursor that owns each route end (see WallFinePlanner.Cursor). This is
-                            // what makes the meter a column count instead of a slice count.
-                            int apron = (from == 0 ? WallFinePlanner.APRON_BLOCKS : 0)
-                                    + (to == points ? WallFinePlanner.APRON_BLOCKS : 0);
-                            // An apron is a run of cross-sections one block apart along the terminal
-                            // chord; the grid keeps every gridStep-th of them, and rounding the
-                            // division is fine - the meter uses max(done, expected) so an estimate that
-                            // runs slightly low cannot show a fraction above one.
-                            expectedColumns.addAndGet(gridWidth(WallFinePlanner.LATERAL, gridStep)
-                                            * Math.max(1, apron / gridStep)
-                                    + sliceColumns(route.localSQ8(), from, to, wideAt, gridStep));
+                            // The denominator is seeded once per segment in the route callback above, from
+                            // the whole route's point count. Accumulating a second estimate here as well
+                            // would double it, and accumulating *only* here is what made the card show one
+                            // segment's total while four were sampling (402%). The per-point width split
+                            // this used to apply (wide vs base band) is bounded by the LATERAL band the
+                            // seed assumes, so the seed is an upper bound and never a lie about being done.
                             var job = new FineSampleJob(route, from, to, priority,
                                     new CompletableFuture<List<WallFinePlanner.FineColumn>>(), fineSampleCache,
-                                    wideAt, walks);
+                                    wideAt, walks, claims);
                             enqueue(job);
                             job.result.whenCompleteAsync((columns, sampleError) -> {
                                 try {
@@ -712,6 +755,8 @@ public final class PlannerScheduler implements AutoCloseable {
         }
         if (state.putIfAbsent("after-road-bulk", 1L) != null) return;
         pumpSubmit(() -> {
+            // This body owns the startup gates: only a failure originating here may release them.
+            ((Pump) pump).enterPrewarmBody();
             long target = prewarmTargetSegments();
             long started = System.nanoTime();
             state.put("prewarm-target-segments", target);
@@ -872,10 +917,25 @@ public final class PlannerScheduler implements AutoCloseable {
      * costs one instanceof and one non-blocking {@code get()} per task.
      */
     private static final class Pump extends ScheduledThreadPoolExecutor {
+        /**
+         * Whether the task that just ran is the one that holds the startup gates.
+         *
+         * <p>The pump is single-threaded and {@code afterExecute} runs on that same thread straight after
+         * the task, so a flag set by the task body is still visible here - and still visible when the body
+         * threw, which is exactly the case that matters. It is removed in {@code afterExecute} so the next
+         * task never inherits it.
+         */
+        private final ThreadLocal<Boolean> inPrewarmBody = ThreadLocal.withInitial(() -> Boolean.FALSE);
+
         Pump(ThreadFactory factory) { super(1, factory); }
+
+        /** Marks the current pump task as the startup-gate holder. First statement of that body. */
+        void enterPrewarmBody() { inPrewarmBody.set(Boolean.TRUE); }
 
         @Override protected void afterExecute(Runnable task, Throwable failure) {
             super.afterExecute(task, failure);
+            boolean gateHolder = Boolean.TRUE.equals(inPrewarmBody.get());
+            inPrewarmBody.remove();
             Throwable actual = failure;
             if (actual == null && task instanceof java.util.concurrent.FutureTask<?> future && future.isDone()) {
                 try {
@@ -890,6 +950,15 @@ public final class PlannerScheduler implements AutoCloseable {
                 }
             }
             if (actual == null) return;
+            if (!gateHolder) {
+                // A bookkeeping task failed - a priority promotion, an admission, a progress report. The
+                // prewarm it was bookkeeping for is still running and can still finish, so releasing the
+                // gates here is what let RoadWeaver start laying roads while the wall had sampled 7.8% of
+                // its columns. Count it and carry on; the gate has exactly one owner (below).
+                GreatWallMod.LOGGER.warn("[GreatWall:S1C] PUMP_TASK_FAILED_GATE_KEPT reason={} - the startup "
+                        + "gates stay closed; this task does not own them.", actual.toString());
+                return;
+            }
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PUMP_TASK_FAILED the wall releases its startup gates; "
                     + "reason={}", actual.toString(), actual);
             // Idempotent, and the only release that every waiter on this session hangs off: the loading
@@ -1314,8 +1383,15 @@ public final class PlannerScheduler implements AutoCloseable {
                     case RouteJob route -> route.key.index();
                     case HydroJob hydro -> hydro.routes.center().key().index();
                     case ContractJob contract -> contract.inputs.geometry.key().index();
-                    default -> throw new IllegalStateException("unknown job");
+                    // A fine-sample job belongs to the segment whose route it walks. Leaving it out of this
+                    // switch is what took the whole pump down: a promotion that landed on a segment with a
+                    // fine sample in flight threw "unknown job", the pump reported PUMP_TASK_FAILED, and that
+                    // path releases every startup gate - so RoadWeaver started laying roads while the wall
+                    // was still sampling. A bookkeeping lookup must never be able to do that.
+                    case FineSampleJob fine -> fine.route.key().index();
+                    default -> -1L;
                 };
+                if (index < 0L) continue;
                 if (index == segment && priority.compareTo(job.priority) < 0) {
                     boolean queued = pending.remove(job);
                     job.priority = priority;
@@ -1677,7 +1753,9 @@ public final class PlannerScheduler implements AutoCloseable {
             case PlannerScheduler.RouteJob route -> route.key.index();
             case PlannerScheduler.HydroJob hydro -> hydro.routes.center().key().index();
             case PlannerScheduler.ContractJob contract -> contract.inputs.geometry.key().index();
-            default -> throw new IllegalStateException("unknown job");
+            case PlannerScheduler.FineSampleJob fine -> fine.route.key().index();
+            // Never fatal: this is a label for diagnostics, and a missing label used to fail the pump.
+            default -> -1L;
         };
     }
     private WallFailure closedFailure() {
@@ -1784,12 +1862,15 @@ public final class PlannerScheduler implements AutoCloseable {
         private final java.util.function.IntPredicate wideAt;
         /** Session-wide memo of already-walked columns; see {@link WallFinePlanner#begin}. */
         private final java.util.Map<Long, local.plaincraft.greatwall.model.WallTypes.ColumnSample> walks;
+        /** Columns already claimed by another slice of this session; see WallFinePlanner.begin. */
+        private final java.util.Set<Long> claims;
         private WallFinePlanner.Cursor cursor;
         private FineSampleJob(RouteShape route, int fromPoint, int toPoint, Priority priority,
                               CompletableFuture<List<WallFinePlanner.FineColumn>> result,
                               local.plaincraft.greatwall.terrain.FineSampleCache cache,
                               java.util.function.IntPredicate wideAt,
-                              java.util.Map<Long, local.plaincraft.greatwall.model.WallTypes.ColumnSample> walks) {
+                              java.util.Map<Long, local.plaincraft.greatwall.model.WallTypes.ColumnSample> walks,
+                              java.util.Set<Long> claims) {
             super(priority, "FINE_SAMPLE", result);
             this.route = route;
             this.fromPoint = Math.max(0, fromPoint);
@@ -1797,10 +1878,11 @@ public final class PlannerScheduler implements AutoCloseable {
             this.cache = cache;
             this.wideAt = wideAt;
             this.walks = walks;
+            this.claims = claims;
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
             if (cursor == null) {
-                cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint, cache, wideAt, walks);
+                cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint, cache, wideAt, walks, claims);
             }
             operations += limit;
             return WallFinePlanner.advance(cursor, limit) == WorkState.DONE;

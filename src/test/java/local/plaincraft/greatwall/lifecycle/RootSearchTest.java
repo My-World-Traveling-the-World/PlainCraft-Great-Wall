@@ -153,8 +153,25 @@ final class RootSearchTest {
         });
         assertEquals(FailureCode.ROOT_NOT_FOUND, error.code());
         assertTrue(search.progress().columns() <= RootSearch.RADIUS_COUNT * 36 * 81);
-        assertTrue(search.audit().stream().allMatch(row -> row.stage().equals("coarse")
-                && row.wetColumns() == 81 && row.invalidSamples() == 0 && row.result().equals("REJECTED")));
+        // Every ring point is refused, and the refusal is recorded - that is what this test is for. What
+        // changed: the coarse phase now stops walking a candidate as soon as its water or relief bound is
+        // crossed, because admission needs wet*2 <= 81 and relief <= 32 and both only grow, so the verdict
+        // is already decided. The row therefore carries the value at which it was refused instead of 81,
+        // and the whole ring costs fewer columns than the full walk it used to pay for.
+        var rows = search.audit();
+        assertFalse(rows.isEmpty(), "a refused ring still records why");
+        assertTrue(rows.stream().allMatch(row -> row.stage().equals("coarse")),
+                "every row belongs to the coarse phase");
+        assertTrue(rows.stream().allMatch(row -> row.invalidSamples() == 0),
+                "this fixture has no unusable columns");
+        assertTrue(rows.stream().allMatch(row -> row.result().equals("REJECTED")
+                        || row.result().equals("REJECTED_EARLY_WATER_OR_RELIEF")),
+                "every ring point is refused, whether after the full walk or at the bound it crossed");
+        assertTrue(rows.stream().filter(row -> row.result().equals("REJECTED"))
+                        .allMatch(row -> row.wetColumns() == 81),
+                "a row that was walked to the end reports all 81 columns");
+        assertTrue(search.progress().columns() < RootSearch.RADIUS_COUNT * 36 * 81,
+                "an all-wet ring must cost less than a full walk now that the bound exits early");
     }
 
     @Test void unsupportedFootprintCannotBeReplacedWithAnEmptyFort() {
