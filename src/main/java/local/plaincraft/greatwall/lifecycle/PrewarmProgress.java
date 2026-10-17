@@ -492,9 +492,21 @@ public final class PrewarmProgress {
             };
         }
 
+        /**
+         * Fraction of the active stage's sub-counter, 0-100 - capped at 99 while the stage runs.
+         *
+         * <p>The cap is the point, not a rounding guard. A stage's sub-total is an <em>estimate</em>
+         * made before the work starts (the fine sample guesses columns from the route geometry), and
+         * an estimate that runs low used to turn the bar into a permanent 100%: a real session showed
+         * "采样地形 435385/435385 列" for eleven minutes while the sampler climbed past 1.2M columns,
+         * because the caller clamped the total to the done count and this fraction then could not be
+         * anything but 100. A stage that is still running may therefore read 99 at most; only the
+         * stage transition (or {@link #setCompleted}) reports 100.
+         */
         private int subPercent() {
             if (subTotal <= 0) return 0;
-            return Math.max(0, Math.min(100, Math.round(subDone * 100.0F / subTotal)));
+            if (subDone >= subTotal) return 99;
+            return Math.max(0, Math.min(99, Math.round(subDone * 100.0F / subTotal)));
         }
 
         /**

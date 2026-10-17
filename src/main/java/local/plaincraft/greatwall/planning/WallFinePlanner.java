@@ -174,9 +174,16 @@ public final class WallFinePlanner {
         return c.wideSections;
     }
 
-    /** {@return REFERENCE walks this cursor started, i.e. columns no cache or memo answered} */
+    /**
+     * {@return REFERENCE walks this cursor started, i.e. columns no cache or memo answered}
+     *
+     * <p>Read from {@link Cursor#probed}, the list every resolved probe is added to, because the field
+     * this used to read was declared and never incremented: a real session printed {@code probesPerSection=0}
+     * and {@code probesPerColumn=0} for eleven minutes, which reads as "the probe plan visits nothing"
+     * when it actually means "nobody counted".
+     */
     public static long probedColumns(Cursor c) {
-        return c.probedColumns;
+        return c.probed.size();
     }
 
     public static WorkState advance(Cursor c, int primitiveLimit) {

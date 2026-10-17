@@ -34,6 +34,8 @@ public final class PlannerScheduler implements AutoCloseable {
     public record FailureEvidence(String phase, long segment, long operations, FailureCode code,
             String exceptionType, String message, String originalStack) {}
     private static final long MIB = 1024L * 1024;
+    /** How many times the fine-sample stage ran in this process; see the FINE_SAMPLE_CALL line. */
+    private static final java.util.concurrent.atomic.AtomicLong FINE_SAMPLE_CALLS = new java.util.concurrent.atomic.AtomicLong();
     private final WorldRecipe recipe;
     private final ConcurrentHashMap<SegmentKey, CompletableFuture<RouteShape>> routeFlights = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<SegmentKey, CompletableFuture<SegmentGeometry>> geometryFlights = new ConcurrentHashMap<>();
@@ -147,6 +149,34 @@ public final class PlannerScheduler implements AutoCloseable {
     private volatile java.util.concurrent.atomic.AtomicLong fineSampleProbed;
     private volatile long fineSampleStartNanos;
     private volatile long fineSampleLastLogNanos;
+    /**
+     * The fine sample's own completion, published so the runaway guard can publish the index early.
+     *
+     * <p>Null once the stage has finished or been abandoned, which makes the guard idempotent.
+     */
+    private volatile Runnable fineSampleAbandon;
+    /** Set when the runaway guard published the index instead of waiting for the work to converge. */
+    private volatile boolean fineSampleForced;
+    /**
+     * How far past its own estimate the fine sample may run before it is treated as a runaway.
+     *
+     * <p>An estimate may be a little low; ten times is not an estimate problem. A measured session was
+     * still climbing at 4.5M columns against a 498k estimate after 25 minutes, at a rate that was
+     * <em>rising</em> (1.8k/s to 3.7k/s) with 85% chunk-cache hits - the signature of re-walking columns
+     * the index already holds, not of sampling new terrain. Publishing what has been sampled keeps the
+     * save buildable; waiting for convergence never does.
+     */
+    private static final long FINE_SAMPLE_RUNAWAY_NUMERATOR = 10L;
+    /** How often the semantic runaway test samples the counters. */
+    private static final long FINE_SAMPLE_RUNAWAY_WINDOW_NANOS = TimeUnit.SECONDS.toNanos(5);
+    /** Columns that must arrive in one window before "no new terrain" means anything. */
+    private static final long FINE_SAMPLE_RUNAWAY_MIN_COLUMNS = 10_000L;
+    /** Consecutive no-new-terrain windows before the stage is declared a runaway (5 s each). */
+    private static final int FINE_SAMPLE_RUNAWAY_IDLE_WINDOWS = 3;
+    private long runawayLastColumns;
+    private long runawayLastMisses;
+    private long runawayLastCheckNanos;
+    private int runawayIdleChecks;
 
     /**
      * The prewarm's segment leases, pinned until the planning compile has published them.
@@ -357,6 +387,17 @@ public final class PlannerScheduler implements AutoCloseable {
         // Drive this stage ourselves: without it the fine sample waits on server ticks, which is how
         // a measured session spent 27 minutes here without finishing a single slice.
         startFineSampleDriver();
+        // How many times this stage runs in one session, and over how many points.
+        //
+        // Every counter below (`all`, `walks`, the meters) is method-local, so a second call would
+        // re-walk every column from scratch with nothing to show for it - and a measured session walked
+        // ~29k cross-sections where the estimate implied ~7.4k, a ratio of 3.9 that has no explanation
+        // inside a single call (a cursor cannot walk more indices than its own range). This line is what
+        // separates "the stage ran four times" from "one call enqueued four times the slices", because
+        // the next run prints the call number next to the segment and slice counts that produced it.
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_CALL call={} segments={} slicesPerSegment={}",
+                FINE_SAMPLE_CALLS.incrementAndGet(), (int) Math.min(Integer.MAX_VALUE, target),
+                Math.max(4, Math.min(laneState.size(), 16) * 4));
         // One memo per session, shared by every slice and every segment: a world column this run has
         // already walked is answered from here instead of walking the terrain a second time. Slices of
         // one segment meet at their boundaries and neighbouring cross-sections round to the same
@@ -383,11 +424,21 @@ public final class PlannerScheduler implements AutoCloseable {
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 1);
         var completion = new Runnable() {
             @Override public void run() {
-                if (enqueueing.get()) return;
-                if (routesPending.get() > 0 || slicesPending.get() > 0) return;
+                // The runaway guard publishes the index while slices are still in flight, so it skips both
+                // gates: what has been merged so far is a superset of the columns it needs (the excess work
+                // is re-walking columns the index already holds), and waiting for `pending` to drain is
+                // exactly what never happened in the measured session.
+                if (!fineSampleForced) {
+                    if (enqueueing.get()) return;
+                    if (routesPending.get() > 0 || slicesPending.get() > 0) return;
+                }
                 int done = sampledColumns.get();
+                // The estimate, not max(done, estimate): clamping the total to the done count made the
+                // fraction identically 100% for the whole tail of a run whose estimate ran low, so the
+                // card read "435385/435385" for eleven minutes while the sampler passed 1.2M columns.
+                // PrewarmProgress caps a running stage at 99% and only the stage transition reports 100.
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                        done, Math.max(done, expectedColumns.get()));
+                        done, expectedColumns.get());
                 // Recorded here as well as at PREWARM_COMPLETE: the fine sample is the stage whose
                 // cost scales with the cross-section width, and its cache counters are what decide
                 // whether a slow run is the terrain walk or the chunk cache.
@@ -420,6 +471,8 @@ public final class PlannerScheduler implements AutoCloseable {
                 synchronized (all) { aggregate.complete(FineHeightIndex.of(all)); }
             }
         };
+        // Published for the runaway guard; cleared on the way out so a guard that fires twice is a no-op.
+        fineSampleAbandon = completion;
         try {
             for (long i = 0; i < target && safeSegment(i); i++) {
                 var lease = requireRoute(i, priority);
@@ -484,7 +537,7 @@ public final class PlannerScheduler implements AutoCloseable {
                                     }
                                     int done = sampledColumns.get();
                                     local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                                            done, Math.max(done, expectedColumns.get()));
+                                            done, expectedColumns.get());
                                     slicesPending.decrementAndGet();
                                     completion.run();
                                 } catch (Throwable t) { aggregate.completeExceptionally(t); }
@@ -861,11 +914,74 @@ public final class PlannerScheduler implements AutoCloseable {
     }
 
     /**
+     * Publishes the index early when the fine sample runs wildly past its own estimate.
+     *
+     * <p>Called once per driver tick (about a millisecond), so it reads two atomics and returns.
+     * {@return true when the stage was abandoned, in which case the caller stops reporting}
+     */
+    private boolean checkFineSampleRunaway() {
+        var abandon = fineSampleAbandon;
+        var done = fineSampleDone;
+        var total = fineSampleTotal;
+        if (abandon == null || done == null || total == null) return false;
+        long expected = total.get();
+        long columns = done.get();
+        if (expected > 0L && columns > FINE_SAMPLE_RUNAWAY_NUMERATOR * expected) {
+            return abandonFineSample(abandon, columns, expected, "ratio");
+        }
+        // The semantic test, and the one that actually catches this: a runaway keeps producing columns
+        // while it stops producing terrain. Every column in a healthy pass either builds a chunk cell
+        // this run has not sampled yet or is answered by one; once no NEW cell appears for several
+        // windows in a row while columns keep pouring in, every one of them is being answered from a
+        // cell already in the cache - the stage is re-walking its own work, and no amount of waiting
+        // finishes it. The measured session ran at 4.3k columns/s with a chunk-cache hit rate above 85%.
+        long now = System.nanoTime();
+        if (now - runawayLastCheckNanos < FINE_SAMPLE_RUNAWAY_WINDOW_NANOS) return false;
+        runawayLastCheckNanos = now;
+        long misses = laneDiagnostic("chunk-cache-misses");
+        long columnDelta = columns - runawayLastColumns;
+        long missDelta = Math.max(0L, misses - runawayLastMisses);
+        runawayLastColumns = columns;
+        runawayLastMisses = misses;
+        if (columnDelta < FINE_SAMPLE_RUNAWAY_MIN_COLUMNS || missDelta > columnDelta / 50L) {
+            runawayIdleChecks = 0;   // real terrain is still being discovered
+            return false;
+        }
+        if (++runawayIdleChecks < FINE_SAMPLE_RUNAWAY_IDLE_WINDOWS) return false;
+        return abandonFineSample(abandon, columns, expected, "no-new-terrain=" + runawayIdleChecks);
+    }
+
+    /**
+     * Publishes the fine-sample index early and stops the stage.
+     *
+     * @param why which test fired, for the log
+     * @return always true, so the caller can return it directly
+     */
+    private boolean abandonFineSample(Runnable abandon, long columns, long expected, String why) {
+        // Cleared first: two driver ticks cannot both publish, and a second call reads null and returns.
+        fineSampleAbandon = null;
+        fineSampleForced = true;
+        stopFineSampleDriver();
+        GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_RUNAWAY reason={} columns={} expected={} ratio={} "
+                        + "sections={} - the stage is re-walking columns the index already holds, so the "
+                        + "index is published as it stands instead of waiting for a convergence that never comes.",
+                why, columns, expected, expected <= 0 ? 0 : columns / expected,
+                fineSampleSections == null ? 0L : fineSampleSections.get());
+        try {
+            abandon.run();
+        } catch (RuntimeException alreadyPublished) {
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_RUNAWAY publish failed", alreadyPublished);
+        }
+        return true;
+    }
+
+    /**
      * Logs one fine-sample progress line every {@link #FINE_SAMPLE_REPORT_MILLIS} ms while the stage
      * runs: columns sampled, the stage's own denominator, the rate and an ETA. Called from the fine
      * sample's own driver (once per millisecond), so it must stay cheap when it does not log.
      */
     private void reportFineSampleProgress() {
+        if (checkFineSampleRunaway()) return;
         var done = fineSampleDone;
         var total = fineSampleTotal;
         if (done == null || total == null) return;
@@ -891,11 +1007,19 @@ public final class PlannerScheduler implements AutoCloseable {
                 ? String.format(java.util.Locale.ROOT, "%.0f", (expected - columns) / rate)
                 : "?";
         GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_PROGRESS columns={} expected={} rate={}/s "
-                        + "eta={}s lanes={} chunkCacheHits={} chunkCacheMisses={} walkedBlocks={} "
+                        + "eta={}s raw={} repeatedPct={} expectedSections={} lanes={} chunkCacheHits={} "
+                        + "chunkCacheMisses={} walkedBlocks={} "
                         + "blocksPerColumn={} leadRetries={} retryPct={} blockMs={} sliceMs={} constructMs={} "
                         + "cellMs={} biomeMs={} surfaceMs={} surfaceMemoHits={} sections={} wideSections={} "
                         + "widePct={} columnsPerSection={} probesPerSection={}",
                 columns, expected, String.format(java.util.Locale.ROOT, "%.0f", rate), eta,
+                // raw vs columns is the duplicate factor the overlapping cross-sections produce, and
+                // expectedSections is the meter's own estimate divided by the width it observed: comparing
+                // it with the walked `sections` is what tells whether the sampler walks the cross-sections
+                // the meter counted, without waiting for the stage to finish.
+                rawColumns,
+                rawColumns == 0 ? 0 : Math.round(100f * (rawColumns - columns) / rawColumns),
+                sections == 0 ? 0 : expected / Math.max(1, rawColumns / sections),
                 laneState.size(), laneDiagnostic("chunk-cache-hits"), laneDiagnostic("chunk-cache-misses"),
                 laneDiagnostic("walked-blocks"),
                 columns == 0 ? 0 : laneDiagnostic("walked-blocks") / columns,

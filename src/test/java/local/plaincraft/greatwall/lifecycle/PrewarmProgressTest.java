@@ -179,4 +179,26 @@ class PrewarmProgressTest {
         assertTrue(snapshot.completed() == 2, "completed must clamp to the total, was " + snapshot.completed());
         assertTrue(snapshot.percent() == 100);
     }
-}
+    /**
+     * A running stage never reports 100%, however far past its estimate it has run.
+     *
+     * <p>Real session: the fine sample's total was an estimate, the caller clamped it to the done count,
+     * and the card read "采样地形 435385/435385 列" for eleven minutes while the sampler passed 1.2M
+     * columns - full bar, no stage change, which is indistinguishable from a hang. The cap belongs in
+     * the fraction, not in the caller.
+     */
+    @Test
+    void aRunningStageNeverReadsOneHundredPercentEvenPastItsEstimate() {
+        PrewarmProgress.clear();
+        PrewarmProgress.begin(4, 16);
+        PrewarmProgress.setStage(PrewarmProgress.Stage.FINE_SAMPLE);
+        PrewarmProgress.setSubProgress(120_376, 120_376);
+        assertTrue(PrewarmProgress.snapshot().stagePercent() <= 99,
+                "done == estimate must not read as complete while the stage runs");
+        PrewarmProgress.setSubProgress(1_205_514, 120_376);
+        assertTrue(PrewarmProgress.snapshot().stagePercent() <= 99,
+                "done far past the estimate must still not read as complete");
+        PrewarmProgress.setSubProgress(60_188, 120_376);
+        assertTrue(PrewarmProgress.snapshot().stagePercent() < 99,
+                "a half-finished stage must read below the cap");
+    }}
