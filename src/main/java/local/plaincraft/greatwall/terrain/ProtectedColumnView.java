@@ -39,7 +39,10 @@ final class ProtectedColumnView {
                 buckets.put(key,unique.stream().filter(b->b.minX()<x0+16&&b.maxXExclusive()>x0
                         &&b.minZ()<z0+16&&b.maxZExclusive()>z0).toList());
             }
-            CURRENT.set(new Index(boxes,Map.copyOf(buckets)));
+            // A read-only view, not a copy: the bucket key packs two block coordinates into one long, the
+            // same shape FineHeightIndex.of documents at 53 s inside ImmutableCollections$MapN.<init> for
+            // a 192k-entry index. The map is built here, never aliased and never mutated afterwards.
+            CURRENT.set(new Index(boxes, java.util.Collections.unmodifiableMap(buckets)));
             return action.get();
         } finally {
             if (prior==null) CURRENT.remove(); else CURRENT.set(prior);

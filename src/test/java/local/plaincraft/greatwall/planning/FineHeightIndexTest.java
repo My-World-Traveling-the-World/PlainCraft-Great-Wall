@@ -108,6 +108,49 @@ class FineHeightIndexTest {
         }
     }
 
+    /**
+     * 冲突序必须是**全序**：并列 ⇔ 两列的可观测内容完全相同。
+     *
+     * <p>这条不变量此前没有任何测试钉住，而它撑着整个世界的确定性：合并时并列不替换、保留先到者，
+     * 而「先到」由 12 条 lane 的完成顺序决定（受 25 ms 墙钟 deadline 影响）。只要比较器对
+     * {@code ColumnSample} 的某个字段视而不见，两列就会在语义不同的情况下判为并列 ⇒ 同一份输入在
+     * 不同负载下可能产出不同的墙，且只在多核偶发。给 ColumnSample 加字段却忘了加进比较器，就会
+     * 静默踩中；这条测试把那次遗忘变成红灯。
+     */
+    @Test void theConflictOrderIsTotalOverEveryObservableColumnField() {
+        var qualities = Quality.values();
+        var columns = new java.util.ArrayList<WallFinePlanner.FineColumn>();
+        for (int ground = 60; ground <= 62; ground++) {
+            for (int water : new int[] { Integer.MIN_VALUE, 58, 59 }) {
+                for (int quality = 0; quality < qualities.length; quality++) {
+                    for (int lateral = -2; lateral <= 2; lateral++) {
+                        for (String biome : new String[] { "minecraft:plains", "minecraft:river" }) {
+                            for (boolean censored : new boolean[] { false, true }) {
+                                // 同一个 (x, z)：比较器只在同一列的两个候选之间使用。
+                                columns.add(new WallFinePlanner.FineColumn(1_000, 0, lateral,
+                                        new ColumnSample(ground,
+                                                water == Integer.MIN_VALUE ? OptionalInt.empty() : OptionalInt.of(water),
+                                                water == Integer.MIN_VALUE ? OptionalInt.empty() : OptionalInt.of(water - 4),
+                                                biome, qualities[quality], censored)));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        int ties = 0;
+        for (var a : columns) {
+            for (var b : columns) {
+                boolean orderedOneWay = FineHeightIndex.prefers(a, b) || FineHeightIndex.prefers(b, a);
+                if (orderedOneWay) continue;
+                ties++;
+                assertEquals(a.sample(), b.sample(),
+                        "并列但内容不同 ⇒ 比较器漏了字段，确定性会随 lane 完成顺序漂移: " + a + " vs " + b);
+            }
+        }
+        assertTrue(ties > 0, "样本集里连一个并列都没有，说明这条测试没有覆盖到比较器");
+    }
+
     @Test void collapsingRepeatedColumnsUpFrontMergesToTheIdenticalIndexInTheIdenticalOrder() {
         // WallFinePlanner 现在在“发出”这一层就把重复的 (x,z) 折成一个：相邻路线点取整后压在同一个
         // 格子上，同一列被走过好几遍（真机一次开局走了 134 万列，走廊唯一列只有约 27 万）。以前是让

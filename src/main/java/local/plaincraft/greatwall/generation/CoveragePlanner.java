@@ -88,12 +88,27 @@ public final class CoveragePlanner {
                 for(int cz=Math.floorDiv(z-16,16);cz<=Math.floorDiv(z+16,16);cz++)
                     owners.add(new ChunkKey(cell.dimension(),cx,cz));
         }
-        for(var plan:plans.plans())for(var site:plan.sites())if(site.globalSQ8()>=from&&site.globalSQ8()<=to) {
+        for(var plan:plans.plans())for(var site:plan.sites()) {
             var template=templates.get(site.id().kind());
             if(template==null)throw new WallFailure(FailureCode.INVALID_RESOURCE,"unknown capture footprint: "+site.id());
             var provisional=new ComponentInput(site,List.of(),java.util.Map.of(),new DecaySample(DecayState.INTACT,0,20),
                     PaletteFamily.STONE,false,List.of(),List.of());
             var b=Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
+            // The admission window is the one RealizationPlanner.resolveAccounted uses - the cell plus 64
+            // blocks on both sides - widened by the footprint's own reach, because a site whose *centre*
+            // sits just outside this cell still gets realized here and then writes voxels into chunks that
+            // must be owners of this cell. Admitting by the centre alone left exactly that band uncovered:
+            // the component was realized, its footprint chunks were not owners, its columns were missing,
+            // and the component was dropped with a T0_MISSING warning while the compile reported success.
+            long reach=footprintReach(site,b);
+            if(site.globalSQ8()+reach<from-64L*256||site.globalSQ8()-reach>to+64L*256)continue;
+            // More owners than the capture budget allows must never turn into a session failure: keep what
+            // the previous rule admitted and stop adding, which degrades to the old coverage, not to a
+            // failed window.
+            if(owners.size()+footprintOwners(cell.dimension(),b).size()>256) {
+                if(site.globalSQ8()>=from&&site.globalSQ8()<=to) addOwners(owners,cell.dimension(),b);
+                continue;
+            }
             addOwners(owners,cell.dimension(),b);
         }
         if(owners.size()>256)throw new WallFailure(FailureCode.CAPACITY,"realization footprint exceeds 256 capture owners");
@@ -103,6 +118,29 @@ public final class CoveragePlanner {
         for(int cx=Math.floorDiv(b.minX()-1,16);cx<=Math.floorDiv(b.maxXExclusive(),16);cx++)
             for(int cz=Math.floorDiv(b.minZ()-1,16);cz<=Math.floorDiv(b.maxZExclusive(),16);cz++)
                 owners.add(new ChunkKey(dimension,cx,cz));
+    }
+
+    /** {@return the chunks {@link #addOwners} would add for this footprint} */
+    private static TreeSet<ChunkKey> footprintOwners(String dimension,Bounds b){
+        var owners=new TreeSet<ChunkKey>(java.util.Comparator.comparing(ChunkKey::dimension)
+                .thenComparingInt(ChunkKey::x).thenComparingInt(ChunkKey::z));
+        addOwners(owners,dimension,b);
+        return owners;
+    }
+
+    /**
+     * {@return how far, in arc space, this footprint can reach from its site centre}
+     *
+     * <p>The footprint is the template's axis-aligned world envelope, so the largest distance from the
+     * centre to any of its corners bounds the arc distance to any voxel it can write. Deliberately
+     * conservative in the admitting direction: it can admit a site whose voxels never enter this cell,
+     * never the other way around.
+     */
+    private static long footprintReach(SiteRecord site,Bounds b){
+        long cx=FixedMath.floorBlock(site.frame().center().xQ8()),cz=FixedMath.floorBlock(site.frame().center().zQ8());
+        long dx=Math.max(Math.abs(b.minX()-cx),Math.abs((long)b.maxXExclusive()-cx));
+        long dz=Math.max(Math.abs(b.minZ()-cz),Math.abs((long)b.maxZExclusive()-cz));
+        return Math.max(dx,dz)*256L;
     }
     private static List<Station> stations(PlanWindow plans) {
         var result=new TreeMap<Long,Station>();

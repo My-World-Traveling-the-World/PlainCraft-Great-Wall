@@ -140,6 +140,36 @@ class CoveragePlannerTest {
         }
     }
 
+    /**
+     * 站点中心落在本 cell 的 owner 窗口之外、但**会被本 cell realize** 时，它的足迹 chunk 必须也是本
+     * cell 的 owner。
+     *
+     * <p>{@code RealizationPlanner.resolveAccounted} 的站点准入窗口比 cell 宽 64 格
+     * （{@code from-64*256 .. to+64*256}），而 owner 枚举过去只按中心是否落在 {@code [from,to]} 判断：
+     * 于是存在一条 64 格宽的带——站点会被 realize，但它的足迹 chunk 从不进 owner 集，编译到该组件时
+     * 那些 chunk 的列缺失，组件被 T0_MISSING 丢弃、墙上留洞，**而编译仍然报成功**。这条钉住
+     * 「准入 ⊆ 覆盖」，并且约束 owner 预算不被提高。
+     */
+    @Test void aSiteRealizedPastTheCellWindowStillOwnsItsFootprintChunks(){
+        var templates=local.plaincraft.greatwall.component.S1TemplateSet.create(0);
+        // cell 0 的 owner 窗口是 [-192, 256] 格；准入窗口到 320 格。取 300 格：旧规则必漏、准入必中。
+        long centre=300L*256;
+        var base=window(1024).plans().getFirst();
+        var frame=new Frame(new Point2q(centre,0),1<<30,0,84,false);
+        var site=new SiteRecord(new SiteId("fixture",SiteKind.FORT,0),centre,frame,
+                new Bounds(0,49,-64,320,92,64),SiteState.PLANNED,Optional.empty(),Optional.empty());
+        var input=new ComponentInput(site,List.of(),Map.of(),new DecaySample(DecayState.INTACT,0,20),
+                PaletteFamily.STONE,false,List.of(),List.of());
+        var envelope=Rasterizer.worldBounds(frame,templates.get(SiteKind.FORT).localBounds(input));
+        var plans=new PlanWindow(List.of(new SegmentPlan(base.geometry(),base.prefix(),base.stations(),
+                List.of(site),H)));
+        var owners=new HashSet<>(new CoveragePlanner().realizationOwners(
+                new CellKey(H,"minecraft:overworld",0),plans));
+        assertTrue(owners.containsAll(Rasterizer.owners("minecraft:overworld",envelope)),
+                "中心在 owner 窗口外、足迹入窗的站点必须带来它的足迹 chunk（否则组件静默掉洞）");
+        assertTrue(owners.size()<=256,"owner 预算不被提高");
+    }
+
     private static PlanWindow window(int length) {
         var stations=new ArrayList<Station>();
         for(int x=0;x<=length;x+=4) stations.add(new Station(x*256L,new Point2q(x*256L,0),84,0));

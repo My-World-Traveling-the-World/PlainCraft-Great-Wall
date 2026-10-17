@@ -35,6 +35,11 @@ public final class PlanningChunkCompiler {
         this.compiler = Objects.requireNonNull(compiler, "compiler");
         this.index = Objects.requireNonNull(index, "index");
         this.structures = List.copyOf(Objects.requireNonNull(structures, "structures"));
+        // The realization planner recomputes the window's stations, sites and waters for every owner it
+        // compiles - about five merges of the whole window each time, for values that cannot change while
+        // the window is frozen. The memo is keyed by plan instance, so it can live for the compiler's
+        // whole life without ever answering for a re-planned segment.
+        this.realization.useWindowMemos(new RealizationPlanner.WindowMemos());
     }
 
     /**
@@ -87,6 +92,15 @@ public final class PlanningChunkCompiler {
         var result = new HashMap<ChunkKey, ChunkWritePlan>();
         var provider = new PlanningColumnProvider(index);
         if (progress != null) progress.accept(0, work.size());
+        // Two per-window values the per-owner path used to recompute: the sampled vertical extent (one
+        // pass over every indexed column, so a hundred-owner cell paid it a hundred times) and the
+        // protection hash (a sort plus a SHA-256 over every structure box, once per owner). Both are
+        // functions of this compiler's own fields, not of the owner.
+        var windowBounds = recipeBounds();
+        var protection = List.copyOf(structures);
+        String protectionHash = local.plaincraft.greatwall.geometry.DeterministicHash.sha256(
+                structures.stream().map(Bounds::toString).sorted().toList().toString()
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
         CellKey cachedCell = null;
         Map<Point3i, SurfaceProbe.ColumnView> cachedColumns = null;
         int done = 0;
@@ -112,7 +126,7 @@ public final class PlanningChunkCompiler {
             // and cost the session its wall over one owner.
             try {
                 compileOwner(item.cell(), item.owner(), cachedColumns, new PlanWindow(List.of(item.plan())),
-                        recipeHash, result);
+                        recipeHash, windowBounds, protection, protectionHash, result);
             } catch (Throwable failure) {
                 failed++;
                 local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
@@ -155,11 +169,8 @@ public final class PlanningChunkCompiler {
 
     private void compileOwner(CellKey cell, ChunkKey owner,
             Map<Point3i, SurfaceProbe.ColumnView> columns, PlanWindow plans, String recipeHash,
+            DimensionBounds windowBounds, List<Bounds> protection, String protectionHash,
             Map<ChunkKey, ChunkWritePlan> into) {
-        var protection = new ArrayList<>(structures);
-        String protectionHash = local.plaincraft.greatwall.geometry.DeterministicHash.sha256(
-                structures.stream().map(Bounds::toString).sorted().toList().toString()
-                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
         var input = new RealizationPlanner.Input(cell, plans, Map.of(), columns, protection,
                 Map.of(), 0, protectionHash);
         var cellResult = realization.resolve(input);
@@ -171,7 +182,7 @@ public final class PlanningChunkCompiler {
                 if (column != null) before.putIfAbsent(v.pos(), column.state(v.pos().y()));
             }
         }
-        var coverageForOwner = coverage.forChunk(owner, plans, recipeBounds());
+        var coverageForOwner = coverage.forChunk(owner, plans, windowBounds);
         var plan = compiler.bindCoverage(
                 compiler.compile(owner, recipeHash, List.of(cellResult), before),
                 coverageForOwner.hash());

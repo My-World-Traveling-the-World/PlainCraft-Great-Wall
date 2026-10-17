@@ -76,6 +76,7 @@ public final class AtomicFiles {
                             "immutable file was created concurrently with different content: " + relative);
                 }
             }
+            forceDirectory(parent);
         } finally {
             Files.deleteIfExists(temporary);
         }
@@ -96,6 +97,7 @@ public final class AtomicFiles {
                 throw new WallFailure(FailureCode.IO_FAILED,
                         "atomic pointer replace is unavailable on this volume: " + relative, unsupported);
             }
+            forceDirectory(parent);
         } finally {
             Files.deleteIfExists(temporary);
         }
@@ -135,6 +137,28 @@ public final class AtomicFiles {
             var buffer = java.nio.ByteBuffer.wrap(content);
             while (buffer.hasRemaining()) channel.write(buffer);
             channel.force(true);
+        }
+    }
+
+    /**
+     * Flushes the directory entry that publishing a rename created.
+     *
+     * <p>{@link #writeAndForce} forces the file's own bytes only; the name that makes it reachable lives
+     * in the parent directory, so a power loss can leave a caller that already saw success with the
+     * previous content - exactly the HEAD pointer and checkpoint state {@code HistoryJournal} exists to
+     * keep. Windows cannot open a directory for reading and some file systems refuse the flush; both are
+     * reported as a degraded guarantee rather than treated as a failure, which is the contract this class
+     * already states for cheap disks.
+     */
+    private static void forceDirectory(Path directory) {
+        if (directory == null) return;
+        try (FileChannel channel = FileChannel.open(directory, StandardOpenOption.READ)) {
+            channel.force(true);
+        } catch (IOException | UnsupportedOperationException unavailable) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.debug(
+                    "[GreatWall:io] directory flush unavailable for {} ({}); the rename is atomic but its "
+                            + "directory entry is not forced on this platform",
+                    directory, unavailable.toString());
         }
     }
 

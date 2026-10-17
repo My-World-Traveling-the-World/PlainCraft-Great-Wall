@@ -64,6 +64,35 @@ class RealizationPlannerEvidenceHashTest {
         }
     }
 
+    /**
+     * 窗口级 memo（stations / sites / waters / evidenceHash）只许按 (cell, 计划实例) 作答。
+     *
+     * <p>编译期会连续解析同一个 cell 的上百个 owner，memo 就是把那份重复劳动收掉的地方。它一旦串味
+     * （例如按 cell 缓存却拿旧计划，或按计划缓存却跨 cell 复用），给出的就是**另一格的列图与摘要**
+     * ⇒ 静默错墙。这条用单计划窗口把 memo 打开，重复解析、换 cell、换 plan 实例三种情况各钉一次。
+     */
+    @Test void windowMemosStayCorrectAcrossRepeatedCellsAndPlans() {
+        var memoized=planner();
+        memoized.useWindowMemos(new RealizationPlanner.WindowMemos());
+        var input=input(false,new HashOnly(H));
+        // 单计划窗口才会走 memo（多计划窗口按设计直接计算）。
+        var single=new PlanWindow(List.of(input.plans().plans().getFirst()));
+        var first=copy(input,input.key(),single,input.tiles(),input.columns(),input.frozenGateY(),0,H);
+        var expected=memoized.inspect(first).t0Hash();
+        assertEquals(expected,memoized.inspect(first).t0Hash(),
+                "同一 (cell, plan) 第二次解析必须得到同一份证物摘要");
+        var otherCell=copy(input,new CellKey(H,"minecraft:overworld",input.key().arcCell()+1),
+                single,input.tiles(),input.columns(),input.frozenGateY(),0,H);
+        assertNotEquals(expected,memoized.inspect(otherCell).t0Hash(),
+                "不同 cell 不得共用 memo 条目");
+        var remote=input.plans().plans().getFirst();
+        var reshaped=new PlanWindow(List.of(new SegmentPlan(remote.geometry(),remote.prefix(),
+                remote.stations(),remote.sites(),C)));
+        var otherPlan=copy(input,input.key(),reshaped,input.tiles(),input.columns(),input.frozenGateY(),0,H);
+        assertNotEquals(expected,memoized.inspect(otherPlan).t0Hash(),
+                "同一 cell 换了计划实例不得复用 memo 条目");
+    }
+
     @Test void insertionOrderAndOriginalUtf8SignatureRemainUnchanged() {
         var forward=input(false,new HashOnly(H));var reverse=input(true,new HashOnly(H));
         var first=planner().inspect(forward);var second=planner().inspect(reverse);

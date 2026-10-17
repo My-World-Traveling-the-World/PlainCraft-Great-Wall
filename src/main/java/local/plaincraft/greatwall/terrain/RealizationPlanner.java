@@ -58,6 +58,83 @@ public final class RealizationPlanner {
             local.plaincraft.greatwall.decay.BiomePaletteIndex biomeIndex,Map<SiteKind,ComponentTemplate> templates){
         this.recipe=recipe;this.probe=Objects.requireNonNull(probe);this.biomeIndex=biomeIndex;this.templates=Map.copyOf(templates);
     }
+
+    /**
+     * Window-scoped memos for the three pure functions of a frozen plan window: {@link #stations},
+     * {@link #sites} and {@link #waters}.
+     *
+     * <p>Each of them merges every plan's records into a sorted map, and the compile asks for them about
+     * five times per owner: with roughly a hundred owners per 64-block cell that is on the order of ten
+     * million red-black insertions and list copies for values that cannot change while the window is
+     * frozen. The keys are plan <em>instances</em>, so a re-planned segment (which is a new instance)
+     * can never read a stale entry, and a window holding more than one plan keeps computing directly.
+     *
+     * <p>Installed by {@link local.plaincraft.greatwall.planning.PlanningChunkCompiler}; a planner used
+     * on its own (the unit tests) leaves it null and behaves exactly as before.
+     */
+    public static final class WindowMemos {
+        private final java.util.Map<SegmentPlan, List<Station>> stations = new java.util.IdentityHashMap<>();
+        private final java.util.Map<SegmentPlan, List<SiteRecord>> sites = new java.util.IdentityHashMap<>();
+        private final java.util.Map<SegmentPlan, List<WaterEvidence>> waters = new java.util.IdentityHashMap<>();
+        /** Evidence digests, per plan instance and cell: see {@link #evidenceHashFor}. */
+        private final java.util.Map<SegmentPlan, java.util.Map<CellKey, String>> evidence =
+                new java.util.IdentityHashMap<>();
+    }
+
+    private WindowMemos memos;
+
+    /** Installs the window memos. Called once, before the compile window is walked. */
+    public void useWindowMemos(WindowMemos windowMemos) { this.memos = windowMemos; }
+
+    private List<Station> stationList(PlanWindow plans) {
+        if (memos == null || plans.plans().size() != 1) return stations(plans);
+        var plan = plans.plans().getFirst();
+        var cached = memos.stations.get(plan);
+        if (cached != null) return cached;
+        var computed = stations(plans);
+        memos.stations.put(plan, computed);
+        return computed;
+    }
+
+    private List<SiteRecord> siteList(PlanWindow plans) {
+        if (memos == null || plans.plans().size() != 1) return sites(plans);
+        var plan = plans.plans().getFirst();
+        var cached = memos.sites.get(plan);
+        if (cached != null) return cached;
+        var computed = sites(plans);
+        memos.sites.put(plan, computed);
+        return computed;
+    }
+
+    private List<WaterEvidence> waterList(PlanWindow plans) {
+        if (memos == null || plans.plans().size() != 1) return waters(plans);
+        var plan = plans.plans().getFirst();
+        var cached = memos.waters.get(plan);
+        if (cached != null) return cached;
+        var computed = waters(plans);
+        memos.waters.put(plan, computed);
+        return computed;
+    }
+
+    /**
+     * {@link #evidenceHash} memoised per plan instance and cell.
+     *
+     * <p>The digest is taken over the cell key, the plan hashes, the tiles, every sampled column with its
+     * digest, the protection hash and the gate revision - every one of which the compiler builds
+     * identically for all owners of a cell. Recomputing it per owner meant sorting and hashing the whole
+     * column list (about 27k entries, each contributing a 64-character digest) once per owner instead of
+     * once per cell: the difference measured in gigabytes of transient strings for one window.
+     */
+    private String evidenceHashFor(Input input) {
+        if (memos == null || input.plans().plans().size() != 1) return evidenceHash(input);
+        var plan = input.plans().plans().getFirst();
+        var byCell = memos.evidence.computeIfAbsent(plan, ignored -> new java.util.HashMap<>());
+        var cached = byCell.get(input.key());
+        if (cached != null) return cached;
+        var computed = evidenceHash(input);
+        byCell.put(input.key(), computed);
+        return computed;
+    }
     public RealizationCell resolve(Input input) {
         return resolve(input,null,null);
     }
@@ -104,11 +181,11 @@ public final class RealizationPlanner {
         if(input.key().arcCell()<0)throw new IllegalArgumentException("negative arc cell");
         if(recipe!=null&&(!recipe.recipeHash().equals(input.key().recipeHash())||!recipe.dimension().equals(input.key().dimension())))
             throw new WallFailure(FailureCode.RECIPE_MISMATCH,"foreign realization request");
-        var stations=stations(input.plans());var accepted=new ArrayList<ComponentVoxels>();var breaks=new ArrayList<BreakInterval>();
+        var stations=stationList(input.plans());var accepted=new ArrayList<ComponentVoxels>();var breaks=new ArrayList<BreakInterval>();
         long from=Math.multiplyExact(input.key().arcCell(),64L*256),to=Math.addExact(from,64L*256);
         String t0=hash(input.tiles().values().stream().map(t->t.key().identity()+":"+t.hash()).sorted().toList().toString());
         if(stations.size()<2||from>=stations.getLast().globalSQ8()) {
-            if(inspection!=null)inspection.accept(inspection(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHash(input)));
+            if(inspection!=null)inspection.accept(inspection(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHashFor(input)));
             return result(input,breaks,accepted,t0);
         }
         // A cell before the wall's first station is the mirror image of the "past the last station"
@@ -116,7 +193,7 @@ public final class RealizationPlanner {
         // Treating one side as empty and the other as a fatal MISSING_FEATURES_PLAN was asymmetric
         // and stopped the server on an otherwise normal geometry boundary.
         if(from<stations.getFirst().globalSQ8()) {
-            if(inspection!=null)inspection.accept(inspection(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHash(input)));
+            if(inspection!=null)inspection.accept(inspection(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHashFor(input)));
             return result(input,breaks,accepted,t0);
         }
         to=Math.min(to,stations.getLast().globalSQ8());
@@ -127,8 +204,8 @@ public final class RealizationPlanner {
         String wall=recipe!=null?recipe.wallId():input.plans().plans().stream().flatMap(p->p.sites().stream()).findFirst()
                 .map(s->s.id().wallId()).orElse(input.key().recipeHash());
         var field=new DecayField(recipe==null?0:recipe.seed());
-        var sites=sites(input.plans());var maintained=new ArrayList<Long>();var exits=new ArrayList<GroundExitDecision.Exit>();
-        var waters=waters(input.plans());long terminal=Long.MAX_VALUE;BreakReason terminalReason=BreakReason.RIVER_WIDE;
+        var sites=siteList(input.plans());var maintained=new ArrayList<Long>();var exits=new ArrayList<GroundExitDecision.Exit>();
+        var waters=waterList(input.plans());long terminal=Long.MAX_VALUE;BreakReason terminalReason=BreakReason.RIVER_WIDE;
         for(var p:input.plans().plans()){
             breaks.addAll(p.stations().breaks());
             if(p.geometry().terminal().isPresent()) {
@@ -202,7 +279,7 @@ public final class RealizationPlanner {
                 if(site.globalSQ8()>=from&&site.globalSQ8()<to&&site.globalSQ8()<terminal) {
                     accepted.add(component);
                     if(naturalExit(input,site,component)) {
-                        if(evidence==null)evidence=evidenceHash(input);
+                        if(evidence==null)evidence=evidenceHashFor(input);
                         exits.add(new GroundExitDecision.Exit(site.id(),site.globalSQ8(),
                                 new ArcInterval(siteFrom,siteTo),component.hash(),evidence));
                     }
@@ -236,7 +313,7 @@ public final class RealizationPlanner {
                 long a=Math.max(from,gap.range().fromQ8()),b=Math.min(to,gap.range().toQ8());
                 if(a<b)core.add(new BreakInterval(new ArcInterval(a,b),gap.reason(),gap.scope()));
             }
-            inspection.accept(inspection(input.key(),exits,core,terminal(input.plans()),evidence==null?evidenceHash(input):evidence));
+            inspection.accept(inspection(input.key(),exits,core,terminal(input.plans()),evidence==null?evidenceHashFor(input):evidence));
             return result(input,walkMerged,accepted,t0);
         }
         var capExclusions=new ArrayList<ArcInterval>();
@@ -315,8 +392,8 @@ public final class RealizationPlanner {
         finally { CompiledAllocation.discard(temporary); }
     }
     private GroundExitDecision.CapVote probeCapAccounted(Input input,GroundExitDecision.Edge edge) {
-        var ribbon=stations(input.plans());
-        String wall=recipe==null?sites(input.plans()).getFirst().id().wallId():recipe.wallId();
+        var ribbon=stationList(input.plans());
+        String wall=recipe==null?siteList(input.plans()).getFirst().id().wallId():recipe.wallId();
         var limits=recipe==null?new DimensionBounds(input.tiles().keySet().stream().mapToInt(TerrainTile.Key::minY).min().orElseThrow(),
                 input.tiles().keySet().stream().mapToInt(k->k.maxY()+1).max().orElseThrow(),29_999_000):recipe.bounds();
         var original=capSite(wall,edge.sQ8(),edge.reverse(),ribbon);
@@ -334,11 +411,11 @@ public final class RealizationPlanner {
                         }));
                 if(!c.voxels().isEmpty()) {
                     return capVote(Optional.of(new GroundExitDecision.Cap(c.id(),edge,
-                            attempt.globalSQ8(),c.hash(),capFootprint(c,ribbon))),evidenceHash(input));
+                            attempt.globalSQ8(),c.hash(),capFootprint(c,ribbon))),evidenceHashFor(input));
                 }
             }catch(WallFailure e){if(e.code()!=FailureCode.OWNERSHIP_CONFLICT)throw e;}
         }
-        return capVote(Optional.empty(),evidenceHash(input));
+        return capVote(Optional.empty(),evidenceHashFor(input));
     }
     private static ArcInterval capFootprint(ComponentVoxels component,List<Station> ribbon) {
         long min=Long.MAX_VALUE,max=Long.MIN_VALUE;
@@ -350,9 +427,9 @@ public final class RealizationPlanner {
     }
     private List<ArcInterval> capObstacles(Input input,List<Station> ribbon,DimensionBounds limits,long edge) {
         var result=new ArrayList<ArcInterval>();var field=new DecayField(recipe==null?0:recipe.seed());
-        var water=waters(input.plans());
+        var water=waterList(input.plans());
         for(var w:water)if(w.classification()!=WaterClass.DRY)result.add(new ArcInterval(Math.max(0,w.crossing().fromQ8()-8*256L),w.crossing().toQ8()+8*256L));
-        for(var s:sites(input.plans())) {
+        for(var s:siteList(input.plans())) {
             if(Math.abs(s.globalSQ8()-edge)>192*256L||s.state()==SiteState.SUPPRESSED||s.state()==SiteState.ABSORBED)continue;
             long extent=switch(s.id().kind()){case FORT->24L*256;case GATE->30L*256;case ENEMY_TOWER->6L*256;case BEACON->5L*256;default->0;};
             if(extent==0)continue;

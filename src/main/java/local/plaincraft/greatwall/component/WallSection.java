@@ -7,6 +7,7 @@ import local.plaincraft.greatwall.decay.DecayField;
 import local.plaincraft.greatwall.decay.PaletteBinding;
 import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.geometry.Rasterizer;
+import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** A 64-block arc cell, rasterized against the station chain rather than its straight chord. */
@@ -33,7 +34,7 @@ public final class WallSection implements ComponentTemplate {
         if(stations.size()<2)throw new IllegalArgumentException("station ribbon needs two points");
         var c=column(stations,x,z,stations.getFirst().globalSQ8(),stations.getFirst().globalSQ8(),
                 Math.addExact(stations.getLast().globalSQ8(),1),false);
-        if(c==null)throw new IllegalArgumentException("column outside ribbon");
+        if(c==null)throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"column outside ribbon");
         return new ColumnContract(c.globalS(),c.z(),c.walkY());
     }
 
@@ -54,16 +55,16 @@ public final class WallSection implements ComponentTemplate {
         final List<Frame> replacements=List.copyOf(gates);
         List<Station> stations = input.stations();
         long center = input.site().globalSQ8(), from = Math.max(0,center-32L*256);
-        if(stations.size()<2)throw new IllegalArgumentException("wall requires complete station ribbon");
+        if(stations.size()<2)throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"wall requires complete station ribbon");
         long to = Math.min(stations.getLast().globalSQ8(),center+32L*256);
         if (stations.size() < 2 || stations.getFirst().globalSQ8() > from || stations.getLast().globalSQ8() < to)
-            throw new IllegalArgumentException("wall requires complete station ribbon");
+            throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"wall requires complete station ribbon");
         Bounds bounds = curveBounds(stations,from,to);
         var assembly = new ComponentAssembly(input,localBounds(input),decay,palette);
         for(var interval:intervals)
-            if(interval.fromQ8()<from||interval.toQ8()>to)throw new IllegalArgumentException("build interval outside cell");
+            if(interval.fromQ8()<from||interval.toQ8()>to)throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"build interval outside cell");
         for(var interval:walkable) {
-            if(interval.fromQ8()<from||interval.toQ8()>to)throw new IllegalArgumentException("walkable interval outside cell");
+            if(interval.fromQ8()<from||interval.toQ8()>to)throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"walkable interval outside cell");
             int left=FixedMath.floorBlock(interval.fromQ8()-center)+1,right=FixedMath.floorBlock(interval.toQ8()-center)-2;
             while(left<=right&&replacedAnchor(input,left,replacements))left++;
             while(right>=left&&replacedAnchor(input,right,replacements))right--;
@@ -92,7 +93,7 @@ public final class WallSection implements ComponentTemplate {
                 int next = height(stations,Math.min(to,globalS+256));
                 int previous = height(stations,Math.max(from,globalS-256));
                 if (Math.abs(next-w) > 1 || Math.abs(w-previous) > 1)
-                    throw new IllegalArgumentException("height contract jumps more than one block");
+                    throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"height contract jumps more than one block");
                 int slope = next > w ? 1 : previous > w ? -1 : 0;
                 return slope == 0 ? cell(Part.FLOOR,true,true,Map.of("type","top","waterlogged","false"))
                         : cell(Part.STAIR,true,true,Map.of("facing",assembly.facing(slope,0),
@@ -136,7 +137,7 @@ public final class WallSection implements ComponentTemplate {
                     a.point().zQ8()+FixedMath.mulDiv(dz,offset,span)+FixedMath.mulDiv(dx,n,length));
             return new ComponentAssembly.RouteAnchor(point,height(stations,s)+local.y());
         }
-        throw new IllegalArgumentException("route anchor outside station ribbon");
+        throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"route anchor outside station ribbon");
     }
 
     private static ComponentAssembly.Cell cell(Part p, boolean required, boolean walk, Map<String,String> properties) {
@@ -205,6 +206,6 @@ public final class WallSection implements ComponentTemplate {
             if (s >= a.globalSQ8() && s <= b.globalSQ8())
                 return a.walkY()+(int) FixedMath.roundDiv((long) (b.walkY()-a.walkY())*(s-a.globalSQ8()),b.globalSQ8()-a.globalSQ8());
         }
-        throw new IllegalArgumentException("height outside station ribbon");
+        throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"height outside station ribbon");
     }
 }
