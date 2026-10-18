@@ -93,6 +93,14 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      * answer.
      */
     private static final int NEIGHBOUR_LEAD_BLOCKS = 10;
+    /**
+     * How far a certified ground may sit from the density estimate before the walk is not trusted.
+     *
+     * <p>The estimate is coarse (it is a bisection on the density function) but it cannot be off by a
+     * hundred blocks on real terrain. A walk that disagrees with it by more than this was started in the
+     * wrong place, and the height it found belongs to a cliff face, not to this column.
+     */
+    private static final int SANITY_BLOCKS = 96;
     /** The last REFERENCE column this lane finished, used as this column start hint. */
     private int lastTopX = Integer.MIN_VALUE, lastTopZ = Integer.MIN_VALUE, lastTopY = Integer.MIN_VALUE;
     private final Thread owner = Thread.currentThread();
@@ -474,13 +482,29 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
             // always been trusted on. The ceiling margin stays the last rung, so a column whose terrain
             // really does reach for the sky still walks what it always walked.
             c.leadChecked = true;
-            if (!state.isAir() && c.attemptStartY < c.highStartY) {
-                blockNanosTotal += System.nanoTime() - start;
-                leadRetries++;
-                int climb = nextLeadClimb(c.leadClimb);
-                c.leadClimb = climb;
-                c.resetWalk(Math.min(c.attemptStartY + climb, c.highStartY));
-                return;
+            if (!state.isAir()) {
+                if (c.attemptStartY < c.highStartY) {
+                    blockNanosTotal += System.nanoTime() - start;
+                    leadRetries++;
+                    int climb = nextLeadClimb(c.leadClimb);
+                    c.leadClimb = climb;
+                    c.resetWalk(Math.min(c.attemptStartY + climb, c.highStartY));
+                    return;
+                }
+                // The ladder is exhausted and the first block is still solid: the seed was wrong by more
+                // than the ladder can cover. Accepting this block as "the ground" is how a cliff column got
+                // recorded tens of blocks too low - and, being REFERENCE, it then seeded its neighbours and
+                // the error spread. Re-anchor on the density estimate and walk again instead.
+                if (!c.estimateFallbackUsed) {
+                    c.estimateFallbackUsed = true;
+                    blockNanosTotal += System.nanoTime() - start;
+                    leadRetries++;
+                    int estimate = estimate(c);
+                    c.resetWalk(Math.min(estimate + REFERENCE_LEAD_BLOCKS, bounds.maxYExclusive() - 1));
+                    return;
+                }
+                // Even the estimate starts inside rock: this column cannot be certified from above.
+                c.censored = true;
             }
         }
         long duration = System.nanoTime() - start;
@@ -507,7 +531,28 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     }
 
     private void complete(Cursor c, Quality quality) {
-        if (quality == Quality.REFERENCE) {
+        // C: a walk that had to climb, or that abandoned the neighbour seed, is exactly the walk whose
+        // height can be wrong. Cross-check it against the density estimate before it is allowed to count:
+        // one disagreement is re-walked from the estimate, a second one is not certifiable at all.
+        if (quality == Quality.REFERENCE && !c.sanityChecked
+                && (c.leadClimb > 0 || c.estimateFallbackUsed)) {
+            c.sanityChecked = true;
+            int estimate = estimate(c);
+            if (Math.abs(c.groundTop - estimate) > SANITY_BLOCKS) {
+                c.estimateFallbackUsed = true;
+                leadRetries++;
+                c.resetWalk(Math.min(estimate + REFERENCE_LEAD_BLOCKS, bounds.maxYExclusive() - 1));
+                return;
+            }
+        }
+        Quality certified = quality;
+        if (quality == Quality.REFERENCE && c.estimateFallbackUsed
+                && Math.abs(c.groundTop - estimate(c)) > SANITY_BLOCKS) {
+            // Even re-anchored on the estimate, the ground is somewhere this column cannot prove.
+            certified = Quality.CENSORED;
+            c.censored = true;
+        }
+        if (certified == Quality.REFERENCE) {
             // Only a fully certified walk is a trustworthy hint for the next column; a censored or coarse
             // result is not, and must not be carried forward.
             lastTopX = c.x; lastTopZ = c.z; lastTopY = c.groundTop;
@@ -520,7 +565,13 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         long duration = System.nanoTime() - start;
         maxBiomeNanos = Math.max(maxBiomeNanos, duration); observe(duration);
         biomeNanosTotal += duration;
-        c.result = new ColumnSample(c.groundTop, c.waterTop, c.bedTop, biome, quality, c.censored);
+        c.result = new ColumnSample(c.groundTop, c.waterTop, c.bedTop, biome, certified, c.censored);
+    }
+
+    /** {@return the density estimate for this column, computed at most once per walk attempt} */
+    private int estimate(Cursor c) {
+        if (c.estimateUsed == Integer.MIN_VALUE) c.estimateUsed = preliminarySurface(c.x, c.z);
+        return c.estimateUsed;
     }
 
     private void stop(Cursor c) {
@@ -572,6 +623,12 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         private int leadClimb;
         /** Whether the current attempt's first block has already been inspected. */
         private boolean leadChecked;
+        /** Whether the walk already fell back to the density estimate for this column. */
+        private boolean estimateFallbackUsed;
+        /** Whether the estimate cross-check already ran for this column. */
+        private boolean sanityChecked;
+        /** The density estimate, computed at most once per column. */
+        private int estimateUsed = Integer.MIN_VALUE;
         private NoiseChunk chunk;
         /** Whether the chunk's horizontal interpolation fractions describe this column already. */
         private boolean axesReady;
