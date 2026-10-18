@@ -402,6 +402,30 @@ final class ProductionSession implements AutoCloseable {
         int minChunkZ = Math.floorDiv(Math.min(originZ, endZ) - corridorHalfWidth, 16);
         int maxChunkZ = Math.floorDiv(Math.max(originZ, endZ) + corridorHalfWidth, 16);
 
+        // A coarse water map of the corridor, from the heightmaps alone: the world surface stands above
+        // the ocean floor exactly where there is water, so a station costs two heightmap reads and no
+        // density work at all. It runs off the route lease so it never blocks the startup, and its numbers
+        // are available whether or not the hydrology classifier ever certifies a column - which is the
+        // measurement the crossing rule has always been missing.
+        try {
+            var waterLease = planner.requireRoute(0L, Priority.PLAYER_PREFETCH);
+            waterLease.future().whenCompleteAsync((waterRoute, waterError) -> {
+                try {
+                    if (waterError == null && waterRoute != null) {
+                        local.plaincraft.greatwall.terrain.CorridorWaterScan.log(level, waterRoute);
+                    } else if (waterError != null) {
+                        GreatWallMod.LOGGER.warn("[GreatWall:water] CORRIDOR_WATER skipped reason={}",
+                                waterError.toString());
+                    }
+                } finally {
+                    waterLease.close();
+                }
+            }, server);
+        } catch (RuntimeException cannotLease) {
+            GreatWallMod.LOGGER.warn("[GreatWall:water] CORRIDOR_WATER not started reason={}",
+                    cannotLease.toString());
+        }
+
         // A structure scan's result is a pure function of the recipe (seed + world datapack/mods):
         // the same recipe always resolves the same footprints. Cache it so a re-open skips the
         // ~3 minute rescan. The cache is keyed by recipeHash, which already covers the terrain,

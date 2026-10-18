@@ -175,6 +175,8 @@ public final class PlannerScheduler implements AutoCloseable {
      * the index already holds, not of sampling new terrain. Publishing what has been sampled keeps the
      * save buildable; waiting for convergence never does.
      */
+    /** Fixed slice count per segment; see the comment where it is used. */
+    private static final int FINE_SAMPLE_SLICES_PER_SEGMENT = 48;
     private static final long FINE_SAMPLE_RUNAWAY_NUMERATOR = 4L;
     /** How often the semantic runaway test samples the counters. */
     private static final long FINE_SAMPLE_RUNAWAY_WINDOW_NANOS = TimeUnit.SECONDS.toNanos(5);
@@ -376,7 +378,12 @@ public final class PlannerScheduler implements AutoCloseable {
         // 4x the lane count so the queue holds fine-grained work units: a 12-lane session measured
         // 26% idle (9/12 RUNNABLE) because its 12 coarse slices per route (~8k columns each) left
         // the last lane's tail unabsorbed. Smaller slices let the queue work-steal that tail away.
-        int slices = Math.max(4, Math.min(laneState.size(), 16) * 4);
+        // A fixed slice count, not lanes * 4. The slice boundaries are where the session-wide claim set
+        // hands a column from one cursor to the next, so making the count depend on the lane number made
+        // the sampled set depend on how many cores the machine has: the same seed produced a different
+        // fine index on a four-lane and a sixteen-lane session. Forty-eight slices still work-steal across
+        // any lane count, so the parallel win is unchanged and the result no longer varies by machine.
+        int slices = FINE_SAMPLE_SLICES_PER_SEGMENT;
         // Progress is reported in sampled columns. A slice is roughly eight thousand columns, so a
         // slice-counting meter only moves every few thousand columns and reads as a hang. The
         // denominator starts at 1 and grows as slices are enqueued (their point ranges are known
