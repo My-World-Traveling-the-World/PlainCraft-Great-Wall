@@ -50,7 +50,8 @@ public final class RootSearchCache {
 
     /** Everything a cached axis must still match for it to be usable. */
     public record Identity(long seed, String dimension, int spawnX, int spawnY, int spawnZ,
-                           String terrainHash, String paletteHash, String templatesHash) {
+                           String terrainHash, String paletteHash, String templatesHash,
+                           String parametersHash) {
         public Identity {
             java.util.Objects.requireNonNull(dimension, "dimension");
         }
@@ -139,10 +140,14 @@ public final class RootSearchCache {
 
     /** Identity of the state a selection was made against. */
     public static Identity identityOf(long seed, String dimension, Point3i spawn,
-                                      String terrainHash, String paletteHash, String templatesHash) {
+                                      String terrainHash, String paletteHash, String templatesHash,
+                                      String parametersHash) {
         java.util.Objects.requireNonNull(spawn, "spawn");
+        // parametersHash is the config the axis was chosen against: wall length and the sampling grid both
+        // move where the search lands, so an entry from other parameters must not be reused. Files written
+        // before this field existed are rejected by the version bump, not by a null comparison.
         return new Identity(seed, dimension, spawn.x(), spawn.y(), spawn.z(),
-                terrainHash, paletteHash, templatesHash);
+                terrainHash, paletteHash, templatesHash, parametersHash);
     }
 
     /** Builds an entry from a completed search. */
@@ -166,7 +171,7 @@ public final class RootSearchCache {
     private static String toJson(Entry entry) {
         var identity = entry.identity();
         var json = new com.google.gson.JsonObject();
-        json.addProperty("version", 1);
+        json.addProperty("version", 2);
         var id = new com.google.gson.JsonObject();
         id.addProperty("seed", identity.seed());
         id.addProperty("dimension", identity.dimension());
@@ -176,6 +181,7 @@ public final class RootSearchCache {
         id.addProperty("terrainHash", identity.terrainHash());
         id.addProperty("paletteHash", identity.paletteHash());
         id.addProperty("templatesHash", identity.templatesHash());
+        id.addProperty("parametersHash", identity.parametersHash());
         json.add("identity", id);
         json.addProperty("axisOriginX", entry.axisOriginX());
         json.addProperty("axisOriginY", entry.axisOriginY());
@@ -193,7 +199,7 @@ public final class RootSearchCache {
     }
 
     private static Entry fromJson(com.google.gson.JsonObject json) {
-        if (json == null || !json.has("version") || json.get("version").getAsInt() != 1) return null;
+        if (json == null || !json.has("version") || json.get("version").getAsInt() != 2) return null;
         if (!json.has("identity") || !json.get("identity").isJsonObject()) return null;
         var id = json.getAsJsonObject("identity");
         var identity = new Identity(
@@ -201,7 +207,8 @@ public final class RootSearchCache {
                 id.get("dimension").getAsString(),
                 id.get("spawnX").getAsInt(), id.get("spawnY").getAsInt(), id.get("spawnZ").getAsInt(),
                 id.get("terrainHash").getAsString(), id.get("paletteHash").getAsString(),
-                id.get("templatesHash").getAsString());
+                id.get("templatesHash").getAsString(),
+                id.has("parametersHash") ? id.get("parametersHash").getAsString() : "");
         var entry = new Entry(identity,
                 json.get("axisOriginX").getAsInt(), json.get("axisOriginY").getAsInt(),
                 json.get("axisOriginZ").getAsInt(), json.get("exQ30").getAsInt(), json.get("ezQ30").getAsInt(),

@@ -738,7 +738,8 @@ public final class WorldBootstrap implements AutoCloseable {
         if (chosen == null) return Optional.empty();
         try {
             var identity = RootSearchCache.identityOf(seed, "minecraft:overworld", chosen,
-                    inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash());
+                    inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash(),
+                    defaultConfig().parametersHash());
             var entry = RootSearchCache.read(directory, identity);
             if (entry.isPresent()) return entry;
             GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_CACHE_MISS searching; no usable entry at {}",
@@ -757,7 +758,8 @@ public final class WorldBootstrap implements AutoCloseable {
         if (chosen == null) return;
         try {
             var identity = RootSearchCache.identityOf(seed, "minecraft:overworld", chosen,
-                    inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash());
+                    inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash(),
+                    defaultConfig().parametersHash());
             RootSearchCache.write(directory, RootSearchCache.of(identity, selection.axis(),
                     selection.radiusIndex(), selection.angleIndex(), selection.axisIndex()));
             GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_CACHE_STORED axis={} radiusIndex={} angleIndex={} "

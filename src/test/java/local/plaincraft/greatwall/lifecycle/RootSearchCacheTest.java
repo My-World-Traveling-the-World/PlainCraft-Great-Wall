@@ -26,10 +26,11 @@ class RootSearchCacheTest {
     private static final String TERRAIN = "a".repeat(64);
     private static final String PALETTE = "b".repeat(64);
     private static final String TEMPLATES = "c".repeat(64);
+    private static final String PARAMETERS = "0".repeat(64);
 
     private static RootSearchCache.Identity identity(long seed, int spawnX) {
         return RootSearchCache.identityOf(seed, "minecraft:overworld", new Point3i(spawnX, 116, 866),
-                TERRAIN, PALETTE, TEMPLATES);
+                TERRAIN, PALETTE, TEMPLATES, PARAMETERS);
     }
 
     private static Axis axis() {
@@ -57,7 +58,7 @@ class RootSearchCacheTest {
         // Same everything except the terrain hash: the ground the axis was chosen against
         // has changed, so the axis no longer describes this world.
         var changedTerrain = RootSearchCache.identityOf(17L, "minecraft:overworld", new Point3i(0, 116, 866),
-                "d".repeat(64), PALETTE, TEMPLATES);
+                "d".repeat(64), PALETTE, TEMPLATES, PARAMETERS);
         assertTrue(RootSearchCache.read(world, changedTerrain).isEmpty(),
                 "a changed terrain hash must invalidate the entry");
     }
@@ -70,14 +71,19 @@ class RootSearchCacheTest {
         assertTrue(RootSearchCache.read(world, identity(18L, 0)).isEmpty(), "a different seed must not match");
         assertTrue(RootSearchCache.read(world, identity(17L, 32)).isEmpty(), "a different spawn must not match");
         assertTrue(RootSearchCache.read(world, RootSearchCache.identityOf(17L, "minecraft:the_nether",
-                new Point3i(0, 116, 866), TERRAIN, PALETTE, TEMPLATES)).isEmpty(),
+                new Point3i(0, 116, 866), TERRAIN, PALETTE, TEMPLATES, PARAMETERS)).isEmpty(),
                 "a different dimension must not match");
         assertTrue(RootSearchCache.read(world, RootSearchCache.identityOf(17L, "minecraft:overworld",
-                new Point3i(0, 116, 866), TERRAIN, PALETTE, "e".repeat(64))).isEmpty(),
+                new Point3i(0, 116, 866), TERRAIN, PALETTE, "e".repeat(64), PARAMETERS)).isEmpty(),
                 "a different palette hash must not match");
         assertTrue(RootSearchCache.read(world, RootSearchCache.identityOf(17L, "minecraft:overworld",
-                new Point3i(0, 116, 866), TERRAIN, "f".repeat(64), TEMPLATES)).isEmpty(),
+                new Point3i(0, 116, 866), TERRAIN, "f".repeat(64), TEMPLATES, PARAMETERS)).isEmpty(),
                 "a different templates hash must not match");
+        // Wall length and the sampling grid both move where the search lands, so an entry chosen under
+        // other parameters is not this world selection even though the terrain is unchanged.
+        assertTrue(RootSearchCache.read(world, RootSearchCache.identityOf(17L, "minecraft:overworld",
+                new Point3i(0, 116, 866), TERRAIN, PALETTE, TEMPLATES, "1".repeat(64))).isEmpty(),
+                "a different parameters hash must not match");
     }
 
     @Test
