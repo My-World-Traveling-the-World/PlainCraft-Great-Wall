@@ -126,20 +126,21 @@ public final class PlanningChunkCompiler {
             var owner = entry.getKey();
             var items = entry.getValue();
             var cells = new java.util.ArrayList<RealizationCell>();
-            var ownerPlans = new java.util.ArrayList<SegmentPlan>();
             var seen = new java.util.LinkedHashSet<CellKey>();
             var before = new HashMap<Point3i, String>();
             Throwable cellFailure = null;
             for (var item : items) {
                 if (!seen.add(item.cell())) continue;
-                ownerPlans.add(item.plan());
                 Map<Point3i, SurfaceProbe.ColumnView> columns = cellColumns.computeIfAbsent(
                         item.cell(), ignored -> provider.columnsFor(item.owners()));
                 Object realization = cellRealizations.get(item.cell());
                 if (realization == null) {
                     try {
-                        realization = resolveCell(item.cell(), columns,
-                                new PlanWindow(List.of(item.plan())), protectionHash);
+                        // The whole launch window, not this item's plan: a cell that straddles a segment
+                        // boundary is admitted by both segments, and resolving it against only the first
+                        // one clips away everything the other segment built inside it. A cell's
+                        // realization is a function of the cell and the window, never of which owner asks.
+                        realization = resolveCell(item.cell(), columns, plans, protectionHash);
                     } catch (Throwable failure) {
                         // Memoised so every owner of this cell fails the same way, instead of each paying
                         // the realization again to hit the same failure.
@@ -169,10 +170,9 @@ public final class PlanningChunkCompiler {
             // named in the log, and the remaining owners still publish.
             try {
                 if (cellFailure != null) throw cellFailure;
-                var planWindow = new PlanWindow(List.copyOf(ownerPlans));
                 var plan = compiler.bindCoverage(
                         compiler.compile(owner, recipeHash, List.copyOf(cells), before),
-                        coverage.forChunk(owner, planWindow, windowBounds).hash());
+                        coverage.forChunk(owner, plans, windowBounds).hash());
                 if (result.putIfAbsent(owner, plan) != null) {
                     // Cannot happen with one entry per owner; loud if a future change reintroduces the
                     // silent overwrite this grouping exists to remove.

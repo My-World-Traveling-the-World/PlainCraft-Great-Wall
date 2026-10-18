@@ -446,7 +446,9 @@ public final class PlannerScheduler implements AutoCloseable {
                 // gates: what has been merged so far is a superset of the columns it needs (the excess work
                 // is re-walking columns the index already holds), and waiting for `pending` to drain is
                 // exactly what never happened in the measured session.
-                if (!fineSampleForced.get()) {
+                // This call's own flag, not the field: a later call replaces the field, and a completion
+                // reading the field would then see that call's force state instead of its own.
+                if (!forcedFlag.get()) {
                     if (enqueueing.get()) return;
                     if (routesPending.get() > 0 || slicesPending.get() > 0) return;
                 }
