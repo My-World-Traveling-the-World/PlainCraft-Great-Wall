@@ -416,6 +416,12 @@ final class ProductionSession implements AutoCloseable {
                     } else if (waterError != null) {
                         GreatWallMod.LOGGER.warn("[GreatWall:water] CORRIDOR_WATER skipped reason={}",
                                 waterError.toString());
+                    } else {
+                        // Neither a route nor an error: the future completed with nothing at all. This
+                        // branch printing nothing is why the measurement went missing from runs whose log
+                        // held every other water line.
+                        GreatWallMod.LOGGER.warn(
+                                "[GreatWall:water] CORRIDOR_WATER skipped reason=null-route");
                     }
                 } finally {
                     waterLease.close();

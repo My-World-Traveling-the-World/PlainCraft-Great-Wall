@@ -189,8 +189,8 @@ public final class PlanningChunkCompiler {
             } catch (Throwable failure) {
                 failed++;
                 local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
-                        "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] failed={}/{}",
-                        owner.x(), owner.z(), failed, ownerCount, failure);
+                        "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] failed={}/{} failure={}",
+                        owner.x(), owner.z(), failed, ownerCount, summarize(failure), failure);
             }
             done++;
             // Progress reporting never costs the window its result: the sink writes a loading-card
@@ -237,6 +237,22 @@ public final class PlanningChunkCompiler {
                 List.copyOf(structures), Map.of(), 0, protectionHash));
     }
 
+
+    /**
+     * {@return a one-line type-and-message for a failure}
+     *
+     * <p>The stack trace still goes to the log as the trailing throwable, but a tail-truncated or
+     * rotated log loses it - and a run where every owner failed identically then reads as "no reason
+     * given" for a thousand lines. This field keeps the reason greppable and countable.
+     */
+    private static String summarize(Throwable failure) {
+        if (failure == null) return "null";
+        String type = failure.getClass().getSimpleName();
+        String message = failure.getMessage();
+        if (message == null || message.isBlank()) return type;
+        String line = type + ": " + message.replace('\n', ' ').replace('\r', ' ');
+        return line.length() <= 240 ? line : line.substring(0, 240) + "...";
+    }
 
     private DimensionBounds recipeBounds() {
         // The planning compiler does not hold a WorldRecipe; derive a conservative bound from the
