@@ -82,20 +82,30 @@ public final class PlanningChunkCompiler {
         // one - so the fix is to hand it every cell that admits the owner.
         var byOwner = new java.util.LinkedHashMap<ChunkKey, java.util.ArrayList<Owned>>();
         for (var plan : plans.plans()) {
-            long from = plan.prefix().lengthBeforeQ8();
-            long to = from + plan.geometry().localSQ8().getLast();
-            var firstCell = Math.floorDiv(from, 64L * 256);
-            var lastCell = Math.floorDiv(to + 64L * 256 - 1, 64L * 256);
-            for (long cell = firstCell; cell <= lastCell; cell++) {
-                var cellKey = new CellKey(recipeHash, dimension, cell);
-                var owners = coverage.realizationOwners(cellKey, new PlanWindow(List.of(plan)));
-                for (var owner : owners) {
-                    // The whole owner list travels with the item: a component's support table and its
-                    // ground-exit walk read every cell of its axis-aligned bounds, which reaches into
-                    // the neighbouring chunks, so the column map of one owner alone cannot serve it.
-                    byOwner.computeIfAbsent(owner, ignored -> new java.util.ArrayList<>())
-                            .add(new Owned(cellKey, owner, owners, plan));
+            try {
+                long from = plan.prefix().lengthBeforeQ8();
+                long to = from + plan.geometry().localSQ8().getLast();
+                var firstCell = Math.floorDiv(from, 64L * 256);
+                var lastCell = Math.floorDiv(to + 64L * 256 - 1, 64L * 256);
+                for (long cell = firstCell; cell <= lastCell; cell++) {
+                    var cellKey = new CellKey(recipeHash, dimension, cell);
+                    var owners = coverage.realizationOwners(cellKey, new PlanWindow(List.of(plan)));
+                    for (var owner : owners) {
+                        // The whole owner list travels with the item: a component's support table and its
+                        // ground-exit walk read every cell of its axis-aligned bounds, which reaches into
+                        // the neighbouring chunks, so the column map of one owner alone cannot serve it.
+                        byOwner.computeIfAbsent(owner, ignored -> new java.util.ArrayList<>())
+                                .add(new Owned(cellKey, owner, owners, plan));
+                    }
                 }
+            } catch (Throwable failure) {
+                // Enumeration used to sit outside every try: one coverage failure (its CAPACITY guard, an
+                // unknown footprint) threw out of compileWindow and the whole window published nothing.
+                // Dropping this plan's cells costs the owners that only it admits, not the other plans.
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
+                        "[GreatWall:S1C] PLANNING_COMPILE_PLAN_SKIPPED prefix={} failure={} "
+                                + "(only this plan's owners are dropped)",
+                        plan.prefix().lengthBeforeQ8(), summarize(failure), failure);
             }
         }
         var result = new HashMap<ChunkKey, ChunkWritePlan>();
@@ -136,8 +146,17 @@ public final class PlanningChunkCompiler {
             for (var item : items) {
                 if (!seen.add(item.cell())) continue;
                 ownerPlans.add(item.plan());
-                Map<Point3i, SurfaceProbe.ColumnView> columns = cellColumns.computeIfAbsent(
-                        item.cell(), ignored -> provider.columnsFor(item.owners()));
+                Map<Point3i, SurfaceProbe.ColumnView> columns;
+                try {
+                    columns = cellColumns.computeIfAbsent(
+                            item.cell(), ignored -> provider.columnsFor(item.owners()));
+                } catch (Throwable failure) {
+                    // Gathering a cell's columns is not "one owner's failure" but it is still a cell's
+                    // failure: without this the exception escaped the whole window and took all 2131
+                    // owners with it. Skipping this owner is the same contract as the compile below.
+                    cellFailure = failure;
+                    break;
+                }
                 Object realization = cellRealizations.get(item.cell());
                 if (realization == null) {
                     try {

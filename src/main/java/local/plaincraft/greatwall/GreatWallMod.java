@@ -35,7 +35,15 @@ public final class GreatWallMod implements ModInitializer {
             local.plaincraft.greatwall.compat.ftb.FtbIntegration.initialize();
         }
         LOGGER.info("[GreatWall:S0-01] Common entrypoint loaded; world generation disabled");
-        RuntimeVersions.capture().forEach(version -> LOGGER.info(
-                "[GreatWall:version] {}={}", version.id(), version.version()));
+        // One line, not 767. This list was printed one INFO line per mod on every launch: measured
+        // 767 lines / ~100 KB in a single session log, for a list nothing reads at INFO. The digest
+        // the wall actually depends on is printed by the fingerprint stage; the full list is one
+        // DEBUG line away when a terrain-mismatch diagnosis needs it.
+        var versions = RuntimeVersions.capture();
+        if (LOGGER.isDebugEnabled()) {
+            versions.forEach(version -> LOGGER.debug(
+                    "[GreatWall:version] {}={}", version.id(), version.version()));
+        }
+        LOGGER.info("[GreatWall:version] captured {} mod versions (full list at DEBUG)", versions.size());
     }
 }

@@ -151,6 +151,8 @@ public final class RootSearch {
     /** Why pads were refused, so a ring that dies of one cause says so in one line. */
     private int coarseRejectedCensored, coarseRejectedSupport, coarseRejectedWater, coarseRejectedRelief,
             coarseRejectedOther;
+    /** The last ranked count, so a failure message can carry it. */
+    private int lastRanked;
     private int coarseWetMin = Integer.MAX_VALUE, coarseWetMax = Integer.MIN_VALUE;
     private int coarseSpreadMin = Integer.MAX_VALUE, coarseSpreadMax = Integer.MIN_VALUE;
     private long coarseWetSum, coarseSpreadSum;
@@ -208,6 +210,7 @@ public final class RootSearch {
     public Selection finish() {
         claimOwner();
         if (phase != 3 || best == null) throw new IllegalStateException("root search is incomplete");
+        logPadRejects();
         // ═══════════════════════════════════════════════════════════════════════════
         // 【用户明确授权的保留项 — 2026-10-05 拍板，禁止在未重新授权前回退】
         // 授权内容：移除 40ms 稳态采样的硬拒绝（原 `if (over40msBatches != 0) throw ...`）。
@@ -381,12 +384,18 @@ public final class RootSearch {
         // river-cut. The bound still keeps a fort out of a lake, and off ground that cannot carry it.
         if (failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS) invalid = true;
         if (wet > MAX_WET_FOOTPRINT_CELLS) invalid = true;
+        // Relief is monotone for the same reason water and support are: min only falls and max only
+        // grows, so a pad that already spans more than MAX_FOOTPRINT_RELIEF can never pass. The coarse
+        // phase has always made this exact argument (see MAX_COARSE_RELIEF); the pad walk was still
+        // completing all 2304 cells to reach the same verdict.
+        if (max - min > MAX_FOOTPRINT_RELIEF) invalid = true;
         sampleIndex++;
         // (A) Exact-equivalence early exit: both tolerated bounds only grow while the pad is walked, so
         // once either is crossed the pad is refused whatever the remaining cells hold.
         if (invalid) {
             rejectFootprint(current, wet > MAX_WET_FOOTPRINT_CELLS,
-                    failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS, false);
+                    failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS,
+                    max - min > MAX_FOOTPRINT_RELIEF);
             return;
         }
         if (sampleIndex < 48 * 48) return;
@@ -786,6 +795,7 @@ public final class RootSearch {
      * wet world from a steep one from a probe that returns nothing usable.
      */
     private void logCoarseSummary(int ranked) {
+        lastRanked = ranked;
         if (ranked == 0) {
             local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
                     "[GreatWall:S1C] ROOT_SCREEN_SUMMARY ring={} ranked=0 invalid={} gateRejected={} historicPass={} -- no ring point produced usable samples",
@@ -797,11 +807,22 @@ public final class RootSearch {
                 RADII.length * 36, ranked, coarseInvalid, coarseRejected, coarseHistoric,
                 coarseWetMin, coarseWetSum / rank(coarseAdmitted), coarseWetMax,
                 coarseSpreadMin, coarseSpreadSum / rank(coarseAdmitted), coarseSpreadMax);
-        // Why the pads that did get walked were refused. One line, one per search: a ring that dies of a
-        // single cause should not need eight rejection lines read end to end to see it.
+    }
+
+    /**
+     * One line naming why the pads that were actually walked got refused.
+     *
+     * <p>Deliberately not printed from the coarse summary: the five counters only move during the
+     * footprint walk, which runs after the coarse phase, so printing it there produced a line of zeros
+     * on every search. This is called when the search ends, whichever way it ends.
+     */
+    private void logPadRejects() {
+        int total = coarseRejectedCensored + coarseRejectedSupport + coarseRejectedWater
+                + coarseRejectedRelief + coarseRejectedOther;
+        if (total == 0) return;
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                "[GreatWall:S1C] ROOT_PAD_REJECTS censored={} support={} water={} relief={} other={}",
-                coarseRejectedCensored, coarseRejectedSupport, coarseRejectedWater,
+                "[GreatWall:S1C] ROOT_PAD_REJECTS pads={} censored={} support={} water={} relief={} other={}",
+                total, coarseRejectedCensored, coarseRejectedSupport, coarseRejectedWater,
                 coarseRejectedRelief, coarseRejectedOther);
     }
 
@@ -906,8 +927,22 @@ public final class RootSearch {
         if (owner != Thread.currentThread()) throw new IllegalStateException("root continuation belongs to another lane");
     }
 
-    private static WallFailure notFound() {
+    private WallFailure notFound() {
+        // The failure message is the only line a reader sees when a session has no site at all, so it
+        // carries the counts the summary would have carried: which phase ran out, how many candidates
+        // were ranked, and why the pads that were walked were refused.
+        logPadRejects();
         return new WallFailure(FailureCode.ROOT_NOT_FOUND, "all frozen " + RADII[0] + ".."
-                + RADII[RADII.length - 1] + " ring/footprint/axis candidates rejected");
+                + RADII[RADII.length - 1] + " ring/footprint/axis candidates rejected (phase=" + phase
+                + " candidates=" + candidateIndex + " ranked=" + lastRanked
+                + " coarseInvalid=" + coarseInvalid + " coarseRejected=" + coarseRejected
+                + " historicPass=" + coarseHistoric + " pads={" + padTally() + "})");
+    }
+
+    /** {@return "censored=3 support=1 water=2 relief=4 other=0"} */
+    private String padTally() {
+        return "censored=" + coarseRejectedCensored + " support=" + coarseRejectedSupport
+                + " water=" + coarseRejectedWater + " relief=" + coarseRejectedRelief
+                + " other=" + coarseRejectedOther;
     }
 }

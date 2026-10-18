@@ -500,6 +500,10 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
                     blockNanosTotal += System.nanoTime() - start;
                     leadRetries++;
                     int estimate = estimate(c);
+                    // A re-anchor is a fresh search, not a continuation: keeping the old ladder step
+                    // would start it at estimate+32+2*climb, hundreds of blocks above the estimate this
+                    // branch exists to trust.
+                    c.leadClimb = 0;
                     c.resetWalk(Math.min(estimate + REFERENCE_LEAD_BLOCKS, bounds.maxYExclusive() - 1));
                     return;
                 }
@@ -541,6 +545,9 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
             if (Math.abs(c.groundTop - estimate) > SANITY_BLOCKS) {
                 c.estimateFallbackUsed = true;
                 leadRetries++;
+                // Fresh search: drop the ladder step, or the re-anchor is silently lifted to
+                // estimate+32+2*climb and the walk spends hundreds of blocks proving nothing.
+                c.leadClimb = 0;
                 c.resetWalk(Math.min(estimate + REFERENCE_LEAD_BLOCKS, bounds.maxYExclusive() - 1));
                 return;
             }

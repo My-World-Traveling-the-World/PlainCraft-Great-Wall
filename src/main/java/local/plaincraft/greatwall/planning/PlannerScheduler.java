@@ -454,6 +454,12 @@ public final class PlannerScheduler implements AutoCloseable {
         // decrement routesPending to zero) before the loop reaches the second segment, and the index
         // would then be published missing the columns of every later segment.
         var enqueueing = new java.util.concurrent.atomic.AtomicBoolean(true);
+        // The body below publishes an index, writes the cache file and prints the stage summary. Five
+        // call sites drive this callback, and once the runaway guard forces a publish every later call
+        // used to re-run all of it: a measured session printed six FINE_SAMPLE_DONE lines, rebuilt the
+        // index five extra times and rewrote the cache file five extra times. After the gates, so an
+        // early return from a half-drained state does not consume the one chance.
+        var published = new java.util.concurrent.atomic.AtomicBoolean(false);
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 1);
         var completion = new Runnable() {
             @Override public void run() {
@@ -467,6 +473,7 @@ public final class PlannerScheduler implements AutoCloseable {
                     if (enqueueing.get()) return;
                     if (routesPending.get() > 0 || slicesPending.get() > 0) return;
                 }
+                if (!published.compareAndSet(false, true)) return;
                 int done = sampledColumns.get();
                 // The estimate, not max(done, estimate): clamping the total to the done count made the
                 // fraction identically 100% for the whole tail of a run whose estimate ran low, so the
