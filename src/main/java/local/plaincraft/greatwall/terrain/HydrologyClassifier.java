@@ -18,6 +18,15 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** Width evidence uses natural reference columns, never decorated chunks or adjacent hydrology. */
 public final class HydrologyClassifier {
+    /**
+     * Documented crossing limit: a water span narrower than this crosses, at or above it terminates.
+     *
+     * <p>From the handover note - rivers under 50 blocks cross, 50 and wider terminate. The classifier has
+     * never had a reliable way to measure the span, so a width it cannot certify is treated as WIDE, which
+     * is the policy approved at S1C. This constant exists so the measurement below can report what the
+     * documented rule would have decided, without changing what the code does.
+     */
+    public static final int RIVER_CROSS_MAX_BLOCKS = 50;
     private static final List<Point2q> DIRECTIONS = directions();
     public HydrologyClassifier() {}
 
@@ -80,10 +89,45 @@ public final class HydrologyClassifier {
      * continuing to certify it only burns time. Already certified NARROW /
      * WIDE / SUPPORT_GAP evidence is preserved untouched.
      */
+    /**
+     * Blocks of continuous water around one station, measured on the route scan that already ran.
+     *
+     * <p>This is the quantity every forced completion was missing. The coarse and route scans have already
+     * classified each station as wet or dry, so the span is a count over data in hand: no riverbed, no new
+     * sampling, no extra budget.
+     */
+    private static long continuousWaterBlocks(Cursor c, int around) {
+        int stations = Math.min(c.trace.size(), c.traceSamples.size());
+        if (stations == 0) return 0L;
+        int start = Math.max(0, Math.min(stations - 1, around));
+        int from = start;
+        int to = start;
+        while (from > 0 && waterColumnAt(c, from - 1)) from--;
+        while (to + 1 < stations && waterColumnAt(c, to + 1)) to++;
+        return Math.max(0L, c.trace.get(to).s - c.trace.get(from).s);
+    }
+
+    private static boolean waterColumnAt(Cursor c, int index) {
+        var sample = c.traceSamples.get(index);
+        return sample != null && sample.waterTopY().isPresent();
+    }
+
     public void forceComplete(Cursor c) {
         Objects.requireNonNull(c, "cursor");
         c.claimOwner();
         if (c.done) return;
+        // Measure the span before abandoning the segment, and report what the documented rule would have
+        // decided. The outcome stays WIDE - that is the approved policy - but this line turns "how much are
+        // we losing to an uncertifiable width" into a number instead of a guess, which is the first of the
+        // four missing definitions the final review named.
+        long span = continuousWaterBlocks(c, c.run != null ? c.run.from
+                : (c.runs.isEmpty() ? 0 : c.runs.get(Math.min(c.runIndex, c.runs.size() - 1)).from));
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:hydro] RIVER_SPAN span={} threshold={} documentedDecision={} outcome=WIDE "
+                        + "phase={} stations={} - policy unchanged; this measures the span certification "
+                        + "never had",
+                span, RIVER_CROSS_MAX_BLOCKS, span < RIVER_CROSS_MAX_BLOCKS ? "CROSS" : "WIDE",
+                c.phase, c.trace.size());
         // A column that was mid-sample must be finished before the cursor is
         // abandoned, otherwise the oracle still owns an open column and the
         // next begin() refuses with "finish the current natural column".
