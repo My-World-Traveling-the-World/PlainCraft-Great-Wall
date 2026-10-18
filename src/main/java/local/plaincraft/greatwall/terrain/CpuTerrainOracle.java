@@ -84,6 +84,17 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      * old fixed-margin walk.
      */
     private static final int REFERENCE_LEAD_BLOCKS = 32;
+    /**
+     * Lead used when the start height comes from the neighbouring column instead of an estimate.
+     *
+     * <p>A cross-section is walked column by column and neighbouring surfaces differ by a couple of blocks,
+     * so ten above the last real height starts almost exactly at the surface. The retry ladder still climbs
+     * in 32-block steps when the terrain turns out to be a cliff, so a bad seed costs a retry, never a wrong
+     * answer.
+     */
+    private static final int NEIGHBOUR_LEAD_BLOCKS = 10;
+    /** The last REFERENCE column this lane finished, used as this column start hint. */
+    private int lastTopX = Integer.MIN_VALUE, lastTopZ = Integer.MIN_VALUE, lastTopY = Integer.MIN_VALUE;
     private final Thread owner = Thread.currentThread();
     private final UUID identity = UUID.randomUUID();
     private final RandomState randomState;
@@ -496,6 +507,11 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     }
 
     private void complete(Cursor c, Quality quality) {
+        if (quality == Quality.REFERENCE) {
+            // Only a fully certified walk is a trustworthy hint for the next column; a censored or coarse
+            // result is not, and must not be carried forward.
+            lastTopX = c.x; lastTopZ = c.z; lastTopY = c.groundTop;
+        }
         stop(c);
         long start = System.nanoTime();
         String biome = biomeSource.getNoiseBiome(Math.floorDiv(c.x, 4),
@@ -566,14 +582,19 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         private Cursor(int x, int z, SampleKind kind) {
             this.x = x; this.z = z; this.kind = kind;
             if (kind == SampleKind.REFERENCE) {
-                // Start with a short lead above the smooth terrain surface instead of walking the
-                // air column from the top of a tall dimension - the single biggest cost of the fine
-                // sample. The lead is raised to the full historical margin only when the first
-                // walked block shows the estimate sat at or below the real surface. The coarse probe
-                // keeps its own full top-down walk, so it is untouched.
-                int surface = preliminarySurface(x, z);
+                // Start with a short lead above the surface instead of walking the air column from the top
+                // of a tall dimension - the single biggest cost of the fine sample. The lead is raised to
+                // the full historical margin only when the first walked block shows the estimate sat at or
+                // below the real surface.
                 int top = bounds.maxYExclusive() - 1;
-                this.lowStartY = Math.min(surface + REFERENCE_LEAD_BLOCKS, top);
+                // Seed from the column just sampled when it is adjacent: a cross-section is walked one
+                // column after another, so the previous real height is a far better start than a density
+                // bisection, and it costs nothing - the bisection is skipped entirely in that case.
+                boolean adjacent = Math.abs(x - lastTopX) <= 2 && Math.abs(z - lastTopZ) <= 2
+                        && lastTopY != Integer.MIN_VALUE;
+                int surface = adjacent ? lastTopY : preliminarySurface(x, z);
+                int lead = adjacent ? NEIGHBOUR_LEAD_BLOCKS : REFERENCE_LEAD_BLOCKS;
+                this.lowStartY = Math.min(surface + lead, top);
                 this.highStartY = Math.min(surface + settings.seaLevel() - bounds.minY() + 32, top);
                 seekStart(this.lowStartY);
             }
