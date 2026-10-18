@@ -119,6 +119,7 @@ public final class PlanningChunkCompiler {
         var cellRealizations = new HashMap<CellKey, Object>();
         int done = 0;
         int failed = 0;
+        var tally = new FailureTally(FAILURE_DETAIL_LIMIT);
         long started = System.nanoTime();
         long lastReport = started;
         long reportInterval = java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
@@ -188,9 +189,20 @@ public final class PlanningChunkCompiler {
                 }
             } catch (Throwable failure) {
                 failed++;
-                local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
-                        "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] failed={}/{} failure={}",
-                        owner.x(), owner.z(), failed, ownerCount, summarize(failure), failure);
+                String kind = tally.record(failure);
+                // One stack trace per distinct cause, not one per owner: a real run failed 1783 owners
+                // with the same exception and wrote about fifty thousand lines doing it. The first few
+                // keep their trace (that is what a diagnosis needs), the rest are counted.
+                if (tally.shouldLogDetail(kind)) {
+                    local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
+                            "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] failed={}/{} failure={}",
+                            owner.x(), owner.z(), failed, ownerCount, kind, failure);
+                } else if (tally.suppressed(kind) == 1) {
+                    local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
+                            "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] failed={}/{} failure={} "
+                                    + "(stack trace suppressed from here; see COMPILE_FAILURES at the end)",
+                            owner.x(), owner.z(), failed, ownerCount, kind);
+                }
             }
             done++;
             // Progress reporting never costs the window its result: the sink writes a loading-card
@@ -216,6 +228,12 @@ public final class PlanningChunkCompiler {
         if (failed > 0) {
             local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
                     "[GreatWall:S1C] PLANNING_COMPILE_PARTIAL owners={} failed={}", result.size(), failed);
+            // The whole point of the tally: a hundred owners failing for one reason is one bug, and the
+            // summary says which. A hundred owners failing for a hundred reasons is not, and the summary
+            // says that too - without a hundred stack traces.
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                    "[GreatWall:S1C] COMPILE_FAILURES failed={} distinct={} {}", failed, tally.distinct(),
+                    tally.summary(FAILURE_SUMMARY_LIMIT));
         }
         // Map.copyOf rejects nulls outright, and a null here would take the whole window down with it,
         // so drop any owner the compiler refused to produce a plan for. A read-only view rather than a
@@ -237,6 +255,70 @@ public final class PlanningChunkCompiler {
                 List.copyOf(structures), Map.of(), 0, protectionHash));
     }
 
+
+    /** How many owner failures of one cause keep their stack trace; the rest are only counted. */
+    static final int FAILURE_DETAIL_LIMIT = 5;
+    /** How many distinct causes the end-of-window summary names. */
+    static final int FAILURE_SUMMARY_LIMIT = 5;
+
+    /**
+     * Counts compile failures by their one-line cause, so a mass failure stays one screen of log.
+     *
+     * <p>Measured: a real run failed 1783 of 2131 owners with the same exception, and printing the
+     * throwable for each wrote roughly fifty thousand lines. The first few traces are what a diagnosis
+     * needs; after that the count is the information, and the order of magnitude is all that matters.
+     */
+    static final class FailureTally {
+        private final java.util.Map<String, Integer> counts = new java.util.LinkedHashMap<>();
+        private final int detailLimit;
+
+        FailureTally(int detailLimit) {
+            this.detailLimit = Math.max(0, detailLimit);
+        }
+
+        String record(Throwable failure) {
+            String kind = summarize(failure);
+            counts.merge(kind, 1, Integer::sum);
+            return kind;
+        }
+
+        /** {@return whether this occurrence still gets its stack trace} */
+        boolean shouldLogDetail(String kind) {
+            return count(kind) <= detailLimit;
+        }
+
+        /** {@return how many occurrences of this cause were already suppressed} */
+        int suppressed(String kind) {
+            return Math.max(0, count(kind) - detailLimit);
+        }
+
+        int distinct() {
+            return counts.size();
+        }
+
+        int total() {
+            int total = 0;
+            for (int value : counts.values()) total += value;
+            return total;
+        }
+
+        /** {@return "219x Type: message | 178x Type: message | +13 more"} */
+        String summary(int limit) {
+            var sorted = new java.util.ArrayList<>(counts.entrySet());
+            sorted.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+            StringBuilder text = new StringBuilder();
+            for (int i = 0; i < Math.min(Math.max(0, limit), sorted.size()); i++) {
+                if (i > 0) text.append(" | ");
+                text.append(sorted.get(i).getValue()).append('x').append(' ').append(sorted.get(i).getKey());
+            }
+            if (sorted.size() > limit) text.append(" | +").append(sorted.size() - Math.max(0, limit)).append(" more");
+            return text.toString();
+        }
+
+        private int count(String kind) {
+            return counts.getOrDefault(kind, 0);
+        }
+    }
 
     /**
      * {@return a one-line type-and-message for a failure}

@@ -477,10 +477,20 @@ public final class PlannerScheduler implements AutoCloseable {
                 // Recorded here as well as at PREWARM_COMPLETE: the fine sample is the stage whose
                 // cost scales with the cross-section width, and its cache counters are what decide
                 // whether a slow run is the terrain walk or the chunk cache.
+                // Cost split, so "is the walk or the cache the bottleneck" is readable without dividing
+                // by hand: this is the number the slice-on-demand decision (B2) waits on.
+                long blockMs = laneDiagnostic("block-ms");
+                long sliceMs = laneDiagnostic("slice-ms");
+                long constructMs = laneDiagnostic("construct-ms");
+                long cellMs = laneDiagnostic("cell-ms");
+                long biomeMs = laneDiagnostic("biome-ms");
+                long surfaceMs = laneDiagnostic("surface-ms");
+                long walkMs = blockMs + sliceMs + constructMs + cellMs + biomeMs + surfaceMs;
                 GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_DONE columns={} raw={} repeatedPct={} "
                                 + "expectedColumns={} chunkCacheHits={} chunkCacheMisses={} lanes={} "
                                 + "walkedBlocks={} blocksPerColumn={} leadRetries={} retryPct={} "
                                 + "blockMs={} sliceMs={} constructMs={} cellMs={} biomeMs={} surfaceMs={} "
+                                + "blockPct={} slicePct={} walkMs={} msPerColumn={} "
                                 + "surfaceMemoHits={} sections={} wideSections={} widePct={} "
                                 + "columnsPerSection={} probesPerSection={} probesPerColumn={}",
                         done, rawColumns.get(),
@@ -492,9 +502,9 @@ public final class PlannerScheduler implements AutoCloseable {
                         done == 0 ? 0 : laneDiagnostic("walked-blocks") / done,
                         laneDiagnostic("lead-retries"),
                         done == 0 ? 0 : Math.round(100f * laneDiagnostic("lead-retries") / done),
-                        laneDiagnostic("block-ms"), laneDiagnostic("slice-ms"),
-                        laneDiagnostic("construct-ms"), laneDiagnostic("cell-ms"),
-                        laneDiagnostic("biome-ms"), laneDiagnostic("surface-ms"),
+                        blockMs, sliceMs, constructMs, cellMs, biomeMs, surfaceMs,
+                        percentOf(blockMs, walkMs), percentOf(sliceMs, walkMs), walkMs,
+                        done == 0 ? 0 : walkMs / done,
                         laneDiagnostic("surface-memo-hits"),
                         walkedSections.get(), wideSections.get(),
                         walkedSections.get() == 0 ? 0
@@ -1155,6 +1165,11 @@ public final class PlannerScheduler implements AutoCloseable {
         var timer = fineSampleTimer;
         fineSampleTimer = null;
         if (timer != null) timer.cancel(false);
+    }
+
+    /** {@return the share of {@code whole} that {@code part} accounts for, as a whole percent} */
+    private static int percentOf(long part, long whole) {
+        return whole <= 0L ? 0 : (int) Math.round(100.0D * part / whole);
     }
 
     /** Sum of one per-lane diagnostic counter across the native lanes. */
