@@ -245,10 +245,26 @@ public final class CorridorStructureScan {
     private static final java.util.concurrent.atomic.LongAdder STARTS = new java.util.concurrent.atomic.LongAdder();
     private static final java.util.concurrent.atomic.LongAdder EMPTY_CANDIDATES = new java.util.concurrent.atomic.LongAdder();
     private static final java.util.concurrent.atomic.LongAdder PIECES = new java.util.concurrent.atomic.LongAdder();
+    /**
+     * DRY_RUN counters for a dimension-level biome filter: candidates tested, and how many of them hold no
+     * structure whose biome set intersects the biome source's possible biomes.
+     *
+     * <p>Such a candidate cannot produce a piece anywhere in this dimension, so `structure.generate` is pure
+     * waste on it. The filter is exact - it uses the same set the generator samples from - but enabling it
+     * changes the scan's cost model on every world, so the count is measured first: a filter that removes
+     * almost nothing is not worth a new failure mode that can silently drop a structure.
+     */
+    private static final java.util.concurrent.atomic.LongAdder FILTER_TESTED = new java.util.concurrent.atomic.LongAdder();
+    private static final java.util.concurrent.atomic.LongAdder FILTER_WOULD_SKIP = new java.util.concurrent.atomic.LongAdder();
 
     /** {@return {starts, emptyCandidates, pieces} accumulated since the process started} */
     public static long[] scanYield() {
         return new long[] {STARTS.sum(), EMPTY_CANDIDATES.sum(), PIECES.sum()};
+    }
+
+    /** {@return {filterTested, filterWouldSkip} for the dimension-level biome filter dry run} */
+    public static long[] filterYield() {
+        return new long[] {FILTER_TESTED.sum(), FILTER_WOULD_SKIP.sum()};
     }
     private static List<OwnedBox> resolveBoxesSerial(ServerLevel level, List<Candidate> candidates,
                                                       java.util.function.IntConsumer sliceProgress) {
@@ -270,6 +286,19 @@ public final class CorridorStructureScan {
             if (!structureSet.placement().isStructureChunk(generatorState, pos.x, pos.z)) continue;
             List<StructureSet.StructureSelectionEntry> entries = structureSet.structures();
             if (entries.isEmpty()) continue;
+            // DRY_RUN only: count the candidates a dimension-level biome filter would never generate.
+            // Nothing is skipped here - the count is what decides whether the filter is worth enabling.
+            {
+                boolean possible = false;
+                for (var entry : entries) {
+                    for (var holder : entry.structure().value().biomes()) {
+                        if (generator.getBiomeSource().possibleBiomes().contains(holder)) { possible = true; break; }
+                    }
+                    if (possible) break;
+                }
+                FILTER_TESTED.increment();
+                if (!possible) FILTER_WOULD_SKIP.increment();
+            }
             ArrayList<StructureSet.StructureSelectionEntry> remaining =
                     entries.size() == 1 ? null : new ArrayList<>(entries);
             var random = STRUCTURE_SELECTION_RANDOM.get();
