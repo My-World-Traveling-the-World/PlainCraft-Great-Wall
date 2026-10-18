@@ -160,6 +160,13 @@ public final class PlannerScheduler implements AutoCloseable {
     /** Set when the runaway guard published the index instead of waiting for the work to converge. */
     private volatile java.util.concurrent.atomic.AtomicBoolean fineSampleForced = new java.util.concurrent.atomic.AtomicBoolean();
     /**
+     * The columns this session has walked, kept so a close can still write them to disk.
+     *
+     * <p>It is the same list the completion callback persists, so there is one source of truth; it is
+     * published only for the close path.
+     */
+    private volatile List<WallFinePlanner.FineColumn> fineSampleWalked;
+    /**
      * How far past its own estimate the fine sample may run before it is treated as a runaway.
      *
      * <p>An estimate may be a little low; ten times is not an estimate problem. A measured session was
@@ -340,6 +347,7 @@ public final class PlannerScheduler implements AutoCloseable {
         var all = new ArrayList<WallFinePlanner.FineColumn>();
         /** The subset of {@code all} this run walked or read from the cache; what gets persisted. */
         var walked = new ArrayList<WallFinePlanner.FineColumn>();
+        fineSampleWalked = walked;
         var sampledColumns = new java.util.concurrent.atomic.AtomicInteger();
         // Cross-section columns emitted before the cursor collapsed repeats. The gap between this and
         // sampledColumns is the duplicate factor the overlapping cross-sections produce, which is the
@@ -542,7 +550,13 @@ public final class PlannerScheduler implements AutoCloseable {
                     // BASE_LATERAL, not LATERAL: only the fort and gate points carry the wide band, so
                     // seeding with the wide half-width made the total 2.1x too large and the card stalled
                     // near half at completion. The base band is what most cross-sections emit.
-                    long perPoint = 2L * (WallFinePlanner.BASE_LATERAL / Math.max(1, gridStep)) + 1L;
+                    // Base band plus the share of sections that carry the wide band. Seeding with the
+                    // base band alone undershot by 1.6x on a measured run (73,985 against 119,305 columns)
+                    // because about a quarter of the sections are wide - 17 columns each against 53. The
+                    // share is measured, not derived: widePct sat at 24-25% across every run so far.
+                    long baseWidth = 2L * (WallFinePlanner.BASE_LATERAL / Math.max(1, gridStep)) + 1L;
+                    long wideWidth = 2L * (WallFinePlanner.LATERAL / Math.max(1, gridStep)) + 1L;
+                    long perPoint = (3L * baseWidth + wideWidth) / 4L;
                     long estimated = (points / Math.max(1, gridStep)) * perPoint;
                     expectedColumns.addAndGet((int) Math.min(Integer.MAX_VALUE - 1L, estimated));
                 }, pump);
@@ -1695,7 +1709,13 @@ public final class PlannerScheduler implements AutoCloseable {
                 catch (IOException error) { state.put("cache-disabled", 1L); result.complete(Optional.empty()); }
                 catch (Throwable error) { result.completeExceptionally(error); }
             });
-        } catch (RejectedExecutionException full) { state.put("cache-disabled", 1L); result.complete(Optional.empty()); }
+        } catch (RejectedExecutionException full) {
+            // Capacity, not failure: one burst must not switch the cache off for the whole session. Only a
+            // closed planner does that, because then nothing will ever drain the queue.
+            if (closed()) state.put("cache-disabled", 1L);
+            else state.compute("cache-backpressure", (k, old) -> old == null ? 1L : old + 1L);
+            result.complete(Optional.empty());
+        }
         return result;
     }
 
@@ -1739,12 +1759,20 @@ public final class PlannerScheduler implements AutoCloseable {
     private void persist(SegmentGeometry value) {
         if (!state.containsKey("cache-disabled") && !closed()) try {
             submitIo(() -> { try { cache.writeGeometry(value); } catch (IOException error) { state.put("cache-disabled", 1L); } });
-        } catch (RejectedExecutionException full) { state.put("cache-disabled", 1L); }
+        } catch (RejectedExecutionException full) {
+                    // Capacity, not failure: the cache stays enabled so the next write can still land.
+                    if (closed()) state.put("cache-disabled", 1L);
+                    else state.compute("cache-backpressure", (k, old) -> old == null ? 1L : old + 1L);
+                }
     }
     private void persist(SegmentPlan value) {
         if (!state.containsKey("cache-disabled") && !closed()) try {
             submitIo(() -> { try { cache.writePlan(value); } catch (IOException error) { state.put("cache-disabled", 1L); } });
-        } catch (RejectedExecutionException full) { state.put("cache-disabled", 1L); }
+        } catch (RejectedExecutionException full) {
+                    // Capacity, not failure: the cache stays enabled so the next write can still land.
+                    if (closed()) state.put("cache-disabled", 1L);
+                    else state.compute("cache-backpressure", (k, old) -> old == null ? 1L : old + 1L);
+                }
     }
 
     private static long retainedBytes(Object value) {
@@ -1822,6 +1850,18 @@ public final class PlannerScheduler implements AutoCloseable {
         // A session that ends before the compile must not leave the prewarm's leases holding the
         // memory budget open.
         releasePrewarmLeases();
+        // Write the columns this session walked before the session is torn down. The cache used to be
+        // written only from the completion callback, so a session that ended early - the measured one
+        // stopped after 50,937 of 230,657 columns - kept nothing and the next session walked them again.
+        var sampled = fineSampleWalked;
+        if (sampled != null && !sampled.isEmpty()) {
+            try {
+                persistFineSamples(sampled);
+            } catch (RuntimeException cannotPersist) {
+                GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_CACHE_CLOSE_FAILED reason={}",
+                        cannotPersist.toString());
+            }
+        }
         memory.close();
         pump.execute(() -> {
             if (startupTimer != null) startupTimer.cancel(false);
