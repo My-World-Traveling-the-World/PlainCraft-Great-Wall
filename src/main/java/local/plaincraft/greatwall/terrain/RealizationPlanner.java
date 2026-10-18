@@ -544,7 +544,8 @@ public final class RealizationPlanner {
         if(reverse){var f=site.frame();site=new SiteRecord(site.id(),s,new Frame(f.center(),-f.txQ30(),-f.tzQ30(),f.walkY(),!f.mirror()),
                 site.bounds(),site.state(),site.absorbedBy(),site.reason());}
         if(!(templates.get(SiteKind.END_CAP) instanceof EndCap template))throw new IllegalArgumentException("missing EndCap");
-        for(var attempt:EndCap.candidates(site,stations)){
+        var candidates=EndCap.candidates(site,stations);
+        for(var attempt:candidates){
             ComponentVoxels cap;
             try{cap=CompiledAllocation.component(()->template.compileAt(componentInput(input,attempt,stations,
                     new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,known)));}
@@ -559,7 +560,13 @@ public final class RealizationPlanner {
             if(s>=from&&(s<to||s==to&&s==stations.getLast().globalSQ8()))components.add(cap);
             return;
         }
-        throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"no proven ground exit for break at "+s);
+        // The message carries what a bare position cannot: how many inward candidates were tried, how
+        // many columns this realization was handed, and the bounds it believed in. A real run threw this
+        // 1783 times with nothing but "break at <s>", and the only way to tell "one hard column" from
+        // "resolved against the wrong window" was to read the jar's source afterwards.
+        throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"no proven ground exit for break at "+s
+                +" (endCapCandidates="+candidates.size()+", columns="+input.columns().size()
+                +", bounds="+bounds+")");
     }
     private ComponentVoxels compile(SiteKind kind,java.util.function.Supplier<ComponentInput> preparation,Input input) {
         var template=templates.get(kind);if(template==null)throw new IllegalArgumentException("missing template "+kind);
