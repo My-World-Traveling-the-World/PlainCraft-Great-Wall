@@ -317,7 +317,16 @@ public final class PrewarmProgress {
      */
     public static void signalWorldgenReady() {
         var latch = worldgenReady;
-        if (latch != null) latch.countDown();
+        if (latch != null) {
+            // Logged at the one place the road gate opens, so a startup log answers the only question
+            // that matters about ordering: did the peer start before the wall had published?
+            var snap = snapshot();
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:S1C] ROAD_GATE_OPENED stage={} completed={}/{} elapsedMs={} - a startup peer "
+                            + "(RoadWeaver) may now begin",
+                    snap.stage(), snap.completed(), snap.total(), snap.elapsedMillis());
+            latch.countDown();
+        }
     }
 
     /**

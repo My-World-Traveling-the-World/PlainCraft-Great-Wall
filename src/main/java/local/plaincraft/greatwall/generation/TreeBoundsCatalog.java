@@ -80,7 +80,12 @@ public final class TreeBoundsCatalog {
                     // ═══════════════════════════════════════════════════════════════════
                     String skipped = feature.feature().toString();
                     if (warnedSkips.add(skipped)) {
-                        GreatWallMod.LOGGER.warn("Skipping unencodable tree feature during freeze: {}",
+                        // Type and message inline, the stack trace not: fourteen features each printed a
+                        // ten-line trace during the freeze, about a hundred and forty lines of noise
+                        // describing features this mod deliberately skips. The trace stays at debug.
+                        GreatWallMod.LOGGER.warn("Skipping unencodable tree feature during freeze: {} ({})",
+                                skipped, failure.getClass().getSimpleName() + ": " + failure.getMessage());
+                        GreatWallMod.LOGGER.debug("Skipping unencodable tree feature during freeze: {}",
                                 skipped, failure);
                     } else {
                         GreatWallMod.LOGGER.debug("Skipping unencodable tree feature during freeze: {}",

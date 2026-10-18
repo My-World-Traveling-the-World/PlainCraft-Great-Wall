@@ -461,6 +461,8 @@ public final class WorldBootstrap implements AutoCloseable {
     private final java.util.concurrent.atomic.AtomicLong rootCacheHits = new java.util.concurrent.atomic.AtomicLong();
     /** Last logged root candidate; logging only on advance keeps the log bounded. */
     private final java.util.concurrent.atomic.AtomicLong lastLoggedCandidate = new java.util.concurrent.atomic.AtomicLong(-1L);
+    /** Last root-search phase a progress line was printed for, so a phase change always logs. */
+    private volatile int lastLoggedPhase = -1;
 
     /**
      * The save directory, or null when this bootstrap has no server (tests and the
@@ -575,11 +577,14 @@ public final class WorldBootstrap implements AutoCloseable {
             var now = batch.progress();
             PrewarmProgress.setRootProgress(now.candidate(), RootSearch.RADIUS_COUNT * 36);
             PrewarmProgress.setRootPhase(now.phase());
-            // Logged only when the candidate advances, and never more than the finite
-            // candidate set (RADIUS_COUNT radii x 36 angles).
+            // One line per 25 candidates, plus every phase change. The ring is RADIUS_COUNT x 36 = 324
+            // candidates, and a line per candidate produced 200 lines that carried nothing a reader could
+            // act on - they buried the lines that do matter. Only the sampling changed, not the numbers.
             long lastCandidate = lastLoggedCandidate.get();
-            if (now.candidate() != lastCandidate && now.candidate() < 200) {
+            boolean newPhase = now.phase() != lastLoggedPhase;
+            if (newPhase || now.candidate() - lastCandidate >= 25) {
                 lastLoggedCandidate.set(now.candidate());
+                lastLoggedPhase = now.phase();
                 GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SEARCH phase={} candidate={} shortlisted={} "
                                 + "footprintColumn={} axis={} columns={}",
                         now.phase(), now.candidate(), now.shortlisted(),
@@ -799,10 +804,10 @@ public final class WorldBootstrap implements AutoCloseable {
     }
 
     private <T> CompletableFuture<T> io(IoAction<T> action) {
-        GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() ENTER thread={} state={}", Thread.currentThread().getName(), Map.copyOf(state));
+        GreatWallMod.LOGGER.debug("[GreatWall:DIAG] io() ENTER thread={} state={}", Thread.currentThread().getName(), Map.copyOf(state));
         try {
             active();
-            GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() AFTER_ACTIVE thread={}", Thread.currentThread().getName());
+            GreatWallMod.LOGGER.debug("[GreatWall:DIAG] io() AFTER_ACTIVE thread={}", Thread.currentThread().getName());
         } catch (Throwable activeError) {
             GreatWallMod.LOGGER.error("[GreatWall:DIAG] io() ACTIVE_THREW thread={} state={}", Thread.currentThread().getName(), Map.copyOf(state), activeError);
             throw activeError;
@@ -816,7 +821,7 @@ public final class WorldBootstrap implements AutoCloseable {
                 if (pending.size() >= 128) throw new WallFailure(FailureCode.CAPACITY, "bootstrap IO admission capacity");
                 pending.add(result); return List.copyOf(pending);
             });
-            GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() AFTER_ADMIT thread={} admitted={}", Thread.currentThread().getName(), ioFlights.get("admitted").size());
+            GreatWallMod.LOGGER.debug("[GreatWall:DIAG] io() AFTER_ADMIT thread={} admitted={}", Thread.currentThread().getName(), ioFlights.get("admitted").size());
         } catch (Throwable admitError) {
             GreatWallMod.LOGGER.error("[GreatWall:DIAG] io() ADMIT_THREW thread={}", Thread.currentThread().getName(), admitError);
             throw admitError;
@@ -824,19 +829,19 @@ public final class WorldBootstrap implements AutoCloseable {
         result.whenComplete((value, error) -> ioFlights.computeIfPresent("admitted", (key, old) ->
                 old.stream().filter(future -> future != result).toList()));
         try {
-            GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() BEFORE_EXECUTE thread={}", Thread.currentThread().getName());
+            GreatWallMod.LOGGER.debug("[GreatWall:DIAG] io() BEFORE_EXECUTE thread={}", Thread.currentThread().getName());
             io.execute(() -> {
-                GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() TASK_START thread={}", Thread.currentThread().getName());
+                GreatWallMod.LOGGER.debug("[GreatWall:DIAG] io() TASK_START thread={}", Thread.currentThread().getName());
                 try {
                     T value = action.run();
-                    GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() ACTION_SUCCESS thread={}", Thread.currentThread().getName());
+                    GreatWallMod.LOGGER.debug("[GreatWall:DIAG] io() ACTION_SUCCESS thread={}", Thread.currentThread().getName());
                     result.complete(value);
                 } catch (Throwable error) {
                     GreatWallMod.LOGGER.error("[GreatWall:DIAG] io() ACTION_THREW thread={}", Thread.currentThread().getName(), error);
                     result.completeExceptionally(error);
                 }
             });
-            GreatWallMod.LOGGER.info("[GreatWall:DIAG] io() AFTER_EXECUTE thread={}", Thread.currentThread().getName());
+            GreatWallMod.LOGGER.debug("[GreatWall:DIAG] io() AFTER_EXECUTE thread={}", Thread.currentThread().getName());
         } catch (RuntimeException error) {
             GreatWallMod.LOGGER.error("[GreatWall:DIAG] io() EXECUTE_REJECTED thread={}", Thread.currentThread().getName(), error);
             result.completeExceptionally(error);

@@ -215,6 +215,12 @@ public final class PlanningChunkCompiler {
         // so drop any owner the compiler refused to produce a plan for. A read-only view rather than a
         // second full table build: this map holds one plan per owner of the whole window.
         result.values().removeIf(java.util.Objects::isNull);
+        // The end of the compile used to be "the progress lines stopped". One line with the three numbers
+        // that separate "published" from "published nothing".
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:S1C] PLANNING_COMPILE_DONE owners={} plans={} failed={} elapsedMs={}",
+                ownerCount, result.size(), failed,
+                Math.round((System.nanoTime() - started) / 1_000_000.0D));
         return java.util.Collections.unmodifiableMap(result);
     }
 

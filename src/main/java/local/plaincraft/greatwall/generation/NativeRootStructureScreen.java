@@ -143,9 +143,15 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
             String reason=!missing.isEmpty()?"UNRESOLVED_REFERENCE:"+missing:!hits.isEmpty()?"STRUCTURE_CONFLICT:"+hits:"CLEAR";
             if(reason.equals("CLEAR"))allowed.add(index);
             reasons.add(reason);
-            GreatWallMod.LOGGER.info("[GreatWall:root-structure] origin={} radius={} angle={} axis={} status={} footprint={}",
-                    candidate.origin(),candidate.radiusIndex(),candidate.angleIndex(),index,reason,footprint);
         }
+        // One line per candidate, not one per axis. All five axes measure the same footprint - the axis
+        // only chooses which one the wall is built along - so five identical lines per candidate said
+        // nothing and buried the rest of the startup. The status is collapsed when it is the same on every
+        // axis (the normal case) and spelled out per axis when it is not.
+        String uniform = reasons.stream().allMatch(reasons.get(0)::equals) ? reasons.get(0) : reasons.toString();
+        GreatWallMod.LOGGER.info("[GreatWall:root-structure] origin={} radius={} angle={} status={} axes={}/5 footprint={}",
+                candidate.origin(), candidate.radiusIndex(), candidate.angleIndex(),
+                uniform, allowed.size(), footprints.get(0));
         return new Vote(candidate.radiusIndex(),candidate.angleIndex(),allowed,reasons);
     }
     private String id(Structure structure) {
