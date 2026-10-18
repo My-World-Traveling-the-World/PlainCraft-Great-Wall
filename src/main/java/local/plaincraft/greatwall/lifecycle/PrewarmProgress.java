@@ -121,6 +121,17 @@ public final class PrewarmProgress {
     private static final java.util.concurrent.atomic.AtomicInteger PEAK_OVERALL_PERCENT =
             new java.util.concurrent.atomic.AtomicInteger();
     private static final AtomicReference<Stage> STAGE = new AtomicReference<>(Stage.ROOT_SEARCH);
+    /**
+     * Measured wall-clock nanoseconds per {@link Stage}, indexed by ordinal.
+     *
+     * <p>The startup is four five-minute stages and nobody could say which one took what without
+     * grepping a log by hand. The account is kept here because this is the one class every stage
+     * transition already passes through, and it is printed once, at the end.
+     */
+    private static final java.util.concurrent.atomic.AtomicLongArray STAGE_NANOS =
+            new java.util.concurrent.atomic.AtomicLongArray(Stage.values().length);
+    /** When the active stage started, or 0 when no account is running. */
+    private static volatile long stageSinceNanos;
     /** Sub-progress of the active stage: done/total; total 0 means "indeterminate, still running". */
     private static final AtomicInteger SUB_DONE = new AtomicInteger();
     private static final AtomicInteger SUB_TOTAL = new AtomicInteger();
@@ -128,9 +139,36 @@ public final class PrewarmProgress {
     private PrewarmProgress() {
     }
 
+    /** Starts a fresh stage account for a new startup. */
+    private static void resetStageAccount() {
+        for (int i = 0; i < STAGE_NANOS.length(); i++) STAGE_NANOS.set(i, 0L);
+        stageSinceNanos = System.nanoTime();
+    }
+
+    /** Charges the running stage with the time it has held so far, and stops the clock. */
+    private static synchronized void closeStageAccount() {
+        long since = stageSinceNanos;
+        if (since == 0L) return;
+        STAGE_NANOS.addAndGet(STAGE.get().ordinal(), Math.max(0L, System.nanoTime() - since));
+        stageSinceNanos = 0L;
+    }
+
+    /** {@return the wall-clock milliseconds charged to one stage so far} */
+    static long accountedMillis(Stage stage) {
+        return STAGE_NANOS.get(stage.ordinal()) / 1_000_000L;
+    }
+
     /** Selects the active large stage; the card dims earlier stages and lights the active one. */
     public static void setStage(Stage stage) {
-        STAGE.set(stage == null ? Stage.ROOT_SEARCH : stage);
+        Stage next = stage == null ? Stage.ROOT_SEARCH : stage;
+        Stage previous = STAGE.getAndSet(next);
+        // A repeated call is a progress tick, not a transition: restarting the clock here would
+        // charge the whole stage to whichever tick happened to be last.
+        if (previous == next) return;
+        long now = System.nanoTime();
+        long since = stageSinceNanos;
+        if (since != 0L) STAGE_NANOS.addAndGet(previous.ordinal(), Math.max(0L, now - since));
+        stageSinceNanos = now;
     }
 
     /** Publishes the active stage's sub-progress (done/total); total 0 is an indeterminate running
@@ -186,6 +224,7 @@ public final class PrewarmProgress {
         STARTED_AT_NANOS.set(System.nanoTime());
         FAILED.set(false);
         STATE.clear();
+        resetStageAccount();
         ACTIVE.set(totalSegments > 0);
         EVER_STARTED.set(true);
     }
@@ -227,6 +266,7 @@ public final class PrewarmProgress {
         FAILED.set(false);
         STATE.clear();
         STATE.put("root-search", true);
+        resetStageAccount();
         ACTIVE.set(true);
         REQUESTED.set(true);
         EVER_STARTED.set(true);
@@ -286,10 +326,20 @@ public final class PrewarmProgress {
         // five minutes before the root search even started.
         if (ACTIVE.get() || EVER_STARTED.get()) {
             var snap = snapshot();
+            closeStageAccount();
             local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                     "[GreatWall:S1C] ROAD_GATE_OPENED success={} stage={} completed={}/{} elapsedMs={} - a "
                             + "startup peer (RoadWeaver) may now begin",
                     success, snap.stage(), snap.completed(), snap.total(), snap.elapsedMillis());
+            // One line, once per session: what each startup stage actually cost. Without it the only
+            // way to answer "where did the twenty minutes go" was to read timestamps out of the log.
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:S1C] WALL_STARTUP_ACCOUNT totalMs={} rootMs={} scanMs={} fineMs={} "
+                            + "prewarmMs={} compileMs={} segments={}/{} lanes={}",
+                    snap.elapsedMillis(),
+                    accountedMillis(Stage.ROOT_SEARCH), accountedMillis(Stage.STRUCTURE_SCAN),
+                    accountedMillis(Stage.FINE_SAMPLE), accountedMillis(Stage.PREWARM),
+                    accountedMillis(Stage.COMPILE), snap.completed(), snap.total(), snap.lanes());
         }
         COMPLETED_SEGMENTS.set(TOTAL_SEGMENTS.get());
         FAILED.set(!success);
