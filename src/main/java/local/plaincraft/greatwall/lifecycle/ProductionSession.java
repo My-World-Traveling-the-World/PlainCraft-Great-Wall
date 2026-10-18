@@ -82,6 +82,13 @@ final class ProductionSession implements AutoCloseable {
     private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();
     /** Set while the fine sample is still in flight; the compile waits on it instead of failing. */
     private volatile boolean fineSampleSettled;
+    /**
+     * Whether the fine sample has been requested for this session. It is started before the corridor
+     * structure scan, not after it: sampling walks terrain columns along a route the recipe already
+     * fixed, so it needs no obstacle index, and the 130 s scan would otherwise sit in front of the
+     * longest stage of the startup instead of running beside it.
+     */
+    private volatile boolean fineSampleStarted;
     /** Set when a compile attempt deferred for want of the fine sample, so the callback re-triggers it. */
     private final java.util.concurrent.atomic.AtomicBoolean compileDeferred =
             new java.util.concurrent.atomic.AtomicBoolean();
@@ -449,6 +456,10 @@ final class ProductionSession implements AutoCloseable {
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.STRUCTURE_SCAN);
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
+        // Start the fine sample NOW, beside the scan. The scan reads the world for 130 s to resolve
+        // structure boxes; the sample only needs the recipe's route, so leaving it until the boxes are
+        // installed puts the longest stage of the startup behind a stage it does not depend on.
+        startFineSample(planner);
         // The wall's true corridor band (segment endpoints + half-width): candidates outside it are
         // dropped up front, so an angled wall no longer scans the AABB's 3.5x overscan.
         var corridor = new local.plaincraft.greatwall.generation.CorridorStructureScan.Corridor(
@@ -526,6 +537,25 @@ final class ProductionSession implements AutoCloseable {
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE);
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
+        startFineSample(planner);
+    }
+
+    /**
+     * Requests the fine cross-section sample, once per session.
+     *
+     * <p>Called from two places on purpose: the scan path calls it <em>before</em> the corridor
+     * structure scan, and the installer calls it again (a no-op by then) so a structure-scan cache hit
+     * still starts the sample. Idempotent, because a second {@code requireFineSamples} would walk the
+     * whole route again and publish a second index.
+     */
+    private void startFineSample(PlannerScheduler planner) {
+        if (fineSampleStarted) return;
+        fineSampleStarted = true;
+        // Sampled terrain columns do not change between sessions, but the stage used to re-walk every
+        // one of them on every world entry - the single most expensive thing this mod does. Hand it
+        // the previous session's columns instead. The file is bound to the recipe and terrain
+        // identity, so a world whose terrain configuration changed re-probes rather than trusting
+        // columns sampled under different terrain.
         planner.setFineSampleCache(FineSampleCache.load(
                 root.resolve("samples").resolve("fine-columns.bin"),
                 recipe().recipeHash() + '|' + recipe().terrainHash() + '|' + recipe().dimension()));
