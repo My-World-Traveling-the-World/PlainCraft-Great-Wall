@@ -279,6 +279,18 @@ public final class PrewarmProgress {
 
     /** Records that the prewarm finished, successfully or not. */
     public static void finish(boolean success) {
+        // The one place a session actually releases the road gate, so this is where the ordering question
+        // gets answered. It used to be logged inside signalWorldgenReady, which clear() also calls to
+        // release a stale latch before installing a fresh one - so every world load printed a release that
+        // had not happened. A measured log opened with "ROAD_GATE_OPENED stage=ROOT_SEARCH completed=0/0"
+        // five minutes before the root search even started.
+        if (ACTIVE.get() || EVER_STARTED.get()) {
+            var snap = snapshot();
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:S1C] ROAD_GATE_OPENED success={} stage={} completed={}/{} elapsedMs={} - a "
+                            + "startup peer (RoadWeaver) may now begin",
+                    success, snap.stage(), snap.completed(), snap.total(), snap.elapsedMillis());
+        }
         COMPLETED_SEGMENTS.set(TOTAL_SEGMENTS.get());
         FAILED.set(!success);
         ACTIVE.set(false);
@@ -317,16 +329,10 @@ public final class PrewarmProgress {
      */
     public static void signalWorldgenReady() {
         var latch = worldgenReady;
-        if (latch != null) {
-            // Logged at the one place the road gate opens, so a startup log answers the only question
-            // that matters about ordering: did the peer start before the wall had published?
-            var snap = snapshot();
-            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                    "[GreatWall:S1C] ROAD_GATE_OPENED stage={} completed={}/{} elapsedMs={} - a startup peer "
-                            + "(RoadWeaver) may now begin",
-                    snap.stage(), snap.completed(), snap.total(), snap.elapsedMillis());
-            latch.countDown();
-        }
+        // Silent on purpose: clear() calls this to release a stale latch before replacing it, so a log
+        // here fires on every world load and reads as a gate that opened before anything ran. The real
+        // release is logged by finish().
+        if (latch != null) latch.countDown();
     }
 
     /**

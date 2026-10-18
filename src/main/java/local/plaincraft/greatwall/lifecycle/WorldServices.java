@@ -319,6 +319,12 @@ public final class WorldServices {
     public static void warming(MinecraftServer server) {
         var services = find(server);
         if (services != null) {
+            // Mark the prewarm as coming before anything can ask whether one is coming. A peer that polls
+            // the gate between world load and the first segment was told "no prewarm has been requested",
+            // and awaitCompletion answers that with an immediate true - which is how a road can start
+            // laying while the wall has not sampled a column. Every exit from here (published, failed,
+            // timed out) calls finish(), which releases the gate for real.
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.request();
             if (services.production != null) { services.production.warming(); return; }
             services.planner.transition(BootstrapState.RECIPE_READY, BootstrapState.WARMING);
             services.trace("STARTUP_WARMING", "*", 0, 0, "prepareLevels", "none");

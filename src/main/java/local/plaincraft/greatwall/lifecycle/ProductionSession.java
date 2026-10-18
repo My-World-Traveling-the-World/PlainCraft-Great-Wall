@@ -542,7 +542,9 @@ final class ProductionSession implements AutoCloseable {
 
     /** Runs the compile if an earlier attempt deferred for want of the fine sample. */
     private void triggerDeferredCompile() {
-        if (!compileDeferred.get()) return;
+        // Consumed here, where the compile is actually queued - not at the point that set the deferral,
+        // which left this check permanently false and the compile never started.
+        if (!compileDeferred.getAndSet(false)) return;
         try {
             server.execute(this::compileAtStartup);
         } catch (Throwable cannotQueue) {
@@ -724,10 +726,16 @@ final class ProductionSession implements AutoCloseable {
         }
         if (state.putIfAbsent("compile-started", true) != null) return;
         compilePlanningPlans(snapshot);
-        if (compileDeferred.getAndSet(false)) {
+        if (compileDeferred.get()) {
             // The prewarm now starts before the fine sample, so the first compile attempt can arrive with
-            // the column index still in flight. That is a wait, not a start: clear the guard so the
-            // fine-sample callback can run the compile when its half of the input lands.
+            // the column index still in flight. That is a wait, not a start.
+            //
+            // The flag must stay SET here. It used to be consumed by a getAndSet(false) at this exact
+            // point, and its only other reader is triggerDeferredCompile - so deferring cleared the very
+            // flag the retrigger waits on, and the compile never ran. A measured session logged
+            // PLANNING_COMPILE_WAIT_FOR_SAMPLE at 13:05:29, published the sample at 13:06:05, and then
+            // printed no compile line at all while the roads started. Only the guard that lets another
+            // attempt through is cleared here; the deferral is consumed where the compile is queued.
             state.remove("compile-started");
         }
     }
