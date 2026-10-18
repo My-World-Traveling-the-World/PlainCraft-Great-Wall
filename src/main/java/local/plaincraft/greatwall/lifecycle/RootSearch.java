@@ -125,6 +125,18 @@ public final class RootSearch {
     private int phase, candidateIndex, sampleIndex, selectedIndex, axisIndex, columns;
     private int wet, min = Integer.MAX_VALUE, max = Integer.MIN_VALUE, centerHeight;
     private int invalidSamples, failedFoundations;
+    /**
+     * Columns this pad could not certify, and the first one that did it.
+     *
+     * <p>Kept apart from {@code invalidSamples} because they answer different questions: {@code
+     * invalidSamples} feeds the coarse gate, while this pair is what a rejected pad reports. Without it a
+     * refusal printed {@code water=false support=false relief=false} and named no cause at all.
+     */
+    private int censoredSamples;
+    private int firstCensoredX = Integer.MIN_VALUE, firstCensoredZ, firstCensoredIndex = -1;
+    private String firstCensoredQuality;
+    /** The column the current sample came from, so a refusal can name the one that refused it. */
+    private int lastSampleX, lastSampleZ;
     private long sum, axisScore, maxBatchNanos, over40msBatches;
     private boolean invalid, lastSupport;
     private Axis axis;
@@ -136,6 +148,9 @@ public final class RootSearch {
     private int entranceIndex,entranceMin,entranceMax;
     /** Diagnostic-only ring counters behind {@link #logCoarseSummary(int)}; never an input to selection. */
     private int coarseInvalid, coarseHistoric, coarseAdmitted, coarseRejected;
+    /** Why pads were refused, so a ring that dies of one cause says so in one line. */
+    private int coarseRejectedCensored, coarseRejectedSupport, coarseRejectedWater, coarseRejectedRelief,
+            coarseRejectedOther;
     private int coarseWetMin = Integer.MAX_VALUE, coarseWetMax = Integer.MIN_VALUE;
     private int coarseSpreadMin = Integer.MAX_VALUE, coarseSpreadMax = Integer.MIN_VALUE;
     private long coarseWetSum, coarseSpreadSum;
@@ -273,6 +288,7 @@ public final class RootSearch {
         int z = origin.z() + (sampleIndex % 9 - 4) * 8;
         ColumnSample value = read(oracle, x, z, false);
         if (value == null) return;
+        lastSampleX = x; lastSampleZ = z;
         acceptHeight(value);
         if (sampleIndex == 40) centerHeight = value.groundTopY();
         sampleIndex++;
@@ -356,6 +372,7 @@ public final class RootSearch {
         int z = current.origin().z() + sampleIndex % 48 - 24;
         ColumnSample value = read(oracle, x, z, true);
         if (value == null) return;
+        lastSampleX = x; lastSampleZ = z;
         acceptHeight(value);
         if (!lastSupport) failedFoundations++;
         // Bounded tolerated support and a bounded amount of water. Water is no longer an instant
@@ -392,18 +409,48 @@ public final class RootSearch {
      * counts are the ones that decided the refusal - not always the full 48x48 totals.
      */
     private void rejectFootprint(Candidate current, boolean waterFired, boolean supportFired, boolean reliefFired) {
-        // Every refusal lands in the audit exactly once, whichever path reached it: the early exit
-        // mid-walk, or the full 48x48 walk that only the relief check can still refuse.
+        // Name the cause. The three booleans the callers pass are false on the early-exit path, which is
+        // why a pad that died of one uncertified column used to print all three as false and say nothing.
+        String reason = rejectReason(censoredSamples > 0, supportFired, waterFired, reliefFired);
+        switch (reason) {
+            case "censored" -> coarseRejectedCensored++;
+            case "support" -> coarseRejectedSupport++;
+            case "water" -> coarseRejectedWater++;
+            case "relief" -> coarseRejectedRelief++;
+            default -> coarseRejectedOther++;
+        }
+        // The audit result stays the bare word: existing readers count "REJECTED" exactly, and the
+        // reason belongs in the log line a human reads (the audit itself is never printed).
         audit.add(new Audit("footprint", current.origin(), current.radius(), current.angle(), -1,
                 wet, invalidSamples, failedFoundations, min, max, "REJECTED"));
         // A rejected pad has to say why it was rejected, otherwise the next session can only
         // repeat "no site" without saying whether the water, the support or the relief did it.
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                "[GreatWall:S1C] ROOT_FOOTPRINT_REJECTED radius={} angle={} unsupported={}/{} wet={}/{} spread={}/{} height={} water={} support={} relief={}",
-                current.radius(), current.angle(), failedFoundations, 48 * 48, wet, 48 * 48,
+                "[GreatWall:S1C] ROOT_FOOTPRINT_REJECTED radius={} angle={} reason={} unsupported={}/{} "
+                        + "wet={}/{} spread={}/{} height={} water={} support={} relief={} censored={}/{} "
+                        + "firstCensored={}",
+                current.radius(), current.angle(), reason, failedFoundations, 48 * 48, wet, 48 * 48,
                 max - min, MAX_FOOTPRINT_RELIEF, current.origin().y(),
-                waterFired, supportFired, reliefFired);
+                waterFired, supportFired, reliefFired, censoredSamples, sampleIndex,
+                firstCensoredX == Integer.MIN_VALUE ? "none"
+                        : firstCensoredX + "," + firstCensoredZ + " q=" + firstCensoredQuality
+                        + " @" + firstCensoredIndex);
         selectedIndex++; resetSamples();
+    }
+
+    /**
+     * {@return the one-word cause of a refused pad, most specific first}
+     *
+     * <p>An uncertified column is named before the bound breaches on purpose: a pad whose support or
+     * water bound was crossed *because* a column came back censored would otherwise be reported as a
+     * support or water problem, and the next fix would be aimed at the wrong thing.
+     */
+    static String rejectReason(boolean censored, boolean support, boolean water, boolean relief) {
+        if (censored) return "censored";
+        if (support) return "support";
+        if (water) return "water";
+        if (relief) return "relief";
+        return "other";
     }
 
     private void axisStep(NaturalTerrainOracle oracle) {
@@ -441,6 +488,7 @@ public final class RootSearch {
         }
         ColumnSample value = read(oracle, x, z, false);
         if (value == null) return;
+        lastSampleX = x; lastSampleZ = z;
         acceptHeight(value);
         if (sampleIndex % 3 == 0) centerHeight = value.groundTopY();
         else axisScore += centerHeight - (long) value.groundTopY();
@@ -705,8 +753,18 @@ public final class RootSearch {
     }
 
     private void acceptHeight(ColumnSample value) {
-        if (value.upperCensored() || value.quality() != Quality.REFERENCE) invalidSamples++;
-        invalid |= value.upperCensored() || value.quality() != Quality.REFERENCE;
+        boolean uncertified = value.upperCensored() || value.quality() != Quality.REFERENCE;
+        if (uncertified) invalidSamples++;
+        invalid |= uncertified;
+        if (uncertified) {
+            censoredSamples++;
+            if (firstCensoredX == Integer.MIN_VALUE) {
+                firstCensoredX = lastSampleX;
+                firstCensoredZ = lastSampleZ;
+                firstCensoredIndex = sampleIndex;
+                firstCensoredQuality = value.quality() + (value.upperCensored() ? "/upperCensored" : "");
+            }
+        }
         if (value.waterTopY().isPresent()) wet++;
         min = Math.min(min, value.groundTopY()); max = Math.max(max, value.groundTopY());
         sum += value.groundTopY();
@@ -739,9 +797,14 @@ public final class RootSearch {
                 RADII.length * 36, ranked, coarseInvalid, coarseRejected, coarseHistoric,
                 coarseWetMin, coarseWetSum / rank(coarseAdmitted), coarseWetMax,
                 coarseSpreadMin, coarseSpreadSum / rank(coarseAdmitted), coarseSpreadMax);
+        // Why the pads that did get walked were refused. One line, one per search: a ring that dies of a
+        // single cause should not need eight rejection lines read end to end to see it.
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:S1C] ROOT_PAD_REJECTS censored={} support={} water={} relief={} other={}",
+                coarseRejectedCensored, coarseRejectedSupport, coarseRejectedWater,
+                coarseRejectedRelief, coarseRejectedOther);
     }
 
-    /** Divisor for the screen summary: the stats cover every candidate with usable samples. */
     private int rank(int measured) { return measured == 0 ? 1 : measured; }
 
     /**
@@ -765,6 +828,9 @@ public final class RootSearch {
         invalidSamples = 0; failedFoundations = 0;
         sampleIndex = 0; wet = 0; min = Integer.MAX_VALUE; max = Integer.MIN_VALUE;
         sum = 0; axisScore = 0; invalid = false;
+        censoredSamples = 0;
+        firstCensoredX = Integer.MIN_VALUE; firstCensoredZ = 0; firstCensoredIndex = -1;
+        firstCensoredQuality = null;
         // Every candidate and phase transition passes through here, which makes it
         // the one place that reliably drops samples the search has moved past. A
         // rejected candidate can leave thousands of prefetched columns behind, and
