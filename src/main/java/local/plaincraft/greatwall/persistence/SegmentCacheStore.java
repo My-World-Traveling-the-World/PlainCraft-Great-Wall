@@ -73,13 +73,27 @@ public final class SegmentCacheStore {
         if (index < 0 || index % 256 != 0) throw new IllegalArgumentException("prefix checkpoint must be 256-aligned");
         if (index == 0) return Optional.of(PrefixSummaryIndex.origin());
         if (readPrefixPayload(index).isEmpty()) return Optional.empty();
+        // Start from the nearest earlier checkpoint instead of replaying from segment zero. A checkpoint is
+        // a cumulative summary and is stored through the same hash-verified slot as everything else, so
+        // re-deriving it from genesis proves nothing the slot's own hash does not - while costing one
+        // geometry read per segment since the beginning of the wall. The replay still walks the last stretch
+        // and still compares every checkpoint it crosses, so a checkpoint that disagrees with the segments
+        // after it is still caught.
+        long from = Math.max(0L, index - 256L);
+        // The origin is not a persisted checkpoint: it is the empty summary, so a replay that starts at
+        // segment zero starts from it rather than from a payload.
         var prefix = PrefixSummaryIndex.origin();
-        // A checkpoint is never trusted as an unauthenticated high-water mark.
-        for (long segment = 0; segment < index; segment++) {
+        if (from > 0) {
+            var start = readPrefixPayload(from);
+            if (start.isEmpty()) return Optional.empty();
+            prefix = start.get();
+            if (prefix.beforeSegment() != from) { corrupt(); return Optional.empty(); }
+        }
+        for (long segment = from; segment < index; segment++) {
             var geometry = readGeometry(new SegmentKey(recipeHash, recipe.dimension(), segment));
             if (geometry.isEmpty() || prefix.terminal().isPresent()) return Optional.empty();
             prefix = PrefixSummaryIndex.reduce(prefix, geometry.get());
-            if (prefix.beforeSegment() % 256 == 0) {
+            if (prefix.beforeSegment() % 256 == 0 && prefix.beforeSegment() > from) {
                 var persisted = readPrefixPayload(prefix.beforeSegment());
                 if (persisted.isEmpty() || !persisted.get().equals(prefix)) { corrupt(); return Optional.empty(); }
             }
