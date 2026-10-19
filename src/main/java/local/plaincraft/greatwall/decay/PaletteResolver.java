@@ -1,5 +1,6 @@
 package local.plaincraft.greatwall.decay;
 
+import local.plaincraft.greatwall.GreatWallMod;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import java.io.ByteArrayOutputStream;
@@ -26,6 +27,9 @@ import net.minecraft.server.packs.resources.ResourceManager;
 
 /** Immutable material selection. Registry binding belongs to PaletteResourceValidator. */
 public final class PaletteResolver implements PaletteBinding {
+    /** Components whose arc fell outside the sampled ribbon and clamped to its nearest station. */
+    private static final java.util.concurrent.atomic.AtomicInteger RIBBON_CLAMPS =
+            new java.util.concurrent.atomic.AtomicInteger();
     private static final int RESOURCE_LIMIT = 1024 * 1024;
     private static final int TABLE_COUNT = Variant.values().length * DecayState.values().length * Part.values().length;
     private static final Set<String> GEOMETRY_PROPERTIES = Set.of(
@@ -100,10 +104,25 @@ public final class PaletteResolver implements PaletteBinding {
             throw new IllegalArgumentException("global S out of range");
         }
         var ribbon = input.materials();
+        if (ribbon.isEmpty()) {
+            throw invalid("material ribbon is empty");
+        }
+        // The ribbon used to have to reach eight blocks past this component on both sides. That is
+        // not a requirement of the blend: PaletteBlend.at extends the first and last station to plus
+        // and minus infinity, so an arc outside the sampled range clamps to the nearest biome instead
+        // of failing. It was also unsatisfiable at a window edge, where the stations beyond the edge
+        // belong to the next owner: a measured session rejected 2176 of 2188 components this way. A
+        // wall is one stone for hundreds of blocks, so clamping is also what the real thing looks like.
         if (ribbon.size() < 2
                 || ribbon.getFirst().globalSQ8() > Math.max(0, globalSQ8 - 8L * 256)
                 || ribbon.getLast().globalSQ8() < globalSQ8 + 8L * 256) {
-            throw invalid("material ribbon lacks the eight-block halo");
+            int clamped = RIBBON_CLAMPS.incrementAndGet();
+            if (clamped <= 4 || clamped % 4096 == 0) {
+                GreatWallMod.LOGGER.warn(
+                        "[GreatWall:S1C] PALETTE_CLAMPED s={} ribbon=[{},{}] stations={} clamped={}",
+                        globalSQ8, ribbon.getFirst().globalSQ8(), ribbon.getLast().globalSQ8(),
+                        ribbon.size(), clamped);
+            }
         }
         var mix = PaletteBlend.at(globalSQ8, ribbon);
         var variant = PaletteBlend.choose(mix, materialHash("material-family", world, part));

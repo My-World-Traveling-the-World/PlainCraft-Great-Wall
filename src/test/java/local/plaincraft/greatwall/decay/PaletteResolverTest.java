@@ -168,13 +168,10 @@ class PaletteResolverTest {
         }
     }
 
-    @Test void emptyOrUnorderedOrMissingHaloRibbonsFailClosed() {
+    @Test void emptyAndUnorderedRibbonsFailClosed() {
         var resolver = new PaletteResolver(SEED, PaletteResolver.defaults());
         var base = input(SiteKind.ENEMY_TOWER, DecayState.INTACT, Variant.STONE, 0);
         for (var ribbon : List.<List<BiomeStation>>of(List.of(),
-                List.of(new BiomeStation(1024L * 256, "minecraft:plains", Variant.STONE)),
-                List.of(new BiomeStation(1023L * 256, "minecraft:plains", Variant.STONE),
-                        new BiomeStation(1025L * 256, "minecraft:plains", Variant.STONE)),
                 List.of(new BiomeStation(2048L * 256, "minecraft:plains", Variant.STONE),
                         new BiomeStation(0, "minecraft:plains", Variant.STONE)))) {
             var input = new ComponentInput(base.site(), base.stations(), base.supports(), base.decay(),
@@ -183,6 +180,31 @@ class PaletteResolverTest {
         }
         assertThrows(IllegalArgumentException.class, () -> resolver.resolve(base, Part.SKIN,
                 new Point3i(0, 0, 0), new Point3i(0, 84, 0), -1, 0));
+    }
+
+    /**
+     * A ribbon that does not reach eight blocks past the component clamps to its nearest station.
+     *
+     * <p>It used to be a hard failure, and that is how a measured session lost 2176 of 2188
+     * components: the stations beyond a window edge belong to the next owner, so no ribbon built for
+     * one window could ever carry the halo. The blend itself has no such requirement - it extends the
+     * first and last station to plus and minus infinity - so the component is built with the nearest
+     * biome's material, which is what a stone wall looks like anyway.
+     */
+    @Test void aRibbonWithoutTheHaloClampsToItsNearestStation() {
+        var resolver = new PaletteResolver(SEED, PaletteResolver.defaults());
+        var base = input(SiteKind.ENEMY_TOWER, DecayState.INTACT, Variant.STONE, 0);
+        for (var ribbon : List.<List<BiomeStation>>of(
+                List.of(new BiomeStation(1024L * 256, "minecraft:plains", Variant.STONE)),
+                List.of(new BiomeStation(1023L * 256, "minecraft:plains", Variant.STONE),
+                        new BiomeStation(1025L * 256, "minecraft:plains", Variant.STONE)))) {
+            var input = new ComponentInput(base.site(), base.stations(), base.supports(), base.decay(),
+                    base.family(), false, List.of(), ribbon);
+            for (long s : new long[] {1024L * 256, 4096L * 256}) {
+                var spec = resolver.resolve(input, Part.SKIN, new Point3i(0, 0, 0), new Point3i(0, 84, 0), s, 0);
+                assertNotNull(spec, "arc " + s);
+            }
+        }
     }
 
     @Test void fixedDecayTowerAndBeaconOccupancyRoutesAndFunctionalIdentitiesMatchAllFamilies() {
