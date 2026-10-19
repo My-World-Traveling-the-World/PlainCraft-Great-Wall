@@ -139,8 +139,6 @@ public final class PlanningChunkCompiler {
         // serial because it fills the shared cell caches.
         int workers = compileWorkers();
         long started = System.nanoTime();
-        long lastReport = started;
-        long reportInterval = java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
         for (var entry : byOwner.entrySet()) {
             var owner = entry.getKey();
             var items = entry.getValue();
