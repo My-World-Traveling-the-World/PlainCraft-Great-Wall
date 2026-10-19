@@ -126,20 +126,35 @@ class OracleLaneTest {
         } finally { lane.close(); lane.drain().get(5, TimeUnit.SECONDS); }
     }
 
-    @Test void queueCapacityIsReservedBeforeSubmittingAndReleasedAfterDrain() throws Exception {
-        var entered = new CountDownLatch(1); var release = new CountDownLatch(1);
-        var lane = new OracleLane(UUID.randomUUID(), 0, HASH, () -> {
-            entered.countDown(); await(release); return new OwnedOracle(new AtomicInteger(), new AtomicInteger());
-        });
+    @Test void aFullQueueBackPressuresTheSubmitterInsteadOfFailingImmediately() throws Exception {
+        // 2026-10-19：满队列不再「立刻让整个会话失败」。真机那局在选完址一秒后就死在
+        // "oracle lane queue capacity" 上；现在提交方会等（默认 30 s，可用系统属性缩短）。
+        var release = new CountDownLatch(1);
+        var lane = new OracleLane(UUID.randomUUID(), 0, HASH,
+                () -> new OwnedOracle(new AtomicInteger(), new AtomicInteger()));
+        String previous = System.getProperty("greatwall.oracleLaneWaitMillis");
+        System.setProperty("greatwall.oracleLaneWaitMillis", "300");
         try {
-            lane.start(); assertTrue(entered.await(5, TimeUnit.SECONDS));
-            for (int i = 0; i < 64; i++) lane.submit(o -> 1);
-            assertThrows(ExecutionException.class, () -> lane.submit(o -> 1).get(5, TimeUnit.SECONDS));
-            assertEquals(64L, lane.diagnostics().get("queued"));
-        } finally { lane.close(); release.countDown(); lane.drain().get(5, TimeUnit.SECONDS); }
+            lane.start().get(5, TimeUnit.SECONDS);
+            // 第一个动作把 lane 线程占住，后面的全部排队。
+            var blocker = lane.submit(o -> { await(release); return 1; });
+            for (int i = 0; i < 256; i++) lane.submit(o -> 1);
+            long started = System.nanoTime();
+            var extra = lane.submit(o -> 1);
+            long waitedMs = (System.nanoTime() - started) / 1_000_000L;
+            assertTrue(waitedMs >= 250L, "the submitter waits for room instead of failing at once: " + waitedMs + " ms");
+            ExecutionException failure = assertThrows(ExecutionException.class,
+                    () -> extra.get(1, TimeUnit.SECONDS));
+            assertTrue(String.valueOf(failure.getCause()).contains("queue capacity"), String.valueOf(failure.getCause()));
+            release.countDown();
+            assertEquals(1, blocker.get(20, TimeUnit.SECONDS));
+        } finally {
+            if (previous == null) System.clearProperty("greatwall.oracleLaneWaitMillis");
+            else System.setProperty("greatwall.oracleLaneWaitMillis", previous);
+            release.countDown(); lane.close(); lane.drain().get(20, TimeUnit.SECONDS);
+        }
         assertEquals(0L, lane.diagnostics().get("queued"));
     }
-
     @Test void canceledDrainViewCannotHideCloseFailure() throws Exception {
         var lane = new OracleLane(UUID.randomUUID(), 0, HASH, () -> new OwnedOracle(new AtomicInteger(), new AtomicInteger()) {
             @Override public void close() { super.close(); throw new IllegalStateException("native close counterexample"); }

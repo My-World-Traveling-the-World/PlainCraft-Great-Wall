@@ -16,7 +16,15 @@ import local.plaincraft.greatwall.model.WallTypes.FailureCode;
 /** One session/lane owns one native producer. Public cancellation never substitutes for producer drain. */
 public final class OracleLane implements AutoCloseable {
     private static final ThreadLocal<OracleLane> INITIALIZING = new ThreadLocal<>();
-    private static final int MAX_QUEUED_BATCHES = 64;
+    /**
+     * Queued batches a lane accepts before submitters start waiting.
+     *
+     * <p>64 was enough while every session was sited by the strict contract; the fallback site samples
+     * more of the map, and the measured session filled a lane one second after the site was chosen.
+     */
+    private static final int MAX_QUEUED_BATCHES = 256;
+    /** How long a submitter waits for room before the lane is declared stuck. */
+    private static final long LANE_QUEUE_POLL_MILLIS = 5L;
     private final UUID session;
     private final int index;
     private final String fingerprint;
@@ -60,30 +68,48 @@ public final class OracleLane implements AutoCloseable {
         Objects.requireNonNull(action);
         trace.assertOutsideLock();
         var result = new CompletableFuture<T>();
-        synchronized (admission) {
-            if (state.containsKey("closed")) return CompletableFuture.failedFuture(closedFailure());
-            if (state.getOrDefault("queued", 0L) >= MAX_QUEUED_BATCHES) {
-                return CompletableFuture.failedFuture(new WallFailure(FailureCode.CAPACITY, "oracle lane queue capacity"));
+        // Backpressure instead of an immediate failure. A full queue used to fail the whole session
+        // ("oracle lane queue capacity"), which is how a fallback-sited session died one second after
+        // the site was chosen: the fallback samples more of the map, the lanes fill, and a scheduling
+        // hiccup becomes "no wall at all". The wait is bounded so a genuinely stuck lane still fails.
+        long waitMillis = Long.getLong("greatwall.oracleLaneWaitMillis", 30_000L);
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(waitMillis);
+        while (true) {
+            synchronized (admission) {
+                if (state.containsKey("closed")) return CompletableFuture.failedFuture(closedFailure());
+                if (state.getOrDefault("queued", 0L) < MAX_QUEUED_BATCHES) {
+                    start();
+                    state.merge("queued", 1L, Long::sum);
+                    executor.execute(() -> {
+                        try {
+                            if (state.containsKey("closed")) throw closedFailure();
+                            if (producerFailure != null) throw new WallFailure(FailureCode.UNSUPPORTED_ADAPTER,
+                                    "oracle lane producer failed", producerFailure);
+                            if (oracle == null) throw new IllegalStateException("initialization did not publish an owner-local oracle");
+                            trace.assertOutsideLock();
+                            result.complete(action.apply(oracle));
+                        } catch (Throwable failure) {
+                            // A failed action may leave an unfinished cursor; this lane is never silently reused.
+                            producerFailure = failure;
+                            state.merge("action-failures", 1L, Long::sum);
+                            result.completeExceptionally(failure);
+                        } finally { state.compute("queued", (key, count) -> count - 1); }
+                    });
+                    return result;
+                }
             }
-            start();
-            state.merge("queued", 1L, Long::sum);
-            executor.execute(() -> {
-                try {
-                    if (state.containsKey("closed")) throw closedFailure();
-                    if (producerFailure != null) throw new WallFailure(FailureCode.UNSUPPORTED_ADAPTER,
-                            "oracle lane producer failed", producerFailure);
-                    if (oracle == null) throw new IllegalStateException("initialization did not publish an owner-local oracle");
-                    trace.assertOutsideLock();
-                    result.complete(action.apply(oracle));
-                } catch (Throwable failure) {
-                    // A failed action may leave an unfinished cursor; this lane is never silently reused.
-                    producerFailure = failure;
-                    state.merge("action-failures", 1L, Long::sum);
-                    result.completeExceptionally(failure);
-                } finally { state.compute("queued", (key, count) -> count - 1); }
-            });
+            if (System.nanoTime() >= deadline) {
+                return CompletableFuture.failedFuture(new WallFailure(FailureCode.CAPACITY,
+                        "oracle lane queue capacity (waited " + waitMillis + " ms)"));
+            }
+            try {
+                Thread.sleep(LANE_QUEUE_POLL_MILLIS);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                return CompletableFuture.failedFuture(new WallFailure(FailureCode.CAPACITY,
+                        "interrupted while waiting for oracle lane capacity", interrupted));
+            }
         }
-        return result;
     }
 
     public UUID session() { return session; }
