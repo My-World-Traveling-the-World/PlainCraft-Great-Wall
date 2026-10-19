@@ -41,20 +41,36 @@ import net.minecraft.world.level.levelgen.blending.Blender;
 final class NoiseSurfaceSampler {
     /** Vanilla records "the y of the first air above the surface", so ground = surface - 1. */
     private static final int COLUMN_COUNT = 256;
-    /** Two sweeps of the wall revisit the same chunk far more often than they visit 64 distinct ones. */
-    private static final int CACHE_CHUNKS = 512;
+    /**
+     * Baked cells kept per lane.
+     *
+     * <p>One siting candidate covers 64x64 blocks - 256 cells - and neighbouring candidates sit about
+     * ten blocks apart, so their footprints overlap heavily. A 512-cell cache held barely one
+     * candidate, which made every candidate pay for every cell again. Each cell is roughly a
+     * kilobyte, and there are as many caches as lanes, so the default trades reuse against the twelve
+     * caches a full startup opens. Override with the system property greatwall.samplerCacheCells.
+     */
+    private static final int CACHE_CELLS = Math.max(512,
+            Integer.getInteger("greatwall.samplerCacheCells", 65536));
 
     private final RandomState randomState;
     private final NoiseSettings noiseSettings;
     private final NoiseGeneratorSettings generatorSettings;
     private final Aquifer.FluidPicker fluidPicker;
     private final BlockState defaultBlock;
-    private final LinkedHashMap<Long, Heights> cache = new LinkedHashMap<>(512, 0.75f, true) {
-        @Override
-        protected boolean removeEldestEntry(java.util.Map.Entry<Long, Heights> eldest) {
-            return size() > CACHE_CHUNKS;
-        }
-    };
+    /**
+     * Baked cells, shared by every lane of one terrain.
+     *
+     * <p>A result is immutable once built, so lanes can read each other's cells; only the NoiseChunk
+     * used to build one is thread-confined. Sharing matters because the lanes sweep the same ring:
+     * the whole coarse phase touches roughly forty thousand distinct cells, which fits easily in one
+     * shared budget but not in twelve separate ones.
+     */
+    private static final java.util.concurrent.ConcurrentHashMap<String,
+            java.util.concurrent.ConcurrentHashMap<Long, Heights>> SHARED =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    private final java.util.concurrent.ConcurrentHashMap<Long, Heights> cache;
     private long sweeps;
     private long corrections;
 
@@ -65,6 +81,10 @@ final class NoiseSurfaceSampler {
         this.generatorSettings = generatorSettings;
         this.fluidPicker = fluidPicker;
         this.defaultBlock = generatorSettings.defaultBlock();
+        // Keyed by the terrain fingerprint so two saves in one JVM can never share heights.
+        this.cache = SHARED.computeIfAbsent(Integer.toHexString(System.identityHashCode(randomState))
+                + ":" + generatorSettings.seaLevel() + ":" + noiseSettings.minY() + ":" + noiseSettings.height(),
+                ignored -> new java.util.concurrent.ConcurrentHashMap<>());
     }
 
     /** {@return the vanilla WORLD_SURFACE_WG height} in heightmap semantics, or the dimension floor. */
@@ -97,11 +117,19 @@ final class NoiseSurfaceSampler {
         // sparse query actually needs.
         int cellWidth = noiseSettings.getCellWidth();
         long key = ((long) Math.floorDiv(x, cellWidth) << 32) ^ (Math.floorDiv(z, cellWidth) & 0xffffffffL);
+        int cellX = Math.floorDiv(x, cellWidth);
+        int cellZ = Math.floorDiv(z, cellWidth);
         Heights cached = cache.get(key);
         if (cached != null) return cached;
-        Heights fresh = sweep(Math.floorDiv(x, cellWidth), Math.floorDiv(z, cellWidth));
-        cache.put(key, fresh);
-        sweeps++;
+        Heights[] built = new Heights[1];
+        Heights fresh = cache.computeIfAbsent(key, ignored -> {
+            built[0] = sweep(cellX, cellZ);
+            return built[0];
+        });
+        if (built[0] != null) {
+            sweeps++;
+            evictIfOversized();
+        }
         return fresh;
     }
 
@@ -113,6 +141,17 @@ final class NoiseSurfaceSampler {
      * thousands of chunks wide, so a chunk bake computed 255 columns nobody read - measured 67 ms per
      * answered column, and 3.4 s per siting candidate.
      */
+    /** A shared map has no LRU: drop an eighth of it when the budget is crossed. */
+    private void evictIfOversized() {
+        if (cache.size() <= CACHE_CELLS) return;
+        int target = cache.size() - CACHE_CELLS / 8;
+        var iterator = cache.keySet().iterator();
+        while (cache.size() > target && iterator.hasNext()) {
+            iterator.next();
+            iterator.remove();
+        }
+    }
+
     private Heights sweep(int cellX, int cellZ) {
         int cellWidth = noiseSettings.getCellWidth();
         int columns = cellWidth * cellWidth;
