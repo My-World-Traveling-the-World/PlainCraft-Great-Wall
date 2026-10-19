@@ -69,12 +69,14 @@ final class NoiseSurfaceSampler {
 
     /** {@return the vanilla WORLD_SURFACE_WG height} in heightmap semantics, or the dimension floor. */
     int worldSurface(int x, int z) {
-        return heightsFor(x, z).worldSurface[(x & 15) + ((z & 15) << 4)];
+        int cellWidth = noiseSettings.getCellWidth();
+        return heightsFor(x, z).worldSurface[(x & (cellWidth - 1)) + ((z & (cellWidth - 1)) * cellWidth)];
     }
 
     /** {@return the vanilla OCEAN_FLOOR_WG height} in heightmap semantics. */
     int oceanFloor(int x, int z) {
-        return heightsFor(x, z).oceanFloor[(x & 15) + ((z & 15) << 4)];
+        int cellWidth = noiseSettings.getCellWidth();
+        return heightsFor(x, z).oceanFloor[(x & (cellWidth - 1)) + ((z & (cellWidth - 1)) * cellWidth)];
     }
 
     long sweeps() { return sweeps; }
@@ -82,94 +84,99 @@ final class NoiseSurfaceSampler {
     void countedCorrection() { corrections++; }
 
     private Heights heightsFor(int x, int z) {
-        long key = ((long) (x >> 4) << 32) ^ ((z >> 4) & 0xffffffffL);
+        // Keyed by the noise CELL, not the chunk. The wall asks for one column at a time over a ring
+        // thousands of chunks wide, so a chunk bake would compute 256 columns to answer one: measured
+        // 67 ms per column. One cell holds cellWidth^2 columns (16 at cellWidth 4), which is what a
+        // sparse query actually needs.
+        int cellWidth = noiseSettings.getCellWidth();
+        long key = ((long) Math.floorDiv(x, cellWidth) << 32) ^ (Math.floorDiv(z, cellWidth) & 0xffffffffL);
         Heights cached = cache.get(key);
         if (cached != null) return cached;
-        Heights fresh = sweep(x >> 4, z >> 4);
+        Heights fresh = sweep(Math.floorDiv(x, cellWidth), Math.floorDiv(z, cellWidth));
         cache.put(key, fresh);
         sweeps++;
         return fresh;
     }
 
-    private Heights sweep(int chunkX, int chunkZ) {
-        int[] worldSurface = new int[COLUMN_COUNT];
-        int[] oceanFloor = new int[COLUMN_COUNT];
+    /**
+     * Bakes one noise cell: cellWidth x cellWidth columns.
+     *
+     * <p>The port used to bake a whole chunk (256 columns) because that is what the road needs: it
+     * samples a road footprint, which is dense. The wall asks for single columns spread over a ring
+     * thousands of chunks wide, so a chunk bake computed 255 columns nobody read - measured 67 ms per
+     * answered column, and 3.4 s per siting candidate.
+     */
+    private Heights sweep(int cellX, int cellZ) {
+        int cellWidth = noiseSettings.getCellWidth();
+        int columns = cellWidth * cellWidth;
+        int[] worldSurface = new int[columns];
+        int[] oceanFloor = new int[columns];
         int minY = noiseSettings.minY();
         Arrays.fill(worldSurface, minY);
         Arrays.fill(oceanFloor, minY);
 
-        int cellWidth = noiseSettings.getCellWidth();
         int cellHeight = noiseSettings.getCellHeight();
-        int cellCountXZ = 16 / cellWidth;
         int cellCountY = Mth.floorDiv(noiseSettings.height(), cellHeight);
         int cellNoiseMinY = Mth.floorDiv(minY, cellHeight);
         int airSkipMargin = generatorSettings.seaLevel() - minY + 32;
-        byte[] unresolvedMasks = new byte[COLUMN_COUNT];
+        byte[] unresolvedMasks = new byte[columns];
         Arrays.fill(unresolvedMasks, (byte) 0x03);
-        int unresolvedColumns = COLUMN_COUNT;
+        int unresolvedColumns = columns;
 
         Predicate<BlockState> worldSurfacePredicate = Heightmap.Types.WORLD_SURFACE_WG.isOpaque();
         Predicate<BlockState> oceanFloorPredicate = Heightmap.Types.OCEAN_FLOOR_WG.isOpaque();
 
-        int minBlockX = chunkX << 4;
-        int minBlockZ = chunkZ << 4;
-        AccessibleNoiseChunk noiseChunk = new AccessibleNoiseChunk(cellCountXZ, randomState,
-                minBlockX, minBlockZ, noiseSettings, ZeroBeardifier.INSTANCE, generatorSettings, fluidPicker);
+        int minBlockX = cellX * cellWidth;
+        int minBlockZ = cellZ * cellWidth;
+        AccessibleNoiseChunk noiseChunk = new AccessibleNoiseChunk(1, randomState, minBlockX, minBlockZ,
+                noiseSettings, ZeroBeardifier.INSTANCE, generatorSettings, fluidPicker);
         noiseChunk.initializeForFirstCellX();
         try {
+            noiseChunk.advanceCellX(0);
+            int repX = minBlockX + (cellWidth >> 1);
+            int repZ = minBlockZ + (cellWidth >> 1);
+            int startCellY = Mth.floorDiv(preliminarySurface(repX, repZ) + airSkipMargin, cellHeight)
+                    - cellNoiseMinY;
+            startCellY = Math.max(0, Math.min(cellCountY - 1, startCellY));
             outer:
-            for (int cellX = 0; cellX < cellCountXZ; cellX++) {
-                noiseChunk.advanceCellX(cellX);
-                for (int cellZ = 0; cellZ < cellCountXZ; cellZ++) {
-                    int repX = minBlockX + cellX * cellWidth + (cellWidth >> 1);
-                    int repZ = minBlockZ + cellZ * cellWidth + (cellWidth >> 1);
-                    int startCellY = Mth.floorDiv(preliminarySurface(repX, repZ) + airSkipMargin, cellHeight)
-                            - cellNoiseMinY;
-                    startCellY = Math.max(0, Math.min(cellCountY - 1, startCellY));
-                    for (int cellY = startCellY; cellY >= 0; cellY--) {
-                        noiseChunk.selectCellYZ(cellY, cellZ);
-                        for (int inCellY = cellHeight - 1; inCellY >= 0; inCellY--) {
-                            int blockY = (cellNoiseMinY + cellY) * cellHeight + inCellY;
-                            noiseChunk.updateForY(blockY, (double) inCellY / cellHeight);
-                            for (int inCellX = 0; inCellX < cellWidth; inCellX++) {
-                                int blockX = minBlockX + cellX * cellWidth + inCellX;
-                                int localX = blockX & 15;
-                                noiseChunk.updateForX(blockX, (double) inCellX / cellWidth);
-                                for (int inCellZ = 0; inCellZ < cellWidth; inCellZ++) {
-                                    int blockZ = minBlockZ + cellZ * cellWidth + inCellZ;
-                                    int index = localX + ((blockZ & 15) << 4);
-                                    byte mask = unresolvedMasks[index];
-                                    if (mask == 0) continue;
-                                    noiseChunk.updateForZ(blockZ, (double) inCellZ / cellWidth);
-                                    BlockState state = noiseChunk.sampleInterpolatedState();
-                                    if (state == null) state = defaultBlock;
-                                    if (state.isAir()) continue;
-                                    byte next = mask;
-                                    if ((next & 0x01) != 0 && worldSurfacePredicate.test(state)) {
-                                        worldSurface[index] = blockY + 1;
-                                        next &= ~0x01;
-                                    }
-                                    if ((next & 0x02) != 0 && oceanFloorPredicate.test(state)) {
-                                        oceanFloor[index] = blockY + 1;
-                                        next &= ~0x02;
-                                    }
-                                    if (next != mask) {
-                                        unresolvedMasks[index] = next;
-                                        if (next == 0 && --unresolvedColumns == 0) break outer;
-                                    }
-                                }
+            for (int cellY = startCellY; cellY >= 0; cellY--) {
+                noiseChunk.selectCellYZ(cellY, 0);
+                for (int inCellY = cellHeight - 1; inCellY >= 0; inCellY--) {
+                    int blockY = (cellNoiseMinY + cellY) * cellHeight + inCellY;
+                    noiseChunk.updateForY(blockY, (double) inCellY / cellHeight);
+                    for (int inCellX = 0; inCellX < cellWidth; inCellX++) {
+                        noiseChunk.updateForX(minBlockX + inCellX, (double) inCellX / cellWidth);
+                        for (int inCellZ = 0; inCellZ < cellWidth; inCellZ++) {
+                            int index = inCellX + inCellZ * cellWidth;
+                            byte mask = unresolvedMasks[index];
+                            if (mask == 0) continue;
+                            noiseChunk.updateForZ(minBlockZ + inCellZ, (double) inCellZ / cellWidth);
+                            BlockState state = noiseChunk.sampleInterpolatedState();
+                            if (state == null) state = defaultBlock;
+                            if (state.isAir()) continue;
+                            byte next = mask;
+                            if ((next & 0x01) != 0 && worldSurfacePredicate.test(state)) {
+                                worldSurface[index] = blockY + 1;
+                                next &= ~0x01;
+                            }
+                            if ((next & 0x02) != 0 && oceanFloorPredicate.test(state)) {
+                                oceanFloor[index] = blockY + 1;
+                                next &= ~0x02;
+                            }
+                            if (next != mask) {
+                                unresolvedMasks[index] = next;
+                                if (next == 0 && --unresolvedColumns == 0) break outer;
                             }
                         }
                     }
                 }
-                noiseChunk.swapSlices();
             }
+            noiseChunk.swapSlices();
         } finally {
             noiseChunk.stopInterpolation();
         }
         return new Heights(worldSurface, oceanFloor);
     }
-
     /** The same start heuristic the road uses: a cheap descent bound, never the answer itself. */
     private int preliminarySurface(int blockX, int blockZ) {
         DensityFunction density = randomState.router().initialDensityWithoutJaggedness();

@@ -31,8 +31,10 @@ class BuildContractTest {
                 entrypoints.getAsJsonArray("client").get(0).getAsString());
         assertFalse(entrypoints.has("fabric-gametest"));
         JsonObject dependencies = metadata.getAsJsonObject("depends");
-        assertEquals("=0.19.3", dependencies.get("fabricloader").getAsString());
-        assertEquals("=0.116.14+1.21.1", dependencies.get("fabric-api").getAsString());
+        // A floor, not an exact pin: an exact pin made the wall refuse to load on any pack whose
+        // loader or API differed by one patch release, which has nothing to do with this code.
+        assertEquals(">=0.19.3", dependencies.get("fabricloader").getAsString());
+        assertEquals(">=0.116.14+1.21.1", dependencies.get("fabric-api").getAsString());
         assertFalse(dependencies.has("ftbquests"));
         assertFalse(dependencies.has("roadweaver"));
         assertFalse(dependencies.has("c2me"));
