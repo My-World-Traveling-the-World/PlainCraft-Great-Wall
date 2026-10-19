@@ -186,10 +186,26 @@ public final class PlannerScheduler implements AutoCloseable {
     private static final long FINE_SAMPLE_RUNAWAY_MIN_EXPECTED = 1_000L;
     /** Consecutive no-new-terrain windows before the stage is declared a runaway (5 s each). */
     private static final int FINE_SAMPLE_RUNAWAY_IDLE_WINDOWS = 3;
+    /**
+     * Consecutive windows of "not one column moved while work is still outstanding and every lane is
+     * idle" before the stage is abandoned (5 s each).
+     *
+     * <p>The other two tests both need columns to keep arriving: the ratio test divides by columns, and
+     * the no-new-terrain test ignores a window whose column delta is below its floor. A stage that hangs
+     * - a slice future that never completes, a lane that died holding a job - moves no columns at all, so
+     * both tests zero their counters and wait forever. This one is the liveness test they were missing,
+     * and it is phrased on idleness rather than on a column count so a slow-but-alive stage cannot trip
+     * it: lanes busy means work is progressing even when the counters are flat.
+     */
+    private static final int FINE_SAMPLE_STALL_WINDOWS = 3;
     private long runawayLastColumns;
     private long runawayLastMisses;
     private long runawayLastCheckNanos;
     private int runawayIdleChecks;
+    private int runawayStallChecks;
+    /** The fine sample's outstanding counters, mirrored so the driver can judge a stall. */
+    private volatile java.util.concurrent.atomic.AtomicInteger fineSampleSlicesPending;
+    private volatile java.util.concurrent.atomic.AtomicInteger fineSampleRoutesPending;
 
     /**
      * The prewarm's segment leases, pinned until the planning compile has published them.
@@ -449,6 +465,11 @@ public final class PlannerScheduler implements AutoCloseable {
         // below would never be stopped and the startup would sit in FINE_SAMPLE forever.
         var routesPending = new java.util.concurrent.atomic.AtomicInteger();
         var slicesPending = new java.util.concurrent.atomic.AtomicInteger();
+        // Published so the driver's stall test can tell "nothing is running and work is outstanding"
+        // from "everything is busy and merely slow".
+        fineSampleRoutesPending = routesPending;
+        fineSampleSlicesPending = slicesPending;
+        runawayStallChecks = 0;
         // While the enqueue loop below is still running, the counters cannot speak for the segments
         // that have not been handed to a lane yet: the first route's callback may resolve (and
         // decrement routesPending to zero) before the loop reaches the second segment, and the index
@@ -1076,6 +1097,16 @@ public final class PlannerScheduler implements AutoCloseable {
         long missDelta = Math.max(0L, misses - runawayLastMisses);
         runawayLastColumns = columns;
         runawayLastMisses = misses;
+        // Liveness first: if nothing is running, nothing is outstanding and no column moved, the stage
+        // is hung, not slow. Judged on lane idleness rather than on the counter, because a healthy
+        // stage can also spend a window without producing a column.
+        if (columnDelta == 0L && outstandingFineSampleWork() && lanesIdle()) {
+            if (++runawayStallChecks >= FINE_SAMPLE_STALL_WINDOWS) {
+                return abandonFineSample(abandon, columns, expected, "stalled=" + runawayStallChecks);
+            }
+        } else {
+            runawayStallChecks = 0;
+        }
         if (columnDelta < FINE_SAMPLE_RUNAWAY_MIN_COLUMNS || missDelta > columnDelta / 50L) {
             runawayIdleChecks = 0;   // real terrain is still being discovered
             return false;
@@ -1179,9 +1210,24 @@ public final class PlannerScheduler implements AutoCloseable {
         return whole <= 0L ? 0 : (int) Math.round(100.0D * part / whole);
     }
 
+    /** {@return whether any fine-sample work is still outstanding} */
+    private boolean outstandingFineSampleWork() {
+        var slices = fineSampleSlicesPending;
+        var routes = fineSampleRoutesPending;
+        if (slices == null) return false;
+        return slices.get() > 0 || (routes != null && routes.get() > 0);
+    }
+
+    /** {@return whether every planning lane is idle right now} */
+    private boolean lanesIdle() {
+        for (var lane : laneState) {
+            if (lane.busy || lane.initializing) return false;
+        }
+        return true;
+    }
+
     /** Sum of one per-lane diagnostic counter across the native lanes. */
-    private long laneDiagnostic(String key) {
-        long total = 0L;
+    private long laneDiagnostic(String key) {        long total = 0L;
         for (var lane : lanes) total += lane.diagnostics().getOrDefault(key, 0L);
         return total;
     }
