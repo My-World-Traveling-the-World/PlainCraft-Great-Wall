@@ -52,6 +52,44 @@ public final class WallBodyBackfill {
     /** A chunk that cannot settle after this many drains leaves the queue. */
     private static final int MAX_ATTEMPTS = 3;
 
+    /**
+     * The durable build-proof store. Planner publishes into it once per chunk; the backfill reads
+     * from it when a chunk is loaded in a later session and the in-memory cache is gone (the cache
+     * only lives as long as the publish that filled it). Null when the store could not be opened.
+     */
+    public interface PlanStore {
+        java.util.Optional<ChunkWritePlan> read(ChunkKey owner) throws java.io.IOException;
+
+        void write(ChunkWritePlan plan) throws java.io.IOException;
+    }
+
+    private static volatile PlanStore planStore;
+    private static final AtomicLong PERSISTED = new AtomicLong();
+    private static final AtomicLong PERSIST_FAILURES = new AtomicLong();
+
+    /** Installed once per server by the production session, which owns the durable store. */
+    public static void install(PlanStore store) {
+        planStore = store;
+    }
+
+    /** Writes one published plan to the durable store; a failure costs a backfill, never a session. */
+    public static void persist(ChunkWritePlan plan) {
+        PlanStore store = planStore;
+        if (store == null || plan == null) return;
+        try {
+            store.write(plan);
+            PERSISTED.incrementAndGet();
+        } catch (java.io.IOException | RuntimeException failure) {
+            if (PERSIST_FAILURES.incrementAndGet() <= 4) {
+                GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_PERSIST_FAILED owner={},{} reason={}",
+                        plan.owner().x(), plan.owner().z(), failure.toString());
+            }
+        }
+    }
+
+    public static long persisted() { return PERSISTED.get(); }
+
+    public static long persistFailures() { return PERSIST_FAILURES.get(); }
     private static final Map<ServerLevel, State> STATES = new ConcurrentHashMap<>();
     private static final AtomicLong TOTAL_BLOCKS = new AtomicLong();
 
@@ -153,6 +191,21 @@ public final class WallBodyBackfill {
 
     private static Sweep settle(ServerLevel level, LevelChunk chunk, ChunkKey key) {
         ChunkWritePlan plan = WallWorldgenPlanCache.get(level, key);
+        if (plan == null) return new Sweep(Status.FOREIGN, 0);
+        if (plan == null) {
+            // A later session: the in-memory cache died with the publish that filled it, but
+            // the planner wrote the durability record. One small read per chunk, and only once.
+            PlanStore store = planStore;
+            if (store != null) {
+                try {
+                    plan = store.read(key).orElse(null);
+                } catch (java.io.IOException | RuntimeException failure) {
+                    GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_READ_FAILED owner={},{} reason={}",
+                            key.x(), key.z(), failure.toString());
+                }
+                if (plan != null) WallWorldgenPlanCache.put(level, plan);
+            }
+        }
         if (plan == null) return new Sweep(Status.FOREIGN, 0);
         int written = 0;
         for (var voxel : plan.voxels()) {

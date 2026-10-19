@@ -14,6 +14,8 @@ import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 
 /** Whole-cell decisions use only immutable contracts/T0, never the owner currently asking for them. */
 public final class RealizationPlanner {
+    /** Ends whose ground exit could not be proven; the wall ends flush instead of with a cap. */
+    private long capsDegraded;
     public record Input(CellKey key,PlanWindow plans,Map<TerrainTile.Key,TerrainTile> tiles,
             Map<Point3i,SurfaceProbe.ColumnView> columns,List<Bounds> protectedBounds,Map<GateId,Integer> frozenGateY,
             long gateRevision,String protectionHash) {
@@ -560,13 +562,16 @@ public final class RealizationPlanner {
             if(s>=from&&(s<to||s==to&&s==stations.getLast().globalSQ8()))components.add(cap);
             return;
         }
-        // The message carries what a bare position cannot: how many inward candidates were tried, how
-        // many columns this realization was handed, and the bounds it believed in. A real run threw this
-        // 1783 times with nothing but "break at <s>", and the only way to tell "one hard column" from
-        // "resolved against the wrong window" was to read the jar's source afterwards.
-        throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"no proven ground exit for break at "+s
-                +" (endCapCandidates="+candidates.size()+", columns="+input.columns().size()
-                +", bounds="+bounds+")");
+        // Degrade instead of failing the owner. 560 of 2185 owners died here in the measured
+        // session, and each one cost its whole window: the wall had missing chunks where it should
+        // merely have ended square. A cap is decoration on a flush end, so its absence costs a
+        // square end, not a hole.
+        capsDegraded++;
+        if(capsDegraded<=8||capsDegraded%512==0){
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                    "[GreatWall:S1C] WALL_END_CAP_DEGRADED break={} candidates={} columns={} degraded={}",
+                    s,candidates.size(),input.columns().size(),capsDegraded);
+        }
     }
     private ComponentVoxels compile(SiteKind kind,java.util.function.Supplier<ComponentInput> preparation,Input input) {
         var template=templates.get(kind);if(template==null)throw new IllegalArgumentException("missing template "+kind);

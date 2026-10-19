@@ -219,6 +219,21 @@ final class ProductionSession implements AutoCloseable {
                         }
                     });
                     var negotiated = new NegotiatedGateService(services, planner, gates, backfill);
+                    // The wall body backfill reads the same durable build-proofs the arch backfill does,
+                    // so a plan published in an earlier session can still paint a chunk loaded today.
+                    local.plaincraft.greatwall.generation.WallBodyBackfill.install(
+                            new local.plaincraft.greatwall.generation.WallBodyBackfill.PlanStore() {
+                                @Override public java.util.Optional<local.plaincraft.greatwall.model.WallTypes.ChunkWritePlan>
+                                        read(local.plaincraft.greatwall.model.WallTypes.ChunkKey owner)
+                                        throws java.io.IOException {
+                                    return store.readPlan(owner);
+                                }
+
+                                @Override public void write(local.plaincraft.greatwall.model.WallTypes.ChunkWritePlan plan)
+                                        throws java.io.IOException {
+                                    store.persistPlan(plan);
+                                }
+                            });
                     var debug = new DebugService(services);
                     var exporter = new DiagnosticExporter(
                             server.getWorldPath(LevelResource.ROOT).resolve("greatwall-exports"), planner, server);
@@ -1009,6 +1024,7 @@ final class ProductionSession implements AutoCloseable {
                 // 17.6 minutes after the prewarm finished), so nothing here would ever reach the
                 // feature stage again. See WallBodyBackfill.
                 publishedKeys.add(entry.getKey());
+                local.plaincraft.greatwall.generation.WallBodyBackfill.persist(entry.getValue());
                 // Publish the planning vegetation corridor + biome mask for this chunk, replacing the
                 // deleted FeatureSlot's per-chunk publication.
                 vegetation.publish(entry.getKey(), window);

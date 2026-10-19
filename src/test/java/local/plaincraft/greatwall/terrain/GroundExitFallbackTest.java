@@ -57,7 +57,7 @@ class GroundExitFallbackTest {
         var terminal=new RealizationPlanner.Input(new CellKey(H,recipe.dimension(),7),plans,tiles,columns,List.of(),Map.of(),0,H);
         return new Fixture(planner,early,terminal,root);
     }
-    @Test void finiteRetreatCanFailAfterAnEarlierValidGroundExit(){
+    @Test void finiteRetreatDegradesInsteadOfFailingTheOwner(){
         var f=fixture();
         assertFalse(f.root().voxels().isEmpty(),"the earlier fort is physically buildable");
         var probe=new SurfaceProbe();var bounds=new DimensionBounds(0,128,29_999_000);
@@ -68,9 +68,12 @@ class GroundExitFallbackTest {
         var early=f.planner().resolve(f.early());
         assertTrue(early.components().stream().flatMap(c->c.voxels().stream()).anyMatch(VoxelIntent::walkable),
                 "an upstream independent cell already publishes a walkway before the distant failure");
-        var failure=assertThrows(WallFailure.class,()->f.planner().resolve(f.terminal()));
-        assertEquals(FailureCode.OWNERSHIP_CONFLICT,failure.code());
-        assertTrue(failure.getMessage().contains("no proven ground exit"));
+        // 2026-10-19: a break whose ground exit cannot be proven no longer fails the owner - that
+        // cost 560 of 2185 owners their whole window. The wall now ends flush without its cap, so
+        // the terminal cell still resolves and still publishes its walkway.
+        var terminal=f.planner().resolve(f.terminal());
+        assertTrue(terminal.components().stream().flatMap(c->c.voxels().stream()).anyMatch(VoxelIntent::walkable),
+                "the wall still publishes once its end cap is degraded");
     }
     @Test void exhaustedCapSearchMustFallBackToTheEarlierGroundExitWithoutFatalGeneration() throws Exception {
         var f=fixture();

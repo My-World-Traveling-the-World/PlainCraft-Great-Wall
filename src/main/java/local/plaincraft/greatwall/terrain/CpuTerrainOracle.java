@@ -571,9 +571,11 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         // accepted groundTopY=-61 under a sparse jungle whose real surface was y=121, and the wall
         // started at y=-44. The road answers the same question by reading the real heightmap; this
         // reads the heightmap the game itself would have written, from a real NoiseChunk sweep.
-        if (certified != Quality.REFERENCE || c.groundTop <= bounds.minY() + 8) {
+        // Full replacement: every column takes the vanilla sweep's ground. The walk still runs - it
+        // is what collects the support evidence the foundation uses - but it is no longer the answer.
+        {
             int sampledGround = surfaceSampler.worldSurface(c.x, c.z) - 1;
-            if (sampledGround > bounds.minY() + 8 && Math.abs(sampledGround - c.groundTop) > 1) {
+            if (sampledGround > bounds.minY() + 8) {
                 int walkedGround = c.groundTop;
                 c.groundTop = sampledGround;
                 certified = Quality.REFERENCE;
