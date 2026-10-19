@@ -233,6 +233,33 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         }
         if (active != null) throw new IllegalStateException("finish the current natural column before beginning another");
         active = new Cursor(x, z, kind);
+        // Road-style answer: the vanilla sweep already knows this column, so there is nothing to walk.
+        // It also hands back the three solid states under the surface, which is what the foundation
+        // certificate reads - the density walk existed only to collect them.
+        int sea = settings.seaLevel();
+        int surface = surfaceSampler.worldSurface(x, z);
+        int floor = surfaceSampler.oceanFloor(x, z);
+        int ground = surface - 1;
+        boolean sane = ground > bounds.minY() + 8 && ground < bounds.maxYExclusive();
+        var water = base(sea, surface, floor);
+        String biome = biomeSource.getNoiseBiome(Math.floorDiv(x, 4),
+                Math.floorDiv(sane ? ground : sea, 4), Math.floorDiv(z, 4), randomState.sampler())
+                .unwrapKey().orElseThrow(() -> new WallFailure(FailureCode.INVALID_RESOURCE,
+                        "unkeyed natural biome")).location().toString();
+        Quality quality = sane ? Quality.REFERENCE : Quality.CENSORED;
+        if (!sane) active.censored = true;
+        active.groundTop = sane ? ground : bounds.minY() + 16;
+        active.waterTop = water[0];
+        active.bedTop = water[1];
+        BlockState[] support = surfaceSampler.supportColumn(x, z);
+        if (support != null) {
+            active.firstSolid = support[0];
+            for (int i = 0; i < support.length && i < active.support.length; i++) {
+                active.support[i] = support[i];
+            }
+            active.supportCount = Math.min(support.length, active.support.length);
+        }
+        active.result = new ColumnSample(active.groundTop, active.waterTop, active.bedTop, biome, quality, active.censored);
         return active;
     }
 
@@ -338,6 +365,14 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      */
     static int nextLeadClimb(int climb) {
         return Math.max(REFERENCE_LEAD_BLOCKS, climb * 2);
+    }
+
+    /** {@return [waterTop, bedTop] in the same semantics the walk used} */
+    private OptionalInt[] base(int sea, int surface, int floor) {
+        if (surface <= sea && floor < surface) {
+            return new OptionalInt[] {OptionalInt.of(sea), OptionalInt.of(Math.max(bounds.minY(), floor - 1))};
+        }
+        return new OptionalInt[] {OptionalInt.empty(), OptionalInt.empty()};
     }
 
     private int preliminarySurface(int x, int z) {

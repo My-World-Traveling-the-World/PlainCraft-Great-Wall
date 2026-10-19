@@ -79,6 +79,13 @@ final class NoiseSurfaceSampler {
         return heightsFor(x, z).oceanFloor[(x & (cellWidth - 1)) + ((z & (cellWidth - 1)) * cellWidth)];
     }
 
+    /** {@return the three solid states under this column's surface, or null when unknown} */
+    BlockState[] supportColumn(int x, int z) {
+        int cellWidth = noiseSettings.getCellWidth();
+        BlockState[] support = heightsFor(x, z).support[(x & (cellWidth - 1)) + ((z & (cellWidth - 1)) * cellWidth)];
+        return support == null ? null : support.clone();
+    }
+
     long sweeps() { return sweeps; }
     long corrections() { return corrections; }
     void countedCorrection() { corrections++; }
@@ -119,6 +126,9 @@ final class NoiseSurfaceSampler {
         int cellCountY = Mth.floorDiv(noiseSettings.height(), cellHeight);
         int cellNoiseMinY = Mth.floorDiv(minY, cellHeight);
         int airSkipMargin = generatorSettings.seaLevel() - minY + 32;
+        BlockState[][] support = new BlockState[columns][];
+        int[] supportDepth = new int[columns];
+        java.util.Arrays.fill(supportDepth, -1);
         byte[] unresolvedMasks = new byte[columns];
         Arrays.fill(unresolvedMasks, (byte) 0x03);
         int unresolvedColumns = columns;
@@ -157,11 +167,21 @@ final class NoiseSurfaceSampler {
                             byte next = mask;
                             if ((next & 0x01) != 0 && worldSurfacePredicate.test(state)) {
                                 worldSurface[index] = blockY + 1;
+                                supportDepth[index] = 0;
+                                if (support[index] == null) support[index] = new BlockState[3];
+                                support[index][supportDepth[index]++] = state;
                                 next &= ~0x01;
                             }
                             if ((next & 0x02) != 0 && oceanFloorPredicate.test(state)) {
                                 oceanFloor[index] = blockY + 1;
                                 next &= ~0x02;
+                            }
+                            // The first solid block under the surface starts the foundation evidence: the
+                            // wall certifies its base against these three states, and reading them from the
+                            // same vanilla sweep is what lets the density walk go away entirely.
+                            if (supportDepth[index] >= 0 && supportDepth[index] < 3) {
+                                if (support[index] == null) support[index] = new BlockState[3];
+                                support[index][supportDepth[index]++] = state;
                             }
                             if (next != mask) {
                                 unresolvedMasks[index] = next;
@@ -175,7 +195,7 @@ final class NoiseSurfaceSampler {
         } finally {
             noiseChunk.stopInterpolation();
         }
-        return new Heights(worldSurface, oceanFloor);
+        return new Heights(worldSurface, oceanFloor, support);
     }
     /** The same start heuristic the road uses: a cheap descent bound, never the answer itself. */
     private int preliminarySurface(int blockX, int blockZ) {
@@ -194,7 +214,8 @@ final class NoiseSurfaceSampler {
         return lo;
     }
 
-    private record Heights(int[] worldSurface, int[] oceanFloor) {
+    /** One cell's heightmaps plus the first three solid blocks under each column's surface. */
+    private record Heights(int[] worldSurface, int[] oceanFloor, BlockState[][] support) {
     }
 
     static Aquifer.FluidPicker fluidPicker(NoiseGeneratorSettings settings) {
