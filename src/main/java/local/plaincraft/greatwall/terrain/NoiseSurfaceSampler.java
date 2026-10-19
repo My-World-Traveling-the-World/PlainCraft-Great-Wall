@@ -153,6 +153,14 @@ final class NoiseSurfaceSampler {
     }
 
     private Heights sweep(int cellX, int cellZ) {
+        Heights fast = sweepCell(cellX, cellZ, 8);
+        if (fast.complete) return fast;
+        // A column the short margin could not resolve gets the road's full margin: correctness first,
+        // but only for the cells that actually need it.
+        return sweepCell(cellX, cellZ, generatorSettings.seaLevel() - noiseSettings.minY() + 32);
+    }
+
+    private Heights sweepCell(int cellX, int cellZ, int airSkipMargin) {
         int cellWidth = noiseSettings.getCellWidth();
         int columns = cellWidth * cellWidth;
         int[] worldSurface = new int[columns];
@@ -164,7 +172,11 @@ final class NoiseSurfaceSampler {
         int cellHeight = noiseSettings.getCellHeight();
         int cellCountY = Mth.floorDiv(noiseSettings.height(), cellHeight);
         int cellNoiseMinY = Mth.floorDiv(minY, cellHeight);
-        int airSkipMargin = generatorSettings.seaLevel() - minY + 32;
+        // Start just above the estimate, not a hundred and sixty blocks above it: the estimate the
+        // sweep uses is its own density bisection, accurate to a few blocks, and every extra cell of
+        // air above it costs a full 16-column pass. The old margin was the road's, where a chunk bake
+        // answers 256 columns and the waste amortises; here it was most of the work. A cell that the
+        // short margin leaves unresolved is swept again from the full margin, so accuracy is kept.
         BlockState[][] support = new BlockState[columns][];
         int[] supportDepth = new int[columns];
         java.util.Arrays.fill(supportDepth, -1);
@@ -234,7 +246,7 @@ final class NoiseSurfaceSampler {
         } finally {
             noiseChunk.stopInterpolation();
         }
-        return new Heights(worldSurface, oceanFloor, support);
+        return new Heights(worldSurface, oceanFloor, support, unresolvedColumns == 0);
     }
     /** The same start heuristic the road uses: a cheap descent bound, never the answer itself. */
     private int preliminarySurface(int blockX, int blockZ) {
@@ -254,7 +266,7 @@ final class NoiseSurfaceSampler {
     }
 
     /** One cell's heightmaps plus the first three solid blocks under each column's surface. */
-    private record Heights(int[] worldSurface, int[] oceanFloor, BlockState[][] support) {
+    private record Heights(int[] worldSurface, int[] oceanFloor, BlockState[][] support, boolean complete) {
     }
 
     static Aquifer.FluidPicker fluidPicker(NoiseGeneratorSettings settings) {
