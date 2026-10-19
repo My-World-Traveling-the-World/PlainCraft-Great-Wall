@@ -263,35 +263,15 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         return active;
     }
 
+    /**
+     * Every column is already answered by {@link #begin}: the vanilla sweep resolves the height,
+     * the water and the three foundation states in one pass, so there is nothing left to advance.
+     */
     @Override public WorkState advance(ColumnCursor cursor, int primitiveLimit) {
-        var c = own(cursor);
+        own(cursor);
         if (primitiveLimit < 1 || primitiveLimit > 4096) throw new IllegalArgumentException("primitive limit 1..4096");
-        long started = System.nanoTime();
-        try {
-            for (int step = 0; step < primitiveLimit && c.result == null; step++) {
-                // A native slice walk should finish in a small multiple of the column's
-                // height. A cursor that is still walking after this many steps has hit a
-                // malformed interpolation - an empty interpolator list or an off-by-one in
-                // the cell traversal - and would otherwise spin forever, holding a whole
-                // lane and, through the root search's serial chain, the whole startup. Censor
-                // instead: the column is treated as unbuildable, which is what an unreadable
-                // native column means anyway, and the search moves on.
-                if (++c.advanceSteps > MAX_REFERENCE_ADVANCE_STEPS) {
-                    c.censored = true;
-                    complete(c, Quality.CENSORED);
-                    break;
-                }
-                if (c.kind == SampleKind.COARSE) { coarse(c); coarsePrimitives++; }
-                else { reference(c); referencePrimitives++; }
-            }
-            return c.result == null ? WorkState.MORE : WorkState.DONE;
-        } finally {
-            long elapsed = System.nanoTime() - started;
-            maxAdvanceNanos = Math.max(maxAdvanceNanos, elapsed);
-            if (elapsed > FORTY_MS) over40msAdvances++;
-        }
+        return WorkState.DONE;
     }
-
     @Override public ColumnSample finish(ColumnCursor cursor) {
         var c = own(cursor);
         if (c.result == null) throw new IllegalStateException("natural column is unfinished");
@@ -343,7 +323,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         checkOwner();
         if (closed) return;
         closed = true;
-        if (active != null) { stop(active); active = null; }
+        active = null;
         // Cached chunks hold scratch arrays and this lane is going away: release every one.
         for (var chunk : chunkCache.values()) chunk.stopInterpolation();
         chunkCache.clear();
@@ -363,11 +343,6 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      * <p>Exponential search, so the number of rungs is logarithmic in the distance to clear air rather
      * than linear in the dimension's height.
      */
-    static int nextLeadClimb(int climb) {
-        return Math.max(REFERENCE_LEAD_BLOCKS, climb * 2);
-    }
-
-    /** {@return [waterTop, bedTop] in the same semantics the walk used} */
     private OptionalInt[] base(int sea, int surface, int floor) {
         if (surface <= sea && floor < surface) {
             return new OptionalInt[] {OptionalInt.of(sea), OptionalInt.of(Math.max(bounds.minY(), floor - 1))};
@@ -375,268 +350,6 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         return new OptionalInt[] {OptionalInt.empty(), OptionalInt.empty()};
     }
 
-    private int preliminarySurface(int x, int z) {
-        // Road-style, and now the only path: the exact vanilla sweep knows this column, so the walk
-        // starts a few blocks above the real surface. The density bisection this method used to run
-        // could sit tens of blocks away and every walk paid for the descent - 70 ms per column,
-        // 17.6 minutes per root search. It is gone rather than kept as a fallback.
-        int swept = surfaceSampler.worldSurface(x, z) - 1;
-        if (swept > bounds.minY() + 8 && swept < bounds.maxYExclusive()) return swept;
-        return bounds.minY() + 16;
-    }
-    private void coarse(Cursor c) {
-        long start = System.nanoTime();
-        var density = randomState.router().initialDensityWithoutJaggedness();
-        int x4 = Math.floorDiv(c.x, 4) * 4;
-        int z4 = Math.floorDiv(c.z, 4) * 4;
-        int cellHeight = noise.getCellHeight();
-        int top = bounds.maxYExclusive() - 1;
-        // Binary-search the surface cell instead of walking one cell per advance step from
-        // the top. The smooth density is monotonic in Y for a fixed column, so this is
-        // bit-identical to the old top-down walk while replacing ~cellCountY evaluations
-        // with ~log2(cellCountY). This is the coarse probe's share of the root search.
-        int steps = (top - bounds.minY()) / cellHeight;
-        int lo = 0;
-        int hi = steps;
-        while (lo < hi) {
-            int mid = (lo + hi) >>> 1;
-            int y = top - mid * cellHeight;
-            if (density.compute(new DensityFunction.SinglePointContext(x4, y, z4)) > 0.390625) {
-                hi = mid;
-            } else {
-                lo = mid + 1;
-            }
-        }
-        int y = top - lo * cellHeight;
-        boolean solid = density.compute(new DensityFunction.SinglePointContext(x4, y, z4)) > 0.390625;
-        long duration = System.nanoTime() - start;
-        maxCoarseNanos = Math.max(maxCoarseNanos, duration); observe(duration);
-        if (solid) {
-            c.groundTop = y + 1;
-            c.censored = y == top;
-            complete(c, Quality.COARSE);
-        } else {
-            c.censored = true;
-            complete(c, Quality.CENSORED);
-        }
-    }
-
-    private void reference(Cursor c) {
-        if (c.chunk == null) {
-            int width = noise.getCellWidth();
-            int cellX = Math.floorDiv(c.x, width);
-            int cellZ = Math.floorDiv(c.z, width);
-            long key = ((long) cellX << 32) ^ (cellZ & 0xffffffffL);
-            var cached = chunkCache.get(key);
-            if (cached != null) {
-                chunkCacheHits++;
-                c.chunk = cached;
-                c.bridge = (NoiseCursorBridge) (Object) cached;
-                // Already baked: skipping the slice walk is the entire point of the reuse.
-                c.slicesReady = true;
-                return;
-            }
-            chunkCacheMisses++;
-            long start = System.nanoTime();
-            c.chunk = new NoiseChunk(1, randomState, cellX * width, cellZ * width,
-                    noise, DensityFunctions.BeardifierMarker.INSTANCE, settings, fluidPicker, Blender.empty());
-            c.bridge = (NoiseCursorBridge) (Object) c.chunk;
-            c.bridge.greatwall$beginSlices();
-            long duration = System.nanoTime() - start;
-            maxConstructNanos = Math.max(maxConstructNanos, duration); observe(duration);
-            constructNanosTotal += duration;
-            return;
-        }
-        if (!c.slicesReady) {
-            long start = System.nanoTime();
-            c.slicesReady = c.bridge.greatwall$advanceSlices(1);
-            long duration = System.nanoTime() - start;
-            maxSlicePointNanos = Math.max(maxSlicePointNanos, duration); observe(duration);
-            sliceNanosTotal += duration;
-            return;
-        }
-        if (c.selectedCell != c.cellY) {
-            long start = System.nanoTime();
-            c.chunk.selectCellYZ(c.cellY, 0);
-            long duration = System.nanoTime() - start;
-            maxCellNanos = Math.max(maxCellNanos, duration); observe(duration);
-            cellNanosTotal += duration;
-            c.selectedCell = c.cellY;
-            return;
-        }
-        long start = System.nanoTime();
-        c.chunk.updateForY(c.y, (double) c.innerY / noise.getCellHeight());
-        if (!c.axesReady) {
-            // The column's x/z never change, so the horizontal interpolation fractions are constant
-            // for the whole descent: they are set once instead of on every walked block, which is
-            // two fewer density-interpolation calls per block with an identical result.
-            c.chunk.updateForX(c.x, (double) Math.floorMod(c.x, noise.getCellWidth()) / noise.getCellWidth());
-            c.chunk.updateForZ(c.z, (double) Math.floorMod(c.z, noise.getCellWidth()) / noise.getCellWidth());
-            c.axesReady = true;
-        }
-        BlockState state = c.bridge.greatwall$state();
-        if (state == null) state = settings.defaultBlock();
-        walkedBlocks++;
-        if (!c.leadChecked && c.y == c.attemptStartY) {
-            // The first block of the walk proves whether the short lead cleared the real surface.
-            // Non-air here means the smooth estimate sat at or below the ground (or the water top),
-            // so climb and try again.
-            //
-            // The climb doubles instead of jumping straight to the full historical margin. That margin
-            // is {@code seaLevel - minY + 32} above the estimate - with a 2112-block dimension that is
-            // over a thousand blocks, and the old code paid every one of them as a walked block for
-            // every column whose estimate was low. The estimate is only ever wrong by the height of the
-            // jagged band, the aquifer and the surface rules, which is tens of blocks, so an exponential
-            // search reaches clear air in O(log distance) single-block probes: 32, 64, 128, ... blocks
-            // above the short lead, and the walk then descends from the first clear start it finds.
-            //
-            // Same acceptance rule as before, applied at more candidate heights: a start is accepted
-            // only when its own first block is air, which is exactly the condition the short lead has
-            // always been trusted on. The ceiling margin stays the last rung, so a column whose terrain
-            // really does reach for the sky still walks what it always walked.
-            c.leadChecked = true;
-            if (!state.isAir()) {
-                if (c.attemptStartY < c.highStartY) {
-                    blockNanosTotal += System.nanoTime() - start;
-                    leadRetries++;
-                    int climb = nextLeadClimb(c.leadClimb);
-                    c.leadClimb = climb;
-                    c.resetWalk(Math.min(c.attemptStartY + climb, c.highStartY));
-                    return;
-                }
-                // The ladder is exhausted and the first block is still solid: the seed was wrong by more
-                // than the ladder can cover. Accepting this block as "the ground" is how a cliff column got
-                // recorded tens of blocks too low - and, being REFERENCE, it then seeded its neighbours and
-                // the error spread. Re-anchor on the density estimate and walk again instead.
-                if (!c.estimateFallbackUsed) {
-                    c.estimateFallbackUsed = true;
-                    blockNanosTotal += System.nanoTime() - start;
-                    leadRetries++;
-                    int estimate = estimate(c);
-                    // A re-anchor is a fresh search, not a continuation: keeping the old ladder step
-                    // would start it at estimate+32+2*climb, hundreds of blocks above the estimate this
-                    // branch exists to trust.
-                    c.leadClimb = 0;
-                    c.resetWalk(Math.min(estimate + REFERENCE_LEAD_BLOCKS, bounds.maxYExclusive() - 1));
-                    return;
-                }
-                // Even the estimate starts inside rock: this column cannot be certified from above.
-                c.censored = true;
-            }
-        }
-        long duration = System.nanoTime() - start;
-        maxBlockNanos = Math.max(maxBlockNanos, duration); observe(duration);
-        blockNanosTotal += duration;
-        if (c.solidFound) {
-            c.support[c.supportCount++] = state;
-            if (c.supportCount == 3) { complete(c, c.censored ? Quality.CENSORED : Quality.REFERENCE); return; }
-        } else if (state.getFluidState().is(FluidTags.WATER) && c.skyOpen) {
-            if (c.waterTop.isEmpty()) c.waterTop = OptionalInt.of(c.y + 1);
-            if (c.y == bounds.maxYExclusive() - 1) c.censored = true;
-        } else if (!state.isAir() && state.getFluidState().isEmpty()) {
-            c.firstSolid=state;
-            c.solidFound = true; c.skyOpen = false; c.groundTop = c.y + 1;
-            if (c.waterTop.isPresent()) c.bedTop = OptionalInt.of(c.groundTop);
-            if (c.y == bounds.maxYExclusive() - 1) c.censored = true;
-        } else if (!state.getFluidState().isEmpty()) {
-            // A lava-covered column is not silently presented as a buildable dry column.
-            c.censored = true; c.skyOpen = false;
-        }
-        c.y--; c.innerY--;
-        if (c.innerY < 0) { c.innerY = noise.getCellHeight() - 1; c.cellY--; }
-        if (c.y < bounds.minY()) { c.censored = true; complete(c, Quality.CENSORED); }
-    }
-
-    private void complete(Cursor c, Quality quality) {
-        // C: a walk that had to climb, or that abandoned the neighbour seed, is exactly the walk whose
-        // height can be wrong. Cross-check it against the density estimate before it is allowed to count:
-        // one disagreement is re-walked from the estimate, a second one is not certifiable at all.
-        if (quality == Quality.REFERENCE && !c.sanityChecked
-                && (c.leadClimb > 0 || c.estimateFallbackUsed)) {
-            c.sanityChecked = true;
-            int estimate = estimate(c);
-            if (Math.abs(c.groundTop - estimate) > SANITY_BLOCKS) {
-                c.estimateFallbackUsed = true;
-                leadRetries++;
-                // Fresh search: drop the ladder step, or the re-anchor is silently lifted to
-                // estimate+32+2*climb and the walk spends hundreds of blocks proving nothing.
-                c.leadClimb = 0;
-                c.resetWalk(Math.min(estimate + REFERENCE_LEAD_BLOCKS, bounds.maxYExclusive() - 1));
-                return;
-            }
-        }
-        Quality certified = quality;
-        if (quality == Quality.REFERENCE && c.estimateFallbackUsed
-                && Math.abs(c.groundTop - estimate(c)) > SANITY_BLOCKS) {
-            // Even re-anchored on the estimate, the ground is somewhere this column cannot prove.
-            certified = Quality.CENSORED;
-            c.censored = true;
-        }
-        // Vanilla cross-check. A column the walk could not certify, or one that reads at bedrock
-        // level, is exactly where the density-only estimate is silently wrong: the measured session
-        // accepted groundTopY=-61 under a sparse jungle whose real surface was y=121, and the wall
-        // started at y=-44. The road answers the same question by reading the real heightmap; this
-        // reads the heightmap the game itself would have written, from a real NoiseChunk sweep.
-        // Full replacement: every column takes the vanilla sweep's ground. The walk still runs - it
-        // is what collects the support evidence the foundation uses - but it is no longer the answer.
-        {
-            int sampledGround = surfaceSampler.worldSurface(c.x, c.z) - 1;
-            if (sampledGround > bounds.minY() + 8) {
-                int walkedGround = c.groundTop;
-                c.groundTop = sampledGround;
-                certified = Quality.REFERENCE;
-                c.censored = false;
-                surfaceSampler.countedCorrection();
-                long corrections = surfaceSampler.corrections();
-                if (corrections <= 8 || corrections % 2048 == 0) {
-                    local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                            "[GreatWall:S1C] WALL_SURFACE_RECONCILED column={},{} walkY={} vanillaY={} "
-                                    + "corrections={} sweeps={}",
-                            c.x, c.z, walkedGround, sampledGround, corrections, surfaceSampler.sweeps());
-                }
-            }
-        }
-        if (certified == Quality.REFERENCE) {
-            // Only a fully certified walk is a trustworthy hint for the next column; a censored or coarse
-            // result is not, and must not be carried forward.
-            lastTopX = c.x; lastTopZ = c.z; lastTopY = c.groundTop;
-        }
-        stop(c);
-        long start = System.nanoTime();
-        String biome = biomeSource.getNoiseBiome(Math.floorDiv(c.x, 4),
-                Math.floorDiv(c.groundTop, 4), Math.floorDiv(c.z, 4), randomState.sampler()).unwrapKey()
-                .orElseThrow(() -> new WallFailure(FailureCode.INVALID_RESOURCE, "unkeyed natural biome")).location().toString();
-        long duration = System.nanoTime() - start;
-        maxBiomeNanos = Math.max(maxBiomeNanos, duration); observe(duration);
-        biomeNanosTotal += duration;
-        c.result = new ColumnSample(c.groundTop, c.waterTop, c.bedTop, biome, certified, c.censored);
-    }
-
-    /** {@return the density estimate for this column, computed at most once per walk attempt} */
-    private int estimate(Cursor c) {
-        if (c.estimateUsed == Integer.MIN_VALUE) c.estimateUsed = preliminarySurface(c.x, c.z);
-        return c.estimateUsed;
-    }
-
-    private void stop(Cursor c) {
-        if (c.chunk == null) return;
-        // A fully baked chunk goes back into the cell cache instead of being torn down: the next column
-        // in the same cell - or the next route point sweeping the same band - would otherwise rebuild it
-        // and re-run the entire slice fill. Only fully baked chunks qualify; a partially baked one is not
-        // reusable and must release its scratch arrays now.
-        if (c.slicesReady && !closed) {
-            int width = noise.getCellWidth();
-            long key = ((long) Math.floorDiv(c.x, width) << 32) ^ (Math.floorDiv(c.z, width) & 0xffffffffL);
-            var displaced = chunkCache.put(key, c.chunk);
-            // An equal key holds the same chunk (it came from the cache). A different value means the
-            // entry was evicted and rebuilt while this column ran, so that one is stale.
-            if (displaced != null && displaced != c.chunk) displaced.stopInterpolation();
-            c.chunk = null; c.bridge = null;
-            return;
-        }
-        c.chunk.stopInterpolation(); c.chunk = null; c.bridge = null;
-    }
-    private void observe(long nanos) { if (nanos > FORTY_MS) over40msPrimitives++; }
     private Cursor own(ColumnCursor cursor) {
         checkOpen();
         if (!(cursor instanceof CpuTerrainOracle.Cursor c) || c.oracle() != this) {
@@ -651,92 +364,24 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         checkOwner();
         if (closed) throw new WallFailure(FailureCode.CLOSED, "natural oracle is closed");
     }
+    /** One column, answered whole by the vanilla sweep. The walk this class used to run is gone. */
     private final class Cursor implements ColumnCursor {
         private final int x, z;
         private final SampleKind kind;
         private final BlockState[] support = new BlockState[3];
         private BlockState firstSolid;
-        private int y = bounds.maxYExclusive() - 1, groundTop = bounds.minY(), supportCount;
-        private int cellY = noise.height() / noise.getCellHeight() - 1, innerY = noise.getCellHeight() - 1;
-        private int selectedCell = -1;
+        private int groundTop = bounds.minY(), supportCount;
         private OptionalInt waterTop = OptionalInt.empty(), bedTop = OptionalInt.empty();
-        private boolean skyOpen = true, solidFound, censored, slicesReady;
-        /** Short-lead start, the full historical margin, and the start the walk is on now. */
-        private int lowStartY, highStartY, attemptStartY = -1;
-        /** How far the retry ladder has climbed above the short lead, in blocks. */
-        private int leadClimb;
-        /** Whether the current attempt's first block has already been inspected. */
-        private boolean leadChecked;
-        /** Whether the walk already fell back to the density estimate for this column. */
-        private boolean estimateFallbackUsed;
-        /** Whether the estimate cross-check already ran for this column. */
-        private boolean sanityChecked;
-        /** The density estimate, computed at most once per column. */
-        private int estimateUsed = Integer.MIN_VALUE;
-        private NoiseChunk chunk;
-        /** Whether the chunk's horizontal interpolation fractions describe this column already. */
-        private boolean axesReady;
-        private NoiseCursorBridge bridge;
+        private boolean censored;
         private ColumnSample result;
-        /** Guard against a malformed native slice walk that never terminates. */
-        private int advanceSteps;
+
         private Cursor(int x, int z, SampleKind kind) {
             this.x = x; this.z = z; this.kind = kind;
-            if (kind == SampleKind.REFERENCE) {
-                // Start with a short lead above the surface instead of walking the air column from the top
-                // of a tall dimension - the single biggest cost of the fine sample. The lead is raised to
-                // the full historical margin only when the first walked block shows the estimate sat at or
-                // below the real surface.
-                int top = bounds.maxYExclusive() - 1;
-                // Seed from the column just sampled when it is adjacent: a cross-section is walked one
-                // column after another, so the previous real height is a far better start than a density
-                // bisection, and it costs nothing - the bisection is skipped entirely in that case.
-                boolean adjacent = Math.abs(x - lastTopX) <= 2 && Math.abs(z - lastTopZ) <= 2
-                        && lastTopY != Integer.MIN_VALUE;
-                int surface = adjacent ? lastTopY : preliminarySurface(x, z);
-                int lead = adjacent ? NEIGHBOUR_LEAD_BLOCKS : REFERENCE_LEAD_BLOCKS;
-                this.lowStartY = Math.min(surface + lead, top);
-                this.highStartY = Math.min(surface + settings.seaLevel() - bounds.minY() + 32, top);
-                seekStart(this.lowStartY);
-            }
         }
-        /**
-         * Places the walk at {@code startY}. The noise chunk and its baked slices are kept.
-         *
-         * <p>The chunk's cell grid is indexed from its own top cell downwards, exactly as the
-         * original top-down walk did ({@code maxYExclusive - 1} sits in cell
-         * {@code height/cellHeight - 1} with {@code cellHeight - 1} walked blocks left). The cell
-         * index therefore has to be derived from that same anchor: indexing straight from the world
-         * origin runs one cell off the bottom of the slice array, because the chunk's height is not
-         * a whole number of world cells (it starts below {@code minY}).
-         */
-        private void seekStart(int startY) {
-            int cellHeight = noise.getCellHeight();
-            int topY = bounds.maxYExclusive() - 1;
-            int topCell = noise.height() / cellHeight - 1;
-            int floorY = topY - (cellHeight * (topCell + 1) - 1);
-            int start = Math.max(floorY, Math.min(topY, startY));
-            int back = topY - start;
-            this.y = start;
-            this.cellY = topCell - Math.floorDiv(back, cellHeight);
-            this.innerY = Math.floorMod(cellHeight - 1 - back, cellHeight);
-            this.attemptStartY = start;
-            this.selectedCell = -1;
-        }
-        /** Restarts the walk from a raised lead, discarding everything the short attempt saw. */
-        private void resetWalk(int startY) {
-            seekStart(startY);
-            this.leadChecked = false;
-            this.supportCount = 0;
-            this.firstSolid = null;
-            this.solidFound = false;
-            this.skyOpen = true;
-            this.censored = false;
-            this.groundTop = bounds.minY();
-            this.waterTop = OptionalInt.empty();
-            this.bedTop = OptionalInt.empty();
-        }
+
+        /** The cursor is answered the moment it is created: nothing is ever pending. */
+        @Override public boolean done() { return result != null; }
+
         private CpuTerrainOracle oracle() { return CpuTerrainOracle.this; }
-        @Override public boolean done() { checkOpen(); return result != null; }
     }
 }
