@@ -341,6 +341,14 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     }
 
     private int preliminarySurface(int x, int z) {
+        // Road-style start: the exact vanilla sweep already knows this column, so the walk begins
+        // a few blocks above the real surface instead of descending from a density guess that can
+        // be tens of blocks off (the measured session accepted groundTopY=-61 under terrain at
+        // y=121). Every walk used to pay that descent: 70 ms per column, 17.6 minutes per root
+        // search. The density bisection below stays as the fallback for a column the sweep cannot
+        // resolve.
+        int swept = surfaceSampler.worldSurface(x, z) - 1;
+        if (swept > bounds.minY() + 8 && swept < bounds.maxYExclusive()) return swept;
         int x4 = Math.floorDiv(x, 4) * 4;
         int z4 = Math.floorDiv(z, 4) * 4;
         // The estimate is a pure function of the 4x4 cell column, and the fine sample sweeps the same
