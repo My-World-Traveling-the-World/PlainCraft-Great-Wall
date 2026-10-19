@@ -64,6 +64,18 @@ public final class CorridorStructureScanner implements AutoCloseable {
         return CompletableFuture.supplyAsync(() -> {
             if (closed.get()) return List.<CorridorStructureScan.OwnedBox>of();
             long startedAt = System.nanoTime();
+            // A structure start is a pure function of the seed, the structure sets and the chunk, so
+            // the same corridor always resolves to the same boxes. The scan measured 268,569 ms - 4.5
+            // minutes - per startup, which is why RoadWeaver caches its structure starts too.
+            String cacheKey = StructureScanCache.key(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ);
+            var cached = StructureScanCache.load(level, cacheKey);
+            if (cached.isPresent()) {
+                GreatWallMod.LOGGER.info(
+                        "[GreatWall:corridor] structure scan cache hit corridor=[{},{}]..[{},{}] boxes={} elapsedMs={}",
+                        minChunkX, minChunkZ, maxChunkX, maxChunkZ, cached.get().size(),
+                        (System.nanoTime() - startedAt) / 1_000_000L);
+                return cached.get();
+            }
             var candidates = CorridorStructureScan.predictCandidates(
                     level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor);
             // The loading card's structure-scan stage: candidates known up front, done count ticking
@@ -85,6 +97,7 @@ public final class CorridorStructureScanner implements AutoCloseable {
                     minChunkX, minChunkZ, maxChunkX, maxChunkZ, candidates.size(), boxes.size(),
                     yield[0], yield[1], yield[2], filter[1], filter[0],
                     (System.nanoTime() - startedAt) / 1_000_000L);
+            StructureScanCache.store(level, cacheKey, boxes);
             return boxes;
         }, pool);
     }
