@@ -128,6 +128,10 @@ public final class WorldServices {
         ServerChunkEvents.CHUNK_LOAD.register((level, chunk) -> {
             var service = find(level.getServer());
             if (service != null && service.barrier(level) != null) service.barrier(level).verifyLoaded(chunk);
+            // A chunk generated before the plan existed still has to carry the wall, and a chunk
+            // load is the only moment it becomes writable without requesting it.
+            local.plaincraft.greatwall.generation.WallBodyBackfill.onChunkLoaded(level,
+                    new ChunkKey(level.dimension().location().toString(), chunk.getPos().x, chunk.getPos().z));
         });
         ServerChunkEvents.CHUNK_UNLOAD.register((level, chunk) -> {
             var service = find(level.getServer());
@@ -167,6 +171,8 @@ public final class WorldServices {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             var services = find(server);
             if (services != null && services.production != null) services.production.tick();
+            // Rate limited inside: four chunks per ten ticks, loaded chunks only.
+            local.plaincraft.greatwall.generation.WallBodyBackfill.drain(server.overworld());
         });
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, successful) -> {
             var services = find(server);

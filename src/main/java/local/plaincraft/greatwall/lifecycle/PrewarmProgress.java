@@ -132,6 +132,9 @@ public final class PrewarmProgress {
             new java.util.concurrent.atomic.AtomicLongArray(Stage.values().length);
     /** When the active stage started, or 0 when no account is running. */
     private static volatile long stageSinceNanos;
+    /** When the first startup stage opened; the wall-clock anchor for totalMs. */
+    private static final java.util.concurrent.atomic.AtomicLong SESSION_START_NANOS =
+            new java.util.concurrent.atomic.AtomicLong();
     /** Sub-progress of the active stage: done/total; total 0 means "indeterminate, still running". */
     private static final AtomicInteger SUB_DONE = new AtomicInteger();
     private static final AtomicInteger SUB_TOTAL = new AtomicInteger();
@@ -142,7 +145,9 @@ public final class PrewarmProgress {
     /** Starts a fresh stage account for a new startup. */
     private static void resetStageAccount() {
         for (int i = 0; i < STAGE_NANOS.length(); i++) STAGE_NANOS.set(i, 0L);
-        stageSinceNanos = System.nanoTime();
+        long now = System.nanoTime();
+        SESSION_START_NANOS.compareAndSet(0L, now);
+        stageSinceNanos = now;
     }
 
     /** Charges the running stage with the time it has held so far, and stops the clock. */
@@ -336,10 +341,15 @@ public final class PrewarmProgress {
                     success, snap.stage(), snap.completed(), snap.total(), snap.elapsedMillis());
             // One line, once per session: what each startup stage actually cost. Without it the only
             // way to answer "where did the twenty minutes go" was to read timestamps out of the log.
+            // Total is wall clock from the first stage (the root search), not from the prewarm begin:
+            // the measured session spent 17.6 minutes searching and reported an 8.5-minute total.
+            long sessionStart = SESSION_START_NANOS.get();
+            long totalMs = sessionStart == 0L ? snap.elapsedMillis()
+                    : (System.nanoTime() - sessionStart) / 1_000_000L;
             local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                     "[GreatWall:S1C] WALL_STARTUP_ACCOUNT totalMs={} rootMs={} scanMs={} fineMs={} "
                             + "prewarmMs={} compileMs={} segments={}/{} lanes={}",
-                    snap.elapsedMillis(),
+                    totalMs,
                     accountedMillis(Stage.ROOT_SEARCH), accountedMillis(Stage.STRUCTURE_SCAN),
                     accountedMillis(Stage.FINE_SAMPLE), accountedMillis(Stage.PREWARM),
                     accountedMillis(Stage.COMPILE), snap.completed(), snap.total(), snap.lanes());

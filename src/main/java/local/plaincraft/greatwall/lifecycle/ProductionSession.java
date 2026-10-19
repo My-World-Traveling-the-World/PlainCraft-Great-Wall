@@ -1000,9 +1000,15 @@ final class ProductionSession implements AutoCloseable {
         int published = 0;
         int failed = 0;
         Throwable firstFailure = null;
+        var publishedKeys = new java.util.ArrayList<local.plaincraft.greatwall.model.WallTypes.ChunkKey>();
         for (var entry : compiled.entrySet()) {
             try {
                 local.plaincraft.greatwall.generation.WallWorldgenPlanCache.put(level, entry.getValue());
+                // The wall body is written by a queue as well as by the worldgen feature: this
+                // corridor was generated before the plan existed (the measured session published
+                // 17.6 minutes after the prewarm finished), so nothing here would ever reach the
+                // feature stage again. See WallBodyBackfill.
+                publishedKeys.add(entry.getKey());
                 // Publish the planning vegetation corridor + biome mask for this chunk, replacing the
                 // deleted FeatureSlot's per-chunk publication.
                 vegetation.publish(entry.getKey(), window);
@@ -1022,6 +1028,10 @@ final class ProductionSession implements AutoCloseable {
                         + "failed={} compileMs={} vegetationLeases={} guardMisses={} suppressed={}",
                 plans.size(), compiled.size(), published, failed, compileMillis,
                 vegetation.leases(), vegetation.misses(), vegetation.suppressed());
+        // Queue the published window for the loaded-chunk writer. Loaded chunks are written within
+        // seconds; the rest wait for the player, which is the only way a chunk generated before the
+        // plan can ever carry the wall.
+        local.plaincraft.greatwall.generation.WallBodyBackfill.enqueuePublished(level, publishedKeys);
         if (failed > 0) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_PARTIAL published={} failed={} of "
                             + "{} owners; those chunks will not carry the wall",
