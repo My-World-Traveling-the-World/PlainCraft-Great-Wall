@@ -4,7 +4,7 @@
   "compatibilityLevel": "JAVA_21",
   "plugin": "local.plaincraft.greatwall.compat.c2me.ProbeMixinPlugin",
   "mixins": ["ChunkMapAccess", "TerrainChunkAccess", "MinecraftServerProbeMixin", "VanillaGateMixin",
-    "NoiseInterpolatorAccess", "NoiseGeneratorAccess", "NoiseSliceMixin",
+    "NoiseInterpolatorAccess", "NoiseGeneratorAccess",
     "SpawnProbeMixin", "BootstrapSpawnMixin", "TreeFeatureMixin", "OwnershipMutationMixin",
     "NaturalSpawnMixin", "BaseSpawnerAccess", "OwnedMobLootMixin", "IgnitionUseMixin",
     "TorchIgnitionMixin", "WallSpawnerMixin", "ChunkGeneratorBiomeMixin",
