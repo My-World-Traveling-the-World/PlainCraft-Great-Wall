@@ -642,11 +642,30 @@ public final class RealizationPlanner {
         }
         return candidate;
     }
+    /**
+     * The material ribbon for a component: one material for the whole wall.
+     *
+     * <p>The wall used to take its material from the biome around every voxel, blended over an
+     * eight-block window. That is not what a wall looks like - a real one is the same stone for
+     * hundreds of blocks, and in the west the same rammed earth - and it cost a blend per emitted
+     * voxel plus a ribbon whose edges no window could ever satisfy (a measured session rejected 2176
+     * of 2188 components with "material ribbon lacks the eight-block halo").
+     *
+     * <p>So the material is decided once, from the wall's own first station, and held constant. The
+     * first station is the wall's start, so every window of a segment derives the same material and
+     * the seams cannot disagree.
+     */
     private List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> materials(Input input, List<Station> stations) {
         if (biomeIndex == null) return List.of();
         var keys = new java.util.HashMap<Long, String>();
         for (var plan : input.plans().plans()) keys.putAll(plan.stations().biomeKeys());
-        return biomeIndex.ribbonByKey(stations, keys);
+        var ribbon = biomeIndex.ribbonByKey(stations, keys);
+        if (ribbon.isEmpty()) return ribbon;
+        var anchor = ribbon.getFirst();
+        return List.of(
+                new local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation(0, anchor.biomeKey(), anchor.variant()),
+                new local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation(Long.MAX_VALUE / 8,
+                        anchor.biomeKey(), anchor.variant()));
     }
     private static long workingBytes(Input input) {
         long bytes=Math.addExact(8192,Math.multiplyExact(256L,input.columns().size()));

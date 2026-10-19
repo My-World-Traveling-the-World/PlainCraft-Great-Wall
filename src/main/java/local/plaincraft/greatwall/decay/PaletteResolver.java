@@ -124,8 +124,7 @@ public final class PaletteResolver implements PaletteBinding {
                         ribbon.size(), clamped);
             }
         }
-        var mix = PaletteBlend.at(globalSQ8, ribbon);
-        var variant = PaletteBlend.choose(mix, materialHash("material-family", world, part));
+        var variant = variantOf(ribbon, globalSQ8, world, part);
         Map<String, String> shape = switch (part) {
             case STAIR -> Map.of("facing", facing(input.site().frame(), 1, 0));
             case CHEST -> Map.of("facing", facing(input.site().frame(), 0, 1));
@@ -485,4 +484,30 @@ public final class PaletteResolver implements PaletteBinding {
     private static WallFailure invalid(String message) {
         return new WallFailure(FailureCode.INVALID_RESOURCE, message);
     }
-}
+
+    /**
+     * The variant for this voxel: constant when the ribbon is, blended when it is not.
+     *
+     * <p>A ribbon whose stations all name one variant describes one material for the whole wall, and
+     * the blend would return that variant with 100% of the window regardless of the arc. Skipping the
+     * window walk is therefore exact, not an approximation - and it matters, because this runs once
+     * per emitted voxel and the walk is the expensive half of it.
+     */
+    private Variant variantOf(List<PaletteTypes.BiomeStation> ribbon, long globalSQ8, Point3i world, Part part) {
+        Variant constant = ribbon.getFirst().variant();
+        for (int i = 1; i < ribbon.size(); i++) {
+            if (ribbon.get(i).variant() != constant) constant = null;
+        }
+        if (constant != null) {
+            // The blend validated the order; a constant ribbon skips it, so validate here. A constant
+            // ribbon is two stations, so this is two comparisons.
+            for (int i = 1; i < ribbon.size(); i++) {
+                if (ribbon.get(i).globalSQ8() <= ribbon.get(i - 1).globalSQ8()) {
+                    throw new WallFailure(FailureCode.INVALID_RESOURCE, "ribbon stations must be strictly increasing");
+                }
+            }
+            return constant;
+        }
+        var mix = PaletteBlend.at(globalSQ8, ribbon);
+        return PaletteBlend.choose(mix, materialHash("material-family", world, part));
+    }}
