@@ -144,6 +144,11 @@ public final class WorldBootstrap implements AutoCloseable {
     }
 
     public boolean mayPassBeforeRecipe(ChunkKey requested) {
+        // A predicate on the chunk pipeline must never throw. This is called from the feature stage of
+        // every chunk in the early domain, so a failed session used to fail those chunks outright:
+        // measured after ROOT_UNAVAILABLE, "Error upgrading chunk [-3,3] to minecraft:features" followed
+        // by "Failed to load chunk -3,3". A wall that is absent is a reason to let the chunk through.
+        if (state.containsKey("closed") || state.containsKey("failed")) return true;
         active();
         return !originallyInitialized && requested.dimension().equals("minecraft:overworld")
                 && earlyDomain.contains(requested);
@@ -184,6 +189,11 @@ public final class WorldBootstrap implements AutoCloseable {
      */
     public CompletableFuture<Void> beforeRecipe(ChunkKey requested) {
         if (!requested.dimension().equals("minecraft:overworld")) return CompletableFuture.completedFuture(null);
+        // Same rule as mayPassBeforeRecipe: a session that already failed must release the chunk rather
+        // than complete this future exceptionally, because the future sits on the worldgen path.
+        if (state.containsKey("closed") || state.containsKey("failed")) {
+            return CompletableFuture.completedFuture(null);
+        }
         return authorized.thenCompose(value -> {
             active();
             if (mayPassBeforeRecipe(requested)) return CompletableFuture.completedFuture(null);
