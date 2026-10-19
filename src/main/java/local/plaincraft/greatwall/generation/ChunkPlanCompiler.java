@@ -17,6 +17,9 @@ import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 
 /** Pure whole-component resolution followed by owner clipping; no live-world reads. */
 public final class ChunkPlanCompiler {
+    /** How many required air clearances lost to a neighbouring component's body. */
+    private static final java.util.concurrent.atomic.AtomicInteger VOID_OVERLAPS =
+            new java.util.concurrent.atomic.AtomicInteger();
     private static final Comparator<Point3i> POS=Comparator.comparingInt(Point3i::y).thenComparingInt(Point3i::z).thenComparingInt(Point3i::x);
     private static final Comparator<SiteId> SITE=Comparator.comparing(SiteId::wallId).thenComparing(s->s.kind().name()).thenComparingLong(SiteId::ordinal);
     public ChunkPlanCompiler() {}
@@ -113,8 +116,18 @@ public final class ChunkPlanCompiler {
             var empty=a.kind()==IntentKind.OWNED_VOID?a:b;var other=empty==a?b:a;
             if(!empty.component().equals(other.component()) && !(empty.component().wallId().equals(other.component().wallId())
                     && other.component().kind()==SiteKind.WALL)) {
-                if(empty.required())throw failure("void is not authorized to erase this component at "
-                        +empty.pos()+" empty="+empty+" other="+other);
+                // Two sites' footprints overlapping used to kill the whole owner: the corridor's
+                // air clearance of one met the body of the other and the conflict was a hard error.
+                // It is a boundary between neighbouring components, not a corruption: the solid
+                // keeps the voxel, the air clearance is dropped, and the collision is logged.
+                if(empty.required()){
+                    int n=VOID_OVERLAPS.incrementAndGet();
+                    if(n<=4||n%512==0){
+                        local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                                "[GreatWall:S1C] VOID_OVERLAP_DROPPED pos={} empty={} other={} count={}",
+                                empty.pos(),empty.component(),other.component(),n);
+                    }
+                }
                 return other;
             }
         }

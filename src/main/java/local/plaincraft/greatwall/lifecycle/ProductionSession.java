@@ -1047,8 +1047,7 @@ final class ProductionSession implements AutoCloseable {
         // Queue the published window for the loaded-chunk writer. Loaded chunks are written within
         // seconds; the rest wait for the player, which is the only way a chunk generated before the
         // plan can ever carry the wall.
-        local.plaincraft.greatwall.generation.WallBodyBackfill.enqueuePublished(level, publishedKeys);
-        // A partially published window used to be reported as a failure and returned here - while a later
+                // A partially published window used to be reported as a failure and returned here - while a later
         // stage still opened the gate with success=true, so the two signals contradicted each other and
         // RoadWeaver could read either one. The wall has a better answer now: every published chunk is
         // written by the backfill, and an owner that failed is a hole, not a dead session. So a small
@@ -1063,6 +1062,7 @@ final class ProductionSession implements AutoCloseable {
             PrewarmProgress.finish(false);
             return;
         }
+        local.plaincraft.greatwall.generation.WallBodyBackfill.enqueuePublished(level, publishedKeys);
         if (failed > tolerated) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_FAILED published={} failed={} of "
                             + "{} owners (tolerated {})",

@@ -119,6 +119,8 @@ public final class WallBodyBackfill {
             });
     /** Chunks with a plan read in flight, so a burst of loads does not read the same file twice. */
     private static final Set<ChunkKey> LOADING = ConcurrentHashMap.newKeySet();
+    /** Voxels skipped because the world changed after the plan was compiled. */
+    private static int beforeConflicts;
 
     /** A chunk the server just loaded: queue it when a published plan already covers it. */
     public static void onChunkLoaded(ServerLevel level, ChunkKey key) {
@@ -243,7 +245,12 @@ public final class WallBodyBackfill {
             // would put a file read on the server thread for every chunk the player walks into.
             // A miss means the prefetch is still in flight, so this chunk stays pending.
             return new Sweep(Status.PENDING, 0);
-        }        int written = 0;
+        }
+        int written = 0;
+        var beforeStates = new java.util.HashMap<Point3i, String>();
+        for (var proof : plan.proofs()) {
+            beforeStates.putIfAbsent(proof.pos(), proof.beforeState());
+        }
         for (var voxel : plan.voxels()) {
             Point3i p = voxel.pos();
             if (Math.floorDiv(p.x(), 16) != key.x() || Math.floorDiv(p.z(), 16) != key.z()) continue;
@@ -253,6 +260,17 @@ public final class WallBodyBackfill {
             BlockState current = chunk.getBlockState(pos);
             if (current == target) continue;
             if (!replaceable(current)) continue;
+            // The compile recorded what it saw here. If it was not air and the world has since
+            // changed - a player placing a block, water flowing in - the plan's authority ends:
+            // overwriting it would erase something the wall never owned.
+            String before = beforeStates.get(p);
+            if (before != null && !before.startsWith("minecraft:air") && !before.equals(voxel.state().id())) {
+                if (beforeConflicts++ % 512 == 1) {
+                    GreatWallMod.LOGGER.warn("[GreatWall:S1C] BACKFILL_CONFLICT pos={} before={} current={}",
+                            p, before, current.getBlock());
+                }
+                continue;
+            }
             // Flag 3 notifies clients and neighbours, and setBlock keeps the heightmaps honest -
             // the raw ChunkAccess path used during generation has to prime them by hand.
             // Flag 2 notifies clients but does not cascade neighbour updates: a chunk of wall is two
