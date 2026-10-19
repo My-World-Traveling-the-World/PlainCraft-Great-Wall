@@ -1,5 +1,6 @@
 package local.plaincraft.greatwall.generation;
 
+import local.plaincraft.greatwall.model.WallFailure;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -121,6 +122,8 @@ public final class WallBodyBackfill {
     private static final Set<ChunkKey> LOADING = ConcurrentHashMap.newKeySet();
     /** Voxels skipped because the world changed after the plan was compiled. */
     private static int beforeConflicts;
+    /** Voxels whose block id the registry could not resolve. */
+    private static int unresolvableVoxels;
 
     /** A chunk the server just loaded: queue it when a published plan already covers it. */
     public static void onChunkLoaded(ServerLevel level, ChunkKey key) {
@@ -252,6 +255,7 @@ public final class WallBodyBackfill {
             beforeStates.putIfAbsent(proof.pos(), proof.beforeState());
         }
         for (var voxel : plan.voxels()) {
+            try {
             Point3i p = voxel.pos();
             if (Math.floorDiv(p.x(), 16) != key.x() || Math.floorDiv(p.z(), 16) != key.z()) continue;
             if (voxel.kind() == IntentKind.KEEP) continue;
@@ -264,12 +268,21 @@ public final class WallBodyBackfill {
             // changed - a player placing a block, water flowing in - the plan's authority ends:
             // overwriting it would erase something the wall never owned.
             String before = beforeStates.get(p);
-            if (before != null && !before.startsWith("minecraft:air") && !before.equals(voxel.state().id())) {
-                if (beforeConflicts++ % 512 == 1) {
-                    GreatWallMod.LOGGER.warn("[GreatWall:S1C] BACKFILL_CONFLICT pos={} before={} current={}",
-                            p, before, current.getBlock());
+            if (before != null && !before.startsWith("minecraft:air")) {
+                // before is the compile-time token ("minecraft:stone{}:fluid=minecraft:empty:be=false").
+                // If the world still holds exactly that block, the plan owns this position and may
+                // write. If it does not - a player placed something, water flowed in - the plan's
+                // authority ends here.
+                String beforeId = before.substring(0, before.indexOf('{'));
+                String currentId = net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                        .getKey(current.getBlock()).toString();
+                if (!beforeId.equals(currentId)) {
+                    if (beforeConflicts++ % 512 == 1) {
+                        GreatWallMod.LOGGER.warn("[GreatWall:S1C] BACKFILL_CONFLICT pos={} before={} current={}",
+                                p, beforeId, current.getBlock());
+                    }
+                    continue;
                 }
-                continue;
             }
             // Flag 3 notifies clients and neighbours, and setBlock keeps the heightmaps honest -
             // the raw ChunkAccess path used during generation has to prime them by hand.
@@ -278,6 +291,16 @@ public final class WallBodyBackfill {
             // chunk still updates its own heightmaps, and lighting is recomputed per section on save.
             level.setBlock(pos, target, 2);
             written++;
+            } catch (WallFailure unresolvable) {
+                // A voxel that names a block the registry does not have (a palette referencing a
+                // removed mod, a template drift) would otherwise kill this chunk silently: the
+                // exception escapes, the chunk stays in settling, and every drain retries it.
+                // Drop the voxel, count it, and let the rest of the wall write.
+                if (++unresolvableVoxels % 512 == 1) {
+                    GreatWallMod.LOGGER.warn("[GreatWall:S1C] BACKFILL_VOXEL_DROPPED owner={},{} reason={}",
+                            key.x(), key.z(), unresolvable.getMessage());
+                }
+            }
         }
         return new Sweep(Status.SETTLED, written);
     }
