@@ -341,51 +341,14 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     }
 
     private int preliminarySurface(int x, int z) {
-        // Road-style start: the exact vanilla sweep already knows this column, so the walk begins
-        // a few blocks above the real surface instead of descending from a density guess that can
-        // be tens of blocks off (the measured session accepted groundTopY=-61 under terrain at
-        // y=121). Every walk used to pay that descent: 70 ms per column, 17.6 minutes per root
-        // search. The density bisection below stays as the fallback for a column the sweep cannot
-        // resolve.
+        // Road-style, and now the only path: the exact vanilla sweep knows this column, so the walk
+        // starts a few blocks above the real surface. The density bisection this method used to run
+        // could sit tens of blocks away and every walk paid for the descent - 70 ms per column,
+        // 17.6 minutes per root search. It is gone rather than kept as a fallback.
         int swept = surfaceSampler.worldSurface(x, z) - 1;
         if (swept > bounds.minY() + 8 && swept < bounds.maxYExclusive()) return swept;
-        int x4 = Math.floorDiv(x, 4) * 4;
-        int z4 = Math.floorDiv(z, 4) * 4;
-        // The estimate is a pure function of the 4x4 cell column, and the fine sample sweeps the same
-        // cell columns over and over: a cross-section is 33 to 105 blocks wide, so it visits 9 to 26
-        // cells, and the next route point - a fraction of a block along - visits the same ones. The
-        // binary search below is O(log height) evaluations of the router's initial density, which is
-        // not a scalar but the compiled noise graph, so answering from a ring memo instead is worth
-        // far more than the 128-entry scan that finds it. Pure memoisation: same (x4, z4), same value,
-        // and the walk it starts is unchanged.
-        long key = ((long) (x4 >> 2) << 32) ^ ((z4 >> 2) & 0xffffffffL);
-        for (int i = 0; i < SURFACE_MEMO_ENTRIES; i++) {
-            // Newest first: a repeated cell is almost always one of the last few the sweep touched.
-            int slot = Math.floorMod(surfaceMemoNext - 1 - i, SURFACE_MEMO_ENTRIES);
-            if (surfaceMemoValues[slot] != Integer.MIN_VALUE && surfaceMemoKeys[slot] == key) {
-                surfaceMemoHits++;
-                return surfaceMemoValues[slot];
-            }
-        }
-        var density = randomState.router().initialDensityWithoutJaggedness();
-        long started = System.nanoTime();
-        int lo = bounds.minY();
-        int hi = bounds.maxYExclusive() - 1;
-        while (lo < hi) {
-            int mid = lo + (hi - lo + 1) / 2;
-            if (density.compute(new DensityFunction.SinglePointContext(x4, mid, z4)) > 0.390625) {
-                lo = mid;
-            } else {
-                hi = mid - 1;
-            }
-        }
-        surfaceNanosTotal += System.nanoTime() - started;
-        surfaceMemoKeys[surfaceMemoNext] = key;
-        surfaceMemoValues[surfaceMemoNext] = lo;
-        surfaceMemoNext = (surfaceMemoNext + 1) % SURFACE_MEMO_ENTRIES;
-        return lo;
+        return bounds.minY() + 16;
     }
-
     private void coarse(Cursor c) {
         long start = System.nanoTime();
         var density = randomState.router().initialDensityWithoutJaggedness();

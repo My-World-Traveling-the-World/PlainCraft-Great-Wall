@@ -42,14 +42,14 @@ final class NoiseSurfaceSampler {
     /** Vanilla records "the y of the first air above the surface", so ground = surface - 1. */
     private static final int COLUMN_COUNT = 256;
     /** Two sweeps of the wall revisit the same chunk far more often than they visit 64 distinct ones. */
-    private static final int CACHE_CHUNKS = 64;
+    private static final int CACHE_CHUNKS = 512;
 
     private final RandomState randomState;
     private final NoiseSettings noiseSettings;
     private final NoiseGeneratorSettings generatorSettings;
     private final Aquifer.FluidPicker fluidPicker;
     private final BlockState defaultBlock;
-    private final LinkedHashMap<Long, Heights> cache = new LinkedHashMap<>(64, 0.75f, true) {
+    private final LinkedHashMap<Long, Heights> cache = new LinkedHashMap<>(512, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(java.util.Map.Entry<Long, Heights> eldest) {
             return size() > CACHE_CHUNKS;
