@@ -135,18 +135,6 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      * once its slice walk reported complete ({@code slicesReady}), because a half-baked chunk is not
      * reusable. This map is touched from one lane thread only, like the rest of the oracle.
      */
-    private final java.util.LinkedHashMap<Long, NoiseChunk> chunkCache =
-            new java.util.LinkedHashMap<>(32, 0.75F, true) {
-                @Override protected boolean removeEldestEntry(java.util.Map.Entry<Long, NoiseChunk> eldest) {
-                    // Configured per lane (clamped to 4..64); see GreatWallConfig.chunkCacheLimit.
-                    if (size() <= local.plaincraft.greatwall.config.GreatWallConfig.get().chunkCacheLimit()) {
-                        return false;
-                    }
-                    // Evicted chunks are the only ones that still need their scratch arrays released.
-                    eldest.getValue().stopInterpolation();
-                    return true;
-                }
-            };
     private long chunkCacheHits, chunkCacheMisses;
     /** Baked-chunk reuse counters, surfaced so a real session can prove the cache is working. */
     public long chunkCacheHits() { return chunkCacheHits; }
@@ -325,8 +313,6 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         closed = true;
         active = null;
         // Cached chunks hold scratch arrays and this lane is going away: release every one.
-        for (var chunk : chunkCache.values()) chunk.stopInterpolation();
-        chunkCache.clear();
     }
 
     /**

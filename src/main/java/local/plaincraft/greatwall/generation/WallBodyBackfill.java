@@ -110,13 +110,44 @@ public final class WallBodyBackfill {
                 state.pending.size(), added, state.settled.size());
     }
 
+    /** Single IO thread: a plan read must never block the server thread that reported the load. */
+    private static final java.util.concurrent.ExecutorService IO =
+            java.util.concurrent.Executors.newSingleThreadExecutor(task -> {
+                Thread thread = new Thread(task, "pgw-wall-backfill-io");
+                thread.setDaemon(true);
+                return thread;
+            });
+    /** Chunks with a plan read in flight, so a burst of loads does not read the same file twice. */
+    private static final Set<ChunkKey> LOADING = ConcurrentHashMap.newKeySet();
+
     /** A chunk the server just loaded: queue it when a published plan already covers it. */
     public static void onChunkLoaded(ServerLevel level, ChunkKey key) {
         if (level == null || key == null) return;
         State state = state(level);
         if (state.settled.contains(key) || state.settling.contains(key)) return;
-        if (WallWorldgenPlanCache.get(level, key) == null) return;
-        state.pending.add(key);
+        if (WallWorldgenPlanCache.get(level, key) != null) {
+            state.pending.add(key);
+            return;
+        }
+        PlanStore store = planStore;
+        if (store == null || !LOADING.add(key)) return;
+        IO.execute(() -> {
+            ChunkWritePlan plan = null;
+            try {
+                plan = store.read(key).orElse(null);
+            } catch (java.io.IOException | RuntimeException failure) {
+                GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_READ_FAILED owner={},{} reason={}",
+                        key.x(), key.z(), failure.toString());
+            } finally {
+                LOADING.remove(key);
+            }
+            if (plan == null) return;
+            ChunkWritePlan loaded = plan;
+            level.getServer().execute(() -> {
+                WallWorldgenPlanCache.put(level, loaded);
+                state(level).pending.add(key);
+            });
+        });
     }
 
     /** One bounded step, driven by the production session's tick. */
@@ -219,7 +250,10 @@ public final class WallBodyBackfill {
             if (!replaceable(current)) continue;
             // Flag 3 notifies clients and neighbours, and setBlock keeps the heightmaps honest -
             // the raw ChunkAccess path used during generation has to prime them by hand.
-            level.setBlock(pos, target, 3);
+            // Flag 2 notifies clients but does not cascade neighbour updates: a chunk of wall is two
+            // thousand writes, and eight thousand cascades every half second is a visible stutter. The
+            // chunk still updates its own heightmaps, and lighting is recomputed per section on save.
+            level.setBlock(pos, target, 2);
             written++;
         }
         return new Sweep(Status.SETTLED, written);

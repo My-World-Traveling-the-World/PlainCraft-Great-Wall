@@ -459,10 +459,16 @@ public final class RootSearch {
         // only support and water are hard floors there.
         boolean hardFailure = failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS
                 || wet > MAX_WET_FOOTPRINT_CELLS;
-        if (invalid && (hardFailure || !relaxed)) {
+        // One uncertified column used to refuse the whole pad, and in mountains that is every pad of
+        // every ring (measured: pads=8 censored=8 support=0 water=0 relief=0 - never a support or
+        // water failure). The count is the honest measure, exactly as the coarse phase already treats
+        // its 81 samples: up to 5% of the footprint may be uncertified.
+        boolean tooMuchCensored = censoredSamples * 20 > 48 * 48;
+        boolean reliefOverflow = max - min > footprintRelief;
+        if ((hardFailure || tooMuchCensored || reliefOverflow) && !relaxed) {
             rejectFootprint(current, wet > MAX_WET_FOOTPRINT_CELLS,
                     failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS,
-                    max - min > footprintRelief);
+                    reliefOverflow || tooMuchCensored);
             return;
         }
         if (relaxed && !hardFailure) invalid = false;

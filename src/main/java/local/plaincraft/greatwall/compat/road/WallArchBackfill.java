@@ -61,6 +61,8 @@ public final class WallArchBackfill {
     private final ConcurrentHashMap<GateId, Integer> cursors = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<GateId, Long> ackedRevision = new ConcurrentHashMap<>();
     private volatile boolean closed;
+    /** Why the loaded-owner write path is unavailable; reported once, never thrown per tick. */
+    private static volatile String gateBackfillUnsupported;
 
     public WallArchBackfill(ServerLevel level, GateLedger gates) {
         this(level, gates, Runnable::run, owner -> Optional.empty());
@@ -269,6 +271,20 @@ public final class WallArchBackfill {
             ChunkWritePlan plan = plans.get((cursor + step) % plans.size());
             var chunk = level.getChunkSource().getChunkNow(plan.owner().x(), plan.owner().z());
             if (chunk == null) {
+                pendingChunks++;
+                continue;
+            }
+            // ChunkWallWriter only writes proto chunks: it rejects anything not in WriteMode.INITIAL
+            // ("loaded backfill requires the S2 loaded-owner writer"). Calling it here could only throw
+            // from inside a tick, so the gate stays PENDING and the reason is reported once instead.
+            if (true) {
+                if (gateBackfillUnsupported == null) {
+                    gateBackfillUnsupported = "loaded-owner arch backfill is not implemented: "+
+                            "ChunkWallWriter accepts proto-chunk INITIAL writes only";
+                    local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                            "[GreatWall:S1C] GATE_BACKFILL_UNSUPPORTED {}; gate stays PENDING",
+                            gateBackfillUnsupported);
+                }
                 pendingChunks++;
                 continue;
             }
