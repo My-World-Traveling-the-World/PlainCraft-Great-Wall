@@ -1054,6 +1054,15 @@ final class ProductionSession implements AutoCloseable {
         // written by the backfill, and an owner that failed is a hole, not a dead session. So a small
         // failure rate is reported and survived; only a window that mostly failed is called a failure.
         int tolerated = Math.max(8, compiled.size() / 20);
+        if (published == 0) {
+            // Nothing published is never a tolerable partial: the gate would otherwise open on a
+            // wall that does not exist anywhere.
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_EMPTY owners={} failed={}",
+                    compiled.size(), failed);
+            snapshot.planner().releasePrewarmLeases();
+            PrewarmProgress.finish(false);
+            return;
+        }
         if (failed > tolerated) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_FAILED published={} failed={} of "
                             + "{} owners (tolerated {})",

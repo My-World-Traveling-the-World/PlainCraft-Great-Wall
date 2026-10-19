@@ -267,6 +267,9 @@ public final class PrewarmProgress {
                 worldgenReady = new CountDownLatch(1);
             }
         }
+        // A new world in the same JVM must re-anchor the wall-clock total, or the second session
+        // reports the first session's duration as well.
+        SESSION_START_NANOS.set(0L);
         TOTAL_SEGMENTS.set(0);
         COMPLETED_SEGMENTS.set(0);
         LANES.set(Math.max(1, lanes));
@@ -431,6 +434,9 @@ public final class PrewarmProgress {
     /** Clears everything; used between sessions so a stale snapshot cannot be served. */
     public static void clear() {
         ACTIVE.set(false);
+        // A new world in the same JVM must re-anchor the wall-clock total, or the second session
+        // reports the first session's duration as well.
+        SESSION_START_NANOS.set(0L);
         TOTAL_SEGMENTS.set(0);
         COMPLETED_SEGMENTS.set(0);
         LANES.set(0);

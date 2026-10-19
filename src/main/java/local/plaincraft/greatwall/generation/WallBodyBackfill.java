@@ -131,23 +131,39 @@ public final class WallBodyBackfill {
         }
         PlanStore store = planStore;
         if (store == null || !LOADING.add(key)) return;
-        IO.execute(() -> {
-            ChunkWritePlan plan = null;
-            try {
-                plan = store.read(key).orElse(null);
-            } catch (java.io.IOException | RuntimeException failure) {
-                GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_READ_FAILED owner={},{} reason={}",
-                        key.x(), key.z(), failure.toString());
-            } finally {
-                LOADING.remove(key);
-            }
-            if (plan == null) return;
-            ChunkWritePlan loaded = plan;
+        try {
+            IO.execute(() -> {
+                try {
+                    prefetch(level, key, store);
+                } finally {
+                    LOADING.remove(key);
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException closing) {
+            // The pool is shutting down with the server; the chunk stays queued for the next run.
+            LOADING.remove(key);
+        }
+    }
+
+    /** Reads one durable plan off the IO thread, then hands it back to the server thread. */
+    private static void prefetch(ServerLevel level, ChunkKey key, PlanStore store) {
+        ChunkWritePlan plan = null;
+        try {
+            plan = store.read(key).orElse(null);
+        } catch (java.io.IOException | RuntimeException failure) {
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_READ_FAILED owner={},{} reason={}",
+                    key.x(), key.z(), failure.toString());
+        }
+        if (plan == null) return;
+        ChunkWritePlan loaded = plan;
+        try {
             level.getServer().execute(() -> {
                 WallWorldgenPlanCache.put(level, loaded);
                 state(level).pending.add(key);
             });
-        });
+        } catch (java.util.concurrent.RejectedExecutionException closing) {
+            // Server is stopping: the durable record stays readable next launch.
+        }
     }
 
     /** One bounded step, driven by the production session's tick. */
@@ -222,23 +238,12 @@ public final class WallBodyBackfill {
 
     private static Sweep settle(ServerLevel level, LevelChunk chunk, ChunkKey key) {
         ChunkWritePlan plan = WallWorldgenPlanCache.get(level, key);
-        if (plan == null) return new Sweep(Status.FOREIGN, 0);
         if (plan == null) {
-            // A later session: the in-memory cache died with the publish that filled it, but
-            // the planner wrote the durability record. One small read per chunk, and only once.
-            PlanStore store = planStore;
-            if (store != null) {
-                try {
-                    plan = store.read(key).orElse(null);
-                } catch (java.io.IOException | RuntimeException failure) {
-                    GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_READ_FAILED owner={},{} reason={}",
-                            key.x(), key.z(), failure.toString());
-                }
-                if (plan != null) WallWorldgenPlanCache.put(level, plan);
-            }
-        }
-        if (plan == null) return new Sweep(Status.FOREIGN, 0);
-        int written = 0;
+            // The durable read is prefetched on the IO thread when the chunk loads; doing it here
+            // would put a file read on the server thread for every chunk the player walks into.
+            // A miss means the prefetch is still in flight, so this chunk stays pending.
+            return new Sweep(Status.PENDING, 0);
+        }        int written = 0;
         for (var voxel : plan.voxels()) {
             Point3i p = voxel.pos();
             if (Math.floorDiv(p.x(), 16) != key.x() || Math.floorDiv(p.z(), 16) != key.z()) continue;
