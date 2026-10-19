@@ -106,6 +106,8 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     private final Thread owner = Thread.currentThread();
     private final UUID identity = UUID.randomUUID();
     private final RandomState randomState;
+    /** Vanilla NoiseChunk heightmaps, used where the density walk cannot certify a column. */
+    private final NoiseSurfaceSampler surfaceSampler;
     private final NoiseGeneratorSettings settings;
     private final NoiseSettings noise;
     private final Aquifer.FluidPicker fluidPicker;
@@ -198,6 +200,11 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         long start = System.nanoTime();
         randomState = RandomState.create(settings, frozen.noises(), frozen.seed());
         randomStateNanos = System.nanoTime() - start;
+        // The road's sampler, ported: a real NoiseChunk sweep with the vanilla heightmap
+        // predicates. It only answers for columns the walk could not certify (and for columns that
+        // read at bedrock), which is exactly where the density-only estimate used to be silently
+        // wrong - see NoiseSurfaceSampler.
+        surfaceSampler = new NoiseSurfaceSampler(randomState, noise, settings, fluidPicker);
     }
 
     /** Called on server owner after all LOAD callbacks, before publishing a lane factory. */
@@ -558,6 +565,28 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
             // Even re-anchored on the estimate, the ground is somewhere this column cannot prove.
             certified = Quality.CENSORED;
             c.censored = true;
+        }
+        // Vanilla cross-check. A column the walk could not certify, or one that reads at bedrock
+        // level, is exactly where the density-only estimate is silently wrong: the measured session
+        // accepted groundTopY=-61 under a sparse jungle whose real surface was y=121, and the wall
+        // started at y=-44. The road answers the same question by reading the real heightmap; this
+        // reads the heightmap the game itself would have written, from a real NoiseChunk sweep.
+        if (certified != Quality.REFERENCE || c.groundTop <= bounds.minY() + 8) {
+            int sampledGround = surfaceSampler.worldSurface(c.x, c.z) - 1;
+            if (sampledGround > bounds.minY() + 8 && Math.abs(sampledGround - c.groundTop) > 1) {
+                int walkedGround = c.groundTop;
+                c.groundTop = sampledGround;
+                certified = Quality.REFERENCE;
+                c.censored = false;
+                surfaceSampler.countedCorrection();
+                long corrections = surfaceSampler.corrections();
+                if (corrections <= 8 || corrections % 2048 == 0) {
+                    local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                            "[GreatWall:S1C] WALL_SURFACE_RECONCILED column={},{} walkY={} vanillaY={} "
+                                    + "corrections={} sweeps={}",
+                            c.x, c.z, walkedGround, sampledGround, corrections, surfaceSampler.sweeps());
+                }
+            }
         }
         if (certified == Quality.REFERENCE) {
             // Only a fully certified walk is a trustworthy hint for the next column; a censored or coarse
