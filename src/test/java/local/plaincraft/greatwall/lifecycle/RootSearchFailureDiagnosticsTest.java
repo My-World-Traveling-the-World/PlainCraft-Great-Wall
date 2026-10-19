@@ -67,4 +67,47 @@ final class RootSearchFailureDiagnosticsTest {
 
         @Override public void close() { }
     }
+
+    @Test
+    void aRingWithNoAdmissibleCandidateStillYieldsTheBestOfWhatItMeasured() {
+        var domain = new SpawnDomain();
+        domain.authorize(new ChunkKey("minecraft:overworld", -63, -63), 11);
+        var search = new RootSearch(new Point3i(-1000, 64, -1000), BOUNDS,
+                domain.snapshot(), (o, c) -> true);
+        // Every 8-block band steps 120 blocks: no 64x64 window on this ring is within the relief bound,
+        // which is exactly the shape that ended two real sessions with no wall at all.
+        var oracle = new SteepFixture();
+
+        while (search.advance(oracle, 64) != WorkState.DONE) { }
+        var selection = search.finish();
+
+        assertTrue(selection.axis().origin().y() > 0, "the fallback must still produce a site");
+    }
+
+    /** Dry, fully supported, but stepped far beyond any relief bound. */
+    private static final class SteepFixture implements NaturalTerrainOracle {
+        private static final class Cursor implements ColumnCursor {
+            private boolean done; private int x;
+            public boolean done() { return done; }
+        }
+
+        @Override public ColumnCursor begin(int x, int z, SampleKind kind) {
+            var cursor = new Cursor(); cursor.x = x; return cursor;
+        }
+
+        @Override public WorkState advance(ColumnCursor cursor, int limit) {
+            ((Cursor) cursor).done = true;
+            return WorkState.DONE;
+        }
+
+        @Override public ColumnSample finish(ColumnCursor cursor) {
+            int height = 64 + Math.floorMod(((Cursor) cursor).x / 8, 2) * 120;
+            return new ColumnSample(height, OptionalInt.empty(), OptionalInt.empty(),
+                    "minecraft:plains", Quality.REFERENCE, false);
+        }
+
+        @Override public String fingerprint() { return "0".repeat(64); }
+
+        @Override public void close() { }
+    }
 }

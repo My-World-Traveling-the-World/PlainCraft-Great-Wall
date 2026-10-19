@@ -109,6 +109,19 @@ public final class RootSearch {
     private static final int[] AXIS_ACROSS = {0, -48, 48};
     private final Point3i spawn;
     private final DimensionBounds bounds;
+    /**
+     * Relief bounds, scaled to the dimension's height.
+     *
+     * <p>The 32-block contract was calibrated on vanilla terrain. On a tall modpack terrain (Tectonic
+     * and a height patch) no 64×64 window within 2500 blocks of spawn comes close: two consecutive
+     * sessions measured spread averages of 126 and 163 with maxima around 580, and the second one had
+     * ranked=0 - not one candidate admitted. Scaling by height keeps vanilla behaviour (a 384-block
+     * dimension still gets 32) while letting a 2100-block dimension offer pads up to 88 blocks.
+     */
+    private final int coarseRelief;
+    private final int footprintRelief;
+    /** Ceiling of the adaptive relief bound, whatever the dimension height. */
+    private static final int MAX_ADAPTIVE_RELIEF = 96;
     private final List<ChunkKey> early;
     private final BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation;
     private final ArrayList<Candidate> candidates = new ArrayList<>();
@@ -153,6 +166,17 @@ public final class RootSearch {
             coarseRejectedOther;
     /** The last ranked count, so a failure message can carry it. */
     private int lastRanked;
+    /**
+     * Best-effort candidates, kept only for the no-site fallback.
+     *
+     * <p>Two consecutive sessions on this modpack ended with no site at all - one with twelve pads
+     * rejected on relief, one with ranked=0. A wall that is never built is worse than a wall on the best
+     * ground the ring offers, so every refused candidate is remembered with the statistics it had when it
+     * was refused, and the best of them is used when the strict contract admits nothing.
+     */
+    private final java.util.List<Candidate> fallbackPool = new java.util.ArrayList<>();
+    /** Set when the strict contract admitted nothing and the pad walk runs best-effort. */
+    private boolean relaxed;
     private int coarseWetMin = Integer.MAX_VALUE, coarseWetMax = Integer.MIN_VALUE;
     private int coarseSpreadMin = Integer.MAX_VALUE, coarseSpreadMax = Integer.MIN_VALUE;
     private long coarseWetSum, coarseSpreadSum;
@@ -172,6 +196,11 @@ public final class RootSearch {
             local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance) {
         this.spawn = Objects.requireNonNull(spawn);
         this.bounds = Objects.requireNonNull(bounds);
+        int heightSpan = Math.max(1, bounds.maxYExclusive() - bounds.minY());
+        int adaptiveRelief = Math.max(MAX_COARSE_RELIEF,
+                Math.min(MAX_ADAPTIVE_RELIEF, heightSpan / 24));
+        this.coarseRelief = adaptiveRelief;
+        this.footprintRelief = Math.max(MAX_FOOTPRINT_RELIEF, adaptiveRelief);
         this.early = List.copyOf(early);
         this.foundation = Objects.requireNonNull(foundation);
         this.screenStructures=screenStructures;
@@ -269,6 +298,23 @@ public final class RootSearch {
                     .thenComparingInt(Candidate::slope).thenComparing(Comparator.comparingLong(Candidate::ridge).reversed())
                     .thenComparingInt(Candidate::radius).thenComparingInt(Candidate::angle)).toList();
             logCoarseSummary(ordered.size());
+            // Water is not negotiable: a ring point that is mostly water is not ground to build on, and a
+            // fallback that walks eight wet pads only to fail them costs columns for nothing. What the
+            // fallback is for is the pad the contract refuses for relief or for one uncertified column.
+            var fallbackPool = this.fallbackPool.stream().filter(c -> c.wet() * 2 <= 81).toList();
+            if (ordered.isEmpty() && !fallbackPool.isEmpty()) {
+                var fallback = fallbackPool.stream().sorted(Comparator.comparingInt(Candidate::wet)
+                        .thenComparingInt(Candidate::slope).thenComparingInt(Candidate::radius)
+                        .thenComparingInt(Candidate::angle)).limit(8).toList();
+                relaxed = true;
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                        "[GreatWall:S1C] ROOT_FALLBACK no candidate meets the siting contract (relief bound {} blocks, "+
+                                "{} candidates measured); using the best of {} - the wall is built on the best ground the ring offers",                        coarseRelief, candidateIndex, fallbackPool.size());
+                shortlisted = fallback;
+                remainingScreened = fallback;
+                screenedOffset = shortlisted.size();
+                phase = 1; resetSamples(); return;
+            }
             if(screenStructures){
                 if(ordered.isEmpty())throw notFound();
                 structureCandidates=ordered;phase=4;return;
@@ -300,6 +346,7 @@ public final class RootSearch {
         // columns cannot change the verdict, it only spends the walk - the ring is already refused.
         if (invalidSamples * 8 > 81) {
             coarseInvalid++;
+            noteFallback(origin);
             audit.add(new Audit("coarse", origin, candidateIndex / 36, candidateIndex % 36, -1,
                     wet, invalidSamples, 0, min, max, "REJECTED_INVALID"));
             candidateIndex++; resetSamples(); return;
@@ -316,9 +363,10 @@ public final class RootSearch {
             // The verdicts cannot change: the two bounds are precisely the complements of the admission
             // test below and both counters are monotone, so this yields the same candidate set as walking
             // to 81. noteCoarse is called here as well, so the summary's averages keep their denominators.
-            if (wet * 2 > 81 || max - min > MAX_COARSE_RELIEF) {
+            if (wet * 2 > 81 || max - min > coarseRelief) {
                 coarseRejected++;
                 noteCoarse(wet, max - min);
+                noteFallback(origin);
                 audit.add(new Audit("coarse", origin, candidateIndex / 36, candidateIndex % 36, -1,
                         wet, invalidSamples, 0, min, max, "REJECTED_EARLY_WATER_OR_RELIEF"));
                 candidateIndex++; resetSamples(); return;
@@ -337,15 +385,17 @@ public final class RootSearch {
         // honest measure, so a rocky or cave-riddled ring point is no longer thrown away for one
         // censored column.
         boolean unusable = invalidSamples * 8 > 81;
-        boolean admitted = !unusable && wet * 2 <= 81 && max - min <= MAX_COARSE_RELIEF;
+        boolean admitted = !unusable && wet * 2 <= 81 && max - min <= coarseRelief;
         if (!unusable) noteCoarse(wet, max - min);
         if (admitted) {
             candidates.add(new Candidate(new Point3i(origin.x(), centerHeight, origin.z()), candidateIndex / 36,
                     candidateIndex % 36, wet, max - min, 81L * centerHeight - sum));
         } else if (unusable) {
             coarseInvalid++;
+            noteFallback(origin);
         } else {
             coarseRejected++;
+            noteFallback(origin);
         }
         if (historic) coarseHistoric++;
         audit.add(new Audit("coarse", origin, candidateIndex / 36, candidateIndex % 36, -1,
@@ -363,6 +413,19 @@ public final class RootSearch {
                 int end=Math.min(remainingScreened.size(),screenedOffset+8);
                 shortlisted=List.copyOf(remainingScreened.subList(screenedOffset,end));
                 screenedOffset=end;selectedIndex=0;resetSamples();return;
+            }
+            if (best == null && relaxed && !shortlisted.isEmpty()) {
+                // Last resort of the fallback: every pad was walked and every axis was refused, so take
+                // the head of the ranking with axis 0. The wall is built, and the log says the siting
+                // contract was not met - which is the trade the fallback exists to make.
+                var chosen = shortlisted.get(0);
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                        "[GreatWall:S1C] ROOT_FALLBACK_SITE no pad passed any axis check; building on the "
+                                + "best measured candidate radius={} angle={} origin={} (axis 0)",
+                        chosen.radius(), chosen.angle(), chosen.origin());
+                best = new Selection(axis(chosen.origin(), 0), chosen.radius(), chosen.angle(), 0, 0L, 0, 0, 0);
+                phase = 3;
+                return;
             }
             if (best == null) {
                 logAxisSummary();
@@ -388,18 +451,23 @@ public final class RootSearch {
         // grows, so a pad that already spans more than MAX_FOOTPRINT_RELIEF can never pass. The coarse
         // phase has always made this exact argument (see MAX_COARSE_RELIEF); the pad walk was still
         // completing all 2304 cells to reach the same verdict.
-        if (max - min > MAX_FOOTPRINT_RELIEF) invalid = true;
+        if (!relaxed && max - min > footprintRelief) invalid = true;
         sampleIndex++;
         // (A) Exact-equivalence early exit: both tolerated bounds only grow while the pad is walked, so
         // once either is crossed the pad is refused whatever the remaining cells hold.
-        if (invalid) {
+        // In fallback mode an uncertified column is not a reason to refuse the only ground on offer:
+        // only support and water are hard floors there.
+        boolean hardFailure = failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS
+                || wet > MAX_WET_FOOTPRINT_CELLS;
+        if (invalid && (hardFailure || !relaxed)) {
             rejectFootprint(current, wet > MAX_WET_FOOTPRINT_CELLS,
                     failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS,
-                    max - min > MAX_FOOTPRINT_RELIEF);
+                    max - min > footprintRelief);
             return;
         }
+        if (relaxed && !hardFailure) invalid = false;
         if (sampleIndex < 48 * 48) return;
-        boolean reliefOk = max - min <= MAX_FOOTPRINT_RELIEF;
+        boolean reliefOk = relaxed || max - min <= footprintRelief;
         if (!reliefOk) {
             rejectFootprint(current, wet > MAX_WET_FOOTPRINT_CELLS,
                     failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS, true);
@@ -439,7 +507,7 @@ public final class RootSearch {
                         + "wet={}/{} spread={}/{} height={} water={} support={} relief={} censored={}/{} "
                         + "firstCensored={}",
                 current.radius(), current.angle(), reason, failedFoundations, 48 * 48, wet, 48 * 48,
-                max - min, MAX_FOOTPRINT_RELIEF, current.origin().y(),
+                max - min, footprintRelief, current.origin().y(),
                 waterFired, supportFired, reliefFired, censoredSamples, sampleIndex,
                 firstCensoredX == Integer.MIN_VALUE ? "none"
                         : firstCensoredX + "," + firstCensoredZ + " q=" + firstCensoredQuality
@@ -587,6 +655,16 @@ public final class RootSearch {
         }
         if(lower.isPresent()&&(best==null||axisScore>best.ridgeScore()))
             best=new Selection(axis,current.radius(),current.angle(),axisIndex,axisScore,0,0,0);
+        if(lower.isEmpty()&&relaxed&&best==null){
+            // Fallback: the ring admitted nothing and no axis can certify an entrance. A wall with a
+            // degraded fort0 entrance is still a wall; no wall at all is not - which is the whole point of
+            // the fallback, and the log says which axis was taken without a certificate.
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                    "[GreatWall:S1C] ROOT_FALLBACK_AXIS no certified entrance on axis={} radius={} angle={}; "
+                            + "accepting it degraded so the wall is built",
+                    axisIndex,current.radius(),current.angle());
+            best=new Selection(axis,current.radius(),current.angle(),axisIndex,axisScore,0,0,0);
+        }
         entranceSupports.clear();entranceColumns.clear();entrancePositions=List.of();
         axisIndex++;phase=2;resetSamples();
     }
@@ -759,6 +837,13 @@ public final class RootSearch {
         prefetched.clear();
         claimed.clear();
         return count;
+    }
+
+    /** Remembers a refused candidate with the statistics it had when it was refused. */
+    private void noteFallback(Point3i origin) {
+        int height = centerHeight != 0 ? centerHeight : origin.y();
+        fallbackPool.add(new Candidate(new Point3i(origin.x(), height, origin.z()), candidateIndex / 36,
+                candidateIndex % 36, wet, max - min, 81L * height - sum));
     }
 
     private void acceptHeight(ColumnSample value) {
