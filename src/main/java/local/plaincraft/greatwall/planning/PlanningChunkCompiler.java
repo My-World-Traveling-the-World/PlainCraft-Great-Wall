@@ -130,6 +130,14 @@ public final class PlanningChunkCompiler {
         int done = 0;
         int failed = 0;
         var tally = new FailureTally(FAILURE_DETAIL_LIMIT);
+        var pending = new java.util.ArrayList<Runnable>();
+        var failedCounter = new java.util.concurrent.atomic.AtomicInteger();
+        // The per-owner compile is the only expensive part of this stage and every owner is
+        // independent: its inputs are read-only (cells, before-states, coverage) and its output is
+        // one entry of the result map. A measured window of 2188 owners took 57 s on one thread; the
+        // same work on the machine's cores is a few seconds. The collection phase below stays
+        // serial because it fills the shared cell caches.
+        int workers = compileWorkers();
         long started = System.nanoTime();
         long lastReport = started;
         long reportInterval = java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
@@ -194,56 +202,65 @@ public final class PlanningChunkCompiler {
             }
             // One owner's failure must not cost the rest of the window its wall: that owner is skipped,
             // named in the log, and the remaining owners still publish.
-            try {
-                if (cellFailure != null) throw cellFailure;
-                var plan = compiler.bindCoverage(
-                        compiler.compile(owner, recipeHash, List.copyOf(cells), before),
-                        coverage.forChunk(owner, new PlanWindow(List.copyOf(ownerPlans)), windowBounds).hash());
-                if (result.putIfAbsent(owner, plan) != null) {
-                    // Cannot happen with one entry per owner; loud if a future change reintroduces the
-                    // silent overwrite this grouping exists to remove.
-                    local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
-                            "[GreatWall:S1C] PLANNING_COMPILE_DUPLICATE_OWNER owner=[{},{}]",
-                            owner.x(), owner.z());
-                }
-            } catch (Throwable failure) {
-                failed++;
-                String kind = tally.record(failure);
-                // One stack trace per distinct cause, not one per owner: a real run failed 1783 owners
-                // with the same exception and wrote about fifty thousand lines doing it. The first few
-                // keep their trace (that is what a diagnosis needs), the rest are counted.
-                if (tally.shouldLogDetail(kind)) {
-                    local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
-                            "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] failed={}/{} failure={}",
-                            owner.x(), owner.z(), failed, ownerCount, kind, failure);
-                } else if (tally.suppressed(kind) == 1) {
-                    local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
-                            "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] failed={}/{} failure={} "
-                                    + "(stack trace suppressed from here; see COMPILE_FAILURES at the end)",
-                            owner.x(), owner.z(), failed, ownerCount, kind);
-                }
-            }
-            done++;
-            // Progress reporting never costs the window its result: the sink writes a loading-card
-            // counter today, but this loop is the only place that publishes the compile at all.
-            if (progress != null) {
-                try { progress.accept(done, ownerCount); } catch (Throwable ignored) { }
-            }
-            // A 15 s heartbeat: (done, total) with the elapsed time yields a per-owner rate even from a
-            // run that is interrupted, which is the only way this stage can be sized today.
-            long now = System.nanoTime();
-            if (now - lastReport >= reportInterval || done == ownerCount) {
-                lastReport = now;
-                double seconds = Math.max(0.001, (now - started) / 1_000_000_000.0);
-                double perOwnerMs = 1000.0 * seconds / Math.max(1, done);
-                local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                        "[GreatWall:S1C] PLANNING_COMPILE_PROGRESS owners={}/{} failed={} elapsedMs={} "
-                                + "msPerOwner={} etaMs={}",
-                        done, ownerCount, failed, Math.round(seconds * 1000.0),
-                        String.format(java.util.Locale.ROOT, "%.1f", perOwnerMs),
-                        Math.round(perOwnerMs * Math.max(0, ownerCount - done)));
+            if (cellFailure != null) {
+                recordFailure(owner, cellFailure, tally, failedCounter);
+            } else {
+                var compiledCells = List.copyOf(cells);
+                var compiledBefore = java.util.Collections.unmodifiableMap(new HashMap<>(before));
+                var compiledPlans = List.copyOf(ownerPlans);
+                pending.add(() -> {
+                    try {
+                        var plan = compiler.bindCoverage(
+                                compiler.compile(owner, recipeHash, compiledCells, compiledBefore),
+                                coverage.forChunk(owner, new PlanWindow(compiledPlans), windowBounds).hash());
+                        if (result.putIfAbsent(owner, plan) != null) {
+                            local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
+                                    "[GreatWall:S1C] PLANNING_COMPILE_DUPLICATE_OWNER owner=[{},{}]",
+                                    owner.x(), owner.z());
+                        }
+                    } catch (Throwable failure) {
+                        recordFailure(owner, failure, tally, failedCounter);
+                    }
+                });
             }
         }
+        failed = failedCounter.get();
+        int ownerCountDone = pending.size();
+        // Run the collected compiles. One worker runs them inline: the pool buys nothing on a
+        // single-core machine and the ordering of the progress log stays unchanged.
+        if (pending.size() > 1 && workers > 1) {
+            var pool = java.util.concurrent.Executors.newFixedThreadPool(workers, task -> {
+                Thread thread = new Thread(task, "pgw-compile");
+                thread.setDaemon(true);
+                return thread;
+            });
+            try {
+                var jobs = pending.toArray(new Runnable[0]);
+                var futures = new java.util.concurrent.CompletableFuture[jobs.length];
+                var cursor = new java.util.concurrent.atomic.AtomicInteger();
+                for (int p = 0; p < Math.min(workers, jobs.length); p++) {
+                    futures[p] = java.util.concurrent.CompletableFuture.runAsync(() -> {
+                        int i;
+                        while ((i = cursor.getAndIncrement()) < jobs.length) jobs[i].run();
+                    }, pool);
+                }
+                java.util.concurrent.CompletableFuture.allOf(futures).join();
+            } finally {
+                pool.shutdownNow();
+            }
+        } else {
+            for (var job : pending) job.run();
+        }
+        done = ownerCountDone;
+        if (progress != null) {
+            try { progress.accept(done, ownerCount); } catch (Throwable ignored) { }
+        }
+        long now = System.nanoTime();
+        double seconds = Math.max(0.001, (now - started) / 1_000_000_000.0);
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:S1C] PLANNING_COMPILE_PROGRESS owners={}/{} failed={} elapsedMs={} msPerOwner={}",
+                done, ownerCount, failed, Math.round(seconds * 1000.0),
+                String.format(java.util.Locale.ROOT, "%.1f", 1000.0 * seconds / Math.max(1, done)));
         if (failed > 0) {
             local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
                     "[GreatWall:S1C] PLANNING_COMPILE_PARTIAL owners={} failed={}", result.size(), failed);
@@ -267,7 +284,38 @@ public final class PlanningChunkCompiler {
         return java.util.Collections.unmodifiableMap(result);
     }
 
+    /** One owner's failure: counted, summarised by cause, and never allowed to stop the others. */
+    private static void recordFailure(ChunkKey owner, Throwable failure, FailureTally tally,
+                                      java.util.concurrent.atomic.AtomicInteger failed) {
+        int n = failed.incrementAndGet();
+        String kind = tally.record(failure);
+        if (tally.shouldLogDetail(kind)) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
+                    "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] failed={}/{} failure={}",
+                    owner.x(), owner.z(), n, tally.total(), kind, failure);
+        } else if (tally.suppressed(kind) == 1) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
+                    "[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner=[{},{}] failed={}/{} failure={} "
+                            + "(stack trace suppressed from here; see COMPILE_FAILURES at the end)",
+                    owner.x(), owner.z(), n, tally.total(), kind);
+        }
+    }
+
+    /**
+     * How many owners to compile at once.
+     *
+     * <p>Capped at eight: the pool exists to use idle cores during startup, and the tally and the
+     * result map are the only shared state, both of which are concurrent. Override with
+     * {@code -Dgreatwall.compileWorkers}.
+     */
+    private static int compileWorkers() {
+        int available = Runtime.getRuntime().availableProcessors();
+        int requested = Integer.getInteger("greatwall.compileWorkers", Math.min(8, available));
+        return Math.max(1, Math.min(requested, Math.max(1, available - 1)));
+    }
+
     /** {@return the realization of one cell, as the compile input describes it} */
+
     private RealizationCell resolveCell(CellKey cell,
             Map<Point3i, SurfaceProbe.ColumnView> columns, PlanWindow plans, String protectionHash) {
         return realization.resolve(new RealizationPlanner.Input(cell, plans, Map.of(), columns,
