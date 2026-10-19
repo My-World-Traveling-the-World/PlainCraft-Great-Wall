@@ -20,6 +20,7 @@ public final class ServerSmoke implements ModInitializer {
     private String evidence;
     private int reloadRound;
     private final RuntimeEntryFixture entries = new RuntimeEntryFixture();
+    private final SamplerParityFixture parity = new SamplerParityFixture();
     private final TerrainBarrierFixture terrain = new TerrainBarrierFixture();
     private final RealTerrainFixture wall = new RealTerrainFixture();
     private final RootHydrologyFixture survey = new RootHydrologyFixture();
@@ -76,6 +77,8 @@ public final class ServerSmoke implements ModInitializer {
                 if (!survey.tick(server)) return;
             } else if (Boolean.getBoolean("greatwall.s1c.productionFixture")) {
                 if (!wall.tick(server)) return;
+            } else if (Boolean.getBoolean("greatwall.smoke.samplerParity")) {
+                if (!parity.tick(server, ticks)) return;
             } else if (Boolean.getBoolean("greatwall.s0.terrain")) {
                 if (!terrain.tick(server, ticks)) return;
             } else if (Boolean.getBoolean("greatwall.s0.entries")) {
@@ -91,7 +94,7 @@ public final class ServerSmoke implements ModInitializer {
                 server.halt(false);
             }
         });
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> { wall.close(); survey.close(); });
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> { wall.close(); survey.close(); parity.close(); });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             if (!started || !stopRequested) {
                 if (Boolean.getBoolean("greatwall.s0.expectedFailure")) {
