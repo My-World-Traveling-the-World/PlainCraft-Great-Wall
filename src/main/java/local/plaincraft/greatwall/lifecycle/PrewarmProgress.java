@@ -224,7 +224,10 @@ public final class PrewarmProgress {
         STARTED_AT_NANOS.set(System.nanoTime());
         FAILED.set(false);
         STATE.clear();
-        resetStageAccount();
+        // Keep what the root search and the structure scan already cost: both run before this call, and
+        // an unconditional reset made every measured session report rootMs=0 scanMs=0 (a real session:
+        // 17 minutes of search, printed as zero).
+        if (stageSinceNanos == 0L) resetStageAccount();
         ACTIVE.set(totalSegments > 0);
         EVER_STARTED.set(true);
     }

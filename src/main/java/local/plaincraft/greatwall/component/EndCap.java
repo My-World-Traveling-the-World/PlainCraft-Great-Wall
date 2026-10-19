@@ -24,6 +24,10 @@ public final class EndCap implements ComponentTemplate {
     public static List<SiteRecord> candidates(SiteRecord site,List<Station> stations) {
         if(stations.size()<2)throw new IllegalArgumentException("cap needs station ribbon");
         Station[] original=edge(stations,site.globalSQ8());
+        // A route with a break has gaps between its station intervals. A cap whose own station lands
+        // in one cannot be anchored to a ribbon at all; the owner compiles with an empty cap rather
+        // than the whole window losing every owner it shares the window with.
+        if(original==null)return List.of();
         long dx=original[1].point().xQ8()-original[0].point().xQ8();
         long dz=original[1].point().zQ8()-original[0].point().zQ8();
         int direction=dx*site.frame().txQ30()+dz*site.frame().tzQ30()>=0?1:-1;
@@ -31,7 +35,9 @@ public final class EndCap implements ComponentTemplate {
         for(int retreat=0;retreat<=128;retreat+=4) {
             long s=site.globalSQ8()-direction*retreat*256L;
             if(s<stations.getFirst().globalSQ8()||s>stations.getLast().globalSQ8())break;
-            Station[] pair=edge(stations,s);var a=pair[0];var b=pair[1];
+            Station[] pair=edge(stations,s);
+            if(pair==null)continue;
+            var a=pair[0];var b=pair[1];
             long length=b.globalSQ8()-a.globalSQ8(),offset=s-a.globalSQ8();
             dx=b.point().xQ8()-a.point().xQ8();dz=b.point().zQ8()-a.point().zQ8();
             var point=new Point2q(a.point().xQ8()+FixedMath.mulDiv(dx,offset,length),a.point().zQ8()+FixedMath.mulDiv(dz,offset,length));
@@ -47,7 +53,9 @@ public final class EndCap implements ComponentTemplate {
     private static Station[] edge(List<Station> stations,long s) {
         for(int i=1;i<stations.size();i++)if(s>=stations.get(i-1).globalSQ8()&&s<=stations.get(i).globalSQ8())
             return new Station[]{stations.get(i-1),stations.get(i)};
-        throw new IllegalArgumentException("cap outside station ribbon");
+        // Measured: 324 of 2185 owners failed this way on a fallback-sited route, each one costing
+        // its whole window. A gap is a geometry fact, not an error: report "no anchor here".
+        return null;
     }
     @Override public ComponentVoxels compile(ComponentInput input) {
         ComponentVoxels last=null;
