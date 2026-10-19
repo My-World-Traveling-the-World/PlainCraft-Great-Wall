@@ -14,10 +14,10 @@
     "modmenu": ["local.plaincraft.greatwall.client.config.GreatWallModMenu"]
   },
   "depends": {
-    "fabricloader": "=${loader_version}",
+    "fabricloader": ">=${loader_version}",
     "minecraft": "=1.21.1",
     "java": ">=21",
-    "fabric-api": "=${fabric_version}"
+    "fabric-api": ">=${fabric_version}"
   },
   "suggests": {
     "modmenu": "*"
