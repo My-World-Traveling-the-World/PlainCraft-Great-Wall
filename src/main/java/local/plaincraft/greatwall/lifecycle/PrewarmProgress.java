@@ -372,10 +372,14 @@ public final class PrewarmProgress {
         if (ACTIVE.get() || EVER_STARTED.get()) {
             var snap = snapshot();
             closeStageAccount();
-            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                    "[GreatWall:S1C] ROAD_GATE_OPENED success={} stage={} completed={}/{} elapsedMs={} - a "
-                            + "startup peer (RoadWeaver) may now begin",
-                    success, snap.stage(), snap.completed(), snap.total(), snap.elapsedMillis());
+            // Only a released gate says OPENED; a held one says HELD at the end of this method. The
+            // two lines used to print together, so a failed session announced a release it did not do.
+            if (success) {
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                        "[GreatWall:S1C] ROAD_GATE_OPENED success=true stage={} completed={}/{} elapsedMs={} - a "
+                                + "startup peer (RoadWeaver) may now begin",
+                        snap.stage(), snap.completed(), snap.total(), snap.elapsedMillis());
+            }
             // One line, once per session: what each startup stage actually cost. Without it the only
             // way to answer "where did the twenty minutes go" was to read timestamps out of the log.
             // Total is wall clock from the first stage (the root search), not from the prewarm begin:

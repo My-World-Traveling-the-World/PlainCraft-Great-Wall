@@ -215,6 +215,10 @@ public final class PlanningChunkCompiler {
                         var plan = compiler.bindCoverage(
                                 compiler.compile(owner, recipeHash, compiledCells, compiledBefore),
                                 coverage.forChunk(owner, new PlanWindow(compiledPlans), windowBounds).hash());
+                        // A null plan is a legitimate "this owner produces nothing"; the map is a
+                        // ConcurrentHashMap now, which rejects null values outright - that threw the
+                        // NullPointerException that killed a whole window in PLANNING_COMPILE_FAILED.
+                        if (plan == null) return;
                         if (result.putIfAbsent(owner, plan) != null) {
                             local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
                                     "[GreatWall:S1C] PLANNING_COMPILE_DUPLICATE_OWNER owner=[{},{}]",
