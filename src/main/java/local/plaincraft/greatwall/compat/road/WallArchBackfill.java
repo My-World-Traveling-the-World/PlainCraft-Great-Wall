@@ -274,19 +274,46 @@ public final class WallArchBackfill {
                 pendingChunks++;
                 continue;
             }
-            // ChunkWallWriter only writes proto chunks: it rejects anything not in WriteMode.INITIAL
-            // ("loaded backfill requires the S2 loaded-owner writer"). Calling it here could only throw
-            // from inside a tick, so the gate stays PENDING and the reason is reported once instead.
-            if (true) {
-                if (gateBackfillUnsupported == null) {
-                    gateBackfillUnsupported = "loaded-owner arch backfill is not implemented: "+
-                            "ChunkWallWriter accepts proto-chunk INITIAL writes only";
-                    local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
-                            "[GreatWall:S1C] GATE_BACKFILL_UNSUPPORTED {}; gate stays PENDING",
-                            gateBackfillUnsupported);
+            // A loaded chunk cannot go through ChunkWallWriter: that writer owns the proto-chunk path
+            // and refuses anything past INITIAL ("initial write cannot mutate a FULL chunk"). An arch
+            // is exactly the opposite case - the chunk exists, the road is already there, and the gate
+            // has to be opened underneath it - so the voxels are written the way the wall body has been
+            // written into loaded chunks all along: level.setBlock, flag 2, with the ownership decision
+            // re-taken here because the world may have changed since prepare().
+            var proofsByPos = new java.util.HashMap<Point3i, BlockProof>();
+            for (BlockProof proof : plan.proofs()) proofsByPos.put(proof.pos(), proof);
+            for (VoxelIntent voxel : plan.voxels()) {
+                if (written >= blockBudget) break;
+                if (voxel.kind() == local.plaincraft.greatwall.model.WallTypes.IntentKind.KEEP) continue;
+                Point3i p = voxel.pos();
+                if (Math.floorDiv(p.x(), 16) != plan.owner().x() || Math.floorDiv(p.z(), 16) != plan.owner().z()) continue;
+                var pos = new net.minecraft.core.BlockPos(p.x(), p.y(), p.z());
+                try {
+                    var target = local.plaincraft.greatwall.terrain.BlockCatalog.resolveState(voxel.state());
+                    var current = chunk.getBlockState(pos);
+                    if (current == target) continue;
+                    BlockProof proof = proofsByPos.get(p);
+                    if (proof == null) { conflicts.add(p); continue; }
+                    var decision = OwnershipGuard.decide(WriteMode.GATE_BACKFILL, plan.owner(), p,
+                            current.toString(), chunk.getBlockEntity(pos) != null, proof, false);
+                    if (decision == local.plaincraft.greatwall.model.WallTypes.WriteDecision.CONFLICT
+                            || decision == local.plaincraft.greatwall.model.WallTypes.WriteDecision.PROTECTED) {
+                        conflicts.add(p);
+                        continue;
+                    }
+                    // Flag 2: clients are notified, neighbours are not cascaded. An arch is a few hundred
+                    // writes inside one tick, and eight thousand cascades every half second is a stutter.
+                    level.setBlock(pos, target, 2);
+                    written++;
+                } catch (RuntimeException unresolvable) {
+                    // A palette naming a block the registry no longer has must not pin this chunk: the
+                    // voxel is skipped and the gate still completes.
+                    conflicts.add(p);
                 }
-                pendingChunks++;
-                continue;
+            }
+            if (written >= blockBudget) {
+                cursors.put(id, (cursor + step + 1) % plans.size());
+                break;
             }
             var report = writer.apply(chunk, plan, WriteMode.GATE_BACKFILL);
             written += report.written();
