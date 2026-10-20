@@ -131,6 +131,9 @@ public final class RootSearch {
     private final java.util.Set<Long> askedColumns = new java.util.HashSet<>();
     private long distinctColumnCount;
     private long totalColumnReads;
+    /** Column reads by coordinate; see {@link #read}. */
+    private final java.util.Map<Long, ColumnSample> columnMemo = new java.util.HashMap<>();
+
     private List<Candidate> structureCandidates = List.of();
     /** Candidates past the first screen batch; only reached through {@link #screenNextStructureBatch()}. */
     private List<Candidate> structureRemainder = List.of();
@@ -730,7 +733,24 @@ public final class RootSearch {
         axisIndex++;phase=2;resetSamples();
     }
 
+    /**
+     * Memoises column reads for the life of this search.
+     *
+     * <p>A measured run asked for 59,259 columns of which only 41,242 were distinct: the footprint
+     * phase walks a 48x48 grid per candidate and neighbouring candidates overlap, so three reads in
+     * ten were the same coordinate asked for again. The prefetch cache answers some of those, but not
+     * the ones that were sampled inline.
+     */
     private ColumnSample read(NaturalTerrainOracle oracle, int x, int z, boolean requireFoundation) {
+        long key = (((long) x) << 32) ^ (z & 0xffffffffL) ^ (requireFoundation ? 0x4000000000000000L : 0L);
+        ColumnSample memoised = columnMemo.get(key);
+        if (memoised != null) return memoised;
+        ColumnSample fresh = readUnmemoised(oracle, x, z, requireFoundation);
+        if (fresh != null) columnMemo.put(key, fresh);
+        return fresh;
+    }
+
+    private ColumnSample readUnmemoised(NaturalTerrainOracle oracle, int x, int z, boolean requireFoundation) {
         // Distinct versus repeated reads. The footprint phase walks 48x48 grids per candidate and
         // neighbours overlap, so this ratio decides whether A4 is a memo or a rebuilt sampling field.
         totalColumnReads++;

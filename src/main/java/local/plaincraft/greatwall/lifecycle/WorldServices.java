@@ -172,6 +172,10 @@ public final class WorldServices {
             var services = find(server);
             if (services != null && services.production != null) services.production.tick();
             // Rate limited inside: four chunks per ten ticks, loaded chunks only.
+            // A reloaded save has no production session, so install the reader here before draining:
+            // otherwise every loaded chunk drains against an empty plan cache and the world stays bare.
+            local.plaincraft.greatwall.generation.WallBodyBackfill.installIfAbsent(
+                    server.getWorldPath(LevelResource.ROOT).resolve("greatwall"));
             local.plaincraft.greatwall.generation.WallBodyBackfill.drain(server.overworld());
         });
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, successful) -> {

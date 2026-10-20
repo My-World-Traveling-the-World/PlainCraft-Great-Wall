@@ -69,6 +69,30 @@ public final class WallBodyBackfill {
     private static final AtomicLong PERSIST_FAILURES = new AtomicLong();
 
     /** Installed once per server by the production session, which owns the durable store. */
+    /**
+     * Installs the durable reader from the save directory when no session has done it.
+     *
+     * <p>{@code ProductionSession} installs the reader while a build is running. A reloaded save has no
+     * session, so nothing installed one: a measured run published 456 chunks, was restarted a minute
+     * later, and from then on wrote zero blocks - the drain ran every tick against an empty plan cache
+     * and every chunk stayed PENDING. The reader only needs the save directory, so it can be installed
+     * the first time a tick runs.
+     */
+    public static void installIfAbsent(java.nio.file.Path greatWallRoot) {
+        if (planStore != null) return;
+        var evidence = local.plaincraft.greatwall.persistence.ChunkEvidenceStore
+                .production(greatWallRoot.resolve("evidence"));
+        install(new PlanStore() {
+            @Override public java.util.Optional<ChunkWritePlan> read(ChunkKey owner) throws java.io.IOException {
+                return evidence.readPlan(owner);
+            }
+            @Override public void write(ChunkWritePlan plan) throws java.io.IOException {
+                evidence.persistPlan(plan);
+            }
+        });
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STORE_INSTALLED root={}", greatWallRoot);
+    }
+
     public static void install(PlanStore store) {
         planStore = store;
     }
@@ -198,6 +222,28 @@ public final class WallBodyBackfill {
             if (state.settling.contains(key)) continue;
             LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
             if (chunk == null) continue; // not loaded: stays pending, and is never requested
+            // Reading the plan only on CHUNK_LOAD is not enough: the wall's own sampling generates the
+            // whole corridor, so by the time the queue exists every chunk it covers is already loaded
+            // and no load event will ever fire for it again. A measured run queued 456 chunks that way
+            // and wrote zero blocks - the drain ran every tick against an empty cache. Fetch the plan
+            // here instead, on the IO pool, the way the road reads its construction data each pass.
+            if (local.plaincraft.greatwall.generation.WallWorldgenPlanCache.get(level, key) == null) {
+                PlanStore store = planStore;
+                if (store != null && LOADING.add(key)) {
+                    try {
+                        IO.execute(() -> {
+                            try {
+                                prefetch(level, key, store);
+                            } finally {
+                                LOADING.remove(key);
+                            }
+                        });
+                    } catch (java.util.concurrent.RejectedExecutionException closing) {
+                        LOADING.remove(key);
+                    }
+                }
+                continue; // stays pending; the prefetch wakes it on the next drain
+            }
             state.settling.add(key);
             try {
                 Sweep sweep = settle(level, chunk, key);
