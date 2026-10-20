@@ -87,6 +87,9 @@ public final class PrewarmProgress {
      * overlap the wall's compile.
      */
     private static volatile CountDownLatch worldgenReady = new CountDownLatch(1);
+    /** Guards against the second caller of {@link #finish(boolean)} in one session. */
+    private static final java.util.concurrent.atomic.AtomicBoolean FINISHED =
+            new java.util.concurrent.atomic.AtomicBoolean();
     /** Candidate index the root search has reached, and the total it will scan. */
     private static final AtomicInteger ROOT_CANDIDATE = new AtomicInteger();
     private static final AtomicInteger ROOT_TOTAL = new AtomicInteger();
@@ -231,6 +234,7 @@ public final class PrewarmProgress {
 
     /** Records that a prewarm began, how many segments it will produce, and on how many lanes. */
     public static void begin(int totalSegments, int lanes) {
+        FINISHED.set(false);  // each prewarm may finish once; see the guard in finish()
         REQUESTED.set(true);
         PEAK_OVERALL_PERCENT.set(0);
         synchronized (LATCH_LOCK) {
@@ -364,6 +368,15 @@ public final class PrewarmProgress {
 
     /** Records that the prewarm finished, successfully or not. */
     public static void finish(boolean success) {
+        // Once per session. finish() has several callers - the compile path, the bootstrap failure
+        // path and the long-stop watchdog - and a measured session logged the whole WALL_STARTUP_ACCOUNT
+        // block twice, 52 minutes apart, the second time into a totalMs of 3,926,577. The watchdog is
+        // meant to fire only when nobody else did; this makes the second caller a no-op that says so.
+        if (!FINISHED.compareAndSet(false, true)) {
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_FINISH_REPEATED success={} - already finished, "
+                    + "this call changes nothing", success);
+            return;
+        }
         // The one place a session actually releases the road gate, so this is where the ordering question
         // gets answered. It used to be logged inside signalWorldgenReady, which clear() also calls to
         // release a stale latch before installing a fresh one - so every world load printed a release that
@@ -499,6 +512,7 @@ public final class PrewarmProgress {
 
     /** Clears everything; used between sessions so a stale snapshot cannot be served. */
     public static void clear() {
+        FINISHED.set(false);  // a new session may finish once more
         ACTIVE.set(false);
         // A new world in the same JVM must re-anchor the wall-clock total, or the second session
         // reports the first session's duration as well.
