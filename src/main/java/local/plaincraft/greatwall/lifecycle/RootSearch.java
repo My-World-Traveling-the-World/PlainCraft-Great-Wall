@@ -779,8 +779,11 @@ public final class RootSearch {
      */
     public List<ColumnKey> pendingCoarseReads() {
         if (phase != 0) return List.of();
-        var result = new ArrayList<ColumnKey>(81 * 2);
-        for (int ahead = 0; ahead < 2; ahead++) {
+        // Four candidates ahead rather than two: the samples are now cached across candidates,
+        // so a position sampled for one candidate is still the answer for the next, and a wider
+        // window keeps eleven lanes fed instead of letting them idle behind the pump.
+        var result = new ArrayList<ColumnKey>(81 * 4);
+        for (int ahead = 0; ahead < 4; ahead++) {
             int ci = candidateIndex + ahead;
             if (ci >= RADII.length * 36) break;
             var origin = ringPoint(ci / 36, ci % 36);
@@ -943,17 +946,42 @@ public final class RootSearch {
         censoredSamples = 0;
         firstCensoredX = Integer.MIN_VALUE; firstCensoredZ = 0; firstCensoredIndex = -1;
         firstCensoredQuality = null;
-        // Every candidate and phase transition passes through here, which makes it
-        // the one place that reliably drops samples the search has moved past. A
-        // rejected candidate can leave thousands of prefetched columns behind, and
-        // holding them would trade the outage this fixes for a memory leak.
-        claimed.clear();
-        int dropped = prefetched.size();
-        if (dropped > 0) {
-            prefetched.clear();
-            discardedPrefetched.addAndGet(dropped);
+        // This used to clear the prefetch cache on every candidate and every phase change, and to
+        // release every claim. Both were wrong, and together they made the prefetch lanes useless.
+        //
+        // pendingCoarseReads deliberately samples the current candidate AND the next one. Clearing
+        // on the transition therefore threw away exactly the work that was about to be needed: a
+        // measured run discarded 83425 samples while the search consumed 48700, and the effective
+        // parallelism was 0.00 - three times the sampling for none of the speedup.
+        //
+        // A prefetched sample is a pure function of (x, z, requireFoundation), so it stays correct
+        // for any later request of the same position. There is nothing to invalidate - only a budget
+        // to respect.
+        if (prefetched.size() > PREFETCH_CACHE) {
+            int target = PREFETCH_CACHE - PREFETCH_CACHE / 8;
+            int dropped = 0;
+            var keys = prefetched.keySet().iterator();
+            while (prefetched.size() > target && keys.hasNext()) {
+                keys.next();
+                keys.remove();
+                dropped++;
+            }
+            if (dropped > 0) discardedPrefetched.addAndGet(dropped);
         }
+        // Claims need no reset: prefetch() releases its own claim in a finally, so a claim that is
+        // still here belongs to a lane that is still sampling. Clearing this set handed those same
+        // positions to a second lane - the other half of the duplicate work.
     }
+
+    /**
+     * How many prefetched columns to keep.
+     *
+     * <p>One coarse candidate contributes 81 and one footprint 2304, so the whole measured search
+     * (324 candidates, 8 pads) touches about 45000 positions. The default holds them several times
+     * over and still costs tens of megabytes at worst; override with -Dgreatwall.prefetchCache.
+     */
+    private static final int PREFETCH_CACHE = Math.max(1024,
+            Integer.getInteger("greatwall.prefetchCache", 262144));
 
     private final java.util.concurrent.atomic.AtomicLong discardedPrefetched =
             new java.util.concurrent.atomic.AtomicLong();
