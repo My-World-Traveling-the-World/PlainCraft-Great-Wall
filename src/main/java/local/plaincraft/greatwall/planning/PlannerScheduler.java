@@ -638,7 +638,20 @@ public final class PlannerScheduler implements AutoCloseable {
                     // The wide arcs sit at absolute stations, so the segment's starting arc has to be
                     // resolved before its cross-sections can be sized. The prefix index answers from its
                     // own cache and its lease closes to a no-op.
-                    prefixes.requireBefore(segment).future().whenCompleteAsync((prefix, prefixError) -> {
+                    // Sampling waits for this segment's geometry, because only the geometry knows where the
+                    // wall stops: a measured run cut nothing at all (121,120 columns, unchanged) because
+                    // the slices were created before any geometry existed and terminalPointLimit fell back
+                    // to "sample the whole route" every time. The wait is bounded - a geometry that never
+                    // completes must not stop the sample, so the timeout falls back to the full route.
+                    CompletableFuture<Void> geometryReady = CompletableFuture.<Void>completedFuture(null);
+                    var flight = geometryFlights.get(route.key());
+                    if (flight != null) {
+                        geometryReady = flight.thenApply(ignored -> (Void) null)
+                                .exceptionally(failed -> null)
+                                .completeOnTimeout(null, 120, java.util.concurrent.TimeUnit.SECONDS);
+                    }
+                    geometryReady.thenComposeAsync(ignored -> prefixes.requireBefore(segment).future(), pump)
+                            .whenCompleteAsync((prefix, prefixError) -> {
                     try {
                         if (prefixError != null) { aggregate.completeExceptionally(prefixError); return; }
                         var wideAt = widePoints(route, prefix.lengthBeforeQ8());
