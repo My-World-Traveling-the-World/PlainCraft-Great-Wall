@@ -481,7 +481,7 @@ public final class PlannerScheduler implements AutoCloseable {
         // index five extra times and rewrote the cache file five extra times. After the gates, so an
         // early return from a half-drained state does not consume the one chance.
         var published = new java.util.concurrent.atomic.AtomicBoolean(false);
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 1);
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.PREWARM, 0, 1);
         var completion = new Runnable() {
             @Override public void run() {
                 // The runaway guard publishes the index while slices are still in flight, so it skips both
@@ -501,7 +501,7 @@ public final class PlannerScheduler implements AutoCloseable {
                 // card read "435385/435385" for eleven minutes while the sampler passed 1.2M columns.
                 // PrewarmProgress caps a running stage at 99% and only the stage transition reports 100.
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                        done, expectedColumns.get());
+                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE, done, expectedColumns.get());
                 // Recorded here as well as at PREWARM_COMPLETE: the fine sample is the stage whose
                 // cost scales with the cross-section width, and its cache counters are what decide
                 // whether a slow run is the terrain walk or the chunk cache.
@@ -654,6 +654,7 @@ public final class PlannerScheduler implements AutoCloseable {
                                     }
                                     int done = sampledColumns.get();
                                     local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                                            local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE,
                                             done, expectedColumns.get());
                                     slicesPending.decrementAndGet();
                                     completion.run();

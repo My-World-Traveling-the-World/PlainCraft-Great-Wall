@@ -64,12 +64,31 @@ class PrewarmWorldgenGateTest {
         assertTrue(PrewarmProgress.awaitWorldgenReady(0, TimeUnit.NANOSECONDS));
     }
 
+    /**
+     * A failed wall does NOT open the peer gate.
+     *
+     * <p>This pins the opposite of the previous contract. Releasing on failure let a session start
+     * its roads fifty seconds after the compile died, so the roads were laid through a corridor the
+     * wall had never published; the release also made "the wall finished" and "the wall gave up"
+     * indistinguishable to the peer. The peer now waits on its own stall timeout instead, which
+     * {@link #aFailedPrewarmStillSettlesItsOwnWaiters} covers.
+     */
     @Test
-    void aFailedPrewarmAlsoReleasesTheWorldgenGate() {
+    void aFailedPrewarmHoldsTheWorldgenGate() {
         PrewarmProgress.begin(4, 16);
 
-        // A wall that will never paint must not park the roads for the whole peer timeout.
         PrewarmProgress.finish(false);
+        assertFalse(PrewarmProgress.awaitWorldgenReady(0, TimeUnit.NANOSECONDS));
+        // The prewarm's own waiter is still released: the wall giving up must not hang its own
+        // loading block, only the peer's gate.
+        assertTrue(PrewarmProgress.awaitCompletion(0, TimeUnit.NANOSECONDS));
+    }
+
+    @Test
+    void aSuccessfulPrewarmReleasesTheWorldgenGate() {
+        PrewarmProgress.begin(4, 16);
+
+        PrewarmProgress.finish(true);
         assertTrue(PrewarmProgress.awaitWorldgenReady(0, TimeUnit.NANOSECONDS));
         assertTrue(PrewarmProgress.awaitCompletion(0, TimeUnit.NANOSECONDS));
     }

@@ -80,14 +80,18 @@ public final class CorridorStructureScanner implements AutoCloseable {
                     level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor);
             // The loading card's structure-scan stage: candidates known up front, done count ticking
             // live as the scan walks them, total/total once resolved.
-            local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, candidates.size());
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.STRUCTURE_SCAN,
+                    0, candidates.size());
             var boxes = CorridorStructureScan.resolveBoxes(level, candidates,
                     done -> local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                            local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.STRUCTURE_SCAN,
                             done, candidates.size()));
             // The finished count stays in the candidate口径 even though the result is shorter: the live
             // ticks above count candidates, so reporting boxes here would walk the displayed number
             // backwards (13085 candidates resolving to 4262 boxes reads as a stalled meter).
             local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.STRUCTURE_SCAN,
                     candidates.size(), candidates.size());
             long[] yield = CorridorStructureScan.scanYield();
             long[] filter = CorridorStructureScan.filterYield();

@@ -1007,7 +1007,8 @@ final class ProductionSession implements AutoCloseable {
         PrewarmProgress.setSubProgress(0, 0);
         var compiled = compiler.compileWindow(window, snapshot.recipe().recipeHash(),
                 snapshot.recipe().dimension(),
-                (done, total) -> PrewarmProgress.setSubProgress(done, total));
+                (done, total) -> PrewarmProgress.setSubProgress(
+                        PrewarmProgress.Stage.COMPILE, done, total));
         long compileMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - compileStartedNanos);
         // Publish per owner, isolating each owner's failure: one chunk that cannot take its mask
         // must not cost the wall every other chunk. Failures are counted and reported loudly,

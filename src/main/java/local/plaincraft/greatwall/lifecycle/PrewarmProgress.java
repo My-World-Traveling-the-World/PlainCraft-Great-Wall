@@ -191,6 +191,21 @@ public final class PrewarmProgress {
 
     /** Publishes the active stage's sub-progress (done/total); total 0 is an indeterminate running
      *  stage with no countable unit. */
+    /**
+     * Records sub-progress for an explicit stage.
+     *
+     * <p>Callers must name their own stage: stamping "whichever stage is current" put the fine
+     * sample's 85241/113153 under the structure scan's label on a real session, because the label
+     * had already moved on while the sampler was still writing.
+     */
+    public static void setSubProgress(Stage stage, int done, int total) {
+        SUB_BY_STAGE.put(stage, new int[] {Math.max(0, done), Math.max(0, total)});
+        if (stage != STAGE.get()) return;
+        SUB_STAGE.set(stage);
+        SUB_DONE.set(Math.max(0, done));
+        SUB_TOTAL.set(Math.max(0, total));
+    }
+
     public static void setSubProgress(int done, int total) {
         Stage stage = STAGE.get();
         SUB_STAGE.set(stage);
@@ -382,9 +397,17 @@ public final class PrewarmProgress {
         STATE.clear();
         var latch = settled;
         if (latch != null) latch.countDown();
-        // A finished prewarm is always a settled peer gate, successful or not: a wall that cannot
-        // paint must not hold the roads behind it for the whole timeout.
-        signalWorldgenReady();
+        if (success) {
+            signalWorldgenReady();
+        } else {
+            // A failed wall does not open the peer gate. The road waits on its own stall detector
+            // instead of starting on a corridor the wall never published: a measured session opened
+            // the gate with success=false fifty seconds after the compile died, and the roads began
+            // building around a wall that did not exist.
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                    "[GreatWall:S1C] ROAD_GATE_HELD success=false stage={} ; the peer waits for its own "+
+                    "timeout instead of starting on an unpublished wall", STAGE.get());
+        }
     }
 
     /**
