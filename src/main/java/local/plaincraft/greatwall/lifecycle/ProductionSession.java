@@ -89,6 +89,14 @@ final class ProductionSession implements AutoCloseable {
      * longest stage of the startup instead of running beside it.
      */
     private volatile boolean fineSampleStarted;
+    /**
+     * Whether startup stages run one at a time.
+     *
+     * <p>True by default: the wall's stages are individually parallel and share one CPU, so running
+     * two of them at once means each waits for the other's threads.
+     */
+    private static final boolean SERIAL_STAGES =
+            !"false".equalsIgnoreCase(System.getProperty("greatwall.startup.serialStages", "true"));
     /** Set when a compile attempt deferred for want of the fine sample, so the callback re-triggers it. */
     private final java.util.concurrent.atomic.AtomicBoolean compileDeferred =
             new java.util.concurrent.atomic.AtomicBoolean();
@@ -474,7 +482,12 @@ final class ProductionSession implements AutoCloseable {
         // Start the fine sample NOW, beside the scan. The scan reads the world for 130 s to resolve
         // structure boxes; the sample only needs the recipe's route, so leaving it until the boxes are
         // installed puts the longest stage of the startup behind a stage it does not depend on.
-        startFineSample(planner);
+        // Serial by default: both stages are CPU-bound and each already saturates the machine (twelve
+        // sample lanes plus up to twelve scan workers on sixteen threads), so overlapping them does not
+        // fill idle cores - it oversubscribes the CPU, and the stage that is nearly finished crawls
+        // while the next one takes its threads. The sample starts from installStructuresAndSample
+        // instead. -Dgreatwall.startup.serialStages=false restores the overlap for an A/B run.
+        if (!SERIAL_STAGES) startFineSample(planner);
         // The wall's true corridor band (segment endpoints + half-width): candidates outside it are
         // dropped up front, so an angled wall no longer scans the AABB's 3.5x overscan.
         var corridor = new local.plaincraft.greatwall.generation.CorridorStructureScan.Corridor(
