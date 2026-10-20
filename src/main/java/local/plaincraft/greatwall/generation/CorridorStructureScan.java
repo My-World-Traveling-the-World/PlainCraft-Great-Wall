@@ -52,6 +52,52 @@ public final class CorridorStructureScan {
      * or dimension-incompatible sets are skipped so the scan cannot balloon into tens of thousands of
      * candidates for a surface wall.
      */
+    /**
+     * The z window a corridor can possibly reach at one x, or null when it cannot reach x at all.
+     *
+     * <p>Conservative by construction: the returned window contains every z for which
+     * {@link Corridor#within} is true, and may contain more. Callers still filter with within(), so
+     * narrowing can only skip positions that would have been rejected - never one that would have
+     * counted. That is the whole safety argument for this optimisation, and
+     * {@code CorridorStructureScanBandTest} asserts it against a brute-force sweep.
+     *
+     * <p>What it buys: the corridor is a thin band across a 465x402 rectangle, so 92% of the old
+     * enumeration was positions the filter then threw away - 187000 reads of the generator state to
+     * keep 15000.
+     */
+    static int[] bandZRange(Corridor corridor, int x, int minZ, int maxZ) {
+        if (corridor == null) return new int[] {minZ, maxZ};
+        long dx = (long) corridor.endX() - corridor.originX();
+        long dz = (long) corridor.endZ() - corridor.originZ();
+        long half = corridor.halfWidth();
+        long lenSq = dx * dx + dz * dz;
+        if (lenSq == 0) {
+            if (Math.abs((long) x - corridor.originX()) > half) return null;
+            return new int[] {(int) Math.max(minZ, corridor.originZ() - half),
+                    (int) Math.min(maxZ, corridor.originZ() + half)};
+        }
+        // The cap circles reach half a width past each end of the segment.
+        long xLo = Math.min(corridor.originX(), corridor.endX()) - half;
+        long xHi = Math.max(corridor.originX(), corridor.endX()) + half;
+        if (x < xLo || x > xHi) return null;
+        double lineZ;
+        double spread;
+        if (dx == 0) {
+            lineZ = (corridor.originZ() + corridor.endZ()) / 2.0;
+            spread = Math.abs(dz) / 2.0 + 2.0 * half;
+        } else {
+            double slope = (double) dz / (double) dx;
+            lineZ = corridor.originZ() + (x - corridor.originX()) * slope;
+            // Perpendicular half-width converts to a z half-height by 1/cos(theta), and the end caps
+            // add a full half-width; both are covered by the factors below.
+            spread = half * Math.sqrt(1.0 + slope * slope) + half + 1.0;
+        }
+        int lo = (int) Math.max(minZ, Math.floor(lineZ - spread));
+        int hi = (int) Math.min(maxZ, Math.ceil(lineZ + spread));
+        if (lo > hi) return null;
+        return new int[] {lo, hi};
+    }
+
     public static List<Candidate> predictCandidates(ServerLevel level, int minChunkX, int minChunkZ,
             int maxChunkX, int maxChunkZ) {
         return predictCandidates(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, null);
@@ -106,7 +152,9 @@ public final class CorridorStructureScan {
             int crews = Math.min(adaptiveScanWorkers(), Math.max(1, rows));
             if (crews <= 1) {
                 for (int x = minChunkX; x <= maxChunkX; x++) {
-                    for (int z = minChunkZ; z <= maxChunkZ; z++) {
+                    int[] window = bandZRange(corridor, x, minChunkZ, maxChunkZ);
+                    if (window == null) continue;
+                    for (int z = window[0]; z <= window[1]; z++) {
                         addCandidate(state, holder, placement, new ChunkPos(x, z), minChunkX, minChunkZ,
                                 maxChunkX, maxChunkZ, corridor, result);
                     }
@@ -129,7 +177,9 @@ public final class CorridorStructureScan {
                         var into = bands.get(crew);
                         futures.add(java.util.concurrent.CompletableFuture.runAsync(() -> {
                             for (int x = from; x <= to; x++) {
-                                for (int z = minChunkZ; z <= maxChunkZ; z++) {
+                                int[] window = bandZRange(corridor, x, minChunkZ, maxChunkZ);
+                                if (window == null) continue;
+                                for (int z = window[0]; z <= window[1]; z++) {
                                     addCandidate(state, holder, placement, new ChunkPos(x, z),
                                             minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor, into);
                                 }
