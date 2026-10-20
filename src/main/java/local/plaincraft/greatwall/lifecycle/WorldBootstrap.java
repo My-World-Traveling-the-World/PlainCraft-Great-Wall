@@ -509,6 +509,45 @@ public final class WorldBootstrap implements AutoCloseable {
      * transient condition. The main advance chain already retries; this mirrors that so the
      * vote application is equally resilient.
      */
+    /**
+     * Screens one batch of candidates and applies its votes, trying the next batch when this one is
+     * entirely blocked.
+     *
+     * <p>{@link RootSearch#acceptStructureVotes} throws when everything it screened conflicts, and
+     * that must stay - it is the rule that stops the wall being sited through a village. What can
+     * change is how many candidates are screened before giving up, so a blocked batch moves on to the
+     * next one while any remain.
+     */
+    private CompletableFuture<Void> screenThenVote(RootSearch search, OracleLane lane,
+            WorldManifest.Creation creation, Frozen inputs,
+            List<RootStructureScreen.Candidate> candidates) {
+        if (candidates.isEmpty()) {
+            return submitVotesWithRetry(search, lane, creation, inputs, List.of());
+        }
+        return inputs.structures().inspect(candidates)
+                .thenCompose(votes -> submitVotesWithRetry(search, lane, creation, inputs, votes))
+                .handle((done, error) -> {
+                    Throwable cause = error;
+                    while (cause instanceof java.util.concurrent.CompletionException && cause.getCause() != null) {
+                        cause = cause.getCause();
+                    }
+                    if (cause instanceof WallFailure blocked
+                            && blocked.code() == local.plaincraft.greatwall.model.WallTypes.FailureCode.ROOT_NOT_FOUND
+                            && search.hasStructureRemainder()) {
+                        GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SCREEN_NEXT_BATCH candidates={} - the "
+                                + "previous batch was entirely blocked", candidates.size());
+                        if (search.screenNextStructureBatch()) {
+                            return screenThenVote(search, lane, creation, inputs,
+                                    search.pendingStructureCandidates());
+                        }
+                    }
+                    return error == null
+                            ? CompletableFuture.<Void>completedFuture(null)
+                            : CompletableFuture.<Void>failedFuture(cause);
+                })
+                .thenCompose(next -> next);
+    }
+
     private CompletableFuture<Void> submitVotesWithRetry(RootSearch search, OracleLane lane,
             WorldManifest.Creation creation, Frozen inputs, List<RootStructureScreen.Vote> votes) {
         CompletableFuture<Void> submitted;
@@ -605,7 +644,7 @@ public final class WorldBootstrap implements AutoCloseable {
                 GreatWallMod.LOGGER.info("[GreatWall:DIAG] advance STRUCTURE_SCREEN thread={} screenSize={}",
                     Thread.currentThread().getName(), batch.screen().size());
                 try {
-                    inputs.structures().inspect(batch.screen()).thenCompose(votes->submitVotesWithRetry(search, lane, creation, inputs, votes))
+                    screenThenVote(search, lane, creation, inputs, batch.screen())
                             .whenCompleteAsync((ignored,failure)->{
                         if(state.containsKey("closed")||state.containsKey("failed"))return;
                         if(failure!=null){fail(failure);return;}

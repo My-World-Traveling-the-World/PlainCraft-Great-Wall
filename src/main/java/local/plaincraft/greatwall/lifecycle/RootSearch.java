@@ -140,7 +140,7 @@ public final class RootSearch {
      * weakening the rule that a blocked batch fails closed.
      */
     private static final int STRUCTURE_SCREEN_LIMIT =
-            Math.max(8, Integer.getInteger("greatwall.structureScreenCandidates", Integer.MAX_VALUE));
+            Math.max(8, Integer.getInteger("greatwall.structureScreenCandidates", 64));
     private List<Candidate> remainingScreened = List.of();
     private int screenedOffset;
     private Map<Integer,List<Integer>> allowedAxes = Map.of();
