@@ -232,6 +232,10 @@ public final class PlanningChunkCompiler {
         }
         failed = failedCounter.get();
         int ownerCountDone = pending.size();
+        // Progress for the compile stage, which used to report only once - at the end - so the bar jumped
+        // from nothing to full and looked like it never ran.
+        final int total = pending.size();
+        var doneCounter = new java.util.concurrent.atomic.AtomicInteger();
         // Run the collected compiles. One worker runs them inline: the pool buys nothing on a
         // single-core machine and the ordering of the progress log stays unchanged.
         if (pending.size() > 1 && workers > 1) {
@@ -253,7 +257,10 @@ public final class PlanningChunkCompiler {
                 for (int p = 0; p < crews; p++) {
                     futures[p] = java.util.concurrent.CompletableFuture.runAsync(() -> {
                         int i;
-                        while ((i = cursor.getAndIncrement()) < jobs.length) jobs[i].run();
+                        while ((i = cursor.getAndIncrement()) < jobs.length) {
+                            jobs[i].run();
+                            reportCompileProgress(doneCounter.incrementAndGet(), total, null);
+                        }
                     }, pool);
                 }
                 java.util.concurrent.CompletableFuture.allOf(futures).join();
@@ -261,7 +268,7 @@ public final class PlanningChunkCompiler {
                 pool.shutdownNow();
             }
         } else {
-            for (var job : pending) job.run();
+            for (var job : pending) { job.run(); reportCompileProgress(doneCounter.incrementAndGet(), total, null); }
         }
         done = ownerCountDone;
         if (progress != null) {
@@ -297,6 +304,13 @@ public final class PlanningChunkCompiler {
     }
 
     /** One owner's failure: counted, summarised by cause, and never allowed to stop the others. */
+    private static void reportCompileProgress(int done, int total, Object unused) {
+        if (total <= 0) return;
+        if (done != total && (done & 31) != 0) return;
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.COMPILE, done, total);
+    }
+
     private static void recordFailure(ChunkKey owner, Throwable failure, FailureTally tally,
                                       java.util.concurrent.atomic.AtomicInteger failed) {
         int n = failed.incrementAndGet();

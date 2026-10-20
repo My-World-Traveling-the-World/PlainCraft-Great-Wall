@@ -506,7 +506,7 @@ public final class PlannerScheduler implements AutoCloseable {
                 // card read "435385/435385" for eleven minutes while the sampler passed 1.2M columns.
                 // PrewarmProgress caps a running stage at 99% and only the stage transition reports 100.
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE, done, expectedColumns.get());
+                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE, Math.min(done, Math.max(1, expectedColumns.get())), expectedColumns.get());
                 // Recorded here as well as at PREWARM_COMPLETE: the fine sample is the stage whose
                 // cost scales with the cross-section width, and its cache counters are what decide
                 // whether a slow run is the terrain walk or the chunk cache.
