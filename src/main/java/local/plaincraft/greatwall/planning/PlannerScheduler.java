@@ -874,8 +874,19 @@ public final class PlannerScheduler implements AutoCloseable {
                         // prewarm is behind us, and a failed segment is behind us.
                         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setCompleted(
                                 completedSegments.incrementAndGet());
-                        GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_SEGMENT segment={} elapsedMs={}",
-                                segment, elapsedMs);
+                        // stations/terminal are the two numbers that decide whether the fine
+                        // sample and the compile coverage agree. Without them a session cannot
+                        // tell "the plan stopped at the coast" from "the plan covers the whole
+                        // route", and those need opposite fixes.
+                        var segmentPlan = plan;
+                        long terminalSQ8 = segmentPlan == null ? -1L
+                                : segmentPlan.geometry().terminal().map(terminal -> terminal.localSQ8()).orElse(-1L);
+                        int stationCount = segmentPlan == null ? 0 : segmentPlan.stations().stations().size();
+                        int siteCount = segmentPlan == null ? 0 : segmentPlan.sites().size();
+                        GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_SEGMENT segment={} elapsedMs={} "
+                                        + "stations={} sites={} terminalSQ8={} routeSQ8={}",
+                                segment, elapsedMs, stationCount, siteCount, terminalSQ8,
+                                segmentPlan == null ? -1L : segmentPlan.geometry().localSQ8().getLast());
                     } else {
                         GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_SEGMENT_FAILED segment={} elapsedMs={} reason={}",
                                 segment, elapsedMs, error.toString());
