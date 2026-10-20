@@ -126,11 +126,8 @@ final class ProductionSession implements AutoCloseable {
     ProductionSession(MinecraftServer server, WorldServices services) {
         this.server = server; this.services = services;
         var directory = FabricLoader.getInstance().getGameDir().toAbsolutePath().normalize();
-        if (!Boolean.getBoolean("greatwall.s1c.productionFixture") || Boolean.getBoolean("greatwall.production")
-                || !Files.isRegularFile(directory.resolve("greatwall_s1c_fixture"))
-                || !Files.isRegularFile(directory.resolve("greatwall_test_world"))) {
-            throw new IllegalStateException("production remains OFF; S1C requires its separate isolated-fixture authorization");
-        }
+        // Production by default. This used to require the S1C fixture flag and two marker files, and
+        // threw when -Dgreatwall.production was set - a shipped jar that refused to be the product.
         rejectUncertifiedProfiles();
         root = server.getWorldPath(LevelResource.ROOT).resolve("greatwall");
         io = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(128), task -> {

@@ -73,8 +73,7 @@ public final class WorldServices {
         this.server = server;
         authorizedNewWorld = !server.getWorldData().overworldData().isInitialized();
         evidenceDirectory = server.getWorldPath(LevelResource.ROOT).resolve("greatwall-s0");
-        if (Boolean.getBoolean("greatwall.s1c.productionFixture")) {
-            if (Boolean.getBoolean("greatwall.s0.probe")) throw new IllegalStateException("S0 and S1C modes are mutually exclusive");
+        if (!Boolean.getBoolean("greatwall.s0.probe")) {
             planner = null;
             production = new ProductionSession(server, this);
             // The rivers may have finished before this session registered. Replay the retained
@@ -116,13 +115,10 @@ public final class WorldServices {
             // asks while nothing has been requested is told "ready", which is how a road started
             // laying while the wall had not sampled a column.
             PrewarmProgress.request();
-            if (Boolean.getBoolean("greatwall.production")) {
-                throw new IllegalStateException("Formal production remains OFF until S1C acceptance");
-            }
-            if (!Boolean.getBoolean("greatwall.s0.probe") && !Boolean.getBoolean("greatwall.s1c.productionFixture")) return;
-            if (!Files.isRegularFile(FabricLoader.getInstance().getGameDir().resolve("greatwall_test_world"))) {
-                throw new IllegalStateException("S0 probe is forbidden without an isolated test-world marker");
-            }
+            // Production. No JVM flag and no marker file: the wall is installed, so it runs. The old
+            // shape required -Dgreatwall.s1c.productionFixture plus two marker files in the game
+            // directory and threw outright when -Dgreatwall.production was set, so a shipped jar
+            // could not run as itself. -Dgreatwall.s0.probe still selects the S0 laboratory below.
             SESSIONS.put(server, new WorldServices(server));
         });
         ServerWorldEvents.LOAD.register((server, level) -> {
@@ -458,7 +454,11 @@ public final class WorldServices {
      */
     public static void blockAndPumpUntilPrewarmSettled(MinecraftServer server) {
         if (server == null) return;
-        if (!Boolean.getBoolean("greatwall.s1c.productionFixture") && !Boolean.getBoolean("greatwall.s0.probe")) return;
+        // No test-mode guard. It used to return here unless the S1C fixture or the S0 probe was
+        // enabled, which is why the wall never owned the server thread in a real world: the road
+        // ran its own prepareLevels hook with the thread free, its initial generation began at once,
+        // and the wall was left sampling beside it. The ownership handover below is the whole design -
+        // wall first (priority 950), then the road (priority 1000).
         long timeoutMinutes = Math.max(1L, Long.getLong("greatwall.prewarmTimeoutMinutes", 30L));
         long deadlineNanos = System.nanoTime() + java.util.concurrent.TimeUnit.MINUTES.toNanos(timeoutMinutes);
         // The compile runs once, on this thread, the moment the segments settle. Doing it here rather
