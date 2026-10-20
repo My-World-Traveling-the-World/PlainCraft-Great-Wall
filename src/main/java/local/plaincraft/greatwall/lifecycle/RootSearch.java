@@ -687,7 +687,18 @@ public final class RootSearch {
         // identical: every lane's oracle is constructed from the same frozen inputs
         // and verified against the same terrain fingerprint, so the noise is a pure
         // function of (x, z). Selection therefore cannot change.
-        Prefetched hit = prefetched.remove(new ColumnKey(x, z, requireFoundation));
+        var wanted = new ColumnKey(x, z, requireFoundation);
+        // Wait for the prefetch lane that is sampling this very column instead of spinning on it.
+        //
+        // The old shape returned null and was called again immediately, so the pump re-asked the same
+        // question about fourteen hundred times per column: a measured session recorded 68,467,296
+        // waits for 48,700 columns and spent 401 of its 402 seconds there, while the lanes had already
+        // sampled 92 % of the columns. Parking until the result lands turns that into one block per
+        // column, and the wake-up is signalled by the lane that produced it.
+        if (column == null && !prefetched.containsKey(wanted) && claimed.contains(wanted)) {
+            awaitPrefetch(wanted);
+        }
+        Prefetched hit = prefetched.remove(wanted);
         if (hit != null) {
             if (column != null) {
                 // A prefetch arrived for a position whose serial cursor is still open.
@@ -708,20 +719,6 @@ public final class RootSearch {
             // same eight milliseconds the lane is spending. Waiting one short interval instead lets
             // the lane's result arrive; the wait is bounded, so a stalled or dead lane costs one
             // interval and then the pump samples the column itself, exactly as before.
-            var key = new ColumnKey(x, z, requireFoundation);
-            if (claimed.contains(key)) {
-                long now = System.nanoTime();
-                if (!key.equals(waitingKey)) {
-                    waitingKey = key;
-                    waitUntilNanos = now + PREFETCH_WAIT_NANOS;
-                    prefetchWaits.incrementAndGet();
-                    return null;
-                }
-                if (now < waitUntilNanos) {
-                    prefetchWaits.incrementAndGet();
-                    return null;
-                }
-            }
             waitingKey = null;
             if (++columns > 150000) throw new WallFailure(FailureCode.BUDGET_EXHAUSTED, "root column budget exceeds 150000");
             inlineSamples++;
@@ -853,6 +850,9 @@ public final class RootSearch {
             boolean support = !key.requireFoundation() || foundation.test(oracle, cursor);
             var sample = oracle.finish(cursor);
             prefetched.put(key, new Prefetched(sample, support));
+            // Wake the pump if it is parked on this column; without this the wait would expire
+            // on its own and the pump would sample what just landed.
+            synchronized (prefetchLock) { prefetchLock.notifyAll(); }
         } finally {
             // Released on every path: a claim that outlived its lane turn would hide the column from every
             // later pending list, and the phase would wait for a sample nobody is producing.
@@ -1023,6 +1023,27 @@ public final class RootSearch {
 
     /** Columns sampled by a prefetch that the search then moved past; pure diagnostics. */
     public long discardedPrefetchedCount() { return discardedPrefetched.get(); }
+
+    /** Signalled by prefetch() when a sampled column lands. */
+    private final Object prefetchLock = new Object();
+
+    /** Parks until {@code key} is in the prefetch cache, the wait expires, or the thread is woken. */
+    private void awaitPrefetch(ColumnKey key) {
+        long deadline = System.nanoTime() + PREFETCH_WAIT_NANOS;
+        synchronized (prefetchLock) {
+            while (!prefetched.containsKey(key)) {
+                long left = deadline - System.nanoTime();
+                if (left <= 0L) return;
+                prefetchWaits.incrementAndGet();
+                try {
+                    prefetchLock.wait(Math.max(1L, left / 1_000_000L));
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+        }
+    }
 
     /** {@return columns the pump took from a prefetch lane} */
     public int prefetchHitCount() { return prefetchHits; }
