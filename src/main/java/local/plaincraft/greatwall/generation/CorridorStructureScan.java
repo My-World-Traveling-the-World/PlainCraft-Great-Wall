@@ -97,11 +97,51 @@ public final class CorridorStructureScan {
                 continue;
             }
             // Custom placements expose no region formula; the native predicate is authoritative.
-            for (int x = minChunkX; x <= maxChunkX; x++) {
-                for (int z = minChunkZ; z <= maxChunkZ; z++) {
-                    addCandidate(state, holder, placement, new ChunkPos(x, z), minChunkX, minChunkZ,
-                            maxChunkX, maxChunkZ, corridor, result);
+            //
+            // This is where a modded pack spends its scan time, and it used to run on one thread: a
+            // 464x420 corridor is 194880 positions per custom-placement structure, and a measured
+            // pack had several. The rows are independent, so they are split across the same pool the
+            // resolve stage uses - the predicate is a pure read of the frozen generator state.
+            int rows = maxChunkX - minChunkX + 1;
+            int crews = Math.min(adaptiveScanWorkers(), Math.max(1, rows));
+            if (crews <= 1) {
+                for (int x = minChunkX; x <= maxChunkX; x++) {
+                    for (int z = minChunkZ; z <= maxChunkZ; z++) {
+                        addCandidate(state, holder, placement, new ChunkPos(x, z), minChunkX, minChunkZ,
+                                maxChunkX, maxChunkZ, corridor, result);
+                    }
                 }
+            } else {
+                var bands = new ArrayList<List<Candidate>>(crews);
+                for (int crew = 0; crew < crews; crew++) bands.add(new ArrayList<>(1024));
+                var pool = java.util.concurrent.Executors.newFixedThreadPool(crews, task -> {
+                    Thread thread = new Thread(task, "pgw-corridor-predict");
+                    thread.setDaemon(true);
+                    return thread;
+                });
+                try {
+                    int band = Math.max(1, (rows + crews - 1) / crews);
+                    var futures = new ArrayList<java.util.concurrent.CompletableFuture<Void>>(crews);
+                    for (int crew = 0; crew < crews; crew++) {
+                        int from = minChunkX + crew * band;
+                        int to = Math.min(maxChunkX, from + band - 1);
+                        if (from > maxChunkX) break;
+                        var into = bands.get(crew);
+                        futures.add(java.util.concurrent.CompletableFuture.runAsync(() -> {
+                            for (int x = from; x <= to; x++) {
+                                for (int z = minChunkZ; z <= maxChunkZ; z++) {
+                                    addCandidate(state, holder, placement, new ChunkPos(x, z),
+                                            minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor, into);
+                                }
+                            }
+                        }, pool));
+                    }
+                    java.util.concurrent.CompletableFuture.allOf(
+                            futures.toArray(new java.util.concurrent.CompletableFuture[0])).join();
+                } finally {
+                    pool.shutdownNow();
+                }
+                for (var part : bands) result.addAll(part);
             }
         }
         return List.copyOf(result);

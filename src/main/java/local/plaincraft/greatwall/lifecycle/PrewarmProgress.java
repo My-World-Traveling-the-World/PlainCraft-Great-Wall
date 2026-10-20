@@ -138,6 +138,19 @@ public final class PrewarmProgress {
     /** Sub-progress of the active stage: done/total; total 0 means "indeterminate, still running". */
     private static final AtomicInteger SUB_DONE = new AtomicInteger();
     private static final AtomicInteger SUB_TOTAL = new AtomicInteger();
+    /**
+     * Which stage wrote {@link #SUB_DONE}/{@link #SUB_TOTAL}.
+     *
+     * <p>Those two are a single global pair, and every stage writes them: the corridor scan counts
+     * candidates, the segment prewarm counts segments, the compile counts owners. Two stages that
+     * overlap therefore overwrite each other and the card shows a number jumping between e.g.
+     * 5000/13085 and 2/4. Stamping the writer and ignoring a stamp that belongs to another stage
+     * keeps each stage's number its own.
+     */
+    private static final AtomicReference<Stage> SUB_STAGE = new AtomicReference<>();
+    /** Per-stage sub-progress, so two stages running together each keep their own number. */
+    private static final java.util.concurrent.ConcurrentHashMap<Stage, int[]> SUB_BY_STAGE =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     private PrewarmProgress() {
     }
@@ -179,8 +192,14 @@ public final class PrewarmProgress {
     /** Publishes the active stage's sub-progress (done/total); total 0 is an indeterminate running
      *  stage with no countable unit. */
     public static void setSubProgress(int done, int total) {
+        Stage stage = STAGE.get();
+        SUB_STAGE.set(stage);
         SUB_DONE.set(Math.max(0, done));
         SUB_TOTAL.set(Math.max(0, total));
+        // Keep every stage's own pair as well: the stages overlap (the corridor scan and the prewarm
+        // run together, so do the fine sample and the prewarm), and the card is meant to show each
+        // one's number at the same time rather than whichever wrote last.
+        SUB_BY_STAGE.put(stage, new int[] {Math.max(0, done), Math.max(0, total)});
     }
 
     /**
@@ -518,7 +537,11 @@ public final class PrewarmProgress {
         return new Snapshot(ACTIVE.get(), total, completed, LANES.get(), elapsedMillis,
                 STATE.containsKey("root-search"), FAILED.get(), ROOT_CANDIDATE.get(), ROOT_TOTAL.get(),
                 ROOT_PHASE.get(), STRUCTURE_CANDIDATE.get(), STRUCTURE_TOTAL.get(),
-                STAGE.get(), SUB_DONE.get(), SUB_TOTAL.get());
+                STAGE.get(),
+                // Only the stage that wrote the numbers may report them.
+                SUB_STAGE.get() == STAGE.get() ? SUB_DONE.get() : 0,
+                SUB_STAGE.get() == STAGE.get() ? SUB_TOTAL.get() : 0,
+                java.util.Map.copyOf(SUB_BY_STAGE));
     }
 
     /**
@@ -543,7 +566,13 @@ public final class PrewarmProgress {
     public record Snapshot(boolean active, int total, int completed, int lanes, long elapsedMillis,
                            boolean rootSearch, boolean failed, int rootCandidate, int rootTotal,
                            int rootPhase, int structureCandidate, int structureTotal,
-                           Stage stage, int subDone, int subTotal) {
+                           Stage stage, int subDone, int subTotal,
+                           java.util.Map<Stage, int[]> subByStage) {
+        /** {@return {done, total} for one stage; {0, 0} when it has not reported} */
+        public int[] subFor(Stage which) {
+            int[] pair = subByStage.get(which);
+            return pair == null ? new int[] {0, 0} : pair;
+        }
         public int percent() {
             if (total <= 0) return 0;
             return Math.max(0, Math.min(100, Math.round(completed * 100.0F / total)));

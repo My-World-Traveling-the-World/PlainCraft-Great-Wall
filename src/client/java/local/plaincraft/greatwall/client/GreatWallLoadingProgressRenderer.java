@@ -376,8 +376,11 @@ public final class GreatWallLoadingProgressRenderer {
      */
     private static Component progressLine(PrewarmProgress.Stage stage, String key,
                                           PrewarmProgress.Snapshot snapshot) {
-        int done = snapshot.subDone();
-        int total = snapshot.subTotal();
+        return progressLine(stage, key, snapshot, snapshot.subDone(), snapshot.subTotal());
+    }
+
+    private static Component progressLine(PrewarmProgress.Stage stage, String key,
+                                          PrewarmProgress.Snapshot snapshot, int done, int total) {
         if (total <= 0) return Component.translatable(key + "_unknown");
         long elapsedMs = snapshot.elapsedMillis();
         // The two long stages report a rate and a remaining-time estimate: "how many are left" says
@@ -408,11 +411,17 @@ public final class GreatWallLoadingProgressRenderer {
             // them is running. Printing it from a stage that is not active made three rows show the
             // same numbers at once, which reads as three stages running in parallel - and it did, on a
             // real session, where 扫描结构 / 采样地形 / 编译区块 all read 3256/13085.
-            case STRUCTURE_SCAN, FINE_SAMPLE, COMPILE -> stage != snapshot.stage()
-                    ? Component.translatable(stage.ordinal() < snapshot.stage().ordinal()
-                            ? "plaincraft.great_wall.loading_progress.detail_done"
-                            : "plaincraft.great_wall.loading_progress.detail_pending")
-                    : progressLine(stage, key, snapshot);
+            // Each of these stages keeps its own counter now, so a stage that is running shows its own
+            // number even while another one runs beside it. The previous shape printed the single
+            // shared pair from whichever stage was current, which is why three rows once all read
+            // 3256/13085 and why the fix at the time was to hide two of them.
+            case STRUCTURE_SCAN, FINE_SAMPLE, COMPILE -> {
+                int[] own = snapshot.subFor(stage);
+                if (own[1] > 0) yield progressLine(stage, key, snapshot, own[0], own[1]);
+                yield Component.translatable(stage.ordinal() < snapshot.stage().ordinal()
+                        ? "plaincraft.great_wall.loading_progress.detail_done"
+                        : "plaincraft.great_wall.loading_progress.detail_pending");
+            }
             case PREWARM -> snapshot.total() > 0
                     ? Component.translatable(key, snapshot.completed(), snapshot.total())
                     : Component.translatable(key + "_unknown");

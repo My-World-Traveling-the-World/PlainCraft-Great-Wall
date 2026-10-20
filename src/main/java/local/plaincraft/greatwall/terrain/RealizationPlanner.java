@@ -35,6 +35,8 @@ public final class RealizationPlanner {
     private final Map<SiteKind,ComponentTemplate> templates;
     private final WorldRecipe recipe;
     private final local.plaincraft.greatwall.decay.BiomePaletteIndex biomeIndex;
+    /** Memo for {@link #wallMaterials}: the ribbon is constant for a wall. */
+    private volatile List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> wallMaterialCache;
 
     /**
      * Set once the root fort has been reported as unrealizable.
@@ -379,8 +381,13 @@ public final class RealizationPlanner {
         var buildable=subtract(new ArcInterval(from,to),excluded);
         if(!buildable.isEmpty()){
             var site=site(wall,SiteKind.WALL,input.key().arcCell(),from+32L*256,stations);
+            // The wall body is the biggest component of every owner, and it was handed an EMPTY material
+            // ribbon: PaletteResolver refuses that, so every voxel of every wall section failed. The
+            // error surfaced as "material ribbon lacks the eight-block halo" before the check became an
+            // emptiness test, which is why 2176 of 2188 owners died and the wall published nothing - the
+            // halo was never the problem, the empty list was.
             var candidate=new ComponentInput(site,stations,supported,field.sample(site.globalSQ8(),PaletteFamily.STONE,maintained),
-                    PaletteFamily.STONE,false,List.of(),List.of());
+                    PaletteFamily.STONE,false,List.of(),wallMaterials(input,stations));
             var template=templates.get(SiteKind.WALL);
             if(!(template instanceof WallSection section))throw new IllegalArgumentException("WALL template must support build intervals");
             var walkExcluded=new ArrayList<>(excluded);walkMerged.forEach(b->walkExcluded.add(b.range()));
@@ -655,6 +662,17 @@ public final class RealizationPlanner {
      * first station is the wall's start, so every window of a segment derives the same material and
      * the seams cannot disagree.
      */
+    /** The wall's material, resolved once: every component of the wall shares it. */
+    private List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> wallMaterials(
+            Input input, List<Station> stations) {
+        var cached = wallMaterialCache;
+        if (cached == null) {
+            cached = materials(input, stations);
+            wallMaterialCache = cached;
+        }
+        return cached;
+    }
+
     private List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> materials(Input input, List<Station> stations) {
         if (biomeIndex == null) return List.of();
         var keys = new java.util.HashMap<Long, String>();
