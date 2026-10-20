@@ -108,7 +108,11 @@ public final class PlanningChunkCompiler {
                         plan.prefix().lengthBeforeQ8(), summarize(failure), failure);
             }
         }
-        var result = new HashMap<ChunkKey, ChunkWritePlan>();
+        // Concurrent: the compile tasks write one entry each from several threads at once. A plain
+        // HashMap here is not merely racy - concurrent putIfAbsent corrupts its bucket structure and
+        // the next read throws a NullPointerException, which is exactly how a measured session lost
+        // the whole window (PLANNING_COMPILE_FAILED phase=publish reason=NullPointerException).
+        var result = new java.util.concurrent.ConcurrentHashMap<ChunkKey, ChunkWritePlan>();
         var provider = new PlanningColumnProvider(index);
         int ownerCount = byOwner.size();
         if (progress != null) progress.accept(0, ownerCount);
@@ -333,6 +337,12 @@ public final class PlanningChunkCompiler {
      * throwable for each wrote roughly fifty thousand lines. The first few traces are what a diagnosis
      * needs; after that the count is the information, and the order of magnitude is all that matters.
      */
+    /**
+     * Counts failures by cause.
+     *
+     * <p>Synchronized because the compile tasks record from several threads: the counters are a
+     * LinkedHashMap, and concurrent merge() both loses counts and can throw.
+     */
     static final class FailureTally {
         private final java.util.Map<String, Integer> counts = new java.util.LinkedHashMap<>();
         private final int detailLimit;
@@ -341,34 +351,34 @@ public final class PlanningChunkCompiler {
             this.detailLimit = Math.max(0, detailLimit);
         }
 
-        String record(Throwable failure) {
+        synchronized String record(Throwable failure) {
             String kind = summarize(failure);
             counts.merge(kind, 1, Integer::sum);
             return kind;
         }
 
         /** {@return whether this occurrence still gets its stack trace} */
-        boolean shouldLogDetail(String kind) {
+        synchronized boolean shouldLogDetail(String kind) {
             return count(kind) <= detailLimit;
         }
 
         /** {@return how many occurrences of this cause were already suppressed} */
-        int suppressed(String kind) {
+        synchronized int suppressed(String kind) {
             return Math.max(0, count(kind) - detailLimit);
         }
 
-        int distinct() {
+        synchronized int distinct() {
             return counts.size();
         }
 
-        int total() {
+        synchronized int total() {
             int total = 0;
             for (int value : counts.values()) total += value;
             return total;
         }
 
         /** {@return "219x Type: message | 178x Type: message | +13 more"} */
-        String summary(int limit) {
+        synchronized String summary(int limit) {
             var sorted = new java.util.ArrayList<>(counts.entrySet());
             sorted.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
             StringBuilder text = new StringBuilder();
