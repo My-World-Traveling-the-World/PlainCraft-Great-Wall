@@ -586,7 +586,10 @@ public final class PlannerScheduler implements AutoCloseable {
                 // over-state - which the 99% cap in PrewarmProgress handles correctly.
                 lease.future().thenAcceptAsync(route -> {
                     if (route == null) return;
-                    long points = Math.max(1L, route.points().size() + 2L * WallFinePlanner.APRON_BLOCKS);
+                    // The denominator follows the truncated range too, otherwise the card would stop
+                    // short of 100% on exactly the segments the cut applies to.
+                    long points = Math.max(1L, terminalPointLimit(route, route.points().size())
+                            + 2L * WallFinePlanner.APRON_BLOCKS);
                     // The number that explains this stage's cost: the route length this segment carries.
                     // Four segments of an 8,190-block wall are four windows of it, so their point counts
                     // should sum to the wall length. If every segment reports the whole wall, the wall is
@@ -640,6 +643,11 @@ public final class PlannerScheduler implements AutoCloseable {
                         if (prefixError != null) { aggregate.completeExceptionally(prefixError); return; }
                         var wideAt = widePoints(route, prefix.lengthBeforeQ8());
                         int points = route.points().size();
+                        // Past the terminal there is no wall, so sampling there buys nothing. The cut is
+                        // applied only when the geometry has already settled for this segment - the
+                        // sample is pipelined with the prewarm, so an early segment often has none yet -
+                        // and a segment without a terminal is sampled whole, exactly as before.
+                        points = terminalPointLimit(route, points);
                         int perSlice = Math.max(1, (points + slices - 1) / slices);
                         for (int s = 0; s < slices; s++) {
                             int from = s * perSlice;
@@ -1289,6 +1297,32 @@ public final class PlannerScheduler implements AutoCloseable {
      * the historical opening-segment count. The config is read here rather than at
      * construction so a Mod Menu edit applies to the next world without a restart.
      */
+    /**
+     * Cuts a segment's sample range at its terminal.
+     *
+     * <p>Returns {@code points} unchanged whenever the geometry is not settled yet or the segment has no
+     * terminal, so the worst case is the old behaviour - sample the whole route. That is deliberate:
+     * over-sampling costs time, under-covering costs a broken compile.
+     */
+    private int terminalPointLimit(local.plaincraft.greatwall.model.WallTypes.RouteShape route, int points) {
+        try {
+            var flight = geometryFlights.get(route.key());
+            if (flight == null || !flight.isDone() || flight.isCompletedExceptionally()) return points;
+            var geometry = flight.getNow(null);
+            if (geometry == null || geometry.terminal().isEmpty()) return points;
+            long cap = geometry.terminal().get().localSQ8() + 32L * 256;
+            var arcs = route.localSQ8();
+            int lo = 0, hi = arcs.size() - 1;
+            while (lo < hi) {
+                int mid = (lo + hi + 1) >>> 1;
+                if (arcs.get(mid) <= cap) lo = mid; else hi = mid - 1;
+            }
+            return Math.max(1, Math.min(points, lo + 1));
+        } catch (RuntimeException unsettled) {
+            return points;
+        }
+    }
+
     private long prewarmTargetSegments() {
         try {
             long configured = GreatWallConfig.parameters().prewarmSegmentsTarget();
