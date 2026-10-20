@@ -546,7 +546,12 @@ final class ProductionSession implements AutoCloseable {
         // while waiting for this wall to publish, and that pump is what executes these tasks - so
         // the wall compiles inside the road's wait and the roads start only after the wall can
         // actually paint. Waiting for a tick instead deadlocked the two against each other.
-        planner.onBulkReady(() -> server.execute(this::compileAtStartup));
+        planner.onBulkReady(() -> {
+            // Serial mode: the prewarm has just finished, so this is the moment the fine sample may
+            // start without fighting it for the CPU. The compile below waits for that sample anyway.
+            if (SERIAL_STAGES) startFineSample(planner);
+            server.execute(this::compileAtStartup);
+        });
         // The bulk prewarm starts HERE, not from the fine-sample callback: it needs nothing but the
         // obstacle index installed above, and it is precisely what the road gate, the world's startup
         // stage and the compile's lease release all wait for. Ordering it behind the fine sample (as this
@@ -565,7 +570,9 @@ final class ProductionSession implements AutoCloseable {
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE);
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
-        startFineSample(planner);
+        // Serial mode starts the sample from the bulk-ready hook instead, so the prewarm is not
+        // competing with it for the same sixteen threads.
+        if (!SERIAL_STAGES) startFineSample(planner);
     }
 
     /**

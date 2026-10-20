@@ -242,9 +242,15 @@ public final class PlanningChunkCompiler {
             });
             try {
                 var jobs = pending.toArray(new Runnable[0]);
-                var futures = new java.util.concurrent.CompletableFuture[jobs.length];
+                // One future per crew, not one per job. The array used to be sized jobs.length while
+                // only the first crew count entries were filled, and allOf walks every element: the
+                // trailing nulls made it throw NullPointerException out of andTree, which surfaced as
+                // PLANNING_COMPILE_FAILED phase=publish on every session that compiled more owners
+                // than it had workers. That is the failure that kept the wall from painting.
+                int crews = Math.min(workers, jobs.length);
+                var futures = new java.util.concurrent.CompletableFuture[crews];
                 var cursor = new java.util.concurrent.atomic.AtomicInteger();
-                for (int p = 0; p < Math.min(workers, jobs.length); p++) {
+                for (int p = 0; p < crews; p++) {
                     futures[p] = java.util.concurrent.CompletableFuture.runAsync(() -> {
                         int i;
                         while ((i = cursor.getAndIncrement()) < jobs.length) jobs[i].run();

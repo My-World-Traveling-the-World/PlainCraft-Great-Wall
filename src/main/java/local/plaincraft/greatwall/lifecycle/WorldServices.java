@@ -428,7 +428,9 @@ public final class WorldServices {
             if (services.productionFixture()) { awaiting = true; break; }
         }
         if (!awaiting) return true;
-        return PrewarmProgress.awaitWorldgenReady(timeout, unit);
+        // A production session exists, so this world really is generating a wall and the peer must
+        // wait for its gate even if warming() has not run yet - see awaitWorldgenReadyStrict.
+        return PrewarmProgress.awaitWorldgenReadyStrict(timeout, unit);
     }
 
     /**

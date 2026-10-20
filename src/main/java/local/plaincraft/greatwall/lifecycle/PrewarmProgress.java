@@ -458,6 +458,26 @@ public final class PrewarmProgress {
      *
      * @return true if the wall published, failed, or will not run at all; false on timeout
      */
+    /**
+     * Waits for the peer gate without the "nothing requested yet" escape.
+     *
+     * <p>{@link #awaitWorldgenReady} answers "ready" while {@code REQUESTED} is false, so a peer that
+     * polls before the wall's warming() hook runs is told to go ahead. A measured session did exactly
+     * that: the road asked at 15:23:42, the wall had a production session but had not requested the
+     * gate, and the roads began while the compile had not started. A caller that already knows a wall
+     * session exists must use this method, which waits for the latch however early it asks.
+     */
+    public static boolean awaitWorldgenReadyStrict(long timeout, TimeUnit unit) {
+        var latch = worldgenReady;
+        if (latch == null) return true;
+        try {
+            return latch.await(Math.max(0L, timeout), unit);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            return true;
+        }
+    }
+
     public static boolean awaitWorldgenReady(long timeout, TimeUnit unit) {
         if (!REQUESTED.get()) return true;
         var latch = worldgenReady;
