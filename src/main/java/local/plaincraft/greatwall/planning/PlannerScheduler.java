@@ -383,6 +383,9 @@ public final class PlannerScheduler implements AutoCloseable {
         // lane budget and the fine samples land together with the plans.
         long target = prewarmTargetSegments();
         if (target <= 0) target = STARTUP_PREWARM_SEGMENTS;
+        // Final copy for the per-segment estimate lambda: target is reassigned above, so it cannot be
+        // captured directly.
+        final int projectedSegments = (int) Math.max(1L, target);
         final int totalSegments = (int) Math.min(Integer.MAX_VALUE, target);
         // Fan each segment's point range across the native lanes. One segment is ~2048 points plus the
         // two end aprons, each point a full cross-section of 2 * WallFinePlanner.LATERAL + 1 columns
@@ -405,6 +408,8 @@ public final class PlannerScheduler implements AutoCloseable {
         // denominator starts at 1 and grows as slices are enqueued (their point ranges are known
         // before they are sampled), and max() keeps the fraction monotone.
         var expectedColumns = new java.util.concurrent.atomic.AtomicInteger(1);
+        // Seeded once from the first segment and projected across the route; see the comment where it is set.
+        var expectedSeeded = new java.util.concurrent.atomic.AtomicBoolean();
         // The sampling grid decides how many columns this stage emits, so the meter has to count the
         // same way or the fraction runs away from one. Read from the frozen snapshot: gridStep = 1 -
         // the default - leaves both the sampler and the meter exactly as they were.
@@ -603,7 +608,18 @@ public final class PlannerScheduler implements AutoCloseable {
                     long wideWidth = 2L * (WallFinePlanner.LATERAL / Math.max(1, gridStep)) + 1L;
                     long perPoint = (3L * baseWidth + wideWidth) / 4L;
                     long estimated = (points / Math.max(1, gridStep)) * perPoint;
-                    expectedColumns.addAndGet((int) Math.min(Integer.MAX_VALUE - 1L, estimated));
+                    // Project the whole route, do not accumulate it. Adding one segment at a time made
+                    // the denominator climb while the bar was already moving - 28289, then 84865, then
+                    // 113153 - which reads as the sample getting longer the longer it runs. Segments are
+                    // the same length, so one segment's count times the number of segments is the right
+                    // denominator from the first one; later segments only raise it if they genuinely are
+                    // longer.
+                    int projected = (int) Math.min(Integer.MAX_VALUE - 1L, estimated * projectedSegments);
+                    if (expectedSeeded.compareAndSet(false, true)) {
+                        expectedColumns.set(projected);
+                    } else {
+                        expectedColumns.updateAndGet(current -> Math.max(current, projected));
+                    }
                 }, pump);
                 lease.future().whenCompleteAsync((route, error) -> {
                     if (error != null) {
