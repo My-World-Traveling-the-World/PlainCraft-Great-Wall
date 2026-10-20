@@ -6,6 +6,14 @@ import local.plaincraft.greatwall.model.WallTypes.WorkState;
 
 /** Owner-confined natural-terrain input. No chunks, registries or futures cross this boundary. */
 public interface NaturalTerrainOracle extends AutoCloseable {
+    /**
+     * The biome at one column, or {@code null} when this oracle cannot answer.
+     *
+     * <p>Deliberately a default: a biome lookup is an optimisation for the siting and hydro
+     * stages, not a contract every oracle owes. An oracle that returns null simply leaves the
+     * caller on its old water-based decision.
+     */
+    default String biomeKeyAt(int x, int z) { return null; }
     interface ColumnCursor { boolean done(); }
     ColumnCursor begin(int x, int z, SampleKind kind);
     WorkState advance(ColumnCursor cursor, int primitiveLimit);

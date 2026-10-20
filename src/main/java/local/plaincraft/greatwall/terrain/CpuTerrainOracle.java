@@ -312,6 +312,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      * the run. The Y is sea level, not the terrain height, because the caller does not have the height
      * yet; that is the point.
      */
+    @Override
     public String biomeKeyAt(int x, int z) {
         checkOpen();
         return biomeSource.getNoiseBiome(Math.floorDiv(x, 4),

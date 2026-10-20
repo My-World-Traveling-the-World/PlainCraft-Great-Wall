@@ -1392,7 +1392,8 @@ public final class PlannerScheduler implements AutoCloseable {
             var next = safeSegment(segment + 1) ? Optional.of(computeRoute(segment + 1, oracle)) : Optional.<RouteShape>empty();
             var cursor = hydrology.begin(new RouteNeighborhood(center, previous, next), oracle, 96000);
             while (hydrology.advance(cursor, 64) != WorkState.DONE) if (closed()) throw closedFailure();
-            return geometry(center, hydrology.finish(cursor), cursor.logicalColumns(), next.isEmpty());
+            return geometry(center, hydrology.finish(cursor), cursor.logicalColumns(), next.isEmpty(),
+                    oceanRuns(center, oracle));
         } finally {
             state.merge("synchronous-count", 1L, Long::sum);
             state.merge("synchronous-max-nanos", System.nanoTime() - started, Math::max);
@@ -1467,8 +1468,37 @@ public final class PlannerScheduler implements AutoCloseable {
         }, pump);
     }
 
-    private SegmentGeometry geometry(RouteShape route, List<WaterEvidence> water, int hydroColumns, boolean last) {
-        Optional<Terminal> terminal = water.stream().filter(w -> w.classification() == WaterClass.WIDE
+    static java.util.List<local.plaincraft.greatwall.planning.OceanRouteScan.OceanRun> oceanRuns(
+            local.plaincraft.greatwall.model.WallTypes.RouteShape route, NaturalTerrainOracle source) {
+        if (source == null || route == null) return java.util.List.of();
+        var points = route.points();
+        var arcs = route.localSQ8();
+        if (points.isEmpty() || arcs.size() != points.size()) return java.util.List.of();
+        var keys = new java.util.ArrayList<String>(points.size());
+        for (var point : points) {
+            keys.add(source.biomeKeyAt(local.plaincraft.greatwall.geometry.FixedMath.floorBlock(point.xQ8()),
+                    local.plaincraft.greatwall.geometry.FixedMath.floorBlock(point.zQ8())));
+        }
+        return local.plaincraft.greatwall.planning.OceanRouteScan.scan(keys, arcs);
+    }
+
+    private SegmentGeometry geometry(RouteShape route, List<WaterEvidence> water, int hydroColumns, boolean last,
+            List<local.plaincraft.greatwall.planning.OceanRouteScan.OceanRun> seas) {
+        // The sea is decided from biomes first. It costs one lookup per route point and it is the
+        // same coastline the hydrology stage would have found by measuring every column of water -
+        // including the deep ones, which are the most expensive columns this stage can ask for.
+        Optional<Terminal> terminal = local.plaincraft.greatwall.planning.OceanRouteScan
+                .firstTerminating(seas)
+                .map(run -> new Terminal(route.key().index(),
+                        route.localSQ8().get(Math.min(route.localSQ8().size() - 1,
+                                local.plaincraft.greatwall.planning.OceanRouteScan.shoreIndex(run))),
+                        TerminalKind.OCEAN));
+        if (terminal.isPresent()) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:S1C] OCEAN_ROUTE_SCAN segment={} seas={} terminal=biome localSQ8={}",
+                    route.key().index(), seas.size(), terminal.get().localSQ8());
+        }
+        if (terminal.isEmpty()) terminal = water.stream().filter(w -> w.classification() == WaterClass.WIDE
                 && w.crossing().fromQ8() >= 0 && w.crossing().fromQ8() < route.localSQ8().getLast())
                 .map(w -> new Terminal(route.key().index(), w.crossing().fromQ8(), TerminalKind.OCEAN))
                 .min(Comparator.comparingLong(Terminal::localSQ8));
@@ -2113,12 +2143,15 @@ public final class PlannerScheduler implements AutoCloseable {
     private final class HydroJob extends Job<SegmentGeometry> {
         private final RouteNeighborhood routes;
         private HydrologyClassifier.Cursor cursor;
+        /** Kept from advance() so value() can ask for biomes without a fresh oracle. */
+        private NaturalTerrainOracle oracle;
         private HydroJob(RouteNeighborhood routes, Priority priority, CompletableFuture<SegmentGeometry> result) {
             super(priority, "HYDROLOGY", result); this.routes = routes;
             result.thenAcceptAsync(PlannerScheduler.this::persist, pump);
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
             if (cursor == null) cursor = hydrology.begin(routes, oracle, 96000);
+            this.oracle = oracle;
             operations += limit;
             try {
                 // A segment whose hydrology exceeds this operation ceiling terminates
@@ -2146,7 +2179,20 @@ public final class PlannerScheduler implements AutoCloseable {
                 return true;
             }
         }
-        @Override SegmentGeometry value() { return geometry(routes.center(), hydrology.finish(cursor), cursor.logicalColumns(), routes.next().isEmpty()); }
+        @Override SegmentGeometry value() {
+            return geometry(routes.center(), hydrology.finish(cursor), cursor.logicalColumns(),
+                    routes.next().isEmpty(), oceanRuns(routes.center(), oracle));
+        }
+
+        /**
+         * The seas along this segment, from biome data alone.
+         *
+         * <p>One biome lookup per route point costs about a thousandth of a column sample, and it
+         * answers the question the hydrology stage used to answer by measuring: where is the water,
+         * and is it wide enough to end the wall. Returns an empty list whenever the oracle cannot
+         * answer, which leaves the old water-based decision in place.
+         */
+
     }
 
     private final class ContractJob extends Job<SegmentPlan> {
