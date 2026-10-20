@@ -112,6 +112,10 @@ public final class WorldServices {
             // branch in WorldServices.<init>), so the replay could never fire. Only clear the latch;
             // RIVERS_READY is left to SERVER_STOPPED so an early rivers signal is not lost.
             PrewarmProgress.clear();
+            // Arm the gate now, before any peer can ask. The latch alone is not enough: a peer that
+            // asks while nothing has been requested is told "ready", which is how a road started
+            // laying while the wall had not sampled a column.
+            PrewarmProgress.request();
             if (Boolean.getBoolean("greatwall.production")) {
                 throw new IllegalStateException("Formal production remains OFF until S1C acceptance");
             }
@@ -222,6 +226,10 @@ public final class WorldServices {
             // spent latch or a stale rivers-ready flag in the shared statics either.
             RIVERS_READY.set(false);
             PrewarmProgress.clear();
+            // Arm the gate now, before any peer can ask. The latch alone is not enough: a peer that
+            // asks while nothing has been requested is told "ready", which is how a road started
+            // laying while the wall had not sampled a column.
+            PrewarmProgress.request();
             // The landing cache is keyed by ServerLevel, so it holds a strong reference into a world
             // that has just been closed. Leaving it behind pinned that level - and its LRU of up to
             // 4096 + 16384 compiled plans - for the rest of the JVM's life, which made every world a
@@ -417,19 +425,14 @@ public final class WorldServices {
      * @return true if the wall published, failed, or will not run; false if the wait timed out
      */
     public static boolean awaitPrewarm(long timeout, java.util.concurrent.TimeUnit unit) {
-        // No session at all means no wall generation in this world, which is a normal state:
-        // report ready so the caller is never delayed by a stage that will not run.
-        if (SESSIONS.isEmpty()) return true;
-        // A session without a production fixture - the S0 probe, or a client-only run - has no
-        // prewarm to wait for either. Returning ready here matters: otherwise a peer would sit
-        // on its gate for the full timeout on a world where the wall is deliberately inactive.
-        boolean awaiting = false;
-        for (var services : SESSIONS.values()) {
-            if (services.productionFixture()) { awaiting = true; break; }
-        }
-        if (!awaiting) return true;
-        // A production session exists, so this world really is generating a wall and the peer must
-        // wait for its gate even if warming() has not run yet - see awaitWorldgenReadyStrict.
+        // The gate must not consult SESSIONS. That map is only populated when the S0 probe or the
+        // S1C production fixture is enabled, so in an ordinary world it is empty and this method
+        // answered "ready" to every peer before the wall had sampled a column. Measured: the road
+        // began its initial generation at 16:33:20, the same second the prewarm completed, on every
+        // session that was ever run - the gate had never once held it.
+        //
+        // The latch is the contract: clear() closes it at server start, request() arms the session,
+        // and finish(true) opens it. A peer waits until then.
         return PrewarmProgress.awaitWorldgenReadyStrict(timeout, unit);
     }
 
