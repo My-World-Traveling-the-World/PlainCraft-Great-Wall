@@ -128,6 +128,19 @@ public final class RootSearch {
     private final ArrayList<Audit> audit = new ArrayList<>();
     private List<Candidate> shortlisted = List.of();
     private List<Candidate> structureCandidates = List.of();
+    /** Candidates past the first screen batch; only reached through {@link #screenNextStructureBatch()}. */
+    private List<Candidate> structureRemainder = List.of();
+    /**
+     * How many candidates the structure screen resolves in one batch.
+     *
+     * <p>It used to resolve every ranked candidate - 258 in a measured session - to pick one site,
+     * and every candidate costs a full structure generation. The shortlist comes from the head of the
+     * ranking, so the tail matters only when the head is entirely blocked;
+     * {@link #screenNextStructureBatch()} lets the caller trade another batch for that case withoutFalse
+     * weakening the rule that a blocked batch fails closed.
+     */
+    private static final int STRUCTURE_SCREEN_LIMIT =
+            Math.max(8, Integer.getInteger("greatwall.structureScreenCandidates", Integer.MAX_VALUE));
     private List<Candidate> remainingScreened = List.of();
     private int screenedOffset;
     private Map<Integer,List<Integer>> allowedAxes = Map.of();
@@ -272,6 +285,29 @@ public final class RootSearch {
     /** Diagnostic-only, lane-owned copy. It is never an input to selection or persisted recipe identity. */
     public List<Audit> audit() { claimOwner(); return List.copyOf(audit); }
     public boolean needsStructureScreen(){claimOwner();return phase==4;}
+    /** {@return true when candidates past the first screen batch are still unscreened} */
+    public boolean hasStructureRemainder(){claimOwner();return !structureRemainder.isEmpty();}
+
+    /**
+     * Moves the next batch of candidates into the screen, after the previous one failed closed.
+     *
+     * <p>Callers use this to try another batch before accepting "no site here". Keeping it on the
+     * caller side is deliberate: {@link #acceptStructureVotes} still throws when a batch it screened
+     * is entirely blocked, which is the rule that stops the wall being sited through a village.
+     *
+     * @return true when a new batch is pending, false when nothing is left
+     */
+    public boolean screenNextStructureBatch(){
+        claimOwner();
+        if(structureRemainder.isEmpty())return false;
+        var next=structureRemainder;
+        structureRemainder=next.stream().skip(STRUCTURE_SCREEN_LIMIT).toList();
+        structureCandidates=next.stream().limit(STRUCTURE_SCREEN_LIMIT).toList();
+        phase=4;
+        resetSamples();
+        return true;
+    }
+
     public List<RootStructureScreen.Candidate> pendingStructureCandidates(){
         claimOwner();
         if(phase!=4)throw new IllegalStateException("root is not waiting for structure votes");
@@ -324,7 +360,9 @@ public final class RootSearch {
             }
             if(screenStructures){
                 if(ordered.isEmpty())throw notFound();
-                structureCandidates=ordered;phase=4;return;
+                structureRemainder=ordered.stream().skip(STRUCTURE_SCREEN_LIMIT).toList();
+                structureCandidates=ordered.stream().limit(STRUCTURE_SCREEN_LIMIT).toList();
+                phase=4;return;
             }
             if (ordered.isEmpty()) throw notFound();
             shortlisted=ordered.stream().limit(8).toList();
