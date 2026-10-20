@@ -111,9 +111,20 @@ public final class WallBodyBackfill {
                 state.pending.size(), added, state.settled.size());
     }
 
-    /** Single IO thread: a plan read must never block the server thread that reported the load. */
+    /**
+     * Plan reads, off the server thread.
+     *
+     * <p>They used to run on one thread. A player walking the wall reports loads faster than one
+     * thread can read plans, so the queue grew while the wall behind them stayed missing - and the
+     * read itself is I/O, which is exactly what a second thread helps with and CPU-bound work is not.
+     * The default is small on purpose: this shares the machine with world generation.
+     * {@code -Dgreatwall.backfillIoThreads} overrides it.
+     */
+    private static final int IO_THREADS = Math.max(1, Math.min(8,
+            Integer.getInteger("greatwall.backfillIoThreads", 3)));
+
     private static final java.util.concurrent.ExecutorService IO =
-            java.util.concurrent.Executors.newSingleThreadExecutor(task -> {
+            java.util.concurrent.Executors.newFixedThreadPool(IO_THREADS, task -> {
                 Thread thread = new Thread(task, "pgw-wall-backfill-io");
                 thread.setDaemon(true);
                 return thread;
