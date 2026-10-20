@@ -50,7 +50,11 @@ public final class SupportGraph {
             removed.forEach(retained::remove);
         }
         for (VoxelIntent v : blocks.values())
-            if (v.required() && !retained.containsKey(v.pos())) throw failure("required voxel has no rooted support: " + v.pos());
+            if (v.required() && !retained.containsKey(v.pos())) throw failure(
+                    // Naming the component is the point: one measured session lost 131 owners to the same
+                    // voxel, and the site id says which component produced it.
+                    "required voxel has no rooted support: " + v.pos()
+                            + " in " + component.id() + " bounds=" + component.bounds());
         List<VoxelIntent> voxels = component.voxels().stream()
                 .filter(v -> !solid(v) || retained.containsKey(v.pos())).sorted(Comparator.comparing(VoxelIntent::pos, ORDER)).toList();
         var result = hashed(component, voxels,
