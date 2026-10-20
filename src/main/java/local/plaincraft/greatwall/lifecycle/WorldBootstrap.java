@@ -676,17 +676,22 @@ public final class WorldBootstrap implements AutoCloseable {
             }
         }
         double elapsedMs = Math.max(1.0D, elapsedNanos / 1_000_000.0D);
+        // The eight timers this line used to print were deleted with the walk that fed them, so
+        // sliceMs/blockMs/cellMs/biomeMs/constructMs/surfaceMs/walkedBlocks/leadRetries were always
+        // zero and effectiveParallelism was always 0.00 - a metric derived from them, and the reason a
+        // measured session's scan looked idle while the lanes were answering 92% of its columns from
+        // cache. What replaces them is measured: how much of the sampling did not happen on the pump.
+        long hitsNow = search.prefetchHitCount();
+        long inlineNow = search.inlineSampleCount();
+        double offThreadPct = hitsNow + inlineNow == 0 ? 0.0
+                : 100.0 * hitsNow / (hitsNow + inlineNow);
         GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SEARCH_DONE columns={} phase={} over40msBatches={} "
-                        + "maxBatchMs={} elapsedMs={} sliceMs={} blockMs={} cellMs={} biomeMs={} constructMs={} "
-                        + "surfaceMs={} walkedBlocks={} leadRetries={} chunkCacheHits={} chunkCacheMisses={} "
-                        + "effectiveParallelism={} discardedPrefetched={} prefetchHits={} inlineSamples={} "
-                        + "prefetchWaits={} {}",
+                        + "maxBatchMs={} elapsedMs={} prefetchOffThreadPct={} prefetchHits={} inlineSamples={} "
+                        + "prefetchWaits={} discardedPrefetched={} {}",
                 progress.columns(), progress.phase(), progress.over40msBatches(),
                 Math.round(progress.maxBatchNanos() / 1_000_000.0D), Math.round(elapsedMs),
-                sliceMs, blockMs, cellMs, biomeMs, constructMs, surfaceMs, walkedBlocks, leadRetries,
-                hits, misses,
-                String.format(java.util.Locale.ROOT, "%.2f", (sliceMs + blockMs + cellMs + biomeMs) / elapsedMs),
-                search.discardedPrefetchedCount(), search.prefetchHitCount(), search.inlineSampleCount(), search.prefetchWaitCount(),
+                String.format(java.util.Locale.ROOT, "%.1f", offThreadPct),
+                hitsNow, inlineNow, search.prefetchWaitCount(), search.discardedPrefetchedCount(),
                 new java.util.TreeMap<>(prefetchDiagnostics()));
     }
 
