@@ -679,13 +679,14 @@ public final class WorldBootstrap implements AutoCloseable {
         GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SEARCH_DONE columns={} phase={} over40msBatches={} "
                         + "maxBatchMs={} elapsedMs={} sliceMs={} blockMs={} cellMs={} biomeMs={} constructMs={} "
                         + "surfaceMs={} walkedBlocks={} leadRetries={} chunkCacheHits={} chunkCacheMisses={} "
-                        + "effectiveParallelism={} discardedPrefetched={} {}",
+                        + "effectiveParallelism={} discardedPrefetched={} prefetchHits={} inlineSamples={} "
+                        + "prefetchWaits={} {}",
                 progress.columns(), progress.phase(), progress.over40msBatches(),
                 Math.round(progress.maxBatchNanos() / 1_000_000.0D), Math.round(elapsedMs),
                 sliceMs, blockMs, cellMs, biomeMs, constructMs, surfaceMs, walkedBlocks, leadRetries,
                 hits, misses,
                 String.format(java.util.Locale.ROOT, "%.2f", (sliceMs + blockMs + cellMs + biomeMs) / elapsedMs),
-                search.discardedPrefetchedCount(),
+                search.discardedPrefetchedCount(), search.prefetchHitCount(), search.inlineSampleCount(), search.prefetchWaitCount(),
                 new java.util.TreeMap<>(prefetchDiagnostics()));
     }
 

@@ -146,6 +146,13 @@ public final class RootSearch {
      * refusal printed {@code water=false support=false relief=false} and named no cause at all.
      */
     private int censoredSamples;
+    /** Columns answered by a prefetch, sampled inline on the pump, and pump turns spent waiting. */
+    private int prefetchHits, inlineSamples;
+    private final java.util.concurrent.atomic.AtomicLong prefetchWaits =
+            new java.util.concurrent.atomic.AtomicLong();
+    /** The column the pump is waiting for, and until when. */
+    private ColumnKey waitingKey;
+    private long waitUntilNanos;
     private int firstCensoredX = Integer.MIN_VALUE, firstCensoredZ, firstCensoredIndex = -1;
     private String firstCensoredQuality;
     /** The column the current sample came from, so a refusal can name the one that refused it. */
@@ -689,12 +696,35 @@ public final class RootSearch {
                 prefetched.put(new ColumnKey(x, z, requireFoundation), hit);
             } else {
                 if (++columns > 150000) throw new WallFailure(FailureCode.BUDGET_EXHAUSTED, "root column budget exceeds 150000");
+                prefetchHits++;
                 lastSupport = hit.lastSupport();
                 return hit.sample();
             }
         }
         if (column == null) {
+            // The pump is the consumer, not a second producer. When a prefetch lane has already
+            // claimed this exact column it is sampling it right now, and beginning it here as well
+            // duplicates the work - the pump always loses that race, because its own begin() is the
+            // same eight milliseconds the lane is spending. Waiting one short interval instead lets
+            // the lane's result arrive; the wait is bounded, so a stalled or dead lane costs one
+            // interval and then the pump samples the column itself, exactly as before.
+            var key = new ColumnKey(x, z, requireFoundation);
+            if (claimed.contains(key)) {
+                long now = System.nanoTime();
+                if (!key.equals(waitingKey)) {
+                    waitingKey = key;
+                    waitUntilNanos = now + PREFETCH_WAIT_NANOS;
+                    prefetchWaits.incrementAndGet();
+                    return null;
+                }
+                if (now < waitUntilNanos) {
+                    prefetchWaits.incrementAndGet();
+                    return null;
+                }
+            }
+            waitingKey = null;
             if (++columns > 150000) throw new WallFailure(FailureCode.BUDGET_EXHAUSTED, "root column budget exceeds 150000");
+            inlineSamples++;
             column = oracle.begin(x, z, SampleKind.REFERENCE);
             return null;
         }
@@ -980,6 +1010,11 @@ public final class RootSearch {
      * (324 candidates, 8 pads) touches about 45000 positions. The default holds them several times
      * over and still costs tens of megabytes at worst; override with -Dgreatwall.prefetchCache.
      */
+    /** How long the pump waits for an in-flight prefetch before sampling the column itself. */
+    private static final long PREFETCH_WAIT_NANOS =
+            java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
+                    Long.getLong("greatwall.prefetchWaitMillis", 25L));
+
     private static final int PREFETCH_CACHE = Math.max(1024,
             Integer.getInteger("greatwall.prefetchCache", 262144));
 
@@ -988,6 +1023,15 @@ public final class RootSearch {
 
     /** Columns sampled by a prefetch that the search then moved past; pure diagnostics. */
     public long discardedPrefetchedCount() { return discardedPrefetched.get(); }
+
+    /** {@return columns the pump took from a prefetch lane} */
+    public int prefetchHitCount() { return prefetchHits; }
+
+    /** {@return columns the pump sampled itself because no lane had them ready} */
+    public int inlineSampleCount() { return inlineSamples; }
+
+    /** {@return pump turns spent waiting for an in-flight prefetch} */
+    public long prefetchWaitCount() { return prefetchWaits.get(); }
 
     /** Columns currently held in the prefetch cache; pure diagnostics. */
     public int prefetchedCount() { return prefetched.size(); }
