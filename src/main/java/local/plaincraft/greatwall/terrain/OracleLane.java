@@ -81,6 +81,10 @@ public final class OracleLane implements AutoCloseable {
                     start();
                     state.merge("queued", 1L, Long::sum);
                     executor.execute(() -> {
+                        // Every heavy sampling unit in a session - the prewarm lanes and the fine sample
+                        // lanes alike - passes through here, so this is the one place that can hold the
+                        // whole startup to a single concurrency budget.
+                        boolean slot = StageBudget.acquireSlot();
                         try {
                             if (state.containsKey("closed")) throw closedFailure();
                             if (producerFailure != null) throw new WallFailure(FailureCode.UNSUPPORTED_ADAPTER,
@@ -93,7 +97,10 @@ public final class OracleLane implements AutoCloseable {
                             producerFailure = failure;
                             state.merge("action-failures", 1L, Long::sum);
                             result.completeExceptionally(failure);
-                        } finally { state.compute("queued", (key, count) -> count - 1); }
+                        } finally {
+                            if (slot) StageBudget.releaseSlot();
+                            state.compute("queued", (key, count) -> count - 1);
+                        }
                     });
                     return result;
                 }
