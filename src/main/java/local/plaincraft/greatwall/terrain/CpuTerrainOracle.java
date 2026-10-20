@@ -303,6 +303,24 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
                 maxAdvanceNanos, over40msAdvances);
     }
     /** Immutable diagnostic identity, never a RandomState reference. */
+    /**
+     * The biome at one column, sampled at sea level.
+     *
+     * <p>This is the cheap question: a biome lookup costs a few microseconds and a column sample about
+     * ten milliseconds, so a whole route can be classified land-versus-sea before anything is sampled -
+     * which is what lets the planner skip the middle of a sea instead of paying the deepest columns in
+     * the run. The Y is sea level, not the terrain height, because the caller does not have the height
+     * yet; that is the point.
+     */
+    public String biomeKeyAt(int x, int z) {
+        checkOpen();
+        return biomeSource.getNoiseBiome(Math.floorDiv(x, 4),
+                        Math.floorDiv(settings.seaLevel(), 4), Math.floorDiv(z, 4),
+                        randomState.sampler())
+                .unwrapKey().orElseThrow(() -> new WallFailure(FailureCode.INVALID_RESOURCE,
+                        "unkeyed natural biome")).location().toString();
+    }
+
     public UUID identity() { checkOpen(); return identity; }
 
     @Override public String fingerprint() { return fingerprint; }
