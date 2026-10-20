@@ -71,6 +71,20 @@ public final class CoveragePlanner {
         }
         if(Math.abs(projection.lateralQ8())>196L*256)return List.of();
         long min=Math.max(0,projection.globalSQ8()-192L*256),max=projection.globalSQ8()+192L*256;
+        // Nothing exists past the terminal, so nothing there needs an owner. The plans already stop
+        // their stations and sites at that arc (RealizationPlanner breaks on geometry.terminal()), but
+        // this enumeration is driven by the projection rather than by the plans, so it kept asking for
+        // cells across the whole route: a measured session compiled 559 owners for a wall whose
+        // terminal sat 1750 blocks into a 8192 block route. One cell of margin keeps the end cap covered.
+        long terminalLimit = Long.MAX_VALUE;
+        for (var limited : plans.plans()) {
+            var terminal = limited.geometry().terminal();
+            if (terminal.isEmpty()) continue;
+            long global = limited.prefix().lengthBeforeQ8() + terminal.get().localSQ8() + 64L * 256;
+            terminalLimit = Math.min(terminalLimit, global);
+        }
+        if (projection.globalSQ8() > terminalLimit) return List.of();
+        if (max > terminalLimit) max = terminalLimit;
         String recipe=plans.plans().getFirst().geometry().key().recipeHash();
         var result=new ArrayList<CellKey>();
         for(long cell=Math.floorDiv(min,64L*256);cell<=Math.floorDiv(max,64L*256);cell++) {
