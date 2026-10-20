@@ -127,6 +127,10 @@ public final class RootSearch {
     private final ArrayList<Candidate> candidates = new ArrayList<>();
     private final ArrayList<Audit> audit = new ArrayList<>();
     private List<Candidate> shortlisted = List.of();
+    /** Coordinates this search has already asked for, so repeated reads are visible as a ratio. */
+    private final java.util.Set<Long> askedColumns = new java.util.HashSet<>();
+    private long distinctColumnCount;
+    private long totalColumnReads;
     private List<Candidate> structureCandidates = List.of();
     /** Candidates past the first screen batch; only reached through {@link #screenNextStructureBatch()}. */
     private List<Candidate> structureRemainder = List.of();
@@ -285,6 +289,12 @@ public final class RootSearch {
     /** Diagnostic-only, lane-owned copy. It is never an input to selection or persisted recipe identity. */
     public List<Audit> audit() { claimOwner(); return List.copyOf(audit); }
     public boolean needsStructureScreen(){claimOwner();return phase==4;}
+    /** {@return distinct coordinates this search asked for} */
+    public long distinctColumns(){return distinctColumnCount;}
+
+    /** {@return every coordinate this search asked for, including repeats} */
+    public long columnReads(){return totalColumnReads;}
+
     /** {@return true when candidates past the first screen batch are still unscreened} */
     public boolean hasStructureRemainder(){claimOwner();return !structureRemainder.isEmpty();}
 
@@ -721,6 +731,10 @@ public final class RootSearch {
     }
 
     private ColumnSample read(NaturalTerrainOracle oracle, int x, int z, boolean requireFoundation) {
+        // Distinct versus repeated reads. The footprint phase walks 48x48 grids per candidate and
+        // neighbours overlap, so this ratio decides whether A4 is a memo or a rebuilt sampling field.
+        totalColumnReads++;
+        if (askedColumns.add((((long) x) << 32) ^ (z & 0xffffffffL))) distinctColumnCount++;
         // A prefetched column answers in one call instead of many. The values are
         // identical: every lane's oracle is constructed from the same frozen inputs
         // and verified against the same terrain fingerprint, so the noise is a pure
