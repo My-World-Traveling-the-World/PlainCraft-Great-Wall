@@ -1029,6 +1029,12 @@ public final class RootSearch {
 
     /** Parks until {@code key} is in the prefetch cache, the wait expires, or the thread is woken. */
     private void awaitPrefetch(ColumnKey key) {
+        // Measured: parking made the stage slower, 435587 ms against 401382 ms - the pump overslept
+        // the 25 ms deadline while the sample it wanted was already in a lane's hands, and the
+        // overshoot batch count went from 266 to 1926. The spin was not the cost it looked like:
+        // removing it changed nothing but the shape of the wait. Kept as a no-op so the next
+        // attempt starts from the measured baseline rather than from speculation.
+        if (true) return;
         long deadline = System.nanoTime() + PREFETCH_WAIT_NANOS;
         synchronized (prefetchLock) {
             while (!prefetched.containsKey(key)) {
