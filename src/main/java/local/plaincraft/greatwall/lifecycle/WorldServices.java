@@ -518,6 +518,8 @@ public final class WorldServices {
             // The wall is planned, published and still holding the stage: paint it now, while nothing else
             // can run and the loading screen is up. The drain would get there eventually, one batch per ten
             // ticks, but the player would watch an empty corridor for the first minutes of the world.
+            if (PrewarmProgress.awaitWorldgenReadyStrict(0L, java.util.concurrent.TimeUnit.NANOSECONDS)) return true;
+            if (!PrewarmProgress.isPublished()) return false;   // plans not on disk yet
             if (!painted[0]) {
                 painted[0] = true;
                 try {
@@ -527,6 +529,8 @@ public final class WorldServices {
                     GreatWallMod.LOGGER.error("[GreatWall:S1C] WALL_BACKFILL_STARTUP_FAILED", paintFailed);
                 }
             }
+            // The wall is in the world: only now may the road start.
+            PrewarmProgress.finish(true);
             // The compile can be deferred: compileAtStartup returns true after asking for it, and the
             // compile itself only runs once the fine sample publishes (PLANNING_COMPILE_WAIT_FOR_SAMPLE).
             // Its return value is therefore "I asked", not "it published" - holding the stage on it released

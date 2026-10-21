@@ -1103,7 +1103,9 @@ final class ProductionSession implements AutoCloseable {
         // its road generation while the wall is still being compiled. finish() opens both the
         // card's latch and the worldgen gate the roads wait on.
         PrewarmProgress.signalReady();
-        PrewarmProgress.finish(true);
+        // Publishing puts the plans on disk; the gate opens only once they are written into the world,
+        // which the startup stage does on the server thread before calling finish(true).
+        PrewarmProgress.markPublished();
     }
 
     void validateReload() {

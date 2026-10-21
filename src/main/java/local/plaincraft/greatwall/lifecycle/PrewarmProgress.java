@@ -546,6 +546,13 @@ public final class PrewarmProgress {
         }
     }
 
+    /** Set by the compile once the plans are on disk; the startup stage paints, then opens the gate. */
+    private static final java.util.concurrent.atomic.AtomicBoolean PUBLISHED =
+            new java.util.concurrent.atomic.AtomicBoolean();
+
+    public static void markPublished() { PUBLISHED.set(true); }
+    public static boolean isPublished() { return PUBLISHED.get(); }
+
     public static boolean isActive() { return ACTIVE.get(); }
 
     /**
