@@ -82,7 +82,10 @@ public final class WallBodyBackfill {
      * the first time a tick runs.
      */
     public static void installIfAbsent(java.nio.file.Path greatWallRoot) {
-        if (planStore != null) return;
+        // The root can change inside one game process: quitting to the title and loading another save
+        // must not keep reading the first save's plans nor append to its ledger (that is how a second
+        // world's chunk keys ended up in the first world's backfilled.txt).
+        if (planStore != null && greatWallRoot.equals(installedRoot)) return;
         var evidence = local.plaincraft.greatwall.persistence.ChunkEvidenceStore
                 .production(greatWallRoot.resolve("evidence"));
         install(new PlanStore() {
@@ -93,6 +96,7 @@ public final class WallBodyBackfill {
                 evidence.persistPlan(plan);
             }
         });
+        installedRoot = greatWallRoot;
         loadDone(greatWallRoot);
         GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STORE_INSTALLED root={}", greatWallRoot);
     }
@@ -121,7 +125,7 @@ public final class WallBodyBackfill {
                     int z = Integer.parseInt(name.substring(split + 1));
                     ChunkKey key = new ChunkKey(level.dimension().location().toString(), x, z);
                     if (state.settled.contains(key)) continue;
-                    if (DONE.contains(x + "_" + z)) continue;
+                    if (DONE.contains(x + "_" + z)) { state.verify.add(key); continue; }
                     if (state.pending.add(key)) added++;
                 } catch (NumberFormatException notAChunkDirectory) {
                     // FILES/ and the world hash directory are not chunk directories.
@@ -139,12 +143,20 @@ public final class WallBodyBackfill {
     }
     /** Time one startup batch may wait for its chunks before it is written as far as it got. */
     private static final long BATCH_TIMEOUT_NANOS = 20_000_000_000L;
-    /** How long a startup request may stay unanswered before its ticket is dropped and it is retried. */
+    /** How long a request may stay unanswered before its ticket is dropped and the chunk retried. */
     private static final long REQUEST_GIVE_UP_NANOS = 90_000_000_000L;
     /** Chunk requests the startup pass may hold at once; each one pins its chunk in memory. */
     private static final int MAX_STARTUP_INFLIGHT = 16;
-    /** Time one in-game drain may wait for a single chunk. */
-    private static final long DRAIN_TIMEOUT_NANOS = 5_000_000_000L;
+    /** Wall-clock budget one in-game drain may spend writing before it yields the tick. */
+    private static final long DRAIN_BUDGET_NANOS = 150_000_000L;
+    /** Chunk requests the in-game drain may keep in flight. It never waits on one. */
+    private static final int MAX_DRAIN_REQUESTS = 8;
+    /** Pending chunks one drain may inspect; a long queue must not cost a tick. */
+    private static final int MAX_DRAIN_CHECKS = 64;
+    /** Done-ledger entries one drain may re-verify; each costs one block read. */
+    private static final int MAX_VERIFY_PER_DRAIN = 8;
+    /** Default wall-clock budget for the whole startup pass; {@code greatwall.backfillStartupBudgetMs}. */
+    private static final long STARTUP_BUDGET_DEFAULT_MS = 480_000L;
     /**
      * The ticket that keeps a chunk loaded while the wall is written into it.
      *
@@ -215,6 +227,12 @@ public final class WallBodyBackfill {
         if (done != null) releaseTicket(level, done.pos(), done.ticketId());
     }
 
+    /** Releases the in-game drain's request for one key, if it has one. */
+    private static void releaseDrainRequest(ServerLevel level, State state, ChunkKey key) {
+        StartupRequest done = state.requests.remove(key);
+        if (done != null) releaseTicket(level, done.pos(), done.ticketId());
+    }
+
     /**
      * Drains every world-local chunk queue.
      *
@@ -235,6 +253,109 @@ public final class WallBodyBackfill {
         }
     }
 
+    /** Asks the IO pool for one plan; the caller keeps the chunk pending until it arrives. */
+    private static void requestPlanRead(ServerLevel level, ChunkKey key) {
+        PlanStore store = planStore;
+        if (store == null || !LOADING.add(key)) return;
+        try {
+            IO.execute(() -> {
+                try {
+                    prefetch(level, key, store);
+                } finally {
+                    LOADING.remove(key);
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException closing) {
+            LOADING.remove(key);
+        }
+    }
+
+    /**
+     * Pending chunks ordered by distance to the centroid of the players in this level.
+     *
+     * <p>The queue is a hash set, so without this a drain could spend its budget pre-generating
+     * chunks three hundred blocks away while the wall in front of the player stayed missing.
+     */
+    private static List<ChunkKey> nearestFirst(ServerLevel level, Set<ChunkKey> pending) {
+        List<ChunkKey> keys = new ArrayList<>(pending);
+        if (keys.size() < 2) return keys;
+        var players = level.players();
+        if (players.isEmpty()) return keys;
+        double cx = 0.0D;
+        double cz = 0.0D;
+        for (var player : players) {
+            cx += player.getX();
+            cz += player.getZ();
+        }
+        cx /= players.size();
+        cz /= players.size();
+        final double centreX = cx;
+        final double centreZ = cz;
+        keys.sort(java.util.Comparator.comparingDouble(key -> {
+            double dx = (key.x() << 4) + 8 - centreX;
+            double dz = (key.z() << 4) + 8 - centreZ;
+            return dx * dx + dz * dz;
+        }));
+        return keys;
+    }
+
+    /**
+     * Re-proves the done ledger against the world, one loaded chunk at a time.
+     *
+     * <h2>Why the ledger cannot be trusted on its own</h2>
+     * {@code backfilled.txt} is appended the moment a chunk is written, but the chunk itself is only
+     * flushed to disk when the world saves. A crash (or a force-kill) between the two leaves the
+     * ledger ahead of the world: the save then skips those chunks for ever, and the wall has holes the
+     * log never mentions. A measured session marked 88 chunks done and was killed before its first
+     * autosave. So a ledger entry buys a chunk one free pass, not a permanent one: the first time the
+     * chunk loads, one planned voxel is checked, and a mismatch puts the whole chunk back in the queue.
+     */
+    private static void verifyDone(ServerLevel level, State state) {
+        if (state.verify.isEmpty()) return;
+        int checks = 0;
+        for (ChunkKey key : List.copyOf(state.verify)) {
+            if (checks++ >= MAX_VERIFY_PER_DRAIN) break;
+            LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
+            if (chunk == null) continue;
+            ChunkWritePlan plan = WallWorldgenPlanCache.get(level, key);
+            if (plan == null) {
+                requestPlanRead(level, key);
+                continue;
+            }
+            // Three candidate voxels, and one match is enough: a chunk that was written normally
+            // matches all of them, and requiring only one keeps a single player-placed block (or a
+            // voxel the write skipped as a conflict) from repainting a chunk that is otherwise done.
+            int matched = 0;
+            int candidates = 0;
+            for (var voxel : plan.voxels()) {
+                if (voxel.kind() == IntentKind.KEEP) continue;
+                // No before-state filter: a voxel whose compile-time neighbour was solid may have
+                // been skipped as a conflict, and one skipped voxel must not condemn the chunk.
+                BlockState expected;
+                try {
+                    expected = BlockCatalog.resolveState(voxel.state());
+                } catch (RuntimeException unresolvable) {
+                    continue;
+                }
+                candidates++;
+                Point3i at = voxel.pos();
+                if (chunk.getBlockState(new BlockPos(at.x(), at.y(), at.z())) == expected) {
+                    matched++;
+                    break;
+                }
+                if (candidates >= 3) break;
+            }
+            state.verify.remove(key);
+            if (candidates == 0 || matched > 0) continue;
+            state.pending.add(key);
+            if (REPAINT_LOGS.incrementAndGet() <= 8) {
+                GreatWallMod.LOGGER.info(
+                        "[GreatWall:S1C] WALL_BACKFILL_REPAINTED owner={},{} reason=sentinel-mismatch",
+                        key.x(), key.z());
+            }
+        }
+    }
+
     /**
      * Paints the whole queue now, on the server thread that owns the startup stage.
      *
@@ -244,9 +365,14 @@ public final class WallBodyBackfill {
      * generates them on its workers while managedBlock pumps), then writes those that arrived.
      *
      * <p>The pass is bounded in three ways, because a loading screen that never ends is worse than a
-     * corridor that fills in late: {@code greatwall.backfillStartupBudgetMs} for the whole pass (five
+     * corridor that fills in late: {@code greatwall.backfillStartupBudgetMs} for the whole pass (eight
      * minutes by default), {@link #BATCH_TIMEOUT_NANOS} for one batch, and {@link #REQUEST_GIVE_UP_NANOS}
      * for one unanswered chunk request. Anything left over stays queued and the in-game drain paints it.
+     *
+     * <p>A chunk that cannot be written this round - its plan has not arrived from disk yet, or its
+     * chunk did not load - is parked in {@link State#deferred} rather than dropped: dropping it would
+     * leave a hole in the wall that nothing in the session would ever revisit, which is exactly the
+     * class of silent gap this pass exists to prevent.
      *
      * @return chunks written
      */
@@ -262,19 +388,22 @@ public final class WallBodyBackfill {
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL, 0, total);
         int written = 0;
         int rounds = 0;
+        int painted = 0;
         long voxels = 0L;
         long startedAt = System.nanoTime();
         // A budget for the whole pass, not just for one batch. Sixty-four rounds of twenty seconds is
         // twenty-one minutes, which is not a bound a player can plan around; whatever is left when the
         // budget runs out is exactly what the in-game drain is for, so the gate opens and the corridor
         // fills in behind the player instead of the loading screen hanging on it.
-        long budgetNanos = java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
-                Math.max(30_000L, Long.getLong("greatwall.backfillStartupBudgetMs", 300_000L)));
+        long budgetMs = Math.max(30_000L, Long.getLong("greatwall.backfillStartupBudgetMs",
+                STARTUP_BUDGET_DEFAULT_MS));
+        long budgetNanos = java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(budgetMs);
         long passDeadline = startedAt + budgetNanos;
         boolean budgetHit = false;
         // Requests in flight, at most MAX_STARTUP_INFLIGHT: the future that says "this chunk reached
         // FULL", plus the ticket that keeps the chunk loaded until it is written.
         java.util.Map<ChunkKey, StartupRequest> inflight = new java.util.LinkedHashMap<>();
+        state.deferred.clear();
         try {
             while (!state.pending.isEmpty() && rounds++ < 64) {
                 if (System.nanoTime() >= passDeadline) {
@@ -303,6 +432,7 @@ public final class WallBodyBackfill {
                         held = requestChunk(level, key, "startup");
                         if (held == null) {
                             state.pending.remove(key);
+                            state.deferred.add(key);
                             continue;
                         }
                         inflight.put(key, held);
@@ -344,25 +474,41 @@ public final class WallBodyBackfill {
                 }
                 int settledThisRound = 0;
                 for (ChunkKey key : arrived) {
-                    LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
-                    if (chunk == null) {
-                        state.pending.remove(key);
-                        releaseRequest(level, inflight, key);
-                        continue;
-                    }
                     try {
+                        LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
+                        if (chunk == null) {
+                            state.pending.remove(key);
+                            state.deferred.add(key);
+                            continue;
+                        }
+                        if (WallWorldgenPlanCache.get(level, key) == null) {
+                            // A reloaded save has the plans on disk but not in memory yet; read it off
+                            // the IO pool and keep the chunk parked until it arrives.
+                            requestPlanRead(level, key);
+                            state.pending.remove(key);
+                            state.deferred.add(key);
+                            continue;
+                        }
                         Sweep sweep = settle(level, chunk, key);
                         var startupPlan = WallWorldgenPlanCache.get(level, key);
                         if (startupPlan != null) voxels += startupPlan.voxels().size();
                         if (sweep.status() == Status.SETTLED) {
                             written += sweep.written();
                             markDone(key);
+                        } else {
+                            // The plan is there but the sweep could not finish; keep the chunk for a
+                            // later round instead of counting it as painted.
+                            state.pending.remove(key);
+                            state.deferred.add(key);
+                            continue;
                         }
                         state.pending.remove(key);
                         state.settled.add(key);
                         settledThisRound++;
+                        painted++;
                     } catch (RuntimeException failed) {
                         state.pending.remove(key);
+                        state.deferred.add(key);
                     } finally {
                         releaseRequest(level, inflight, key);
                     }
@@ -379,11 +525,19 @@ public final class WallBodyBackfill {
                 releaseTicket(level, leftover.pos(), leftover.ticketId());
             }
             inflight.clear();
+            // Parked chunks go back to the queue: the in-game drain owns them from here.
+            state.pending.addAll(state.deferred);
+            state.deferred.clear();
         }
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL, total, total);
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STARTUP_DONE rounds={} written={} pending={} budgetHit={} elapsedMs={}",
-                rounds, written, state.pending.size(), budgetHit,
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL,
+                total - state.pending.size(), total);
+        if (budgetHit) {
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] WALL_BACKFILL_STARTUP_BUDGET pending={} budgetMs={}; "
+                    + "the gate opens and the rest is painted in game", state.pending.size(), budgetMs);
+        }
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STARTUP_DONE rounds={} painted={} written={} pending={} budgetHit={} elapsedMs={}",
+                rounds, painted, written, state.pending.size(), budgetHit,
                 (System.nanoTime() - startedAt) / 1_000_000L);
         return written;
     }
@@ -456,13 +610,21 @@ public final class WallBodyBackfill {
         if (level == null || keys == null || keys.isEmpty()) return;
         State state = state(level);
         int added = 0;
+        int proven = 0;
         for (ChunkKey key : keys) {
             if (key == null || state.settled.contains(key)) continue;
+            // The ledger buys a chunk one free pass, not a permanent one: verifyDone re-proves it the
+            // first time it loads. Honouring it here is what keeps a reload from repainting all 456
+            // chunks that an earlier session already wrote.
+            if (DONE.contains(key.x() + "_" + key.z())) {
+                if (state.verify.add(key)) proven++;
+                continue;
+            }
             if (state.pending.add(key)) added++;
         }
         state.total = Math.max(state.total, state.settled.size() + state.pending.size());
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_QUEUED chunks={} added={} settled={}",
-                state.pending.size(), added, state.settled.size());
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_QUEUED chunks={} added={} settled={} verify={}",
+                state.pending.size(), added, state.settled.size(), proven);
     }
 
     /**
@@ -536,50 +698,49 @@ public final class WallBodyBackfill {
         }
     }
 
-    /** One bounded step, driven by the production session's tick. */
+    /**
+     * One bounded step, driven by the production session's tick.
+     *
+     * <p>This runs on the tick thread, so it must never wait for anything: the queue is walked
+     * nearest-player-first, at most {@link #MAX_DRAIN_CHECKS} keys and {@link #DRAIN_BUDGET_NANOS} of
+     * wall clock per call, chunks that are not loaded are <em>requested</em> (ticketed, generated by
+     * c2me in the background) and skipped, and {@link #MAX_CHUNKS_PER_DRAIN} settles end the pass. An
+     * earlier shape waited inside this loop for each request, with no per-drain bound at all: one
+     * unloadable chunk cost five seconds each and a long queue could hold the server for half an hour.
+     */
     public static void drain(ServerLevel level) {
         if (level == null) return;
         State state = state(level);
         if (++state.tick < DRAIN_INTERVAL_TICKS) return;
         state.tick = 0;
+        // The ledger first: it is the only thing between a crashed session and a wall with holes in it,
+        // and it costs one block read per loaded chunk. See verifyDone.
+        verifyDone(level, state);
+        pollDrainRequests(level, state);
         if (state.pending.isEmpty()) return;
 
+        long startedAt = System.nanoTime();
         int settledThisDrain = 0;
         int writtenBlocks = 0;
         long voxelsSeen = 0L;
+        int inspected = 0;
         List<ChunkKey> dropped = new ArrayList<>();
-        for (ChunkKey key : List.copyOf(state.pending)) {
+        for (ChunkKey key : nearestFirst(level, state.pending)) {
             if (settledThisDrain >= MAX_CHUNKS_PER_DRAIN) break;
+            if (inspected++ >= MAX_DRAIN_CHECKS) break;
+            if (System.nanoTime() - startedAt >= DRAIN_BUDGET_NANOS) break;
             if (state.settling.contains(key)) continue;
             LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
             if (chunk == null) {
-                // The road reaches the chunks it must paint by asking for them; the wall used to sit and
-                // wait for the player to wander past. 558 chunks is a small batch next to a pregeneration
-                // run, and forcing one at a time keeps the memory bounded while C2ME generates it on its
-                // worker pool. The request is ticketed and non-blocking; see requestChunk for why the
-                // public getChunkFuture cannot be used from the server thread.
-                if (!FORCE_LOAD.get()) continue;
-                StartupRequest request = requestChunk(level, key, "drain");
-                if (request == null) continue;
-                try {
-                    long deadline = System.nanoTime() + DRAIN_TIMEOUT_NANOS;
-                    level.getServer().managedBlock(() -> {
-                        drainWorldLocalQueues(level.getServer());
-                        return request.future().isDone() || System.nanoTime() >= deadline;
-                    });
-                    chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
-                } catch (RuntimeException cannotLoad) {
-                    if (FORCE_FAILURES.incrementAndGet() % 64 == 1) {
-                        GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_LOAD_FAILED owner={},{} reason={}",
-                                key.x(), key.z(), cannotLoad.toString());
-                    }
-                    releaseTicket(level, request.pos(), request.ticketId());
-                    continue;
+                // Never wait for a chunk here: this is the tick thread, and one slow request would cost
+                // the player a frozen frame per attempt. The request is ticketed, c2me generates it on
+                // its workers while the player walks, and a later drain writes whatever arrived.
+                if (FORCE_LOAD.get() && state.requests.size() < MAX_DRAIN_REQUESTS
+                        && !state.requests.containsKey(key)) {
+                    StartupRequest request = requestChunk(level, key, "drain");
+                    if (request != null) state.requests.put(key, request);
                 }
-                // The ticket only has to survive until the chunk is in hand: the same tick writes it, and
-                // a chunk cannot unload while this thread is inside the loop.
-                releaseTicket(level, request.pos(), request.ticketId());
-                if (chunk == null) continue;
+                continue;
             }
             // Reading the plan only on CHUNK_LOAD is not enough: the wall's own sampling generates the
             // whole corridor, so by the time the queue exists every chunk it covers is already loaded
@@ -587,21 +748,8 @@ public final class WallBodyBackfill {
             // and wrote zero blocks - the drain ran every tick against an empty cache. Fetch the plan
             // here instead, on the IO pool, the way the road reads its construction data each pass.
             if (local.plaincraft.greatwall.generation.WallWorldgenPlanCache.get(level, key) == null) {
-                PlanStore store = planStore;
-                if (store != null && LOADING.add(key)) {
-                    try {
-                        IO.execute(() -> {
-                            try {
-                                prefetch(level, key, store);
-                            } finally {
-                                LOADING.remove(key);
-                            }
-                        });
-                    } catch (java.util.concurrent.RejectedExecutionException closing) {
-                        LOADING.remove(key);
-                    }
-                }
-                continue; // stays pending; the prefetch wakes it on the next drain
+                requestPlanRead(level, key);
+                continue; // stays pending; the prefetch wakes it on a later drain
             }
             state.settling.add(key);
             try {
@@ -631,6 +779,8 @@ public final class WallBodyBackfill {
                 }
             } finally {
                 state.settling.remove(key);
+                // The chunk is in hand, so the ticket that kept it loaded has done its job.
+                releaseDrainRequest(level, state, key);
             }
         }
         for (ChunkKey key : dropped) {
@@ -652,6 +802,16 @@ public final class WallBodyBackfill {
         }
     }
 
+    /** Drops drain requests that expired without their chunk arriving, tickets included. */
+    private static void pollDrainRequests(ServerLevel level, State state) {
+        if (state.requests.isEmpty()) return;
+        for (var iterator = state.requests.entrySet().iterator(); iterator.hasNext(); ) {
+            var entry = iterator.next();
+            if (System.nanoTime() - entry.getValue().requestedAt() < REQUEST_GIVE_UP_NANOS) continue;
+            releaseTicket(level, entry.getValue().pos(), entry.getValue().ticketId());
+            iterator.remove();
+        }
+    }
     /** Whether every planned chunk loaded so far has been written. */
     public static boolean complete(ServerLevel level) {
         State state = level == null ? null : STATES.get(level);
@@ -757,6 +917,10 @@ public final class WallBodyBackfill {
     /** Chunks already written, as "x_z" lines in greatwall/backfilled.txt; empty until installed. */
     private static final java.util.Set<String> DONE = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static volatile java.nio.file.Path doneFile;
+    /** The save this process last installed the plan reader for; a second world re-installs. */
+    private static volatile java.nio.file.Path installedRoot;
+    /** Mismatched ledger entries reported so far; the log stays readable on a regenerated world. */
+    private static final AtomicLong REPAINT_LOGS = new AtomicLong();
     private static final java.util.concurrent.atomic.AtomicInteger DONE_PENDING = new java.util.concurrent.atomic.AtomicInteger();
 
     private static final class State {
@@ -764,6 +928,12 @@ public final class WallBodyBackfill {
         final Set<ChunkKey> settled = ConcurrentHashMap.newKeySet();
         final Set<ChunkKey> settling = ConcurrentHashMap.newKeySet();
         final Map<ChunkKey, Integer> attempts = new ConcurrentHashMap<>();
+        /** Chunks parked by the startup pass: still pending, but they must not spin a round. */
+        final Set<ChunkKey> deferred = ConcurrentHashMap.newKeySet();
+        /** Ledger entries whose chunk has to prove itself before it is trusted. See verifyDone. */
+        final Set<ChunkKey> verify = ConcurrentHashMap.newKeySet();
+        /** In-game chunk requests in flight; this path never blocks on one. */
+        final Map<ChunkKey, StartupRequest> requests = new ConcurrentHashMap<>();
         int tick;
         int total;
     }

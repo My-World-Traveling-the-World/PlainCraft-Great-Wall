@@ -354,6 +354,38 @@ class BuildContractTest {
                 "the world-local queue drain disappeared; a request whose callbacks never run never completes");
     }
 
+    /**
+     * The in-game drain runs on the tick thread and may not wait for anything.
+     *
+     * <h2>The failure this prevents</h2>
+     * The drain used to wait inside its loop for every unloaded chunk it asked for, with no bound on
+     * how many keys it would walk. One unloadable chunk therefore cost five seconds, and a queue of a
+     * few hundred cost the server minutes - on a path that runs every ten ticks. The fix keeps the
+     * requests in flight and writes whatever has arrived; a {@code managedBlock} or a chunk future
+     * inside this method is the shape that froze the game, so the guard refuses both.
+     */
+    @Test
+    void drainNeverBlocksTheTickThread() throws IOException {
+        var file = java.nio.file.Path.of(
+                "src/main/java/local/plaincraft/greatwall/generation/WallBodyBackfill.java");
+        var text = java.nio.file.Files.readString(file, StandardCharsets.UTF_8);
+        int start = text.indexOf("public static void drain(ServerLevel level) {");
+        assertTrue(start >= 0, "drain(ServerLevel) moved; this guard would check nothing");
+        int end = text.indexOf("\n    }", start);
+        assertTrue(end > start, "could not find the end of drain(ServerLevel)");
+        var code = text.substring(start, end)
+                .replaceAll("(?s)/\\*.*?\\*/", "")
+                .replaceAll("(?m)//.*$", "");
+        assertFalse(code.contains("managedBlock("),
+                "drain() must never wait: it runs on the tick thread, and one slow chunk used to cost the "
+                        + "player a frozen frame per attempt. Keep the request in flight and write it on a "
+                        + "later drain instead.");
+        assertFalse(code.contains("getChunkFuture("),
+                "drain() must not use the blocking chunk request; see requestChunk");
+        assertTrue(code.contains("MAX_DRAIN_CHECKS") && code.contains("DRAIN_BUDGET_NANOS"),
+                "drain() lost its per-call bounds; a long queue would walk every key in one tick");
+    }
+
     private static JsonObject resource(String name) throws IOException {
         var stream = BuildContractTest.class.getClassLoader().getResourceAsStream(name);
         assertNotNull(stream, name);
