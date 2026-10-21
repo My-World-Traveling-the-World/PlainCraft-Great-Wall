@@ -138,7 +138,7 @@ public final class WorldServices {
                             instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
                 var spawn = level.getSharedSpawnPos();
                 local.plaincraft.greatwall.generation.WonderWall.startSample(
-                        level, spawn.getX() + 64, spawn.getZ(), 448);
+                        level, spawn.getX() + 64, spawn.getZ(), 320);
             }            var services = find(server);
             if (services != null) services.openDimension(level);
         });
