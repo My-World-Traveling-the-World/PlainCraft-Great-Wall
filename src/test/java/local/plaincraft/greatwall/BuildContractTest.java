@@ -350,8 +350,49 @@ class BuildContractTest {
                         + "deadlocks the world; use the ticket + getChunkFutureMainThread pair in requestChunk()");
         assertTrue(code.contains("greatwall$request("),
                 "the non-blocking chunk request disappeared; the backfill cannot force a chunk without it");
-        assertTrue(code.contains("drainWorldLocalQueues("),
-                "the world-local queue drain disappeared; a request whose callbacks never run never completes");
+        assertTrue(code.contains("deferGateToDrain("),
+                "the gate handover disappeared; without it the startup pass holds the world for a corridor "
+                        + "it cannot generate");
+    }
+
+    /**
+     * The startup pass may not wait for a chunk, and the pump must hand the gate to the drain.
+     *
+     * <h2>The failure this prevents</h2>
+     * {@code prepareLevels} does not tick the chunk source, so a ticket added there never becomes a
+     * chunk-level update and the request never completes. A measured session spun its whole
+     * eight-minute budget on 343 chunks that never arrived - fourteen c2me workers idle, not one
+     * generation task queued - and another sat on a single request for twenty-five minutes. The pass
+     * therefore paints only chunks that are already loaded, and {@code WorldServices} must defer the
+     * rest to the in-game drain instead of opening the road gate on a half-painted corridor.
+     */
+    @Test
+    void startupPassPaintsOnlyLoadedChunksAndDefersTheGate() throws IOException {
+        var backfill = java.nio.file.Path.of(
+                "src/main/java/local/plaincraft/greatwall/generation/WallBodyBackfill.java");
+        var text = java.nio.file.Files.readString(backfill, StandardCharsets.UTF_8);
+        int start = text.indexOf("public static int paintPendingAtStartup(ServerLevel level) {");
+        assertTrue(start >= 0, "paintPendingAtStartup moved; this guard would check nothing");
+        int end = text.indexOf("\n    }", start);
+        var pass = text.substring(start, end)
+                .replaceAll("(?s)/\\*.*?\\*/", "")
+                .replaceAll("(?m)//.*$", "");
+        assertFalse(pass.contains("managedBlock("),
+                "the startup pass must not wait: prepareLevels never ticks the chunk source, so the wait "
+                        + "can never be satisfied. Paint loaded chunks only and defer the rest.");
+        assertFalse(pass.contains("requestChunk("),
+                "the startup pass must not request chunks; those requests cannot complete before the "
+                        + "world ticks");
+
+        var services = java.nio.file.Path.of(
+                "src/main/java/local/plaincraft/greatwall/lifecycle/WorldServices.java");
+        var pump = java.nio.file.Files.readString(services, StandardCharsets.UTF_8);
+        int defer = pump.indexOf("deferGateToDrain(");
+        int finish = pump.indexOf("PrewarmProgress.finish(true)", defer < 0 ? 0 : defer);
+        assertTrue(defer > 0, "WorldServices no longer defers the gate to the drain");
+        assertTrue(finish > defer,
+                "the pump must defer the gate before it can open it; otherwise the road starts on a "
+                        + "half-painted corridor");
     }
 
     /**

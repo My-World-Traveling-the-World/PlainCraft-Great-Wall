@@ -141,12 +141,8 @@ public final class WallBodyBackfill {
                 state.pending.size(), added, state.settled.size());
         return added;
     }
-    /** Time one startup batch may wait for its chunks before it is written as far as it got. */
-    private static final long BATCH_TIMEOUT_NANOS = 20_000_000_000L;
     /** How long a request may stay unanswered before its ticket is dropped and the chunk retried. */
     private static final long REQUEST_GIVE_UP_NANOS = 90_000_000_000L;
-    /** Chunk requests the startup pass may hold at once; each one pins its chunk in memory. */
-    private static final int MAX_STARTUP_INFLIGHT = 16;
     /** Wall-clock budget one in-game drain may spend writing before it yields the tick. */
     private static final long DRAIN_BUDGET_NANOS = 150_000_000L;
     /** Chunk requests the in-game drain may keep in flight. It never waits on one. */
@@ -155,8 +151,8 @@ public final class WallBodyBackfill {
     private static final int MAX_DRAIN_CHECKS = 64;
     /** Done-ledger entries one drain may re-verify; each costs one block read. */
     private static final int MAX_VERIFY_PER_DRAIN = 8;
-    /** Default wall-clock budget for the whole startup pass; {@code greatwall.backfillStartupBudgetMs}. */
-    private static final long STARTUP_BUDGET_DEFAULT_MS = 480_000L;
+    /** How long the road gate may stay closed after the startup pass hands the thread back. */
+    private static final long GATE_DEFER_LIMIT_NANOS = 600_000_000_000L;
     /**
      * The ticket that keeps a chunk loaded while the wall is written into it.
      *
@@ -231,26 +227,6 @@ public final class WallBodyBackfill {
     private static void releaseDrainRequest(ServerLevel level, State state, ChunkKey key) {
         StartupRequest done = state.requests.remove(key);
         if (done != null) releaseTicket(level, done.pos(), done.ticketId());
-    }
-
-    /**
-     * Drains every world-local chunk queue.
-     *
-     * <p>{@code MinecraftServer.managedBlock} runs the global server queue only; {@code ChunkMap}
-     * posts its completion callbacks to the world's own queue, and a chunk request whose callbacks
-     * never run never completes. The startup pump does this once per round, which is not enough while
-     * a whole backfill pass runs inside one of those rounds.
-     */
-    private static void drainWorldLocalQueues(net.minecraft.server.MinecraftServer server) {
-        for (var world : server.getAllLevels()) {
-            try {
-                while (world.getChunkSource().pollTask()) {
-                    // keep draining until the local queue is empty
-                }
-            } catch (RuntimeException closing) {
-                // A level shutting down mid-pass is not a reason to abort the pass.
-            }
-        }
     }
 
     /** Asks the IO pool for one plan; the caller keeps the chunk pending until it arrives. */
@@ -357,187 +333,60 @@ public final class WallBodyBackfill {
     }
 
     /**
-     * Paints the whole queue now, on the server thread that owns the startup stage.
+     * Paints every chunk the startup thread already has in memory, and only those.
      *
-     * <p>The drain spreads the work over ticks, which is right for a player walking past 456 chunks but
-     * wrong for startup: the wall is already planned and published, the loading screen is still up, and
-     * nothing else can run anyway. Each round forces a batch of chunks through the chunk source (C2ME
-     * generates them on its workers while managedBlock pumps), then writes those that arrived.
-     *
-     * <p>The pass is bounded in three ways, because a loading screen that never ends is worse than a
-     * corridor that fills in late: {@code greatwall.backfillStartupBudgetMs} for the whole pass (eight
-     * minutes by default), {@link #BATCH_TIMEOUT_NANOS} for one batch, and {@link #REQUEST_GIVE_UP_NANOS}
-     * for one unanswered chunk request. Anything left over stays queued and the in-game drain paints it.
-     *
-     * <p>A chunk that cannot be written this round - its plan has not arrived from disk yet, or its
-     * chunk did not load - is parked in {@link State#deferred} rather than dropped: dropping it would
-     * leave a hole in the wall that nothing in the session would ever revisit, which is exactly the
-     * class of silent gap this pass exists to prevent.
+     * <h2>Why nothing is requested here</h2>
+     * This runs on the server thread inside {@code prepareLevels}, where the chunk source is <em>not</em>
+     * ticked. A ticket added here therefore never turns into a chunk-level update, the request never
+     * completes, and the wait spins for as long as the pass is allowed to run: a measured session sat
+     * on one request for twenty-five minutes - every c2me worker idle, not a single generation task
+     * queued - and another burned its whole eight-minute budget on 343 chunks that never arrived.
+     * Chunks that were generated while sampling are still loaded and are written here for free; the
+     * rest of the corridor is finished by the in-game drain, which runs with the server ticking, and
+     * {@link #deferGateToDrain} keeps the road gate closed until that queue empties.
      *
      * @return chunks written
      */
     public static int paintPendingAtStartup(ServerLevel level) {
         State state = state(level);
         if (state.pending.isEmpty()) return 0;
-        // The card gets a row of its own: this pass is the one the player actually waits for, and it
-        // runs while nothing else can, so an unlabelled freeze is the worst possible feedback.
         final int total = state.pending.size();
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL);
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL, 0, total);
-        int written = 0;
-        int rounds = 0;
         int painted = 0;
+        int written = 0;
         long voxels = 0L;
         long startedAt = System.nanoTime();
-        // A budget for the whole pass, not just for one batch. Sixty-four rounds of twenty seconds is
-        // twenty-one minutes, which is not a bound a player can plan around; whatever is left when the
-        // budget runs out is exactly what the in-game drain is for, so the gate opens and the corridor
-        // fills in behind the player instead of the loading screen hanging on it.
-        long budgetMs = Math.max(30_000L, Long.getLong("greatwall.backfillStartupBudgetMs",
-                STARTUP_BUDGET_DEFAULT_MS));
-        long budgetNanos = java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(budgetMs);
-        long passDeadline = startedAt + budgetNanos;
-        boolean budgetHit = false;
-        // Requests in flight, at most MAX_STARTUP_INFLIGHT: the future that says "this chunk reached
-        // FULL", plus the ticket that keeps the chunk loaded until it is written.
-        java.util.Map<ChunkKey, StartupRequest> inflight = new java.util.LinkedHashMap<>();
-        state.deferred.clear();
-        try {
-            while (!state.pending.isEmpty() && rounds++ < 64) {
-                if (System.nanoTime() >= passDeadline) {
-                    budgetHit = true;
-                    break;
+        for (ChunkKey key : List.copyOf(state.pending)) {
+            try {
+                LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
+                if (chunk == null) continue;                  // not loaded: the drain owns it now
+                if (WallWorldgenPlanCache.get(level, key) == null) {
+                    // A reloaded save has the plan on disk but not in memory yet; read it off the IO
+                    // pool and let the drain write the chunk once it arrives.
+                    requestPlanRead(level, key);
+                    continue;
                 }
-                // Retire requests nobody answered: a chunk outside the border can stay pending for ever,
-                // and holding its ticket would pin it and its neighbours in memory for the whole pass.
-                for (var iterator = inflight.entrySet().iterator(); iterator.hasNext(); ) {
-                    StartupRequest stale = iterator.next().getValue();
-                    if (System.nanoTime() - stale.requestedAt() < REQUEST_GIVE_UP_NANOS) continue;
-                    releaseTicket(level, stale.pos(), stale.ticketId());
-                    iterator.remove();
-                }
-                java.util.List<ChunkKey> batch = new java.util.ArrayList<>(8);
-                for (ChunkKey key : state.pending) {
-                    batch.add(key);
-                    if (batch.size() >= 8) break;
-                }
-                if (batch.isEmpty()) break;
-                java.util.Map<ChunkKey, java.util.concurrent.CompletableFuture<?>> futures =
-                        new java.util.LinkedHashMap<>();
-                for (ChunkKey key : batch) {
-                    StartupRequest held = inflight.get(key);
-                    if (held == null) {
-                        held = requestChunk(level, key, "startup");
-                        if (held == null) {
-                            state.pending.remove(key);
-                            state.deferred.add(key);
-                            continue;
-                        }
-                        inflight.put(key, held);
-                    }
-                    futures.put(key, held.future());
-                }
-                // Request the batch after this one while this one is still being written.
-                for (ChunkKey key : state.pending) {
-                    if (inflight.size() >= MAX_STARTUP_INFLIGHT) break;
-                    if (inflight.containsKey(key)) continue;
-                    StartupRequest next = requestChunk(level, key, "startup");
-                    if (next == null) continue;
-                    inflight.put(key, next);
-                }
-                if (!futures.isEmpty()) {
-                    java.util.concurrent.CompletableFuture<?> all = java.util.concurrent.CompletableFuture.allOf(
-                            futures.values().toArray(java.util.concurrent.CompletableFuture[]::new));
-                    try {
-                        // A hard deadline: a chunk that never completes (outside the border, or a worker
-                        // pool held by another generator - a measured run froze for ten minutes this way)
-                        // must cost one batch, not the whole startup.
-                        long deadline = System.nanoTime() + BATCH_TIMEOUT_NANOS;
-                        level.getServer().managedBlock(() -> {
-                            drainWorldLocalQueues(level.getServer());
-                            return all.isDone() || System.nanoTime() >= deadline
-                                    || System.nanoTime() >= passDeadline;
-                        });
-                    } catch (RuntimeException interrupted) {
-                        GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_STARTUP_INTERRUPTED reason={}",
-                                interrupted.toString());
-                        break;
-                    }
-                }
-                java.util.List<ChunkKey> arrived = new java.util.ArrayList<>(batch.size());
-                for (ChunkKey key : batch) {
-                    var future = futures.get(key);
-                    if (future != null && !future.isDone()) continue;   // still generating: stays pending
-                    arrived.add(key);
-                }
-                int settledThisRound = 0;
-                for (ChunkKey key : arrived) {
-                    try {
-                        LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
-                        if (chunk == null) {
-                            state.pending.remove(key);
-                            state.deferred.add(key);
-                            continue;
-                        }
-                        if (WallWorldgenPlanCache.get(level, key) == null) {
-                            // A reloaded save has the plans on disk but not in memory yet; read it off
-                            // the IO pool and keep the chunk parked until it arrives.
-                            requestPlanRead(level, key);
-                            state.pending.remove(key);
-                            state.deferred.add(key);
-                            continue;
-                        }
-                        Sweep sweep = settle(level, chunk, key);
-                        var startupPlan = WallWorldgenPlanCache.get(level, key);
-                        if (startupPlan != null) voxels += startupPlan.voxels().size();
-                        if (sweep.status() == Status.SETTLED) {
-                            written += sweep.written();
-                            markDone(key);
-                        } else {
-                            // The plan is there but the sweep could not finish; keep the chunk for a
-                            // later round instead of counting it as painted.
-                            state.pending.remove(key);
-                            state.deferred.add(key);
-                            continue;
-                        }
-                        state.pending.remove(key);
-                        state.settled.add(key);
-                        settledThisRound++;
-                        painted++;
-                    } catch (RuntimeException failed) {
-                        state.pending.remove(key);
-                        state.deferred.add(key);
-                    } finally {
-                        releaseRequest(level, inflight, key);
-                    }
-                }
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL,
-                        total - state.pending.size(), total);
-                GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STARTUP round={} settled={} written={} voxels={} pending={} elapsedMs={}",
-                        rounds, settledThisRound, written, voxels, state.pending.size(),
-                        (System.nanoTime() - startedAt) / 1_000_000L);
+                Sweep sweep = settle(level, chunk, key);
+                var plan = WallWorldgenPlanCache.get(level, key);
+                if (plan != null) voxels += plan.voxels().size();
+                if (sweep.status() != Status.SETTLED) continue;
+                written += sweep.written();
+                markDone(key);
+                state.pending.remove(key);
+                state.settled.add(key);
+                painted++;
+            } catch (RuntimeException failed) {
+                // Leave it queued; the in-game drain retries with the server ticking.
             }
-        } finally {
-            for (StartupRequest leftover : inflight.values()) {
-                releaseTicket(level, leftover.pos(), leftover.ticketId());
-            }
-            inflight.clear();
-            // Parked chunks go back to the queue: the in-game drain owns them from here.
-            state.pending.addAll(state.deferred);
-            state.deferred.clear();
         }
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL,
                 total - state.pending.size(), total);
-        if (budgetHit) {
-            GreatWallMod.LOGGER.error("[GreatWall:S1C] WALL_BACKFILL_STARTUP_BUDGET pending={} budgetMs={}; "
-                    + "the gate opens and the rest is painted in game", state.pending.size(), budgetMs);
-        }
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STARTUP_DONE rounds={} painted={} written={} pending={} budgetHit={} elapsedMs={}",
-                rounds, painted, written, state.pending.size(), budgetHit,
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STARTUP_DONE painted={} written={} voxels={} pending={} elapsedMs={}",
+                painted, written, voxels, state.pending.size(),
                 (System.nanoTime() - startedAt) / 1_000_000L);
         return written;
     }
@@ -717,7 +566,10 @@ public final class WallBodyBackfill {
         // and it costs one block read per loaded chunk. See verifyDone.
         verifyDone(level, state);
         pollDrainRequests(level, state);
-        if (state.pending.isEmpty()) return;
+        if (state.pending.isEmpty()) {
+            openGateIfDrained(level, state);
+            return;
+        }
 
         long startedAt = System.nanoTime();
         int settledThisDrain = 0;
@@ -800,6 +652,7 @@ public final class WallBodyBackfill {
                     settledThisDrain, state.pending.size(), writtenBlocks, voxelsSeen, dropped.size(),
                     beforeConflicts, total);
         }
+        openGateIfDrained(level, state);
     }
 
     /** Drops drain requests that expired without their chunk arriving, tickets included. */
@@ -823,6 +676,42 @@ public final class WallBodyBackfill {
         return state == null ? 0 : state.pending.size();
     }
 
+    /** Set when the startup pass handed the thread back with chunks still queued; see deferGateToDrain. */
+    private static volatile long gateDeferredAtNanos;
+
+    /**
+     * Hands the untouched part of the corridor to the in-game drain instead of holding the world.
+     *
+     * <p>The startup thread cannot generate a chunk it does not already have: {@code prepareLevels}
+     * does not tick the chunk source, so tickets added there never become chunk-level updates. Rather
+     * than spin a budget away, the pass paints what is loaded and returns, the world starts ticking,
+     * the drain finishes the corridor, and only then does {@link #openGateIfDrained} release the road.
+     * The road already waits for this latch off-thread ({@code ROAD_INITIAL_GEN_WAIT}), so releasing
+     * the server thread without opening the gate is exactly the handover it expects.
+     */
+    public static void deferGateToDrain(ServerLevel level) {
+        gateDeferredAtNanos = System.nanoTime();
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_DEFERRED pending={} - the world starts "
+                + "ticking and the road gate stays closed until the drain finishes", pending(level));
+    }
+
+    /** Opens the road gate once the drain has painted everything, or when the wait ran out. */
+    private static void openGateIfDrained(ServerLevel level, State state) {
+        long deferredAt = gateDeferredAtNanos;
+        if (deferredAt == 0L) return;
+        boolean drained = state.pending.isEmpty() && state.settling.isEmpty();
+        if (!drained && System.nanoTime() - deferredAt < GATE_DEFER_LIMIT_NANOS) return;
+        gateDeferredAtNanos = 0L;
+        long elapsedMs = (System.nanoTime() - deferredAt) / 1_000_000L;
+        if (!drained) {
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] WALL_BACKFILL_DRAIN_TIMEOUT pending={} "
+                    + "elapsedMs={}; the road gate is opened with the corridor unfinished",
+                    state.pending.size(), elapsedMs);
+        }
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(true);
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_COMPLETE pending={} elapsedMs={} - "
+                + "the road gate is open", state.pending.size(), elapsedMs);
+    }
     private enum Status { SETTLED, PENDING, FOREIGN }
 
     private record Sweep(Status status, int written) {
@@ -928,8 +817,6 @@ public final class WallBodyBackfill {
         final Set<ChunkKey> settled = ConcurrentHashMap.newKeySet();
         final Set<ChunkKey> settling = ConcurrentHashMap.newKeySet();
         final Map<ChunkKey, Integer> attempts = new ConcurrentHashMap<>();
-        /** Chunks parked by the startup pass: still pending, but they must not spin a round. */
-        final Set<ChunkKey> deferred = ConcurrentHashMap.newKeySet();
         /** Ledger entries whose chunk has to prove itself before it is trusted. See verifyDone. */
         final Set<ChunkKey> verify = ConcurrentHashMap.newKeySet();
         /** In-game chunk requests in flight; this path never blocks on one. */

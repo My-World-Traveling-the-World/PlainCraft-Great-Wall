@@ -529,6 +529,18 @@ public final class WorldServices {
                     GreatWallMod.LOGGER.error("[GreatWall:S1C] WALL_BACKFILL_STARTUP_FAILED", paintFailed);
                 }
             }
+            // The rest of the corridor cannot be generated on this thread: prepareLevels does not tick
+            // the chunk source, so a ticket added here never becomes a chunk-level update and the
+            // request never completes (a measured session spun its whole eight-minute budget on 343
+            // chunks that never arrived, with every c2me worker idle). Hand the thread back and let the
+            // in-game drain finish it; the gate stays closed until that queue empties, and the road is
+            // already waiting for it off-thread.
+            int stillPending = local.plaincraft.greatwall.generation.WallBodyBackfill
+                    .pending(server.overworld());
+            if (stillPending > 0) {
+                local.plaincraft.greatwall.generation.WallBodyBackfill.deferGateToDrain(server.overworld());
+                return true;
+            }
             // The wall is in the world: only now may the road start.
             PrewarmProgress.finish(true);
             // The compile can be deferred: compileAtStartup returns true after asking for it, and the
