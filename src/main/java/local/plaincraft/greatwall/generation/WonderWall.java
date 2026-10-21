@@ -272,6 +272,24 @@ public final class WonderWall {
                 // 壁龛: a lit niche every eight blocks, the way the chambers are fitted out.
                 if (Math.floorMod(s, 8) == 0 && at == TOWER_HALF - 5) {
                     written += put(level, chunk, x, walkY + 3, z, TRIM);
+                    written += put(level, chunk, x, walkY + 4, z, Blocks.LANTERN.defaultBlockState());
+                }
+                // 楼梯: a straight flight along the inner face, ground floor to the upper floor.
+                if (at == TOWER_HALF - 6 && s >= 104 && s < 120) {
+                    int step = (s - 104) / 2;
+                    written += put(level, chunk, x, walkY + step, z, BODY);
+                }
+                // 陈设: barrels, a chest and a hanging lantern - a guard room, not an empty box.
+                if (walkY > 0 && at <= 2) {
+                    if (Math.abs(s - 112) <= 1 && Math.abs(t + 2) <= 1) {
+                        written += put(level, chunk, x, walkY, z, Blocks.BARREL.defaultBlockState());
+                    }
+                    if (Math.abs(s - 144) <= 1 && t == 2) {
+                        written += put(level, chunk, x, walkY, z, Blocks.CHEST.defaultBlockState());
+                    }
+                    if (Math.abs(s - 128) <= 1 && t == 0) {
+                        written += put(level, chunk, x, walkY + 9, z, Blocks.LANTERN.defaultBlockState());
+                    }
                 }
             }
             return written;
@@ -362,6 +380,12 @@ public final class WonderWall {
                 if (wallRing) written += put(level, chunk, x, y, z, window ? AIR : BODY);
             }
             written += put(level, chunk, x, walkY + 20, z, CAP);
+            // 红柱: the crimson columns of the pavilion, the detail that reads first in the photograph.
+            if ((Math.abs(px) == 7 || Math.abs(px) == 8) && (Math.abs(pz) == 7 || Math.abs(pz) == 8)) {
+                for (int y = walkY + 12; y < walkY + 20; y++) {
+                    written += put(level, chunk, x, y, z, Blocks.RED_TERRACOTTA.defaultBlockState());
+                }
+            }
         }
         return written;
     }
