@@ -332,7 +332,7 @@ public final class GreatWallLoadingProgressRenderer {
                     ? Component.translatable("plaincraft.great_wall.loading_progress.status_prewarm",
                             snapshot.completed(), snapshot.total())
                     : Component.translatable("plaincraft.great_wall.loading_progress.status_prewarm_unknown");
-            case COMPILE -> snapshot.subTotal() > 0
+            case COMPILE, BACKFILL -> snapshot.subTotal() > 0
                     ? Component.translatable("plaincraft.great_wall.loading_progress.status_compile",
                             snapshot.subDone(), snapshot.subTotal())
                     : Component.translatable("plaincraft.great_wall.loading_progress.status_compile_unknown");
@@ -424,6 +424,9 @@ public final class GreatWallLoadingProgressRenderer {
             }
             case PREWARM -> snapshot.total() > 0
                     ? Component.translatable(key, snapshot.completed(), snapshot.total())
+                    : Component.translatable(key + "_unknown");
+            case BACKFILL -> snapshot.subTotal() > 0
+                    ? Component.translatable(key, snapshot.subDone(), snapshot.subTotal())
                     : Component.translatable(key + "_unknown");
             case DONE -> Component.translatable(key);
         };

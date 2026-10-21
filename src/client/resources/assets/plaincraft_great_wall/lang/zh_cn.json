@@ -68,6 +68,7 @@
   "plaincraft.great_wall.loading_progress.stage.fine_sample": "采样地形",
   "plaincraft.great_wall.loading_progress.stage.prewarm": "预热",
   "plaincraft.great_wall.loading_progress.stage.compile": "编译区块",
+    "plaincraft.great_wall.loading_progress.stage.backfill": "写入世界",
   "plaincraft.great_wall.loading_progress.stage.done": "完成",
   "plaincraft.great_wall.loading_progress.status_root": "选址 %s/%s",
   "plaincraft.great_wall.loading_progress.status_root_unknown": "选址中…",
@@ -99,6 +100,7 @@
   "plaincraft.great_wall.loading_progress.detail.prewarm": "预热　%s/%s 段",
   "plaincraft.great_wall.loading_progress.detail.prewarm_unknown": "预热　规划中…",
   "plaincraft.great_wall.loading_progress.detail.compile": "编译区块　%s/%s",
+    "plaincraft.great_wall.loading_progress.detail.backfill": "正在把墙写入世界 %s/%s",
   "plaincraft.great_wall.loading_progress.detail.compile_unknown": "编译区块　编译中…",
   "plaincraft.great_wall.loading_progress.detail.done": "完成",
   "plaincraft.great_wall.loading_progress.detail_lanes": "并行 %s 路 · 总进度 %s%%"

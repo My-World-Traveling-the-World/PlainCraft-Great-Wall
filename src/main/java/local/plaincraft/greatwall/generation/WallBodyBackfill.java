@@ -147,6 +147,13 @@ public final class WallBodyBackfill {
     public static int paintPendingAtStartup(ServerLevel level) {
         State state = state(level);
         if (state.pending.isEmpty()) return 0;
+        // The card gets a row of its own: this pass is the one the player actually waits for, and it
+        // runs while nothing else can, so an unlabelled freeze is the worst possible feedback.
+        final int total = state.pending.size();
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL);
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL, 0, total);
         int written = 0;
         int rounds = 0;
         while (!state.pending.isEmpty() && rounds++ < 64) {
@@ -193,9 +200,14 @@ public final class WallBodyBackfill {
                     state.pending.remove(key);
                 }
             }
+            local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL,
+                    total - state.pending.size(), total);
             GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STARTUP round={} settled={} written={} pending={}",
                     rounds, settledThisRound, written, state.pending.size());
         }
+        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL, total, total);
         GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STARTUP_DONE rounds={} written={} pending={}",
                 rounds, written, state.pending.size());
         return written;

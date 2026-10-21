@@ -68,6 +68,7 @@
   "plaincraft.great_wall.loading_progress.stage.fine_sample": "Sampling terrain",
   "plaincraft.great_wall.loading_progress.stage.prewarm": "Prewarm",
   "plaincraft.great_wall.loading_progress.stage.compile": "Compiling chunks",
+    "plaincraft.great_wall.loading_progress.stage.backfill": "Building the wall",
   "plaincraft.great_wall.loading_progress.stage.done": "Done",
   "plaincraft.great_wall.loading_progress.status_root": "Root %s/%s",
   "plaincraft.great_wall.loading_progress.status_root_unknown": "Choosing the root...",
@@ -99,6 +100,7 @@
   "plaincraft.great_wall.loading_progress.detail.prewarm": "Prewarm  %s/%s segments",
   "plaincraft.great_wall.loading_progress.detail.prewarm_unknown": "Prewarm  planning...",
   "plaincraft.great_wall.loading_progress.detail.compile": "Chunk compile  %s/%s",
+    "plaincraft.great_wall.loading_progress.detail.backfill": "Building the wall %s/%s",
   "plaincraft.great_wall.loading_progress.detail.compile_unknown": "Chunk compile  compiling...",
   "plaincraft.great_wall.loading_progress.detail.done": "Done",
   "plaincraft.great_wall.loading_progress.detail_lanes": "%s lanes · overall %s%%"

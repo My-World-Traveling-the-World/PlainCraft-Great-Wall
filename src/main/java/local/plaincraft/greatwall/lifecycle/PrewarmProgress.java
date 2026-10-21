@@ -106,7 +106,7 @@ public final class PrewarmProgress {
      * newer stages (structure scan, fine sampling, compile) each report a done/total pair.
      */
     public enum Stage {
-        ROOT_SEARCH, STRUCTURE_SCAN, FINE_SAMPLE, PREWARM, COMPILE, DONE
+        ROOT_SEARCH, STRUCTURE_SCAN, FINE_SAMPLE, PREWARM, COMPILE, BACKFILL, DONE
     }
     /**
      * Overall-percent weight of each stage, indexed by {@link Stage#ordinal()}. The weights are the
@@ -119,7 +119,7 @@ public final class PrewarmProgress {
      * points for those 20 seconds and the structure scan only 10 for its 181, so the bar crawled
      * through the scan and then filled half its length at the very end.
      */
-    private static final int[] STAGE_WEIGHT = {22, 30, 28, 5, 15, 0};
+    private static final int[] STAGE_WEIGHT = {22, 30, 28, 5, 10, 5, 0};
     /** Monotonic overall peak for the loading card; reset when a new prewarm begins or clears. */
     private static final java.util.concurrent.atomic.AtomicInteger PEAK_OVERALL_PERCENT =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -661,7 +661,7 @@ public final class PrewarmProgress {
                 case PREWARM -> total > 0
                         ? percent()
                         : (subTotal > 0 ? subPercent() : 0);
-                case STRUCTURE_SCAN, FINE_SAMPLE, COMPILE -> subPercent();
+                case STRUCTURE_SCAN, FINE_SAMPLE, COMPILE, BACKFILL -> subPercent();
                 case DONE -> 100;
             };
         }
