@@ -20,19 +20,19 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * clearance, slope-limited by raising the low side only, so the wall always stands above the ground.
  */
 public final class WonderWall {
-    public static final int HALF_WIDTH = 20;
-    public static final int WALKWAY_HALF = 12;
-    public static final int CLEARANCE = 40;
-    public static final int PARAPET = 12;
-    public static final int INNER_PARAPET = 6;
-    public static final int MAX_FILL = 160;
-    public static final int TOWER_HALF = 32;
-    public static final int TOWER_HEIGHT = 64;
-    public static final int GATE_HALF = 16;
-    public static final int GATE_HEIGHT = 36;
-    public static final int BASTION_RADIUS = 32;
-    public static final int PLATFORM_HALF = 48;
-    public static final int PLATFORM_HEIGHT = 24;
+    public static final int HALF_WIDTH = 10;
+    public static final int WALKWAY_HALF = 6;
+    public static final int CLEARANCE = 20;
+    public static final int PARAPET = 6;
+    public static final int INNER_PARAPET = 3;
+    public static final int MAX_FILL = 80;
+    public static final int TOWER_HALF = 16;
+    public static final int TOWER_HEIGHT = 32;
+    public static final int GATE_HALF = 8;
+    public static final int GATE_HEIGHT = 18;
+    public static final int BASTION_RADIUS = 16;
+    public static final int PLATFORM_HALF = 24;
+    public static final int PLATFORM_HEIGHT = 12;
 
     private static final BlockState FOUNDATION = Blocks.COBBLED_DEEPSLATE.defaultBlockState();
     private static final BlockState BODY = Blocks.STONE_BRICKS.defaultBlockState();
