@@ -586,6 +586,12 @@ public final class PlannerScheduler implements AutoCloseable {
                 // over-state - which the 99% cap in PrewarmProgress handles correctly.
                 lease.future().thenAcceptAsync(route -> {
                     if (route == null) return;
+                    // The cut can only exist once this segment has geometry, and nothing had asked
+                    // for it yet: the first requireGeometry happens in the prewarm, which is why the
+                    // diagnostic reported outcome=no-flight on every segment and 121,120 columns went
+                    // uncut. Ask for it here, and build the slices when it answers.
+                    var geometryLease = requireGeometry(segment, Priority.PLAYER_PREFETCH);
+                    geometryLease.future().whenCompleteAsync((geometry, geometryError) -> {
                     // The denominator follows the truncated range too, otherwise the card would stop
                     // short of 100% on exactly the segments the cut applies to.
                     long points = Math.max(1L, terminalPointLimit(route, route.points().size())
@@ -623,6 +629,7 @@ public final class PlannerScheduler implements AutoCloseable {
                     } else {
                         expectedColumns.updateAndGet(current -> Math.max(current, projected));
                     }
+                    }, pump);
                 }, pump);
                 lease.future().whenCompleteAsync((route, error) -> {
                     if (error != null) {
