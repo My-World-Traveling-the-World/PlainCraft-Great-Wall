@@ -224,10 +224,15 @@ public final class WonderWall {
                     if (at >= TOWER_HALF || Math.abs(s - 128) >= TOWER_HALF) continue;
                     written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 6 ? FOUNDATION : BODY);
                 }
+                // 拱门: one arched doorway per face at walkway level, the way a 敌台 is entered.
+                boolean faceDoor = (Math.abs(s - 128) <= 3 && at >= TOWER_HALF - 1)
+                        || (at >= TOWER_HALF - 1 && Math.abs(s - 128) <= 3);
                 for (int y = walkY; y < walkY + TOWER_HEIGHT; y++) {
                     int dy = y - walkY;
                     boolean window = dy >= 20 && dy < 26 && Math.floorMod(x + z, 8) < 4;
-                    written += put(level, chunk, x, y, z, window ? AIR : (dy % 12 == 0 ? TRIM : BODY));
+                    boolean door = dy < 10 && Math.abs(t) <= 3 && Math.abs(s - 128) <= TOWER_HALF
+                            && (Math.abs(s - 128) >= TOWER_HALF - 1 || at >= TOWER_HALF - 1);
+                    written += put(level, chunk, x, y, z, (window || door) ? AIR : (dy % 12 == 0 ? TRIM : BODY));
                 }
                 written += put(level, chunk, x, walkY + TOWER_HEIGHT, z, CAP);
                 // 铺房: the small guard house a real 敌台 carries on its terrace.
@@ -265,6 +270,12 @@ public final class WonderWall {
                     written += put(level, chunk, x, y, z, window ? AIR : BODY);
                 }
                 written += put(level, chunk, x, walkY + 14, z, CAP);
+                // 门扇: iron bars across the vault, so the gate reads as a gate and not as a hole.
+                if (Math.abs(s - 316) <= 1) {
+                    for (int y = 1; y < GATE_HEIGHT - 2; y++) {
+                        if (at <= GATE_HALF) written += put(level, chunk, x, walkY - 2 - y, z, Blocks.IRON_BARS.defaultBlockState());
+                    }
+                }
                 return written;
             }
         } else {
@@ -329,7 +340,10 @@ public final class WonderWall {
             if (!rim) continue;
             written += put(level, chunk, x, y, z, dy <= 6 ? FOUNDATION : (dy % 8 == 0 ? TRIM : BODY));
         }
-        for (int y = 0; y < 2; y++) written += put(level, chunk, x, walkY + 24 + y, z, CAP);
+        int phase = Math.floorMod(x + z, 6);
+        for (int y = 0; y < (phase < 3 ? 3 : 2); y++) {
+            written += put(level, chunk, x, walkY + 24 + y, z, y == 2 ? CAP : BODY);
+        }
         return written;
     }
 
