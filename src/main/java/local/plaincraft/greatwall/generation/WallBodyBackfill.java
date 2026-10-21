@@ -93,6 +93,41 @@ public final class WallBodyBackfill {
         GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STORE_INSTALLED root={}", greatWallRoot);
     }
 
+    /**
+     * Seeds the queue from the plans on disk, the way the road seeds its construction backfill from
+     * its ledger. A save whose corridor was generated before this session has no CHUNK_LOAD event
+     * left to fire, so nothing would ever be queued; the plan directories name their own chunk.
+     */
+    public static int seedFromDisk(ServerLevel level, java.nio.file.Path greatWallRoot) {
+        State state = state(level);
+        int added = 0;
+        try (var dirs = java.nio.file.Files.newDirectoryStream(greatWallRoot)) {
+            for (java.nio.file.Path dir : dirs) {
+                if (!java.nio.file.Files.isDirectory(dir)) continue;
+                String name = dir.getFileName().toString();
+                int split = name.indexOf('_');
+                if (split <= 0) continue;
+                try {
+                    int x = Integer.parseInt(name.substring(0, split));
+                    int z = Integer.parseInt(name.substring(split + 1));
+                    ChunkKey key = new ChunkKey(level.dimension().location().toString(), x, z);
+                    if (state.settled.contains(key)) continue;
+                    if (state.pending.add(key)) added++;
+                } catch (NumberFormatException notAChunkDirectory) {
+                    // evidence/, cache/, manifest/ and friends are not chunk directories.
+                }
+            }
+        } catch (java.io.IOException unreadable) {
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_SEED_FAILED root={} reason={}",
+                    greatWallRoot, unreadable.toString());
+            return added;
+        }
+        state.total = Math.max(state.total, state.settled.size() + state.pending.size());
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_SEEDED pending={} added={} settled={}",
+                state.pending.size(), added, state.settled.size());
+        return added;
+    }
+
     public static void install(PlanStore store) {
         planStore = store;
     }

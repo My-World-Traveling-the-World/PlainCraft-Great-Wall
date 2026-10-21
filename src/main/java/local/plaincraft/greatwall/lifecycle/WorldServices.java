@@ -122,6 +122,14 @@ public final class WorldServices {
             SESSIONS.put(server, new WorldServices(server));
         });
         ServerWorldEvents.LOAD.register((server, level) -> {
+            // Install the plan reader before any chunk loads, and seed the queue from the plans on
+            // disk the way the road seeds its construction backfill from its ledger. Waiting for
+            // CHUNK_LOAD alone is not enough: a save whose corridor was generated before this
+            // session has no load event left to fire, so a measured run installed the reader and
+            // still queued zero chunks.
+            var greatWallRoot = server.getWorldPath(LevelResource.ROOT).resolve("greatwall");
+            local.plaincraft.greatwall.generation.WallBodyBackfill.installIfAbsent(greatWallRoot);
+            local.plaincraft.greatwall.generation.WallBodyBackfill.seedFromDisk(level, greatWallRoot);
             var services = find(server);
             if (services != null) services.openDimension(level);
         });
@@ -172,10 +180,14 @@ public final class WorldServices {
             var services = find(server);
             if (services != null && services.production != null) services.production.tick();
             // Rate limited inside: four chunks per ten ticks, loaded chunks only.
-            // A reloaded save has no production session, so install the reader here before draining:
-            // otherwise every loaded chunk drains against an empty plan cache and the world stays bare.
-            local.plaincraft.greatwall.generation.WallBodyBackfill.installIfAbsent(
-                    server.getWorldPath(LevelResource.ROOT).resolve("greatwall"));
+            // A reloaded save has no production session, so install the reader here before draining:
+
+            // otherwise every loaded chunk drains against an empty plan cache and the world stays bare.
+
+            local.plaincraft.greatwall.generation.WallBodyBackfill.installIfAbsent(
+
+                    server.getWorldPath(LevelResource.ROOT).resolve("greatwall"));
+
             local.plaincraft.greatwall.generation.WallBodyBackfill.drain(server.overworld());
         });
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, successful) -> {
