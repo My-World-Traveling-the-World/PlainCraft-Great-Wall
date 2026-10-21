@@ -130,7 +130,14 @@ public final class WorldServices {
             var greatWallRoot = server.getWorldPath(LevelResource.ROOT).resolve("greatwall");
             local.plaincraft.greatwall.generation.WallBodyBackfill.installIfAbsent(greatWallRoot);
             local.plaincraft.greatwall.generation.WallBodyBackfill.seedFromDisk(level, greatWallRoot);
-            var services = find(server);
+            // The wonder-wall sample: the real wall's proportions, generated procedurally so the
+            // player can walk up to it and judge the look before the whole line is built.
+            if (level.dimension() == net.minecraft.world.level.Level.OVERWORLD
+                    && Boolean.parseBoolean(System.getProperty("greatwall.wonderSample", "true"))) {
+                var spawn = level.getSharedSpawnPos();
+                local.plaincraft.greatwall.generation.WonderWall.startSample(
+                        level, spawn.getX() + 64, spawn.getZ(), 240);
+            }            var services = find(server);
             if (services != null) services.openDimension(level);
         });
         ServerChunkEvents.CHUNK_LOAD.register((level, chunk) -> {
@@ -189,6 +196,7 @@ public final class WorldServices {
                     server.getWorldPath(LevelResource.ROOT).resolve("greatwall"));
 
             local.plaincraft.greatwall.generation.WallBodyBackfill.drain(server.overworld());
+            local.plaincraft.greatwall.generation.WonderWall.tick(server.overworld());
         });
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, successful) -> {
             var services = find(server);
