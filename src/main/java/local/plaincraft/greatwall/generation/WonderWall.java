@@ -180,7 +180,7 @@ public final class WonderWall {
                     double t = -rx * route.dz() + rz * route.dx();
                     if (s < 0 || s >= route.length() || Math.abs(t) > HALF_WIDTH) continue;
                     written += wallColumn(job.level, chunk, x, z, (int) Math.round(t), ground,
-                            ground + CLEARANCE, (int) s, route.detailed());
+                            ground + CLEARANCE, (int) s, route.detailed(), route.length());
                 }
             }
         }
@@ -188,12 +188,21 @@ public final class WonderWall {
     }
 
     private static long wallColumn(ServerLevel level, LevelChunk chunk, int x, int z, int t,
-            int ground, int walkY, int s, boolean detailed) {
+            int ground, int walkY, int s, boolean detailed, int routeLength) {
         long written = 0L;
         int at = Math.abs(t);
         int foot = Math.max(ground - 1, walkY - MAX_FILL);
         boolean gate = detailed && s >= 300 && s < 332;
         boolean tower = detailed && s >= 96 && s < 160;
+
+        // Close both ends of every route: an open cross-section lets you see straight through the
+        // hollow body, which reads as "the wall is floating".
+        if (s <= 1 || s >= routeLength - 2) {
+            for (int y = foot; y < walkY; y++) {
+                written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 6 ? FOUNDATION : BODY);
+            }
+            return written + put(level, chunk, x, walkY - 1, z, WALK);
+        }
 
         if (tower) {
             boolean perimeter = at >= TOWER_HALF - 4 || Math.abs(s - 128) >= TOWER_HALF - 4;
@@ -228,7 +237,9 @@ public final class WonderWall {
             }
         } else {
             for (int y = foot; y < walkY; y++) {
-                if (at < HALF_WIDTH - 4) continue;
+                boolean rim = at >= HALF_WIDTH - 4;
+                boolean base = y < foot + 4;   // solid base course: the hollow body must not be see-through
+                if (!rim && !base) continue;
                 written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 6 ? FOUNDATION : BODY);
             }
         }
@@ -238,12 +249,14 @@ public final class WonderWall {
             written += put(level, chunk, x, walkY - 1, z, deck);
         }
         if (t <= -(HALF_WIDTH - 4)) {
-            int phase = Math.floorMod(s, 8);
+            // Merlon three blocks wide, gap two: at this scale the old five-wide merlons read as one
+            // long wall with the odd notch instead of as crenellation.
+            int phase = Math.floorMod(s, 5);
             int crenel = phase < 2 ? 3 : PARAPET;
             for (int y = 0; y < crenel; y++) {
                 written += put(level, chunk, x, walkY + y, z, y == crenel - 1 ? CAP : BODY);
             }
-            if (phase >= 2 && phase < 3) {
+            if (phase == 2) {
                 put(level, chunk, x, walkY + 1, z, AIR);
             }
         } else if (t >= HALF_WIDTH - 4) {
