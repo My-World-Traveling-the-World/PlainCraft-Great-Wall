@@ -478,7 +478,15 @@ public final class WorldServices {
      */
     public static void blockAndPumpUntilPrewarmSettled(MinecraftServer server) {
         if (server == null) return;
-        // No test-mode guard. It used to return here unless the S1C fixture or the S0 probe was
+        // A flat test world exists to look at the wonder sample, nothing else: the ridge search would
+        // find no ridge, the sample would wait behind it, and the player would watch a loading screen
+        // for a wall the flat world cannot carry. Skip the whole pipeline and open the road gate.
+        if (server.overworld().getChunkSource().getGenerator()
+                instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_SKIPPED flat=true reason=wonder-sample-world");
+            PrewarmProgress.finish(true);
+            return;
+        }        // No test-mode guard. It used to return here unless the S1C fixture or the S0 probe was
         // enabled, which is why the wall never owned the server thread in a real world: the road
         // ran its own prepareLevels hook with the thread free, its initial generation began at once,
         // and the wall was left sampling beside it. The ownership handover below is the whole design -
