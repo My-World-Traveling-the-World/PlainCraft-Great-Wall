@@ -101,12 +101,17 @@ public final class WallBodyBackfill {
     public static int seedFromDisk(ServerLevel level, java.nio.file.Path greatWallRoot) {
         State state = state(level);
         int added = 0;
-        try (var dirs = java.nio.file.Files.newDirectoryStream(greatWallRoot)) {
-            for (java.nio.file.Path dir : dirs) {
+        // The plans live at greatwall/evidence/<world hash>/<x>_<z>/, one hash directory per world
+        // and 456 chunk directories under it in the measured save. Scanning greatwall/ itself finds
+        // nothing, which is what the first attempt reported (added=0).
+        java.nio.file.Path evidence = greatWallRoot.resolve("evidence");
+        if (!java.nio.file.Files.isDirectory(evidence)) return added;
+        try (var walk = java.nio.file.Files.walk(evidence, 2)) {
+            for (java.nio.file.Path dir : (Iterable<java.nio.file.Path>) walk::iterator) {
                 if (!java.nio.file.Files.isDirectory(dir)) continue;
                 String name = dir.getFileName().toString();
                 int split = name.indexOf('_');
-                if (split <= 0) continue;
+                if (split <= 0 || split != name.lastIndexOf('_')) continue;
                 try {
                     int x = Integer.parseInt(name.substring(0, split));
                     int z = Integer.parseInt(name.substring(split + 1));
@@ -114,12 +119,12 @@ public final class WallBodyBackfill {
                     if (state.settled.contains(key)) continue;
                     if (state.pending.add(key)) added++;
                 } catch (NumberFormatException notAChunkDirectory) {
-                    // evidence/, cache/, manifest/ and friends are not chunk directories.
+                    // FILES/ and the world hash directory are not chunk directories.
                 }
             }
         } catch (java.io.IOException unreadable) {
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_SEED_FAILED root={} reason={}",
-                    greatWallRoot, unreadable.toString());
+                    evidence, unreadable.toString());
             return added;
         }
         state.total = Math.max(state.total, state.settled.size() + state.pending.size());
@@ -127,7 +132,6 @@ public final class WallBodyBackfill {
                 state.pending.size(), added, state.settled.size());
         return added;
     }
-
     public static void install(PlanStore store) {
         planStore = store;
     }
