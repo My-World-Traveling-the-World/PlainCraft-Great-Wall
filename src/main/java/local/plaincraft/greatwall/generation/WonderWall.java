@@ -229,10 +229,20 @@ public final class WonderWall {
                 written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 6 ? FOUNDATION : BODY);
             }
             if (at <= GATE_HALF) {
-                int arch = GATE_HEIGHT - (at > 4 ? 6 : 0) - 1;
+                // A barrel vault: the opening loses height towards the jambs, so the top reads as an arch
+                // instead of a square slot.
+                int arch = GATE_HEIGHT - 1 - (at * at) / 12;
                 for (int y = 0; y < arch; y++) {
                     written += put(level, chunk, x, walkY - 2 - y, z, AIR);
                 }
+                // Gatehouse above the vault: a window band and a crenellated top, the way a real 城楼
+                // sits over the gate rather than leaving a bare bridge of masonry.
+                for (int y = walkY; y < walkY + 14; y++) {
+                    int dy = y - walkY;
+                    boolean window = dy >= 5 && dy < 9 && Math.floorMod(s, 6) < 3;
+                    written += put(level, chunk, x, y, z, window ? AIR : BODY);
+                }
+                written += put(level, chunk, x, walkY + 14, z, CAP);
                 return written;
             }
         } else {
@@ -240,7 +250,8 @@ public final class WonderWall {
                 boolean rim = at >= HALF_WIDTH - 4;
                 boolean base = y < foot + 4;   // solid base course: the hollow body must not be see-through
                 if (!rim && !base) continue;
-                written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 6 ? FOUNDATION : BODY);
+                int dy = walkY - 1 - y;
+                written += put(level, chunk, x, y, z, dy <= 6 ? FOUNDATION : (dy % 8 == 0 ? TRIM : BODY));
             }
         }
 
