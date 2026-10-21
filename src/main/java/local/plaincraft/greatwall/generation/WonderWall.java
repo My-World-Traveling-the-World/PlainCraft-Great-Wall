@@ -263,7 +263,16 @@ public final class WonderWall {
                 written += put(level, chunk, x, walkY - 1, z, floor);
                 int vault = walkY + 10 + (at <= 2 ? 2 : (at <= 5 ? 1 : 0));
                 written += put(level, chunk, x, vault, z, BODY);
+                // 二层楼板: a timber-storey floor above the vault, with a stair well left open.
+                if (vault < walkY + 10 || at > 3) {
+                    written += put(level, chunk, x, walkY + 11, z, WALK);
+                }
                 written += put(level, chunk, x, walkY + TOWER_HEIGHT - 1, z, CAP);
+
+                // 壁龛: a lit niche every eight blocks, the way the chambers are fitted out.
+                if (Math.floorMod(s, 8) == 0 && at == TOWER_HALF - 5) {
+                    written += put(level, chunk, x, walkY + 3, z, TRIM);
+                }
             }
             return written;
         }
