@@ -255,6 +255,7 @@ public final class WallBodyBackfill {
 
         int settledThisDrain = 0;
         int writtenBlocks = 0;
+        long voxelsSeen = 0L;
         List<ChunkKey> dropped = new ArrayList<>();
         for (ChunkKey key : List.copyOf(state.pending)) {
             if (settledThisDrain >= MAX_CHUNKS_PER_DRAIN) break;
@@ -286,6 +287,8 @@ public final class WallBodyBackfill {
             state.settling.add(key);
             try {
                 Sweep sweep = settle(level, chunk, key);
+                var settledPlan = WallWorldgenPlanCache.get(level, key);
+                if (settledPlan != null) voxelsSeen += settledPlan.voxels().size();
                 switch (sweep.status()) {
                     case SETTLED -> {
                         state.pending.remove(key);
@@ -314,10 +317,17 @@ public final class WallBodyBackfill {
             state.attempts.remove(key);
         }
         long total = TOTAL_BLOCKS.addAndGet(writtenBlocks);
-        if (settledThisDrain > 0 || !dropped.isEmpty()) {
+        // Quiet by design: 456 chunks at four per drain is 114 lines if every drain speaks, and a log
+        // that scrolls itself out of the file is a log nobody reads. Speak when blocks were written, when
+        // the queue empties, or once every 200 drains as a heartbeat.
+        drainsSinceLog++;
+        boolean justEmptied = state.pending.isEmpty() && !state.settled.isEmpty();
+        if (writtenBlocks > 0 || justEmptied || drainsSinceLog >= 200) {
+            drainsSinceLog = 0;
             GreatWallMod.LOGGER.info(
-                    "[GreatWall:S1C] WALL_BACKFILL_DRAIN settled={} pending={} written={} dropped={} total={}",
-                    settledThisDrain, state.pending.size(), writtenBlocks, dropped.size(), total);
+                    "[GreatWall:S1C] WALL_BACKFILL_DRAIN settled={} pending={} written={} voxels={} dropped={} guardSkip={} total={}",
+                    settledThisDrain, state.pending.size(), writtenBlocks, voxelsSeen, dropped.size(),
+                    beforeConflicts, total);
         }
     }
 
@@ -410,6 +420,9 @@ public final class WallBodyBackfill {
     private static State state(ServerLevel level) {
         return STATES.computeIfAbsent(level, ignored -> new State());
     }
+
+    /** Drains since the last log line; see the throttle in drain(). */
+    private static long drainsSinceLog;
 
     private static final class State {
         final Set<ChunkKey> pending = ConcurrentHashMap.newKeySet();
