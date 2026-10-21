@@ -133,7 +133,9 @@ public final class WorldServices {
             // The wonder-wall sample: the real wall's proportions, generated procedurally so the
             // player can walk up to it and judge the look before the whole line is built.
             if (level.dimension() == net.minecraft.world.level.Level.OVERWORLD
-                    && Boolean.parseBoolean(System.getProperty("greatwall.wonderSample", "true"))) {
+                    && Boolean.parseBoolean(System.getProperty("greatwall.wonderSample", "true"))
+                    && level.getChunkSource().getGenerator()
+                            instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
                 var spawn = level.getSharedSpawnPos();
                 local.plaincraft.greatwall.generation.WonderWall.startSample(
                         level, spawn.getX() + 64, spawn.getZ(), 448);
