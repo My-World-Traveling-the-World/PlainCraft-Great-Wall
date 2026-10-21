@@ -90,6 +90,7 @@ public final class WallBodyBackfill {
                 evidence.persistPlan(plan);
             }
         });
+        loadDone(greatWallRoot);
         GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STORE_INSTALLED root={}", greatWallRoot);
     }
 
@@ -117,6 +118,7 @@ public final class WallBodyBackfill {
                     int z = Integer.parseInt(name.substring(split + 1));
                     ChunkKey key = new ChunkKey(level.dimension().location().toString(), x, z);
                     if (state.settled.contains(key)) continue;
+                    if (DONE.contains(x + "_" + z)) continue;
                     if (state.pending.add(key)) added++;
                 } catch (NumberFormatException notAChunkDirectory) {
                     // FILES/ and the world hash directory are not chunk directories.
@@ -132,6 +134,40 @@ public final class WallBodyBackfill {
                 state.pending.size(), added, state.settled.size());
         return added;
     }
+    /** Loads the written-chunk marker; missing file just means nothing was written yet. */
+    private static void loadDone(java.nio.file.Path greatWallRoot) {
+        doneFile = greatWallRoot.resolve("backfilled.txt");
+        DONE.clear();
+        if (!java.nio.file.Files.isRegularFile(doneFile)) return;
+        try {
+            for (String line : java.nio.file.Files.readAllLines(doneFile)) {
+                if (line != null && !line.isBlank()) DONE.add(line.trim());
+            }
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_DONE_LOADED chunks={}", DONE.size());
+        } catch (java.io.IOException | RuntimeException unreadable) {
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_DONE_LOAD_FAILED reason={}",
+                    unreadable.toString());
+        }
+    }
+
+    /** Remembers one finished chunk, flushing every 32 so a crash costs at most that many re-writes. */
+    private static void markDone(ChunkKey key) {
+        String token = key.x() + "_" + key.z();
+        if (!DONE.add(token)) return;
+        java.nio.file.Path file = doneFile;
+        if (file == null) return;
+        try {
+            java.nio.file.Files.writeString(file, token + System.lineSeparator(),
+                    java.nio.charset.StandardCharsets.UTF_8,
+                    java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+        } catch (java.io.IOException | RuntimeException unwritable) {
+            if (DONE_PENDING.incrementAndGet() % 64 == 1) {
+                GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_DONE_WRITE_FAILED reason={}",
+                        unwritable.toString());
+            }
+        }
+    }
+
     public static void install(PlanStore store) {
         planStore = store;
     }
@@ -296,11 +332,13 @@ public final class WallBodyBackfill {
                         state.attempts.remove(key);
                         settledThisDrain++;
                         writtenBlocks += sweep.written();
+                        markDone(key);
                     }
                     case FOREIGN -> {
                         // No plan for this node, or another dimension's chunk: retrying cannot help.
                         state.pending.remove(key);
                         state.settled.add(key);
+                        markDone(key);
                     }
                     case PENDING -> {
                         if (state.attempts.merge(key, 1, Integer::sum) >= MAX_ATTEMPTS) {
@@ -427,6 +465,10 @@ public final class WallBodyBackfill {
 
     /** Drains since the last log line; see the throttle in drain(). */
     private static long drainsSinceLog;
+    /** Chunks already written, as "x_z" lines in greatwall/backfilled.txt; empty until installed. */
+    private static final java.util.Set<String> DONE = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static volatile java.nio.file.Path doneFile;
+    private static final java.util.concurrent.atomic.AtomicInteger DONE_PENDING = new java.util.concurrent.atomic.AtomicInteger();
 
     private static final class State {
         final Set<ChunkKey> pending = ConcurrentHashMap.newKeySet();
