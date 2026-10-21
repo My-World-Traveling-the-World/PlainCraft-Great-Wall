@@ -425,9 +425,14 @@ public final class GreatWallLoadingProgressRenderer {
             case PREWARM -> snapshot.total() > 0
                     ? Component.translatable(key, snapshot.completed(), snapshot.total())
                     : Component.translatable(key + "_unknown");
-            case BACKFILL -> snapshot.subTotal() > 0
+            // Only this stage owns the sub pair while it runs. Without the guard the row showed the fine
+            // sampler's 117597/113152 under "writing the wall" before the write had started: the shared
+            // pair belongs to whichever stage wrote last, and that was the sampler.
+            case BACKFILL -> snapshot.stage() == PrewarmProgress.Stage.BACKFILL && snapshot.subTotal() > 0
                     ? Component.translatable(key, snapshot.subDone(), snapshot.subTotal())
-                    : Component.translatable(key + "_unknown");
+                    : Component.translatable(stage.ordinal() < snapshot.stage().ordinal()
+                            ? "plaincraft.great_wall.loading_progress.detail_done"
+                            : "plaincraft.great_wall.loading_progress.detail_pending");
             case DONE -> Component.translatable(key);
         };
     }

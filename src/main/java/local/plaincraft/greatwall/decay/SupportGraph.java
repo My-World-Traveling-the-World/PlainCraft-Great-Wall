@@ -49,12 +49,23 @@ public final class SupportGraph {
             if (removed.isEmpty()) break;
             removed.forEach(retained::remove);
         }
+        // A wall segment is one component spanning a hundred chunks, and a single voxel the template left
+        // unsupported discarded all of them: a measured run lost 246 chunks to two voxels. Large components
+        // therefore tolerate a rare blemish and drop just that voxel; small ones stay strict, which is the
+        // rule removesFloatingIslandsButRejectsRequiredIsland protects - an island IS the whole component.
+        java.util.List<VoxelIntent> unsupported = new java.util.ArrayList<>();
         for (VoxelIntent v : blocks.values())
-            if (v.required() && !retained.containsKey(v.pos())) throw failure(
-                    // Naming the component is the point: one measured session lost 131 owners to the same
-                    // voxel, and the site id says which component produced it.
-                    "required voxel has no rooted support: " + v.pos()
-                            + " in " + component.id() + " bounds=" + component.bounds());
+            if (v.required() && !retained.containsKey(v.pos())) unsupported.add(v);
+        if (!unsupported.isEmpty()) {
+            long requiredCount = blocks.values().stream().filter(VoxelIntent::required).count();
+            long tolerated = requiredCount >= 200L ? Math.max(1L, requiredCount / 500L) : 0L;
+            if (unsupported.size() > tolerated) throw failure(
+                    "required voxel has no rooted support: " + unsupported.get(0).pos()
+                            + " in " + component.id() + " bounds=" + component.bounds()
+                            + " (unsupported=" + unsupported.size() + " of " + requiredCount + ")");
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn("[GreatWall:S1C] SUPPORT_TOLERATED unsupported={} required={} tolerated={} first={}",
+                    unsupported.size(), requiredCount, tolerated, unsupported.get(0).pos());
+        }
         List<VoxelIntent> voxels = component.voxels().stream()
                 .filter(v -> !solid(v) || retained.containsKey(v.pos())).sorted(Comparator.comparing(VoxelIntent::pos, ORDER)).toList();
         var result = hashed(component, voxels,

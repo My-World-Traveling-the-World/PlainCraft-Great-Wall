@@ -101,6 +101,7 @@
   "plaincraft.great_wall.loading_progress.detail.prewarm_unknown": "Prewarm  planning...",
   "plaincraft.great_wall.loading_progress.detail.compile": "Chunk compile  %s/%s",
     "plaincraft.great_wall.loading_progress.detail.backfill": "Building the wall %s/%s",
+    "plaincraft.great_wall.loading_progress.detail.backfill_unknown": "Waiting to build the wall",
   "plaincraft.great_wall.loading_progress.detail.compile_unknown": "Chunk compile  compiling...",
   "plaincraft.great_wall.loading_progress.detail.done": "Done",
   "plaincraft.great_wall.loading_progress.detail_lanes": "%s lanes · overall %s%%"
