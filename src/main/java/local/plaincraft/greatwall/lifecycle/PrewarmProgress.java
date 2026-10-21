@@ -482,12 +482,12 @@ public final class PrewarmProgress {
      */
     public static boolean awaitWorldgenReadyStrict(long timeout, TimeUnit unit) {
         var latch = worldgenReady;
-        if (latch == null) return true;
+        if (latch == null) return false;   // no session registered yet = NOT ready
         try {
             return latch.await(Math.max(0L, timeout), unit);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            return true;
+            return false;
         }
     }
 

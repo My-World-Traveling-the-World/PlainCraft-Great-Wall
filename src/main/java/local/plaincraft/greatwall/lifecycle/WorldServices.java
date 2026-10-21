@@ -505,10 +505,15 @@ public final class WorldServices {
             // compile below has published, so waiting on it here would wait on ourselves.
             if (!PrewarmProgress.awaitCompletion(0, java.util.concurrent.TimeUnit.NANOSECONDS)) return false;
             if (!compiled[0]) {
-                compiled[0] = true;
-                compileWhileBlocked(server);
+                // Try the compile, and keep the stage if it could not run yet: at this point the segments
+                // have settled but the fine sample may still be running, and compileAtStartup answers
+                // false for that. The old shape recorded "compiled" before trying, so a compile that was
+                // not ready yet released the server thread: SERVER_STARTED fired, the road's structure
+                // discovery began while the wall was still sampling at 76 %, and the loading card stayed
+                // up for another three minutes with the road already running beside it.
+                compiled[0] = compileWhileBlocked(server);
             }
-            return true;
+            return compiled[0];
         });
     }
 
@@ -519,14 +524,16 @@ public final class WorldServices {
      * reports its own failure loudly (see {@code ProductionSession.PLANNING_COMPILE_FAILED}) and
      * opens the road gate either way, so a broken wall costs a warning instead of a hung server.
      */
-    private static void compileWhileBlocked(MinecraftServer server) {
+    private static boolean compileWhileBlocked(MinecraftServer server) {
         var services = SESSIONS.get(server);
-        if (services == null || services.production == null) return;
+        if (services == null || services.production == null) return true;
         try {
             boolean ran = services.production.compileAtStartup();
             GreatWallMod.LOGGER.info("[GreatWall:S1C] PRODUCTION_STARTUP_COMPILE ran={}", ran);
+            return ran;
         } catch (Throwable error) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PRODUCTION_STARTUP_COMPILE_FAILED", error);
+            return true;
         }
     }
 
