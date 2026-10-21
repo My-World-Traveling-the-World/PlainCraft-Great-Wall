@@ -156,6 +156,9 @@ public final class WallBodyBackfill {
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL, 0, total);
         int written = 0;
         int rounds = 0;
+        // Generation runs on the c2me workers and writing runs on this thread, so they can overlap: the
+        // next batch is requested before the current one is written, instead of waiting for it afterwards.
+        java.util.Map<ChunkKey, java.util.concurrent.CompletableFuture<?>> prefetched = new java.util.LinkedHashMap<>();
         long startedAt = System.nanoTime();
         long voxels = 0L;
         while (!state.pending.isEmpty() && rounds++ < 64) {
@@ -165,13 +168,26 @@ public final class WallBodyBackfill {
                 if (batch.size() >= 8) break;
             }
             if (batch.isEmpty()) break;
-            java.util.Map<ChunkKey, java.util.concurrent.CompletableFuture<?>> futures = new java.util.LinkedHashMap<>();
+            java.util.Map<ChunkKey, java.util.concurrent.CompletableFuture<?>> futures =
+                    new java.util.LinkedHashMap<>(prefetched);
+            prefetched = new java.util.LinkedHashMap<>();
             for (ChunkKey key : batch) {
+                if (futures.containsKey(key)) continue;   // already requested during the previous batch
                 try {
                     futures.put(key, level.getChunkSource().getChunkFuture(key.x(), key.z(),
                             net.minecraft.world.level.chunk.status.ChunkStatus.FULL, true));
                 } catch (RuntimeException cannotLoad) {
                     state.pending.remove(key);
+                }
+            }
+            // Request the batch after this one while this one is still being written.
+            for (ChunkKey key : state.pending) {
+                if (futures.containsKey(key) || prefetched.size() >= 8) continue;
+                try {
+                    prefetched.put(key, level.getChunkSource().getChunkFuture(key.x(), key.z(),
+                            net.minecraft.world.level.chunk.status.ChunkStatus.FULL, true));
+                } catch (RuntimeException cannotPrefetch) {
+                    break;
                 }
             }
             if (!futures.isEmpty()) {
