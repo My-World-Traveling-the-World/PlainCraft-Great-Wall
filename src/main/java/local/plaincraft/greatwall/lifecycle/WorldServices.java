@@ -513,7 +513,14 @@ public final class WorldServices {
                 // up for another three minutes with the road already running beside it.
                 compiled[0] = compileWhileBlocked(server);
             }
-            return compiled[0];
+            if (!compiled[0]) return false;
+            // The compile can be deferred: compileAtStartup returns true after asking for it, and the
+            // compile itself only runs once the fine sample publishes (PLANNING_COMPILE_WAIT_FOR_SAMPLE).
+            // Its return value is therefore "I asked", not "it published" - holding the stage on it released
+            // the server thread with nothing published, which is what let the road start at 10:36 while
+            // the wall was still sampling at 76 %. The gate that really opens on publish is worldgenReady,
+            // released by finish(true) after the compile or by finish(false) on failure.
+            return PrewarmProgress.awaitWorldgenReadyStrict(0L, java.util.concurrent.TimeUnit.NANOSECONDS);
         });
     }
 
