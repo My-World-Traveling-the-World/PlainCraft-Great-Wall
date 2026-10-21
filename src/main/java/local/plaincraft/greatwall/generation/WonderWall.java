@@ -173,6 +173,19 @@ public final class WonderWall {
             for (int lz = 0; lz < 16; lz++) {
                 int z = baseZ + lz;
                 int ground = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, lx, lz);
+                // 入海端台: the wall runs into a stepped terrace at the end of the detailed route,
+                // the way the real wall ends in a fortified platform rather than a cut face.
+                int endX = job.routes.get(0).x() + job.routes.get(0).length() - 10;
+                int endZ = job.routes.get(0).z();
+                if (Math.abs(x - endX) <= 24 && Math.abs(z - endZ) <= 24) {
+                    written += platformColumn(job.level, chunk, x, z, x - endX, z - endZ, ground);
+                }
+                // 烽火台: a beacon tower standing off the wall, square, solid, crenellated.
+                int beaconX = job.routes.get(0).x() + 800;
+                int beaconZ = job.routes.get(0).z() - 60;
+                if (Math.abs(x - beaconX) <= 8 && Math.abs(z - beaconZ) <= 8) {
+                    written += beaconColumn(job.level, chunk, x, z, ground);
+                }
                 for (Route route : job.routes) {
                     double rx = x - route.x();
                     double rz = z - route.z();
@@ -217,6 +230,15 @@ public final class WonderWall {
                     written += put(level, chunk, x, y, z, window ? AIR : (dy % 12 == 0 ? TRIM : BODY));
                 }
                 written += put(level, chunk, x, walkY + TOWER_HEIGHT, z, CAP);
+                // 铺房: the small guard house a real 敌台 carries on its terrace.
+                if (Math.abs(s - 128) <= 4 && at <= 3) {
+                    for (int y = walkY + TOWER_HEIGHT + 1; y <= walkY + TOWER_HEIGHT + 6; y++) {
+                        boolean wall = at == 3 || Math.abs(s - 128) == 4;
+                        boolean door = at <= 1 && Math.abs(s - 128) == 4 && y <= walkY + TOWER_HEIGHT + 3;
+                        if (wall && !door) written += put(level, chunk, x, y, z, BODY);
+                        else if (y == walkY + TOWER_HEIGHT + 6) written += put(level, chunk, x, y, z, CAP);
+                    }
+                }
             } else {
                 written += put(level, chunk, x, walkY - 1, z, WALK);
                 written += put(level, chunk, x, walkY + TOWER_HEIGHT - 1, z, CAP);
@@ -259,6 +281,10 @@ public final class WonderWall {
             BlockState deck = at == HALF_WIDTH - 5 ? DRAIN : (Math.floorMod(x + z, 7) == 0 ? WALK_ACCENT : WALK);
             written += put(level, chunk, x, walkY - 1, z, deck);
         }
+        // 吐水嘴: a stone spout every 48 blocks, so the wall reads as draining rather than as a trough.
+        if (t == -(HALF_WIDTH - 1) && Math.floorMod(s, 48) == 0) {
+            written += put(level, chunk, x, walkY - 2, z, CAP);
+        }
         if (t <= -(HALF_WIDTH - 4)) {
             // Merlon three blocks wide, gap two: at this scale the old five-wide merlons read as one
             // long wall with the odd notch instead of as crenellation.
@@ -275,6 +301,35 @@ public final class WonderWall {
                 written += put(level, chunk, x, walkY + y, z, y == INNER_PARAPET - 1 ? CAP : BODY);
             }
         }
+        return written;
+    }
+
+    private static long platformColumn(ServerLevel level, LevelChunk chunk, int x, int z,
+            int px, int pz, int ground) {
+        long written = 0L;
+        int at = Math.max(Math.abs(px), Math.abs(pz));
+        int walkY = ground + CLEARANCE;
+        for (int y = ground - 1; y < walkY + 12; y++) {
+            int dy = walkY + 11 - y;
+            int half = 24 - Math.min(16, dy / 4);
+            if (at > half) continue;
+            if (at < half - 3 && dy > 4) continue;
+            written += put(level, chunk, x, y, z, dy <= 6 ? FOUNDATION : (dy % 8 == 0 ? TRIM : BODY));
+        }
+        if (at <= 24) written += put(level, chunk, x, walkY + 11, z, CAP);
+        return written;
+    }
+
+    private static long beaconColumn(ServerLevel level, LevelChunk chunk, int x, int z, int ground) {
+        long written = 0L;
+        int walkY = ground + CLEARANCE;
+        for (int y = ground - 1; y < walkY + 24; y++) {
+            int dy = walkY + 23 - y;
+            boolean rim = Math.abs(x) >= 0;   // solid beacon: no hollow, it must read as a mass
+            if (!rim) continue;
+            written += put(level, chunk, x, y, z, dy <= 6 ? FOUNDATION : (dy % 8 == 0 ? TRIM : BODY));
+        }
+        for (int y = 0; y < 2; y++) written += put(level, chunk, x, walkY + 24 + y, z, CAP);
         return written;
     }
 
