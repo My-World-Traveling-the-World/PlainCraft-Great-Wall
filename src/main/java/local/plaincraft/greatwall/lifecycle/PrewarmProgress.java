@@ -550,6 +550,10 @@ public final class PrewarmProgress {
     private static final java.util.concurrent.atomic.AtomicBoolean PUBLISHED =
             new java.util.concurrent.atomic.AtomicBoolean();
 
+    /** Per-stage sub progress, so a row cannot borrow another stage's numbers while both are visible. */
+    public static int subDoneFor(Stage stage) { int[] pair = SUB_BY_STAGE.get(stage); return pair == null ? 0 : pair[0]; }
+    public static int subTotalFor(Stage stage) { int[] pair = SUB_BY_STAGE.get(stage); return pair == null ? 0 : pair[1]; }
+
     public static void markPublished() { PUBLISHED.set(true); }
     public static boolean isPublished() { return PUBLISHED.get(); }
 

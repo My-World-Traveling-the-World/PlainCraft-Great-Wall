@@ -159,10 +159,10 @@ public final class WallBodyBackfill {
         long startedAt = System.nanoTime();
         long voxels = 0L;
         while (!state.pending.isEmpty() && rounds++ < 64) {
-            java.util.List<ChunkKey> batch = new java.util.ArrayList<>(32);
+            java.util.List<ChunkKey> batch = new java.util.ArrayList<>(8);
             for (ChunkKey key : state.pending) {
                 batch.add(key);
-                if (batch.size() >= 32) break;
+                if (batch.size() >= 8) break;
             }
             if (batch.isEmpty()) break;
             java.util.Map<ChunkKey, java.util.concurrent.CompletableFuture<?>> futures = new java.util.LinkedHashMap<>();
@@ -178,15 +178,25 @@ public final class WallBodyBackfill {
                 java.util.concurrent.CompletableFuture<?> all = java.util.concurrent.CompletableFuture.allOf(
                         futures.values().toArray(java.util.concurrent.CompletableFuture[]::new));
                 try {
-                    level.getServer().managedBlock(all::isDone);
+                    // A hard deadline: a chunk that never completes (outside the border, or a worker pool
+                    // held by another generator - a measured run froze for ten minutes this way) must cost
+                    // one batch, not the whole startup.
+                    long deadline = System.nanoTime() + 20_000_000_000L;
+                    level.getServer().managedBlock(() -> all.isDone() || System.nanoTime() >= deadline);
                 } catch (RuntimeException interrupted) {
                     GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_STARTUP_INTERRUPTED reason={}",
                             interrupted.toString());
                     break;
                 }
             }
-            int settledThisRound = 0;
+            java.util.List<ChunkKey> arrived = new java.util.ArrayList<>(batch.size());
             for (ChunkKey key : batch) {
+                var future = futures.get(key);
+                if (future != null && !future.isDone()) continue;   // still generating: stays pending
+                arrived.add(key);
+            }
+            int settledThisRound = 0;
+            for (ChunkKey key : arrived) {
                 LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
                 if (chunk == null) { state.pending.remove(key); continue; }
                 try {
