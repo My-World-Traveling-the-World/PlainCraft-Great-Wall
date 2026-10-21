@@ -248,6 +248,13 @@ public final class WonderWall {
                         if (wall && !door) written += put(level, chunk, x, y, z, BODY);
                         else if (y == walkY + TOWER_HEIGHT + 6) written += put(level, chunk, x, y, z, CAP);
                     }
+                    // 瓦顶: a stepped tile roof over the 铺房, the way the real ones are roofed.
+                    int roofY = walkY + TOWER_HEIGHT + 7;
+                    int ds = Math.abs(s - 128);
+                    if (ds <= 4 && at <= 4 && (ds <= 2 || at <= 2)) {
+                        written += put(level, chunk, x, roofY, z, Blocks.DEEPSLATE_TILES.defaultBlockState());
+                        if (ds <= 1 && at <= 1) written += put(level, chunk, x, roofY + 1, z, CAP);
+                    }
                 }
             } else {
                 written += put(level, chunk, x, walkY - 1, z, WALK);
@@ -357,7 +364,7 @@ public final class WonderWall {
         // 点火: a lit brazier at the centre of the terrace - the smoke column is the signal.
         if (Math.abs(x) <= 1 && Math.abs(z) <= 1) {
             written += put(level, chunk, x, walkY + 24, z, Blocks.MAGMA_BLOCK.defaultBlockState());
-            written += put(level, chunk, x, walkY + 25, z, Blocks.FIRE.defaultBlockState());
+            written += put(level, chunk, x, walkY + 25, z, Blocks.CAMPFIRE.defaultBlockState().setValue(net.minecraft.world.level.block.CampfireBlock.LIT, true));
             return written;
         }
         int phase = Math.floorMod(x + z, 6);
