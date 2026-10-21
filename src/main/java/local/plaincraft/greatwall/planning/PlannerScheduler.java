@@ -1317,10 +1317,22 @@ public final class PlannerScheduler implements AutoCloseable {
      * terminal, so the worst case is the old behaviour - sample the whole route. That is deliberate:
      * over-sampling costs time, under-covering costs a broken compile.
      */
+    /** One line per distinct outcome, so a silent "no cut" cannot hide for a whole release again. */
+    private static final java.util.Set<String> TERMINAL_CUT_NOTES =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    private static void noteTerminalCut(String outcome, long cap, int before, int after) {
+        if (!TERMINAL_CUT_NOTES.add(outcome + ":" + (cap < 0 ? "-" : String.valueOf(cap / 256)))) return;
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_TERMINAL outcome={} terminalBlock={} pointsBefore={} pointsAfter={}",
+                outcome, cap < 0 ? -1 : cap / 256, before, after);
+    }
+
     private int terminalPointLimit(local.plaincraft.greatwall.model.WallTypes.RouteShape route, int points) {
         try {
             var flight = geometryFlights.get(route.key());
-            if (flight == null || !flight.isDone() || flight.isCompletedExceptionally()) return points;
+            if (flight == null) { noteTerminalCut("no-flight", -1L, points, points); return points; }
+            if (!flight.isDone()) { noteTerminalCut("flight-pending", -1L, points, points); return points; }
+            if (flight.isCompletedExceptionally()) { noteTerminalCut("flight-failed", -1L, points, points); return points; }
             var geometry = flight.getNow(null);
             if (geometry == null || geometry.terminal().isEmpty()) return points;
             long cap = geometry.terminal().get().localSQ8() + 32L * 256;
@@ -1330,7 +1342,9 @@ public final class PlannerScheduler implements AutoCloseable {
                 int mid = (lo + hi + 1) >>> 1;
                 if (arcs.get(mid) <= cap) lo = mid; else hi = mid - 1;
             }
-            return Math.max(1, Math.min(points, lo + 1));
+            int cut = Math.max(1, Math.min(points, lo + 1));
+            noteTerminalCut("cut", cap, points, cut);
+            return cut;
         } catch (RuntimeException unsettled) {
             return points;
         }

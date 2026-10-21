@@ -156,6 +156,8 @@ public final class WallBodyBackfill {
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL, 0, total);
         int written = 0;
         int rounds = 0;
+        long startedAt = System.nanoTime();
+        long voxels = 0L;
         while (!state.pending.isEmpty() && rounds++ < 64) {
             java.util.List<ChunkKey> batch = new java.util.ArrayList<>(32);
             for (ChunkKey key : state.pending) {
@@ -189,6 +191,8 @@ public final class WallBodyBackfill {
                 if (chunk == null) { state.pending.remove(key); continue; }
                 try {
                     Sweep sweep = settle(level, chunk, key);
+                    var startupPlan = WallWorldgenPlanCache.get(level, key);
+                    if (startupPlan != null) voxels += startupPlan.voxels().size();
                     if (sweep.status() == Status.SETTLED) {
                         written += sweep.written();
                         markDone(key);
@@ -203,8 +207,9 @@ public final class WallBodyBackfill {
             local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
                     local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL,
                     total - state.pending.size(), total);
-            GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STARTUP round={} settled={} written={} pending={}",
-                    rounds, settledThisRound, written, state.pending.size());
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STARTUP round={} settled={} written={} voxels={} pending={} elapsedMs={}",
+                    rounds, settledThisRound, written, voxels, state.pending.size(),
+                    (System.nanoTime() - startedAt) / 1_000_000L);
         }
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.BACKFILL, total, total);
