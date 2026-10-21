@@ -203,7 +203,7 @@ public final class WonderWall {
                 int s = x - job.startX;
                 int t = z - job.startZ;
                 if (s >= 0 && s < job.length && Math.abs(t) <= HALF_WIDTH) {
-                    written += wallColumn(job.level, chunk, x, z, t, ground, job.profile[s], s);
+                    written += wallColumn(job.level, chunk, x, z, t, ground, job.profile[s], s, job.length);
                 }
                 int bx = x - bastionX;
                 int bz = t;
@@ -226,13 +226,24 @@ public final class WonderWall {
     // ---------------------------------------------------------------- wall
 
     private static long wallColumn(ServerLevel level, LevelChunk chunk, int x, int z, int t,
-            int ground, int walkY, int s) {
+            int ground, int walkY, int s, int jobLength) {
         long written = 0L;
         int at = Math.abs(t);
         int foot = Math.max(ground - 1, walkY - MAX_FILL);
         boolean gate = s >= 196 && s < 228;
         boolean tower = s >= 96 && s < 160;
 
+        boolean endCap = s <= 1 || s >= jobLength - 2;
+        if (endCap) {
+            // Close both ends: an open cross-section reads as "the wall is floating", because the
+            // hollow inside is visible straight through the first and last blocks.
+            for (int y = foot; y < walkY; y++) {
+                if (at >= HALF_WIDTH) continue;
+                written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 8 ? FOUNDATION : BODY, false);
+            }
+            written += put(level, chunk, x, walkY - 1, z, WALK, true);
+            return written;
+        }
         if (tower) {
             boolean perimeter = at >= TOWER_HALF - 4 || Math.abs(s - 128) >= TOWER_HALF - 4;
             if (perimeter) {
@@ -262,9 +273,9 @@ public final class WonderWall {
                 written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 8 ? FOUNDATION : BODY, false);
             }
             if (at <= GATE_HALF) {
-                int arch = GATE_HEIGHT - (at > 8 ? 12 : 0);
+                int arch = GATE_HEIGHT - (at > 8 ? 12 : 0) - 1;
                 for (int y = 0; y < arch; y++) {
-                    written += put(level, chunk, x, walkY - 1 - y, z, AIR, true);
+                    written += put(level, chunk, x, walkY - 2 - y, z, AIR, true);
                 }
                 return written;
             }
@@ -342,8 +353,9 @@ public final class WonderWall {
     private static long put(ServerLevel level, LevelChunk chunk, int x, int y, int z, BlockState state, boolean lit) {
         BlockPos pos = new BlockPos(x, y, z);
         if (chunk.getBlockState(pos).equals(state)) return 0L;
-        if (lit) level.setBlock(pos, state, 2);
-        else chunk.setBlockState(pos, state, false);
+        // Every write goes through the level: a raw chunk write leaves the light engine and the
+        // heightmap stale, which is exactly the "the blocks are there but nothing renders" symptom.
+        level.setBlock(pos, state, 2);
         return 1L;
     }
 }
