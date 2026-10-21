@@ -105,7 +105,6 @@ public final class WonderWall {
         }
         if (current.phase == 1) {
             current.profile = buildProfile(current);
-            releaseAll(current);
             current.phase = 2;
             current.cursor = 0;
         }
@@ -114,15 +113,20 @@ public final class WonderWall {
                 GreatWallMod.LOGGER.info("[GreatWall:wonder] WONDER_SAMPLE_DONE blocks={} chunks={} elapsedMs={}",
                         current.written, current.chunks.size(),
                         (System.nanoTime() - current.startedAt) / 1_000_000L);
+                releaseAll(current);
                 job = null;
                 return;
             }
-            long[] chunk = current.chunks.get(current.cursor++);
+            long[] chunk = current.chunks.get(current.cursor);
             LevelChunk loaded = level.getChunkSource().getChunkNow((int) chunk[0], (int) chunk[1]);
             if (loaded == null) {
+                // Do not advance: a chunk that unloaded between requesting it and its turn must be
+                // painted when it comes back, not skipped for ever. A measured run skipped two thirds
+                // of the section this way, which is why the wall looked like "just a little bit".
                 request(level, current, (int) chunk[0], (int) chunk[1]);
                 return;
             }
+            current.cursor++;
             current.written += paintChunk(current, loaded);
         }
     }
