@@ -235,6 +235,11 @@ public final class WonderWall {
                     written += put(level, chunk, x, y, z, (window || door) ? AIR : (dy % 12 == 0 ? TRIM : BODY));
                 }
                 written += put(level, chunk, x, walkY + TOWER_HEIGHT, z, CAP);
+                // 垛口圈: the terrace edge is crenellated, alternating three and one blocks high.
+                int ph = Math.floorMod(s + t, 4);
+                for (int y = 1; y <= (ph < 2 ? 3 : 1); y++) {
+                    written += put(level, chunk, x, walkY + TOWER_HEIGHT + y, z, y == 3 ? CAP : BODY);
+                }
                 // 铺房: the small guard house a real 敌台 carries on its terrace.
                 if (Math.abs(s - 128) <= 4 && at <= 3) {
                     for (int y = walkY + TOWER_HEIGHT + 1; y <= walkY + TOWER_HEIGHT + 6; y++) {
@@ -328,6 +333,15 @@ public final class WonderWall {
             written += put(level, chunk, x, y, z, dy <= 6 ? FOUNDATION : (dy % 8 == 0 ? TRIM : BODY));
         }
         if (at <= 24) written += put(level, chunk, x, walkY + 11, z, CAP);
+        // 澄海楼: a small pavilion on the terrace, the way the wall's sea end carries a tower.
+        if (at <= 8) {
+            for (int y = walkY + 12; y < walkY + 20; y++) {
+                boolean wallRing = at >= 6;
+                boolean window = y >= walkY + 15 && y < walkY + 18 && Math.floorMod(x + z, 6) < 3;
+                if (wallRing) written += put(level, chunk, x, y, z, window ? AIR : BODY);
+            }
+            written += put(level, chunk, x, walkY + 20, z, CAP);
+        }
         return written;
     }
 
@@ -339,6 +353,12 @@ public final class WonderWall {
             boolean rim = Math.abs(x) >= 0;   // solid beacon: no hollow, it must read as a mass
             if (!rim) continue;
             written += put(level, chunk, x, y, z, dy <= 6 ? FOUNDATION : (dy % 8 == 0 ? TRIM : BODY));
+        }
+        // 点火: a lit brazier at the centre of the terrace - the smoke column is the signal.
+        if (Math.abs(x) <= 1 && Math.abs(z) <= 1) {
+            written += put(level, chunk, x, walkY + 24, z, Blocks.MAGMA_BLOCK.defaultBlockState());
+            written += put(level, chunk, x, walkY + 25, z, Blocks.FIRE.defaultBlockState());
+            return written;
         }
         int phase = Math.floorMod(x + z, 6);
         for (int y = 0; y < (phase < 3 ? 3 : 2); y++) {
