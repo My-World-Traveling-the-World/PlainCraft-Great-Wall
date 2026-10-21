@@ -374,7 +374,11 @@ public final class WallBodyBackfill {
             // changed - a player placing a block, water flowing in - the plan's authority ends:
             // overwriting it would erase something the wall never owned.
             String before = beforeStates.get(p);
-            if (before != null && !before.startsWith("minecraft:air")) {
+            // The recorded before-state comes from the sampled column (PlanningChunkCompiler), not from
+            // this chunk: they agree only where nothing has touched the terrain since. When the world is
+            // air here there is no player work to protect and the plan's own wall belongs in that space,
+            // so the comparison is skipped; a solid block that differs is still left alone.
+            if (before != null && !before.startsWith("minecraft:air") && !current.isAir()) {
                 // before is the compile-time token ("minecraft:stone{}:fluid=minecraft:empty:be=false").
                 // If the world still holds exactly that block, the plan owns this position and may
                 // write. If it does not - a player placed something, water flowed in - the plan's

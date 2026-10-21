@@ -557,6 +557,9 @@ public final class WorldServices {
             throw new CancellationException("Closed or stale world session");
         }
     }
+    /** {@return true when this session is the S0 laboratory rather than a production build} */
+    public boolean probeOnly() { return production == null; }
+
     public CompletableFuture<ProbePlanner.Plan> require(String dimension, int x, int z, String stage) {
         if (production != null) throw new IllegalStateException("Production cannot use ProbePlanner");
         if (!planner.accepting() || SESSIONS.get(server) != this) {

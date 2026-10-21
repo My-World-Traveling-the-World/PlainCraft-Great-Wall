@@ -39,6 +39,11 @@ public abstract class VanillaGateMixin {
                     original.call(holder, step, chunks), executor);
         }
         if (step.targetStatus() != ChunkStatus.FEATURES) return original.call(holder, step, chunks);
+        // require() is the S0 laboratory's ProbePlanner entry and throws outright under a production
+        // session ("Production cannot use ProbePlanner"). This mixin is registered in the main config, not
+        // in a probe-only one, so a production chunk reaching FEATURES would hit that throw; the wall does
+        // not need this gate in production anyway, it lands through WallFeature at the decoration stage.
+        if (!services.probeOnly()) return original.call(holder, step, chunks);
         return services.require(dimension, pos.x, pos.z, "vanilla:features").thenCompose(plan -> barrier == null
                         ? CompletableFuture.completedFuture(null) : barrier.delayFeatures(pos))
                 .<CompletableFuture<ChunkAccess>>handleAsync((plan, planningFailure) -> {
