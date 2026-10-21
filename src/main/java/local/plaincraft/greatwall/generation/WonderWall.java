@@ -170,8 +170,8 @@ public final class WonderWall {
             }
             raw[i] = best + CLEARANCE;
         }
-        // A ramp at the start so the stairs are part of the demonstration.
-        int rampEnd = Math.min(40, raw.length - 1);
+        // The gallery is flat, so the ramp only applies to the contiguous route.
+        int rampEnd = job.length > 300 ? 0 : Math.min(40, raw.length - 1);
         int top = raw[rampEnd];
         for (int i = 0; i < rampEnd; i++) raw[i] = top - (rampEnd - i) / 5;
         for (int i = 1; i < raw.length; i++) raw[i] = Math.max(raw[i], raw[i - 1] - 1);
@@ -185,12 +185,24 @@ public final class WonderWall {
         return chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
     }
 
+    /**
+     * Gallery layout: five separate exhibits along +X, so every piece can be judged on its own instead
+     * of walking a kilometre of wall. Each exhibit is generated with the same code the final line uses.
+     *
+     * <pre>
+     *   x   0.. 32  standard wall section
+     *   x  64..112  gate section (32-wide barrel vault)
+     *   x 160..224  tower 64x64
+     *   x 256..320  round corner bastion
+     *   x 352..448  sea terminus platform 96x96
+     * </pre>
+     */
     private static long paintChunk(Job job, LevelChunk chunk) {
         long written = 0L;
         int baseX = chunk.getPos().x << 4;
         int baseZ = chunk.getPos().z << 4;
-        int bastionX = job.startX + job.length;
-        int platformX = bastionX + PLATFORM_HALF;
+        int bastionX = job.startX + 288;
+        int platformX = job.startX + 400;
         for (int lx = 0; lx < 16; lx++) {
             int x = baseX + lx;
             for (int lz = 0; lz < 16; lz++) {
@@ -198,13 +210,18 @@ public final class WonderWall {
                 int ground = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, lx, lz);
                 int s = x - job.startX;
                 int t = z - job.startZ;
-                if (s >= 0 && s < job.length && Math.abs(t) <= HALF_WIDTH) {
-                    written += wallColumn(job.level, chunk, x, z, t, ground, job.profile[s], s);
+                if (Math.abs(t) <= HALF_WIDTH) {
+                    if (s >= 0 && s < 32) {
+                        written += wallColumn(job.level, chunk, x, z, t, ground, walkY(job, s), s);
+                    } else if (s >= 64 && s < 112) {
+                        written += wallColumn(job.level, chunk, x, z, t, ground, walkY(job, s), 196 + (s - 64));
+                    } else if (s >= 160 && s < 224) {
+                        written += wallColumn(job.level, chunk, x, z, t, ground, walkY(job, s), 96 + (s - 160));
+                    }
                 }
                 int bx = x - bastionX;
-                int bz = t;
-                if (dist2(bx, bz) <= BASTION_RADIUS * BASTION_RADIUS) {
-                    written += bastionColumn(job.level, chunk, x, z, bx, bz, ground);
+                if (dist2(bx, t) <= (long) BASTION_RADIUS * BASTION_RADIUS) {
+                    written += bastionColumn(job.level, chunk, x, z, bx, t, ground);
                 }
                 int px = x - platformX;
                 if (Math.abs(px) <= PLATFORM_HALF && Math.abs(t) <= PLATFORM_HALF) {
@@ -215,6 +232,10 @@ public final class WonderWall {
         return written;
     }
 
+    private static int walkY(Job job, int s) {
+        int index = Math.max(0, Math.min(job.profile.length - 1, s));
+        return job.profile[index];
+    }
     private static long dist2(int dx, int dz) {
         return (long) dx * dx + (long) dz * dz;
     }

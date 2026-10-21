@@ -136,7 +136,7 @@ public final class WorldServices {
                     && Boolean.parseBoolean(System.getProperty("greatwall.wonderSample", "true"))) {
                 var spawn = level.getSharedSpawnPos();
                 local.plaincraft.greatwall.generation.WonderWall.startSample(
-                        level, spawn.getX() + 64, spawn.getZ(), 240);
+                        level, spawn.getX() + 64, spawn.getZ(), 448);
             }            var services = find(server);
             if (services != null) services.openDimension(level);
         });
