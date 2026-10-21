@@ -351,8 +351,15 @@ public final class WorldServices {
         return production;
     }
     public static void warming(MinecraftServer server) {
-        var services = find(server);
-        if (services != null) {
+        // A flat test world carries no ridge, no noise generator and no sampling worth doing: the
+        // production oracle refuses a non-noise generator outright, and the crash would take the whole
+        // world down before the wonder sample ever ran. Skip the wall's warm-up there entirely.
+        if (server != null && server.overworld().getChunkSource().getGenerator()
+                instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_SKIPPED flat=true reason=wonder-sample-world");
+            return;
+        }
+        var services = find(server);        if (services != null) {
             // Mark the prewarm as coming before anything can ask whether one is coming. A peer that polls
             // the gate between world load and the first segment was told "no prewarm has been requested",
             // and awaitCompletion answers that with an immediate true - which is how a road can start
