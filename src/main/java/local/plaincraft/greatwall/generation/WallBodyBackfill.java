@@ -134,6 +134,73 @@ public final class WallBodyBackfill {
                 state.pending.size(), added, state.settled.size());
         return added;
     }
+    /**
+     * Paints the whole queue now, on the server thread that owns the startup stage.
+     *
+     * <p>The drain spreads the work over ticks, which is right for a player walking past 456 chunks but
+     * wrong for startup: the wall is already planned and published, the loading screen is still up, and
+     * nothing else can run anyway. Each round forces a batch of chunks through the chunk source (C2ME
+     * generates them on its workers while managedBlock pumps), then writes those that arrived.
+     *
+     * @return chunks written
+     */
+    public static int paintPendingAtStartup(ServerLevel level) {
+        State state = state(level);
+        if (state.pending.isEmpty()) return 0;
+        int written = 0;
+        int rounds = 0;
+        while (!state.pending.isEmpty() && rounds++ < 64) {
+            java.util.List<ChunkKey> batch = new java.util.ArrayList<>(32);
+            for (ChunkKey key : state.pending) {
+                batch.add(key);
+                if (batch.size() >= 32) break;
+            }
+            if (batch.isEmpty()) break;
+            java.util.Map<ChunkKey, java.util.concurrent.CompletableFuture<?>> futures = new java.util.LinkedHashMap<>();
+            for (ChunkKey key : batch) {
+                try {
+                    futures.put(key, level.getChunkSource().getChunkFuture(key.x(), key.z(),
+                            net.minecraft.world.level.chunk.status.ChunkStatus.FULL, true));
+                } catch (RuntimeException cannotLoad) {
+                    state.pending.remove(key);
+                }
+            }
+            if (!futures.isEmpty()) {
+                java.util.concurrent.CompletableFuture<?> all = java.util.concurrent.CompletableFuture.allOf(
+                        futures.values().toArray(java.util.concurrent.CompletableFuture[]::new));
+                try {
+                    level.getServer().managedBlock(all::isDone);
+                } catch (RuntimeException interrupted) {
+                    GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_STARTUP_INTERRUPTED reason={}",
+                            interrupted.toString());
+                    break;
+                }
+            }
+            int settledThisRound = 0;
+            for (ChunkKey key : batch) {
+                LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
+                if (chunk == null) { state.pending.remove(key); continue; }
+                try {
+                    Sweep sweep = settle(level, chunk, key);
+                    if (sweep.status() == Status.SETTLED) {
+                        written += sweep.written();
+                        markDone(key);
+                    }
+                    state.pending.remove(key);
+                    state.settled.add(key);
+                    settledThisRound++;
+                } catch (RuntimeException failed) {
+                    state.pending.remove(key);
+                }
+            }
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STARTUP round={} settled={} written={} pending={}",
+                    rounds, settledThisRound, written, state.pending.size());
+        }
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_STARTUP_DONE rounds={} written={} pending={}",
+                rounds, written, state.pending.size());
+        return written;
+    }
+
     /** Loads the written-chunk marker; missing file just means nothing was written yet. */
     private static void loadDone(java.nio.file.Path greatWallRoot) {
         doneFile = greatWallRoot.resolve("backfilled.txt");

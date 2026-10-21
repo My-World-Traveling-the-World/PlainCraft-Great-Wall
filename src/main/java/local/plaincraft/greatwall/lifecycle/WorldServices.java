@@ -482,6 +482,7 @@ public final class WorldServices {
         // true rather than aspirational: this thread holds the stage, the tick loop cannot run while
         // it is parked in managedBlock, and the road gate now waits for the compile to publish.
         final boolean[] compiled = {false};
+        final boolean[] painted = {false};
         server.managedBlock(() -> {
             // Drain every world-local chunk queue: ChunkMap posts its completion callbacks here
             // and they must run for the structure screen's chunk requests to finish.
@@ -514,6 +515,18 @@ public final class WorldServices {
                 compiled[0] = compileWhileBlocked(server);
             }
             if (!compiled[0]) return false;
+            // The wall is planned, published and still holding the stage: paint it now, while nothing else
+            // can run and the loading screen is up. The drain would get there eventually, one batch per ten
+            // ticks, but the player would watch an empty corridor for the first minutes of the world.
+            if (!painted[0]) {
+                painted[0] = true;
+                try {
+                    local.plaincraft.greatwall.generation.WallBodyBackfill
+                            .paintPendingAtStartup(server.overworld());
+                } catch (Throwable paintFailed) {
+                    GreatWallMod.LOGGER.error("[GreatWall:S1C] WALL_BACKFILL_STARTUP_FAILED", paintFailed);
+                }
+            }
             // The compile can be deferred: compileAtStartup returns true after asking for it, and the
             // compile itself only runs once the fine sample publishes (PLANNING_COMPILE_WAIT_FOR_SAMPLE).
             // Its return value is therefore "I asked", not "it published" - holding the stage on it released
