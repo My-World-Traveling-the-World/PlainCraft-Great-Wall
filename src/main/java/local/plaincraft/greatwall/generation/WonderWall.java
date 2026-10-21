@@ -336,6 +336,12 @@ public final class WonderWall {
             BlockState deck = at == HALF_WIDTH - 5 ? DRAIN : (Math.floorMod(x + z, 7) == 0 ? WALK_ACCENT : WALK);
             written += put(level, chunk, x, walkY - 1, z, deck);
         }
+        // 城墙上的 3x3 篝火阵: every two hundred blocks, unlit, for the same quest.
+        if (Math.abs(t) <= 1 && Math.floorMod(s, 200) <= 2) {
+            written += put(level, chunk, x, walkY, z,
+                    Blocks.CAMPFIRE.defaultBlockState()
+                            .setValue(net.minecraft.world.level.block.CampfireBlock.LIT, false));
+        }
         // 吐水嘴: a stone spout every 48 blocks, so the wall reads as draining rather than as a trough.
         if (t == -(HALF_WIDTH - 1) && Math.floorMod(s, 48) == 0) {
             written += put(level, chunk, x, walkY - 2, z, CAP);
@@ -399,10 +405,12 @@ public final class WonderWall {
             if (!rim) continue;
             written += put(level, chunk, x, y, z, dy <= 6 ? FOUNDATION : (dy % 8 == 0 ? TRIM : BODY));
         }
-        // 点火: a lit brazier at the centre of the terrace - the smoke column is the signal.
+        // 3x3 篝火阵: left unlit on purpose - the player lights them for the beacon quest, and the
+        // campfire-optimisation mod keeps the particle cost down when several burn at once.
         if (Math.abs(x) <= 1 && Math.abs(z) <= 1) {
-            written += put(level, chunk, x, walkY + 24, z, Blocks.MAGMA_BLOCK.defaultBlockState());
-            written += put(level, chunk, x, walkY + 25, z, Blocks.CAMPFIRE.defaultBlockState().setValue(net.minecraft.world.level.block.CampfireBlock.LIT, true));
+            written += put(level, chunk, x, walkY + 24, z,
+                    Blocks.CAMPFIRE.defaultBlockState()
+                            .setValue(net.minecraft.world.level.block.CampfireBlock.LIT, false));
             return written;
         }
         int phase = Math.floorMod(x + z, 6);
