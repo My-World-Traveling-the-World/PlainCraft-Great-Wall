@@ -257,7 +257,12 @@ public final class WonderWall {
                     }
                 }
             } else {
-                written += put(level, chunk, x, walkY - 1, z, WALK);
+                // Interior: a stone-slab floor and a barrel-vaulted ceiling, as in the photographed
+                // chambers inside a 敌台 - the vault rises towards the middle of the room.
+                BlockState floor = Math.floorMod(x + z, 3) == 0 ? Blocks.SMOOTH_STONE.defaultBlockState() : WALK;
+                written += put(level, chunk, x, walkY - 1, z, floor);
+                int vault = walkY + 10 + (at <= 2 ? 2 : (at <= 5 ? 1 : 0));
+                written += put(level, chunk, x, vault, z, BODY);
                 written += put(level, chunk, x, walkY + TOWER_HEIGHT - 1, z, CAP);
             }
             return written;
