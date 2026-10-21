@@ -297,7 +297,26 @@ public final class WallBodyBackfill {
             if (settledThisDrain >= MAX_CHUNKS_PER_DRAIN) break;
             if (state.settling.contains(key)) continue;
             LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
-            if (chunk == null) continue; // not loaded: stays pending, and is never requested
+            if (chunk == null) {
+                // The road reaches the chunks it must paint by asking for them; the wall used to sit and
+                // wait for the player to wander past. 558 chunks is a small batch next to a pregeneration
+                // run, and forcing one at a time keeps the memory bounded while C2ME generates it on its
+                // worker pool - managedBlock pumps exactly those chunk tasks and nothing else.
+                if (!FORCE_LOAD.get()) continue;
+                try {
+                    var future = level.getChunkSource().getChunkFuture(key.x(), key.z(),
+                            net.minecraft.world.level.chunk.status.ChunkStatus.FULL, true);
+                    level.getServer().managedBlock(future::isDone);
+                    chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
+                } catch (RuntimeException cannotLoad) {
+                    if (FORCE_FAILURES.incrementAndGet() % 64 == 1) {
+                        GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_LOAD_FAILED owner={},{} reason={}",
+                                key.x(), key.z(), cannotLoad.toString());
+                    }
+                    continue;
+                }
+                if (chunk == null) continue;
+            }
             // Reading the plan only on CHUNK_LOAD is not enough: the wall's own sampling generates the
             // whole corridor, so by the time the queue exists every chunk it covers is already loaded
             // and no load event will ever fire for it again. A measured run queued 456 chunks that way
@@ -465,6 +484,12 @@ public final class WallBodyBackfill {
 
     /** Drains since the last log line; see the throttle in drain(). */
     private static long drainsSinceLog;
+    /** Whether the drain may ask for a chunk it needs; see the note in drain(). */
+    private static final java.util.concurrent.atomic.AtomicBoolean FORCE_LOAD =
+            new java.util.concurrent.atomic.AtomicBoolean(Boolean.parseBoolean(
+                    System.getProperty("greatwall.backfillForceLoad", "true")));
+    private static final java.util.concurrent.atomic.AtomicInteger FORCE_FAILURES =
+            new java.util.concurrent.atomic.AtomicInteger();
     /** Chunks already written, as "x_z" lines in greatwall/backfilled.txt; empty until installed. */
     private static final java.util.Set<String> DONE = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static volatile java.nio.file.Path doneFile;
