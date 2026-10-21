@@ -323,6 +323,37 @@ class BuildContractTest {
                 || key.startsWith("text.plaincraft_great_wall");
     }
 
+    /**
+     * The startup backfill may not call {@code ServerChunkCache.getChunkFuture}.
+     *
+     * <h2>The failure this prevents</h2>
+     * On the server thread that method does not return a pending future: it calls
+     * {@code mainThreadProcessor.managedBlock(future::isDone)} and parks the thread until the chunk is
+     * generated. Called from inside the startup pump - itself a {@code managedBlock} that drains the
+     * world-local chunk queue only between calls - the promotion callbacks the wait needs never run.
+     * A real session froze for twenty-five minutes this way: the server thread sat in
+     * {@code getChunkFuture}, all fourteen c2me workers were idle, and no log line was written after
+     * the eleventh batch. The ticket + {@code getChunkFutureMainThread} pair is the fix, and this guard
+     * keeps the blocking call from coming back.
+     */
+    @Test
+    void startupBackfillNeverUsesTheBlockingChunkRequest() throws IOException {
+        var file = java.nio.file.Path.of(
+                "src/main/java/local/plaincraft/greatwall/generation/WallBodyBackfill.java");
+        assertTrue(java.nio.file.Files.isRegularFile(file),
+                file + " is missing; this guard would pass while checking nothing");
+        var code = java.nio.file.Files.readString(file, StandardCharsets.UTF_8)
+                .replaceAll("(?s)/\\*.*?\\*/", "")
+                .replaceAll("(?m)//.*$", "");
+        assertFalse(code.contains(".getChunkFuture("),
+                "ServerChunkCache.getChunkFuture blocks the server thread inside its own startup pump and "
+                        + "deadlocks the world; use the ticket + getChunkFutureMainThread pair in requestChunk()");
+        assertTrue(code.contains("greatwall$request("),
+                "the non-blocking chunk request disappeared; the backfill cannot force a chunk without it");
+        assertTrue(code.contains("drainWorldLocalQueues("),
+                "the world-local queue drain disappeared; a request whose callbacks never run never completes");
+    }
+
     private static JsonObject resource(String name) throws IOException {
         var stream = BuildContractTest.class.getClassLoader().getResourceAsStream(name);
         assertNotNull(stream, name);
