@@ -90,6 +90,13 @@ public final class WonderWall {
                 }
             }
         }
+        // Showcase models behind spawn (negative X), isolated from every route.
+        for (int cx = Math.floorDiv(startX - 100, 16); cx <= Math.floorDiv(startX - 30, 16); cx++) {
+            for (int cz = Math.floorDiv(startZ - 30, 16); cz <= Math.floorDiv(startZ + 230, 16); cz++) {
+                long key = (((long) cx) << 32) ^ (cz & 0xFFFFFFFFL);
+                if (seen.add(key)) next.chunks.add(new long[] {cx, cz});
+            }
+        }
         job = next;
         GreatWallMod.LOGGER.info("[GreatWall:wonder] WONDER_ROUTES_START from=({},{}) routes={} length={} chunks={}",
                 startX, startZ, routes.size(), ROUTE_LENGTH, next.chunks.size());
@@ -173,6 +180,7 @@ public final class WonderWall {
             for (int lz = 0; lz < 16; lz++) {
                 int z = baseZ + lz;
                 int ground = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, lx, lz);
+                written += local.plaincraft.greatwall.generation.WonderShowcase.paint(job.level, chunk, x, z, ground);
                 // 入海端台: the wall runs into a stepped terrace at the end of the detailed route,
                 // the way the real wall ends in a fortified platform rather than a cut face.
                 int endX = job.routes.get(0).x() + job.routes.get(0).length() - 10;
