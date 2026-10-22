@@ -137,6 +137,7 @@ public final class WorldServices {
                     && level.getChunkSource().getGenerator()
                             instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
                 var spawn = level.getSharedSpawnPos();
+                local.plaincraft.greatwall.generation.GatehouseStamp.start(spawn.getX() + 64 + 216 - 12, level.getChunkSource().getChunkNow(0,0) != null ? 0 : 40, spawn.getZ() - 16);
                 local.plaincraft.greatwall.generation.WonderWall.startSample(
                         level, spawn.getX() + 64, spawn.getZ(), 320);
                 local.plaincraft.greatwall.generation.GateTemplate.start(level, -200, 40, 0);
@@ -200,6 +201,7 @@ public final class WorldServices {
 
             local.plaincraft.greatwall.generation.WallBodyBackfill.drain(server.overworld());
             local.plaincraft.greatwall.generation.WonderWall.tick(server.overworld());
+            local.plaincraft.greatwall.generation.GatehouseStamp.tick(server.overworld());
             local.plaincraft.greatwall.generation.GateTemplate.tick(server.overworld());
         });
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, successful) -> {
