@@ -55,11 +55,11 @@ public final class GateStamp {
     public static void tick(ServerLevel level) {
         if (done || !loaded || coords == null || coords.isEmpty()) return;
         if (autoGround) {
-            int ground = level.getChunkSource().getChunkNow(originX >> 4, originZ >> 4) != null
-                    ? level.getChunkSource().getChunkNow(originX >> 4, originZ >> 4)
-                            .getHeight(Heightmap.Types.WORLD_SURFACE, originX & 15, originZ & 15)
-                    : 64;
-            originY = ground;
+            // Do not guess: wait until the chunk under the gate is actually loaded, otherwise the whole
+            // model is stamped at a made-up height and floats in the sky.
+            var chunk = level.getChunkSource().getChunkNow(originX >> 4, originZ >> 4);
+            if (chunk == null) return;
+            originY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, originX & 15, originZ & 15);
             autoGround = false;
         }
         int budget = 2000;

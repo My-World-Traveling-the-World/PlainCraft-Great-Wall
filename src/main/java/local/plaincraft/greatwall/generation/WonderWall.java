@@ -24,10 +24,10 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * be judged from every orientation.
  */
 public final class WonderWall {
-    public static final int HALF_WIDTH = 10;
-    public static final int WALKWAY_HALF = 6;
-    public static final int CLEARANCE = 20;
-    public static final int PARAPET = 6;
+    public static final int HALF_WIDTH = 5;
+    public static final int WALKWAY_HALF = 2;
+    public static final int CLEARANCE = 15;
+    public static final int PARAPET = 3;
     public static final int INNER_PARAPET = 3;
     public static final int MAX_FILL = 80;
     public static final int TOWER_HALF = 16;
@@ -374,14 +374,14 @@ public final class WonderWall {
             }
         } else {
             for (int y = foot; y < walkY; y++) {
-                boolean rim = at >= HALF_WIDTH - 3;
+                boolean rim = at >= HALF_WIDTH - 2;
                 boolean base = y < foot + 4;   // solid base course: the hollow body must not be see-through
                 if (!rim && !base) continue;
                 written += put(level, chunk, x, y, z, band(walkY - 1 - y));
             }
         }
 
-        if (at < HALF_WIDTH - 3) {
+        if (at < HALF_WIDTH - 2) {
             BlockState deck = at == HALF_WIDTH - 4 ? DRAIN : (Math.floorMod(x + z, 7) == 0 ? WALK_ACCENT : WALK);
             written += put(level, chunk, x, walkY - 1, z, deck);
         }
@@ -395,7 +395,7 @@ public final class WonderWall {
         if (t == -(HALF_WIDTH - 1) && Math.floorMod(s, 48) == 0) {
             written += put(level, chunk, x, walkY - 2, z, CAP);
         }
-        if (t <= -(HALF_WIDTH - 3)) {
+        if (t <= -(HALF_WIDTH - 2)) {
             // Merlon three blocks wide, gap two: at this scale the old five-wide merlons read as one
             // long wall with the odd notch instead of as crenellation.
             int phase = Math.floorMod(s, 6);
@@ -406,7 +406,7 @@ public final class WonderWall {
             if (phase == 2) {
                 put(level, chunk, x, walkY + 1, z, AIR);
             }
-        } else if (t >= HALF_WIDTH - 3) {
+        } else if (t >= HALF_WIDTH - 2) {
             for (int y = 0; y < INNER_PARAPET; y++) {
                 written += put(level, chunk, x, walkY + y, z, y == INNER_PARAPET - 1 ? CAP : BODY);
             }
@@ -484,9 +484,10 @@ public final class WonderWall {
 
     /** Seven-band wall section, copied from the reference gate: base, body, terracotta band, body, quartz belt, body. */
     private static BlockState band(int depth) {
-        if (depth >= 16) return FOUNDATION;    // 4-layer plinth
-        if (depth == 12) return TERRACOTTA;    // decorative band
-        if (depth == 6) return QUARTZ;         // white belt course
+        // The reference wall, bottom up: stone plinth, stone-brick body, terracotta band, quartz belt.
+        if (depth >= 12) return FOUNDATION;    // 3-layer plinth
+        if (depth == 1) return TERRACOTTA;     // band just under the belt
+        if (depth == 0) return QUARTZ;         // white belt right under the walkway
         return BODY;
     }
 
