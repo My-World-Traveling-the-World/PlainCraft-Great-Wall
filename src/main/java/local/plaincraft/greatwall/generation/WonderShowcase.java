@@ -61,6 +61,14 @@ public final class WonderShowcase {
             if (y == 1 && ph >= 2) continue;
             written += put(level, chunk, x, top + y, z, y == 1 ? CAP : BODY);
         }
+        // 古风: red corner columns, an overhanging tile eave and a ridge line.
+        if (Math.abs(dx) == 11 && Math.abs(dz) == 11) {
+            for (int y = ground; y < top; y++) written += put(level, chunk, x, y, z, Blocks.RED_TERRACOTTA.defaultBlockState());
+        }
+        if (Math.abs(dx) <= 13 && Math.abs(dz) <= 13 && (Math.abs(dx) == 13 || Math.abs(dz) == 13)) {
+            written += put(level, chunk, x, top + 1, z, TILE);
+        }
+        if (Math.abs(dx) <= 1 && Math.abs(dz) <= 12) written += put(level, chunk, x, top + 2, z, TILE);
         return written;
     }
 
@@ -76,6 +84,12 @@ public final class WonderShowcase {
             written += put(level, chunk, x, y, z, dy <= 2 ? FOUNDATION : (dy % 6 == 0 ? TRIM : BODY));
         }
         if (Math.abs(dx) <= 6) written += put(level, chunk, x, top, z, TILE);
+        if (Math.abs(dx) <= 8 && Math.abs(dz) <= 16 && (Math.abs(dx) == 8 || Math.abs(dz) == 16)) {
+            written += put(level, chunk, x, top + 1, z, TILE);
+        }
+        if (Math.abs(dx) == 11 && Math.abs(dz) == 13) {
+            for (int y = ground; y < top; y++) written += put(level, chunk, x, y, z, Blocks.RED_TERRACOTTA.defaultBlockState());
+        }
         return written;
     }
 
