@@ -44,6 +44,8 @@ public final class WonderWall {
     private static final BlockState DRAIN = Blocks.COBBLESTONE.defaultBlockState();
     private static final BlockState CAP = Blocks.SMOOTH_STONE_SLAB.defaultBlockState();
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
+    private static final BlockState TERRACOTTA = Blocks.TERRACOTTA.defaultBlockState();
+    private static final BlockState QUARTZ = Blocks.QUARTZ_BLOCK.defaultBlockState();
 
     private WonderWall() {
     }
@@ -239,7 +241,7 @@ public final class WonderWall {
         // hollow body, which reads as "the wall is floating".
         if (s <= 1 || s >= routeLength - 2) {
             for (int y = foot; y < walkY; y++) {
-                written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 3 ? FOUNDATION : ((walkY - 1 - y) % 6 == 0 ? TRIM : BODY));
+                written += put(level, chunk, x, y, z, band(walkY - 1 - y));
             }
             return written + put(level, chunk, x, walkY - 1, z, WALK);
         }
@@ -249,7 +251,7 @@ public final class WonderWall {
             if (perimeter) {
                 for (int y = ground - 1; y < walkY; y++) {
                     if (at >= TOWER_HALF || Math.abs(s - 128) >= TOWER_HALF) continue;
-                    written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 3 ? FOUNDATION : ((walkY - 1 - y) % 6 == 0 ? TRIM : BODY));
+                    written += put(level, chunk, x, y, z, band(walkY - 1 - y));
                 }
                 // 拱门: one arched doorway per face at walkway level, the way a 敌台 is entered.
                 boolean faceDoor = (Math.abs(s - 128) <= 3 && at >= TOWER_HALF - 1)
@@ -331,7 +333,7 @@ public final class WonderWall {
 
         if (gate) {
             for (int y = foot; y < walkY; y++) {
-                written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 3 ? FOUNDATION : ((walkY - 1 - y) % 6 == 0 ? TRIM : BODY));
+                written += put(level, chunk, x, y, z, band(walkY - 1 - y));
             }
             // The gate is a tunnel at GROUND level, not a hole through the walkway: the wall's walkway
             // must stay continuous over the gate, otherwise the wall is cut in two at every gate.
@@ -372,8 +374,7 @@ public final class WonderWall {
                 boolean rim = at >= HALF_WIDTH - 3;
                 boolean base = y < foot + 4;   // solid base course: the hollow body must not be see-through
                 if (!rim && !base) continue;
-                int dy = walkY - 1 - y;
-                written += put(level, chunk, x, y, z, dy <= 3 ? FOUNDATION : (dy % 6 == 0 ? TRIM : BODY));
+                written += put(level, chunk, x, y, z, band(walkY - 1 - y));
             }
         }
 
@@ -476,6 +477,14 @@ public final class WonderWall {
             written += put(level, chunk, x, walkY + 24 + y, z, y == 2 ? CAP : BODY);
         }
         return written;
+    }
+
+    /** Seven-band wall section, copied from the reference gate: base, body, terracotta band, body, quartz belt, body. */
+    private static BlockState band(int depth) {
+        if (depth >= 16) return FOUNDATION;    // 4-layer plinth
+        if (depth == 12) return TERRACOTTA;    // decorative band
+        if (depth == 6) return QUARTZ;         // white belt course
+        return BODY;
     }
 
     private static long put(ServerLevel level, LevelChunk chunk, int x, int y, int z, BlockState state) {
