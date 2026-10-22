@@ -197,7 +197,8 @@ public final class WonderWall {
                 }
                 // 坡道: a stair from the walkway down to the ground every hundred and fifty blocks.
                 int rampPhase = Math.floorMod(span, 150);
-                if (span >= 0 && rampPhase < 20 && t >= HALF_WIDTH && t <= HALF_WIDTH + 3) {
+                int rampT = z - main.z();
+                if (span >= 0 && rampPhase < 20 && rampT >= HALF_WIDTH && rampT <= HALF_WIDTH + 3) {
                     int y = ground + CLEARANCE - rampPhase;
                     written += put(job.level, chunk, x, y, z, BODY);
                 }
