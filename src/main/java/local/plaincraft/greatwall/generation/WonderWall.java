@@ -324,7 +324,7 @@ public final class WonderWall {
             }
         } else {
             for (int y = foot; y < walkY; y++) {
-                boolean rim = at >= HALF_WIDTH - 4;
+                boolean rim = at >= HALF_WIDTH - 3;
                 boolean base = y < foot + 4;   // solid base course: the hollow body must not be see-through
                 if (!rim && !base) continue;
                 int dy = walkY - 1 - y;
@@ -332,8 +332,8 @@ public final class WonderWall {
             }
         }
 
-        if (at < HALF_WIDTH - 4) {
-            BlockState deck = at == HALF_WIDTH - 5 ? DRAIN : (Math.floorMod(x + z, 7) == 0 ? WALK_ACCENT : WALK);
+        if (at < HALF_WIDTH - 3) {
+            BlockState deck = at == HALF_WIDTH - 4 ? DRAIN : (Math.floorMod(x + z, 7) == 0 ? WALK_ACCENT : WALK);
             written += put(level, chunk, x, walkY - 1, z, deck);
         }
         // 城墙上的 3x3 篝火阵: every two hundred blocks, unlit, for the same quest.
@@ -346,7 +346,7 @@ public final class WonderWall {
         if (t == -(HALF_WIDTH - 1) && Math.floorMod(s, 48) == 0) {
             written += put(level, chunk, x, walkY - 2, z, CAP);
         }
-        if (t <= -(HALF_WIDTH - 4)) {
+        if (t <= -(HALF_WIDTH - 3)) {
             // Merlon three blocks wide, gap two: at this scale the old five-wide merlons read as one
             // long wall with the odd notch instead of as crenellation.
             int phase = Math.floorMod(s, 5);
@@ -357,7 +357,7 @@ public final class WonderWall {
             if (phase == 2) {
                 put(level, chunk, x, walkY + 1, z, AIR);
             }
-        } else if (t >= HALF_WIDTH - 4) {
+        } else if (t >= HALF_WIDTH - 3) {
             for (int y = 0; y < INNER_PARAPET; y++) {
                 written += put(level, chunk, x, walkY + y, z, y == INNER_PARAPET - 1 ? CAP : BODY);
             }
