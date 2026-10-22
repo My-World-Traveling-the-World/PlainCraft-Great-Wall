@@ -35,6 +35,9 @@ public final class WonderWall {
     public static final int GATE_HALF = 8;
     public static final int GATE_HEIGHT = 14;
     public static final int ROUTE_LENGTH = 600;
+    /** Span of the detailed route the reference gate is stamped into. */
+    public static final int GATE_STAMP_FROM = 152;
+    public static final int GATE_STAMP_TO = 280;
 
     private static final BlockState FOUNDATION = Blocks.COBBLED_DEEPSLATE.defaultBlockState();
     private static final BlockState BODY = Blocks.STONE_BRICKS.defaultBlockState();
@@ -227,6 +230,9 @@ public final class WonderWall {
                     double s = rx * route.dx() + rz * route.dz();
                     double t = -rx * route.dz() + rz * route.dx();
                     if (s < 0 || s >= route.length() || Math.abs(t) > HALF_WIDTH) continue;
+                    // The reference gate occupies this span: leave it empty so the stamped model and the
+                    // rule generator never fight over the same blocks.
+                    if (route.detailed() && s >= GATE_STAMP_FROM && s < GATE_STAMP_TO) continue;
                     written += wallColumn(job.level, chunk, x, z, (int) Math.round(t), ground,
                             ground + CLEARANCE, (int) s, route.detailed(), route.length());
                 }
