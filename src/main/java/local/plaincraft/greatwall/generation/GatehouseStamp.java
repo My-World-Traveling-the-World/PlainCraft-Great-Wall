@@ -29,6 +29,7 @@ public final class GatehouseStamp {
     private static boolean done;
     private static int originX, originY, originZ;
     private static int cursor;
+    private static boolean autoGround;
     private static int budget;
 
     private GatehouseStamp() {
@@ -39,6 +40,7 @@ public final class GatehouseStamp {
         originX = x;
         originY = y;
         originZ = z;
+        autoGround = true;
         cursor = 0;
         done = false;
         load();
@@ -46,6 +48,13 @@ public final class GatehouseStamp {
 
     public static void tick(ServerLevel level) {
         if (done || !loaded || grid == null) return;
+        if (autoGround && level != null) {
+            int ground = level.getChunkSource().getChunkNow(0, 0) != null
+                    ? level.getChunkSource().getChunkNow(0, 0).getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, 0, 0)
+                    : 40;
+            originY = ground + 20;
+            autoGround = false;
+        }
         int tx = sx / 2, ty = sy / 2, tz = sz / 2;
         int total = tx * ty * tz;
         int remaining = 2000;

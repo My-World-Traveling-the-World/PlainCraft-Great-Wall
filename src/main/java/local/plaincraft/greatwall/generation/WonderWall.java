@@ -353,16 +353,6 @@ public final class WonderWall {
                 if (at <= GATE_HALF) {
                     written += put(level, chunk, x, ground, z, Blocks.SMOOTH_STONE.defaultBlockState());
                 }
-                // Gatehouse above: the walkway passes through its floor, windows and crenellation above.
-                for (int y = walkY; y < walkY + 22; y++) {
-                    int dy = y - walkY;
-                    boolean window = (dy >= 5 && dy < 9 || dy >= 14 && dy < 18) && Math.floorMod(s, 6) < 3;
-                    written += put(level, chunk, x, y, z, window ? AIR : BODY);
-                }
-                written += put(level, chunk, x, walkY + 22, z, CAP);
-                // 两级瓦顶
-                if (at <= 8) written += put(level, chunk, x, walkY + 23, z, Blocks.DEEPSLATE_TILES.defaultBlockState());
-                if (at <= 4) written += put(level, chunk, x, walkY + 24, z, Blocks.DEEPSLATE_TILES.defaultBlockState());
                 // 券脸：门洞边缘包一圈 chiseled
                 if (at == GATE_HALF) {
                     for (int y = ground + 1; y <= ground + GATE_HEIGHT; y++) {
