@@ -299,25 +299,27 @@ public final class WonderWall {
             for (int y = foot; y < walkY; y++) {
                 written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 6 ? FOUNDATION : BODY);
             }
+            // The gate is a tunnel at GROUND level, not a hole through the walkway: the wall's walkway
+            // must stay continuous over the gate, otherwise the wall is cut in two at every gate.
             if (at <= GATE_HALF) {
-                // A barrel vault: the opening loses height towards the jambs, so the top reads as an arch
-                // instead of a square slot.
-                int arch = GATE_HEIGHT - 1 - (at * at) / 12;
-                for (int y = 0; y < arch; y++) {
-                    written += put(level, chunk, x, walkY - 2 - y, z, AIR);
+                int springing = ground + 1;
+                int crown = ground + GATE_HEIGHT - (at * at) / 24;
+                for (int y = springing; y <= crown; y++) {
+                    written += put(level, chunk, x, y, z, AIR);
                 }
-                // Gatehouse above the vault: a window band and a crenellated top, the way a real 城楼
-                // sits over the gate rather than leaving a bare bridge of masonry.
+                if (at <= GATE_HALF) {
+                    written += put(level, chunk, x, ground, z, Blocks.SMOOTH_STONE.defaultBlockState());
+                }
+                // Gatehouse above: the walkway passes through its floor, windows and crenellation above.
                 for (int y = walkY; y < walkY + 14; y++) {
                     int dy = y - walkY;
                     boolean window = dy >= 5 && dy < 9 && Math.floorMod(s, 6) < 3;
                     written += put(level, chunk, x, y, z, window ? AIR : BODY);
                 }
                 written += put(level, chunk, x, walkY + 14, z, CAP);
-                // 门扇: iron bars across the vault, so the gate reads as a gate and not as a hole.
                 if (Math.abs(s - 316) <= 1) {
-                    for (int y = 1; y < GATE_HEIGHT - 2; y++) {
-                        if (at <= GATE_HALF) written += put(level, chunk, x, walkY - 2 - y, z, Blocks.IRON_BARS.defaultBlockState());
+                    for (int y = ground + 1; y <= ground + GATE_HEIGHT - 2; y++) {
+                        if (at <= GATE_HALF) written += put(level, chunk, x, y, z, Blocks.IRON_BARS.defaultBlockState());
                     }
                 }
                 return written;
