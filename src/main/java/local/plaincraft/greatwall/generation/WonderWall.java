@@ -34,7 +34,7 @@ public final class WonderWall {
     public static final int TOWER_HEIGHT = 32;
     public static final int GATE_HALF = 8;
     public static final int GATE_HEIGHT = 18;
-    public static final int ROUTE_LENGTH = 2000;
+    public static final int ROUTE_LENGTH = 600;
 
     private static final BlockState FOUNDATION = Blocks.COBBLED_DEEPSLATE.defaultBlockState();
     private static final BlockState BODY = Blocks.STONE_BRICKS.defaultBlockState();
@@ -181,7 +181,7 @@ public final class WonderWall {
                     written += platformColumn(job.level, chunk, x, z, x - endX, z - endZ, ground);
                 }
                 // 烽火台: a beacon tower standing off the wall, square, solid, crenellated.
-                int beaconX = job.routes.get(0).x() + 800;
+                int beaconX = job.routes.get(0).x() + 300;
                 int beaconZ = job.routes.get(0).z() - 60;
                 if (Math.abs(x - beaconX) <= 8 && Math.abs(z - beaconZ) <= 8) {
                     written += beaconColumn(job.level, chunk, x, z, ground);
@@ -205,7 +205,7 @@ public final class WonderWall {
         long written = 0L;
         int at = Math.abs(t);
         int foot = Math.max(ground - 1, walkY - MAX_FILL);
-        boolean gate = detailed && s >= 300 && s < 332;
+        boolean gate = detailed && s >= 200 && s < 232;
         boolean tower = detailed && s >= 96 && s < 160;
 
         // Close both ends of every route: an open cross-section lets you see straight through the
@@ -351,8 +351,8 @@ public final class WonderWall {
         if (t <= -(HALF_WIDTH - 3)) {
             // Merlon three blocks wide, gap two: at this scale the old five-wide merlons read as one
             // long wall with the odd notch instead of as crenellation.
-            int phase = Math.floorMod(s, 5);
-            int crenel = phase < 2 ? 3 : PARAPET;
+            int phase = Math.floorMod(s, 6);
+            int crenel = phase < 3 ? 3 : PARAPET;
             for (int y = 0; y < crenel; y++) {
                 written += put(level, chunk, x, walkY + y, z, y == crenel - 1 ? CAP : BODY);
             }
