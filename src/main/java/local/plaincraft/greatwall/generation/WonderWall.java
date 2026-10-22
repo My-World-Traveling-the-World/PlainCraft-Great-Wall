@@ -212,7 +212,7 @@ public final class WonderWall {
         // hollow body, which reads as "the wall is floating".
         if (s <= 1 || s >= routeLength - 2) {
             for (int y = foot; y < walkY; y++) {
-                written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 6 ? FOUNDATION : BODY);
+                written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 3 ? FOUNDATION : ((walkY - 1 - y) % 6 == 0 ? TRIM : BODY));
             }
             return written + put(level, chunk, x, walkY - 1, z, WALK);
         }
@@ -222,7 +222,7 @@ public final class WonderWall {
             if (perimeter) {
                 for (int y = ground - 1; y < walkY; y++) {
                     if (at >= TOWER_HALF || Math.abs(s - 128) >= TOWER_HALF) continue;
-                    written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 6 ? FOUNDATION : BODY);
+                    written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 3 ? FOUNDATION : ((walkY - 1 - y) % 6 == 0 ? TRIM : BODY));
                 }
                 // 拱门: one arched doorway per face at walkway level, the way a 敌台 is entered.
                 boolean faceDoor = (Math.abs(s - 128) <= 3 && at >= TOWER_HALF - 1)
@@ -297,7 +297,7 @@ public final class WonderWall {
 
         if (gate) {
             for (int y = foot; y < walkY; y++) {
-                written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 6 ? FOUNDATION : BODY);
+                written += put(level, chunk, x, y, z, (walkY - 1 - y) <= 3 ? FOUNDATION : ((walkY - 1 - y) % 6 == 0 ? TRIM : BODY));
             }
             // The gate is a tunnel at GROUND level, not a hole through the walkway: the wall's walkway
             // must stay continuous over the gate, otherwise the wall is cut in two at every gate.
@@ -330,7 +330,7 @@ public final class WonderWall {
                 boolean base = y < foot + 4;   // solid base course: the hollow body must not be see-through
                 if (!rim && !base) continue;
                 int dy = walkY - 1 - y;
-                written += put(level, chunk, x, y, z, dy <= 6 ? FOUNDATION : (dy % 8 == 0 ? TRIM : BODY));
+                written += put(level, chunk, x, y, z, dy <= 3 ? FOUNDATION : (dy % 6 == 0 ? TRIM : BODY));
             }
         }
 
@@ -377,7 +377,7 @@ public final class WonderWall {
             int half = 24 - Math.min(16, dy / 4);
             if (at > half) continue;
             if (at < half - 3 && dy > 4) continue;
-            written += put(level, chunk, x, y, z, dy <= 6 ? FOUNDATION : (dy % 8 == 0 ? TRIM : BODY));
+            written += put(level, chunk, x, y, z, dy <= 3 ? FOUNDATION : (dy % 6 == 0 ? TRIM : BODY));
         }
         if (at <= 24) written += put(level, chunk, x, walkY + 11, z, CAP);
         // 澄海楼: a small pavilion on the terrace, the way the wall's sea end carries a tower.
@@ -405,7 +405,7 @@ public final class WonderWall {
             int dy = walkY + 23 - y;
             boolean rim = Math.abs(x) >= 0;   // solid beacon: no hollow, it must read as a mass
             if (!rim) continue;
-            written += put(level, chunk, x, y, z, dy <= 6 ? FOUNDATION : (dy % 8 == 0 ? TRIM : BODY));
+            written += put(level, chunk, x, y, z, dy <= 3 ? FOUNDATION : (dy % 6 == 0 ? TRIM : BODY));
         }
         // 3x3 篝火阵: left unlit on purpose - the player lights them for the beacon quest, and the
         // campfire-optimisation mod keeps the particle cost down when several burn at once.
