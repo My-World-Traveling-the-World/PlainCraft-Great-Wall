@@ -26,7 +26,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 public final class WonderWall {
     public static final int HALF_WIDTH = 5;
     public static final int WALKWAY_HALF = 2;
-    public static final int CLEARANCE = 15;
+    public static final int CLEARANCE = 14;
     public static final int PARAPET = 3;
     public static final int INNER_PARAPET = 3;
     public static final int MAX_FILL = 80;
@@ -211,19 +211,7 @@ public final class WonderWall {
                     }
                 }
                 // 坡道: a stair from the walkway down to the ground every hundred and fifty blocks.
-                int rampPhase = Math.floorMod(span, 150);
-                int rampT = z - main.z();
-                // 8-wide staircase with a one-block parapet on each side, twenty steps down to the ground.
-                if (span >= 0 && rampPhase < 20 && rampT >= HALF_WIDTH && rampT <= HALF_WIDTH + 9) {
-                    int y = ground + CLEARANCE - rampPhase;
-                    boolean side = rampT == HALF_WIDTH || rampT == HALF_WIDTH + 9;
-                    if (side) {
-                        written += put(job.level, chunk, x, y, z, BODY);
-                        written += put(job.level, chunk, x, y + 1, z, CAP);
-                    } else {
-                        written += put(job.level, chunk, x, y, z, BODY);
-                    }
-                }
+
                 for (Route route : job.routes) {
                     double rx = x - route.x();
                     double rz = z - route.z();
