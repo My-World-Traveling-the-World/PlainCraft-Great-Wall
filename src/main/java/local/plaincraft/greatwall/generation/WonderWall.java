@@ -186,6 +186,21 @@ public final class WonderWall {
                 if (Math.abs(x - beaconX) <= 8 && Math.abs(z - beaconZ) <= 8) {
                     written += beaconColumn(job.level, chunk, x, z, ground);
                 }
+                // 堡垒: a seven-by-seven outpost every four hundred blocks, off the outer face.
+                Route main = job.routes.get(0);
+                int span = (int) Math.floor(x - main.x());
+                if (span % 400 == 0 && Math.abs(span) < 4000) {
+                    int fz = main.z() - 24;
+                    if (Math.abs(x - (main.x() + span)) <= 3 && Math.abs(z - fz) <= 3) {
+                        written += fortColumn(job.level, chunk, x, z, ground);
+                    }
+                }
+                // 坡道: a stair from the walkway down to the ground every hundred and fifty blocks.
+                int rampPhase = Math.floorMod(span, 150);
+                if (span >= 0 && rampPhase < 20 && t >= HALF_WIDTH && t <= HALF_WIDTH + 3) {
+                    int y = ground + CLEARANCE - rampPhase;
+                    written += put(job.level, chunk, x, y, z, BODY);
+                }
                 for (Route route : job.routes) {
                     double rx = x - route.x();
                     double rz = z - route.z();
@@ -380,6 +395,19 @@ public final class WonderWall {
             for (int y = 0; y < INNER_PARAPET; y++) {
                 written += put(level, chunk, x, walkY + y, z, y == INNER_PARAPET - 1 ? CAP : BODY);
             }
+        }
+        return written;
+    }
+
+    private static long fortColumn(ServerLevel level, LevelChunk chunk, int x, int z, int ground) {
+        long written = 0L;
+        int walkY = ground + 6;
+        for (int y = ground - 1; y < walkY; y++) {
+            int dy = walkY - 1 - y;
+            written += put(level, chunk, x, y, z, dy <= 2 ? FOUNDATION : BODY);
+        }
+        for (int y = 0; y < 2; y++) {
+            written += put(level, chunk, x, walkY + y, z, y == 1 ? CAP : BODY);
         }
         return written;
     }
