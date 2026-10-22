@@ -238,6 +238,7 @@ public final class WonderWall {
                 for (int y = walkY; y < walkY + TOWER_HEIGHT; y++) {
                     int dy = y - walkY;
                     boolean window = dy >= 20 && dy < 26 && Math.floorMod(x + z, 8) < 4;
+                    if (dy == 19) { written += put(level, chunk, x, y, z, TRIM); }
                     boolean door = dy < 10 && Math.abs(t) <= 3 && Math.abs(s - 128) <= TOWER_HALF
                             && (Math.abs(s - 128) >= TOWER_HALF - 1 || at >= TOWER_HALF - 1);
                     written += put(level, chunk, x, y, z, (window || door) ? AIR : (dy % 12 == 0 ? TRIM : BODY));
@@ -295,6 +296,12 @@ public final class WonderWall {
                     if (Math.abs(s - 144) <= 1 && t == 2) {
                         written += put(level, chunk, x, walkY, z, Blocks.CHEST.defaultBlockState());
                     }
+                    if (Math.abs(s - 120) <= 1 && t == -2) {
+                        written += put(level, chunk, x, walkY, z, Blocks.CAULDRON.defaultBlockState());
+                    }
+                    if (Math.abs(s - 136) <= 1 && t == 2) {
+                        written += put(level, chunk, x, walkY, z, Blocks.SMOKER.defaultBlockState());
+                    }
                     if (Math.abs(s - 128) <= 1 && t == 0) {
                         written += put(level, chunk, x, walkY + 9, z, Blocks.LANTERN.defaultBlockState());
                     }
@@ -319,12 +326,21 @@ public final class WonderWall {
                     written += put(level, chunk, x, ground, z, Blocks.SMOOTH_STONE.defaultBlockState());
                 }
                 // Gatehouse above: the walkway passes through its floor, windows and crenellation above.
-                for (int y = walkY; y < walkY + 14; y++) {
+                for (int y = walkY; y < walkY + 22; y++) {
                     int dy = y - walkY;
-                    boolean window = dy >= 5 && dy < 9 && Math.floorMod(s, 6) < 3;
+                    boolean window = (dy >= 5 && dy < 9 || dy >= 14 && dy < 18) && Math.floorMod(s, 6) < 3;
                     written += put(level, chunk, x, y, z, window ? AIR : BODY);
                 }
-                written += put(level, chunk, x, walkY + 14, z, CAP);
+                written += put(level, chunk, x, walkY + 22, z, CAP);
+                // 两级瓦顶
+                if (at <= 8) written += put(level, chunk, x, walkY + 23, z, Blocks.DEEPSLATE_TILES.defaultBlockState());
+                if (at <= 4) written += put(level, chunk, x, walkY + 24, z, Blocks.DEEPSLATE_TILES.defaultBlockState());
+                // 券脸：门洞边缘包一圈 chiseled
+                if (at == GATE_HALF) {
+                    for (int y = ground + 1; y <= ground + GATE_HEIGHT; y++) {
+                        written += put(level, chunk, x, y, z, TRIM);
+                    }
+                }
                 if (Math.abs(s - 316) <= 1) {
                     for (int y = ground + 1; y <= ground + GATE_HEIGHT - 2; y++) {
                         if (at <= GATE_HALF) written += put(level, chunk, x, y, z, Blocks.IRON_BARS.defaultBlockState());
