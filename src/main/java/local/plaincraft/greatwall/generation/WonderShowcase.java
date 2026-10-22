@@ -69,6 +69,16 @@ public final class WonderShowcase {
             written += put(level, chunk, x, top + 1, z, TILE);
         }
         if (Math.abs(dx) <= 1 && Math.abs(dz) <= 12) written += put(level, chunk, x, top + 2, z, TILE);
+        // 斗拱: a stepped bracket course under the eave, one block out from the wall face.
+        if (Math.abs(dx) == 12 || Math.abs(dz) == 12) {
+            written += put(level, chunk, x, top, z, Blocks.STONE_BRICK_STAIRS.defaultBlockState());
+        }
+        // 窗棂: narrow lattice windows, two blocks wide, every ten blocks along each face.
+        if ((Math.abs(dx) == 11 || Math.abs(dz) == 11) && Math.floorMod(x + z, 10) < 2) {
+            for (int y = ground + 12; y <= ground + 15; y++) {
+                written += put(level, chunk, x, y, z, Blocks.GLASS_PANE.defaultBlockState());
+            }
+        }
         return written;
     }
 
@@ -89,6 +99,12 @@ public final class WonderShowcase {
         }
         if (Math.abs(dx) == 11 && Math.abs(dz) == 13) {
             for (int y = ground; y < top; y++) written += put(level, chunk, x, y, z, Blocks.RED_TERRACOTTA.defaultBlockState());
+        }
+        // 窗棂 on the gatehouse face
+        if ((Math.abs(dx) == 11 || Math.abs(dz) == 13) && Math.floorMod(x + z, 8) < 2) {
+            for (int y = ground + 16; y <= ground + 19; y++) {
+                written += put(level, chunk, x, y, z, Blocks.GLASS_PANE.defaultBlockState());
+            }
         }
         return written;
     }
