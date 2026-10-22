@@ -91,8 +91,10 @@ public final class WonderWall {
             }
         }
         // Showcase models behind spawn (negative X), isolated from every route.
-        for (int cx = Math.floorDiv(startX - 100, 16); cx <= Math.floorDiv(startX - 30, 16); cx++) {
-            for (int cz = Math.floorDiv(startZ - 30, 16); cz <= Math.floorDiv(startZ + 230, 16); cz++) {
+        // Absolute world coordinates: the models sit behind the world spawn (negative X), which is not
+        // relative to the route start at all.
+        for (int cx = Math.floorDiv(-100, 16); cx <= Math.floorDiv(-30, 16); cx++) {
+            for (int cz = Math.floorDiv(-30, 16); cz <= Math.floorDiv(230, 16); cz++) {
                 long key = (((long) cx) << 32) ^ (cz & 0xFFFFFFFFL);
                 if (seen.add(key)) next.chunks.add(new long[] {cx, cz});
             }
