@@ -74,10 +74,10 @@ public final class WonderWall {
     /** Starts three 2000-block routes from the given point: east, north and diagonal. */
     public static void startSample(ServerLevel level, int startX, int startZ, int ignored) {
         if (level == null) return;
+        // Two straight routes only: the diagonal read badly as voxels and was dropped on request.
         List<Route> routes = List.of(
                 new Route(startX, startZ, 1.0D, 0.0D, ROUTE_LENGTH, true),
-                new Route(startX, startZ, 0.0D, 1.0D, ROUTE_LENGTH, false),
-                new Route(startX, startZ, 0.70710678D, 0.70710678D, ROUTE_LENGTH, false));
+                new Route(startX, startZ, 0.0D, 1.0D, ROUTE_LENGTH, false));
         Job next = new Job(level, routes);
         Set<Long> seen = new LinkedHashSet<>();
         for (Route route : routes) {
