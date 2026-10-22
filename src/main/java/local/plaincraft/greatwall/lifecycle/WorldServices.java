@@ -139,6 +139,7 @@ public final class WorldServices {
                 var spawn = level.getSharedSpawnPos();
                 local.plaincraft.greatwall.generation.WonderWall.startSample(
                         level, spawn.getX() + 64, spawn.getZ(), 320);
+                local.plaincraft.greatwall.generation.GateTemplate.start(level, -200, 40, 0);
             }            var services = find(server);
             if (services != null) services.openDimension(level);
         });
@@ -199,6 +200,7 @@ public final class WorldServices {
 
             local.plaincraft.greatwall.generation.WallBodyBackfill.drain(server.overworld());
             local.plaincraft.greatwall.generation.WonderWall.tick(server.overworld());
+            local.plaincraft.greatwall.generation.GateTemplate.tick(server.overworld());
         });
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, successful) -> {
             var services = find(server);
