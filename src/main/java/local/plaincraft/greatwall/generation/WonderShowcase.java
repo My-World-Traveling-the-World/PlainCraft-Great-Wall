@@ -33,13 +33,9 @@ public final class WonderShowcase {
 
     /** True when the column belongs to one of the showcase models. */
     public static long paint(ServerLevel level, LevelChunk chunk, int x, int z, int ground) {
-        long written = 0L;
-        written += tower(level, chunk, x, z, ground, -64, 0);
-        written += gate(level, chunk, x, z, ground, -64, 48);
-        written += beacon(level, chunk, x, z, ground, -64, 96);
-        written += platform(level, chunk, x, z, ground, -64, 144);
-        written += fort(level, chunk, x, z, ground, -64, 200);
-        return written;
+        // The hand-made showcase models are retired: the wall and gate now come from the player's
+        // reference templates, so these approximations only added clutter.
+        return 0L;
     }
 
     private static long tower(ServerLevel level, LevelChunk chunk, int x, int z, int ground, int cx, int cz) {

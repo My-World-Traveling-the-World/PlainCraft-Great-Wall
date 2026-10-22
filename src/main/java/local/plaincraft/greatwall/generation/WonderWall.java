@@ -376,8 +376,11 @@ public final class WonderWall {
             // Extrude the reference cross-section: hollow body, mid floor, quartz-edged walkway and
             // one-thick parapets. Below the body, pour a solid foundation down to the ground.
             int topY = walkY + WallProfile.ABOVE_WALK;
+            // Merlon rhythm measured off the reference: three solid, one gap, period four.
+            boolean topGap = Math.floorMod(s, 4) == 3;
             for (int y = topY; y >= ground - 1; y--) {
                 int depth = topY - y;
+                if (topGap && depth == 0) continue;
                 BlockState st = WallProfile.at(t, depth);
                 if (st != null) {
                     written += put(level, chunk, x, y, z, st);
