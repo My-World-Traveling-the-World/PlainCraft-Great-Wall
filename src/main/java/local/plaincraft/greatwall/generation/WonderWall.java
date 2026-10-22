@@ -33,7 +33,7 @@ public final class WonderWall {
     public static final int TOWER_HALF = 16;
     public static final int TOWER_HEIGHT = 32;
     public static final int GATE_HALF = 8;
-    public static final int GATE_HEIGHT = 18;
+    public static final int GATE_HEIGHT = 14;
     public static final int ROUTE_LENGTH = 600;
 
     private static final BlockState FOUNDATION = Blocks.COBBLED_DEEPSLATE.defaultBlockState();
@@ -210,9 +210,16 @@ public final class WonderWall {
                 // 坡道: a stair from the walkway down to the ground every hundred and fifty blocks.
                 int rampPhase = Math.floorMod(span, 150);
                 int rampT = z - main.z();
-                if (span >= 0 && rampPhase < 20 && rampT >= HALF_WIDTH && rampT <= HALF_WIDTH + 3) {
+                // 8-wide staircase with a one-block parapet on each side, twenty steps down to the ground.
+                if (span >= 0 && rampPhase < 20 && rampT >= HALF_WIDTH && rampT <= HALF_WIDTH + 9) {
                     int y = ground + CLEARANCE - rampPhase;
-                    written += put(job.level, chunk, x, y, z, BODY);
+                    boolean side = rampT == HALF_WIDTH || rampT == HALF_WIDTH + 9;
+                    if (side) {
+                        written += put(job.level, chunk, x, y, z, BODY);
+                        written += put(job.level, chunk, x, y + 1, z, CAP);
+                    } else {
+                        written += put(job.level, chunk, x, y, z, BODY);
+                    }
                 }
                 for (Route route : job.routes) {
                     double rx = x - route.x();
