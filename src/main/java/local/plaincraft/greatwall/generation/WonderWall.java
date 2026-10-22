@@ -373,12 +373,19 @@ public final class WonderWall {
                 return written;
             }
         } else {
-            for (int y = foot; y < walkY; y++) {
-                boolean rim = at >= HALF_WIDTH - 2;
-                boolean base = y < foot + 4;   // solid base course: the hollow body must not be see-through
-                if (!rim && !base) continue;
-                written += put(level, chunk, x, y, z, band(walkY - 1 - y));
+            // Extrude the reference cross-section: hollow body, mid floor, quartz-edged walkway and
+            // one-thick parapets. Below the body, pour a solid foundation down to the ground.
+            int topY = walkY + WallProfile.ABOVE_WALK;
+            for (int y = topY; y >= ground - 1; y--) {
+                int depth = topY - y;
+                BlockState st = WallProfile.at(t, depth);
+                if (st != null) {
+                    written += put(level, chunk, x, y, z, st);
+                } else if (depth >= WallProfile.DEPTH) {
+                    written += put(level, chunk, x, y, z, FOUNDATION);
+                }
             }
+            return written;
         }
 
         if (at < HALF_WIDTH - 2) {
