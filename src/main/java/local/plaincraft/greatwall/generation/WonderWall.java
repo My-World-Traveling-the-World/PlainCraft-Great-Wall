@@ -191,7 +191,7 @@ public final class WonderWall {
                     double rz = z - route.z();
                     double s = rx * route.dx() + rz * route.dz();
                     double t = -rx * route.dz() + rz * route.dx();
-                    if (s < 0 || s >= route.length() || Math.abs(t) > HALF_WIDTH + 1) continue;
+                    if (s < 0 || s >= route.length() || Math.abs(t) > HALF_WIDTH) continue;
                     written += wallColumn(job.level, chunk, x, z, (int) Math.round(t), ground,
                             ground + CLEARANCE, (int) s, route.detailed(), route.length());
                 }
@@ -205,14 +205,7 @@ public final class WonderWall {
         long written = 0L;
         int at = Math.abs(t);
         int foot = Math.max(ground - 1, walkY - MAX_FILL);
-        if (at > HALF_WIDTH) {
-            // 出挑: one block outside the wall face - plinth at the foot, coping at the parapet tops.
-            written += put(level, chunk, x, foot, z, FOUNDATION);
-            written += put(level, chunk, x, foot + 1, z, FOUNDATION);
-            written += put(level, chunk, x, walkY + PARAPET - 1, z, CAP);
-            written += put(level, chunk, x, walkY + INNER_PARAPET - 1, z, CAP);
-            return written;
-        }
+
         boolean gate = detailed && s >= 200 && s < 232;
         boolean tower = detailed && s >= 96 && s < 160;
 
