@@ -137,7 +137,7 @@ public final class WorldServices {
                     && level.getChunkSource().getGenerator()
                             instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
                 var spawn = level.getSharedSpawnPos();
-                local.plaincraft.greatwall.generation.GateStamp.start(spawn.getX() + 64 + 216, spawn.getZ());
+                local.plaincraft.greatwall.generation.GateStamp.start(spawn.getX() + 64 + 219, spawn.getZ());
                 local.plaincraft.greatwall.generation.WonderWall.startSample(
                         level, spawn.getX() + 64, spawn.getZ(), 320);
             }            var services = find(server);

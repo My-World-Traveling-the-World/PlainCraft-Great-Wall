@@ -36,8 +36,8 @@ public final class WonderWall {
     public static final int GATE_HEIGHT = 14;
     public static final int ROUTE_LENGTH = 600;
     /** Span of the detailed route the reference gate is stamped into. */
-    public static final int GATE_STAMP_FROM = 152;
-    public static final int GATE_STAMP_TO = 280;
+    public static final int GATE_STAMP_FROM = 147;
+    public static final int GATE_STAMP_TO = 292;
 
     private static final BlockState FOUNDATION = Blocks.COBBLED_DEEPSLATE.defaultBlockState();
     private static final BlockState BODY = Blocks.STONE_BRICKS.defaultBlockState();
@@ -193,13 +193,13 @@ public final class WonderWall {
                 int endX = job.routes.get(0).x() + job.routes.get(0).length() - 10;
                 int endZ = job.routes.get(0).z();
                 if (Math.abs(x - endX) <= 24 && Math.abs(z - endZ) <= 24) {
-                    written += platformColumn(job.level, chunk, x, z, x - endX, z - endZ, ground);
+                    // end platform: retired until it comes in as a template
                 }
                 // 烽火台: a beacon tower standing off the wall, square, solid, crenellated.
                 int beaconX = job.routes.get(0).x() + 300;
                 int beaconZ = job.routes.get(0).z() - 60;
                 if (Math.abs(x - beaconX) <= 8 && Math.abs(z - beaconZ) <= 8) {
-                    written += beaconColumn(job.level, chunk, x, z, ground);
+                    // beacon: retired until it comes in as a template
                 }
                 // 堡垒: a seven-by-seven outpost every four hundred blocks, off the outer face.
                 Route main = job.routes.get(0);
@@ -207,7 +207,7 @@ public final class WonderWall {
                 if (span % 400 == 0 && Math.abs(span) < 4000) {
                     int fz = main.z() - 24;
                     if (Math.abs(x - (main.x() + span)) <= 3 && Math.abs(z - fz) <= 3) {
-                        written += fortColumn(job.level, chunk, x, z, ground);
+                        // fort: retired until it comes in as a template
                     }
                 }
                 // 坡道: a stair from the walkway down to the ground every hundred and fifty blocks.
@@ -236,7 +236,9 @@ public final class WonderWall {
         int foot = Math.max(ground - 1, walkY - MAX_FILL);
 
         boolean gate = detailed && s >= 200 && s < 232;
-        boolean tower = detailed && s >= 96 && s < 160;
+        // The procedural 敌台 is retired: it produced a hollow shell that read as a frame, and a real
+        // 敌台 will arrive as a template instead.
+        boolean tower = false;
 
         // Close both ends of every route: an open cross-section lets you see straight through the
         // hollow body, which reads as "the wall is floating".
@@ -364,12 +366,20 @@ public final class WonderWall {
             // Extrude the reference cross-section: hollow body, mid floor, quartz-edged walkway and
             // one-thick parapets. Below the body, pour a solid foundation down to the ground.
             int topY = walkY + WallProfile.ABOVE_WALK;
-            // Merlon rhythm measured off the reference: three solid, one gap, period four.
-            boolean topGap = Math.floorMod(s, 4) == 3;
+            // The module carries the reference merlon rhythm itself: three stair-topped merlons and one
+            // gap per four blocks, so no phase hack is needed here.
+            // Merlon rhythm is a four-block cycle that must start on a merlon run and end on one, so a
+            // building's wall stub (which finishes on a gap) hands over cleanly. The last few columns of
+            // a run drop their merlons instead of leaving a hole, reading as a low transition.
+            int runStart = s < GATE_STAMP_FROM ? 0 : GATE_STAMP_TO;
+            int runLength = s < GATE_STAMP_FROM ? GATE_STAMP_FROM : routeLength - GATE_STAMP_TO;
+            int runPos = s - runStart;
+            int trim = Math.floorMod(runLength - 3, 4);
+            boolean tail = runPos >= runLength - trim;
+            int phase = tail ? WallProfile.PERIOD - 1 : Math.floorMod(runPos, 4);
             for (int y = topY; y >= ground - 1; y--) {
                 int depth = topY - y;
-                if (topGap && depth == 0) continue;
-                BlockState st = WallProfile.at(t, depth);
+                BlockState st = WallProfile.at(phase, t, depth);
                 if (st != null) {
                     written += put(level, chunk, x, y, z, st);
                 } else if (depth >= WallProfile.DEPTH) {

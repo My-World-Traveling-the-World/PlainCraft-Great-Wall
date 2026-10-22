@@ -4,74 +4,69 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * The wall cross-section taken from the player's reference build: eleven blocks across, eighteen tall,
- * a hollow body one block thick with a floor at mid height and the walkway on top, a quartz course along
- * both edges of the walkway and one-thick parapets capped with slabs.
+ * The wall module, taken verbatim from the player's hand-polished reference wall.
  *
- * <p>Extruding this profile along a route gives exactly the reference wall at any length, instead of the
- * approximation the band() helper used to produce.
+ * <p>Forty-eight blocks long, eleven wide and sixteen tall: a solid stone core faced with stone bricks,
+ * a quartz belt along both edges of the walkway, a continuous slab-capped parapet on one side and
+ * three-merlon-one-gap crenellation with stair caps on the other. Because the module carries the whole
+ * rhythm itself, the generator just repeats it along the route.
  */
 public final class WallProfile {
-    private static final String RESOURCE = "/assets/plaincraft-great-wall/templates/wall_profile.csv";
-    /** Half width of the section; the wall spans t in [-HALF, HALF]. */
+    private static final String RESOURCE = "/assets/plaincraft-great-wall/templates/wall_module.csv";
+    /** Length of the repeating module along the wall. */
+    public static final int PERIOD = 48;
+    /** The wall spans t in [-HALF, HALF]; eleven blocks across. */
     public static final int HALF = 5;
-    /** Total height of the section, top to bottom. */
+    /** Total height of the module. */
     public static final int DEPTH = 18;
-    /** How far the top of the section sits above the walkway. */
+    /** How far the top of the module sits above the walkway. */
     public static final int ABOVE_WALK = 3;
 
-    private static BlockState[][] section;
+    private static BlockState[][][] rows;   // [phase][depth][t + HALF]
     private static boolean loaded;
 
     private WallProfile() {
     }
 
-    /** Block at lateral offset {@code t} and {@code depth} below the top, or null for open air. */
-    public static BlockState at(int t, int depth) {
+    /** Block at module offset {@code phase}, lateral offset {@code t} and {@code depth}, or null. */
+    public static BlockState at(int phase, int t, int depth) {
         load();
-        if (section == null || depth < 0 || depth >= DEPTH) return null;
+        if (rows == null || depth < 0 || depth >= DEPTH) return null;
         int x = t + HALF;
         if (x < 0 || x >= HALF * 2 + 1) return null;
-        return section[depth][x];
+        return rows[Math.floorMod(phase, PERIOD)][depth][x];
     }
 
     private static void load() {
         if (loaded) return;
         loaded = true;
-        Section s = new Section();
+        BlockState[][][] table = new BlockState[PERIOD][DEPTH][HALF * 2 + 1];
         try (InputStream in = WallProfile.class.getResourceAsStream(RESOURCE)) {
             if (in == null) return;
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length != 3) continue;
-                int t = Integer.parseInt(parts[0]);
-                int depth = Integer.parseInt(parts[1]);
+                // The block spec itself contains commas, so split only the three numeric fields off.
+                String[] parts = line.split(",", 4);
+                if (parts.length != 4) continue;
+                int phase = Integer.parseInt(parts[0]);
+                int t = Integer.parseInt(parts[1]);
+                int depth = Integer.parseInt(parts[2]);
                 int x = t + HALF;
-                if (depth < 0 || depth >= DEPTH || x < 0 || x >= HALF * 2 + 1) continue;
-                ResourceLocation id = ResourceLocation.tryParse("minecraft:" + parts[2]);
-                BlockState state = id == null ? null : BuiltInRegistries.BLOCK.get(id).defaultBlockState();
-                if (state != null) s.rows[depth][x] = state;
+                if (phase < 0 || phase >= PERIOD || depth < 0 || depth >= DEPTH || x < 0 || x >= HALF * 2 + 1) continue;
+                table[phase][depth][x] = BlockSpec.parse(parts[3]);
             }
-            section = s.rows;
+            rows = table;
         } catch (Exception ignored) {
-            section = null;
+            rows = null;
         }
     }
 
-    private static final class Section {
-        final BlockState[][] rows = new BlockState[DEPTH][HALF * 2 + 1];
-    }
-
     static {
-        // A defensive default so a missing resource still yields a plain brick wall rather than nothing.
         Blocks.STONE_BRICKS.defaultBlockState();
     }
 }
