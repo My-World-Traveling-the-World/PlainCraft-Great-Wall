@@ -1,0 +1,159 @@
+package local.plaincraft.greatwall.generation;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import local.plaincraft.greatwall.GreatWallMod;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.Heightmap;
+
+/**
+ * Stamps the reference 马道 (wall staircase) - levelled on the highest ground under its footprint and
+ * carried down to the real surface, exactly like the gate and the tower.
+ */
+public final class StairStamp {
+    private static final String RESOURCE = "/assets/plaincraft-great-wall/templates/stair.csv";
+    public static final int WIDTH = 32;
+    public static final int HEIGHT = 18;
+    public static final int DEPTH = 11;
+    private static final int CENTRE_X = 16;
+    private static final int CENTRE_Z = 5;
+
+    private static List<int[]> coords;
+    private static List<BlockState> states;
+    private static int[] columnBottom;
+    private static boolean loaded;
+    private static boolean finished;
+    private static boolean autoGround = true;
+    private static boolean filling;
+    private static int originX, originY, originZ;
+    private static int cursor;
+    private static long[] ticket;
+    private static int fillX, fillZ;
+    private static int filled;
+
+    private StairStamp() {
+    }
+
+    public static void start(int centreX, int centreZ) {
+        originX = centreX - CENTRE_X;
+        originZ = centreZ - CENTRE_Z;
+        originY = 0;
+        autoGround = true;
+        filling = false;
+        cursor = 0;
+        fillX = 0;
+        fillZ = 0;
+        filled = 0;
+        finished = false;
+        ticket = null;
+        load();
+    }
+
+    public static void tick(ServerLevel level) {
+        if (finished || !loaded || coords == null || coords.isEmpty()) return;
+        if (ticket == null) ticket = ChunkHold.hold(level, originX, originZ, originX + (WIDTH) - 1, originZ + (DEPTH) - 1);
+        if (autoGround && !settle(level)) return;
+        if (!filling) {
+            int budget = 4000;
+            while (cursor < coords.size() && budget-- > 0) {
+                int[] p = coords.get(cursor);
+                level.setBlock(new BlockPos(originX + p[0], originY + p[1], originZ + p[2]), states.get(cursor), 2);
+                cursor++;
+            }
+            if (cursor >= coords.size()) {
+                GreatWallMod.LOGGER.info("[GreatWall:wonder] STAIR_STAMPED blocks={} origin=({},{},{})",
+                        coords.size(), originX, originY, originZ);
+                filling = true;
+            }
+            return;
+        }
+        int budget = 2000;
+        while (budget-- > 0) {
+            if (fillX >= WIDTH) {
+                finished = true;
+                ChunkHold.release(level, ticket);
+                ticket = null;
+                GreatWallMod.LOGGER.info("[GreatWall:wonder] STAIR_FOOTED columns={} originY={}", filled, originY);
+                return;
+            }
+            int bottom = columnBottom[fillX * DEPTH + fillZ];
+            if (bottom > 0) {
+                int x = originX + fillX;
+                int z = originZ + fillZ;
+                LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+                if (chunk == null) return;
+                int surface = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
+                for (int y = originY + bottom - 1; y > surface - 1; y--) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    if (level.getBlockState(pos).isAir()) {
+                        level.setBlock(pos, Blocks.STONE.defaultBlockState(), 2);
+                        filled++;
+                    }
+                }
+            }
+            if (++fillZ >= DEPTH) {
+                fillZ = 0;
+                fillX++;
+            }
+        }
+    }
+
+    private static boolean settle(ServerLevel level) {
+        int highest = Integer.MIN_VALUE;
+        for (int dx = 0; dx < WIDTH; dx += 4) {
+            for (int dz = 0; dz < DEPTH; dz += 4) {
+                int x = originX + dx;
+                int z = originZ + dz;
+                LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+                if (chunk == null) return false;
+                highest = Math.max(highest, chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15));
+            }
+        }
+        if (highest == Integer.MIN_VALUE) return false;
+        originY = highest;
+        autoGround = false;
+        return true;
+    }
+
+    public static boolean finished() {
+        return finished;
+    }
+
+    private static void load() {
+        if (loaded) return;
+        loaded = true;
+        coords = new ArrayList<>();
+        states = new ArrayList<>();
+        columnBottom = new int[WIDTH * DEPTH];
+        Arrays.fill(columnBottom, -1);
+        try (InputStream in = StairStamp.class.getResourceAsStream(RESOURCE)) {
+            if (in == null) return;
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",", 4);
+                if (parts.length != 4) continue;
+                int dx = Integer.parseInt(parts[0]);
+                int dy = Integer.parseInt(parts[1]);
+                int dz = Integer.parseInt(parts[2]);
+                coords.add(new int[] {dx, dy, dz});
+                states.add(BlockSpec.parse(parts[3]));
+                if (dx >= 0 && dx < WIDTH && dz >= 0 && dz < DEPTH) {
+                    int i = dx * DEPTH + dz;
+                    if (columnBottom[i] < 0 || dy < columnBottom[i]) columnBottom[i] = dy;
+                }
+            }
+        } catch (Exception ignored) {
+            // A missing template simply means nothing is stamped.
+        }
+    }
+}
