@@ -27,6 +27,7 @@ public final class WallStamp {
     private static boolean autoGround = true;
     private static int originX, originY, originZ;
     private static int cursor;
+    private static long[] ticket;
 
     private WallStamp() {
     }
@@ -39,11 +40,13 @@ public final class WallStamp {
         autoGround = true;
         cursor = 0;
         finished = false;
+        ticket = null;
         load();
     }
 
     public static void tick(ServerLevel level) {
         if (finished || !loaded || coords == null || coords.isEmpty()) return;
+        if (ticket == null) ticket = ChunkHold.hold(level, originX, originZ, originX + (WallProfile.PERIOD) - 1, originZ + (11) - 1);
         if (autoGround) {
             LevelChunk chunk = level.getChunkSource().getChunkNow(originX >> 4, originZ >> 4);
             if (chunk == null) return;
@@ -60,6 +63,8 @@ public final class WallStamp {
         }
         if (cursor >= coords.size()) {
             finished = true;
+                ChunkHold.release(level, ticket);
+                ticket = null;
             GreatWallMod.LOGGER.info("[GreatWall:wonder] WALL_STAMPED blocks={} origin=({},{},{})",
                     coords.size(), originX, originY, originZ);
         }

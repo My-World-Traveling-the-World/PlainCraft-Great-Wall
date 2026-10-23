@@ -44,6 +44,7 @@ public final class TowerStamp {
     private static boolean flooring;
     private static int originX, originY, originZ;
     private static int cursor;
+    private static long[] ticket;
     private static int fillX, fillZ;
     private static int filled;
 
@@ -62,11 +63,13 @@ public final class TowerStamp {
         fillZ = 0;
         filled = 0;
         finished = false;
+        ticket = null;
         load();
     }
 
     public static void tick(ServerLevel level) {
         if (finished || !loaded || coords == null || coords.isEmpty()) return;
+        if (ticket == null) ticket = ChunkHold.hold(level, originX, originZ, originX + (WIDTH) - 1, originZ + (DEPTH) - 1);
         if (autoGround && !settle(level)) return;
         if (!filling && !flooring) {
             int budget = 4000;
@@ -86,7 +89,12 @@ public final class TowerStamp {
             // Keep the wall corridor walkable: floor it at the wall's walking level.
             int budget = 256;
             while (budget-- > 0) {
-                if (fillX > WIDTH) { finished = true; return; }
+                if (fillX > WIDTH) {
+                    finished = true;
+                    ChunkHold.release(level, ticket);
+                    ticket = null;
+                    return;
+                }
                 int dz = CENTRE_Z - BAND_HALF + fillZ;
                 BlockPos pos = new BlockPos(originX + fillX, originY + WALK_DY, originZ + dz);
                 if (level.getBlockState(pos).isAir()) {
