@@ -97,6 +97,7 @@ public final class GreatWallCommands {
                 .then(ledger())
                 .then(repair())
                 .then(debug())
+                .then(roadguard())
                 .then(test()));
     }
 
@@ -902,5 +903,28 @@ public final class GreatWallCommands {
                 player.sendSystemMessage(Component.literal(text));
             });
         }
+    }
+    private static LiteralArgumentBuilder<CommandSourceStack> roadguard() {
+        return Commands.literal("roadguard")
+                .requires(source -> source.hasPermission(PERMISSION))
+                .executes(GreatWallCommands::roadguard);
+    }
+
+    /** 联调自查：站在墙前执行，看道路侧会不会在此处停手。 */
+    private static int roadguard(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        var pos = BlockPos.containing(source.getPosition());
+        int chunks = local.plaincraft.greatwall.compat.road.WallRoadGuard.markedChunks();
+        int thisChunk = local.plaincraft.greatwall.compat.road.WallRoadGuard.markedColumnsIn(pos.getX() >> 4, pos.getZ() >> 4);
+        boolean exact = local.plaincraft.greatwall.compat.road.WallRoadGuard.isMarked(pos.getX(), pos.getZ());
+        boolean blocked = local.plaincraft.greatwall.compat.road.WallRoadGuard.blocks(pos.getX(), pos.getY(), pos.getZ());
+        boolean coarse = local.plaincraft.greatwall.compat.road.WallRoadGuard.coarseMayAffect(pos.getX(), pos.getZ());
+        source.sendSuccess(() -> Component.literal("ROADGUARD markedChunks=" + chunks
+                + " thisChunkColumns=" + thisChunk
+                + " isMarked=" + exact
+                + " roadWouldStop=" + blocked
+                + " coarse=" + coarse
+                + " at " + pos.getX() + "," + pos.getY() + "," + pos.getZ()), false);
+        return 1;
     }
 }
