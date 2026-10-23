@@ -137,9 +137,12 @@ public final class WorldServices {
                     && level.getChunkSource().getGenerator()
                             instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
                 var spawn = level.getSharedSpawnPos();
-                local.plaincraft.greatwall.generation.GateStamp.start(spawn.getX() + 64 + 219, spawn.getZ());
-                local.plaincraft.greatwall.generation.WonderWall.startSample(
-                        level, spawn.getX() + 64, spawn.getZ(), 320);
+                // 展台模式：墙、城门、敌台各占一个独立位置，互不相连，便于逐个验收与手工精修。
+            local.plaincraft.greatwall.generation.GateStamp.start(spawn.getX() - 64, spawn.getZ());
+            local.plaincraft.greatwall.generation.TowerStamp.start(spawn.getX() - 64, spawn.getZ() + 64);
+            local.plaincraft.greatwall.generation.WallStamp.start(spawn.getX() - 64, spawn.getZ() - 64);
+                // 暂不生成路线墙：只出模板展台，玩家在超平坦里逐个精修。
+            // local.plaincraft.greatwall.generation.WonderWall.startSample(                         level, spawn.getX() + 64, spawn.getZ(), 320);
             }            var services = find(server);
             if (services != null) services.openDimension(level);
         });
@@ -201,6 +204,8 @@ public final class WorldServices {
             local.plaincraft.greatwall.generation.WallBodyBackfill.drain(server.overworld());
             local.plaincraft.greatwall.generation.WonderWall.tick(server.overworld());
             local.plaincraft.greatwall.generation.GateStamp.tick(server.overworld());
+            local.plaincraft.greatwall.generation.TowerStamp.tick(server.overworld());
+            local.plaincraft.greatwall.generation.WallStamp.tick(server.overworld());
         });
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, successful) -> {
             var services = find(server);

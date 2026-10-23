@@ -36,8 +36,11 @@ public final class WonderWall {
     public static final int GATE_HEIGHT = 14;
     public static final int ROUTE_LENGTH = 600;
     /** Span of the detailed route the reference gate is stamped into. */
-    public static final int GATE_STAMP_FROM = 147;
-    public static final int GATE_STAMP_TO = 292;
+    public static final int GATE_STAMP_FROM = 0;
+    /** Span of the detailed route the reference 敌台 is stamped into. */
+    public static final int TOWER_STAMP_FROM = 0;
+    public static final int TOWER_STAMP_TO = 0;
+    public static final int GATE_STAMP_TO = 0;
 
     private static final BlockState FOUNDATION = Blocks.COBBLED_DEEPSLATE.defaultBlockState();
     private static final BlockState BODY = Blocks.STONE_BRICKS.defaultBlockState();
@@ -221,6 +224,7 @@ public final class WonderWall {
                     // The reference gate occupies this span: leave it empty so the stamped model and the
                     // rule generator never fight over the same blocks.
                     if (route.detailed() && s >= GATE_STAMP_FROM && s < GATE_STAMP_TO) continue;
+                    if (route.detailed() && s >= TOWER_STAMP_FROM && s < TOWER_STAMP_TO) continue;
                     written += wallColumn(job.level, chunk, x, z, (int) Math.round(t), ground,
                             ground + CLEARANCE, (int) s, route.detailed(), route.length());
                 }
@@ -371,8 +375,18 @@ public final class WonderWall {
             // Merlon rhythm is a four-block cycle that must start on a merlon run and end on one, so a
             // building's wall stub (which finishes on a gap) hands over cleanly. The last few columns of
             // a run drop their merlons instead of leaving a hole, reading as a low transition.
-            int runStart = s < GATE_STAMP_FROM ? 0 : GATE_STAMP_TO;
-            int runLength = s < GATE_STAMP_FROM ? GATE_STAMP_FROM : routeLength - GATE_STAMP_TO;
+            int runStart;
+            int runLength;
+            if (s < GATE_STAMP_FROM) {
+                runStart = 0;
+                runLength = GATE_STAMP_FROM;
+            } else if (s < TOWER_STAMP_FROM) {
+                runStart = GATE_STAMP_TO;
+                runLength = TOWER_STAMP_FROM - GATE_STAMP_TO;
+            } else {
+                runStart = TOWER_STAMP_TO;
+                runLength = routeLength - TOWER_STAMP_TO;
+            }
             int runPos = s - runStart;
             int trim = Math.floorMod(runLength - 3, 4);
             boolean tail = runPos >= runLength - trim;
