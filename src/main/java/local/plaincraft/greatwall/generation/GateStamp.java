@@ -42,6 +42,7 @@ public final class GateStamp {
     private static boolean filling;
     private static int originX, originY, originZ;
     private static int cursor;
+    private static long[] ticket;
     private static int fillX, fillZ;
     private static int filled;
 
@@ -60,11 +61,13 @@ public final class GateStamp {
         fillZ = 0;
         filled = 0;
         finished = false;
+        ticket = null;
         load();
     }
 
     public static void tick(ServerLevel level) {
         if (finished || !loaded || coords == null || coords.isEmpty()) return;
+        if (ticket == null) ticket = ChunkHold.hold(level, originX, originZ, originX + (WIDTH) - 1, originZ + (DEPTH) - 1);
         if (autoGround && !settleOnHighestGround(level)) return;
         if (!filling) {
             int budget = 4000;
@@ -85,6 +88,8 @@ public final class GateStamp {
         while (budget-- > 0) {
             if (fillX >= WIDTH) {
                 finished = true;
+                ChunkHold.release(level, ticket);
+                ticket = null;
                 GreatWallMod.LOGGER.info("[GreatWall:wonder] GATE_FOOTED columns={} originY={}", filled, originY);
                 return;
             }
@@ -123,7 +128,7 @@ public final class GateStamp {
             }
         }
         if (highest == Integer.MIN_VALUE) return false;
-        originY = highest;
+        originY = highest - 2;   // 城门比地面低 2 格（走道对齐需要）
         autoGround = false;
         return true;
     }

@@ -47,6 +47,7 @@ import net.minecraft.world.level.storage.LevelResource;
 
 /** The mode is fixed per server: S0 laboratory or separately authorized S1C fixture, never public production. */
 public final class WorldServices {
+
     private static final ConcurrentHashMap<MinecraftServer, WorldServices> SESSIONS = new ConcurrentHashMap<>();
     /**
      * Whether the rivers reported ready, retained across the session lifecycle.
@@ -139,8 +140,18 @@ public final class WorldServices {
                 var spawn = level.getSharedSpawnPos();
                 // 展台模式：墙、城门、敌台各占一个独立位置，互不相连，便于逐个验收与手工精修。
             local.plaincraft.greatwall.generation.GateStamp.start(spawn.getX() - 64, spawn.getZ());
-            local.plaincraft.greatwall.generation.TowerStamp.start(spawn.getX() - 64, spawn.getZ() + 64);
             local.plaincraft.greatwall.generation.WallStamp.start(spawn.getX() - 64, spawn.getZ() - 64);
+            local.plaincraft.greatwall.generation.StairStamp.start(spawn.getX() - 64, spawn.getZ() + 128);
+            local.plaincraft.greatwall.generation.ShowcaseStamp.start("beacon.csv", 16, 26, 16, 8, 8, spawn.getX() - 64, spawn.getZ() + 192);
+            local.plaincraft.greatwall.generation.ShowcaseStamp.start("corner.csv", 48, 26, 48, 24, 24, spawn.getX() - 64, spawn.getZ() + 320);
+            local.plaincraft.greatwall.generation.ShowcaseStamp.start("fort.csv", 14, 12, 14, 7, 7, spawn.getX() - 64, spawn.getZ() + 448);
+            // v2 对比位：与 v1 并排放置，互不覆盖
+            local.plaincraft.greatwall.generation.ShowcaseStamp.start("tower2.csv", 24, 35, 24, 12, 12, spawn.getX() - 64, spawn.getZ() + 96);
+            // 3ds Max 体素化来的新构件
+            local.plaincraft.greatwall.generation.ShowcaseStamp.start("palace2.csv", 74, 40, 46, 37, 23, spawn.getX() - 64, spawn.getZ() + 640);
+            local.plaincraft.greatwall.generation.ShowcaseStamp.start("watergate.csv", 46, 27, 13, 23, 6, spawn.getX() - 64, spawn.getZ() + 704);
+            // 长城套件：36 件体素化后按行列摆开的选型台
+            local.plaincraft.greatwall.generation.ShowcaseStamp.start("kitset.csv", 852, 31, 175, 426, 87, spawn.getX() + 300, spawn.getZ() + 400);
                 // 暂不生成路线墙：只出模板展台，玩家在超平坦里逐个精修。
             // local.plaincraft.greatwall.generation.WonderWall.startSample(                         level, spawn.getX() + 64, spawn.getZ(), 320);
             }            var services = find(server);
@@ -204,8 +215,9 @@ public final class WorldServices {
             local.plaincraft.greatwall.generation.WallBodyBackfill.drain(server.overworld());
             local.plaincraft.greatwall.generation.WonderWall.tick(server.overworld());
             local.plaincraft.greatwall.generation.GateStamp.tick(server.overworld());
-            local.plaincraft.greatwall.generation.TowerStamp.tick(server.overworld());
             local.plaincraft.greatwall.generation.WallStamp.tick(server.overworld());
+            local.plaincraft.greatwall.generation.StairStamp.tick(server.overworld());
+            local.plaincraft.greatwall.generation.ShowcaseStamp.tick(server.overworld());
         });
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, successful) -> {
             var services = find(server);
@@ -229,6 +241,7 @@ public final class WorldServices {
             }
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            local.plaincraft.greatwall.compat.road.WallRoadGuard.clear();
             var services = find(server);
             if (services != null) {
                 if (services.production != null) {

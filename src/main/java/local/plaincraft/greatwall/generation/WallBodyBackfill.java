@@ -770,6 +770,7 @@ public final class WallBodyBackfill {
             // thousand writes, and eight thousand cascades every half second is a visible stutter. The
             // chunk still updates its own heightmaps, and lighting is recomputed per section on save.
             level.setBlock(pos, target, 2);
+            local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(pos.getX(),pos.getZ());
             written++;
             } catch (WallFailure unresolvable) {
                 // A voxel that names a block the registry does not have (a palette referencing a

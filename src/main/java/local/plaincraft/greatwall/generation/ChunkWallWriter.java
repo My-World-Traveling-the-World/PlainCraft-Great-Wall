@@ -75,6 +75,7 @@ public final class ChunkWallWriter {
         for(var v:plan.voxels()) {
             if(decisions.get(v.pos())==WriteDecision.ALREADY_TARGET) {unchanged++;continue;}
             owner.setBlockState(pos(v.pos()),states.get(v.pos()),false);written++;
+            local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(v.pos().x(),v.pos().z());
             var e=entities.get(v.pos());
             if(e!=null) {
                 var tag=new CompoundTag();tag.putString("id",e.type());
