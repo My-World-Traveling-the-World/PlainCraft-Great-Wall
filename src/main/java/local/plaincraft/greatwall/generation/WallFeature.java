@@ -46,6 +46,7 @@ public class WallFeature extends Feature<NoneFeatureConfiguration> {
             BlockState current = chunk.getBlockState(pos);
             if (!canReplace(current)) continue;
             chunk.setBlockState(pos, state, false);
+            local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(p.x(), p.z());
         }
         Heightmap.primeHeightmaps(chunk, EnumSet.of(
                 Heightmap.Types.WORLD_SURFACE_WG,
