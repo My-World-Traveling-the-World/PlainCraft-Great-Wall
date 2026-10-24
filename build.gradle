@@ -212,3 +212,12 @@ java {
     toolchain { languageVersion = JavaLanguageVersion.of(21) }
     withSourcesJar()
 }
+// 只含接口的极小 jar，给跨 mod 编译期使用（不参与部署）。
+tasks.register('interopJar', Jar) {
+    archiveBaseName = 'plaincraft-great-wall-interop'
+    archiveVersion = ''
+    destinationDirectory = layout.buildDirectory.dir('interop')
+    from(sourceSets.main.output) {
+        include 'local/plaincraft/greatwall/api/**'
+    }
+}

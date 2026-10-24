@@ -37,7 +37,6 @@ public final class WallRoadGuard {
 
     private WallRoadGuard() {
     }
-
     /**
      * Publishes a footprint rectangle up-front, from the template size alone. Roads then avoid a piece
      * before it is stamped, which removes the start-up race entirely.
