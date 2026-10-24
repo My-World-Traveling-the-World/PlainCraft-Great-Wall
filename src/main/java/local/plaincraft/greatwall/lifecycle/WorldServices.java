@@ -151,7 +151,7 @@ public final class WorldServices {
             local.plaincraft.greatwall.generation.ShowcaseStamp.start("palace2.csv", 74, 40, 46, 37, 23, spawn.getX() - 64, spawn.getZ() + 640);
             local.plaincraft.greatwall.generation.ShowcaseStamp.start("watergate.csv", 46, 27, 13, 23, 6, spawn.getX() - 64, spawn.getZ() + 704);
             // 长城套件：36 件体素化后按行列摆开的选型台
-            local.plaincraft.greatwall.generation.ShowcaseStamp.start("kitset.csv", 852, 31, 175, 426, 87, spawn.getX() + 300, spawn.getZ() + 400);
+            local.plaincraft.greatwall.generation.ShowcaseStamp.start("kitset.csv", 836, 31, 176, 418, 88, spawn.getX() + 300, spawn.getZ() + 400);
                 // 暂不生成路线墙：只出模板展台，玩家在超平坦里逐个精修。
             // local.plaincraft.greatwall.generation.WonderWall.startSample(                         level, spawn.getX() + 64, spawn.getZ(), 320);
             }            var services = find(server);
