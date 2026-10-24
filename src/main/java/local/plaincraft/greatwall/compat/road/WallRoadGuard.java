@@ -24,6 +24,7 @@ public final class WallRoadGuard {
     private static final Map<Long, long[]> MASKS = new ConcurrentHashMap<>();
     private static final ThreadLocal<Cache> CACHE = ThreadLocal.withInitial(Cache::new);
     private static final ThreadLocal<Cache> MARK = ThreadLocal.withInitial(Cache::new);
+    private static volatile long lastMarkMillis;
     private static volatile int minCX = Integer.MAX_VALUE, maxCX = Integer.MIN_VALUE;
     private static volatile int minCZ = Integer.MAX_VALUE, maxCZ = Integer.MIN_VALUE;
 
@@ -51,6 +52,7 @@ public final class WallRoadGuard {
         synchronized (mask) {
             mask[bit >> 6] |= 1L << (bit & 63);
         }
+        lastMarkMillis = System.currentTimeMillis();
         int cx = x >> 4;
         int cz = z >> 4;
         if (cx < minCX) minCX = cx;
@@ -89,6 +91,29 @@ public final class WallRoadGuard {
         if (MASKS.isEmpty()) return false;
         for (int dx = -MARGIN; dx <= MARGIN; dx++) {
             for (int dz = -MARGIN; dz <= MARGIN; dz++) {
+                if (isMarked(x + dx, z + dz)) return true;
+            }
+        }
+        return false;
+    }
+
+    /** How long since the last column was marked (milliseconds); used to detect "stamping settled". */
+    public static long millisSinceLastMark() {
+        long last = lastMarkMillis;
+        return last == 0L ? Long.MAX_VALUE : System.currentTimeMillis() - last;
+    }
+
+    /** Any column marked at all? */
+    public static boolean hasMarks() {
+        return !MASKS.isEmpty();
+    }
+
+    /** Same as {@link #blocks(int, int, int)} but with a caller-chosen radius, for multi-block props. */
+    public static boolean blocksWithin(int x, int y, int z, int radius) {
+        if (MASKS.isEmpty()) return false;
+        int reach = Math.max(MARGIN, radius);
+        for (int dx = -reach; dx <= reach; dx++) {
+            for (int dz = -reach; dz <= reach; dz++) {
                 if (isMarked(x + dx, z + dz)) return true;
             }
         }

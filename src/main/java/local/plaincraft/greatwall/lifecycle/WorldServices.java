@@ -139,6 +139,7 @@ public final class WorldServices {
                             instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
                 var spawn = level.getSharedSpawnPos();
                 // 展台模式：墙、城门、敌台各占一个独立位置，互不相连，便于逐个验收与手工精修。
+            local.plaincraft.greatwall.generation.ShowcaseGate.arm();
             local.plaincraft.greatwall.generation.GateStamp.start(spawn.getX() - 64, spawn.getZ());
             local.plaincraft.greatwall.generation.WallStamp.start(spawn.getX() - 64, spawn.getZ() - 64);
             local.plaincraft.greatwall.generation.StairStamp.start(spawn.getX() - 64, spawn.getZ() + 128);
@@ -482,7 +483,9 @@ public final class WorldServices {
         //
         // The latch is the contract: clear() closes it at server start, request() arms the session,
         // and finish(true) opens it. A peer waits until then.
-        return PrewarmProgress.awaitWorldgenReadyStrict(timeout, unit);
+        if (!PrewarmProgress.awaitWorldgenReadyStrict(timeout, unit)) return false;
+        // 模板世界：盖章还没铺完时，道路必须继续等，否则它会在墙列被标记之前就把路铺过去。
+        return !local.plaincraft.greatwall.generation.ShowcaseGate.pending();
     }
 
     /**
