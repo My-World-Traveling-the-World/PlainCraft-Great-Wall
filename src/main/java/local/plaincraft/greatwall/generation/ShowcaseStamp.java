@@ -92,6 +92,7 @@ public final class ShowcaseStamp {
             while (cursor < coords.size() && budget-- > 0) {
                 int[] p = coords.get(cursor);
                 level.setBlock(new BlockPos(originX + p[0], originY + p[1], originZ + p[2]), states.get(cursor), 2);
+                local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(originX + p[0], originZ + p[2]);
                 cursor++;
             }
             if (cursor >= coords.size()) {
@@ -121,6 +122,7 @@ public final class ShowcaseStamp {
                     BlockPos pos = new BlockPos(x, y, z);
                     if (level.getBlockState(pos).isAir()) {
                         level.setBlock(pos, Blocks.STONE.defaultBlockState(), 2);
+                        local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(pos.getX(), pos.getZ());
                         filled++;
                     }
                 }
