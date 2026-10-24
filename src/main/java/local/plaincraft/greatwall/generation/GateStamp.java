@@ -82,6 +82,7 @@ public final class GateStamp {
             if (cursor >= coords.size()) {
                 GreatWallMod.LOGGER.info("[GreatWall:wonder] GATE_STAMPED blocks={} origin=({},{},{})",
                         coords.size(), originX, originY, originZ);
+                local.plaincraft.greatwall.generation.StampVerify.verify(level, "gate.csv", originX, originY, originZ, coords, states);
                 filling = true;
             }
             return;

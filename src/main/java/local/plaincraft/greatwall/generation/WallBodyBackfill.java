@@ -704,6 +704,9 @@ public final class WallBodyBackfill {
 
     /** Set when the startup pass handed the thread back with chunks still queued; see deferGateToDrain. */
     private static volatile long gateDeferredAtNanos;
+    /** 自补开关（默认 false：不写任何"被挖掉"的格子，避免覆盖玩家的改动）。 */
+    private static final boolean SELF_HEAL_ENABLED =
+            Boolean.parseBoolean(System.getProperty("greatwall.selfHeal", "false"));
 
     /**
      * Hands the untouched part of the corridor to the in-game drain instead of holding the world.
@@ -813,7 +816,8 @@ public final class WallBodyBackfill {
         // 别的系统（道路的路面上方清空、装饰、施工）可能在墙画完之后挖掉一两格；
         // 那不属于"规划权威已转移"的情形（玩家放方块会留下非空气，不会走这里）。
         int healed = 0;
-        for (var voxel : plan.voxels()) {
+        // 默认关闭：自补会往空气里写块，等同"覆盖玩家拆掉的墙"。只有显式开启才做。
+        if (SELF_HEAL_ENABLED) for (var voxel : plan.voxels()) {
             try {
                 Point3i hp = voxel.pos();
                 if (Math.floorDiv(hp.x(), 16) != key.x() || Math.floorDiv(hp.z(), 16) != key.z()) continue;

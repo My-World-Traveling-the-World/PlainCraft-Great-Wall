@@ -102,6 +102,7 @@ public final class ShowcaseStamp {
             if (cursor >= coords.size()) {
                 GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_STAMPED {} blocks={} origin=({},{},{})",
                         resource, coords.size(), originX, originY, originZ);
+                local.plaincraft.greatwall.generation.StampVerify.verify(level, resource, originX, originY, originZ, coords, states);
                 filling = true;
             }
             return;

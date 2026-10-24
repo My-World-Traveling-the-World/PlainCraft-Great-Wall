@@ -75,6 +75,7 @@ public final class StairStamp {
             if (cursor >= coords.size()) {
                 GreatWallMod.LOGGER.info("[GreatWall:wonder] STAIR_STAMPED blocks={} origin=({},{},{})",
                         coords.size(), originX, originY, originZ);
+                local.plaincraft.greatwall.generation.StampVerify.verify(level, "stair.csv", originX, originY, originZ, coords, states);
                 filling = true;
             }
             return;

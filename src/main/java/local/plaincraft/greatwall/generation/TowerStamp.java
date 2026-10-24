@@ -83,6 +83,7 @@ public final class TowerStamp {
             if (cursor >= coords.size()) {
                 GreatWallMod.LOGGER.info("[GreatWall:wonder] TOWER_STAMPED blocks={} origin=({},{},{})",
                         coords.size(), originX, originY, originZ);
+                local.plaincraft.greatwall.generation.StampVerify.verify(level, "tower2.csv", originX, originY, originZ, coords, states);
                 filling = true;
             }
             return;
