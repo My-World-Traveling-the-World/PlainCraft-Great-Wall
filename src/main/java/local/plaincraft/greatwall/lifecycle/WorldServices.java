@@ -567,27 +567,25 @@ public final class WorldServices {
             // ticks, but the player would watch an empty corridor for the first minutes of the world.
             if (PrewarmProgress.awaitWorldgenReadyStrict(0L, java.util.concurrent.TimeUnit.NANOSECONDS)) return true;
             if (!PrewarmProgress.isPublished()) return false;   // plans not on disk yet
-            if (!painted[0]) {
-                painted[0] = true;
-                try {
-                    local.plaincraft.greatwall.generation.WallBodyBackfill
-                            .paintPendingAtStartup(server.overworld());
-                } catch (Throwable paintFailed) {
-                    GreatWallMod.LOGGER.error("[GreatWall:S1C] WALL_BACKFILL_STARTUP_FAILED", paintFailed);
-                }
+        // 用户方案（2026-10-24）：启动期一块都不画。预热只负责「规划 + 编译 + 发布足迹」，
+        // 之后立刻放行道路；墙体交给进世界后的 drain（每 tick 150ms）逐区块拉起并写入。
+        // 实测依据：启动期同步拉区块，8 分钟预算只画完 25%（pending 仍 343）；进世界 drain
+        // 456 块约 3 分钟，且完全不占加载界面。
+        // 前提：道路避让不能依赖"写块时打标记"，所以先把规划里每一列墙标进 WallRoadGuard，
+        // 这样墙还没长出来，道路就知道该避开哪里。
+        if (!painted[0]) {
+            painted[0] = true;
+            try {
+                int seeded = local.plaincraft.greatwall.generation.WallBodyBackfill
+                        .seedRoadGuardFromPlans(server.overworld());
+                GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_PAINT_DEFERRED_TO_WORLD pending={} "
+                                + "seededColumns={} - the road gate opens now, the in-game drain paints",
+                        local.plaincraft.greatwall.generation.WallBodyBackfill.pending(server.overworld()),
+                        seeded);
+            } catch (Throwable seedFailed) {
+                GreatWallMod.LOGGER.error("[GreatWall:S1C] ROAD_GUARD_SEED_FAILED", seedFailed);
             }
-            // The rest of the corridor cannot be generated on this thread: prepareLevels does not tick
-            // the chunk source, so a ticket added here never becomes a chunk-level update and the
-            // request never completes (a measured session spun its whole eight-minute budget on 343
-            // chunks that never arrived, with every c2me worker idle). Hand the thread back and let the
-            // in-game drain finish it; the gate stays closed until that queue empties, and the road is
-            // already waiting for it off-thread.
-            int stillPending = local.plaincraft.greatwall.generation.WallBodyBackfill
-                    .pending(server.overworld());
-            if (stillPending > 0) {
-                local.plaincraft.greatwall.generation.WallBodyBackfill.deferGateToDrain(server.overworld());
-                return true;
-            }
+        }
             // The wall is in the world: only now may the road start.
             PrewarmProgress.finish(true);
             // The compile can be deferred: compileAtStartup returns true after asking for it, and the

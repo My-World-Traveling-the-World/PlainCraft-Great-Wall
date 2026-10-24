@@ -665,6 +665,32 @@ public final class WallBodyBackfill {
             iterator.remove();
         }
     }
+    /**
+     * 预热阶段就把"哪些列是墙"从规划里全部标出来。
+     *
+     * <p>启动期不再画方块之后，墙真正写进世界要等到进游戏的 drain；而道路是立刻放行的，所以
+     * 避让不能再依赖"写块时打标记"。这里直接把 ChunkWritePlan 里的每个体素列标进
+     * {@code WallRoadGuard}，道路在墙还没长出来之前就能正确避开。
+     */
+    public static int seedRoadGuardFromPlans(ServerLevel level) {
+        State state = level == null ? null : STATES.get(level);
+        if (state == null) return 0;
+        java.util.Set<ChunkKey> keys = new java.util.LinkedHashSet<>(state.pending);
+        keys.addAll(state.settled);
+        int columns = 0;
+        for (ChunkKey key : keys) {
+            ChunkWritePlan plan = WallWorldgenPlanCache.get(level, key);
+            if (plan == null || plan.voxels().isEmpty()) continue;
+            for (var voxel : plan.voxels()) {
+                var p = voxel.pos();
+                local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(p.x(), p.z());
+                columns++;
+            }
+        }
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] ROAD_GUARD_SEEDED_FROM_PLANS chunks={} columns={}",
+                keys.size(), columns);
+        return columns;
+    }
     /** Whether every planned chunk loaded so far has been written. */
     public static boolean complete(ServerLevel level) {
         State state = level == null ? null : STATES.get(level);
