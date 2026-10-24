@@ -42,6 +42,8 @@ public final class WallStamp {
         finished = false;
         ticket = null;
         load();
+        local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(originX, originZ,
+                originX + 47, originZ + WallProfile.DEPTH - 1);
     }
 
     public static void tick(ServerLevel level) {

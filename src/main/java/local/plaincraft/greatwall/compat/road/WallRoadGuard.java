@@ -22,6 +22,8 @@ public final class WallRoadGuard {
     private static final int VERTICAL_TOLERANCE = 4;
 
     private static final Map<Long, long[]> MASKS = new ConcurrentHashMap<>();
+    /** Footprints published from the templates BEFORE anything is stamped: {minX, minZ, maxX, maxZ}. */
+    private static final java.util.List<int[]> RECTS = new java.util.concurrent.CopyOnWriteArrayList<>();
     private static final ThreadLocal<Cache> CACHE = ThreadLocal.withInitial(Cache::new);
     private static final ThreadLocal<Cache> MARK = ThreadLocal.withInitial(Cache::new);
     private static volatile long lastMarkMillis;
@@ -34,6 +36,29 @@ public final class WallRoadGuard {
     }
 
     private WallRoadGuard() {
+    }
+
+    /**
+     * Publishes a footprint rectangle up-front, from the template size alone. Roads then avoid a piece
+     * before it is stamped, which removes the start-up race entirely.
+     */
+    public static void publishRect(int minX, int minZ, int maxX, int maxZ) {
+        RECTS.add(new int[]{minX, minZ, maxX, maxZ});
+        lastMarkMillis = System.currentTimeMillis();
+        GreatWallMod.LOGGER.info("[GreatWall:road] ROAD_GUARD_RECT {} {} {} {} (total {})",
+                minX, minZ, maxX, maxZ, RECTS.size());
+    }
+
+    /** Clears published footprints (world unload). Marks are cleared by {@link #clear()}. */
+    public static void clearRects() {
+        RECTS.clear();
+    }
+
+    private static boolean inRect(int x, int z) {
+        for (int[] r : RECTS) {
+            if (x >= r[0] - MARGIN && x <= r[2] + MARGIN && z >= r[1] - MARGIN && z <= r[3] + MARGIN) return true;
+        }
+        return false;
     }
 
     /** Marks one column as wall-owned. Called by the wall writers as they place blocks. */
@@ -73,6 +98,7 @@ public final class WallRoadGuard {
     /** Forgets everything; called when a session ends or the world unloads. */
     public static void clear() {
         MASKS.clear();
+        RECTS.clear();
         minCX = Integer.MAX_VALUE; maxCX = Integer.MIN_VALUE;
         minCZ = Integer.MAX_VALUE; maxCZ = Integer.MIN_VALUE;
         GreatWallMod.LOGGER.info("[GreatWall:road] ROAD_GUARD_CLEARED");
@@ -88,6 +114,7 @@ public final class WallRoadGuard {
      * of one. Called reflectively by the road mod - keep this signature stable.
      */
     public static boolean blocks(int x, int y, int z) {
+        if (inRect(x, z)) return true;
         if (MASKS.isEmpty()) return false;
         for (int dx = -MARGIN; dx <= MARGIN; dx++) {
             for (int dz = -MARGIN; dz <= MARGIN; dz++) {
@@ -105,11 +132,17 @@ public final class WallRoadGuard {
 
     /** Any column marked at all? */
     public static boolean hasMarks() {
-        return !MASKS.isEmpty();
+        return !MASKS.isEmpty() || !RECTS.isEmpty();
+    }
+
+    /** Diagnostics: how many footprints were published. */
+    public static int rectCount() {
+        return RECTS.size();
     }
 
     /** Same as {@link #blocks(int, int, int)} but with a caller-chosen radius, for multi-block props. */
     public static boolean blocksWithin(int x, int y, int z, int radius) {
+        if (inRect(x, z)) return true;
         if (MASKS.isEmpty()) return false;
         int reach = Math.max(MARGIN, radius);
         for (int dx = -reach; dx <= reach; dx++) {
@@ -150,6 +183,7 @@ public final class WallRoadGuard {
      * {@link #blocks(int, int, int)} instead.
      */
     public static boolean coarseMayAffect(int x, int z) {
+        if (inRect(x, z)) return true;
         if (MASKS.isEmpty()) return false;
         int cx = x >> 4;
         int cz = z >> 4;

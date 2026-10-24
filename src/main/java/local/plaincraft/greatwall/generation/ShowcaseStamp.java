@@ -49,6 +49,7 @@ public final class ShowcaseStamp {
     /** Registers one more piece to be stamped. */
     public static void start(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ) {
         ALL.add(new ShowcaseStamp(csvName, w, d, cx, cz, atX, atZ));
+        local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
     }
 
     /** Advances every registered piece. */

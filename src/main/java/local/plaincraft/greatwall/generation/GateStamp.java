@@ -53,6 +53,7 @@ public final class GateStamp {
     public static void start(int centreX, int centreZ) {
         originX = centreX - CENTRE_X;
         originZ = centreZ - CENTRE_Z;
+        local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(originX, originZ, originX + WIDTH - 1, originZ + DEPTH - 1);
         originY = 0;
         autoGround = true;
         filling = false;
