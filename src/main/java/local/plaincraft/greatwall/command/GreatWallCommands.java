@@ -959,12 +959,17 @@ public final class GreatWallCommands {
     /** 把展台所有盖章件重置，下一 tick 从头再盖一遍（补洞 / 重画）。 */
     private static int restamp(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
+        // 先复位门记账：否则本轮 done() 会把上一轮的计数打成负数，门提前开。
+        local.plaincraft.greatwall.generation.ShowcaseGate.reset();
         local.plaincraft.greatwall.generation.GateStamp.restart();
         local.plaincraft.greatwall.generation.WallStamp.restart();
         local.plaincraft.greatwall.generation.StairStamp.restart();
-        local.plaincraft.greatwall.generation.TowerStamp.restart();
         local.plaincraft.greatwall.generation.ShowcaseStamp.restartAll();
-        source.sendSuccess(() -> Component.literal("GREATWALL_RESTAMP every showcase piece is queued again"), false);
+        // TowerStamp 从来没接过 start()/tick()（WorldServices 不启动它，服务端 tick 也不驱动它），
+        // 复位它只会造成"复位但不重画"的假动作，所以这里显式跳过并说明。
+        int pending = local.plaincraft.greatwall.generation.ShowcaseGate.remaining();
+        source.sendSuccess(() -> Component.literal("GREATWALL_RESTAMP queued; ShowcaseGate pending="
+                + pending + "（TowerStamp 未参与展台，已跳过）"), false);
         return 1;
     }
 }

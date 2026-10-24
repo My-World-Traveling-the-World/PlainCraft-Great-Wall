@@ -188,8 +188,10 @@ public final class TowerStamp {
                     if (columnBottom[i] < 0 || dy < columnBottom[i]) columnBottom[i] = dy;
                 }
             }
-        } catch (Exception ignored) {
-            // A missing template simply means nothing is stamped.
+        } catch (Exception broken) {
+            // 过去静默吞掉：模板损坏/缺失会表现成「什么都没盖」，排查时毫无线索。
+            GreatWallMod.LOGGER.warn("[GreatWall:wonder] TEMPLATE_LOAD_FAILED piece=TowerStamp resource={} ({})",
+                    RESOURCE, broken.toString(), broken);
         }
     }
     /** 重新盖一遍：进度全部复位，下次 tick 从头铺。用于补洞 / 重画（/greatwall restamp）。 */

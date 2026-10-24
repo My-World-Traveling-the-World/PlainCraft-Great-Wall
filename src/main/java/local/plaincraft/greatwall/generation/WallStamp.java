@@ -95,16 +95,24 @@ public final class WallStamp {
                 coords.add(new int[] {Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2])});
                 states.add(BlockSpec.parse(parts[3]));
             }
-        } catch (Exception ignored) {
-            // A missing template simply means nothing is stamped.
+        } catch (Exception broken) {
+            // 过去静默吞掉：模板损坏/缺失会表现成「什么都没盖」，排查时毫无线索。
+            GreatWallMod.LOGGER.warn("[GreatWall:wonder] TEMPLATE_LOAD_FAILED piece=WallStamp resource={} ({})",
+                    RESOURCE, broken.toString(), broken);
         }
     }
 
     /** 重新盖一遍（/greatwall restamp）。 */
     public static void restart() {
+        // 不清 loaded（清了就永久不重盖，见 GateStamp.restart 的说明）。
+        if (coords == null) {
+            GreatWallMod.LOGGER.warn("[GreatWall:wonder] WALL_RESTAMP_SKIPPED (this piece was never started in this world)");
+            return;
+        }
         cursor = 0;
         finished = false;
-        loaded = false;
+        local.plaincraft.greatwall.generation.ShowcaseGate.expect();
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] WALL_RESTAMP blocks={}", coords.size());
     }
 
 }

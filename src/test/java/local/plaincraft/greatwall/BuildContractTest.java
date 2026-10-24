@@ -356,18 +356,28 @@ class BuildContractTest {
     }
 
     /**
-     * The startup pass may not wait for a chunk, and the pump must hand the gate to the drain.
+     * The startup pass may not wait for a chunk, and the road gate may only open after the guard has been
+     * seeded from the compiled plans.
      *
      * <h2>The failure this prevents</h2>
      * {@code prepareLevels} does not tick the chunk source, so a ticket added there never becomes a
      * chunk-level update and the request never completes. A measured session spun its whole
      * eight-minute budget on 343 chunks that never arrived - fourteen c2me workers idle, not one
      * generation task queued - and another sat on a single request for twenty-five minutes. The pass
-     * therefore paints only chunks that are already loaded, and {@code WorldServices} must defer the
-     * rest to the in-game drain instead of opening the road gate on a half-painted corridor.
+     * therefore paints only chunks that are already loaded.
+     *
+     * <h2>Why this assertion changed at 0.7.53</h2>
+     * The old contract was "paint the loaded chunks at startup and hand the rest of the gate to the
+     * drain" ({@code deferGateToDrain}). 0.7.53 went further and made the startup pass paint
+     * <b>nothing at all</b>: the wall is written by the in-world drain and the gate opens immediately,
+     * which only stays safe because {@code seedRoadGuardFromPlans} marks every planned column first.
+     * This test pinned the retired mechanism (it kept asking for {@code deferGateToDrain} in
+     * {@code WorldServices}) and had been red since that commit, so it is re-pointed at the invariant
+     * that actually holds now - and the ordering it checks is stricter than the old one:
+     * seed the guard, <b>then</b> open the road.
      */
     @Test
-    void startupPassPaintsOnlyLoadedChunksAndDefersTheGate() throws IOException {
+    void startupPaintsNothingAndSeedsTheGuardBeforeOpeningTheGate() throws IOException {
         var backfill = java.nio.file.Path.of(
                 "src/main/java/local/plaincraft/greatwall/generation/WallBodyBackfill.java");
         var text = java.nio.file.Files.readString(backfill, StandardCharsets.UTF_8);
@@ -387,12 +397,17 @@ class BuildContractTest {
         var services = java.nio.file.Path.of(
                 "src/main/java/local/plaincraft/greatwall/lifecycle/WorldServices.java");
         var pump = java.nio.file.Files.readString(services, StandardCharsets.UTF_8);
-        int defer = pump.indexOf("deferGateToDrain(");
-        int finish = pump.indexOf("PrewarmProgress.finish(true)", defer < 0 ? 0 : defer);
-        assertTrue(defer > 0, "WorldServices no longer defers the gate to the drain");
-        assertTrue(finish > defer,
-                "the pump must defer the gate before it can open it; otherwise the road starts on a "
-                        + "half-painted corridor");
+        assertFalse(pump.contains("paintPendingAtStartup("),
+                "0.7.53 起启动期一律不画方块：墙交给进世界的 drain，启动期只标列不放方块。"
+                        + "启动期画墙会让 prepareLevels 停在半画的走廊上（实测 8 分钟只推进 25%）。");
+        int seed = pump.indexOf("seedRoadGuardFromPlans(");
+        assertTrue(seed > 0,
+                "WorldServices no longer seeds the road guard from the compiled plans; the road is "
+                        + "released immediately and would pave over wall columns that are not marked yet");
+        int finish = pump.indexOf("PrewarmProgress.finish(true)", seed);
+        assertTrue(finish > seed,
+                "the guard seed must run before the road gate opens; otherwise the road starts on columns "
+                        + "the wall has not claimed yet");
     }
 
     /**

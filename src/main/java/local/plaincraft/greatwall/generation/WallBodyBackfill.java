@@ -500,6 +500,10 @@ public final class WallBodyBackfill {
     private static int beforeConflicts;
     /** Voxels whose block id the registry could not resolve. */
     private static int unresolvableVoxels;
+    /** 只读自检（B 线）：抽样回读时"应该是实心却是空气"的格数。只上报，绝不补洞。 */
+    private static int verifyMissing;
+    /** 只读自检（B 线）：抽样回读时"写成了别的方块"的格数。 */
+    private static int verifyWrong;
 
     /** A chunk the server just loaded: queue it when a published plan already covers it. */
     public static void onChunkLoaded(ServerLevel level, ChunkKey key) {
@@ -648,9 +652,9 @@ public final class WallBodyBackfill {
         if (writtenBlocks > 0 || justEmptied || drainsSinceLog >= 200) {
             drainsSinceLog = 0;
             GreatWallMod.LOGGER.info(
-                    "[GreatWall:S1C] WALL_BACKFILL_DRAIN settled={} pending={} written={} voxels={} dropped={} guardSkip={} total={}",
+                    "[GreatWall:S1C] WALL_BACKFILL_DRAIN settled={} pending={} written={} voxels={} dropped={} guardSkip={} total={} verifyMissing={} verifyWrong={}",
                     settledThisDrain, state.pending.size(), writtenBlocks, voxelsSeen, dropped.size(),
-                    beforeConflicts, total);
+                    beforeConflicts, total, verifyMissing, verifyWrong);
         }
         openGateIfDrained(level, state);
     }
@@ -678,17 +682,31 @@ public final class WallBodyBackfill {
         java.util.Set<ChunkKey> keys = new java.util.LinkedHashSet<>(state.pending);
         keys.addAll(state.settled);
         int columns = 0;
+        int voxels = 0;
+        int missed = 0;
         for (ChunkKey key : keys) {
             ChunkWritePlan plan = WallWorldgenPlanCache.get(level, key);
-            if (plan == null || plan.voxels().isEmpty()) continue;
+            if (plan == null) {
+                // 计划还没进内存缓存（未入队 / 已被 LRU 淘汰）⇒ 这个区块的墙列这一轮标不上，
+                // 而道路此时已经放行了。必须计数上报，不然覆盖率不全只能靠猜。
+                missed++;
+                continue;
+            }
+            voxels += plan.voxels().size();
+            if (plan.voxels().isEmpty()) continue;
             for (var voxel : plan.voxels()) {
                 var p = voxel.pos();
                 local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(p.x(), p.z());
                 columns++;
             }
         }
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] ROAD_GUARD_SEEDED_FROM_PLANS chunks={} columns={}",
-                keys.size(), columns);
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] ROAD_GUARD_SEEDED_FROM_PLANS chunks={} columns={} voxels={} missed={}",
+                keys.size(), columns, voxels, missed);
+        if (missed > 0) {
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] ROAD_GUARD_SEED_INCOMPLETE missed={}/{} chunks had no plan in the "
+                    + "in-memory cache; the road is already released and those wall columns are unmarked until the "
+                    + "chunk is written by the drain (or /greatwall repaint)", missed, keys.size());
+        }
         return columns;
     }
     /** Whether every planned chunk loaded so far has been written. */
@@ -798,6 +816,19 @@ public final class WallBodyBackfill {
             level.setBlock(pos, target, 2);
             local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(pos.getX(),pos.getZ());
             written++;
+            // ---- 只读自检（B 线）：每 64 个刚写完的体素抽 1 个立刻回读对一遍。
+            // 不补洞、不重试、不改写，只上报 —— 以后任何"盖完却缺格"一次跑就能定位，
+            // 不用像 2026-10-24 那样去解 region 文件猜（当时是道路把墙挖掉的）。
+            if ((written & 63) == 0) {
+                BlockState landed = chunk.getBlockState(pos);
+                if (landed != target) {
+                    if (landed.isAir()) verifyMissing++; else verifyWrong++;
+                    if ((verifyMissing + verifyWrong) % 64 == 1) {
+                        GreatWallMod.LOGGER.warn("[GreatWall:verify] drain owner={},{} pos={} want={} got={}",
+                                key.x(), key.z(), pos, target.getBlock(), landed.getBlock());
+                    }
+                }
+            }
             } catch (WallFailure unresolvable) {
                 // A voxel that names a block the registry does not have (a palette referencing a
                 // removed mod, a template drift) would otherwise kill this chunk silently: the

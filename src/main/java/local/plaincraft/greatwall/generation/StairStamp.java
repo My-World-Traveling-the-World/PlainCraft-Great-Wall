@@ -159,18 +159,27 @@ public final class StairStamp {
                     if (columnBottom[i] < 0 || dy < columnBottom[i]) columnBottom[i] = dy;
                 }
             }
-        } catch (Exception ignored) {
-            // A missing template simply means nothing is stamped.
+        } catch (Exception broken) {
+            // 过去静默吞掉：模板损坏/缺失会表现成「什么都没盖」，排查时毫无线索。
+            GreatWallMod.LOGGER.warn("[GreatWall:wonder] TEMPLATE_LOAD_FAILED piece=StairStamp resource={} ({})",
+                    RESOURCE, broken.toString(), broken);
         }
     }
     /** 重新盖一遍：进度全部复位，下次 tick 从头铺。用于补洞 / 重画（/greatwall restamp）。 */
     public static void restart() {
+        // 不清 loaded（清了就永久不重盖，见 GateStamp.restart 的说明）。
+        if (coords == null) {
+            GreatWallMod.LOGGER.warn("[GreatWall:wonder] STAIR_RESTAMP_SKIPPED (this piece was never started in this world)");
+            return;
+        }
         cursor = 0;
         finished = false;
-        loaded = false;        filling = false;
+        filling = false;
         fillX = 0;
         fillZ = 0;
         filled = 0;
+        local.plaincraft.greatwall.generation.ShowcaseGate.expect();
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] STAIR_RESTAMP blocks={}", coords.size());
     }
 
 }

@@ -163,13 +163,16 @@ public final class ShowcaseStamp {
                     if (columnBottom[i] < 0 || dy < columnBottom[i]) columnBottom[i] = dy;
                 }
             }
-        } catch (Exception ignored) {
-            // A missing template simply means nothing is stamped.
+        } catch (Exception broken) {
+            // 过去静默吞掉：模板损坏/缺失会表现成「什么都没盖」，排查时毫无线索。
+            GreatWallMod.LOGGER.warn("[GreatWall:wonder] TEMPLATE_LOAD_FAILED piece=ShowcaseStamp resource={} ({})",
+                    resource, broken.toString(), broken);
         }
     }
 
     /** 重新盖一遍（/greatwall restamp）。 */
     public static void restartAll() {
+        int queued = 0;
         for (ShowcaseStamp piece : ALL) {
             piece.cursor = 0;
             piece.filled = 0;
@@ -178,8 +181,12 @@ public final class ShowcaseStamp {
             piece.finished = false;
             piece.filling = false;
             piece.settled = false;
-            piece.loaded = false;
+            piece.loaded = false;   // tickOne 会自己 reload，这里清掉是安全的
+            // 重画是新的一轮「必须盖完」：重新占一个 expect() 名额。
+            local.plaincraft.greatwall.generation.ShowcaseGate.expect();
+            queued++;
         }
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_RESTAMP pieces={}", queued);
     }
 
 }

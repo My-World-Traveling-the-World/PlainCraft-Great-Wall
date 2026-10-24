@@ -170,18 +170,30 @@ public final class GateStamp {
                     if (current < 0 || dy < current) columnBottom[i] = dy;
                 }
             }
-        } catch (Exception ignored) {
-            // A missing template simply means nothing is stamped.
+        } catch (Exception broken) {
+            // 过去静默吞掉：模板损坏/缺失会表现成「什么都没盖」，排查时毫无线索。
+            GreatWallMod.LOGGER.warn("[GreatWall:wonder] TEMPLATE_LOAD_FAILED piece=GateStamp resource={} ({})",
+                    RESOURCE, broken.toString(), broken);
         }
     }
     /** 重新盖一遍：进度全部复位，下次 tick 从头铺。用于补洞 / 重画（/greatwall restamp）。 */
     public static void restart() {
+        // 绝对不能清 loaded：load() 只从 start() 调用，清了之后 tick() 会在 `!loaded`
+        // 处永久 return —— 命令回执说「queued again」，实际一个方块都不会重盖。
+        // 模板资源在运行期不会变化，已加载的数据继续有效。
+        if (coords == null) {
+            GreatWallMod.LOGGER.warn("[GreatWall:wonder] GATE_RESTAMP_SKIPPED (this piece was never started in this world)");
+            return;
+        }
         cursor = 0;
         finished = false;
-        loaded = false;        filling = false;
+        filling = false;
         fillX = 0;
         fillZ = 0;
         filled = 0;
+        // 重画也是一轮新的「必须盖完」，重新占一个 expect() 名额，否则门记账会错。
+        local.plaincraft.greatwall.generation.ShowcaseGate.expect();
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] GATE_RESTAMP blocks={}", coords.size());
     }
 
 }

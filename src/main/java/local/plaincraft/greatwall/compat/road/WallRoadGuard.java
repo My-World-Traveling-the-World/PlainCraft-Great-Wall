@@ -35,6 +35,14 @@ public final class WallRoadGuard {
         long[] mask;
     }
 
+    /** 每线程缓存「本区块有没有墙」，让 {@link #coarseMayAffect} 每区块只查一次表。 */
+    private static final ThreadLocal<CoarseCache> COARSE = ThreadLocal.withInitial(CoarseCache::new);
+
+    private static final class CoarseCache {
+        long chunkKey = Long.MIN_VALUE;
+        boolean hasWall;
+    }
+
     private WallRoadGuard() {
     }
     /**
@@ -181,16 +189,26 @@ public final class WallRoadGuard {
     }
 
     /**
-     * Cheap bounding-box test for very hot callers (density functions run per block per chunk).
-     * Returns true when the column is anywhere near the wall; callers that need precision use
-     * {@link #blocks(int, int, int)} instead.
+     * 高热点用的粗筛：只判断"这一列是否可能被长城占用"，无锁、无分配（每线程每区块只查一次表）。
+     *
+     * <p><b>2026-10-24 修</b>：这里过去是「全局外接矩形」判据 —— 用
+     * {@code minCX-1..maxCX+1 / minCZ-1..maxCZ+1} 一框到底。8000 格长城的包围盒几乎等于整个
+     * 游玩区，于是道路的密度通道（{@code BeardifierMixin} 每方块调用一次）在整片区域被判
+     * "受影响"，**道路的地形整平被整片关掉**。现在改成区块粒度：全局框连早退都不再需要，
+     * 每线程缓存「本区块有没有墙」，粒度 = 1 区块（16 格），比过去的整张地图小三个数量级，
+     * 而且依然是墙列的<b>保守超集</b>（不会漏判成"路压墙"），顺带消掉了
+     * {@code minCX..maxCZ} 那几个 volatile 非原子更新的竞态。
      */
     public static boolean coarseMayAffect(int x, int z) {
-        if (inRect(x, z)) return true;
+        if (!RECTS.isEmpty() && inRect(x, z)) return true;
         if (MASKS.isEmpty()) return false;
-        int cx = x >> 4;
-        int cz = z >> 4;
-        return cx >= minCX - 1 && cx <= maxCX + 1 && cz >= minCZ - 1 && cz <= maxCZ + 1;
+        long key = pack(x >> 4, z >> 4);
+        CoarseCache cache = COARSE.get();
+        if (cache.chunkKey != key) {
+            cache.chunkKey = key;
+            cache.hasWall = MASKS.containsKey(key);
+        }
+        return cache.hasWall;
     }
 
     /** Diagnostic snapshot: how many columns are marked in this chunk. */

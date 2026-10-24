@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import local.plaincraft.greatwall.GreatWallMod;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -61,7 +62,10 @@ public final class WallProfile {
                 table[phase][depth][x] = BlockSpec.parse(parts[3]);
             }
             rows = table;
-        } catch (Exception ignored) {
+        } catch (Exception broken) {
+            // 过去静默吞掉：wall_module.csv 坏了会让整面墙「没有形状」，排查时毫无线索。
+            GreatWallMod.LOGGER.warn("[GreatWall:wonder] TEMPLATE_LOAD_FAILED resource={} ({})",
+                    RESOURCE, broken.toString(), broken);
             rows = null;
         }
     }

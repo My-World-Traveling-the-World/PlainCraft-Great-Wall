@@ -32,10 +32,30 @@ public final class ShowcaseGate {
     /** Reports one piece finished. */
     public static void done() {
         int left = PENDING.decrementAndGet();
-        if (left <= 0) {
+        if (left < 0) {
+            // 没有配对的 expect() 就报完成 —— 只会来自复位后的重复 done()。
+            // 过去这里任由计数变负，下一次 expect() 把计数抬到 <=0，门就提前开了。
+            PENDING.set(0);
+            GreatWallMod.LOGGER.warn("[GreatWall:road] SHOWCASE_GATE_DONE_UNEXPECTED (no matching expect(); counter clamped to 0)");
+            return;
+        }
+        if (left == 0) {
             GreatWallMod.LOGGER.info("[GreatWall:road] SHOWCASE_GATE_OPEN after {}ms (all pieces stamped)",
                     System.currentTimeMillis() - armedAt);
         }
+    }
+
+    /**
+     * 重新武装：`/greatwall restamp` 重画前调用。
+     *
+     * <p>把上一轮的计数、armed 时间和 active 全部清掉，让本轮 {@link #expect()} 从零开始计。
+     * 不 reset 就 restart 会让 {@link #done()} 把计数打成负数，随后门提前开。
+     */
+    public static void reset() {
+        int before = PENDING.getAndSet(0);
+        armedAt = 0L;
+        active = false;
+        GreatWallMod.LOGGER.info("[GreatWall:road] SHOWCASE_GATE_RESET pendingWas={}", before);
     }
 
     /** True while the road mod must keep waiting. */
