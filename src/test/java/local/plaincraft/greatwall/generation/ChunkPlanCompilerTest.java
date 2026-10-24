@@ -23,7 +23,7 @@ class ChunkPlanCompilerTest {
     }
     private static VoxelIntent voxel(int x,IntentKind kind,String id) {
         return new VoxelIntent(new Point3i(x,1,0),kind,kind==IntentKind.OWNED_VOID?Part.AIR:Part.CORE,
-                new BlockSpec(id,Map.of()),ID,400,true,kind==IntentKind.SOLID);
+                new local.plaincraft.greatwall.model.WallTypes.BlockSpec(id,Map.of()),ID,400,true,kind==IntentKind.SOLID);
     }
     @Test void clipsAfterWholeComponentAndRoundTripsMetadata() throws Exception {
         var c=component(List.of(voxel(-1,IntentKind.SOLID,"minecraft:stone"),voxel(0,IntentKind.SOLID,"minecraft:stone"),

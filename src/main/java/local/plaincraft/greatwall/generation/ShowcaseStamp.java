@@ -180,13 +180,36 @@ public final class ShowcaseStamp {
             piece.fillV = 0;
             piece.finished = false;
             piece.filling = false;
-            piece.settled = false;
-            piece.loaded = false;   // tickOne 会自己 reload，这里清掉是安全的
+            // Keep the first originY. Re-sampling WORLD_SURFACE after the first pass reads the
+            // newly built roof as "ground" and lifts the whole piece one storey every restamp.
+            if (piece.loaded && piece.coords != null && !piece.coords.isEmpty()) {
+                piece.settled = true;
+            } else {
+                piece.settled = false;
+                piece.loaded = false; // tickOne will load it once coordinates are available.
+            }
             // 重画是新的一轮「必须盖完」：重新占一个 expect() 名额。
             local.plaincraft.greatwall.generation.ShowcaseGate.expect();
             queued++;
         }
-        GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_RESTAMP pieces={}", queued);
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_RESTAMP pieces={} originKept=true", queued);
+    }
+
+    /** Releases every showcase ticket and forgets the pieces before the level can close. */
+    public static void resetAll(ServerLevel level) {
+        for (ShowcaseStamp piece : ALL) {
+            if (piece.ticket != null) {
+                ChunkHold.release(level, piece.ticket);
+                piece.ticket = null;
+            }
+            piece.finished = true;
+        }
+        int dropped = ALL.size();
+        ALL.clear();
+        local.plaincraft.greatwall.generation.ShowcaseGate.reset();
+        if (dropped > 0) {
+            GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_RESET pieces={}", dropped);
+        }
     }
 
 }

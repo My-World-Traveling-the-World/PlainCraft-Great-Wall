@@ -97,10 +97,10 @@ public final class ChunkPlanCompiler {
         return rehash(new ChunkWritePlan(plan.owner(),plan.recipeHash(),plan.inputHash(),plan.voxels(),plan.proofs(),plan.blockEntities(),
                 plan.postprocess(),plan.fluidTicks(),plan.walkwayFeet(),new WriteMetadata(coverageHash,m.gateRevision(),m.spawnSlots(),m.realizedStates()),"0".repeat(64)));
     }
-    public static String token(BlockSpec state) {
+    public static String token(local.plaincraft.greatwall.model.WallTypes.BlockSpec state) {
         return token(state,false);
     }
-    public static String token(BlockSpec state,boolean entity) {
+    public static String token(local.plaincraft.greatwall.model.WallTypes.BlockSpec state,boolean entity) {
         String fluid=state.id().equals("minecraft:water")||"true".equals(state.properties().get("waterlogged"))?"minecraft:water":"minecraft:empty";
         return state.id()+new TreeMap<>(state.properties()).toString()+":fluid="+fluid+":be="+entity;
     }
@@ -147,7 +147,7 @@ public final class ChunkPlanCompiler {
             boolean connected=solid(n)&&(n.part()==Part.FENCE||switch(n.part()){case FOUNDATION,CORE,SKIN,ARCH,ROOF,HAY->true;default->false;});
             properties.put(names[i],Boolean.toString(connected));
         }
-        return new VoxelIntent(v.pos(),v.kind(),v.part(),new BlockSpec(v.state().id(),properties),v.component(),v.priority(),v.required(),v.walkable());
+        return new VoxelIntent(v.pos(),v.kind(),v.part(),new local.plaincraft.greatwall.model.WallTypes.BlockSpec(v.state().id(),properties),v.component(),v.priority(),v.required(),v.walkable());
     }
     private static VoxelIntent stairShape(VoxelIntent v,Map<Point3i,VoxelIntent> logical) {
         String[] directions={"north","east","south","west"};int[][] offsets={{0,-1},{1,0},{0,1},{-1,0}};
@@ -168,7 +168,7 @@ public final class ChunkPlanCompiler {
             shape=(pass==0?"outer_":"inner_")+(next==(index+3)%4?"left":"right");break;
         }
         var properties=new TreeMap<>(v.state().properties());properties.put("shape",shape);
-        return new VoxelIntent(v.pos(),v.kind(),v.part(),new BlockSpec(v.state().id(),properties),v.component(),v.priority(),v.required(),v.walkable());
+        return new VoxelIntent(v.pos(),v.kind(),v.part(),new local.plaincraft.greatwall.model.WallTypes.BlockSpec(v.state().id(),properties),v.component(),v.priority(),v.required(),v.walkable());
     }
     private static boolean solid(VoxelIntent v){return v!=null&&v.kind()==IntentKind.SOLID;}
     private static boolean owns(ChunkKey key,Point3i p){return Math.floorDiv(p.x(),16)==key.x()&&Math.floorDiv(p.z(),16)==key.z();}

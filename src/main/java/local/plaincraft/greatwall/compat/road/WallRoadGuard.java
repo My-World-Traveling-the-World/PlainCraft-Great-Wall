@@ -8,12 +8,8 @@ import local.plaincraft.greatwall.GreatWallMod;
 /**
  * Read-only guard that answers one question for other mods: "may a road be laid down at this column?"
  *
- * <p>The wall marks every column it builds; the road mod calls {@link #blocks(int, int, int)} reflectively
- * before writing a block, so roads stop at the wall foot instead of paving it over. Nothing here writes to
- * the world, and a missing mark list simply returns {@code false} (behaviour identical to before).
- *
- * <p>Storage is a 256-bit column mask per chunk (four longs), which keeps the query O(1) and the memory
- * tiny even for a 8000-block wall.
+ * <p>Storage is a 256-bit column mask per chunk (four longs). A clear is a world-generation boundary:
+ * no lookup may retain a null answer or a mask belonging to the preceding map.
  */
 public final class WallRoadGuard {
     /** Blocks kept clear outside the marked columns so a road ends with a clean cut. */
@@ -24,31 +20,19 @@ public final class WallRoadGuard {
     private static final Map<Long, long[]> MASKS = new ConcurrentHashMap<>();
     /** Footprints published from the templates BEFORE anything is stamped: {minX, minZ, maxX, maxZ}. */
     private static final java.util.List<int[]> RECTS = new java.util.concurrent.CopyOnWriteArrayList<>();
-    private static final ThreadLocal<Cache> CACHE = ThreadLocal.withInitial(Cache::new);
+    /** Only a write-side lookup shortcut. It is valid only while it is still the array in MASKS. */
     private static final ThreadLocal<Cache> MARK = ThreadLocal.withInitial(Cache::new);
     private static volatile long lastMarkMillis;
-    private static volatile int minCX = Integer.MAX_VALUE, maxCX = Integer.MIN_VALUE;
-    private static volatile int minCZ = Integer.MAX_VALUE, maxCZ = Integer.MIN_VALUE;
 
     private static final class Cache {
         long key = Long.MIN_VALUE;
         long[] mask;
     }
 
-    /** 每线程缓存「本区块有没有墙」，让 {@link #coarseMayAffect} 每区块只查一次表。 */
-    private static final ThreadLocal<CoarseCache> COARSE = ThreadLocal.withInitial(CoarseCache::new);
-
-    private static final class CoarseCache {
-        long chunkKey = Long.MIN_VALUE;
-        boolean hasWall;
-    }
-
     private WallRoadGuard() {
     }
-    /**
-     * Publishes a footprint rectangle up-front, from the template size alone. Roads then avoid a piece
-     * before it is stamped, which removes the start-up race entirely.
-     */
+
+    /** Publishes a footprint before it is stamped, so roads avoid it from the first tick. */
     public static void publishRect(int minX, int minZ, int maxX, int maxZ) {
         RECTS.add(new int[]{minX, minZ, maxX, maxZ});
         lastMarkMillis = System.currentTimeMillis();
@@ -75,26 +59,19 @@ public final class WallRoadGuard {
     /** Marks one column as wall-owned. Called by the wall writers as they place blocks. */
     public static void markColumn(int x, int z) {
         long key = chunkKey(x, z);
-        int bit = ((z & 15) << 4) | (x & 15);
         Cache markCache = MARK.get();
-        long[] mask;
-        if (markCache.key == key && markCache.mask != null) {
-            mask = markCache.mask;
-        } else {
+        long[] mask = markCache.key == key ? markCache.mask : null;
+        // A cached null after a miss, or a detached array after clear(), must never suppress this write.
+        if (mask == null || mask != MASKS.get(key)) {
             mask = MASKS.computeIfAbsent(key, unused -> new long[4]);
             markCache.key = key;
             markCache.mask = mask;
         }
+        int bit = ((z & 15) << 4) | (x & 15);
         synchronized (mask) {
             mask[bit >> 6] |= 1L << (bit & 63);
         }
         lastMarkMillis = System.currentTimeMillis();
-        int cx = x >> 4;
-        int cz = z >> 4;
-        if (cx < minCX) minCX = cx;
-        if (cx > maxCX) maxCX = cx;
-        if (cz < minCZ) minCZ = cz;
-        if (cz > maxCZ) maxCZ = cz;
     }
 
     /** Marks every column of an inclusive rectangle. */
@@ -110,8 +87,7 @@ public final class WallRoadGuard {
     public static void clear() {
         MASKS.clear();
         RECTS.clear();
-        minCX = Integer.MAX_VALUE; maxCX = Integer.MIN_VALUE;
-        minCZ = Integer.MAX_VALUE; maxCZ = Integer.MIN_VALUE;
+        lastMarkMillis = 0L;
         GreatWallMod.LOGGER.info("[GreatWall:road] ROAD_GUARD_CLEARED");
     }
 
@@ -120,19 +96,9 @@ public final class WallRoadGuard {
         return MASKS.size();
     }
 
-    /**
-     * True when a road block must not be placed here: the column is wall-owned or within {@link #MARGIN}
-     * of one. Called reflectively by the road mod - keep this signature stable.
-     */
+    /** True in a marked column or within {@link #MARGIN} of one. Keep this reflective signature stable. */
     public static boolean blocks(int x, int y, int z) {
-        if (inRect(x, z)) return true;
-        if (MASKS.isEmpty()) return false;
-        for (int dx = -MARGIN; dx <= MARGIN; dx++) {
-            for (int dz = -MARGIN; dz <= MARGIN; dz++) {
-                if (isMarked(x + dx, z + dz)) return true;
-            }
-        }
-        return false;
+        return inRect(x, z) || markedNear(x, z, MARGIN);
     }
 
     /** How long since the last column was marked (milliseconds); used to detect "stamping settled". */
@@ -153,15 +119,8 @@ public final class WallRoadGuard {
 
     /** Same as {@link #blocks(int, int, int)} but with a caller-chosen radius, for multi-block props. */
     public static boolean blocksWithin(int x, int y, int z, int radius) {
-        if (inRect(x, z, Math.max(MARGIN, radius))) return true;
-        if (MASKS.isEmpty()) return false;
         int reach = Math.max(MARGIN, radius);
-        for (int dx = -reach; dx <= reach; dx++) {
-            for (int dz = -reach; dz <= reach; dz++) {
-                if (isMarked(x + dx, z + dz)) return true;
-            }
-        }
-        return false;
+        return inRect(x, z, reach) || markedNear(x, z, reach);
     }
 
     /** Cheap variant without the margin, for callers that add their own padding. */
@@ -169,18 +128,9 @@ public final class WallRoadGuard {
         return isMarked(x, z);
     }
 
-    /** True when this column is wall-owned. */
+    /** True when this column is wall-owned. Never cache a miss: a writer may mark it immediately after. */
     public static boolean isMarked(int x, int z) {
-        long key = chunkKey(x, z);
-        Cache cache = CACHE.get();
-        long[] mask;
-        if (cache.key == key) {
-            mask = cache.mask;
-        } else {
-            mask = MASKS.get(key);
-            cache.key = key;
-            cache.mask = mask;
-        }
+        long[] mask = MASKS.get(chunkKey(x, z));
         if (mask == null) return false;
         int bit = ((z & 15) << 4) | (x & 15);
         synchronized (mask) {
@@ -189,26 +139,40 @@ public final class WallRoadGuard {
     }
 
     /**
-     * 高热点用的粗筛：只判断"这一列是否可能被长城占用"，无锁、无分配（每线程每区块只查一次表）。
-     *
-     * <p><b>2026-10-24 修</b>：这里过去是「全局外接矩形」判据 —— 用
-     * {@code minCX-1..maxCX+1 / minCZ-1..maxCZ+1} 一框到底。8000 格长城的包围盒几乎等于整个
-     * 游玩区，于是道路的密度通道（{@code BeardifierMixin} 每方块调用一次）在整片区域被判
-     * "受影响"，**道路的地形整平被整片关掉**。现在改成区块粒度：全局框连早退都不再需要，
-     * 每线程缓存「本区块有没有墙」，粒度 = 1 区块（16 格），比过去的整张地图小三个数量级，
-     * 而且依然是墙列的<b>保守超集</b>（不会漏判成"路压墙"），顺带消掉了
-     * {@code minCX..maxCZ} 那几个 volatile 非原子更新的竞态。
+     * Chunk-mask-backed coarse filter for the road density hot path. Each query is local to the marked
+     * chunks near this column; there is deliberately no map-wide bounding box. The two-block margin is
+     * included, making this a conservative superset of the exact guard rather than only the wall itself.
+     * No result is cached, so a first false answer cannot hide a later mark in the same world generation.
      */
     public static boolean coarseMayAffect(int x, int z) {
-        if (!RECTS.isEmpty() && inRect(x, z)) return true;
+        if (inRect(x, z)) return true;
         if (MASKS.isEmpty()) return false;
-        long key = pack(x >> 4, z >> 4);
-        CoarseCache cache = COARSE.get();
-        if (cache.chunkKey != key) {
-            cache.chunkKey = key;
-            cache.hasWall = MASKS.containsKey(key);
+        int cx = x >> 4, cz = z >> 4;
+        // Any mark in this chunk makes the whole chunk coarse-true. That is deliberately
+        // over-inclusive but far cheaper than 25 exact probes per density sample.
+        if (MASKS.containsKey(pack(cx, cz))) return true;
+        int lx = x & 15, lz = z & 15;
+        boolean west = lx < MARGIN, east = lx >= 16 - MARGIN;
+        boolean north = lz < MARGIN, south = lz >= 16 - MARGIN;
+        if (!west && !east && !north && !south) return false;
+        int minDx = west ? -1 : 0, maxDx = east ? 1 : 0;
+        int minDz = north ? -1 : 0, maxDz = south ? 1 : 0;
+        for (int dx = minDx; dx <= maxDx; dx++) {
+            for (int dz = minDz; dz <= maxDz; dz++) {
+                if ((dx != 0 || dz != 0) && MASKS.containsKey(pack(cx + dx, cz + dz))) return true;
+            }
         }
-        return cache.hasWall;
+        return false;
+    }
+
+    private static boolean markedNear(int x, int z, int reach) {
+        if (MASKS.isEmpty()) return false;
+        for (int dx = -reach; dx <= reach; dx++) {
+            for (int dz = -reach; dz <= reach; dz++) {
+                if (isMarked(x + dx, z + dz)) return true;
+            }
+        }
+        return false;
     }
 
     /** Diagnostic snapshot: how many columns are marked in this chunk. */

@@ -18,7 +18,7 @@ class WallWorldgenPlanCacheTest {
     private static ChunkWritePlan plan(ChunkKey key, boolean empty) {
         var voxels = empty ? List.<VoxelIntent>of() : List.of(
                 new VoxelIntent(new Point3i(key.x() * 16, 64, key.z() * 16), IntentKind.SOLID, Part.CORE,
-                        new BlockSpec("minecraft:stone", java.util.Map.of()), new SiteId("w", SiteKind.WALL, 0),
+                        new local.plaincraft.greatwall.model.WallTypes.BlockSpec("minecraft:stone", java.util.Map.of()), new SiteId("w", SiteKind.WALL, 0),
                         0, false, true));
         return new ChunkWritePlan(key, HASH, HASH, voxels, List.of(), List.of(), List.of(), List.of(),
                 List.of(), WriteMetadata.EMPTY, HASH);

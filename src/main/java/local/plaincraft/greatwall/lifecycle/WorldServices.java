@@ -164,6 +164,14 @@ public final class WorldServices {
             // load is the only moment it becomes writable without requesting it.
             local.plaincraft.greatwall.generation.WallBodyBackfill.onChunkLoaded(level,
                     new ChunkKey(level.dimension().location().toString(), chunk.getPos().x, chunk.getPos().z));
+            var productionService = find(level.getServer());
+            if (productionService != null && productionService.production != null) {
+                var sites = productionService.production.sitesIfReady();
+                if (sites != null) {
+                    var marker = chunk.getAttached(local.plaincraft.greatwall.generation.TerrainMarkers.PRODUCTION);
+                    if (marker != null) sites.loaded(chunk, marker);
+                }
+            }
         });
         ServerChunkEvents.CHUNK_UNLOAD.register((level, chunk) -> {
             var service = find(level.getServer());
@@ -241,6 +249,16 @@ public final class WorldServices {
             }
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            // The stamps and their force-load tickets are static. Release them while the level is
+            // still open, or a second world in the same JVM can inherit a ticket/write task.
+            var overworld = server.overworld();
+            local.plaincraft.greatwall.generation.ShowcaseStamp.resetAll(overworld);
+            local.plaincraft.greatwall.generation.GateStamp.reset(overworld);
+            local.plaincraft.greatwall.generation.WallStamp.reset(overworld);
+            local.plaincraft.greatwall.generation.StairStamp.reset(overworld);
+            local.plaincraft.greatwall.generation.WonderWall.stop();
+            local.plaincraft.greatwall.generation.ChunkHold.releaseAll(overworld);
+            local.plaincraft.greatwall.generation.WallBodyBackfill.clearAll();
             local.plaincraft.greatwall.compat.road.WallRoadGuard.clear();
             var services = find(server);
             if (services != null) {
@@ -339,6 +357,25 @@ public final class WorldServices {
     public BeaconLedger beacons() { return requireProductionSession().beacons(); }
     public GateLedger gates() { return requireProductionSession().gates(); }
     public SiteRuntimeIndex sites() { return requireProductionSession().sites(); }
+
+    /**
+     * A wall plan has landed in a chunk. Publish its persistent gameplay index and restore the
+     * guard columns even when this plan was read back from disk. No chunk loading is requested.
+     */
+    public static void onWallChunkReady(ServerLevel level,
+                                        net.minecraft.world.level.chunk.ChunkAccess chunk,
+                                        local.plaincraft.greatwall.model.WallTypes.ChunkWritePlan plan) {
+        if (level == null || chunk == null || plan == null) return;
+        local.plaincraft.greatwall.generation.WallPlanSupport.markPlannedColumns(plan);
+        var services = find(level.getServer());
+        if (services == null || services.production == null) return;
+        var sites = services.production.sitesIfReady();
+        if (sites == null) return;
+        if (!(chunk instanceof net.minecraft.world.level.chunk.LevelChunk loadedChunk)) return;
+        var marker = chunk.getAttached(local.plaincraft.greatwall.generation.TerrainMarkers.PRODUCTION);
+        if (marker != null) sites.loaded(loadedChunk, marker);
+    }
+
     public GarrisonController garrison() { return requireProductionSession().garrison(); }
     public IgnitionService ignition() { return requireProductionSession().ignition(); }
     /** Ignition service for interaction paths, or null before gameplay assembly completes. */

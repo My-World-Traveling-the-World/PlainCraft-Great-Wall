@@ -166,6 +166,13 @@ public final class WonderWall {
         }
     }
 
+    /** Stops the in-flight showcase build and releases its chunk tickets before the level closes. */
+    public static void stop() {
+        Job current = job;
+        job = null;
+        if (current != null) releaseAll(current);
+    }
+
     private static void releaseAll(Job job) {
         try {
             var access = (local.plaincraft.greatwall.mixin.TerrainChunkAccess) job.level.getChunkSource();

@@ -63,8 +63,23 @@ public final class GateStamp {
         fillZ = 0;
         filled = 0;
         finished = false;
+        if (ticket != null) ChunkHold.releaseEverywhere(ticket);
         ticket = null;
         load();
+    }
+
+    /** Releases the old world's ticket and drops template/state references. */
+    public static void reset(ServerLevel level) {
+        if (ticket != null) {
+            ChunkHold.release(level, ticket);
+            ticket = null;
+        }
+        finished = true;
+        filling = false;
+        loaded = false;
+        coords = null;
+        states = null;
+        columnBottom = null;
     }
 
     public static void tick(ServerLevel level) {

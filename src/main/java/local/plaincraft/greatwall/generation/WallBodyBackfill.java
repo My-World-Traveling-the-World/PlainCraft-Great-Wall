@@ -238,7 +238,9 @@ public final class WallBodyBackfill {
                 try {
                     prefetch(level, key, store);
                 } finally {
-                    LOADING.remove(key);
+                    // The key alone is not an ownership token: this request may belong to a
+                    // different save whose level was replaced while the IO thread was reading.
+                    if (STATES.containsKey(level)) LOADING.remove(key);
                 }
             });
         } catch (java.util.concurrent.RejectedExecutionException closing) {
@@ -298,6 +300,8 @@ public final class WallBodyBackfill {
                 requestPlanRead(level, key);
                 continue;
             }
+            // A DONE chunk is already built; its columns must still be visible to the road guard.
+            WallPlanSupport.markPlannedColumns(plan);
             // Three candidate voxels, and one match is enough: a chunk that was written normally
             // matches all of them, and requiring only one keeps a single player-placed block (or a
             // voxel the write skipped as a conflict) from repainting a chunk that is otherwise done.
@@ -449,6 +453,37 @@ public final class WallBodyBackfill {
 
     public static long persistFailures() { return PERSIST_FAILURES.get(); }
     private static final Map<ServerLevel, State> STATES = new ConcurrentHashMap<>();
+
+    /**
+     * Releases every ticket and drops all level-keyed state before the server closes.
+     * Without this, quitting to the title pinned the whole old ServerLevel (and its chunk
+     * manager) for the rest of the JVM and the next save inherited its queue.
+     */
+    public static void clearAll() {
+        for (var entry : STATES.entrySet()) {
+            ServerLevel level = entry.getKey();
+            State state = entry.getValue();
+            try {
+                for (StartupRequest request : state.requests.values()) {
+                    releaseTicket(level, request.pos(), request.ticketId());
+                }
+            } catch (RuntimeException ignored) {
+                // The level may already be closing; the tickets die with it.
+            }
+        }
+        STATES.clear();
+        LOADING.clear();
+        DONE.clear();
+        doneFile = null;
+        installedRoot = null;
+        planStore = null;
+        gateDeferredAtNanos = 0L;
+        drainsSinceLog = 0L;
+        beforeConflicts = 0;
+        unresolvableVoxels = 0;
+        verifyMissing = 0;
+        verifyWrong = 0;
+    }
     private static final AtomicLong TOTAL_BLOCKS = new AtomicLong();
 
     private WallBodyBackfill() {
@@ -521,7 +556,9 @@ public final class WallBodyBackfill {
                 try {
                     prefetch(level, key, store);
                 } finally {
-                    LOADING.remove(key);
+                    // The key alone is not an ownership token: this request may belong to a
+                    // different save whose level was replaced while the IO thread was reading.
+                    if (STATES.containsKey(level)) LOADING.remove(key);
                 }
             });
         } catch (java.util.concurrent.RejectedExecutionException closing) {
@@ -681,27 +718,39 @@ public final class WallBodyBackfill {
         if (state == null) return 0;
         java.util.Set<ChunkKey> keys = new java.util.LinkedHashSet<>(state.pending);
         keys.addAll(state.settled);
+        // DONE chunks live in verify, not in pending. Omitting them meant a reloaded save could
+        // report missed=0 while every already-built chunk was invisible to the road guard.
+        keys.addAll(state.verify);
         int columns = 0;
         int voxels = 0;
         int missed = 0;
+        int fromDisk = 0;
         for (ChunkKey key : keys) {
             ChunkWritePlan plan = WallWorldgenPlanCache.get(level, key);
+            if (plan == null && planStore != null) {
+                try {
+                    plan = planStore.read(key).orElse(null);
+                    if (plan != null) {
+                        WallWorldgenPlanCache.put(level, plan);
+                        fromDisk++;
+                    }
+                } catch (java.io.IOException | RuntimeException unreadable) {
+                    GreatWallMod.LOGGER.warn("[GreatWall:S1C] ROAD_GUARD_PLAN_READ_FAILED owner={},{} reason={}",
+                            key.x(), key.z(), unreadable.toString());
+                }
+            }
             if (plan == null) {
-                // 计划还没进内存缓存（未入队 / 已被 LRU 淘汰）⇒ 这个区块的墙列这一轮标不上，
-                // 而道路此时已经放行了。必须计数上报，不然覆盖率不全只能靠猜。
+                // A missing plan is a real coverage hole. Report it instead of silently marking fewer
+                // columns than the world contains.
                 missed++;
                 continue;
             }
             voxels += plan.voxels().size();
-            if (plan.voxels().isEmpty()) continue;
-            for (var voxel : plan.voxels()) {
-                var p = voxel.pos();
-                local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(p.x(), p.z());
-                columns++;
-            }
+            WallPlanSupport.markPlannedColumns(plan);
+            columns += plan.voxels().size();
         }
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] ROAD_GUARD_SEEDED_FROM_PLANS chunks={} columns={} voxels={} missed={}",
-                keys.size(), columns, voxels, missed);
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] ROAD_GUARD_SEEDED_FROM_PLANS chunks={} columns={} voxels={} missed={} fromDisk={}",
+                keys.size(), columns, voxels, missed, fromDisk);
         if (missed > 0) {
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] ROAD_GUARD_SEED_INCOMPLETE missed={}/{} chunks had no plan in the "
                     + "in-memory cache; the road is already released and those wall columns are unmarked until the "
@@ -770,6 +819,10 @@ public final class WallBodyBackfill {
             return new Sweep(Status.PENDING, 0);
         }
         int written = 0;
+        var touched = new java.util.HashSet<Point3i>();
+        // Mark the complete plan before any idempotence/conflict skip. These are read-only guard
+        // marks, not writes: an already-built column must be protected just as much as a new one.
+        WallPlanSupport.markPlannedColumns(plan);
         var beforeStates = new java.util.HashMap<Point3i, String>();
         for (var proof : plan.proofs()) {
             beforeStates.putIfAbsent(proof.pos(), proof.beforeState());
@@ -814,6 +867,7 @@ public final class WallBodyBackfill {
             // thousand writes, and eight thousand cascades every half second is a visible stutter. The
             // chunk still updates its own heightmaps, and lighting is recomputed per section on save.
             level.setBlock(pos, target, 2);
+            touched.add(p);
             local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(pos.getX(),pos.getZ());
             written++;
             // ---- 只读自检（B 线）：每 64 个刚写完的体素抽 1 个立刻回读对一遍。
@@ -840,6 +894,14 @@ public final class WallBodyBackfill {
                 }
             }
         }
+        try {
+            WallPlanSupport.writeBlockEntities(chunk, plan, touched);
+            WallPlanSupport.writeMarkers(chunk, plan);
+        } catch (RuntimeException metadataFailure) {
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_METADATA_FAILED owner={},{} reason={}",
+                    key.x(), key.z(), metadataFailure.toString());
+        }
+        local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
         return new Sweep(Status.SETTLED, written);
     }
 

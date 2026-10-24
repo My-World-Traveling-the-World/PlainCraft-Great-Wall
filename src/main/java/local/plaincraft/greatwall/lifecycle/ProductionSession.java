@@ -1039,6 +1039,9 @@ final class ProductionSession implements AutoCloseable {
                 // 17.6 minutes after the prewarm finished), so nothing here would ever reach the
                 // feature stage again. See WallBodyBackfill.
                 publishedKeys.add(entry.getKey());
+                // The road may be released as soon as this window publishes; mark the plan's
+                // columns now, not one drain later.
+                local.plaincraft.greatwall.generation.WallPlanSupport.markPlannedColumns(entry.getValue());
                 local.plaincraft.greatwall.generation.WallBodyBackfill.persist(entry.getValue());
                 // Publish the planning vegetation corridor + biome mask for this chunk, replacing the
                 // deleted FeatureSlot's per-chunk publication.

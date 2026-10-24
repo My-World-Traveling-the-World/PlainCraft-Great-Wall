@@ -13,7 +13,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
-import local.plaincraft.greatwall.generation.ChunkWallWriter;
 import local.plaincraft.greatwall.generation.OwnershipGuard;
 import local.plaincraft.greatwall.model.WallTypes.BlockProof;
 import local.plaincraft.greatwall.model.WallTypes.ChunkKey;
@@ -54,7 +53,6 @@ public final class WallArchBackfill {
     private final GateLedger gates;
     private final Executor io;
     private final DurablePlans durable;
-    private final ChunkWallWriter writer = new ChunkWallWriter();
     private final ConcurrentHashMap<GateId, List<ChunkWritePlan>> prepared = new ConcurrentHashMap<>();
     /** Chunks whose owner plan could not be read yet; they stay PENDING, never ACKed. */
     private final ConcurrentHashMap<GateId, List<ChunkKey>> pending = new ConcurrentHashMap<>();
@@ -160,14 +158,21 @@ public final class WallArchBackfill {
                 continue;
             }
             // Full before-state / block-entity / tombstone check before any write.
+            var context = new OwnershipGuard.Context(
+                    new local.plaincraft.greatwall.model.WallTypes.DimensionBounds(
+                            level.getMinBuildHeight(), level.getMaxBuildHeight(), 29_999_000),
+                    true, true, true, true);
             for (BlockProof proof : arch.proofs()) {
                 var blockPos = new net.minecraft.core.BlockPos(proof.pos().x(), proof.pos().y(), proof.pos().z());
-                String current = chunk.getBlockState(blockPos).toString();
+                var state = chunk.getBlockState(blockPos);
+                String current = local.plaincraft.greatwall.terrain.BlockCatalog.token(
+                        state, chunk.getBlockEntity(blockPos) != null);
                 var decision = OwnershipGuard.decide(WriteMode.GATE_BACKFILL, owner, proof.pos(),
-                        current, chunk.getBlockEntity(blockPos) != null, proof, false);
-                if (decision == local.plaincraft.greatwall.model.WallTypes.WriteDecision.CONFLICT) {
+                        current, chunk.getBlockEntity(blockPos) != null, proof, false, context);
+                if (decision != local.plaincraft.greatwall.model.WallTypes.WriteDecision.WRITE
+                        && decision != local.plaincraft.greatwall.model.WallTypes.WriteDecision.ALREADY_TARGET) {
                     throw new IllegalStateException("gate " + id.ordinal()
-                            + " conflicts on " + proof.pos() + " before any write");
+                            + " conflicts on " + proof.pos() + " before any write: " + decision);
                 }
             }
             plans.add(arch);
@@ -282,6 +287,10 @@ public final class WallArchBackfill {
             // re-taken here because the world may have changed since prepare().
             var proofsByPos = new java.util.HashMap<Point3i, BlockProof>();
             for (BlockProof proof : plan.proofs()) proofsByPos.put(proof.pos(), proof);
+            var context = new OwnershipGuard.Context(
+                    new local.plaincraft.greatwall.model.WallTypes.DimensionBounds(
+                            level.getMinBuildHeight(), level.getMaxBuildHeight(), 29_999_000),
+                    true, true, true, true);
             for (VoxelIntent voxel : plan.voxels()) {
                 if (written >= blockBudget) break;
                 if (voxel.kind() == local.plaincraft.greatwall.model.WallTypes.IntentKind.KEEP) continue;
@@ -295,15 +304,18 @@ public final class WallArchBackfill {
                     BlockProof proof = proofsByPos.get(p);
                     if (proof == null) { conflicts.add(p); continue; }
                     var decision = OwnershipGuard.decide(WriteMode.GATE_BACKFILL, plan.owner(), p,
-                            current.toString(), chunk.getBlockEntity(pos) != null, proof, false);
-                    if (decision == local.plaincraft.greatwall.model.WallTypes.WriteDecision.CONFLICT
-                            || decision == local.plaincraft.greatwall.model.WallTypes.WriteDecision.PROTECTED) {
+                            local.plaincraft.greatwall.terrain.BlockCatalog.token(
+                                    current, chunk.getBlockEntity(pos) != null),
+                            chunk.getBlockEntity(pos) != null, proof, false, context);
+                    if (decision != local.plaincraft.greatwall.model.WallTypes.WriteDecision.WRITE
+                            && decision != local.plaincraft.greatwall.model.WallTypes.WriteDecision.ALREADY_TARGET) {
                         conflicts.add(p);
                         continue;
                     }
                     // Flag 2: clients are notified, neighbours are not cascaded. An arch is a few hundred
                     // writes inside one tick, and eight thousand cascades every half second is a stutter.
                     level.setBlock(pos, target, 2);
+                    local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(pos.getX(), pos.getZ());
                     written++;
                 } catch (RuntimeException unresolvable) {
                     // A palette naming a block the registry no longer has must not pin this chunk: the
@@ -315,9 +327,6 @@ public final class WallArchBackfill {
                 cursors.put(id, (cursor + step + 1) % plans.size());
                 break;
             }
-            var report = writer.apply(chunk, plan, WriteMode.GATE_BACKFILL);
-            written += report.written();
-            if (!report.complete()) conflicts.addAll(report.conflicts());
             if (written >= blockBudget) {
                 cursors.put(id, (cursor + step + 1) % plans.size());
                 break;

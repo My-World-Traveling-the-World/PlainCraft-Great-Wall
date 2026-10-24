@@ -35,8 +35,15 @@ public class WallFeature extends Feature<NoneFeatureConfiguration> {
 
         ChunkAccess chunk = world.getChunk(cx, cz);
         var marker = chunk.getAttached(TerrainMarkers.PRODUCTION);
-        if (marker != null && marker.complete()) return true;
+        if (marker != null && marker.complete()) {
+            // An already-written chunk still has to publish its ownership to the road guard and
+            // gameplay index after a restart; returning early here used to lose both forever.
+            WallPlanSupport.markPlannedColumns(plan);
+            local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(server, chunk, plan);
+            return true;
+        }
 
+        var touched = new java.util.HashSet<Point3i>();
         for (var voxel : plan.voxels()) {
             Point3i p = voxel.pos();
             if (Math.floorDiv(p.x(), 16) != cx || Math.floorDiv(p.z(), 16) != cz) continue;
@@ -46,6 +53,7 @@ public class WallFeature extends Feature<NoneFeatureConfiguration> {
             BlockState current = chunk.getBlockState(pos);
             if (!canReplace(current)) continue;
             chunk.setBlockState(pos, state, false);
+            touched.add(p);
             local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(p.x(), p.z());
         }
         Heightmap.primeHeightmaps(chunk, EnumSet.of(
@@ -53,6 +61,17 @@ public class WallFeature extends Feature<NoneFeatureConfiguration> {
                 Heightmap.Types.OCEAN_FLOOR_WG,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
         for (var p : plan.postprocess()) chunk.markPosForPostprocessing(new BlockPos(p.x(), p.y(), p.z()));
+        try {
+            WallPlanSupport.writeBlockEntities(chunk, plan, touched);
+            WallPlanSupport.writeMarkers(chunk, plan);
+        } catch (RuntimeException metadataFailure) {
+            // A template/palette problem must not turn a generated wall chunk into a failed chunk.
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                    "[GreatWall:wonder] WALL_PLAN_METADATA_FAILED owner={},{} reason={}",
+                    cx, cz, metadataFailure.toString());
+        }
+        WallPlanSupport.markPlannedColumns(plan);
+        local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(server, chunk, plan);
         return true;
     }
 

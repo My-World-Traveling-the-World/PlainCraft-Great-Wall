@@ -230,6 +230,7 @@ public final class PrewarmProgress {
      */
     public static void request() {
         REQUESTED.set(true);
+        PUBLISHED.set(false);
     }
 
     /** Records that a prewarm began, how many segments it will produce, and on how many lanes. */
@@ -533,6 +534,7 @@ public final class PrewarmProgress {
         // leaving this set would make a peer wait for a prewarm that may never run.
         EVER_STARTED.set(false);
         REQUESTED.set(false);
+        PUBLISHED.set(false); // A plan from the previous save must not satisfy the new startup.
         synchronized (LATCH_LOCK) {
             // Release any waiter still parked on the old gate before replacing it: a session that is being
             // torn down must not leave a waiter holding a latch nobody will ever open. Both gates are
