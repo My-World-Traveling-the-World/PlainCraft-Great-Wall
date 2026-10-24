@@ -98,6 +98,7 @@ public final class GreatWallCommands {
                 .then(repair())
                 .then(debug())
                 .then(roadguard())
+                .then(repaint())
                 .then(test()));
     }
 
@@ -925,6 +926,27 @@ public final class GreatWallCommands {
                 + " roadWouldStop=" + blocked
                 + " coarse=" + coarse
                 + " at " + pos.getX() + "," + pos.getY() + "," + pos.getZ()), false);
+        return 1;
+    }
+    private static LiteralArgumentBuilder<CommandSourceStack> repaint() {
+        return Commands.literal("repaint")
+                .requires(source -> source.hasPermission(PERMISSION))
+                .executes(ctx -> repaint(ctx, 6));
+    }
+
+    /** 强制把玩家附近「已经画完」的墙区块重新排一遍，让 drain 的自补步骤把被挖掉的格子补回来。 */
+    private static int repaint(CommandContext<CommandSourceStack> ctx, int radiusChunks) {
+        CommandSourceStack source = ctx.getSource();
+        var pos = BlockPos.containing(source.getPosition());
+        int requeued = 0;
+        if (source.getLevel() instanceof net.minecraft.server.level.ServerLevel level) {
+            requeued = local.plaincraft.greatwall.generation.WallBodyBackfill
+                    .requeueAround(level, pos.getX() >> 4, pos.getZ() >> 4, radiusChunks);
+        }
+        int count = requeued;
+        source.sendSuccess(() -> Component.literal("GREATWALL_REPAINT requeued=" + count
+                + " chunks around " + (pos.getX() >> 4) + "," + (pos.getZ() >> 4)
+                + " r=" + radiusChunks + " - watch for WALL_SELF_HEAL lines"), false);
         return 1;
     }
 }

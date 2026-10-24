@@ -809,6 +809,30 @@ public final class WallBodyBackfill {
                 }
             }
         }
+        // 自补（SELF_HEAL）：规划里该有块、现在却是空气的格子补回去。
+        // 别的系统（道路的路面上方清空、装饰、施工）可能在墙画完之后挖掉一两格；
+        // 那不属于"规划权威已转移"的情形（玩家放方块会留下非空气，不会走这里）。
+        int healed = 0;
+        for (var voxel : plan.voxels()) {
+            try {
+                Point3i hp = voxel.pos();
+                if (Math.floorDiv(hp.x(), 16) != key.x() || Math.floorDiv(hp.z(), 16) != key.z()) continue;
+                if (voxel.kind() == IntentKind.KEEP) continue;
+                BlockPos hpos = new BlockPos(hp.x(), hp.y(), hp.z());
+                BlockState htarget = BlockCatalog.resolveState(voxel.state());
+                if (htarget.isAir()) continue;
+                if (!chunk.getBlockState(hpos).isAir()) continue;
+                level.setBlock(hpos, htarget, 2);
+                local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(hpos.getX(), hpos.getZ());
+                healed++;
+            } catch (RuntimeException ignored) {
+            }
+        }
+        if (healed > 0) {
+            GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_SELF_HEAL chunk={},{} patched={}",
+                    key.x(), key.z(), healed);
+        }
+        written += healed;
         return new Sweep(Status.SETTLED, written);
     }
 
@@ -850,5 +874,37 @@ public final class WallBodyBackfill {
         final Map<ChunkKey, StartupRequest> requests = new ConcurrentHashMap<>();
         int tick;
         int total;
+    }
+    /**
+     * 把某片已经"画完"的区块重新排队，让 drain 再画一遍。
+     *
+     * <p>墙画完之后被别的系统挖掉的格子，只有再走一次 {@code settle} 的自补步骤才能补回来；
+     * 而已完成的区块被记录在 backfilled.txt 里，不会再被访问，所以这里把记录一并撤回。
+     */
+    public static int requeueAround(ServerLevel level, int centerChunkX, int centerChunkZ, int radiusChunks) {
+        State state = level == null ? null : STATES.get(level);
+        if (state == null) return 0;
+        java.util.List<ChunkKey> back = new java.util.ArrayList<>();
+        for (ChunkKey k : state.settled) {
+            if (Math.abs(k.x() - centerChunkX) <= radiusChunks && Math.abs(k.z() - centerChunkZ) <= radiusChunks) {
+                back.add(k);
+            }
+        }
+        for (ChunkKey k : back) {
+            state.settled.remove(k);
+            state.pending.add(k);
+            DONE.remove(k.x() + "_" + k.z());
+        }
+        java.nio.file.Path file = doneFile;
+        if (file != null) {
+            try {
+                java.nio.file.Files.write(file, DONE, java.nio.charset.StandardCharsets.UTF_8);
+            } catch (java.io.IOException | RuntimeException unwritable) {
+                GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_REPAINT_LEDGER_FAILED reason={}", unwritable.toString());
+            }
+        }
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_REPAINT_REQUEUED chunks={} center={},{} radius={}",
+                back.size(), centerChunkX, centerChunkZ, radiusChunks);
+        return back.size();
     }
 }
