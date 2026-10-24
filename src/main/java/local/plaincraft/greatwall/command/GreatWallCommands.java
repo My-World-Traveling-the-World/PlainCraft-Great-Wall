@@ -99,6 +99,7 @@ public final class GreatWallCommands {
                 .then(debug())
                 .then(roadguard())
                 .then(repaint())
+                .then(restamp())
                 .then(test()));
     }
 
@@ -947,6 +948,23 @@ public final class GreatWallCommands {
         source.sendSuccess(() -> Component.literal("GREATWALL_REPAINT requeued=" + count
                 + " chunks around " + (pos.getX() >> 4) + "," + (pos.getZ() >> 4)
                 + " r=" + radiusChunks + " - watch for WALL_SELF_HEAL lines"), false);
+        return 1;
+    }
+    private static LiteralArgumentBuilder<CommandSourceStack> restamp() {
+        return Commands.literal("restamp")
+                .requires(source -> source.hasPermission(PERMISSION))
+                .executes(GreatWallCommands::restamp);
+    }
+
+    /** 把展台所有盖章件重置，下一 tick 从头再盖一遍（补洞 / 重画）。 */
+    private static int restamp(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        local.plaincraft.greatwall.generation.GateStamp.restart();
+        local.plaincraft.greatwall.generation.WallStamp.restart();
+        local.plaincraft.greatwall.generation.StairStamp.restart();
+        local.plaincraft.greatwall.generation.TowerStamp.restart();
+        local.plaincraft.greatwall.generation.ShowcaseStamp.restartAll();
+        source.sendSuccess(() -> Component.literal("GREATWALL_RESTAMP every showcase piece is queued again"), false);
         return 1;
     }
 }

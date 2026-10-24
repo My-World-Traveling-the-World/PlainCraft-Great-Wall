@@ -162,4 +162,14 @@ public final class StairStamp {
             // A missing template simply means nothing is stamped.
         }
     }
+    /** 重新盖一遍：进度全部复位，下次 tick 从头铺。用于补洞 / 重画（/greatwall restamp）。 */
+    public static void restart() {
+        cursor = 0;
+        finished = false;
+        loaded = false;        filling = false;
+        fillX = 0;
+        fillZ = 0;
+        filled = 0;
+    }
+
 }

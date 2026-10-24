@@ -99,4 +99,12 @@ public final class WallStamp {
             // A missing template simply means nothing is stamped.
         }
     }
+
+    /** 重新盖一遍（/greatwall restamp）。 */
+    public static void restart() {
+        cursor = 0;
+        finished = false;
+        loaded = false;
+    }
+
 }

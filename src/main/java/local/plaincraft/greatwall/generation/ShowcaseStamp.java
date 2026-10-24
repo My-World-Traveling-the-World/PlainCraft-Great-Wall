@@ -166,4 +166,19 @@ public final class ShowcaseStamp {
             // A missing template simply means nothing is stamped.
         }
     }
+
+    /** 重新盖一遍（/greatwall restamp）。 */
+    public static void restartAll() {
+        for (ShowcaseStamp piece : ALL) {
+            piece.cursor = 0;
+            piece.filled = 0;
+            piece.fillU = 0;
+            piece.fillV = 0;
+            piece.finished = false;
+            piece.filling = false;
+            piece.settled = false;
+            piece.loaded = false;
+        }
+    }
+
 }
