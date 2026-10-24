@@ -1,54 +1,60 @@
 package local.plaincraft.greatwall.generation;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.compat.road.WallRoadGuard;
 
 /**
- * Holds the road mod back until the showcase stamps have actually finished.
+ * Holds the road mod back until every registered showcase piece has actually finished stamping.
  *
- * <p>The template world stamps pieces from the tick loop while the road mod is already generating, so a
- * road chunk written in those first seconds sees no wall columns and paves straight through them. The gate
- * waits until the marked column set has stopped growing (or a hard deadline passes), which is exactly when
- * stamping is over - no per-piece bookkeeping needed.
+ * <p>Each piece calls {@link #expect()} when it is registered and {@link #done()} when it completes, so the
+ * gate is exact - no timing heuristic. (An earlier version guessed "settled" from how long ago the last column
+ * was marked; it opened 2.6 s in while pieces were still stamping 30 s later.) A hard deadline keeps a broken
+ * piece from blocking the road forever.
  */
 public final class ShowcaseGate {
-    /** Stamping counts as settled once no new column has been marked for this long. */
-    private static final long SETTLE_MILLIS = 2_500L;
-    /** Hard cap so a broken piece can never block the road's initial generation forever. */
     private static final long DEADLINE_MILLIS = 300_000L;
 
+    private static final AtomicInteger PENDING = new AtomicInteger();
     private static volatile boolean active;
     private static volatile long armedAt;
-    private static volatile boolean opened;
 
     private ShowcaseGate() {
     }
 
-    /** Called when the showcase pieces are registered. */
-    public static void arm() {
+    /** Registers one piece that must finish before roads may start. */
+    public static void expect() {
         active = true;
-        opened = false;
-        armedAt = System.currentTimeMillis();
+        if (armedAt == 0L) armedAt = System.currentTimeMillis();
+        PENDING.incrementAndGet();
+    }
+
+    /** Reports one piece finished. */
+    public static void done() {
+        int left = PENDING.decrementAndGet();
+        if (left <= 0) {
+            GreatWallMod.LOGGER.info("[GreatWall:road] SHOWCASE_GATE_OPEN after {}ms (all pieces stamped)",
+                    System.currentTimeMillis() - armedAt);
+        }
     }
 
     /** True while the road mod must keep waiting. */
     public static boolean pending() {
-        if (!active || opened) return false;
+        if (!active) return false;
+        int left = PENDING.get();
+        if (left <= 0) return false;
         long elapsed = System.currentTimeMillis() - armedAt;
         if (elapsed > DEADLINE_MILLIS) {
-            opened = true;
-            GreatWallMod.LOGGER.warn("[GreatWall:road] SHOWCASE_GATE_OPEN forced after {}ms", elapsed);
+            PENDING.set(0);
+            GreatWallMod.LOGGER.warn("[GreatWall:road] SHOWCASE_GATE_OPEN forced after {}ms ({} pieces never finished)",
+                    elapsed, left);
             return false;
         }
-        if (!WallRoadGuard.hasMarks()) return true;
-        if (WallRoadGuard.millisSinceLastMark() < SETTLE_MILLIS) return true;
-        opened = true;
-        GreatWallMod.LOGGER.info("[GreatWall:road] SHOWCASE_GATE_OPEN after {}ms (columns settled)", elapsed);
-        return false;
+        return true;
     }
 
-    /** Diagnostics. */
-    public static boolean isActive() {
-        return active;
+    /** Pieces still outstanding (diagnostics). */
+    public static int remaining() {
+        return PENDING.get();
     }
 }

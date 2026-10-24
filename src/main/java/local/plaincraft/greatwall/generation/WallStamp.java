@@ -42,6 +42,7 @@ public final class WallStamp {
         finished = false;
         ticket = null;
         load();
+        local.plaincraft.greatwall.generation.ShowcaseGate.expect();
         local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(originX, originZ,
                 originX + 47, originZ + WallProfile.DEPTH - 1);
     }
@@ -66,6 +67,8 @@ public final class WallStamp {
         }
         if (cursor >= coords.size()) {
             finished = true;
+
+            local.plaincraft.greatwall.generation.ShowcaseGate.done();
                 ChunkHold.release(level, ticket);
                 ticket = null;
             GreatWallMod.LOGGER.info("[GreatWall:wonder] WALL_STAMPED blocks={} origin=({},{},{})",

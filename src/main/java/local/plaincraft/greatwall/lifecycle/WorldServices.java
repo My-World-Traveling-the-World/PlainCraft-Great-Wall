@@ -139,7 +139,6 @@ public final class WorldServices {
                             instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
                 var spawn = level.getSharedSpawnPos();
                 // 展台模式：墙、城门、敌台各占一个独立位置，互不相连，便于逐个验收与手工精修。
-            local.plaincraft.greatwall.generation.ShowcaseGate.arm();
             local.plaincraft.greatwall.generation.GateStamp.start(spawn.getX() - 64, spawn.getZ());
             local.plaincraft.greatwall.generation.WallStamp.start(spawn.getX() - 64, spawn.getZ() - 64);
             local.plaincraft.greatwall.generation.StairStamp.start(spawn.getX() - 64, spawn.getZ() + 128);

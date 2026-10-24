@@ -53,6 +53,7 @@ public final class GateStamp {
     public static void start(int centreX, int centreZ) {
         originX = centreX - CENTRE_X;
         originZ = centreZ - CENTRE_Z;
+        local.plaincraft.greatwall.generation.ShowcaseGate.expect();
         local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(originX, originZ, originX + WIDTH - 1, originZ + DEPTH - 1);
         originY = 0;
         autoGround = true;
@@ -90,6 +91,8 @@ public final class GateStamp {
         while (budget-- > 0) {
             if (fillX >= WIDTH) {
                 finished = true;
+
+                local.plaincraft.greatwall.generation.ShowcaseGate.done();
                 ChunkHold.release(level, ticket);
                 ticket = null;
                 GreatWallMod.LOGGER.info("[GreatWall:wonder] GATE_FOOTED columns={} originY={}", filled, originY);

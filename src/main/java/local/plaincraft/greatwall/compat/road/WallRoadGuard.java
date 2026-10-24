@@ -55,8 +55,12 @@ public final class WallRoadGuard {
     }
 
     private static boolean inRect(int x, int z) {
+        return inRect(x, z, MARGIN);
+    }
+
+    private static boolean inRect(int x, int z, int pad) {
         for (int[] r : RECTS) {
-            if (x >= r[0] - MARGIN && x <= r[2] + MARGIN && z >= r[1] - MARGIN && z <= r[3] + MARGIN) return true;
+            if (x >= r[0] - pad && x <= r[2] + pad && z >= r[1] - pad && z <= r[3] + pad) return true;
         }
         return false;
     }
@@ -142,7 +146,7 @@ public final class WallRoadGuard {
 
     /** Same as {@link #blocks(int, int, int)} but with a caller-chosen radius, for multi-block props. */
     public static boolean blocksWithin(int x, int y, int z, int radius) {
-        if (inRect(x, z)) return true;
+        if (inRect(x, z, Math.max(MARGIN, radius))) return true;
         if (MASKS.isEmpty()) return false;
         int reach = Math.max(MARGIN, radius);
         for (int dx = -reach; dx <= reach; dx++) {
