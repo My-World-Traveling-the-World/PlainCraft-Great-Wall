@@ -17,6 +17,7 @@ public final class ShowcaseGate {
 
     private static final AtomicInteger PENDING = new AtomicInteger();
     private static volatile boolean active;
+    private static volatile boolean completed;
     private static volatile long armedAt;
 
     private ShowcaseGate() {
@@ -40,6 +41,7 @@ public final class ShowcaseGate {
             return;
         }
         if (left == 0) {
+            completed = true;
             GreatWallMod.LOGGER.info("[GreatWall:road] SHOWCASE_GATE_OPEN after {}ms (all pieces stamped)",
                     System.currentTimeMillis() - armedAt);
         }
@@ -55,6 +57,7 @@ public final class ShowcaseGate {
         int before = PENDING.getAndSet(0);
         armedAt = 0L;
         active = false;
+        completed = false;
         GreatWallMod.LOGGER.info("[GreatWall:road] SHOWCASE_GATE_RESET pendingWas={}", before);
     }
 
@@ -71,6 +74,11 @@ public final class ShowcaseGate {
             return false;
         }
         return true;
+    }
+
+    /** True after every registered piece called {@link #done()} normally. */
+    public static boolean completed() {
+        return completed;
     }
 
     /** Pieces still outstanding (diagnostics). */
