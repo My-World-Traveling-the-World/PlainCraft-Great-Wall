@@ -39,6 +39,7 @@ public final class DiagonalWallShowcase {
         final List<Row> rows;
         final boolean bend;
         final int steps;
+        final String accountingName;
         final List<int[]> blocks = new ArrayList<>();
         final List<BlockState> states = new ArrayList<>();
         int minX, minZ, maxX, maxZ;
@@ -55,6 +56,7 @@ public final class DiagonalWallShowcase {
             this.rows = rows;
             this.bend = bend;
             this.steps = bend ? STEPS : 48;
+            this.accountingName = "wall-path@" + centreX + "," + centreZ + (bend ? "/bend" : "/straight");
         }
     }
 
@@ -76,7 +78,7 @@ public final class DiagonalWallShowcase {
                 25, 119, 68, 76);
         ShowcaseLayout.add(bend ? "diagonal-wall" : "straight-wall",
                 centreX - 210, centreZ - 16, centreX + 210, centreZ + 110);
-        ShowcaseGate.expect();
+        ShowcaseGate.expect(added.accountingName);
         GreatWallMod.LOGGER.info("[GreatWall:wonder] WALL_PATH_START gate=({},{}) bend={} steps={}",
                 centreX, centreZ, bend, added.steps);
     }
@@ -129,7 +131,7 @@ public final class DiagonalWallShowcase {
         job.finished = true;
         if (job.ticket != null) ChunkHold.release(job.level, job.ticket);
         job.ticket = null;
-        ShowcaseGate.done();
+        ShowcaseGate.done(job.accountingName);
         GreatWallMod.LOGGER.info("[GreatWall:wonder] WALL_PATH_DONE bend={} reason={} blocks={} baseY={}",
                 job.bend, reason, job.blocks.size(), job.baseY);
     }

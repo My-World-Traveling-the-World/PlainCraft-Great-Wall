@@ -20,6 +20,7 @@ public final class ShowcaseStamp {
     private static final List<ShowcaseStamp> ALL = new ArrayList<>();
 
     private final String resource;
+    private final String accountingName;
     private final int width;
     private final int depth;
     private final int heightOffset;
@@ -55,6 +56,7 @@ public final class ShowcaseStamp {
                           int heightOffset, boolean wallModule, int clipMinX, int clipMaxX,
                           int wallPhaseOffset, int noFillMinX, int noFillMaxX) {
         this.resource = "/assets/plaincraft-great-wall/templates/" + csvName;
+        this.accountingName = csvName + "@" + atX + "," + atZ;
         this.width = w;
         this.depth = d;
         this.heightOffset = heightOffset;
@@ -122,9 +124,10 @@ public final class ShowcaseStamp {
     private static void start(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
                               int heightOffset, boolean wallModule, int clipMinX, int clipMaxX,
                               int wallPhaseOffset, int noFillMinX, int noFillMaxX) {
-        ALL.add(new ShowcaseStamp(csvName, w, d, cx, cz, atX, atZ, heightOffset, wallModule,
-                clipMinX, clipMaxX, wallPhaseOffset, noFillMinX, noFillMaxX));
-        local.plaincraft.greatwall.generation.ShowcaseGate.expect();
+        ShowcaseStamp piece = new ShowcaseStamp(csvName, w, d, cx, cz, atX, atZ, heightOffset, wallModule,
+                clipMinX, clipMaxX, wallPhaseOffset, noFillMinX, noFillMaxX);
+        ALL.add(piece);
+        local.plaincraft.greatwall.generation.ShowcaseGate.expect(piece.accountingName);
         ShowcaseLayout.add(csvName, atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
         local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
     }
@@ -144,7 +147,7 @@ public final class ShowcaseStamp {
             if (coords == null || coords.isEmpty()) {
                 finished = true;
 
-                local.plaincraft.greatwall.generation.ShowcaseGate.done();
+                local.plaincraft.greatwall.generation.ShowcaseGate.done(accountingName);
                 GreatWallMod.LOGGER.warn("[GreatWall:wonder] SHOWCASE_EMPTY {}", resource);
                 return;
             }
@@ -197,7 +200,7 @@ public final class ShowcaseStamp {
             if (fillU >= width) {
                 finished = true;
 
-                local.plaincraft.greatwall.generation.ShowcaseGate.done();
+                local.plaincraft.greatwall.generation.ShowcaseGate.done(accountingName);
                 ChunkHold.release(level, ticket);
                 ticket = null;
                 GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_FOOTED {} columns={}", resource, filled);
@@ -287,7 +290,7 @@ public final class ShowcaseStamp {
                 piece.loaded = false; // tickOne will load it once coordinates are available.
             }
             // 重画是新的一轮「必须盖完」：重新占一个 expect() 名额。
-            local.plaincraft.greatwall.generation.ShowcaseGate.expect();
+            local.plaincraft.greatwall.generation.ShowcaseGate.expect(piece.accountingName);
             queued++;
         }
         GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_RESTAMP pieces={} originKept=true", queued);

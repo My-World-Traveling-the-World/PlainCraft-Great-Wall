@@ -1,5 +1,7 @@
 package local.plaincraft.greatwall.generation;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.compat.road.WallRoadGuard;
@@ -16,6 +18,7 @@ public final class ShowcaseGate {
     private static final long DEADLINE_MILLIS = 300_000L;
 
     private static final AtomicInteger PENDING = new AtomicInteger();
+    private static final Map<String, Integer> PENDING_BY_NAME = new ConcurrentHashMap<>();
     private static volatile boolean active;
     private static volatile boolean completed;
     private static volatile long armedAt;
@@ -25,17 +28,41 @@ public final class ShowcaseGate {
 
     /** Registers one piece that must finish before roads may start. */
     public static void expect() {
+        expect(null);
+    }
+
+    /** Registers one named piece; the name is kept for timeout diagnostics. */
+    public static void expect(String name) {
         active = true;
         if (armedAt == 0L) armedAt = System.currentTimeMillis();
         PENDING.incrementAndGet();
+        if (name != null && !name.isBlank()) {
+            PENDING_BY_NAME.merge(name, 1, Integer::sum);
+        }
     }
 
     /** Reports one piece finished. */
     public static void done() {
+        finishOne(null);
+    }
+
+    public static void done(String name) {
+        finishOne(name);
+    }
+
+    private static void finishOne(String name) {
+        if (name != null && !name.isBlank()) {
+            Integer count = PENDING_BY_NAME.get(name);
+            if (count == null || count <= 0) {
+                GreatWallMod.LOGGER.warn(
+                        "[GreatWall:road] SHOWCASE_GATE_DONE_UNEXPECTED name={} (no matching expect; ignored)", name);
+                return;
+            }
+            if (count == 1) PENDING_BY_NAME.remove(name);
+            else PENDING_BY_NAME.put(name, count - 1);
+        }
         int left = PENDING.decrementAndGet();
         if (left < 0) {
-            // 没有配对的 expect() 就报完成 —— 只会来自复位后的重复 done()。
-            // 过去这里任由计数变负，下一次 expect() 把计数抬到 <=0，门就提前开了。
             PENDING.set(0);
             GreatWallMod.LOGGER.warn("[GreatWall:road] SHOWCASE_GATE_DONE_UNEXPECTED (no matching expect(); counter clamped to 0)");
             return;
@@ -55,6 +82,7 @@ public final class ShowcaseGate {
      */
     public static void reset() {
         int before = PENDING.getAndSet(0);
+        PENDING_BY_NAME.clear();
         armedAt = 0L;
         active = false;
         completed = false;
@@ -69,8 +97,9 @@ public final class ShowcaseGate {
         long elapsed = System.currentTimeMillis() - armedAt;
         if (elapsed > DEADLINE_MILLIS) {
             PENDING.set(0);
-            GreatWallMod.LOGGER.warn("[GreatWall:road] SHOWCASE_GATE_OPEN forced after {}ms ({} pieces never finished)",
-                    elapsed, left);
+            GreatWallMod.LOGGER.warn("[GreatWall:road] SHOWCASE_GATE_OPEN forced after {}ms ({} pieces never finished, pending={})",
+                    elapsed, left, PENDING_BY_NAME.keySet());
+            PENDING_BY_NAME.clear();
             return false;
         }
         return true;
