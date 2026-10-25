@@ -129,8 +129,10 @@ public final class ShowcaseStamp {
                 clipMinX, clipMaxX, wallPhaseOffset, noFillMinX, noFillMaxX);
         ALL.add(piece);
         local.plaincraft.greatwall.generation.ShowcaseGate.expect(piece.accountingName);
-        ShowcaseLayout.add(csvName, atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
-        local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
+        int layoutMinX = atX - cx + clipMinX;
+        int layoutMaxX = atX - cx + clipMaxX;
+        ShowcaseLayout.add(csvName, layoutMinX, atZ - cz, layoutMaxX, atZ - cz + d - 1);
+        local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(layoutMinX, atZ - cz, layoutMaxX, atZ - cz + d - 1);
     }
 
     /** Advances every registered piece. */

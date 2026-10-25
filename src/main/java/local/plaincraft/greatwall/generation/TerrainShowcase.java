@@ -37,7 +37,7 @@ public final class TerrainShowcase {
     private static final int PATH_LENGTH = 128;
     private static final long ARC_BASE = 2_000_000L;
     private static final double INV_SQRT2 = 1.0D / Math.sqrt(2.0D);
-    private static final int WALK_ABOVE_BASE = 22;
+    private static final int WALK_ABOVE_BASE = 6;
 
     private static Job job;
     private static boolean completed;
@@ -159,8 +159,8 @@ public final class TerrainShowcase {
                             y == top ? Blocks.GRASS_BLOCK.defaultBlockState() : Blocks.STONE.defaultBlockState(), 2);
                 }
                 if (water(s)) {
-                    int bed = job.baseY - 16;
-                    for (int y = bed + 1; y <= job.baseY - 8; y++) {
+                    int bed = job.baseY - 5;
+                    for (int y = bed + 1; y <= job.baseY - 2; y++) {
                         level.setBlock(new BlockPos(x, y, z), Blocks.WATER.defaultBlockState(), 2);
                     }
                 }
@@ -169,12 +169,13 @@ public final class TerrainShowcase {
     }
 
     private static int profile(double s) {
-        if (s < 30) return 8;
-        if (s < 55) return 8 - (int) Math.round((s - 30) * 18.0D / 25.0D);
-        if (s < 80) return -10;
-        if (s < 105) return -16;
-        if (s < 125) return -16 + (int) Math.round((s - 105) * 24.0D / 20.0D);
-        return 8;
+        // Keep the synthetic valley within the support probe's 12-block drop budget.
+        if (s < 30) return 0;
+        if (s < 55) return -(int) Math.round((s - 30) * 4.0D / 25.0D);
+        if (s < 80) return -4;
+        if (s < 105) return -4;
+        if (s < 125) return -4 + (int) Math.round((s - 105) * 4.0D / 20.0D);
+        return 0;
     }
 
     private static boolean water(double s) {
@@ -274,16 +275,13 @@ public final class TerrainShowcase {
                 boolean water = water(((x - startX) + (z - startZ)) * INV_SQRT2);
                 boolean deep = floor.containsKey(columnKey(x, z));
                 var kind = water ? ProbeKind.WATER : (deep ? ProbeKind.SUPPORTED : ProbeKind.SUPPORTED);
-                var waterTop = water ? OptionalInt.of(job.baseY - 8) : OptionalInt.empty();
-                var bed = water ? OptionalInt.of(job.baseY - 16) : OptionalInt.empty();
+                var waterTop = water ? OptionalInt.of(job.baseY - 2) : OptionalInt.empty();
+                var bed = water ? OptionalInt.of(job.baseY - 5) : OptionalInt.empty();
                 String hash = DeterministicHash.sha256(("terrain-demo:" + x + ":" + z + ":" + ground)
                         .getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                // The demo's synthetic walkway is deliberately held high across the valley; the
-                // ordinary support probe would reject that as a >12 drop. Keep the ground evidence,
-                // but mark it buildable so the wall body reaches ComponentAssembly; the explicit
-                // foundation fills still come from the real ColumnFoundation path.
-                int rootedGround = Math.min(ground, walkY - 80);
-                supports.put(new Point3i(x, walkY, z), new ProbeResult(kind, rootedGround, waterTop, bed,
+                // Use the real sampled ground. The synthetic profile is deliberately compressed so
+                // the genuine support probe succeeds without a fake deep-root override.
+                supports.put(new Point3i(x, walkY, z), new ProbeResult(kind, ground, waterTop, bed,
                         0, hash, OptionalInt.empty()));
             }
         }
