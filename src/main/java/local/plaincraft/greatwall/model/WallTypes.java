@@ -489,13 +489,30 @@ public final class WallTypes {
             Map<Point3i, ProbeResult> supports, DecaySample decay, PaletteFamily family,
             boolean redSandstone, List<WaterEvidence> waters,
             List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> materials,
-            local.plaincraft.greatwall.component.GroundEntranceContract.Evidence entranceEvidence) {
+            local.plaincraft.greatwall.component.GroundEntranceContract.Evidence entranceEvidence,
+            Map<Long, Integer> foundationFloor) {
         /** Analytic fixture compatibility; production supplies its actual immutable column evidence. */
         public ComponentInput(SiteRecord site,List<Station> stations,Map<Point3i,ProbeResult> supports,
                 DecaySample decay,PaletteFamily family,boolean redSandstone,List<WaterEvidence> waters,
                 List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> materials) {
             this(site,stations,supports,decay,family,redSandstone,waters,materials,
-                    local.plaincraft.greatwall.component.GroundEntranceContract.Evidence.analytic(supports));
+                    local.plaincraft.greatwall.component.GroundEntranceContract.Evidence.analytic(supports),
+                    Map.of());
+        }
+        /** Existing production callers that do not have a foundation map keep the old bounds. */
+        public ComponentInput(SiteRecord site,List<Station> stations,Map<Point3i,ProbeResult> supports,
+                DecaySample decay,PaletteFamily family,boolean redSandstone,List<WaterEvidence> waters,
+                List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> materials,
+                local.plaincraft.greatwall.component.GroundEntranceContract.Evidence entranceEvidence) {
+            this(site,stations,supports,decay,family,redSandstone,waters,materials,entranceEvidence,Map.of());
+        }
+        /** Wall-section path: foundation floor is real production input, not just diagnostics. */
+        public ComponentInput(SiteRecord site,List<Station> stations,Map<Point3i,ProbeResult> supports,
+                DecaySample decay,PaletteFamily family,boolean redSandstone,List<WaterEvidence> waters,
+                List<local.plaincraft.greatwall.decay.PaletteTypes.BiomeStation> materials,
+                Map<Long,Integer> foundationFloor) {
+            this(site,stations,supports,decay,family,redSandstone,waters,materials,
+                    local.plaincraft.greatwall.component.GroundEntranceContract.Evidence.analytic(supports),foundationFloor);
         }
         public ComponentInput {
             Objects.requireNonNull(site, "site");
@@ -506,6 +523,7 @@ public final class WallTypes {
             waters = List.copyOf(waters);
             materials = List.copyOf(materials);
             Objects.requireNonNull(entranceEvidence,"entranceEvidence");
+            foundationFloor = Map.copyOf(foundationFloor);
         }
     }
 

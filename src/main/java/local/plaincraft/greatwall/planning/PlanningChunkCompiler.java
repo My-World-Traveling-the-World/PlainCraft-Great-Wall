@@ -28,6 +28,8 @@ public final class PlanningChunkCompiler {
     private final CoveragePlanner coverage = new CoveragePlanner();
     private final FineHeightIndex index;
     private final List<Bounds> structures;
+    /** Absolute ground floor per (x,z), produced by WallFoundationPlanner for this window. */
+    private final Map<Long, Integer> foundationFloor;
 
     public PlanningChunkCompiler(RealizationPlanner realization, ChunkPlanCompiler compiler,
             FineHeightIndex index, List<Bounds> structures) {
@@ -39,6 +41,13 @@ public final class PlanningChunkCompiler {
         // same support samples when it expands its foundation floor; this call keeps the planner's
         // base/fill contract exercised on every compile window and makes omissions visible.
         var foundations = WallFoundationPlanner.plan(List.copyOf(index.columns()));
+        var floor = new HashMap<Long, Integer>();
+        for (var core : foundations) {
+            for (var fill : core.fills()) {
+                floor.put(columnKey(fill.x(), fill.z()), fill.surfaceY());
+            }
+        }
+        this.foundationFloor = Map.copyOf(floor);
         long fillColumns = foundations.stream().mapToLong(f -> f.fills().size()).sum();
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:S1C] WALL_FOUNDATION_PLAN cores={} fillColumns={}", foundations.size(), fillColumns);
@@ -352,9 +361,13 @@ public final class PlanningChunkCompiler {
     private RealizationCell resolveCell(CellKey cell,
             Map<Point3i, SurfaceProbe.ColumnView> columns, PlanWindow plans, String protectionHash) {
         return realization.resolve(new RealizationPlanner.Input(cell, plans, Map.of(), columns,
-                List.copyOf(structures), Map.of(), 0, protectionHash));
+                List.copyOf(structures), Map.of(), 0, protectionHash, foundationFloor));
     }
 
+
+    private static long columnKey(int x, int z) {
+        return ((long) x << 32) ^ (z & 0xffffffffL);
+    }
 
     /** How many owner failures of one cause keep their stack trace; the rest are only counted. */
     static final int FAILURE_DETAIL_LIMIT = 5;

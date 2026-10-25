@@ -32,7 +32,7 @@ public final class WallFoundationPlanner {
 
     /** A lateral column at {@code lateral} offset that must be filled from the wall base down to
      *  {@code surfaceY} (exclusive of surfaceY; the fill occupies [surfaceY, baseY)). */
-    public record FillColumn(int lateral, int surfaceY) {
+    public record FillColumn(int lateral, int surfaceY, int x, int z) {
         public FillColumn {
             if (lateral < -WallFinePlanner.LATERAL || lateral > WallFinePlanner.LATERAL)
                 throw new IllegalArgumentException("lateral out of wall width");
@@ -75,7 +75,7 @@ public final class WallFoundationPlanner {
             var fills = new ArrayList<FillColumn>();
             for (var sample : group) {
                 int surface = sample.sample().groundTopY();
-                if (surface < base) fills.add(new FillColumn(sample.lateral(), surface));
+                if (surface < base) fills.add(new FillColumn(sample.lateral(), surface, sample.x(), sample.z()));
             }
             fills.sort(Comparator.comparingInt(FillColumn::lateral));
             result.add(new ColumnFoundation(centre.x(), centre.z(), base, fills));

@@ -31,6 +31,9 @@ public final class WallSection implements ComponentTemplate {
         for (var sample : input.supports().values()) {
             min = Math.min(min, sample.groundTopY() - walkY - 1);
         }
+        for (int surfaceY : input.foundationFloor().values()) {
+            min = Math.min(min, surfaceY - walkY - 1);
+        }
         return min;
     }
 
