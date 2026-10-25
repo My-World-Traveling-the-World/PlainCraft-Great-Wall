@@ -22,6 +22,8 @@ public final class ShowcaseStamp {
     private final String resource;
     private final int width;
     private final int depth;
+    private final int heightOffset;
+    private final boolean wallModule;
     private final int originX;
     private final int originZ;
     private List<int[]> coords;
@@ -39,17 +41,31 @@ public final class ShowcaseStamp {
     private int filled;
     private long[] ticket;
 
-    private ShowcaseStamp(String csvName, int w, int d, int centreX, int centreZ, int atX, int atZ) {
+    private ShowcaseStamp(String csvName, int w, int d, int centreX, int centreZ, int atX, int atZ,
+                          int heightOffset, boolean wallModule) {
         this.resource = "/assets/plaincraft-great-wall/templates/" + csvName;
         this.width = w;
         this.depth = d;
+        this.heightOffset = heightOffset;
+        this.wallModule = wallModule;
         this.originX = atX - centreX;
         this.originZ = atZ - centreZ;
     }
 
     /** Registers one more piece to be stamped. */
     public static void start(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ) {
-        ALL.add(new ShowcaseStamp(csvName, w, d, cx, cz, atX, atZ));
+        start(csvName, w, h, d, cx, cz, atX, atZ, 0, false);
+    }
+
+    /**
+     * Adds one piece with an explicit height offset and optional wall-module axis mapping.
+     *
+     * <p>Wall module rows are {@code phase,t,depth} with depth counted downward from the top; the
+     * showcase converter maps them to x/z/y. Gate rows are already x/y/z and use the normal path.
+     */
+    public static void start(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
+                             int heightOffset, boolean wallModule) {
+        ALL.add(new ShowcaseStamp(csvName, w, d, cx, cz, atX, atZ, heightOffset, wallModule));
         local.plaincraft.greatwall.generation.ShowcaseGate.expect();
         local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
     }
@@ -89,7 +105,7 @@ public final class ShowcaseStamp {
                 }
             }
             if (highest == Integer.MIN_VALUE) return;
-            originY = highest;
+            originY = highest + heightOffset;
             groundSurface = new int[width * depth];
             for (int dx = 0; dx < width; dx++) {
                 for (int dz = 0; dz < depth; dz++) {
@@ -166,9 +182,12 @@ public final class ShowcaseStamp {
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",", 4);
                 if (parts.length != 4) continue;
-                int dx = Integer.parseInt(parts[0]);
-                int dy = Integer.parseInt(parts[1]);
-                int dz = Integer.parseInt(parts[2]);
+                int rawX = Integer.parseInt(parts[0]);
+                int rawY = Integer.parseInt(parts[1]);
+                int rawZ = Integer.parseInt(parts[2]);
+                int dx = rawX;
+                int dy = wallModule ? 17 - rawY : rawY;
+                int dz = wallModule ? rawZ + 5 : rawZ;
                 coords.add(new int[] {dx, dy, dz});
                 states.add(BlockSpec.parse(parts[3]));
                 if (dx >= 0 && dx < width && dz >= 0 && dz < depth) {

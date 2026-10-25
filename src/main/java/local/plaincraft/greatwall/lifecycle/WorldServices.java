@@ -363,6 +363,17 @@ public final class WorldServices {
         // 展台模式：墙、城门、敌台各占一个独立位置，互不相连，便于逐个验收与手工精修。
         local.plaincraft.greatwall.generation.GateStamp.start(spawn.getX() - 64, spawn.getZ());
         local.plaincraft.greatwall.generation.WallStamp.start(spawn.getX() - 64, spawn.getZ() - 64);
+        // 单独留一区做「门楼 + 左墙 + 右墙」拼接验收，不覆盖上面的独立墙/门楼展台。
+        int joinedX = spawn.getX() + 256;
+        int joinedZ = spawn.getZ();
+        local.plaincraft.greatwall.generation.ShowcaseStamp.start(
+                "gate.csv", 145, 44, 32, 72, 19, joinedX, joinedZ, -2, false);
+        local.plaincraft.greatwall.generation.ShowcaseStamp.start(
+                "wall_module.csv", 48, 18, 11, 24, 5, joinedX - 96, joinedZ, 0, true);
+        local.plaincraft.greatwall.generation.ShowcaseStamp.start(
+                "wall_module.csv", 48, 18, 11, 24, 5, joinedX + 97, joinedZ, 0, true);
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_JOINED gateCentre={} leftWall={} rightWall={}",
+                joinedX, joinedX - 96, joinedX + 97);
         local.plaincraft.greatwall.generation.StairStamp.start(spawn.getX() - 64, spawn.getZ() + 128);
         local.plaincraft.greatwall.generation.ShowcaseStamp.start("beacon.csv", 16, 26, 16, 8, 8, spawn.getX() - 64, spawn.getZ() + 192);
         local.plaincraft.greatwall.generation.ShowcaseStamp.start("corner.csv", 48, 26, 48, 24, 24, spawn.getX() - 64, spawn.getZ() + 320);
