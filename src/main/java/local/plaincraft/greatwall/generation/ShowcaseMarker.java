@@ -93,18 +93,22 @@ public final class ShowcaseMarker {
         int x = spawn.getX(), z = spawn.getZ();
         // gate: origin spawn-136, spawn-19; 145 x 32
         WallRoadGuard.publishRect(x - 136, z - 19, x + 8, z + 12);
-        // wall: origin spawn-88, spawn-64; 48 x 18
-        WallRoadGuard.publishRect(x - 88, z - 64, x - 41, z - 47);
+        // wall: origin spawn-88, spawn-64; 48 x 11 (the module is 11 wide, not the 18-row height)
+        WallRoadGuard.publishRect(x - 88, z - 64, x - 41, z - 54);
         // stair: origin spawn-80, spawn+123; 32 x 11
         WallRoadGuard.publishRect(x - 80, z + 123, x - 49, z + 133);
         // showcase pieces, matching startFlatShowcase()
-        WallRoadGuard.publishRect(x - 72, z + 184, x - 57, z + 209); // beacon
-        WallRoadGuard.publishRect(x - 88, z + 296, x - 41, z + 321); // corner
-        WallRoadGuard.publishRect(x - 71, z + 441, x - 58, z + 452); // fort
-        WallRoadGuard.publishRect(x - 76, z + 84, x - 53, z + 118);  // tower2
-        WallRoadGuard.publishRect(x - 101, z + 617, x - 28, z + 656); // palace2
-        WallRoadGuard.publishRect(x - 87, z + 698, x - 42, z + 724);  // watergate
-        WallRoadGuard.publishRect(x - 121, z + 8, x + 662, z + 41);   // kitset
+        WallRoadGuard.publishRect(x - 72, z + 184, x - 57, z + 199); // beacon 16x16
+        WallRoadGuard.publishRect(x - 88, z + 296, x - 41, z + 343); // corner 48x48
+        WallRoadGuard.publishRect(x - 71, z + 441, x - 58, z + 454); // fort 14x14
+        WallRoadGuard.publishRect(x - 76, z + 84, x - 53, z + 107);  // tower2 24x24
+        WallRoadGuard.publishRect(x - 101, z + 617, x - 28, z + 662); // palace2 74x46
+        WallRoadGuard.publishRect(x - 87, z + 698, x - 42, z + 710);  // watergate 46x13
+        WallRoadGuard.publishRect(x + 508, z + 190, x + 1291, z + 610); // kitset 784x421, new area
+        // joined gate + left/right wall showcase at spawn+256
+        WallRoadGuard.publishRect(x + 184, z - 19, x + 328, z + 12);
+        WallRoadGuard.publishRect(x + 136, z - 5, x + 183, z + 5);
+        WallRoadGuard.publishRect(x + 329, z - 5, x + 376, z + 5);
     }
 
     /**
