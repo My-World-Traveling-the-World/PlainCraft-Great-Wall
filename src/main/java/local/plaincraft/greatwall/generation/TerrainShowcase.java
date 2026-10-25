@@ -192,8 +192,8 @@ public final class TerrainShowcase {
     private static void buildTower(ServerLevel level, Job job) {
         int startX = job.minX + PATH_START;
         int startZ = job.minZ + PATH_START;
-        int cx = (int) Math.floor(startX + INV_SQRT2 * 126);
-        int cz = (int) Math.floor(startZ + INV_SQRT2 * 126);
+        int cx = stationX(startX, 126);
+        int cz = stationZ(startZ, 126);
         int base = job.baseY + 8;
         for (int x = cx - 10; x <= cx + 10; x++) {
             for (int z = cz - 10; z <= cz + 10; z++) {
@@ -225,8 +225,8 @@ public final class TerrainShowcase {
                                                int centreS, int fromS, int toS) {
         int startX = job.minX + PATH_START;
         int startZ = job.minZ + PATH_START;
-        int cx = (int) Math.floor(startX + INV_SQRT2 * centreS);
-        int cz = (int) Math.floor(startZ + INV_SQRT2 * centreS);
+        int cx = stationX(startX, centreS);
+        int cz = stationZ(startZ, centreS);
         int walkY = job.baseY + WALK_ABOVE_BASE;
         long centre = ARC_BASE + (long) centreS * 256L;
         var frame = new Frame(new Point2q((long) cx * 256L, (long) cz * 256L),
@@ -236,16 +236,19 @@ public final class TerrainShowcase {
                 SiteState.PLANNED, Optional.empty(), Optional.empty());
         var stations = new ArrayList<Station>();
         for (int s = centreS - 40; s <= centreS + 40; s++) {
+            // Stair-step the integer station points along the 45-degree route. Sampling every
+            // 0.707 block with floor() repeats an (x,z), and WallSection rejects that as a zero
+            // station edge.
             stations.add(new Station(ARC_BASE + (long) s * 256L,
-                    new Point2q((long) Math.floor(startX + INV_SQRT2 * s) * 256L,
-                            (long) Math.floor(startZ + INV_SQRT2 * s) * 256L), walkY, 0));
+                    new Point2q((long) stationX(startX, s) * 256L,
+                            (long) stationZ(startZ, s) * 256L), walkY, 0));
         }
         var supports = new HashMap<Point3i, ProbeResult>();
         var floor = new HashMap<Long, Integer>();
         var foundations = new ArrayList<WallFoundationPlanner.ColumnFoundation>();
         for (int s = centreS - 40; s <= centreS + 40; s++) {
-            int sx = (int) Math.floor(startX + INV_SQRT2 * s);
-            int sz = (int) Math.floor(startZ + INV_SQRT2 * s);
+            int sx = stationX(startX, s);
+            int sz = stationZ(startZ, s);
             int base = Integer.MIN_VALUE;
             var samples = new ArrayList<int[]>();
             for (int t = -5; t <= 5; t++) {
@@ -298,6 +301,14 @@ public final class TerrainShowcase {
             BlockState state = local.plaincraft.greatwall.terrain.BlockCatalog.resolveState(voxel.state());
             level.setBlock(new BlockPos(voxel.pos().x(), voxel.pos().y(), voxel.pos().z()), state, 2);
         }
+    }
+
+    private static int stationX(int start, int s) {
+        return start + (int) Math.floor(s * INV_SQRT2);
+    }
+
+    private static int stationZ(int start, int s) {
+        return start + (int) Math.floor((s + 1) * INV_SQRT2);
     }
 
     private static long columnKey(int x, int z) {

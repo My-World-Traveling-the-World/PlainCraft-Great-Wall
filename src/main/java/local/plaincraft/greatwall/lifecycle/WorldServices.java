@@ -369,13 +369,18 @@ public final class WorldServices {
         // 单独留一区做「门楼 + 左墙 + 右墙」拼接验收，不覆盖上面的独立墙/门楼展台。
         int joinedX = spawn.getX() + 256;
         int joinedZ = spawn.getZ();
+        // Gate and wall are separate pieces: keep the whole 145-wide gate template and attach one
+        // current 48-block wall_module to each open end. The end faces were verified block-for-block
+        // to match when the wall uses the gate's highest-ground base (heightOffset 0).
         local.plaincraft.greatwall.generation.ShowcaseStamp.start(
-                "gate.csv", 145, 44, 32, 72, 19, joinedX, joinedZ, -2, false);
-        local.plaincraft.greatwall.generation.ShowcaseStamp.start(
-                "wall_module.csv", 48, 18, 11, 24, 5, joinedX - 96, joinedZ, 0, true);
-        local.plaincraft.greatwall.generation.ShowcaseStamp.start(
-                "wall_module.csv", 48, 18, 11, 24, 5, joinedX + 97, joinedZ, 0, true);
-        GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_JOINED gateCentre={} leftWall={} rightWall={}",
+                "gate.csv", 145, 44, 32, 72, 19, joinedX, joinedZ, -2, false, 0, 144);
+        // Gate ends are both 缺. Left wall ends on phase47=缺; right wall must start at phase3
+        // (缺垛垛垛), so rotate that module by three phases instead of using phase0=垛.
+        local.plaincraft.greatwall.generation.ShowcaseStamp.startWall(
+                "wall_module.csv", 48, 18, 11, 24, 5, joinedX - 96, joinedZ, 0, 0);
+        local.plaincraft.greatwall.generation.ShowcaseStamp.startWall(
+                "wall_module.csv", 48, 18, 11, 24, 5, joinedX + 97, joinedZ, 0, 3);
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_JOINED gate={} leftWall={} rightWall={} phases=47/3",
                 joinedX, joinedX - 96, joinedX + 97);
         // 生产等价地形演示区：模拟高台/低谷/水塘，再用真实 WallSection 生成 45° 墙与端楼。
         local.plaincraft.greatwall.generation.TerrainShowcase.start(level,

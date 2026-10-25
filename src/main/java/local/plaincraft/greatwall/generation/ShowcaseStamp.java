@@ -24,6 +24,11 @@ public final class ShowcaseStamp {
     private final int depth;
     private final int heightOffset;
     private final boolean wallModule;
+    /** Inclusive source-x clip; gatehouse-only pieces reject the template's old wall wings. */
+    private final int clipMinX;
+    private final int clipMaxX;
+    /** Wall-module phase rotation; 3 turns the gate-side start from 垛 into 缺垛垛垛. */
+    private final int wallPhaseOffset;
     private final int originX;
     private final int originZ;
     private List<int[]> coords;
@@ -42,12 +47,16 @@ public final class ShowcaseStamp {
     private long[] ticket;
 
     private ShowcaseStamp(String csvName, int w, int d, int centreX, int centreZ, int atX, int atZ,
-                          int heightOffset, boolean wallModule) {
+                          int heightOffset, boolean wallModule, int clipMinX, int clipMaxX,
+                          int wallPhaseOffset) {
         this.resource = "/assets/plaincraft-great-wall/templates/" + csvName;
         this.width = w;
         this.depth = d;
         this.heightOffset = heightOffset;
         this.wallModule = wallModule;
+        this.clipMinX = clipMinX;
+        this.clipMaxX = clipMaxX;
+        this.wallPhaseOffset = wallPhaseOffset;
         this.originX = atX - centreX;
         this.originZ = atZ - centreZ;
     }
@@ -65,7 +74,26 @@ public final class ShowcaseStamp {
      */
     public static void start(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
                              int heightOffset, boolean wallModule) {
-        ALL.add(new ShowcaseStamp(csvName, w, d, cx, cz, atX, atZ, heightOffset, wallModule));
+        start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, wallModule, 0, w - 1);
+    }
+
+    /** Same, plus an inclusive source-x clip; used to remove the gate template's old wall wings. */
+    public static void start(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
+                             int heightOffset, boolean wallModule, int clipMinX, int clipMaxX) {
+        start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, wallModule, clipMinX, clipMaxX, 0);
+    }
+
+    /** Wall module with an explicit 4-phase crenellation rotation at its source end. */
+    public static void startWall(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
+                                 int heightOffset, int phaseOffset) {
+        start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, true, 0, w - 1, phaseOffset);
+    }
+
+    private static void start(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
+                              int heightOffset, boolean wallModule, int clipMinX, int clipMaxX,
+                              int wallPhaseOffset) {
+        ALL.add(new ShowcaseStamp(csvName, w, d, cx, cz, atX, atZ, heightOffset, wallModule,
+                clipMinX, clipMaxX, wallPhaseOffset));
         local.plaincraft.greatwall.generation.ShowcaseGate.expect();
         ShowcaseLayout.add(csvName, atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
         local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
@@ -184,9 +212,12 @@ public final class ShowcaseStamp {
                 String[] parts = line.split(",", 4);
                 if (parts.length != 4) continue;
                 int rawX = Integer.parseInt(parts[0]);
+                if (rawX < clipMinX || rawX > clipMaxX) continue;
                 int rawY = Integer.parseInt(parts[1]);
                 int rawZ = Integer.parseInt(parts[2]);
-                int dx = rawX;
+                int dx = wallModule
+                        ? Math.floorMod(rawX - clipMinX - wallPhaseOffset, width)
+                        : rawX - clipMinX;
                 int dy = wallModule ? 17 - rawY : rawY;
                 int dz = wallModule ? rawZ + 5 : rawZ;
                 coords.add(new int[] {dx, dy, dz});
