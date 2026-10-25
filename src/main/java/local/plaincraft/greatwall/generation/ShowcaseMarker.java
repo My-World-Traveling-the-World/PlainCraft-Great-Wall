@@ -111,6 +111,9 @@ public final class ShowcaseMarker {
         WallRoadGuard.publishRect(x + 329, z - 5, x + 376, z + 5);
         // production-equivalent terrain demo: 160x160 at spawn+1600,+300
         WallRoadGuard.publishRect(x + 1520, z + 220, x + 1679, z + 379);
+        // diagonal-approach demo: upright gate + wall bending away at spawn+256,+700
+        WallRoadGuard.publishRect(x + 184, z + 681, x + 328, z + 712);
+        WallRoadGuard.publishRect(x + 329, z + 681, x + 430, z + 790);
     }
 
     /**

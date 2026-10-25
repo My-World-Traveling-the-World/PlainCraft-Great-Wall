@@ -226,6 +226,7 @@ public final class WorldServices {
             local.plaincraft.greatwall.generation.WallStamp.tick(overworld);
             local.plaincraft.greatwall.generation.StairStamp.tick(overworld);
             local.plaincraft.greatwall.generation.ShowcaseStamp.tick(overworld);
+            local.plaincraft.greatwall.generation.DiagonalWallShowcase.tick(overworld);
             local.plaincraft.greatwall.generation.TerrainShowcase.tick(overworld);
             if (local.plaincraft.greatwall.generation.ShowcaseGate.completed()
                     && overworld.getChunkSource().getGenerator()
@@ -264,6 +265,7 @@ public final class WorldServices {
             local.plaincraft.greatwall.generation.GateStamp.reset(overworld);
             local.plaincraft.greatwall.generation.WallStamp.reset(overworld);
             local.plaincraft.greatwall.generation.StairStamp.reset(overworld);
+            local.plaincraft.greatwall.generation.DiagonalWallShowcase.reset(overworld);
             local.plaincraft.greatwall.generation.TerrainShowcase.reset(overworld);
             local.plaincraft.greatwall.generation.WonderWall.stop();
             local.plaincraft.greatwall.generation.ChunkHold.releaseAll(overworld);
@@ -382,6 +384,9 @@ public final class WorldServices {
                 "wall_module.csv", 48, 18, 11, 24, 5, joinedX + 97, joinedZ, 0, 3);
         GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_JOINED gate={} leftWall={} rightWall={} phases=47/3",
                 joinedX, joinedX - 96, joinedX + 97);
+        // 斜向走势演示区：门楼保持正东西/正南北，墙先正接再分两段过渡到 45°。
+        local.plaincraft.greatwall.generation.DiagonalWallShowcase.start(level,
+                joinedX, spawn.getZ() + 700);
         // 生产等价地形演示区：模拟高台/低谷/水塘，再用真实 WallSection 生成 45° 墙与端楼。
         local.plaincraft.greatwall.generation.TerrainShowcase.start(level,
                 spawn.getX() + 1600, spawn.getZ() + 300);
