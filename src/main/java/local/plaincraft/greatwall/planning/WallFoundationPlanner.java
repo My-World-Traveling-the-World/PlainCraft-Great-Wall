@@ -41,39 +41,40 @@ public final class WallFoundationPlanner {
 
     public static List<ColumnFoundation> plan(List<WallFinePlanner.FineColumn> samples) {
         Objects.requireNonNull(samples, "samples");
-        // Group samples by their centre column. The centre is identified by (x,z) of the lateral=0
-        // column, but a bent route can re-enter the same (x,z) with a different lateral, so we key on
-        // the lateral=0 sample's coordinates plus a sequence to keep distinct centres stable.
-        record Centre(int x, int z, int seq) {}
-        var centres = new HashMap<Long, Centre>();
-        var byCentre = new HashMap<Long, List<WallFinePlanner.FineColumn>>();
-        int seq = 0;
-        var ordered = new ArrayList<Long>();
-        // WallFinePlanner emits samples in route order, lateral-major per centre. Reconstruct centres
-        // by grouping consecutive runs that share the same lateral=0 sample coordinate.
-        Long currentKey = null;
+        // WallFinePlanner emits one lateral-major cross-section per route point: -L..+L. The old
+        // code opened a group only at lateral==0, which silently discarded the negative half. A
+        // wrap from +L to -L (or the reverse) is the actual cross-section boundary.
+        var groups = new ArrayList<List<WallFinePlanner.FineColumn>>();
+        List<WallFinePlanner.FineColumn> group = null;
+        var pending = new ArrayList<WallFinePlanner.FineColumn>();
         for (var sample : samples) {
             if (sample.lateral() == 0) {
-                var centre = new Centre(sample.x(), sample.z(), seq++);
-                currentKey = key(sample.x(), sample.z(), seq - 1);
-                centres.put(currentKey, centre);
-                byCentre.put(currentKey, new ArrayList<>());
-                ordered.add(currentKey);
+                if (group != null) groups.add(group);
+                group = new ArrayList<>(pending);
+                group.add(sample);
+                pending.clear();
+            } else if (group == null) {
+                // A cross-section may be emitted starting at -L, before its lateral=0 sample.
+                pending.add(sample);
+            } else {
+                group.add(sample);
             }
-            if (currentKey == null) continue;
-            byCentre.get(currentKey).add(sample);
         }
-        var result = new ArrayList<ColumnFoundation>(ordered.size());
-        for (var key : ordered) {
-            var group = byCentre.get(key);
-            var centre = centres.get(key);
-            // Base = highest ground surface across the cross-section.
+        if (group != null) groups.add(group);
+        var result = new ArrayList<ColumnFoundation>(groups.size());
+        for (var columns : groups) {
+            WallFinePlanner.FineColumn centre = null;
+            for (var sample : columns) {
+                if (sample.lateral() == 0) { centre = sample; break; }
+            }
+            if (centre == null) continue;
+            // Base = highest ground surface across the complete cross-section.
             int base = Integer.MIN_VALUE;
-            for (var sample : group) base = Math.max(base, sample.sample().groundTopY());
+            for (var sample : columns) base = Math.max(base, sample.sample().groundTopY());
             if (base == Integer.MIN_VALUE) base = 0;
             // Every column whose surface is below base needs a fill down to its surface.
             var fills = new ArrayList<FillColumn>();
-            for (var sample : group) {
+            for (var sample : columns) {
                 int surface = sample.sample().groundTopY();
                 if (surface < base) fills.add(new FillColumn(sample.lateral(), surface, sample.x(), sample.z()));
             }

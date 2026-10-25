@@ -57,30 +57,20 @@ public final class FineHeightIndex {
                     .thenComparing(column -> column.sample().upperCensored());
 
     private final Map<Long, WallFinePlanner.FineColumn> byXZ;
-    /** First-seen route order, with duplicate (x,z) samples replaced by the same preferred value. */
-    private final List<WallFinePlanner.FineColumn> ordered;
+    /** Original sampler order, including duplicate cross-section columns; grouping depends on it. */
+    private final List<WallFinePlanner.FineColumn> routeColumns;
 
     private FineHeightIndex(Map<Long, WallFinePlanner.FineColumn> byXZ,
-                            List<WallFinePlanner.FineColumn> ordered) {
+                            List<WallFinePlanner.FineColumn> routeColumns) {
         this.byXZ = byXZ;
-        this.ordered = List.copyOf(ordered);
+        this.routeColumns = List.copyOf(routeColumns);
     }
 
     public static FineHeightIndex of(List<WallFinePlanner.FineColumn> columns) {
         Objects.requireNonNull(columns, "columns");
         var map = new HashMap<Long, WallFinePlanner.FineColumn>(columns.size() * 2);
-        var order = new ArrayList<WallFinePlanner.FineColumn>(columns.size());
-        var position = new HashMap<Long, Integer>(columns.size() * 2);
         for (var column : columns) {
-            long key = key(column.x(), column.z());
-            var old = map.get(key);
-            if (old == null) {
-                position.put(key, order.size());
-                order.add(column);
-            } else if (prefers(column, old)) {
-                order.set(position.get(key), column);
-            }
-            map.merge(key, column, FineHeightIndex::prefer);
+            map.merge(key(column.x(), column.z()), column, FineHeightIndex::prefer);
         }
         // A read-only view, deliberately not Map.copyOf: the immutable-map implementation sizes its
         // table to the entry count and probes with the raw hashCode(), and key() packs two block
@@ -88,7 +78,7 @@ public final class FineHeightIndex {
         // 53 s inside ImmutableCollections$MapN.<init> against ~0.1 s here - single-threaded, on the
         // thread that completes the fine-sample stage and holds its aggregate future.
         // The map is built above, never aliased, and the view keeps the read-only contract.
-        return new FineHeightIndex(java.util.Collections.unmodifiableMap(map), order);
+        return new FineHeightIndex(java.util.Collections.unmodifiableMap(map), columns);
     }
 
     /** {@return whichever of the two columns for one {@code (x, z)} {@link #CONFLICT_ORDER} ranks first} */
@@ -144,9 +134,9 @@ public final class FineHeightIndex {
         return byXZ.values();
     }
 
-    /** Route-ordered columns for the foundation planner; its adjacent-centre grouping depends on it. */
+    /** Original route-ordered sampler columns; the foundation planner's grouping depends on it. */
     public List<WallFinePlanner.FineColumn> orderedColumns() {
-        return ordered;
+        return routeColumns;
     }
 
     private static long key(int x, int z) {
