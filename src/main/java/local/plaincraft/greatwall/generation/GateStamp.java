@@ -144,27 +144,22 @@ public final class GateStamp {
 
     /** Plants the base on the highest ground under the footprint, once every chunk involved is loaded. */
     private static boolean settleOnHighestGround(ServerLevel level) {
+        // Sample every footprint column. A 4-block grid can miss a narrow natural peak; that
+        // would lower originY and bury the gate's high side even though the per-column fill is exact.
         int highest = Integer.MIN_VALUE;
-        for (int dx = 0; dx < WIDTH; dx += 4) {
-            for (int dz = 0; dz < DEPTH; dz += 4) {
-                int x = originX + dx;
-                int z = originZ + dz;
-                LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
-                if (chunk == null) return false;
-                highest = Math.max(highest, chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15));
-            }
-        }
-        if (highest == Integer.MIN_VALUE) return false;
-        originY = highest - 2;   // 城门比地面低 2 格（走道对齐需要）
         groundSurface = new int[WIDTH * DEPTH];
         for (int dx = 0; dx < WIDTH; dx++) {
             for (int dz = 0; dz < DEPTH; dz++) {
                 int x = originX + dx, z = originZ + dz;
                 LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
                 if (chunk == null) return false;
-                groundSurface[dx * DEPTH + dz] = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
+                int surface = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
+                groundSurface[dx * DEPTH + dz] = surface;
+                highest = Math.max(highest, surface);
             }
         }
+        if (highest == Integer.MIN_VALUE) return false;
+        originY = highest - 2;   // 城门比地面低 2 格（走道对齐需要）
         autoGround = false;
         return true;
     }

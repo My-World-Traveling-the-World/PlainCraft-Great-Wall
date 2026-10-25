@@ -21,7 +21,17 @@ public final class WallSection implements ComponentTemplate {
 
     @Override public Bounds localBounds(ComponentInput input) {
         Objects.requireNonNull(input);
-        return new Bounds(-32,-32,-5,32,3,5);
+        return new Bounds(-32,minGroundDelta(input),-5,32,3,5);
+    }
+
+    /** Lowest ground below the walkway; -32 is the historical minimum foundation depth. */
+    private static int minGroundDelta(ComponentInput input) {
+        int walkY = input.site().frame().walkY();
+        int min = -32;
+        for (var sample : input.supports().values()) {
+            min = Math.min(min, sample.groundTopY() - walkY - 1);
+        }
+        return min;
     }
 
     @Override public ComponentVoxels compile(ComponentInput input) {
@@ -59,7 +69,7 @@ public final class WallSection implements ComponentTemplate {
         long to = Math.min(stations.getLast().globalSQ8(),center+32L*256);
         if (stations.size() < 2 || stations.getFirst().globalSQ8() > from || stations.getLast().globalSQ8() < to)
             throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"wall requires complete station ribbon");
-        Bounds bounds = curveBounds(stations,from,to);
+        Bounds bounds = curveBounds(input,stations,from,to);
         var assembly = new ComponentAssembly(input,localBounds(input),decay,palette);
         for(var interval:intervals)
             if(interval.fromQ8()<from||interval.toQ8()>to)throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"build interval outside cell");
@@ -144,9 +154,10 @@ public final class WallSection implements ComponentTemplate {
         return new ComponentAssembly.Cell(p,required,walk,properties);
     }
 
-    private static Bounds curveBounds(List<Station> stations, long from, long to) {
+    private static Bounds curveBounds(ComponentInput input, List<Station> stations, long from, long to) {
         int x0 = Integer.MAX_VALUE, z0 = Integer.MAX_VALUE, x1 = Integer.MIN_VALUE, z1 = Integer.MIN_VALUE;
         int y0 = Integer.MAX_VALUE, y1 = Integer.MIN_VALUE;
+        int foundationFloor = minGroundDelta(input);
         for (int i = 1; i < stations.size(); i++) {
             Station a = stations.get(i-1), b = stations.get(i);
             if (b.globalSQ8() < from || a.globalSQ8() > to) continue;
@@ -155,7 +166,9 @@ public final class WallSection implements ComponentTemplate {
                 int x = FixedMath.floorBlock(a.point().xQ8()+FixedMath.mulDiv(dx,s-a.globalSQ8(),b.globalSQ8()-a.globalSQ8()));
                 int z = FixedMath.floorBlock(a.point().zQ8()+FixedMath.mulDiv(dz,s-a.globalSQ8(),b.globalSQ8()-a.globalSQ8()));
                 x0 = Math.min(x0,x-7); x1 = Math.max(x1,x+8); z0 = Math.min(z0,z-7); z1 = Math.max(z1,z+8);
-                int y = height(stations,s); y0 = Math.min(y0,y-32); y1 = Math.max(y1,y+3);
+                int y = height(stations,s);
+                y0 = Math.min(y0, y + foundationFloor);
+                y1 = Math.max(y1, y + 3);
             }
         }
         return new Bounds(x0,y0,z0,x1,y1,z1);

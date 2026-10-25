@@ -35,6 +35,13 @@ public final class PlanningChunkCompiler {
         this.compiler = Objects.requireNonNull(compiler, "compiler");
         this.index = Objects.requireNonNull(index, "index");
         this.structures = List.copyOf(Objects.requireNonNull(structures, "structures"));
+        // Production wiring for the per-column foundation decision. The WallSection consumes the
+        // same support samples when it expands its foundation floor; this call keeps the planner's
+        // base/fill contract exercised on every compile window and makes omissions visible.
+        var foundations = WallFoundationPlanner.plan(List.copyOf(index.columns()));
+        long fillColumns = foundations.stream().mapToLong(f -> f.fills().size()).sum();
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:S1C] WALL_FOUNDATION_PLAN cores={} fillColumns={}", foundations.size(), fillColumns);
         // The realization planner recomputes the window's stations, sites and waters for every owner it
         // compiles - about five merges of the whole window each time, for values that cannot change while
         // the window is frozen. The memo is keyed by plan instance, so it can live for the compiler's
