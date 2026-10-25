@@ -226,6 +226,7 @@ public final class WorldServices {
             local.plaincraft.greatwall.generation.WallStamp.tick(overworld);
             local.plaincraft.greatwall.generation.StairStamp.tick(overworld);
             local.plaincraft.greatwall.generation.ShowcaseStamp.tick(overworld);
+            local.plaincraft.greatwall.generation.TerrainShowcase.tick(overworld);
             if (local.plaincraft.greatwall.generation.ShowcaseGate.completed()
                     && overworld.getChunkSource().getGenerator()
                             instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
@@ -263,6 +264,7 @@ public final class WorldServices {
             local.plaincraft.greatwall.generation.GateStamp.reset(overworld);
             local.plaincraft.greatwall.generation.WallStamp.reset(overworld);
             local.plaincraft.greatwall.generation.StairStamp.reset(overworld);
+            local.plaincraft.greatwall.generation.TerrainShowcase.reset(overworld);
             local.plaincraft.greatwall.generation.WonderWall.stop();
             local.plaincraft.greatwall.generation.ChunkHold.releaseAll(overworld);
             local.plaincraft.greatwall.generation.WallBodyBackfill.clearAll();
@@ -375,6 +377,9 @@ public final class WorldServices {
                 "wall_module.csv", 48, 18, 11, 24, 5, joinedX + 97, joinedZ, 0, true);
         GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_JOINED gateCentre={} leftWall={} rightWall={}",
                 joinedX, joinedX - 96, joinedX + 97);
+        // 生产等价地形演示区：模拟高台/低谷/水塘，再用真实 WallSection 生成 45° 墙与端楼。
+        local.plaincraft.greatwall.generation.TerrainShowcase.start(level,
+                spawn.getX() + 1600, spawn.getZ() + 300);
         local.plaincraft.greatwall.generation.StairStamp.start(spawn.getX() - 64, spawn.getZ() + 128);
         local.plaincraft.greatwall.generation.ShowcaseStamp.start("beacon.csv", 16, 26, 16, 8, 8, spawn.getX() - 64, spawn.getZ() + 192);
         local.plaincraft.greatwall.generation.ShowcaseStamp.start("corner.csv", 48, 26, 48, 24, 24, spawn.getX() - 64, spawn.getZ() + 320);
