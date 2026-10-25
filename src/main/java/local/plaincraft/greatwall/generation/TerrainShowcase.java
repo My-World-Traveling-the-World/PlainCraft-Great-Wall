@@ -91,16 +91,25 @@ public final class TerrainShowcase {
             current.baseReady = true;
         }
         if (!current.terrainBuilt) {
-            buildTerrain(level, current);
-            current.terrainBuilt = true;
-            current.components = buildWallComponents(level, current);
-            buildTower(level, current);
+            try {
+                buildTerrain(level, current);
+                current.terrainBuilt = true;
+                current.components = buildWallComponents(level, current);
+                buildTower(level, current);
+            } catch (RuntimeException broken) {
+                fail(current, broken);
+                return;
+            }
             GreatWallMod.LOGGER.info("[GreatWall:wonder] TERRAIN_DEMO_BUILT baseY={} components={}",
                     current.baseY, current.components.size());
             return;
         }
         if (current.cursor < current.components.size()) {
-            writeComponent(level, current.components.get(current.cursor++));
+            try {
+                writeComponent(level, current.components.get(current.cursor++));
+            } catch (RuntimeException broken) {
+                fail(current, broken);
+            }
             return;
         }
         completed = true;
@@ -115,6 +124,15 @@ public final class TerrainShowcase {
         if (job != null && job.ticket != null) ChunkHold.release(level, job.ticket);
         job = null;
         completed = false;
+    }
+
+    private static void fail(Job job, RuntimeException broken) {
+        completed = true;
+        if (job.ticket != null) ChunkHold.release(job.level, job.ticket);
+        job.ticket = null;
+        ShowcaseGate.done();
+        GreatWallMod.LOGGER.error("[GreatWall:wonder] TERRAIN_DEMO_FAILED origin=({},{}) reason={}",
+                job.minX, job.minZ, broken.toString(), broken);
     }
 
     private static boolean chunksReady(ServerLevel level, Job job) {
