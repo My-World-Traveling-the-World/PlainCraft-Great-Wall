@@ -62,6 +62,11 @@ public final class WallPlanSupport {
 
     /** Persistent production and ownership data used by gameplay, spawning and tombstone tracking. */
     public static void writeMarkers(ChunkAccess chunk, ChunkWritePlan plan) {
+        writeMarkers(chunk, plan, true);
+    }
+
+    /** {@code complete=false} keeps a chunk retryable when writes were skipped or failed. */
+    public static void writeMarkers(ChunkAccess chunk, ChunkWritePlan plan, boolean complete) {
         if (chunk == null || plan == null) return;
         Set<Point3i> owned = new HashSet<>();
         Set<Point3i> firepits = new HashSet<>();
@@ -84,7 +89,7 @@ public final class WallPlanSupport {
                 new TerrainMarkers.Ownership(plan.metadata().gateRevision(), owned, firepits));
         chunk.setAttached(TerrainMarkers.PRODUCTION, new TerrainMarkers.Marker(
                 plan.recipeHash(), plan.metadata().coverageHash(), plan.hash(),
-                plan.metadata().gateRevision(), true, plan.walkwayFeet(), plan.blockEntities(),
+                plan.metadata().gateRevision(), complete, plan.walkwayFeet(), plan.blockEntities(),
                 plan.metadata().spawnSlots(), plan.metadata().realizedStates()));
         chunk.setUnsaved(true);
     }

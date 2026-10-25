@@ -33,7 +33,7 @@ public final class StampVerify {
             if (got.isAir()) missing++; else wrong++;
             if (samples++ < 30) {
                 GreatWallMod.LOGGER.info("[GreatWall:verify] {} pos={} want={} got={}",
-                        name, pos, want.getBlock(), got.getBlock());
+                        name, pos, want, got);
             }
         }
         GreatWallMod.LOGGER.info("[GreatWall:verify] {} expected={} missing={} wrong={} (read-only, nothing written)",

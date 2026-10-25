@@ -779,6 +779,7 @@ public final class WallBodyBackfill {
             return new Sweep(Status.SETTLED, 0);
         }
         int written = 0;
+        boolean fullyWritten = true;
         var touched = new java.util.HashSet<Point3i>();
         // Mark the complete plan before any idempotence/conflict skip. These are read-only guard
         // marks, not writes: an already-built column must be protected just as much as a new one.
@@ -796,7 +797,7 @@ public final class WallBodyBackfill {
             BlockState target = BlockCatalog.resolveState(voxel.state());
             BlockState current = chunk.getBlockState(pos);
             if (current == target) continue;
-            if (!replaceable(current)) continue;
+            if (!replaceable(current)) { fullyWritten = false; continue; }
             // The compile recorded the exact state it saw. Comparing only the block id was not
             // enough: a player could place the same block with different properties, or place a
             // block where the compiler saw air and have it overwritten anyway.
@@ -808,6 +809,7 @@ public final class WallBodyBackfill {
                         GreatWallMod.LOGGER.warn("[GreatWall:S1C] BACKFILL_CONFLICT pos={} before={} current={}",
                                 p, before, currentToken);
                     }
+                    fullyWritten = false;
                     continue;
                 }
             }
@@ -816,7 +818,7 @@ public final class WallBodyBackfill {
             // Flag 2 notifies clients but does not cascade neighbour updates: a chunk of wall is two
             // thousand writes, and eight thousand cascades every half second is a visible stutter. The
             // chunk still updates its own heightmaps, and lighting is recomputed per section on save.
-            level.setBlock(pos, target, 2);
+            if (!level.setBlock(pos, target, 2)) fullyWritten = false;
             touched.add(p);
             local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(pos.getX(),pos.getZ());
             written++;
@@ -838,6 +840,7 @@ public final class WallBodyBackfill {
                 // removed mod, a template drift) would otherwise kill this chunk silently: the
                 // exception escapes, the chunk stays in settling, and every drain retries it.
                 // Drop the voxel, count it, and let the rest of the wall write.
+                fullyWritten = false;
                 if (++unresolvableVoxels % 512 == 1) {
                     GreatWallMod.LOGGER.warn("[GreatWall:S1C] BACKFILL_VOXEL_DROPPED owner={},{} reason={}",
                             key.x(), key.z(), unresolvable.getMessage());
@@ -846,7 +849,7 @@ public final class WallBodyBackfill {
         }
         try {
             WallPlanSupport.writeBlockEntities(chunk, plan, touched);
-            WallPlanSupport.writeMarkers(chunk, plan);
+            WallPlanSupport.writeMarkers(chunk, plan, fullyWritten);
         } catch (RuntimeException metadataFailure) {
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_METADATA_FAILED owner={},{} reason={}",
                     key.x(), key.z(), metadataFailure.toString());

@@ -1,7 +1,6 @@
 package local.plaincraft.greatwall.generation;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.server.level.ServerLevel;
@@ -14,7 +13,8 @@ import net.minecraft.server.level.ServerLevel;
  * force-load or release a chunk the new world still needed.
  */
 public final class ChunkHold {
-    private static final Map<ServerLevel, Set<Long>> HELD = new HashMap<>();
+    /** Per-chunk reference counts: overlapping pieces may hold the same chunk at once. */
+    private static final Map<ServerLevel, Map<Long, Integer>> HELD = new HashMap<>();
 
     private ChunkHold() {
     }
@@ -26,10 +26,13 @@ public final class ChunkHold {
         int cz0 = z0 >> 4;
         int cx1 = x1 >> 4;
         int cz1 = z1 >> 4;
-        Set<Long> held = HELD.computeIfAbsent(level, ignored -> new HashSet<>());
+        Map<Long, Integer> held = HELD.computeIfAbsent(level, ignored -> new HashMap<>());
         for (int cx = cx0; cx <= cx1; cx++) {
             for (int cz = cz0; cz <= cz1; cz++) {
-                if (held.add(key(cx, cz))) level.setChunkForced(cx, cz, true);
+                long key = key(cx, cz);
+                int count = held.getOrDefault(key, 0);
+                if (count == 0) level.setChunkForced(cx, cz, true);
+                held.put(key, count + 1);
             }
         }
         return new long[] {cx0, cz0, cx1, cz1};
@@ -38,11 +41,18 @@ public final class ChunkHold {
     /** Releases the chunks of one ticket. */
     public static void release(ServerLevel level, long[] ticket) {
         if (level == null || ticket == null || ticket.length != 4) return;
-        Set<Long> held = HELD.get(level);
+        Map<Long, Integer> held = HELD.get(level);
         if (held == null) return;
         for (int cx = (int) ticket[0]; cx <= (int) ticket[2]; cx++) {
             for (int cz = (int) ticket[1]; cz <= (int) ticket[3]; cz++) {
-                if (held.remove(key(cx, cz))) level.setChunkForced(cx, cz, false);
+                long key = key(cx, cz);
+                int count = held.getOrDefault(key, 0);
+                if (count <= 1) {
+                    held.remove(key);
+                    if (count == 1) level.setChunkForced(cx, cz, false);
+                } else {
+                    held.put(key, count - 1);
+                }
             }
         }
         if (held.isEmpty()) HELD.remove(level);
@@ -51,9 +61,9 @@ public final class ChunkHold {
     /** Releases every chunk this level still holds. Called while the level is stopping. */
     public static void releaseAll(ServerLevel level) {
         if (level == null) return;
-        Set<Long> held = HELD.remove(level);
+        Map<Long, Integer> held = HELD.remove(level);
         if (held == null) return;
-        for (long key : held) {
+        for (long key : held.keySet()) {
             int cx = (int) (key >> 32);
             int cz = (int) key;
             level.setChunkForced(cx, cz, false);

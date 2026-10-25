@@ -30,6 +30,7 @@ public final class StairStamp {
     private static List<int[]> coords;
     private static List<BlockState> states;
     private static int[] columnBottom;
+    private static int[] groundSurface;
     private static boolean loaded;
     private static boolean finished;
     private static boolean autoGround = true;
@@ -107,12 +108,14 @@ public final class StairStamp {
                 return;
             }
             int bottom = columnBottom[fillX * DEPTH + fillZ];
-            if (bottom > 0) {
+            if (bottom >= 0) {
                 int x = originX + fillX;
                 int z = originZ + fillZ;
                 LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
                 if (chunk == null) return;
-                int surface = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
+                int surface = groundSurface != null
+                        ? groundSurface[fillX * DEPTH + fillZ]
+                        : chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
                 for (int y = originY + bottom - 1; y > surface - 1; y--) {
                     BlockPos pos = new BlockPos(x, y, z);
                     if (level.getBlockState(pos).isAir()) {
@@ -142,6 +145,15 @@ public final class StairStamp {
         }
         if (highest == Integer.MIN_VALUE) return false;
         originY = highest;
+        groundSurface = new int[WIDTH * DEPTH];
+        for (int dx = 0; dx < WIDTH; dx++) {
+            for (int dz = 0; dz < DEPTH; dz++) {
+                int x = originX + dx, z = originZ + dz;
+                LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+                if (chunk == null) return false;
+                groundSurface[dx * DEPTH + dz] = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
+            }
+        }
         autoGround = false;
         return true;
     }
@@ -156,6 +168,7 @@ public final class StairStamp {
         coords = new ArrayList<>();
         states = new ArrayList<>();
         columnBottom = new int[WIDTH * DEPTH];
+        groundSurface = null;
         Arrays.fill(columnBottom, -1);
         try (InputStream in = StairStamp.class.getResourceAsStream(RESOURCE)) {
             if (in == null) return;

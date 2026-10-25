@@ -15,7 +15,16 @@ import net.minecraft.world.level.block.state.properties.Property;
  * bottom half, which is exactly what made the exported gatehouse look stripped of detail.
  */
 public final class BlockSpec {
+    private static final java.util.concurrent.atomic.AtomicInteger WARNINGS =
+            new java.util.concurrent.atomic.AtomicInteger();
+
     private BlockSpec() {
+    }
+
+    private static void warn(String message) {
+        if (WARNINGS.incrementAndGet() <= 20) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn("[GreatWall:templates] {}", message);
+        }
     }
 
     public static BlockState parse(String spec) {
@@ -30,7 +39,10 @@ public final class BlockSpec {
         }
         ResourceLocation id = ResourceLocation.tryParse(name.contains(":") ? name : "minecraft:" + name);
         Block block = id == null ? null : BuiltInRegistries.BLOCK.get(id);
-        if (block == null) block = Blocks.STONE_BRICKS;
+        if (block == null || (block == Blocks.AIR && !"air".equals(id == null ? "" : id.getPath()))) {
+            warn("unknown block id=" + name + "; using stone_bricks");
+            block = Blocks.STONE_BRICKS;
+        }
         BlockState state = block.defaultBlockState();
         if (props == null || props.isEmpty()) return state;
         for (String pair : props.split(",")) {
@@ -45,10 +57,16 @@ public final class BlockSpec {
         for (Property<?> property : state.getProperties()) {
             if (property.getName().equals(name)) return set(state, property, value);
         }
-        return state;   // unknown property for this block: ignore rather than fail
+        warn("unknown property '" + name + "' for " + state.getBlock() + "; ignored");
+        return state;
     }
 
     private static <T extends Comparable<T>> BlockState set(BlockState state, Property<T> property, String value) {
-        return property.getValue(value).map(parsed -> state.setValue(property, parsed)).orElse(state);
+        var parsed = property.getValue(value);
+        if (parsed.isEmpty()) {
+            warn("invalid value '" + value + "' for property " + property.getName() + " on " + state.getBlock());
+            return state;
+        }
+        return state.setValue(property, parsed.get());
     }
 }

@@ -33,6 +33,7 @@ public final class ShowcaseStamp {
     private boolean finished;
     private int originY;
     private int cursor;
+    private int[] groundSurface;
     private int fillU;
     private int fillV;
     private int filled;
@@ -89,6 +90,15 @@ public final class ShowcaseStamp {
             }
             if (highest == Integer.MIN_VALUE) return;
             originY = highest;
+            groundSurface = new int[width * depth];
+            for (int dx = 0; dx < width; dx++) {
+                for (int dz = 0; dz < depth; dz++) {
+                    int x = originX + dx, z = originZ + dz;
+                    LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+                    if (chunk == null) return;
+                    groundSurface[dx * depth + dz] = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
+                }
+            }
             settled = true;
         }
         if (!filling) {
@@ -119,12 +129,14 @@ public final class ShowcaseStamp {
                 return;
             }
             int bottom = columnBottom[fillU * depth + fillV];
-            if (bottom > 0) {
+            if (bottom >= 0) {
                 int x = originX + fillU;
                 int z = originZ + fillV;
                 LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
                 if (chunk == null) return;
-                int surface = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
+                int surface = groundSurface != null
+                        ? groundSurface[fillU * depth + fillV]
+                        : chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
                 for (int y = originY + bottom - 1; y > surface - 1; y--) {
                     BlockPos pos = new BlockPos(x, y, z);
                     if (level.getBlockState(pos).isAir()) {
@@ -145,6 +157,7 @@ public final class ShowcaseStamp {
         coords = new ArrayList<>();
         states = new ArrayList<>();
         columnBottom = new int[width * depth];
+        groundSurface = null;
         Arrays.fill(columnBottom, -1);
         try (InputStream in = ShowcaseStamp.class.getResourceAsStream(resource)) {
             if (in == null) return;

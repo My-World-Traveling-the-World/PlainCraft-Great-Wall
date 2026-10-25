@@ -194,7 +194,7 @@ public final class GreatWallCommands {
                                         .then(Commands.literal("dry-run").executes(GreatWallCommands::repairDryRun))
                                         .then(Commands.literal("confirm")
                                                 .then(Commands.argument("token", StringArgumentType.word())
-                                                        .executes(GreatWallCommands::repairConfirm))))));
+                                                        .executes(GreatWallCommands::repairConfirmDisabled))))));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> debug() {
@@ -608,6 +608,19 @@ public final class GreatWallCommands {
 
     private static int repairDryRun(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
+        source.sendFailure(Component.literal("GREATWALL_REPAIR_DISABLED：手动门洞 repair 目前只有 prepare、没有实写消费者；"
+                + "为避免账本说完成但方块没写，已禁用，请使用 /greatwall repaint 或新世界重建"));
+        return 0;
+    }
+
+    private static int repairConfirmDisabled(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        source.sendFailure(Component.literal("GREATWALL_REPAIR_DISABLED：手动门洞 repair 未启用；没有 apply consumer 前不会返回成功"));
+        return 0;
+    }
+
+    private static int repairDryRunOld(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
         WorldServices svc = WorldServices.find(source.getServer());
         if (svc == null || !svc.productionFixture()) {
             source.sendFailure(Component.literal("repair requires the S1C production fixture"));
@@ -968,6 +981,11 @@ public final class GreatWallCommands {
         // TowerStamp 从来没接过 start()/tick()（WorldServices 不启动它，服务端 tick 也不驱动它），
         // 复位它只会造成"复位但不重画"的假动作，所以这里显式跳过并说明。
         int pending = local.plaincraft.greatwall.generation.ShowcaseGate.remaining();
+        if (pending <= 0) {
+            source.sendFailure(Component.literal("GREATWALL_RESTAMP_NO_TASK：当前世界没有可重画的展台任务；"
+                    + "marker 命中时请先清理展台或使用新世界，不要静默假成功"));
+            return 0;
+        }
         source.sendSuccess(() -> Component.literal("GREATWALL_RESTAMP queued; ShowcaseGate pending="
                 + pending + "（TowerStamp 未参与展台，已跳过）"), false);
         return 1;
