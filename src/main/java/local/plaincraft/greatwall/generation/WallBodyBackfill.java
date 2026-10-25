@@ -125,7 +125,9 @@ public final class WallBodyBackfill {
                     int z = Integer.parseInt(name.substring(split + 1));
                     ChunkKey key = new ChunkKey(level.dimension().location().toString(), x, z);
                     if (state.settled.contains(key)) continue;
-                    if (DONE.contains(x + "_" + z)) { state.verify.add(key); continue; }
+                    // DONE is a final seal: a chunk that was written successfully is never
+                    // re-verified or repainted. Player edits after completion are authoritative.
+                    if (DONE.contains(x + "_" + z)) { state.settled.add(key); continue; }
                     if (state.pending.add(key)) added++;
                 } catch (NumberFormatException notAChunkDirectory) {
                     // FILES/ and the world hash directory are not chunk directories.
@@ -149,8 +151,6 @@ public final class WallBodyBackfill {
     private static final int MAX_DRAIN_REQUESTS = 8;
     /** Pending chunks one drain may inspect; a long queue must not cost a tick. */
     private static final int MAX_DRAIN_CHECKS = 64;
-    /** Done-ledger entries one drain may re-verify; each costs one block read. */
-    private static final int MAX_VERIFY_PER_DRAIN = 8;
     /** How long the road gate may stay closed after the startup pass hands the thread back. */
     private static final long GATE_DEFER_LIMIT_NANOS = 600_000_000_000L;
     /**
@@ -278,65 +278,6 @@ public final class WallBodyBackfill {
     }
 
     /**
-     * Re-proves the done ledger against the world, one loaded chunk at a time.
-     *
-     * <h2>Why the ledger cannot be trusted on its own</h2>
-     * {@code backfilled.txt} is appended the moment a chunk is written, but the chunk itself is only
-     * flushed to disk when the world saves. A crash (or a force-kill) between the two leaves the
-     * ledger ahead of the world: the save then skips those chunks for ever, and the wall has holes the
-     * log never mentions. A measured session marked 88 chunks done and was killed before its first
-     * autosave. So a ledger entry buys a chunk one free pass, not a permanent one: the first time the
-     * chunk loads, one planned voxel is checked, and a mismatch puts the whole chunk back in the queue.
-     */
-    private static void verifyDone(ServerLevel level, State state) {
-        if (state.verify.isEmpty()) return;
-        int checks = 0;
-        for (ChunkKey key : List.copyOf(state.verify)) {
-            if (checks++ >= MAX_VERIFY_PER_DRAIN) break;
-            LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
-            if (chunk == null) continue;
-            ChunkWritePlan plan = WallWorldgenPlanCache.get(level, key);
-            if (plan == null) {
-                requestPlanRead(level, key);
-                continue;
-            }
-            // A DONE chunk is already built; its columns must still be visible to the road guard.
-            WallPlanSupport.markPlannedColumns(plan);
-            // Three candidate voxels, and one match is enough: a chunk that was written normally
-            // matches all of them, and requiring only one keeps a single player-placed block (or a
-            // voxel the write skipped as a conflict) from repainting a chunk that is otherwise done.
-            int matched = 0;
-            int candidates = 0;
-            for (var voxel : plan.voxels()) {
-                if (voxel.kind() == IntentKind.KEEP) continue;
-                // No before-state filter: a voxel whose compile-time neighbour was solid may have
-                // been skipped as a conflict, and one skipped voxel must not condemn the chunk.
-                BlockState expected;
-                try {
-                    expected = BlockCatalog.resolveState(voxel.state());
-                } catch (RuntimeException unresolvable) {
-                    continue;
-                }
-                candidates++;
-                Point3i at = voxel.pos();
-                if (chunk.getBlockState(new BlockPos(at.x(), at.y(), at.z())) == expected) {
-                    matched++;
-                    break;
-                }
-                if (candidates >= 3) break;
-            }
-            state.verify.remove(key);
-            if (candidates == 0 || matched > 0) continue;
-            state.pending.add(key);
-            if (REPAINT_LOGS.incrementAndGet() <= 8) {
-                GreatWallMod.LOGGER.info(
-                        "[GreatWall:S1C] WALL_BACKFILL_REPAINTED owner={},{} reason=sentinel-mismatch",
-                        key.x(), key.z());
-            }
-        }
-    }
-
-    /**
      * Paints every chunk the startup thread already has in memory, and only those.
      *
      * <h2>Why nothing is requested here</h2>
@@ -453,6 +394,8 @@ public final class WallBodyBackfill {
 
     public static long persistFailures() { return PERSIST_FAILURES.get(); }
     private static final Map<ServerLevel, State> STATES = new ConcurrentHashMap<>();
+    /** Explicit `/greatwall repaint` targets: only these may bypass a complete PRODUCTION seal. */
+    private static final Set<ChunkKey> FORCE_REPAIR = ConcurrentHashMap.newKeySet();
 
     /**
      * Releases every ticket and drops all level-keyed state before the server closes.
@@ -473,6 +416,7 @@ public final class WallBodyBackfill {
         }
         STATES.clear();
         LOADING.clear();
+        FORCE_REPAIR.clear();
         DONE.clear();
         doneFile = null;
         installedRoot = null;
@@ -497,11 +441,10 @@ public final class WallBodyBackfill {
         int proven = 0;
         for (ChunkKey key : keys) {
             if (key == null || state.settled.contains(key)) continue;
-            // The ledger buys a chunk one free pass, not a permanent one: verifyDone re-proves it the
-            // first time it loads. Honouring it here is what keeps a reload from repainting all 456
-            // chunks that an earlier session already wrote.
+            // DONE is final. The old "one free pass" verification is gone: it was the path that
+            // refilled player-mined wall blocks on every re-entry.
             if (DONE.contains(key.x() + "_" + key.z())) {
-                if (state.verify.add(key)) proven++;
+                if (state.settled.add(key)) proven++;
                 continue;
             }
             if (state.pending.add(key)) added++;
@@ -603,9 +546,6 @@ public final class WallBodyBackfill {
         State state = state(level);
         if (++state.tick < DRAIN_INTERVAL_TICKS) return;
         state.tick = 0;
-        // The ledger first: it is the only thing between a crashed session and a wall with holes in it,
-        // and it costs one block read per loaded chunk. See verifyDone.
-        verifyDone(level, state);
         pollDrainRequests(level, state);
         if (state.pending.isEmpty()) {
             openGateIfDrained(level, state);
@@ -720,7 +660,6 @@ public final class WallBodyBackfill {
         keys.addAll(state.settled);
         // DONE chunks live in verify, not in pending. Omitting them meant a reloaded save could
         // report missed=0 while every already-built chunk was invisible to the road guard.
-        keys.addAll(state.verify);
         int columns = 0;
         int voxels = 0;
         int missed = 0;
@@ -817,6 +756,15 @@ public final class WallBodyBackfill {
             // would put a file read on the server thread for every chunk the player walks into.
             // A miss means the prefetch is still in flight, so this chunk stays pending.
             return new Sweep(Status.PENDING, 0);
+        }
+        boolean forcedRepair = FORCE_REPAIR.remove(key);
+        var existingMarker = chunk.getAttached(TerrainMarkers.PRODUCTION);
+        if (!forcedRepair && existingMarker != null && existingMarker.complete()
+                && existingMarker.planHash().equals(plan.hash())) {
+            // This chunk has already been built and saved. Never turn a player's edit back into wall.
+            WallPlanSupport.markPlannedColumns(plan);
+            local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
+            return new Sweep(Status.SETTLED, 0);
         }
         int written = 0;
         var touched = new java.util.HashSet<Point3i>();
@@ -928,8 +876,6 @@ public final class WallBodyBackfill {
     private static volatile java.nio.file.Path doneFile;
     /** The save this process last installed the plan reader for; a second world re-installs. */
     private static volatile java.nio.file.Path installedRoot;
-    /** Mismatched ledger entries reported so far; the log stays readable on a regenerated world. */
-    private static final AtomicLong REPAINT_LOGS = new AtomicLong();
     private static final java.util.concurrent.atomic.AtomicInteger DONE_PENDING = new java.util.concurrent.atomic.AtomicInteger();
 
     private static final class State {
@@ -937,8 +883,6 @@ public final class WallBodyBackfill {
         final Set<ChunkKey> settled = ConcurrentHashMap.newKeySet();
         final Set<ChunkKey> settling = ConcurrentHashMap.newKeySet();
         final Map<ChunkKey, Integer> attempts = new ConcurrentHashMap<>();
-        /** Ledger entries whose chunk has to prove itself before it is trusted. See verifyDone. */
-        final Set<ChunkKey> verify = ConcurrentHashMap.newKeySet();
         /** In-game chunk requests in flight; this path never blocks on one. */
         final Map<ChunkKey, StartupRequest> requests = new ConcurrentHashMap<>();
         int tick;
@@ -962,6 +906,7 @@ public final class WallBodyBackfill {
         for (ChunkKey k : back) {
             state.settled.remove(k);
             state.pending.add(k);
+            FORCE_REPAIR.add(k);
             DONE.remove(k.x() + "_" + k.z());
         }
         java.nio.file.Path file = doneFile;

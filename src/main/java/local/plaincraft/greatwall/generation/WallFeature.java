@@ -35,7 +35,7 @@ public class WallFeature extends Feature<NoneFeatureConfiguration> {
 
         ChunkAccess chunk = world.getChunk(cx, cz);
         var marker = chunk.getAttached(TerrainMarkers.PRODUCTION);
-        if (marker != null && marker.complete()) {
+        if (marker != null && marker.complete() && marker.planHash().equals(plan.hash())) {
             // An already-written chunk still has to publish its ownership to the road guard and
             // gameplay index after a restart; returning early here used to lose both forever.
             WallPlanSupport.markPlannedColumns(plan);
