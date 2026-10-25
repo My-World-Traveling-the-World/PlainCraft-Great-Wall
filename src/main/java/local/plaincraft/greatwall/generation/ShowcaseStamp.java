@@ -29,6 +29,9 @@ public final class ShowcaseStamp {
     private final int clipMaxX;
     /** Wall-module phase rotation; 3 turns the gate-side start from 垛 into 缺垛垛垛. */
     private final int wallPhaseOffset;
+    /** Gate passage columns that must never receive foundation fill. */
+    private final int noFillMinX;
+    private final int noFillMaxX;
     private final int originX;
     private final int originZ;
     private List<int[]> coords;
@@ -48,7 +51,7 @@ public final class ShowcaseStamp {
 
     private ShowcaseStamp(String csvName, int w, int d, int centreX, int centreZ, int atX, int atZ,
                           int heightOffset, boolean wallModule, int clipMinX, int clipMaxX,
-                          int wallPhaseOffset) {
+                          int wallPhaseOffset, int noFillMinX, int noFillMaxX) {
         this.resource = "/assets/plaincraft-great-wall/templates/" + csvName;
         this.width = w;
         this.depth = d;
@@ -57,6 +60,8 @@ public final class ShowcaseStamp {
         this.clipMinX = clipMinX;
         this.clipMaxX = clipMaxX;
         this.wallPhaseOffset = wallPhaseOffset;
+        this.noFillMinX = noFillMinX;
+        this.noFillMaxX = noFillMaxX;
         this.originX = atX - centreX;
         this.originZ = atZ - centreZ;
     }
@@ -89,11 +94,25 @@ public final class ShowcaseStamp {
         start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, true, 0, w - 1, phaseOffset);
     }
 
+    /** Gate placement that keeps its passage columns free of foundation fill. */
+    public static void startGate(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
+                                 int heightOffset, int noFillMinX, int noFillMaxX) {
+        start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, false, 0, w - 1, 0,
+                noFillMinX, noFillMaxX);
+    }
+
     private static void start(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
                               int heightOffset, boolean wallModule, int clipMinX, int clipMaxX,
                               int wallPhaseOffset) {
+        start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, wallModule, clipMinX, clipMaxX,
+                wallPhaseOffset, -1, -1);
+    }
+
+    private static void start(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
+                              int heightOffset, boolean wallModule, int clipMinX, int clipMaxX,
+                              int wallPhaseOffset, int noFillMinX, int noFillMaxX) {
         ALL.add(new ShowcaseStamp(csvName, w, d, cx, cz, atX, atZ, heightOffset, wallModule,
-                clipMinX, clipMaxX, wallPhaseOffset));
+                clipMinX, clipMaxX, wallPhaseOffset, noFillMinX, noFillMaxX));
         local.plaincraft.greatwall.generation.ShowcaseGate.expect();
         ShowcaseLayout.add(csvName, atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
         local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
@@ -174,7 +193,10 @@ public final class ShowcaseStamp {
                 return;
             }
             int bottom = columnBottom[fillU * depth + fillV];
-            if (bottom >= 0) {
+            // A gate passage is an authored opening, not a missing foundation column. Filling
+            // from its lintel down to the ground is exactly what buried the doorway.
+            boolean aperture = fillU >= noFillMinX && fillU <= noFillMaxX;
+            if (!aperture && bottom >= 0) {
                 int x = originX + fillU;
                 int z = originZ + fillV;
                 LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);

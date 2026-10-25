@@ -374,19 +374,18 @@ public final class WorldServices {
         // Gate and wall are separate pieces: keep the whole 145-wide gate template and attach one
         // current 48-block wall_module to each open end. The end faces were verified block-for-block
         // to match when the wall uses the gate's highest-ground base (heightOffset 0).
-        local.plaincraft.greatwall.generation.ShowcaseStamp.start(
-                "gate.csv", 145, 44, 32, 72, 19, joinedX, joinedZ, -2, false, 0, 144);
-        // Gate ends are both 缺. Left wall ends on phase47=缺; right wall must start at phase3
-        // (缺垛垛垛), so rotate that module by three phases instead of using phase0=垛.
+        local.plaincraft.greatwall.generation.ShowcaseStamp.startGate(
+                "gate.csv", 145, 44, 32, 72, 19, joinedX, joinedZ, -2, 68, 76);
+        // Gate ends are both 缺. The wall top sits one block below the gate's own height base.
         local.plaincraft.greatwall.generation.ShowcaseStamp.startWall(
-                "wall_module.csv", 48, 18, 11, 24, 5, joinedX - 96, joinedZ, 0, 0);
+                "wall_module.csv", 48, 18, 11, 24, 5, joinedX - 96, joinedZ, -1, 0);
         local.plaincraft.greatwall.generation.ShowcaseStamp.startWall(
-                "wall_module.csv", 48, 18, 11, 24, 5, joinedX + 97, joinedZ, 0, 3);
+                "wall_module.csv", 48, 18, 11, 24, 5, joinedX + 97, joinedZ, -1, 3);
         GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_JOINED gate={} leftWall={} rightWall={} phases=47/3",
                 joinedX, joinedX - 96, joinedX + 97);
         // 斜向走势演示区：门楼保持正东西/正南北，墙先正接再分两段过渡到 45°。
         local.plaincraft.greatwall.generation.DiagonalWallShowcase.start(level,
-                joinedX, spawn.getZ() + 700);
+                joinedX, spawn.getZ() + 120);
         // 生产等价地形演示区：模拟高台/低谷/水塘，再用真实 WallSection 生成 45° 墙与端楼。
         local.plaincraft.greatwall.generation.TerrainShowcase.start(level,
                 spawn.getX() + 1600, spawn.getZ() + 300);

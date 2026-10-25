@@ -63,9 +63,8 @@ public final class DiagonalWallShowcase {
         }
         job = new Job(level, centreX, centreZ, rows);
         // Gate stays upright and whole. Wall attach point is the gate's +x end.
-        ShowcaseStamp.start("gate.csv", 145, 44, 32, 72, 19, centreX, centreZ, -2, false, 0, 144);
-        ShowcaseLayout.add("diagonal-gate", centreX - 72, centreZ - 19, centreX + 72, centreZ + 12);
-        ShowcaseLayout.add("diagonal-wall", centreX + 73, centreZ - 16, centreX + 210, centreZ + 110);
+        ShowcaseStamp.startGate("gate.csv", 145, 44, 32, 72, 19, centreX, centreZ, -2, 68, 76);
+        ShowcaseLayout.add("diagonal-wall", centreX - 210, centreZ - 16, centreX + 210, centreZ + 110);
         ShowcaseGate.expect();
         GreatWallMod.LOGGER.info("[GreatWall:wonder] DIAGONAL_WALL_START gate=({},{}) straight={} transitions={} steps={}",
                 centreX, centreZ, STRAIGHT, TRANSITION, STEPS);
@@ -93,7 +92,7 @@ public final class DiagonalWallShowcase {
         int budget = 4000;
         while (current.cursor < current.blocks.size() && budget-- > 0) {
             int[] p = current.blocks.get(current.cursor);
-            int y = current.baseY + p[1];
+            int y = current.baseY - 1 + p[1];
             level.setBlock(new BlockPos(p[0], y, p[2]), current.states.get(current.cursor), 2);
             WallRoadGuard.markColumn(p[0], p[2]);
             current.cursor++;
@@ -161,6 +160,19 @@ public final class DiagonalWallShowcase {
             }
             x += dx;
             z += dz;
+        }
+        // Mirror the same wall onto the gate's other side; both ends get a wall, one straight
+        // attachment step followed by the same two transition sectors.
+        int rightCount = job.blocks.size();
+        for (int i = 0; i < rightCount; i++) {
+            int[] p = job.blocks.get(i);
+            int leftX = 2 * job.centreX - p[0];
+            job.blocks.add(new int[] {leftX, p[1], p[2]});
+            job.states.add(job.states.get(i));
+            minX = Math.min(minX, leftX);
+            maxX = Math.max(maxX, leftX);
+            minZ = Math.min(minZ, p[2]);
+            maxZ = Math.max(maxZ, p[2]);
         }
         job.minX = minX;
         job.minZ = minZ;
