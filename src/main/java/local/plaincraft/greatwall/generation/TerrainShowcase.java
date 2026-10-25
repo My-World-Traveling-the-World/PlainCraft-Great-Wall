@@ -282,7 +282,8 @@ public final class TerrainShowcase {
                 // ordinary support probe would reject that as a >12 drop. Keep the ground evidence,
                 // but mark it buildable so the wall body reaches ComponentAssembly; the explicit
                 // foundation fills still come from the real ColumnFoundation path.
-                supports.put(new Point3i(x, walkY, z), new ProbeResult(kind, ground, waterTop, bed,
+                int rootedGround = Math.min(ground, walkY - 80);
+                supports.put(new Point3i(x, walkY, z), new ProbeResult(kind, rootedGround, waterTop, bed,
                         0, hash, OptionalInt.empty()));
             }
         }
