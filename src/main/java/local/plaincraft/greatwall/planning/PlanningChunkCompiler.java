@@ -30,6 +30,7 @@ public final class PlanningChunkCompiler {
     private final List<Bounds> structures;
     /** Absolute ground floor per (x,z), produced by WallFoundationPlanner for this window. */
     private final Map<Long, Integer> foundationFloor;
+    private final List<WallFoundationPlanner.ColumnFoundation> foundations;
 
     public PlanningChunkCompiler(RealizationPlanner realization, ChunkPlanCompiler compiler,
             FineHeightIndex index, List<Bounds> structures) {
@@ -40,7 +41,7 @@ public final class PlanningChunkCompiler {
         // Production wiring for the per-column foundation decision. The WallSection consumes the
         // same support samples when it expands its foundation floor; this call keeps the planner's
         // base/fill contract exercised on every compile window and makes omissions visible.
-        var foundations = WallFoundationPlanner.plan(index.orderedColumns());
+        this.foundations = WallFoundationPlanner.plan(index.orderedColumns());
         var floor = new HashMap<Long, Integer>();
         for (var core : foundations) {
             for (var fill : core.fills()) {
@@ -361,7 +362,7 @@ public final class PlanningChunkCompiler {
     private RealizationCell resolveCell(CellKey cell,
             Map<Point3i, SurfaceProbe.ColumnView> columns, PlanWindow plans, String protectionHash) {
         return realization.resolve(new RealizationPlanner.Input(cell, plans, Map.of(), columns,
-                List.copyOf(structures), Map.of(), 0, protectionHash, foundationFloor));
+                List.copyOf(structures), Map.of(), 0, protectionHash, foundationFloor, foundations));
     }
 
 

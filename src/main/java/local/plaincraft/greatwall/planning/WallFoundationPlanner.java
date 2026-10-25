@@ -23,8 +23,11 @@ public final class WallFoundationPlanner {
     }
 
     /** One centre-line column's resolved base and per-lateral fill depths. */
-    public record ColumnFoundation(int centreX, int centreZ, int baseY,
+    public record ColumnFoundation(long globalSQ8, int centreX, int centreZ, int baseY,
             List<FillColumn> fills) {
+        public ColumnFoundation(int centreX, int centreZ, int baseY, List<FillColumn> fills) {
+            this(Long.MIN_VALUE, centreX, centreZ, baseY, fills);
+        }
         public ColumnFoundation {
             fills = List.copyOf(fills);
         }
@@ -32,7 +35,7 @@ public final class WallFoundationPlanner {
 
     /** A lateral column at {@code lateral} offset that must be filled from the wall base down to
      *  {@code surfaceY} (exclusive of surfaceY; the fill occupies [surfaceY, baseY)). */
-    public record FillColumn(int lateral, int surfaceY, int x, int z) {
+    public record FillColumn(int lateral, int surfaceY, int x, int z, int baseY) {
         public FillColumn {
             if (lateral < -WallFinePlanner.LATERAL || lateral > WallFinePlanner.LATERAL)
                 throw new IllegalArgumentException("lateral out of wall width");
@@ -44,23 +47,16 @@ public final class WallFoundationPlanner {
         // WallFinePlanner emits one lateral-major cross-section per route point: -L..+L. The old
         // code opened a group only at lateral==0, which silently discarded the negative half. A
         // wrap from +L to -L (or the reverse) is the actual cross-section boundary.
-        var groups = new ArrayList<List<WallFinePlanner.FineColumn>>();
-        List<WallFinePlanner.FineColumn> group = null;
-        var pending = new ArrayList<WallFinePlanner.FineColumn>();
+        var grouped = new java.util.TreeMap<Long, List<WallFinePlanner.FineColumn>>();
         for (var sample : samples) {
-            if (sample.lateral() == 0) {
-                if (group != null) groups.add(group);
-                group = new ArrayList<>(pending);
-                group.add(sample);
-                pending.clear();
-            } else if (group == null) {
-                // A cross-section may be emitted starting at -L, before its lateral=0 sample.
-                pending.add(sample);
+            if (!sample.hasSectionIdentity()) {
+                // Compatibility for analytic fixtures without a route id: each centre owns a section.
+                grouped.computeIfAbsent(Long.MIN_VALUE + sample.centreX(), ignored -> new ArrayList<>()).add(sample);
             } else {
-                group.add(sample);
+                grouped.computeIfAbsent(sample.globalSQ8(), ignored -> new ArrayList<>()).add(sample);
             }
         }
-        if (group != null) groups.add(group);
+        var groups = new ArrayList<>(grouped.values());
         var result = new ArrayList<ColumnFoundation>(groups.size());
         for (var columns : groups) {
             WallFinePlanner.FineColumn centre = null;
@@ -76,15 +72,12 @@ public final class WallFoundationPlanner {
             var fills = new ArrayList<FillColumn>();
             for (var sample : columns) {
                 int surface = sample.sample().groundTopY();
-                if (surface < base) fills.add(new FillColumn(sample.lateral(), surface, sample.x(), sample.z()));
+                if (surface < base) fills.add(new FillColumn(sample.lateral(), surface, sample.x(), sample.z(), base));
             }
             fills.sort(Comparator.comparingInt(FillColumn::lateral));
-            result.add(new ColumnFoundation(centre.x(), centre.z(), base, fills));
+            result.add(new ColumnFoundation(centre.globalSQ8(), centre.x(), centre.z(), base, fills));
         }
         return List.copyOf(result);
     }
 
-    private static long key(int x, int z, int seq) {
-        return ((long) x << 32) ^ ((long) z << 16) ^ seq;
-    }
 }

@@ -362,7 +362,7 @@ public final class PlannerScheduler implements AutoCloseable {
     public CompletableFuture<FineHeightIndex> requireFineSamples(Priority priority) {
         if (closed()) return CompletableFuture.failedFuture(closedFailure());
         var aggregate = new CompletableFuture<FineHeightIndex>();
-        var all = new ArrayList<WallFinePlanner.FineColumn>();
+        var all = new java.util.TreeMap<Long, List<WallFinePlanner.FineColumn>>();
         /** The subset of {@code all} this run walked or read from the cache; what gets persisted. */
         var walked = new ArrayList<WallFinePlanner.FineColumn>();
         fineSampleWalked = walked;
@@ -546,21 +546,23 @@ public final class PlannerScheduler implements AutoCloseable {
                         walkedSections.get() == 0 ? 0 : probedColumns.get() / walkedSections.get(),
                         done == 0 ? 0 : probedColumns.get() / done);
                 persistFineSamples(walked);
+                var ordered = new ArrayList<WallFinePlanner.FineColumn>();
                 synchronized (all) {
+                    for (var slice : all.values()) ordered.addAll(slice);
                     // Distinct (x, z) columns actually sampled, next to the emission count: the gap between
                     // this and `columns` is the real duplication factor, which `repeatedPct` cannot see
                     // (that one only compares a single cursor's emissions before and after its own collapse,
                     // so cross-slice repeats read as zero).
                     java.util.HashSet<Long> distinct = new java.util.HashSet<>(Math.max(16, all.size() * 2));
-                    for (var column : all) {
+                    for (var column : ordered) {
                         distinct.add(((long) column.x() << 32) ^ (column.z() & 0xffffffffL));
                     }
                     GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_COLUMNS emitted={} distinct={} "
                                     + "duplicatePct={} sections={}",
-                            all.size(), distinct.size(),
-                            all.isEmpty() ? 0 : Math.round(100f * (all.size() - distinct.size()) / all.size()),
+                            ordered.size(), distinct.size(),
+                            ordered.isEmpty() ? 0 : Math.round(100f * (ordered.size() - distinct.size()) / ordered.size()),
                             walkedSections.get());
-                    aggregate.complete(FineHeightIndex.of(all));
+                    aggregate.complete(FineHeightIndex.of(ordered));
                 }
             }
         };
@@ -682,13 +684,15 @@ public final class PlannerScheduler implements AutoCloseable {
                             // seed assumes, so the seed is an upper bound and never a lie about being done.
                             var job = new FineSampleJob(route, from, to, priority,
                                     new CompletableFuture<List<WallFinePlanner.FineColumn>>(), fineSampleCache,
-                                    wideAt, walks, claims);
+                                    wideAt, walks, claims, prefix.lengthBeforeQ8());
                             enqueue(job);
                             job.result.whenCompleteAsync((columns, sampleError) -> {
                                 try {
                                     if (sampleError != null) { aggregate.completeExceptionally(sampleError); return; }
+                                    final int sliceFrom = from, sliceTo = to;
                                     synchronized (all) {
-                                        all.addAll(columns);
+                                        all.computeIfAbsent(WallFinePlanner.sampleOrder(route, from, to),
+                                                ignored -> new ArrayList<>()).addAll(columns);
                                         walked.addAll(job.probed());
                                         sampledColumns.addAndGet(columns.size());
                                         rawColumns.addAndGet(job.emittedRaw());
@@ -2126,6 +2130,7 @@ public final class PlannerScheduler implements AutoCloseable {
         private final int fromPoint, toPoint;
         private final local.plaincraft.greatwall.terrain.FineSampleCache cache;
         /** Points of this route that must carry the full band, because a component sits on them. */
+        private final long globalBaseQ8;
         private final java.util.function.IntPredicate wideAt;
         /** Session-wide memo of already-walked columns; see {@link WallFinePlanner#begin}. */
         private final java.util.Map<Long, local.plaincraft.greatwall.model.WallTypes.ColumnSample> walks;
@@ -2137,8 +2142,9 @@ public final class PlannerScheduler implements AutoCloseable {
                               local.plaincraft.greatwall.terrain.FineSampleCache cache,
                               java.util.function.IntPredicate wideAt,
                               java.util.Map<Long, local.plaincraft.greatwall.model.WallTypes.ColumnSample> walks,
-                              java.util.Set<Long> claims) {
+                              java.util.Set<Long> claims, long globalBaseQ8) {
             super(priority, "FINE_SAMPLE", result);
+            this.globalBaseQ8 = globalBaseQ8;
             this.route = route;
             this.fromPoint = Math.max(0, fromPoint);
             this.toPoint = Math.min(route.points().size(), Math.max(this.fromPoint, toPoint));
@@ -2149,7 +2155,8 @@ public final class PlannerScheduler implements AutoCloseable {
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
             if (cursor == null) {
-                cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint, cache, wideAt, walks, claims);
+                cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint, cache, wideAt, walks, claims,
+                        fromPoint > 0, globalBaseQ8);
             }
             operations += limit;
             return WallFinePlanner.advance(cursor, limit) == WorkState.DONE;

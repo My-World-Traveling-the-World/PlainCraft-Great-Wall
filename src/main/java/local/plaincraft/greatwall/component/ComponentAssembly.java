@@ -161,8 +161,30 @@ final class ComponentAssembly {
                 if (!checked) {
                     checked = true;
                     support = input.supports().get(new Point3i(x,column.walkY(),z));
-                    if (support == null || support.kind() != ProbeKind.SUPPORTED && support.kind() != ProbeKind.WATER
-                            || support.drop() > 12 || support.groundTopY() >= column.walkY())
+                    boolean plannedFoundation = false;
+                    if (input.site().id().kind() == SiteKind.WALL) {
+                        long columnKey = ((long) x << 32) ^ (z & 0xffffffffL);
+                        Integer plannedSurface = input.foundationFloor().get(columnKey);
+                        if (plannedSurface != null) {
+                            // The planning stage has already proven the natural surface for this exact
+                            // fill column. A deep valley must not be rejected by the legacy 12-block
+                            // probe envelope. Protection/water status is still required.
+                            support = new ProbeResult(
+                                    support == null ? ProbeKind.SUPPORTED : support.kind(),
+                                    plannedSurface,
+                                    support == null ? java.util.OptionalInt.empty() : support.waterTopY(),
+                                    support == null ? java.util.OptionalInt.empty() : support.bedTopY(),
+                                    Math.max(0, column.walkY() - plannedSurface),
+                                    support == null ? "foundation-column" : support.evidenceHash(),
+                                    support == null ? java.util.OptionalInt.empty() : support.thinIceY());
+                            plannedFoundation = true;
+                        }
+                    }
+                    if (!plannedFoundation && (support == null || support.kind() != ProbeKind.SUPPORTED && support.kind() != ProbeKind.WATER
+                            || support.drop() > 12 || support.groundTopY() >= column.walkY()))
+                        return empty(input.site().id(),worldBounds);
+                    if (plannedFoundation && (support.kind() != ProbeKind.SUPPORTED && support.kind() != ProbeKind.WATER
+                            || support.groundTopY() >= column.walkY()))
                         return empty(input.site().id(),worldBounds);
                 }
                 if (y < support.groundTopY() - 1) continue;

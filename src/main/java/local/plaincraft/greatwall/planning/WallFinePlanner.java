@@ -69,11 +69,18 @@ public final class WallFinePlanner {
 
     /** One accurately-sampled column. {@code lateral} is the signed offset from the centre line,
      *  in the wall's local frame (positive = one side, negative = the other); 0 is the centre. */
-    public record FineColumn(int x, int z, int lateral, ColumnSample sample) {
+    /** A sampled column with an explicit cross-section identity. The four-argument constructor keeps
+     * analytic fixtures compatible; production always supplies globalS/centreX/centreZ. */
+    public record FineColumn(int x, int z, int lateral, ColumnSample sample,
+                             long globalSQ8, int centreX, int centreZ) {
+        public FineColumn(int x, int z, int lateral, ColumnSample sample) {
+            this(x, z, lateral, sample, Long.MIN_VALUE, x, z);
+        }
         public FineColumn {
             Objects.requireNonNull(sample, "sample");
             if (lateral < -LATERAL || lateral > LATERAL) throw new IllegalArgumentException("lateral out of wall width");
         }
+        public boolean hasSectionIdentity() { return globalSQ8 != Long.MIN_VALUE; }
     }
 
     public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle) {
@@ -152,7 +159,19 @@ public final class WallFinePlanner {
     public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                                FineSampleCache cache, java.util.function.IntPredicate wideAt,
                                java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims) {
-        return begin(route, oracle, fromIndex, toIndex, cache, wideAt, walks, claims, fromIndex > 0);
+        return begin(route, oracle, fromIndex, toIndex, cache, wideAt, walks, claims, fromIndex > 0, 0L);
+    }
+
+    /** Production entry with the route's absolute arc origin. */
+    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+                               FineSampleCache cache, java.util.function.IntPredicate wideAt,
+                               java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims,
+                               boolean carryWater, long globalBaseQ8) {
+        Objects.requireNonNull(route, "route");
+        Objects.requireNonNull(oracle, "oracle");
+        Objects.requireNonNull(cache, "cache");
+        return new Cursor(route, oracle, fromIndex, toIndex, cache, wideAt, walks, claims, carryWater,
+                globalBaseQ8);
     }
 
     /**
@@ -170,7 +189,7 @@ public final class WallFinePlanner {
         Objects.requireNonNull(route, "route");
         Objects.requireNonNull(oracle, "oracle");
         Objects.requireNonNull(cache, "cache");
-        return new Cursor(route, oracle, fromIndex, toIndex, cache, wideAt, walks, claims, carryWater);
+        return new Cursor(route, oracle, fromIndex, toIndex, cache, wideAt, walks, claims, carryWater, 0L);
     }
 
     /**
@@ -237,6 +256,11 @@ public final class WallFinePlanner {
     public static List<FineColumn> finish(Cursor c) {
         if (!c.done()) throw new IllegalStateException("fine planner incomplete");
         return List.copyOf(c.results);
+    }
+
+    /** Stable sampler identity, independent of async callback order. */
+    public static long sampleOrder(RouteShape route, int fromIndex, int toIndex) {
+        return (((long) route.key().index()) << 40) ^ (((long) fromIndex) << 20) ^ (toIndex & 0xfffffL);
     }
 
     private static void step(Cursor c) {
@@ -328,7 +352,7 @@ public final class WallFinePlanner {
             // fills depend on the sampling rules while a probed column does not. Collected only when a
             // session cache can write it - an unread list would cost peak heap for nothing.
             if (c.cache.persistent()) {
-                c.probed.add(new FineColumn(walked.x(), walked.z(), walked.lateral(), sample));
+                c.probed.add(walked.resolve(sample));
             }
             return;
         }
@@ -345,7 +369,7 @@ public final class WallFinePlanner {
             if (cached != null) {
                 c.plan.record(next, cached);
                 if (c.cache.persistent()) {
-                    c.probed.add(new FineColumn(target.x(), target.z(), target.lateral(), cached));
+                    c.probed.add(target.resolve(cached));
                 }
                 return;
             }
@@ -364,7 +388,7 @@ public final class WallFinePlanner {
         int slot = c.emit++;
         c.rawEmissions++;
         var target = c.pending.get(slot);
-        var column = new FineColumn(target.x(), target.z(), target.lateral(), c.plan.column(slot));
+        var column = target.resolve(c.plan.column(slot));
         long columnKey = key(target.x(), target.z());
         Integer previous = c.emitted.get(columnKey);
         if (previous == null) {
@@ -415,7 +439,12 @@ public final class WallFinePlanner {
     /** A pending sample coordinate before the oracle resolves it.
      *  Package-private together with {@link #crossSection} so the redundant-section guard test can
      *  walk exactly the sections the planner walks. */
-    record Target(int x, int z, int lateral) {}
+    record Target(int x, int z, int lateral, long globalSQ8, int centreX, int centreZ) {
+        Target(int x, int z, int lateral) { this(x, z, lateral, Long.MIN_VALUE, x, z); }
+        FineColumn resolve(ColumnSample sample) {
+            return new FineColumn(x, z, lateral, sample, globalSQ8, centreX, centreZ);
+        }
+    }
 
     /** Emits the centre + lateral columns for route point {@code index}, deduplicated by (x,z).
      *  The lateral direction is the local frame of the wall: normal to the tangent, with lateral=0
@@ -465,19 +494,19 @@ public final class WallFinePlanner {
 
     private static List<Target> crossSection(double ux, double uz, int cx, int cz, int halfWidth,
                                              int gridStep) {
-        double nx = -uz, nz = ux; // unit normal: the unit tangent rotated 90°
-        var result = new ArrayList<Target>(2 * halfWidth + 1);
+        return crossSection(ux, uz, cx, cz, halfWidth, gridStep, Long.MIN_VALUE);
+    }
+
+    private static List<Target> crossSection(double ux, double uz, int cx, int cz, int halfWidth,
+                                              int gridStep, long globalS) {
+        var result = new ArrayList<Target>();
         var seen = new java.util.HashSet<Long>();
+        double nx = -uz, nz = ux;
         for (int lateral = -halfWidth; lateral <= halfWidth; lateral++) {
-            // The sampling grid keeps every gridStep-th lateral, including the centre line, which is
-            // the authoritative cross-section the foundation planner reads. The skipped laterals sit
-            // at most gridStep / 2 blocks from a kept one - three blocks at the maximum accepted grid
-            // step - so PlanningColumnProvider can always fill them from a real probe.
             if (gridStep > 1 && Math.floorMod(lateral, gridStep) != 0) continue;
-            int x = (int) Math.floor(cx + nx * lateral);
-            int z = (int) Math.floor(cz + nz * lateral);
+            int x = (int) Math.floor(cx + nx * lateral), z = (int) Math.floor(cz + nz * lateral);
             long key = ((long) x << 32) ^ (z & 0xffffffffL);
-            if (seen.add(key)) result.add(new Target(x, z, lateral));
+            if (seen.add(key)) result.add(new Target(x, z, lateral, globalS, cx, cz));
         }
         return result;
     }
@@ -485,6 +514,20 @@ public final class WallFinePlanner {
     /** A cross-section {@code alongBlocks} beyond the route end at {@code endIndex}, along the
      *  terminal chord, keeping that end's normal — the same centre/normal rule as the route itself,
      *  so the apron is a pure function of the route too. {@code forward} selects the tail end. */
+    private static List<Target> crossSectionIdentity(double ux, double uz, int cx, int cz, int halfWidth,
+                                                      int gridStep, long globalS) {
+        var result = new ArrayList<Target>();
+        var seen = new java.util.HashSet<Long>();
+        double nx = -uz, nz = ux;
+        for (int lateral = -halfWidth; lateral <= halfWidth; lateral++) {
+            if (gridStep > 1 && Math.floorMod(lateral, gridStep) != 0) continue;
+            int x = (int) Math.floor(cx + nx * lateral), z = (int) Math.floor(cz + nz * lateral);
+            long key = ((long) x << 32) ^ (z & 0xffffffffL);
+            if (seen.add(key)) result.add(new Target(x, z, lateral, globalS, cx, cz));
+        }
+        return result;
+    }
+
     private static List<Target> apron(List<Point2q> points, int endIndex, int alongBlocks, boolean forward,
                                       int gridStep) {
         var end = points.get(endIndex);
@@ -505,6 +548,7 @@ public final class WallFinePlanner {
 
     public static final class Cursor {
         private final RouteShape route;
+        private final long globalBaseQ8;
         private final NaturalTerrainOracle oracle;
         /** Point range this cursor covers: {@code [fromIndex, toIndex)} plus any end apron. */
         private final int fromIndex, toIndex;
@@ -582,8 +626,9 @@ public final class WallFinePlanner {
         private Cursor(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                        FineSampleCache cache, java.util.function.IntPredicate wideAt,
                        java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims,
-                       boolean carryWater) {
+                       boolean carryWater, long globalBaseQ8) {
             this.route = route;
+            this.globalBaseQ8 = globalBaseQ8;
             this.oracle = oracle;
             this.cache = cache;
             this.wideAt = wideAt;
@@ -610,11 +655,45 @@ public final class WallFinePlanner {
         /** The current cross-section: a route point, or the apron past one of the route's ends. */
         private List<Target> section() {
             var points = route.points();
-            if (index < 0) return apron(points, 0, -index, false, gridStep);
-            if (index >= points.size()) return apron(points, points.size() - 1, index - (points.size() - 1), true, gridStep);
+            if (index < 0) return identify(apron(points, 0, -index, false, gridStep),
+                    globalBaseQ8 + index * 256L, 0, 0);
+            if (index >= points.size()) return identify(
+                    apron(points, points.size() - 1, index - (points.size() - 1), true, gridStep),
+                    globalBaseQ8 + route.localSQ8().getLast()
+                            + (index - points.size() + 1L) * 256L, points.size() - 1,
+                    index - points.size() + 1);
             var centre = points.get(index);
-            return crossSection(points, index, FixedMath.floorBlock(centre.xQ8()),
-                    FixedMath.floorBlock(centre.zQ8()), halfWidth(), gridStep);
+            return identify(crossSection(points, index, FixedMath.floorBlock(centre.xQ8()),
+                    FixedMath.floorBlock(centre.zQ8()), halfWidth(), gridStep),
+                    globalBaseQ8 + route.localSQ8().get(index), index, 0);
+        }
+
+        private List<Target> identify(List<Target> source, long globalS, int centreIndex, int along) {
+            var anchor = source.get(Math.min(centreIndex, source.size() - 1));
+            int cx = anchor.x(), cz = anchor.z();
+            if (along != 0) {
+                long[] tangent;
+                if (source.size() > 1) {
+                    int a = Math.min(centreIndex, source.size() - 2);
+                    int b = Math.min(centreIndex + 1, source.size() - 1);
+                    tangent = new long[]{source.get(b).x() - source.get(a).x(),
+                            source.get(b).z() - source.get(a).z()};
+                } else {
+                    tangent = new long[]{1, 0};
+                }
+                double length = StrictMath.hypot(tangent[0], tangent[1]);
+                if (length > 0) {
+                    cx = (int) Math.floor(cx + tangent[0] * along / length);
+                    cz = (int) Math.floor(cz + tangent[1] * along / length);
+                }
+            }
+            final int centreX = cx, centreZ = cz;
+            return source.stream().map(t -> new Target(t.x(), t.z(), t.lateral(), globalS, centreX, centreZ)).toList();
+        }
+
+        private static List<Target> identify(List<Target> source, long globalS) {
+            return source.stream().map(t -> new Target(t.x(), t.z(), t.lateral(), globalS,
+                    t.centreX(), t.centreZ())).toList();
         }
 
         /**

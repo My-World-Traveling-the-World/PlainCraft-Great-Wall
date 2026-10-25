@@ -23,6 +23,29 @@ class WallDecayTest {
         assertTrue(walkable.stream().allMatch(v->v.pos().x()<0));
         assertFalse(c.requiredRoutes().isEmpty());
     }
+    @Test void explicitBaseOnlyFillsItsOwnColumnBetweenSurfaceAndBase() {
+        var base = TemplateFixtures.input(SiteKind.WALL,new Bounds(-32,-32,-5,32,3,5));
+        long center = base.site().globalSQ8();
+        var foundation = new local.plaincraft.greatwall.planning.WallFoundationPlanner.ColumnFoundation(
+                center, 0, 0, 80,
+                List.of(new local.plaincraft.greatwall.planning.WallFoundationPlanner.FillColumn(
+                        -5, 40, 0, -5, 80),
+                        new local.plaincraft.greatwall.planning.WallFoundationPlanner.FillColumn(
+                        5, 40, 0, 5, 80)));
+        var input = new ComponentInput(base.site(), base.stations(), base.supports(), base.decay(),
+                base.family(), false, List.of(), List.of(),
+                local.plaincraft.greatwall.component.GroundEntranceContract.Evidence.analytic(base.supports()),
+                java.util.Map.of(5L, 40), List.of(foundation));
+        var c = new WallSection(new DecayField(0),TemplateFixtures.PALETTE).compileIntervals(input,
+                List.of(new ArcInterval(center-32L*256, center+32L*256)));
+        assertTrue(c.voxels().stream().anyMatch(v -> v.pos().y() == 40 && v.pos().z() == 5),
+                "low column starts at its own surface, not a window-wide min");
+        assertTrue(c.voxels().stream().anyMatch(v -> v.pos().y() == 79 && v.pos().z() == 5),
+                "fill stops below baseY");
+        assertFalse(c.voxels().stream().anyMatch(v -> v.pos().y() == 80 && v.pos().z() == 5),
+                "fill must not write at or above baseY");
+    }
+
     @Test void finalPartialCellDoesNotDemandNonexistentFutureStations() {
         var input=TemplateFixtures.input(SiteKind.WALL,new Bounds(-32,-32,-5,32,3,5));
         long end=input.site().globalSQ8()+12*256;

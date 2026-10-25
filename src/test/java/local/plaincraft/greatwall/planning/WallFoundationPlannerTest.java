@@ -50,6 +50,42 @@ class WallFoundationPlannerTest {
         assertEquals(80, plan.get(0).baseY());
     }
 
+    @Test void productionIdentityKeepsCentreSectionsSeparateAndCarriesBaseOnEveryFill() {
+        var samples = List.of(
+                new WallFinePlanner.FineColumn(1000, 0, 0, sample(90), 5000, 1000, 0),
+                new WallFinePlanner.FineColumn(1000, -5, -5, sample(60), 5000, 1000, 0),
+                new WallFinePlanner.FineColumn(1000, 5, 5, sample(85), 5000, 1000, 0),
+                new WallFinePlanner.FineColumn(1001, 0, 0, sample(88), 5256, 1001, 0),
+                new WallFinePlanner.FineColumn(1001, -5, -5, sample(70), 5256, 1001, 0),
+                new WallFinePlanner.FineColumn(1001, 5, 5, sample(86), 5256, 1001, 0));
+        var plan = WallFoundationPlanner.plan(samples);
+        assertEquals(2, plan.size());
+        assertEquals(5000, plan.get(0).globalSQ8());
+        assertEquals(5256, plan.get(1).globalSQ8());
+        assertEquals(90, plan.get(0).baseY());
+        assertEquals(60, plan.get(0).fills().getFirst().surfaceY());
+        assertEquals(90, plan.get(0).fills().getFirst().baseY());
+        assertEquals(88, plan.get(1).baseY());
+    }
+
+    @Test void negativeSideIsNotLostAndOutOfOrderInputDoesNotMergeSections() {
+        var a = new WallFinePlanner.FineColumn(1000, -5, -5, sample(60), 5000, 1000, 0);
+        var b = new WallFinePlanner.FineColumn(1000, 0, 0, sample(90), 5000, 1000, 0);
+        var c = new WallFinePlanner.FineColumn(1000, 5, 5, sample(85), 5000, 1000, 0);
+        var d = new WallFinePlanner.FineColumn(1001, -5, -5, sample(70), 5256, 1001, 0);
+        var e = new WallFinePlanner.FineColumn(1001, 0, 0, sample(88), 5256, 1001, 0);
+        var f = new WallFinePlanner.FineColumn(1001, 5, 5, sample(86), 5256, 1001, 0);
+        var plan = WallFoundationPlanner.plan(List.of(c, a, e, b, f, d));
+        assertEquals(2, plan.size());
+        assertEquals(2, plan.get(0).fills().size(), "both negative and positive lower columns kept");
+        assertEquals(2, plan.get(1).fills().size());
+    }
+
+    private static ColumnSample sample(int ground) {
+        return new ColumnSample(ground, OptionalInt.empty(), OptionalInt.empty(),
+                "minecraft:plains", Quality.REFERENCE, false);
+    }
+
     @Test void multipleCentresKeepOrderAndBase() {
         var samples = List.of(
                 col(1000, 0, 0, 90), col(1000, -5, -5, 60), col(1000, 5, 5, 85),

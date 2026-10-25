@@ -21,20 +21,20 @@ public final class WallSection implements ComponentTemplate {
 
     @Override public Bounds localBounds(ComponentInput input) {
         Objects.requireNonNull(input);
-        return new Bounds(-32,minGroundDelta(input),-5,32,3,5);
+        return new Bounds(-32,-32,-5,32,3,5);
     }
 
-    /** Lowest ground below the walkway; -32 is the historical minimum foundation depth. */
-    private static int minGroundDelta(ComponentInput input) {
-        int walkY = input.site().frame().walkY();
-        int min = -32;
-        for (var sample : input.supports().values()) {
-            min = Math.min(min, sample.groundTopY() - walkY - 1);
+    /** The explicit fill contract, not a window-wide lowest-value bound. */
+    private static int foundationFloor(ComponentInput input, List<Station> stations,
+                                       long from, long to) {
+        int floor = Integer.MAX_VALUE;
+        for (var core : input.foundations()) {
+            if (core.globalSQ8() < from || core.globalSQ8() >= to) continue;
+            for (var fill : core.fills()) {
+                floor = Math.min(floor, fill.surfaceY() - height(stations, core.globalSQ8()) - 1);
+            }
         }
-        for (int surfaceY : input.foundationFloor().values()) {
-            min = Math.min(min, surfaceY - walkY - 1);
-        }
-        return min;
+        return floor == Integer.MAX_VALUE ? -32 : Math.min(-32, floor);
     }
 
     @Override public ComponentVoxels compile(ComponentInput input) {
@@ -88,6 +88,21 @@ public final class WallSection implements ComponentTemplate {
             var column=column(stations,x,z,center,from,to,input.site().frame().mirror());
             return column!=null&&intervals.stream().anyMatch(i->column.globalS()>=i.fromQ8()&&column.globalS()<i.toQ8())?column:null;
         },p -> {
+            // Explicit foundation contract: base is the highest sampled surface of this section.
+            // Every lower column is filled from its own natural surface to that base, never to a
+            // different station's floor. This is independent of the fixed -16 wall body above it.
+            for (var core : input.foundations()) {
+                if (core.globalSQ8() != center + (long) p.x() * 256L) continue;
+                for (var fill : core.fills()) {
+                    if (fill.lateral() != p.z()) continue;
+                    int localY = p.y();
+                    int columnWalkY = height(stations, core.globalSQ8());
+                    if (localY < fill.baseY() - columnWalkY
+                            && localY >= fill.surfaceY() - columnWalkY) {
+                        return cell(Part.FOUNDATION,true,false,Map.of());
+                    }
+                }
+            }
             if (!ComponentAssembly.contains(localBounds(input),p)) return null;
             int y = p.y(), z = p.z();
             long globalS = center + (long) p.x()*256;
@@ -160,7 +175,7 @@ public final class WallSection implements ComponentTemplate {
     private static Bounds curveBounds(ComponentInput input, List<Station> stations, long from, long to) {
         int x0 = Integer.MAX_VALUE, z0 = Integer.MAX_VALUE, x1 = Integer.MIN_VALUE, z1 = Integer.MIN_VALUE;
         int y0 = Integer.MAX_VALUE, y1 = Integer.MIN_VALUE;
-        int foundationFloor = minGroundDelta(input);
+        int foundationFloor = foundationFloor(input, stations, from, to);
         for (int i = 1; i < stations.size(); i++) {
             Station a = stations.get(i-1), b = stations.get(i);
             if (b.globalSQ8() < from || a.globalSQ8() > to) continue;

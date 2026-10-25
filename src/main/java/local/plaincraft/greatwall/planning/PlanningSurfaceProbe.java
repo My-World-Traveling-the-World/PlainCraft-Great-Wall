@@ -33,10 +33,9 @@ public final class PlanningSurfaceProbe {
     public static ProbeResult probe(ColumnSample sample, int walkY, int baseY,
             boolean protectedAtColumn, DimensionBounds bounds) {
         int ground = sample.groundTopY();
-        // A column that reads at bedrock level was never really sampled: the measured
-        // session had a station accept groundTopY=-61 under a sparse jungle whose real
-        // surface was y=121, and the wall then started at y=-44. Ocean floor never reaches
-        // this low, so the band is a sentinel, not a cutoff.
+        // This is an invalid-sample sentinel, not a foundation depth limit. Deep terrain must be
+        // distinguishable from the former "below bedrock" sampling failure; otherwise every deep
+        // valley becomes NO_SUPPORT before the foundation plan can fill it.
         if (ground <= bounds.minY() + 8) {
             return new ProbeResult(ProbeKind.NO_SUPPORT, ground, OptionalInt.empty(), OptionalInt.empty(),
                     Math.max(0, baseY - ground), "bedrock-sentinel:" + ground, OptionalInt.empty());

@@ -18,17 +18,19 @@ public final class RealizationPlanner {
     private long capsDegraded;
     public record Input(CellKey key,PlanWindow plans,Map<TerrainTile.Key,TerrainTile> tiles,
             Map<Point3i,SurfaceProbe.ColumnView> columns,List<Bounds> protectedBounds,Map<GateId,Integer> frozenGateY,
-            long gateRevision,String protectionHash,Map<Long,Integer> foundationFloor) {
+            long gateRevision,String protectionHash,Map<Long,Integer> foundationFloor,
+            List<local.plaincraft.greatwall.planning.WallFoundationPlanner.ColumnFoundation> foundations) {
         /** Compatibility for analytic/tests without a foundation decision. */
         public Input(CellKey key,PlanWindow plans,Map<TerrainTile.Key,TerrainTile> tiles,
                 Map<Point3i,SurfaceProbe.ColumnView> columns,List<Bounds> protectedBounds,Map<GateId,Integer> frozenGateY,
                 long gateRevision,String protectionHash) {
-            this(key,plans,tiles,columns,protectedBounds,frozenGateY,gateRevision,protectionHash,Map.of());
+            this(key,plans,tiles,columns,protectedBounds,frozenGateY,gateRevision,protectionHash,Map.of(),List.of());
         }
         public Input {
             Objects.requireNonNull(key);Objects.requireNonNull(plans);
             tiles=Map.copyOf(tiles);protectedBounds=List.copyOf(protectedBounds);frozenGateY=Map.copyOf(frozenGateY);
             foundationFloor=Map.copyOf(foundationFloor);
+            foundations=List.copyOf(foundations);
             // A read-only view of the column map, not a second copy. It holds one entry per sampled column
             // (about 27k on a real cell) and the provider already hands out an unmodifiable view, so
             // Map.copyOf here was a duplicate quadratic table build per owner - the same
@@ -394,7 +396,9 @@ public final class RealizationPlanner {
             // emptiness test, which is why 2176 of 2188 owners died and the wall published nothing - the
             // halo was never the problem, the empty list was.
             var candidate=new ComponentInput(site,stations,supported,field.sample(site.globalSQ8(),PaletteFamily.STONE,maintained),
-                    PaletteFamily.STONE,false,List.of(),wallMaterials(input,stations),input.foundationFloor());
+                    PaletteFamily.STONE,false,List.of(),wallMaterials(input,stations),
+                    local.plaincraft.greatwall.component.GroundEntranceContract.Evidence.analytic(supported),
+                    input.foundationFloor(),input.foundations());
             var template=templates.get(SiteKind.WALL);
             if(!(template instanceof WallSection section))throw new IllegalArgumentException("WALL template must support build intervals");
             var walkExcluded=new ArrayList<>(excluded);walkMerged.forEach(b->walkExcluded.add(b.range()));
@@ -649,7 +653,7 @@ public final class RealizationPlanner {
                 recipe==null?GroundEntranceContract.Source.ANALYTIC_FIXTURE:GroundEntranceContract.Source.DURABLE_T0,
                 bounds,input.columns());
         var candidate=new ComponentInput(site,stations,supports,decay,PaletteFamily.STONE,false,waters,materials,evidence,
-                input.foundationFloor());
+                input.foundationFloor(),input.foundations());
         if(Boolean.getBoolean("greatwall.s1c.protectionTrace")&&site.id().kind()==SiteKind.FORT&&site.id().ordinal()==0){
             var certificate=GroundEntranceContract.inspect(site.frame(),GroundEntranceContract.Corridor.fort(),supports,evidence);
             local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
