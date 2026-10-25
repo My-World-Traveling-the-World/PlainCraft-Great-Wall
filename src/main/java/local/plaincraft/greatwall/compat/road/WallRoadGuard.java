@@ -45,6 +45,11 @@ public final class WallRoadGuard {
         RECTS.clear();
     }
 
+    /** Read-only copy of the published footprints, used by the showcase completion marker. */
+    public static java.util.List<int[]> rectangles() {
+        return RECTS.stream().map(int[]::clone).toList();
+    }
+
     private static boolean inRect(int x, int z) {
         return inRect(x, z, MARGIN);
     }

@@ -125,9 +125,10 @@ public final class WallBodyBackfill {
                     int z = Integer.parseInt(name.substring(split + 1));
                     ChunkKey key = new ChunkKey(level.dimension().location().toString(), x, z);
                     if (state.settled.contains(key)) continue;
-                    // DONE is a final seal: a chunk that was written successfully is never
-                    // re-verified or repainted. Player edits after completion are authoritative.
-                    if (DONE.contains(x + "_" + z)) { state.settled.add(key); continue; }
+                    // DONE is only a hint that the chunk may have been written. The persistent
+                    // PRODUCTION marker is the seal; a crash between ledger append and region save
+                    // must still be allowed to finish the missing blocks on next load.
+                    if (DONE.contains(x + "_" + z)) { state.doneHint.add(key); continue; }
                     if (state.pending.add(key)) added++;
                 } catch (NumberFormatException notAChunkDirectory) {
                     // FILES/ and the world hash directory are not chunk directories.
@@ -441,10 +442,9 @@ public final class WallBodyBackfill {
         int proven = 0;
         for (ChunkKey key : keys) {
             if (key == null || state.settled.contains(key)) continue;
-            // DONE is final. The old "one free pass" verification is gone: it was the path that
-            // refilled player-mined wall blocks on every re-entry.
+            // DONE is a hint; the chunk's persistent PRODUCTION marker decides whether it is sealed.
             if (DONE.contains(key.x() + "_" + key.z())) {
-                if (state.settled.add(key)) proven++;
+                if (state.doneHint.add(key)) proven++;
                 continue;
             }
             if (state.pending.add(key)) added++;
@@ -488,6 +488,17 @@ public final class WallBodyBackfill {
         if (level == null || key == null) return;
         State state = state(level);
         if (state.settled.contains(key) || state.settling.contains(key)) return;
+        if (state.doneHint.remove(key)) {
+            LevelChunk hinted = level.getChunkSource().getChunkNow(key.x(), key.z());
+            if (hinted != null) {
+                var marker = hinted.getAttached(TerrainMarkers.PRODUCTION);
+                if (marker != null && marker.complete()) {
+                    state.settled.add(key);
+                    return;
+                }
+            }
+            state.pending.add(key);
+        }
         if (WallWorldgenPlanCache.get(level, key) != null) {
             state.pending.add(key);
             return;
@@ -658,6 +669,7 @@ public final class WallBodyBackfill {
         if (state == null) return 0;
         java.util.Set<ChunkKey> keys = new java.util.LinkedHashSet<>(state.pending);
         keys.addAll(state.settled);
+        keys.addAll(state.doneHint);
         // DONE chunks live in verify, not in pending. Omitting them meant a reloaded save could
         // report missed=0 while every already-built chunk was invisible to the road guard.
         int columns = 0;
@@ -785,26 +797,16 @@ public final class WallBodyBackfill {
             BlockState current = chunk.getBlockState(pos);
             if (current == target) continue;
             if (!replaceable(current)) continue;
-            // The compile recorded what it saw here. If it was not air and the world has since
-            // changed - a player placing a block, water flowing in - the plan's authority ends:
-            // overwriting it would erase something the wall never owned.
+            // The compile recorded the exact state it saw. Comparing only the block id was not
+            // enough: a player could place the same block with different properties, or place a
+            // block where the compiler saw air and have it overwritten anyway.
             String before = beforeStates.get(p);
-            // The recorded before-state comes from the sampled column (PlanningChunkCompiler), not from
-            // this chunk: they agree only where nothing has touched the terrain since. When the world is
-            // air here there is no player work to protect and the plan's own wall belongs in that space,
-            // so the comparison is skipped; a solid block that differs is still left alone.
-            if (before != null && !before.startsWith("minecraft:air") && !current.isAir()) {
-                // before is the compile-time token ("minecraft:stone{}:fluid=minecraft:empty:be=false").
-                // If the world still holds exactly that block, the plan owns this position and may
-                // write. If it does not - a player placed something, water flowed in - the plan's
-                // authority ends here.
-                String beforeId = before.substring(0, before.indexOf('{'));
-                String currentId = net.minecraft.core.registries.BuiltInRegistries.BLOCK
-                        .getKey(current.getBlock()).toString();
-                if (!beforeId.equals(currentId)) {
+            if (before != null) {
+                String currentToken = BlockCatalog.token(current, current.hasBlockEntity());
+                if (!before.equals(currentToken)) {
                     if (beforeConflicts++ % 512 == 1) {
                         GreatWallMod.LOGGER.warn("[GreatWall:S1C] BACKFILL_CONFLICT pos={} before={} current={}",
-                                p, beforeId, current.getBlock());
+                                p, before, currentToken);
                     }
                     continue;
                 }
@@ -880,6 +882,8 @@ public final class WallBodyBackfill {
 
     private static final class State {
         final Set<ChunkKey> pending = ConcurrentHashMap.newKeySet();
+        /** DONE ledger entries waiting for their chunk's persistent PRODUCTION marker check. */
+        final Set<ChunkKey> doneHint = ConcurrentHashMap.newKeySet();
         final Set<ChunkKey> settled = ConcurrentHashMap.newKeySet();
         final Set<ChunkKey> settling = ConcurrentHashMap.newKeySet();
         final Map<ChunkKey, Integer> attempts = new ConcurrentHashMap<>();
