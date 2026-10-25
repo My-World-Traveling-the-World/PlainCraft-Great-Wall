@@ -123,8 +123,9 @@ public final class GateStamp {
             }
             int bottom = columnBottom[fillX * DEPTH + fillZ];
             // Doorway columns have their lowest block at the lintel, not at the template's
-            // bottom layer; only actual bottom-layer columns get a foundation.
-            if (bottom == bottomLayerY) {
+            // bottom layer; the explicit band also protects a threshold that sits on that layer.
+            boolean doorway = fillX >= 68 && fillX <= 76;
+            if (bottom == bottomLayerY && !doorway) {
                 int x = originX + fillX;
                 int z = originZ + fillZ;
                 LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);

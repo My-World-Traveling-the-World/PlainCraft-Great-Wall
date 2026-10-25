@@ -64,8 +64,9 @@ public final class ShowcaseStamp {
         this.clipMinX = clipMinX;
         this.clipMaxX = clipMaxX;
         this.wallPhaseOffset = wallPhaseOffset;
-        this.noFillMinX = noFillMinX;
-        this.noFillMaxX = noFillMaxX;
+        // Store the aperture in clipped-local x, the same coordinate used by fillU.
+        this.noFillMinX = noFillMinX - clipMinX;
+        this.noFillMaxX = noFillMaxX - clipMinX;
         this.originX = atX - centreX;
         this.originZ = atZ - centreZ;
     }
@@ -208,8 +209,10 @@ public final class ShowcaseStamp {
             }
             int bottom = columnBottom[fillU * depth + fillV];
             // Only columns that touch the template's global bottom layer are foundation
-            // columns. A doorway column whose lowest block is the lintel is not one.
-            boolean foundationColumn = bottom == bottomLayerY;
+            // columns. The explicit aperture is a second guard for templates whose door
+            // threshold happens to sit on that same bottom layer.
+            boolean aperture = fillU >= noFillMinX && fillU <= noFillMaxX;
+            boolean foundationColumn = bottom == bottomLayerY && !aperture;
             if (foundationColumn) {
                 int x = originX + fillU;
                 int z = originZ + fillV;
@@ -239,6 +242,7 @@ public final class ShowcaseStamp {
         states = new ArrayList<>();
         columnBottom = new int[width * depth];
         groundSurface = null;
+        bottomLayerY = Integer.MAX_VALUE;
         Arrays.fill(columnBottom, -1);
         try (InputStream in = ShowcaseStamp.class.getResourceAsStream(resource)) {
             if (in == null) return;
