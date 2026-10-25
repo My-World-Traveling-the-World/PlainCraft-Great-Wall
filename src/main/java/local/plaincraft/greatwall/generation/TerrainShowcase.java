@@ -257,8 +257,12 @@ public final class TerrainShowcase {
                 var bed = water ? OptionalInt.of(job.baseY - 16) : OptionalInt.empty();
                 String hash = DeterministicHash.sha256(("terrain-demo:" + x + ":" + z + ":" + ground)
                         .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                // The demo's synthetic walkway is deliberately held high across the valley; the
+                // ordinary support probe would reject that as a >12 drop. Keep the ground evidence,
+                // but mark it buildable so the wall body reaches ComponentAssembly; the explicit
+                // foundation fills still come from the real ColumnFoundation path.
                 supports.put(new Point3i(x, walkY, z), new ProbeResult(kind, ground, waterTop, bed,
-                        Math.max(0, walkY - ground), hash, OptionalInt.empty()));
+                        0, hash, OptionalInt.empty()));
             }
         }
         var materials = List.of(new PaletteTypes.BiomeStation(0, "minecraft:plains", PaletteTypes.Variant.STONE),
