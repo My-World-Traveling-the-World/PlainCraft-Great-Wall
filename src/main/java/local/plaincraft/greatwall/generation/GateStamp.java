@@ -36,6 +36,8 @@ public final class GateStamp {
     private static List<BlockState> states;
     /** Lowest model layer per column, indexed [x * DEPTH + z]; -1 where the column is empty. */
     private static int[] columnBottom;
+    /** Global lowest template layer; only columns touching it receive foundation fill. */
+    private static int bottomLayerY = Integer.MAX_VALUE;
     /** Natural WORLD_SURFACE sampled before the model is written, one value per footprint column. */
     private static int[] groundSurface;
     private static boolean loaded;
@@ -83,6 +85,7 @@ public final class GateStamp {
         coords = null;
         states = null;
         columnBottom = null;
+        bottomLayerY = Integer.MAX_VALUE;
         groundSurface = null;
     }
 
@@ -119,7 +122,9 @@ public final class GateStamp {
                 return;
             }
             int bottom = columnBottom[fillX * DEPTH + fillZ];
-            if (bottom >= 0) {
+            // Doorway columns have their lowest block at the lintel, not at the template's
+            // bottom layer; only actual bottom-layer columns get a foundation.
+            if (bottom == bottomLayerY) {
                 int x = originX + fillX;
                 int z = originZ + fillZ;
                 LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
@@ -194,6 +199,7 @@ public final class GateStamp {
                     int i = dx * DEPTH + dz;
                     int current = columnBottom[i];
                     if (current < 0 || dy < current) columnBottom[i] = dy;
+                    if (dy < bottomLayerY) bottomLayerY = dy;
                 }
             }
         } catch (Exception broken) {

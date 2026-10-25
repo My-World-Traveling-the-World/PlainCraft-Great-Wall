@@ -37,6 +37,8 @@ public final class ShowcaseStamp {
     private List<int[]> coords;
     private List<BlockState> states;
     private int[] columnBottom;
+    /** Global lowest template layer; only columns touching it receive foundation fill. */
+    private int bottomLayerY = Integer.MAX_VALUE;
     private boolean loaded;
     private boolean settled;
     private boolean filling;
@@ -98,6 +100,15 @@ public final class ShowcaseStamp {
     public static void startGate(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
                                  int heightOffset, int noFillMinX, int noFillMaxX) {
         start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, false, 0, w - 1, 0,
+                noFillMinX, noFillMaxX);
+    }
+
+    /** Gatehouse-only gate: the template file stays whole, but its old wall wings are not shown. */
+    public static void startGateClipped(String csvName, int w, int h, int d, int cx, int cz,
+                                        int atX, int atZ, int heightOffset,
+                                        int clipMinX, int clipMaxX,
+                                        int noFillMinX, int noFillMaxX) {
+        start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, false, clipMinX, clipMaxX, 0,
                 noFillMinX, noFillMaxX);
     }
 
@@ -193,10 +204,10 @@ public final class ShowcaseStamp {
                 return;
             }
             int bottom = columnBottom[fillU * depth + fillV];
-            // A gate passage is an authored opening, not a missing foundation column. Filling
-            // from its lintel down to the ground is exactly what buried the doorway.
-            boolean aperture = fillU >= noFillMinX && fillU <= noFillMaxX;
-            if (!aperture && bottom >= 0) {
+            // Only columns that touch the template's global bottom layer are foundation
+            // columns. A doorway column whose lowest block is the lintel is not one.
+            boolean foundationColumn = bottom == bottomLayerY;
+            if (foundationColumn) {
                 int x = originX + fillU;
                 int z = originZ + fillV;
                 LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
@@ -247,6 +258,7 @@ public final class ShowcaseStamp {
                 if (dx >= 0 && dx < width && dz >= 0 && dz < depth) {
                     int i = dx * depth + dz;
                     if (columnBottom[i] < 0 || dy < columnBottom[i]) columnBottom[i] = dy;
+                    if (dy < bottomLayerY) bottomLayerY = dy;
                 }
             }
         } catch (Exception broken) {

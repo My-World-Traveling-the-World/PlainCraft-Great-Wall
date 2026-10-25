@@ -374,13 +374,10 @@ public final class WorldServices {
         // Gate and wall are separate pieces: keep the whole 145-wide gate template and attach one
         // current 48-block wall_module to each open end. The end faces were verified block-for-block
         // to match when the wall uses the gate's highest-ground base (heightOffset 0).
-        local.plaincraft.greatwall.generation.ShowcaseStamp.startGate(
-                "gate.csv", 145, 44, 32, 72, 19, joinedX, joinedZ, -2, 68, 76);
-        // Gate ends are both 缺. The wall top sits one block below the gate's own height base.
-        local.plaincraft.greatwall.generation.ShowcaseStamp.startWall(
-                "wall_module.csv", 48, 18, 11, 24, 5, joinedX - 96, joinedZ, -1, 0);
-        local.plaincraft.greatwall.generation.ShowcaseStamp.startWall(
-                "wall_module.csv", 48, 18, 11, 24, 5, joinedX + 97, joinedZ, -1, 3);
+        // Straight display uses the same wall_module path generator as the curved display,
+        // only with bend=false. The gatehouse is stamped by that generator as well.
+        local.plaincraft.greatwall.generation.DiagonalWallShowcase.start(
+                level, joinedX, joinedZ, false);
         GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_JOINED gate={} leftWall={} rightWall={} phases=47/3",
                 joinedX, joinedX - 96, joinedX + 97);
         // 斜向走势演示区：门楼保持正东西/正南北，墙先正接再分两段过渡到 45°。

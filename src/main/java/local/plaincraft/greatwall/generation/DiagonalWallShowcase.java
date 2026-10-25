@@ -25,7 +25,7 @@ public final class DiagonalWallShowcase {
     private static final int TRANSITION = 8;
     private static final int STEPS = STRAIGHT + 2 * TRANSITION + 24;
 
-    private static Job job;
+    private static final List<Job> JOBS = new ArrayList<>();
 
     private DiagonalWallShowcase() {
     }
@@ -37,6 +37,8 @@ public final class DiagonalWallShowcase {
         final ServerLevel level;
         final int centreX, centreZ;
         final List<Row> rows;
+        final boolean bend;
+        final int steps;
         final List<int[]> blocks = new ArrayList<>();
         final List<BlockState> states = new ArrayList<>();
         int minX, minZ, maxX, maxZ;
@@ -46,65 +48,81 @@ public final class DiagonalWallShowcase {
         boolean loaded;
         boolean finished;
 
-        Job(ServerLevel level, int centreX, int centreZ, List<Row> rows) {
+        Job(ServerLevel level, int centreX, int centreZ, List<Row> rows, boolean bend) {
             this.level = level;
             this.centreX = centreX;
             this.centreZ = centreZ;
             this.rows = rows;
+            this.bend = bend;
+            this.steps = bend ? STEPS : 48;
         }
     }
 
     public static void start(ServerLevel level, int centreX, int centreZ) {
-        if (level == null || job != null) return;
+        start(level, centreX, centreZ, true);
+    }
+
+    public static void start(ServerLevel level, int centreX, int centreZ, boolean bend) {
+        if (level == null) return;
         List<Row> rows = load();
         if (rows.isEmpty()) {
             GreatWallMod.LOGGER.warn("[GreatWall:wonder] DIAGONAL_WALL_EMPTY");
             return;
         }
-        job = new Job(level, centreX, centreZ, rows);
-        // Gate stays upright and whole. Wall attach point is the gate's +x end.
-        ShowcaseStamp.startGate("gate.csv", 145, 44, 32, 72, 19, centreX, centreZ, -2, 68, 76);
-        ShowcaseLayout.add("diagonal-wall", centreX - 210, centreZ - 16, centreX + 210, centreZ + 110);
+        Job added = new Job(level, centreX, centreZ, rows, bend);
+        JOBS.add(added);
+        // Gate stays upright and whole; only the wall route bends or stays straight.
+        ShowcaseStamp.startGateClipped("gate.csv", 145, 44, 32, 72, 19, centreX, centreZ, -2,
+                25, 119, 68, 76);
+        ShowcaseLayout.add(bend ? "diagonal-wall" : "straight-wall",
+                centreX - 210, centreZ - 16, centreX + 210, centreZ + 110);
         ShowcaseGate.expect();
-        GreatWallMod.LOGGER.info("[GreatWall:wonder] DIAGONAL_WALL_START gate=({},{}) straight={} transitions={} steps={}",
-                centreX, centreZ, STRAIGHT, TRANSITION, STEPS);
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] WALL_PATH_START gate=({},{}) bend={} steps={}",
+                centreX, centreZ, bend, added.steps);
     }
 
     public static void tick(ServerLevel level) {
-        Job current = job;
-        if (current == null || current.level != level || current.finished) return;
-        if (!current.loaded) {
-            buildBlocks(current);
-            current.loaded = true;
-            if (current.blocks.isEmpty()) {
-                finish(current, "empty");
-                return;
+        for (int i = JOBS.size() - 1; i >= 0; i--) {
+            Job current = JOBS.get(i);
+            if (current.level != level || current.finished) {
+                if (current.finished) JOBS.remove(i);
+                continue;
             }
-        }
-        if (current.ticket == null) {
-            current.ticket = ChunkHold.hold(level, current.minX, current.minZ, current.maxX, current.maxZ);
-        }
-        if (!chunksReady(level, current)) return;
-        if (current.baseY == 0) {
-            current.baseY = level.getHeight(Heightmap.Types.WORLD_SURFACE,
-                    current.centreX + 73, current.centreZ);
-        }
-        int budget = 4000;
-        while (current.cursor < current.blocks.size() && budget-- > 0) {
-            int[] p = current.blocks.get(current.cursor);
-            int y = current.baseY - 1 + p[1];
-            level.setBlock(new BlockPos(p[0], y, p[2]), current.states.get(current.cursor), 2);
-            WallRoadGuard.markColumn(p[0], p[2]);
-            current.cursor++;
-        }
-        if (current.cursor >= current.blocks.size()) {
-            finish(current, "stamped");
+            if (!current.loaded) {
+                buildBlocks(current);
+                current.loaded = true;
+                if (current.blocks.isEmpty()) {
+                    finish(current, "empty");
+                    continue;
+                }
+            }
+            if (current.ticket == null) {
+                current.ticket = ChunkHold.hold(level, current.minX, current.minZ, current.maxX, current.maxZ);
+            }
+            if (!chunksReady(level, current)) continue;
+            if (current.baseY == 0) {
+                current.baseY = level.getHeight(Heightmap.Types.WORLD_SURFACE,
+                        current.centreX + 48, current.centreZ);
+            }
+            int budget = 4000;
+            while (current.cursor < current.blocks.size() && budget-- > 0) {
+                int[] p = current.blocks.get(current.cursor);
+                int y = current.baseY - 1 + p[1];
+                level.setBlock(new BlockPos(p[0], y, p[2]), current.states.get(current.cursor), 2);
+                WallRoadGuard.markColumn(p[0], p[2]);
+                current.cursor++;
+            }
+            if (current.cursor >= current.blocks.size()) {
+                finish(current, "stamped");
+            }
         }
     }
 
     public static void reset(ServerLevel level) {
-        if (job != null && job.ticket != null) ChunkHold.release(level, job.ticket);
-        job = null;
+        for (Job job : JOBS) {
+            if (job.ticket != null) ChunkHold.release(level, job.ticket);
+        }
+        JOBS.clear();
     }
 
     private static void finish(Job job, String reason) {
@@ -112,8 +130,8 @@ public final class DiagonalWallShowcase {
         if (job.ticket != null) ChunkHold.release(job.level, job.ticket);
         job.ticket = null;
         ShowcaseGate.done();
-        GreatWallMod.LOGGER.info("[GreatWall:wonder] DIAGONAL_WALL_DONE reason={} blocks={} baseY={}",
-                reason, job.blocks.size(), job.baseY);
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] WALL_PATH_DONE bend={} reason={} blocks={} baseY={}",
+                job.bend, reason, job.blocks.size(), job.baseY);
     }
 
     private static boolean chunksReady(ServerLevel level, Job job) {
@@ -126,14 +144,16 @@ public final class DiagonalWallShowcase {
     }
 
     private static void buildBlocks(Job job) {
-        double x = job.centreX + 73.0D;
+        double x = job.centreX + 48.0D;
         double z = job.centreZ;
         double nx = 0.0D, nz = 1.0D;
         int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
-        for (int step = 0; step < STEPS; step++) {
+        for (int step = 0; step < job.steps; step++) {
             double angle;
-            if (step < STRAIGHT) {
+            if (!job.bend) {
+                angle = 0.0D;
+            } else if (step < STRAIGHT) {
                 angle = 0.0D;
             } else if (step < STRAIGHT + TRANSITION) {
                 angle = Math.toRadians(15.0D);
