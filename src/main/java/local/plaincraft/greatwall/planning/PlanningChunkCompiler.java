@@ -40,7 +40,7 @@ public final class PlanningChunkCompiler {
         // Production wiring for the per-column foundation decision. The WallSection consumes the
         // same support samples when it expands its foundation floor; this call keeps the planner's
         // base/fill contract exercised on every compile window and makes omissions visible.
-        var foundations = WallFoundationPlanner.plan(List.copyOf(index.columns()));
+        var foundations = WallFoundationPlanner.plan(index.orderedColumns());
         var floor = new HashMap<Long, Integer>();
         for (var core : foundations) {
             for (var fill : core.fills()) {
