@@ -67,6 +67,7 @@ public final class ShowcaseStamp {
                              int heightOffset, boolean wallModule) {
         ALL.add(new ShowcaseStamp(csvName, w, d, cx, cz, atX, atZ, heightOffset, wallModule));
         local.plaincraft.greatwall.generation.ShowcaseGate.expect();
+        ShowcaseLayout.add(csvName, atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
         local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(atX - cx, atZ - cz, atX - cx + w - 1, atZ - cz + d - 1);
     }
 

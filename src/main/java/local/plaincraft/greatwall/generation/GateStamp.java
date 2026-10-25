@@ -56,6 +56,7 @@ public final class GateStamp {
         originX = centreX - CENTRE_X;
         originZ = centreZ - CENTRE_Z;
         local.plaincraft.greatwall.generation.ShowcaseGate.expect();
+        ShowcaseLayout.add("gate", originX, originZ, originX + WIDTH - 1, originZ + DEPTH - 1);
         local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(originX, originZ, originX + WIDTH - 1, originZ + DEPTH - 1);
         originY = 0;
         autoGround = true;

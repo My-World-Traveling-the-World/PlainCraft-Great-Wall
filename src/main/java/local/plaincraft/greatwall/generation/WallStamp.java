@@ -44,6 +44,7 @@ public final class WallStamp {
         ticket = null;
         load();
         local.plaincraft.greatwall.generation.ShowcaseGate.expect();
+        ShowcaseLayout.add("wall", originX, originZ, originX + 47, originZ + 10);
         local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(originX, originZ,
                 originX + 47, originZ + WallProfile.DEPTH - 1);
     }

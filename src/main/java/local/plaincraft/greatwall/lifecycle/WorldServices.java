@@ -361,6 +361,7 @@ public final class WorldServices {
 
     private static void startFlatShowcase(ServerLevel level, net.minecraft.core.BlockPos spawn) {
         // 展台模式：墙、城门、敌台各占一个独立位置，互不相连，便于逐个验收与手工精修。
+        local.plaincraft.greatwall.generation.ShowcaseLayout.reset();
         local.plaincraft.greatwall.generation.GateStamp.start(spawn.getX() - 64, spawn.getZ());
         local.plaincraft.greatwall.generation.WallStamp.start(spawn.getX() - 64, spawn.getZ() - 64);
         // 单独留一区做「门楼 + 左墙 + 右墙」拼接验收，不覆盖上面的独立墙/门楼展台。
@@ -384,7 +385,7 @@ public final class WorldServices {
         local.plaincraft.greatwall.generation.ShowcaseStamp.start("palace2.csv", 74, 40, 46, 37, 23, spawn.getX() - 64, spawn.getZ() + 640);
         local.plaincraft.greatwall.generation.ShowcaseStamp.start("watergate.csv", 46, 27, 13, 23, 6, spawn.getX() - 64, spawn.getZ() + 704);
         // 长城套件：36 件体素化后按行列摆开的选型台
-        local.plaincraft.greatwall.generation.ShowcaseStamp.start("kitset.csv", 784, 34, 421, 392, 210, spawn.getX() + 300, spawn.getZ() + 400);
+        local.plaincraft.greatwall.generation.ShowcaseStamp.start("kitset.csv", 784, 34, 421, 392, 210, spawn.getX() + 900, spawn.getZ() + 400);
         // 暂不生成路线墙：只出模板展台，玩家在超平坦里逐个精修。
         // local.plaincraft.greatwall.generation.WonderWall.startSample(level, spawn.getX() + 64, spawn.getZ(), 320);
     }
