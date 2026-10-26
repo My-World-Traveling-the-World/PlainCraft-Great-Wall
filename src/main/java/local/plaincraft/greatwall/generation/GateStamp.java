@@ -167,7 +167,7 @@ public final class GateStamp {
             }
         }
         if (highest == Integer.MIN_VALUE) return false;
-        originY = highest - 2;   // 城门比地面低 2 格（走道对齐需要）
+        originY = highest - 5;   // 单独展区整体下移 3 格（原 -2）
         autoGround = false;
         return true;
     }
