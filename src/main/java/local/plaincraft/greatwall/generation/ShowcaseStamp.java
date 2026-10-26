@@ -38,8 +38,8 @@ public final class ShowcaseStamp {
     private List<int[]> coords;
     private List<BlockState> states;
     private int[] columnBottom;
-    /** Global lowest template layer; only columns touching it receive foundation fill. */
-    private int bottomLayerY = Integer.MAX_VALUE;
+    /** Block state of each column's lowest template block, reused as foundation material. */
+    private BlockState[] columnBottomState;
     private boolean loaded;
     private boolean settled;
     private boolean filling;
@@ -210,12 +210,13 @@ public final class ShowcaseStamp {
                 return;
             }
             int bottom = columnBottom[fillU * depth + fillV];
-            // Only columns that touch the template's global bottom layer are foundation
-            // columns. The explicit aperture is a second guard for templates whose door
-            // threshold happens to sit on that same bottom layer.
+            // Every column that owns a template block gets a foundation; only the authored
+            // doorway columns are excluded. The material follows that column's bottom block.
             boolean aperture = fillU >= noFillMinX && fillU <= noFillMaxX;
-            boolean foundationColumn = bottom == bottomLayerY && !aperture;
+            boolean foundationColumn = bottom >= 0 && !aperture;
             if (foundationColumn) {
+                BlockState fillState = columnBottomState[fillU * depth + fillV];
+                if (fillState == null) fillState = Blocks.STONE.defaultBlockState();
                 int x = originX + fillU;
                 int z = originZ + fillV;
                 LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
@@ -226,7 +227,7 @@ public final class ShowcaseStamp {
                 for (int y = originY + bottom - 1; y > surface - 1; y--) {
                     BlockPos pos = new BlockPos(x, y, z);
                     if (level.getBlockState(pos).isAir()) {
-                        level.setBlock(pos, Blocks.STONE.defaultBlockState(), 2);
+                        level.setBlock(pos, fillState, 2);
                         local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(pos.getX(), pos.getZ());
                         filled++;
                     }
@@ -243,8 +244,8 @@ public final class ShowcaseStamp {
         coords = new ArrayList<>();
         states = new ArrayList<>();
         columnBottom = new int[width * depth];
+        columnBottomState = new BlockState[width * depth];
         groundSurface = null;
-        bottomLayerY = Integer.MAX_VALUE;
         Arrays.fill(columnBottom, -1);
         try (InputStream in = ShowcaseStamp.class.getResourceAsStream(resource)) {
             if (in == null) return;
@@ -263,11 +264,14 @@ public final class ShowcaseStamp {
                 int dy = wallModule ? 17 - rawY : rawY;
                 int dz = wallModule ? rawZ + 5 : rawZ;
                 coords.add(new int[] {dx, dy, dz});
-                states.add(BlockSpec.parse(parts[3]));
+                BlockState parsed = BlockSpec.parse(parts[3]);
+                states.add(parsed);
                 if (dx >= 0 && dx < width && dz >= 0 && dz < depth) {
                     int i = dx * depth + dz;
-                    if (columnBottom[i] < 0 || dy < columnBottom[i]) columnBottom[i] = dy;
-                    if (dy < bottomLayerY) bottomLayerY = dy;
+                    if (columnBottom[i] < 0 || dy < columnBottom[i]) {
+                        columnBottom[i] = dy;
+                        columnBottomState[i] = parsed;
+                    }
                 }
             }
         } catch (Exception broken) {

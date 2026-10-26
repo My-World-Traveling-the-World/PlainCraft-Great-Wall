@@ -73,9 +73,8 @@ public final class DiagonalWallShowcase {
         }
         Job added = new Job(level, centreX, centreZ, rows, bend);
         JOBS.add(added);
-        // Gate stays upright and whole; only the wall route bends or stays straight.
-        ShowcaseStamp.startGateClipped("gate.csv", 145, 44, 32, 72, 19, centreX, centreZ, -2,
-                25, 119, 68, 76);
+        // Gate template is never clipped; the wall finds its real outer end.
+        ShowcaseStamp.startGate("gate.csv", 145, 44, 32, 72, 19, centreX, centreZ, -2, 68, 76);
         ShowcaseLayout.add(bend ? "diagonal-wall" : "straight-wall",
                 centreX - 210, centreZ - 16, centreX + 210, centreZ + 110);
         ShowcaseGate.expect(added.accountingName);
@@ -146,7 +145,7 @@ public final class DiagonalWallShowcase {
     }
 
     private static void buildBlocks(Job job) {
-        double x = job.centreX + 48.0D;
+        double x = job.centreX + 73.0D;
         double z = job.centreZ;
         double nx = 0.0D, nz = 1.0D;
         int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;

@@ -36,8 +36,8 @@ public final class GateStamp {
     private static List<BlockState> states;
     /** Lowest model layer per column, indexed [x * DEPTH + z]; -1 where the column is empty. */
     private static int[] columnBottom;
-    /** Global lowest template layer; only columns touching it receive foundation fill. */
-    private static int bottomLayerY = Integer.MAX_VALUE;
+    /** Block state of each column's lowest template block, reused as foundation material. */
+    private static BlockState[] columnBottomState;
     /** Natural WORLD_SURFACE sampled before the model is written, one value per footprint column. */
     private static int[] groundSurface;
     private static boolean loaded;
@@ -85,7 +85,7 @@ public final class GateStamp {
         coords = null;
         states = null;
         columnBottom = null;
-        bottomLayerY = Integer.MAX_VALUE;
+        columnBottomState = null;
         groundSurface = null;
     }
 
@@ -122,10 +122,11 @@ public final class GateStamp {
                 return;
             }
             int bottom = columnBottom[fillX * DEPTH + fillZ];
-            // Doorway columns have their lowest block at the lintel, not at the template's
-            // bottom layer; the explicit band also protects a threshold that sits on that layer.
+            // Every footprint column gets a foundation, except the authored doorway band.
             boolean doorway = fillX >= 68 && fillX <= 76;
-            if (bottom == bottomLayerY && !doorway) {
+            if (bottom >= 0 && !doorway) {
+                BlockState fillState = columnBottomState[fillX * DEPTH + fillZ];
+                if (fillState == null) fillState = Blocks.STONE.defaultBlockState();
                 int x = originX + fillX;
                 int z = originZ + fillZ;
                 LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
@@ -136,7 +137,7 @@ public final class GateStamp {
                 for (int y = originY + bottom - 1; y > surface - 1; y--) {
                     BlockPos pos = new BlockPos(x, y, z);
                     if (level.getBlockState(pos).isAir()) {
-                        level.setBlock(pos, Blocks.STONE.defaultBlockState(), 2);
+                        level.setBlock(pos, fillState, 2);
                         local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(pos.getX(), pos.getZ());
                         filled++;
                     }
@@ -181,6 +182,7 @@ public final class GateStamp {
         coords = new ArrayList<>();
         states = new ArrayList<>();
         columnBottom = new int[WIDTH * DEPTH];
+        columnBottomState = new BlockState[WIDTH * DEPTH];
         groundSurface = null;
         java.util.Arrays.fill(columnBottom, -1);
         try (InputStream in = GateStamp.class.getResourceAsStream(RESOURCE)) {
@@ -195,12 +197,15 @@ public final class GateStamp {
                 int dy = Integer.parseInt(parts[1]);
                 int dz = Integer.parseInt(parts[2]);
                 coords.add(new int[] {dx, dy, dz});
-                states.add(BlockSpec.parse(parts[3]));
+                BlockState parsed = BlockSpec.parse(parts[3]);
+                states.add(parsed);
                 if (dx >= 0 && dx < WIDTH && dz >= 0 && dz < DEPTH) {
                     int i = dx * DEPTH + dz;
                     int current = columnBottom[i];
-                    if (current < 0 || dy < current) columnBottom[i] = dy;
-                    if (dy < bottomLayerY) bottomLayerY = dy;
+                    if (current < 0 || dy < current) {
+                        columnBottom[i] = dy;
+                        columnBottomState[i] = parsed;
+                    }
                 }
             }
         } catch (Exception broken) {
