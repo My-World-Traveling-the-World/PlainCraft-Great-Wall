@@ -10,8 +10,6 @@ import local.plaincraft.greatwall.GreatWallMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * Stamps one standalone run of the wall module, so the wall can be inspected on its own instead of only
@@ -65,10 +63,11 @@ public final class WallStamp {
         if (finished || !loaded || coords == null || coords.isEmpty()) return;
         if (ticket == null) ticket = ChunkHold.hold(level, originX, originZ, originX + (WallProfile.PERIOD) - 1, originZ + (11) - 1);
         if (autoGround) {
-            LevelChunk chunk = level.getChunkSource().getChunkNow(originX >> 4, originZ >> 4);
-            if (chunk == null) return;
-            // 0.7.90：整段墙抬高 1 格，墙底坐在草方块顶面上（原来墙底嵌进地表那一层）。
-            originY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, originX & 15, originZ & 15) + 1;
+            // 直接落地：墙底（depth=17）坐在 footprint 的地表上，与门楼同一口径（中位数）、同一平面。
+            int ground = GroundLevel.median(level, originX, originZ - WallProfile.HALF,
+                    WallProfile.PERIOD, WallProfile.HALF * 2 + 1);
+            if (ground == GroundLevel.MISSING) return;
+            originY = ground;
             autoGround = false;
         }
         int budget = 4000;

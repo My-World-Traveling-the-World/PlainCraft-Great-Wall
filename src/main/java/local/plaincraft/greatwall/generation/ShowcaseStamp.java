@@ -24,6 +24,8 @@ public final class ShowcaseStamp {
     private final int width;
     private final int depth;
     private final int heightOffset;
+    /** true = 模板最底层直接坐在地表上（门楼走这条），不再用 heightOffset 微调。 */
+    private final boolean onGround;
     private final boolean wallModule;
     /** Inclusive source-x clip; gatehouse-only pieces reject the template's old wall wings. */
     private final int clipMinX;
@@ -57,12 +59,13 @@ public final class ShowcaseStamp {
 
     private ShowcaseStamp(String csvName, int w, int d, int centreX, int centreZ, int atX, int atZ,
                           int heightOffset, boolean wallModule, int clipMinX, int clipMaxX,
-                          int wallPhaseOffset, int noFillMinX, int noFillMaxX) {
+                          int wallPhaseOffset, int noFillMinX, int noFillMaxX, boolean onGround) {
         this.resource = "/assets/plaincraft-great-wall/templates/" + csvName;
         this.accountingName = csvName + "@" + atX + "," + atZ;
         this.width = w;
         this.depth = d;
         this.heightOffset = heightOffset;
+        this.onGround = onGround;
         this.wallModule = wallModule;
         this.clipMinX = clipMinX;
         this.clipMaxX = clipMaxX;
@@ -102,11 +105,23 @@ public final class ShowcaseStamp {
         start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, true, 0, w - 1, phaseOffset);
     }
 
+    /**
+     * 门楼「直接落地」：模板最底层（局部 y=0，玩家精修封的底板）坐在该处地表上。
+     *
+     * <p>不再传 heightOffset，也不用「最高点 + 偏移」那套：footprint 里的树/村屋/土包会把最高点抬高
+     * 好几格，门楼就会被压进地面（0.7.89 真机埋了 4 格）。这里与城墙共用 {@link GroundLevel} 的中位数，
+     * 两者落在同一平面，端面接口逐格对齐。
+     */
+    public static void startGateOnGround(String csvName, int w, int h, int d, int cx, int cz,
+                                         int atX, int atZ) {
+        start(csvName, w, h, d, cx, cz, atX, atZ, 0, false, 0, w - 1, 0, -1, -1, true);
+    }
+
     /** Gate placement that keeps its passage columns free of foundation fill. */
     public static void startGate(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
                                  int heightOffset, int noFillMinX, int noFillMaxX) {
         start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, false, 0, w - 1, 0,
-                noFillMinX, noFillMaxX);
+                noFillMinX, noFillMaxX, false);
     }
 
     /** Gatehouse-only gate: the template file stays whole, but its old wall wings are not shown. */
@@ -115,21 +130,21 @@ public final class ShowcaseStamp {
                                         int clipMinX, int clipMaxX,
                                         int noFillMinX, int noFillMaxX) {
         start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, false, clipMinX, clipMaxX, 0,
-                noFillMinX, noFillMaxX);
+                noFillMinX, noFillMaxX, false);
     }
 
     private static void start(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
                               int heightOffset, boolean wallModule, int clipMinX, int clipMaxX,
                               int wallPhaseOffset) {
         start(csvName, w, h, d, cx, cz, atX, atZ, heightOffset, wallModule, clipMinX, clipMaxX,
-                wallPhaseOffset, -1, -1);
+                wallPhaseOffset, -1, -1, false);
     }
 
     private static void start(String csvName, int w, int h, int d, int cx, int cz, int atX, int atZ,
                               int heightOffset, boolean wallModule, int clipMinX, int clipMaxX,
-                              int wallPhaseOffset, int noFillMinX, int noFillMaxX) {
+                              int wallPhaseOffset, int noFillMinX, int noFillMaxX, boolean onGround) {
         ShowcaseStamp piece = new ShowcaseStamp(csvName, w, d, cx, cz, atX, atZ, heightOffset, wallModule,
-                clipMinX, clipMaxX, wallPhaseOffset, noFillMinX, noFillMaxX);
+                clipMinX, clipMaxX, wallPhaseOffset, noFillMinX, noFillMaxX, onGround);
         ALL.add(piece);
         local.plaincraft.greatwall.generation.ShowcaseGate.expect(piece.accountingName);
         int layoutMinX = atX - cx + clipMinX;
@@ -162,28 +177,41 @@ public final class ShowcaseStamp {
             ticket = ChunkHold.hold(level, originX, originZ, originX + width - 1, originZ + depth - 1);
         }
         if (!settled) {
-            int highest = Integer.MIN_VALUE;
-            for (int dx = 0; dx < width; dx += 4) {
-                for (int dz = 0; dz < depth; dz += 4) {
-                    int x = originX + dx;
-                    int z = originZ + dz;
-                    LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
-                    if (chunk == null) return;
-                    highest = Math.max(highest, chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15));
+            if (onGround) {
+                // 直接落地：模板最底层坐在 footprint 的地表上（中位数），与城墙同一口径。
+                if (groundSurface == null || groundSurface.length < width * depth) {
+                    groundSurface = new int[width * depth];
                 }
-            }
-            if (highest == Integer.MIN_VALUE) return;
-            originY = highest + heightOffset;
-            groundSurface = new int[width * depth];
-            for (int dx = 0; dx < width; dx++) {
-                for (int dz = 0; dz < depth; dz++) {
-                    int x = originX + dx, z = originZ + dz;
-                    LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
-                    if (chunk == null) return;
-                    groundSurface[dx * depth + dz] = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
+                int ground = GroundLevel.fill(level, originX, originZ, width, depth, groundSurface);
+                if (ground == GroundLevel.MISSING) return;
+                originY = ground;
+                settled = true;
+            } else {
+                int highest = Integer.MIN_VALUE;
+                for (int dx = 0; dx < width; dx += 4) {
+                    for (int dz = 0; dz < depth; dz += 4) {
+                        int x = originX + dx;
+                        int z = originZ + dz;
+                        LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+                        if (chunk == null) return;
+                        highest = Math.max(highest,
+                                chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15));
+                    }
                 }
+                if (highest == Integer.MIN_VALUE) return;
+                originY = highest + heightOffset;
+                groundSurface = new int[width * depth];
+                for (int dx = 0; dx < width; dx++) {
+                    for (int dz = 0; dz < depth; dz++) {
+                        int x = originX + dx, z = originZ + dz;
+                        LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+                        if (chunk == null) return;
+                        groundSurface[dx * depth + dz] =
+                                chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
+                    }
+                }
+                settled = true;
             }
-            settled = true;
         }
         if (!filling) {
             int budget = 6000;
@@ -213,11 +241,12 @@ public final class ShowcaseStamp {
                 return;
             }
             int bottom = columnBottom[fillU * depth + fillV];
-            // Fill every footprint column from ONE global bottom level, not from each
-            // column's own lowest block. Otherwise decorative buttresses get stretched
-            // down into visible pillars outside the wall face.
+            // 只给「模板最底层本来就有方块」的列往下补（全局最底层那一层）。
+            // 这样既有底板的结构被整层托住，又不会把高处的装饰柱/拱券拉成竖井；
+            // 玩家有意留空的口子（门洞等）本身没有最底层方块，自动保持贯通。
             boolean aperture = fillU >= noFillMinX && fillU <= noFillMaxX;
-            boolean foundationColumn = bottom >= 0 && !aperture && bottomLayerY != Integer.MAX_VALUE;
+            boolean footed = bottom >= 0 && bottom == bottomLayerY;
+            boolean foundationColumn = footed && !aperture && bottomLayerY != Integer.MAX_VALUE;
             if (foundationColumn) {
                 BlockState fillState = bottomLayerState;
                 if (fillState == null) fillState = Blocks.STONE.defaultBlockState();

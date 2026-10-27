@@ -77,8 +77,9 @@ public final class DiagonalWallShowcase {
         }
         Job added = new Job(level, centreX, centreZ, rows, bend);
         JOBS.add(added);
-        // Gate template is never clipped; the wall finds its real outer end.
-        ShowcaseStamp.startGate("gate.csv", 145, 44, 32, 72, 19, centreX, centreZ, -2, 68, 76);
+        // Gate template is never clipped; the wall finds its real outer end. 门楼「直接落地」：
+        // 模板最底层坐在该处地表（footprint 中位数）上，墙底也取同一口径，接口因此天然对齐。
+        ShowcaseStamp.startGateOnGround("gate.csv", 145, 42, 32, 72, 19, centreX, centreZ);
         ShowcaseLayout.add(bend ? "diagonal-wall" : "straight-wall",
                 centreX - 210, centreZ - 16, centreX + 210, centreZ + 110);
         ShowcaseGate.expect(added.accountingName);
@@ -106,8 +107,12 @@ public final class DiagonalWallShowcase {
             }
             if (!chunksReady(level, current)) continue;
             if (current.baseY == 0) {
-                current.baseY = level.getHeight(Heightmap.Types.WORLD_SURFACE,
-                        current.centreX + 73, current.centreZ);
+                // 直接落地：墙底（depth=17）坐在该段 footprint 的地表上。取中位数而不是单点/最高点，
+                // 门楼和城墙用的都是同一口径，因此边缘相接时不会出现一格台阶。
+                int ground = GroundLevel.median(level, current.minX, current.minZ,
+                        current.maxX - current.minX + 1, current.maxZ - current.minZ + 1);
+                if (ground == GroundLevel.MISSING) continue;
+                current.baseY = ground;
             }
             int budget = 4000;
             while (current.cursor < current.blocks.size() && budget-- > 0) {

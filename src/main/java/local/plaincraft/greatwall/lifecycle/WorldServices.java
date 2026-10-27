@@ -372,8 +372,9 @@ public final class WorldServices {
         int joinedX = spawn.getX() + 256;
         int joinedZ = spawn.getZ();
         // Gate and wall are separate pieces: keep the whole 145-wide gate template and attach one
-        // current 48-block wall_module to each open end. The end faces were verified block-for-block
-        // to match when the wall uses the gate's highest-ground base (heightOffset 0).
+        // current 48-block wall_module to each open end. 0.7.91 起两者都「直接落地」：模板最底层
+        // 坐在 footprint 的地表中位数上（GateStamp / DiagonalWallShowcase / WallStamp 同一口径），
+        // 门楼端面 z14..24 的墙接口与墙的 depth 0..17 逐格对齐，不再有任何 heightOffset。
         // Straight display uses the same wall_module path generator as the curved display,
         // only with bend=false. The gatehouse is stamped by that generator as well.
         local.plaincraft.greatwall.generation.DiagonalWallShowcase.start(

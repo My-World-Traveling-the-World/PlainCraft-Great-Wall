@@ -18,15 +18,16 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * Stamps the player's reference gate - a complete gate complex with a wall band, arched gateway, stairs
  * and a two-tier gatehouse - into the world.
  *
- * <p>The site is levelled the way a real pass is: the gate is planted on the highest ground under its
- * footprint, and every column of the model is then carried down to the actual terrain with a solid stone
- * footing. Nothing floats, nothing is buried, and the wall that meets it only has to match one height.
+ * <p>「直接落地」：模板最底层（局部 y=0，玩家精修时封的那层底板）就坐在 footprint 的地表上，
+ * 地面高度取 <b>中位数</b>（见 {@link GroundLevel}），因此不再需要任何魔法偏移量。
+ * 地基只给「模板最底层本来就有方块」的列往下补，门洞那类玩家有意留空的口子自动保持贯通。
  */
 public final class GateStamp {
     private static final String RESOURCE = "/assets/plaincraft-great-wall/templates/gate.csv";
     /** Footprint in blocks, from the exported model. */
     public static final int WIDTH = 145;
-    public static final int HEIGHT = 44;
+    /** 玩家精修后的新模板：局部 y 0..41（0.7.91 起最底层是底板）。 */
+    public static final int HEIGHT = 42;
     public static final int DEPTH = 32;
     /** Where the gate centre sits inside the model (wall band z 15..25 of 32, arch centre x=72). */
     private static final int CENTRE_X = 72;
@@ -97,7 +98,7 @@ public final class GateStamp {
     public static void tick(ServerLevel level) {
         if (finished || !loaded || coords == null || coords.isEmpty()) return;
         if (ticket == null) ticket = ChunkHold.hold(level, originX, originZ, originX + (WIDTH) - 1, originZ + (DEPTH) - 1);
-        if (autoGround && !settleOnHighestGround(level)) return;
+        if (autoGround && !settleOnGround(level)) return;
         if (!filling) {
             int budget = 4000;
             while (cursor < coords.size() && budget-- > 0) {
@@ -127,10 +128,10 @@ public final class GateStamp {
                 return;
             }
             int bottom = columnBottom[fillX * DEPTH + fillZ];
-            // One global-bottom foundation slab; doorway band stays open. Do not stretch
-            // individual decorative columns down from their own (higher) lowest block.
-            boolean doorway = fillX >= 68 && fillX <= 76;
-            if (bottom >= 0 && !doorway && bottomLayerY != Integer.MAX_VALUE) {
+            // 只给「模板最底层就有方块」的列往下补：门洞那类有意留空的口子该列本身没有最底层方块，
+            // 于是自然不被填死，也不再需要硬编码的 68..76 例外（那是旧模板的坐标，换模板就会错位）。
+            boolean footed = bottom >= 0 && bottom == bottomLayerY;
+            if (footed && bottomLayerY != Integer.MAX_VALUE) {
                 BlockState fillState = bottomLayerState;
                 if (fillState == null) fillState = Blocks.STONE.defaultBlockState();
                 int x = originX + fillX;
@@ -156,25 +157,22 @@ public final class GateStamp {
         }
     }
 
-    /** Plants the base on the highest ground under the footprint, once every chunk involved is loaded. */
-    private static boolean settleOnHighestGround(ServerLevel level) {
-        // Sample every footprint column. A 4-block grid can miss a narrow natural peak; that
-        // would lower originY and bury the gate's high side even though the per-column fill is exact.
-        int highest = Integer.MIN_VALUE;
-        groundSurface = new int[WIDTH * DEPTH];
-        for (int dx = 0; dx < WIDTH; dx++) {
-            for (int dz = 0; dz < DEPTH; dz++) {
-                int x = originX + dx, z = originZ + dz;
-                LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
-                if (chunk == null) return false;
-                int surface = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
-                groundSurface[dx * DEPTH + dz] = surface;
-                highest = Math.max(highest, surface);
-            }
+    /**
+     * 让模板最底层（局部 y=0）坐在 footprint 的地表上，并顺手记下每一列的地面高度给地基用。
+     *
+     * <p>取中位数而不是最高点：footprint 里只要有一棵树、一座村屋或一个土包，最高点就会被抬高好几格，
+     * 整座门楼随之被压进地面（0.7.89 的真机现象就是埋了 4 格）。中位数不受这些离群点影响，
+     * 城墙也取同一口径，于是两者天然落在同一个平面上。
+     */
+    private static boolean settleOnGround(ServerLevel level) {
+        if (groundSurface == null || groundSurface.length != WIDTH * DEPTH) {
+            groundSurface = new int[WIDTH * DEPTH];
         }
-        if (highest == Integer.MIN_VALUE) return false;
-        originY = highest - 5;   // 0.7.90：比 0.7.89 的 highest-8 抬高 3 格（门楼不再埋进地面）
+        int ground = GroundLevel.fill(level, originX, originZ, WIDTH, DEPTH, groundSurface);
+        if (ground == GroundLevel.MISSING) return false;
+        originY = ground;
         autoGround = false;
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] GATE_GROUND median={} (模板最底层 y=0 坐在该层)", ground);
         return true;
     }
 
