@@ -28,8 +28,18 @@ public final class DiagonalWallShowcase {
     private static final int STRAIGHT = 24;
     private static final int TRANSITION = 8;
     private static final int STEPS = STRAIGHT + 2 * TRANSITION + 24;
-    /** 门楼端面处的起始相位：3 让墙的第一道截面正好接上门楼端面的垛口节奏（48 相位里逐格差最小的那个）。 */
-    private static final int PHASE_OFFSET = 3;
+    /**
+     * 门楼端面处的起始相位。
+     *
+     * <p>墙模块的垛口是「垛垛垛缺」周期 4，缺口在 `phase % 4 == 3`；门楼自己那条压顶的缺口在世界
+     * `x % 4 == 0`（实测：184/188/…/324/328 都是缺）。墙从 `centreX + 73` 起铺，所以
+     * `phase = (offset + i) % 4` 的缺口落在世界 `x = 329 + i` 上：
+     * <ul>
+     *   <li>`offset = 3`（0.7.95 之前）：缺口落在 `x % 4 == 1`，拼缝处门楼 328 的缺 + 墙 329 的缺 = <b>连出两个缺</b>；</li>
+     *   <li>`offset = 0`：缺口落在 `x % 4 == 0`，和门楼完全同相位 —— 拼缝处是「门楼缺 → 墙垛垛垛 → 缺」，两侧墙都接得上。</li>
+     * </ul>
+     */
+    private static final int PHASE_OFFSET = 0;
 
     private static final List<Job> JOBS = new ArrayList<>();
 
