@@ -5,7 +5,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.compat.road.WallRoadGuard;
 import net.minecraft.core.BlockPos;
@@ -103,7 +107,7 @@ public final class DiagonalWallShowcase {
             if (!chunksReady(level, current)) continue;
             if (current.baseY == 0) {
                 current.baseY = level.getHeight(Heightmap.Types.WORLD_SURFACE,
-                        current.centreX + 48, current.centreZ);
+                        current.centreX + 73, current.centreZ);
             }
             int budget = 4000;
             while (current.cursor < current.blocks.size() && budget-- > 0) {
@@ -144,17 +148,21 @@ public final class DiagonalWallShowcase {
         return true;
     }
 
+    /**
+     * Rasterise the wall as a swept volume along the centreline. Each world column is assigned
+     * to the nearest point on the polyline; its lateral coordinate selects the CSV t row and
+     * its longitudinal distance selects the phase. This covers miter/transition areas with the
+     * union of the swept body instead of exposing the seams between adjacent cross-sections.
+     */
     private static void buildBlocks(Job job) {
+        // Build the exact centreline as a polyline, including the bend sectors.
+        List<double[]> line = new ArrayList<>();
         double x = job.centreX + 73.0D;
         double z = job.centreZ;
-        double nx = 0.0D, nz = 1.0D;
-        int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+        line.add(new double[] {x, z});
         for (int step = 0; step < job.steps; step++) {
             double angle;
-            if (!job.bend) {
-                angle = 0.0D;
-            } else if (step < STRAIGHT) {
+            if (!job.bend || step < STRAIGHT) {
                 angle = 0.0D;
             } else if (step < STRAIGHT + TRANSITION) {
                 angle = Math.toRadians(15.0D);
@@ -163,31 +171,88 @@ public final class DiagonalWallShowcase {
             } else {
                 angle = Math.toRadians(45.0D);
             }
-            double dx = Math.cos(angle), dz = Math.sin(angle);
-            nx = -dz;
-            nz = dx;
-            int cx = (int) Math.round(x);
-            int cz = (int) Math.round(z);
-            int phase = Math.floorMod(3 + step, 48);
-            for (Row row : job.rows) {
-                if (row.phase() != phase) continue;
-                int bx = (int) Math.round(cx + nx * row.t());
-                int bz = (int) Math.round(cz + nz * row.t());
-                int by = 17 - row.depth();
-                job.blocks.add(new int[] {bx, by, bz});
-                job.states.add(row.state());
-                minX = Math.min(minX, bx); minZ = Math.min(minZ, bz);
-                maxX = Math.max(maxX, bx); maxZ = Math.max(maxZ, bz);
-            }
-            x += dx;
-            z += dz;
+            x += Math.cos(angle);
+            z += Math.sin(angle);
+            line.add(new double[] {x, z});
         }
-        // Mirror the same wall onto the gate's other side; both ends get a wall, one straight
-        // attachment step followed by the same two transition sectors.
+
+        // Index the template rows by phase and lateral coordinate.
+        Map<Integer, Map<Integer, List<Row>>> byPhase = new HashMap<>();
+        for (Row row : job.rows) {
+            byPhase.computeIfAbsent(row.phase(), k -> new HashMap<>())
+                    .computeIfAbsent(row.t(), k -> new ArrayList<>())
+                    .add(row);
+        }
+
+        double minLineX = Double.MAX_VALUE, maxLineX = -Double.MAX_VALUE;
+        double minLineZ = Double.MAX_VALUE, maxLineZ = -Double.MAX_VALUE;
+        for (double[] p : line) {
+            minLineX = Math.min(minLineX, p[0]); maxLineX = Math.max(maxLineX, p[0]);
+            minLineZ = Math.min(minLineZ, p[1]); maxLineZ = Math.max(maxLineZ, p[1]);
+        }
+
+        int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+        Set<Long> placed = new HashSet<>();
+        int fromX = (int) Math.floor(minLineX) - 7;
+        int toX = (int) Math.ceil(maxLineX) + 7;
+        int fromZ = (int) Math.floor(minLineZ) - 7;
+        int toZ = (int) Math.ceil(maxLineZ) + 7;
+
+        for (int wx = fromX; wx <= toX; wx++) {
+            for (int wz = fromZ; wz <= toZ; wz++) {
+                double bestDist2 = Double.MAX_VALUE;
+                double bestS = 0.0D;
+                double bestLat = 0.0D;
+                double travelled = 0.0D;
+                for (int i = 1; i < line.size(); i++) {
+                    double ax = line.get(i - 1)[0], az = line.get(i - 1)[1];
+                    double bx = line.get(i)[0], bz = line.get(i)[1];
+                    double vx = bx - ax, vz = bz - az;
+                    double len2 = vx * vx + vz * vz;
+                    if (len2 < 1.0E-9D) continue;
+                    double u = ((wx - ax) * vx + (wz - az) * vz) / len2;
+                    u = Math.max(0.0D, Math.min(1.0D, u));
+                    double qx = ax + vx * u, qz = az + vz * u;
+                    double dx = wx - qx, dz = wz - qz;
+                    double d2 = dx * dx + dz * dz;
+                    if (d2 < bestDist2) {
+                        bestDist2 = d2;
+                        double len = Math.sqrt(len2);
+                        bestS = travelled + len * u;
+                        bestLat = dx * (-vz / len) + dz * (vx / len);
+                    }
+                    travelled += Math.sqrt(len2);
+                }
+                if (bestDist2 > 5.55D * 5.55D) continue;
+                int t = (int) Math.round(bestLat);
+                if (t < -5 || t > 5) continue;
+                int phase = Math.floorMod(3 + (int) Math.floor(bestS), 48);
+                Map<Integer, List<Row>> lateral = byPhase.get(phase);
+                if (lateral == null) continue;
+                List<Row> rows = lateral.get(t);
+                if (rows == null) continue;
+                for (Row row : rows) {
+                    int by = 17 - row.depth();
+                    long key = ((long) wx & 0x3FFFFFFL) << 38
+                            | ((long) wz & 0x3FFFFFFL) << 12 | (by & 0xFFFL);
+                    if (!placed.add(key)) continue;
+                    job.blocks.add(new int[] {wx, by, wz});
+                    job.states.add(row.state());
+                    minX = Math.min(minX, wx); minZ = Math.min(minZ, wz);
+                    maxX = Math.max(maxX, wx); maxZ = Math.max(maxZ, wz);
+                }
+            }
+        }
+
+        // Mirror onto the gate's other side.
         int rightCount = job.blocks.size();
         for (int i = 0; i < rightCount; i++) {
             int[] p = job.blocks.get(i);
             int leftX = 2 * job.centreX - p[0];
+            long key = ((long) leftX & 0x3FFFFFFL) << 38
+                    | ((long) p[2] & 0x3FFFFFFL) << 12 | (p[1] & 0xFFFL);
+            if (!placed.add(key)) continue;
             job.blocks.add(new int[] {leftX, p[1], p[2]});
             job.states.add(job.states.get(i));
             minX = Math.min(minX, leftX);

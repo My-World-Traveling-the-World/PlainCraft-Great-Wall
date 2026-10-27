@@ -36,8 +36,11 @@ public final class GateStamp {
     private static List<BlockState> states;
     /** Lowest model layer per column, indexed [x * DEPTH + z]; -1 where the column is empty. */
     private static int[] columnBottom;
-    /** Block state of each column's lowest template block, reused as foundation material. */
+    /** Block state of each column's lowest template block. */
     private static BlockState[] columnBottomState;
+    /** Global lowest template layer and its material; foundation is one slab at this level. */
+    private static int bottomLayerY = Integer.MAX_VALUE;
+    private static BlockState bottomLayerState;
     /** Natural WORLD_SURFACE sampled before the model is written, one value per footprint column. */
     private static int[] groundSurface;
     private static boolean loaded;
@@ -86,6 +89,8 @@ public final class GateStamp {
         states = null;
         columnBottom = null;
         columnBottomState = null;
+        bottomLayerY = Integer.MAX_VALUE;
+        bottomLayerState = null;
         groundSurface = null;
     }
 
@@ -122,10 +127,11 @@ public final class GateStamp {
                 return;
             }
             int bottom = columnBottom[fillX * DEPTH + fillZ];
-            // Every footprint column gets a foundation, except the authored doorway band.
+            // One global-bottom foundation slab; doorway band stays open. Do not stretch
+            // individual decorative columns down from their own (higher) lowest block.
             boolean doorway = fillX >= 68 && fillX <= 76;
-            if (bottom >= 0 && !doorway) {
-                BlockState fillState = columnBottomState[fillX * DEPTH + fillZ];
+            if (bottom >= 0 && !doorway && bottomLayerY != Integer.MAX_VALUE) {
+                BlockState fillState = bottomLayerState;
                 if (fillState == null) fillState = Blocks.STONE.defaultBlockState();
                 int x = originX + fillX;
                 int z = originZ + fillZ;
@@ -134,7 +140,7 @@ public final class GateStamp {
                 int surface = groundSurface != null
                         ? groundSurface[fillX * DEPTH + fillZ]
                         : chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
-                for (int y = originY + bottom - 1; y > surface - 1; y--) {
+                for (int y = originY + bottomLayerY - 1; y > surface - 1; y--) {
                     BlockPos pos = new BlockPos(x, y, z);
                     if (level.getBlockState(pos).isAir()) {
                         level.setBlock(pos, fillState, 2);
@@ -167,9 +173,35 @@ public final class GateStamp {
             }
         }
         if (highest == Integer.MIN_VALUE) return false;
-        originY = highest - 5;   // 单独展区整体下移 3 格（原 -2）
+        originY = highest - 8;   // 新存档实测最高地面 -54：相对旧 -59 再下 3 格
         autoGround = false;
         return true;
+    }
+
+    /**
+     * Lower the already-stamped standalone gate by {@code blocks} in the current world:
+     * remove the old gate blocks, shift originY, and stamp/found again. Intended for the
+     * showcase command because an existing world never re-samples its original height.
+     */
+    public static int lowerBy(ServerLevel level, int blocks) {
+        if (level == null || coords == null || coords.isEmpty()) return 0;
+        if (blocks <= 0) return 0;
+        for (int i = 0; i < coords.size(); i++) {
+            int[] p = coords.get(i);
+            level.setBlock(new BlockPos(originX + p[0], originY + p[1], originZ + p[2]),
+                    Blocks.AIR.defaultBlockState(), 2);
+        }
+        originY -= blocks;
+        cursor = 0;
+        finished = false;
+        filling = false;
+        fillX = 0;
+        fillZ = 0;
+        filled = 0;
+        autoGround = false;
+        local.plaincraft.greatwall.generation.ShowcaseGate.expect();
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] GATE_LOWERED blocks={} newOriginY={}", blocks, originY);
+        return blocks;
     }
 
     public static boolean finished() {
@@ -183,6 +215,8 @@ public final class GateStamp {
         states = new ArrayList<>();
         columnBottom = new int[WIDTH * DEPTH];
         columnBottomState = new BlockState[WIDTH * DEPTH];
+        bottomLayerY = Integer.MAX_VALUE;
+        bottomLayerState = null;
         groundSurface = null;
         java.util.Arrays.fill(columnBottom, -1);
         try (InputStream in = GateStamp.class.getResourceAsStream(RESOURCE)) {
@@ -205,6 +239,10 @@ public final class GateStamp {
                     if (current < 0 || dy < current) {
                         columnBottom[i] = dy;
                         columnBottomState[i] = parsed;
+                    }
+                    if (dy < bottomLayerY) {
+                        bottomLayerY = dy;
+                        bottomLayerState = parsed;
                     }
                 }
             }

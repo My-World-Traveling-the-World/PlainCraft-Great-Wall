@@ -100,6 +100,7 @@ public final class GreatWallCommands {
                 .then(roadguard())
                 .then(repaint())
                 .then(restamp())
+                .then(lowerGate())
                 .then(test()));
     }
 
@@ -967,6 +968,24 @@ public final class GreatWallCommands {
         return Commands.literal("restamp")
                 .requires(source -> source.hasPermission(PERMISSION))
                 .executes(GreatWallCommands::restamp);
+    }
+
+    /** Showcase-only: clear and re-stamp the standalone gate three blocks lower. */
+    private static LiteralArgumentBuilder<CommandSourceStack> lowerGate() {
+        return Commands.literal("lowergate")
+                .requires(source -> source.hasPermission(PERMISSION))
+                .executes(ctx -> {
+                    int moved = local.plaincraft.greatwall.generation.GateStamp.lowerBy(
+                            ctx.getSource().getLevel(), 3);
+                    if (moved <= 0) {
+                        ctx.getSource().sendFailure(Component.literal(
+                                "GREATWALL_LOWERGATE_NO_PIECE：当前世界没有已盖章的独立门楼"));
+                        return 0;
+                    }
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "GREATWALL_LOWERGATE moved=3; 正在重新盖章"), false);
+                    return 1;
+                });
     }
 
     /** 把展台所有盖章件重置，下一 tick 从头再盖一遍（补洞 / 重画）。 */
