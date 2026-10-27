@@ -173,7 +173,7 @@ public final class GateStamp {
             }
         }
         if (highest == Integer.MIN_VALUE) return false;
-        originY = highest - 8;   // 新存档实测最高地面 -54：相对旧 -59 再下 3 格
+        originY = highest - 5;   // 0.7.90：比 0.7.89 的 highest-8 抬高 3 格（门楼不再埋进地面）
         autoGround = false;
         return true;
     }

@@ -67,7 +67,8 @@ public final class WallStamp {
         if (autoGround) {
             LevelChunk chunk = level.getChunkSource().getChunkNow(originX >> 4, originZ >> 4);
             if (chunk == null) return;
-            originY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, originX & 15, originZ & 15);
+            // 0.7.90：整段墙抬高 1 格，墙底坐在草方块顶面上（原来墙底嵌进地表那一层）。
+            originY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, originX & 15, originZ & 15) + 1;
             autoGround = false;
         }
         int budget = 4000;

@@ -38,8 +38,11 @@ public final class ShowcaseStamp {
     private List<int[]> coords;
     private List<BlockState> states;
     private int[] columnBottom;
-    /** Block state of each column's lowest template block, reused as foundation material. */
+    /** Block state of each column's lowest template block. */
     private BlockState[] columnBottomState;
+    /** Global lowest template layer and its material; the foundation is a single slab at this level. */
+    private int bottomLayerY = Integer.MAX_VALUE;
+    private BlockState bottomLayerState;
     private boolean loaded;
     private boolean settled;
     private boolean filling;
@@ -210,12 +213,13 @@ public final class ShowcaseStamp {
                 return;
             }
             int bottom = columnBottom[fillU * depth + fillV];
-            // Every column that owns a template block gets a foundation; only the authored
-            // doorway columns are excluded. The material follows that column's bottom block.
+            // Fill every footprint column from ONE global bottom level, not from each
+            // column's own lowest block. Otherwise decorative buttresses get stretched
+            // down into visible pillars outside the wall face.
             boolean aperture = fillU >= noFillMinX && fillU <= noFillMaxX;
-            boolean foundationColumn = bottom >= 0 && !aperture;
+            boolean foundationColumn = bottom >= 0 && !aperture && bottomLayerY != Integer.MAX_VALUE;
             if (foundationColumn) {
-                BlockState fillState = columnBottomState[fillU * depth + fillV];
+                BlockState fillState = bottomLayerState;
                 if (fillState == null) fillState = Blocks.STONE.defaultBlockState();
                 int x = originX + fillU;
                 int z = originZ + fillV;
@@ -224,7 +228,7 @@ public final class ShowcaseStamp {
                 int surface = groundSurface != null
                         ? groundSurface[fillU * depth + fillV]
                         : chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
-                for (int y = originY + bottom - 1; y > surface - 1; y--) {
+                for (int y = originY + bottomLayerY - 1; y > surface - 1; y--) {
                     BlockPos pos = new BlockPos(x, y, z);
                     if (level.getBlockState(pos).isAir()) {
                         level.setBlock(pos, fillState, 2);
@@ -245,6 +249,8 @@ public final class ShowcaseStamp {
         states = new ArrayList<>();
         columnBottom = new int[width * depth];
         columnBottomState = new BlockState[width * depth];
+        bottomLayerY = Integer.MAX_VALUE;
+        bottomLayerState = null;
         groundSurface = null;
         Arrays.fill(columnBottom, -1);
         try (InputStream in = ShowcaseStamp.class.getResourceAsStream(resource)) {
@@ -271,6 +277,10 @@ public final class ShowcaseStamp {
                     if (columnBottom[i] < 0 || dy < columnBottom[i]) {
                         columnBottom[i] = dy;
                         columnBottomState[i] = parsed;
+                    }
+                    if (dy < bottomLayerY) {
+                        bottomLayerY = dy;
+                        bottomLayerState = parsed;
                     }
                 }
             }
