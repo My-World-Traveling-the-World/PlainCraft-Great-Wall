@@ -8,6 +8,7 @@
 0,0,21,stone
 0,0,22,stone
 0,0,23,stone
+0,0,24,stone
 0,1,14,stone
 0,1,15,stone
 0,1,16,stone
@@ -2351,6 +2352,7 @@
 13,13,20,stone
 13,13,21,stone
 13,13,22,stone
+13,13,23,stone
 13,13,24,stone_bricks
 13,14,14,quartz_block
 13,14,15,stone_bricks
@@ -2520,6 +2522,7 @@
 14,13,20,stone
 14,13,21,stone
 14,13,22,stone
+14,13,23,stone
 14,13,24,stone_bricks
 14,14,14,quartz_block
 14,14,15,stone_bricks
@@ -2689,6 +2692,7 @@
 15,13,20,stone
 15,13,21,stone
 15,13,22,stone
+15,13,23,stone
 15,13,24,stone_bricks
 15,14,14,quartz_block
 15,14,15,stone_bricks
@@ -2858,6 +2862,7 @@
 16,13,20,stone
 16,13,21,stone
 16,13,22,stone
+16,13,23,stone
 16,13,24,stone_bricks
 16,14,14,quartz_block
 16,14,15,stone_bricks
@@ -3025,6 +3030,7 @@
 17,13,20,stone
 17,13,21,stone
 17,13,22,stone
+17,13,23,stone
 17,13,24,stone_bricks
 17,14,14,quartz_block
 17,14,15,stone_bricks
@@ -3194,6 +3200,7 @@
 18,13,20,stone
 18,13,21,stone
 18,13,22,stone
+18,13,23,stone
 18,13,24,stone_bricks
 18,14,14,quartz_block
 18,14,15,stone_bricks
@@ -3363,6 +3370,7 @@
 19,13,20,stone
 19,13,21,stone
 19,13,22,stone
+19,13,23,stone
 19,13,24,stone_bricks
 19,14,14,quartz_block
 19,14,15,stone_bricks
@@ -3532,6 +3540,7 @@
 20,13,20,stone
 20,13,21,stone
 20,13,22,stone
+20,13,23,stone
 20,13,24,stone_bricks
 20,14,14,quartz_block
 20,14,15,stone_bricks
@@ -3699,6 +3708,7 @@
 21,13,20,stone
 21,13,21,stone
 21,13,22,stone
+21,13,23,stone
 21,13,24,stone_bricks
 21,14,14,quartz_block
 21,14,15,stone_bricks
@@ -3868,6 +3878,7 @@
 22,13,20,stone
 22,13,21,stone
 22,13,22,stone
+22,13,23,stone
 22,13,24,stone_bricks
 22,14,14,quartz_block
 22,14,15,stone_bricks
@@ -4037,6 +4048,7 @@
 23,13,20,stone
 23,13,21,stone
 23,13,22,stone
+23,13,23,stone
 23,13,24,stone_bricks
 23,14,14,quartz_block
 23,14,15,stone_bricks
@@ -4206,6 +4218,7 @@
 24,13,20,stone
 24,13,21,stone
 24,13,22,stone
+24,13,23,stone
 24,13,24,stone_bricks
 24,14,14,quartz_block
 24,14,15,stone_bricks
@@ -4375,6 +4388,7 @@
 25,13,20,stone
 25,13,21,stone
 25,13,22,stone
+25,13,23,stone
 25,13,24,stone_bricks
 25,14,14,quartz_block
 25,14,15,stone_bricks
@@ -4555,6 +4569,7 @@
 26,13,20,stone
 26,13,21,stone
 26,13,22,stone
+26,13,23,stone
 26,13,24,stone_bricks
 26,14,14,quartz_block
 26,14,15,stone_bricks
@@ -4745,6 +4760,7 @@
 27,13,20,stone
 27,13,21,stone
 27,13,22,stone
+27,13,23,stone
 27,13,24,stone_bricks
 27,14,14,quartz_block
 27,14,15,stone_bricks
@@ -4935,6 +4951,7 @@
 28,13,20,stone
 28,13,21,stone
 28,13,22,stone
+28,13,23,stone
 28,13,24,stone_bricks
 28,14,14,quartz_block
 28,14,15,stone_bricks
@@ -5133,6 +5150,7 @@
 29,13,20,stone
 29,13,21,stone
 29,13,22,stone
+29,13,23,stone
 29,13,24,stone_bricks
 29,14,14,quartz_block
 29,14,15,stone_bricks
@@ -5333,6 +5351,7 @@
 30,13,20,stone
 30,13,21,stone
 30,13,22,stone
+30,13,23,stone
 30,13,24,stone_bricks
 30,14,14,quartz_block
 30,14,15,stone_bricks
@@ -5543,6 +5562,7 @@
 31,13,20,stone
 31,13,21,stone
 31,13,22,stone
+31,13,23,stone
 31,13,24,stone_bricks
 31,14,14,quartz_block
 31,14,15,stone_bricks
@@ -5753,6 +5773,7 @@
 32,13,20,stone
 32,13,21,stone
 32,13,22,stone
+32,13,23,stone
 32,13,24,stone_bricks
 32,14,14,quartz_block
 32,14,15,stone_bricks
@@ -5971,6 +5992,7 @@
 33,13,20,stone
 33,13,21,stone
 33,13,22,stone
+33,13,23,stone
 33,13,24,stone_bricks
 33,14,14,quartz_block
 33,14,15,stone_bricks
@@ -6191,6 +6213,7 @@
 34,13,20,stone
 34,13,21,stone
 34,13,22,stone
+34,13,23,stone
 34,13,24,stone_bricks
 34,14,14,quartz_block
 34,14,15,stone_bricks
@@ -6421,6 +6444,7 @@
 35,13,20,stone
 35,13,21,stone
 35,13,22,stone
+35,13,23,stone
 35,13,24,stone_bricks
 35,14,14,quartz_block
 35,14,15,stone_bricks
@@ -6651,6 +6675,7 @@
 36,13,20,stone
 36,13,21,stone
 36,13,22,stone
+36,13,23,stone
 36,13,24,stone_bricks
 36,14,14,quartz_block
 36,14,15,stone_bricks
@@ -6889,6 +6914,7 @@
 37,13,20,stone
 37,13,21,stone
 37,13,22,stone
+37,13,23,stone
 37,13,24,stone_bricks
 37,14,14,quartz_block
 37,14,15,stone_bricks
@@ -7129,6 +7155,7 @@
 38,13,20,stone
 38,13,21,stone
 38,13,22,stone
+38,13,23,stone
 38,13,24,stone_bricks
 38,14,14,quartz_block
 38,14,15,stone_bricks
@@ -7379,6 +7406,7 @@
 39,13,20,stone
 39,13,21,stone
 39,13,22,stone
+39,13,23,stone
 39,13,24,stone_bricks
 39,14,14,quartz_block
 39,14,15,stone_bricks
@@ -7629,6 +7657,7 @@
 40,13,20,stone
 40,13,21,stone
 40,13,22,stone
+40,13,23,stone
 40,13,24,stone_bricks
 40,14,14,quartz_block
 40,14,15,stone_bricks
@@ -7887,6 +7916,7 @@
 41,13,20,stone
 41,13,21,stone
 41,13,22,stone
+41,13,23,stone
 41,13,24,stone_bricks
 41,14,14,quartz_block
 41,14,15,stone_bricks
@@ -8147,6 +8177,7 @@
 42,13,20,stone
 42,13,21,stone
 42,13,22,stone
+42,13,23,stone
 42,13,24,stone_bricks
 42,14,14,quartz_block
 42,14,15,stone_bricks
@@ -8417,6 +8448,7 @@
 43,13,20,stone
 43,13,21,stone
 43,13,22,stone
+43,13,23,stone
 43,13,24,stone_bricks
 43,14,14,quartz_block
 43,14,15,stone_bricks
@@ -8687,6 +8719,7 @@
 44,13,20,stone
 44,13,21,stone
 44,13,22,stone
+44,13,23,stone
 44,13,24,stone_bricks
 44,14,14,quartz_block
 44,14,15,stone_bricks
@@ -8965,6 +8998,7 @@
 45,13,20,stone
 45,13,21,stone
 45,13,22,stone
+45,13,23,stone
 45,13,24,stone_bricks
 45,14,14,quartz_block
 45,14,15,stone_bricks
@@ -9245,6 +9279,7 @@
 46,13,20,stone
 46,13,21,stone
 46,13,22,stone
+46,13,23,stone
 46,13,24,stone_bricks
 46,14,14,quartz_block
 46,14,15,stone_bricks
@@ -9535,6 +9570,7 @@
 47,13,20,stone
 47,13,21,stone
 47,13,22,stone
+47,13,23,stone
 47,13,24,stone_bricks
 47,14,14,quartz_block
 47,14,15,stone_bricks
@@ -9825,6 +9861,7 @@
 48,13,20,stone
 48,13,21,stone
 48,13,22,stone
+48,13,23,stone
 48,13,24,stone_bricks
 48,14,14,quartz_block
 48,14,15,stone_bricks
@@ -10123,6 +10160,7 @@
 49,13,20,stone
 49,13,21,stone
 49,13,22,stone
+49,13,23,stone
 49,13,24,stone_bricks
 49,14,14,quartz_block
 49,14,15,stone_bricks
@@ -10423,6 +10461,7 @@
 50,13,20,stone
 50,13,21,stone
 50,13,22,stone
+50,13,23,stone
 50,13,24,stone_bricks
 50,14,14,quartz_block
 50,14,15,stone_bricks
@@ -10732,6 +10771,7 @@
 51,13,20,stone
 51,13,21,stone
 51,13,22,stone
+51,13,23,stone
 51,13,24,stone_bricks
 51,14,4,stone_brick_slab[type=bottom,waterlogged=false]
 51,14,14,quartz_block
@@ -11082,6 +11122,7 @@
 52,13,20,stone
 52,13,21,stone
 52,13,22,stone
+52,13,23,stone
 52,13,24,stone_bricks
 52,14,4,stone_bricks
 52,14,14,quartz_block
@@ -11470,6 +11511,7 @@
 53,13,20,stone
 53,13,21,stone
 53,13,22,stone
+53,13,23,stone
 53,13,24,stone_bricks
 53,14,4,stone_bricks
 53,14,5,stone_brick_slab[type=bottom,waterlogged=false]
@@ -11898,6 +11940,7 @@
 54,13,20,stone
 54,13,21,stone
 54,13,22,stone
+54,13,23,stone
 54,13,24,stone_bricks
 54,13,25,stone_bricks
 54,13,26,stone_bricks
@@ -13900,6 +13943,8 @@
 58,15,20,stone
 58,15,21,stone
 58,15,22,stone
+58,15,23,stone
+58,15,24,stone
 58,15,28,stone_bricks
 58,16,0,stone_brick_slab[type=bottom,waterlogged=false]
 58,16,28,stone_brick_slab[type=bottom,waterlogged=false]
@@ -14442,11 +14487,14 @@
 59,15,20,stone
 59,15,21,stone
 59,15,22,stone
+59,15,23,stone
+59,15,24,stone
 59,15,28,stone_bricks
 59,16,0,stone_brick_slab[type=bottom,waterlogged=false]
 59,16,5,stone
 59,16,9,stone
 59,16,19,stone
+59,16,23,stone
 59,16,28,stone_bricks
 59,17,5,oak_log[axis=y]
 59,17,9,oak_log[axis=y]
@@ -15074,6 +15122,8 @@
 60,15,20,stone
 60,15,21,stone
 60,15,22,stone
+60,15,23,stone
+60,15,24,stone
 60,15,28,stone_bricks
 60,16,0,stone_brick_slab[type=bottom,waterlogged=false]
 60,20,5,spruce_slab[type=bottom,waterlogged=false]
@@ -31687,6 +31737,7 @@
 93,13,20,stone
 93,13,21,stone
 93,13,22,stone
+93,13,23,stone
 93,13,24,stone_bricks
 93,14,4,stone_brick_slab[type=bottom,waterlogged=false]
 93,14,14,quartz_block
@@ -31988,6 +32039,7 @@
 94,13,20,stone
 94,13,21,stone
 94,13,22,stone
+94,13,23,stone
 94,13,24,stone_bricks
 94,14,14,quartz_block
 94,14,15,stone_bricks
@@ -32288,6 +32340,7 @@
 95,13,20,stone
 95,13,21,stone
 95,13,22,stone
+95,13,23,stone
 95,13,24,stone_bricks
 95,14,14,quartz_block
 95,14,15,stone_bricks
@@ -32578,6 +32631,7 @@
 96,13,20,stone
 96,13,21,stone
 96,13,22,stone
+96,13,23,stone
 96,13,24,stone_bricks
 96,14,14,quartz_block
 96,14,15,stone_bricks
@@ -32866,6 +32920,7 @@
 97,13,20,stone
 97,13,21,stone
 97,13,22,stone
+97,13,23,stone
 97,13,24,stone_bricks
 97,14,14,quartz_block
 97,14,15,stone_bricks
@@ -33146,6 +33201,7 @@
 98,13,20,stone
 98,13,21,stone
 98,13,22,stone
+98,13,23,stone
 98,13,24,stone_bricks
 98,14,14,quartz_block
 98,14,15,stone_bricks
@@ -33426,6 +33482,7 @@
 99,13,20,stone
 99,13,21,stone
 99,13,22,stone
+99,13,23,stone
 99,13,24,stone_bricks
 99,14,14,quartz_block
 99,14,15,stone_bricks
@@ -33696,6 +33753,7 @@
 100,13,20,stone
 100,13,21,stone
 100,13,22,stone
+100,13,23,stone
 100,13,24,stone_bricks
 100,14,14,quartz_block
 100,14,15,stone_bricks
@@ -33964,6 +34022,7 @@
 101,13,20,stone
 101,13,21,stone
 101,13,22,stone
+101,13,23,stone
 101,13,24,stone_bricks
 101,14,14,quartz_block
 101,14,15,stone_bricks
@@ -34224,6 +34283,7 @@
 102,13,20,stone
 102,13,21,stone
 102,13,22,stone
+102,13,23,stone
 102,13,24,stone_bricks
 102,14,14,quartz_block
 102,14,15,stone_bricks
@@ -34484,6 +34544,7 @@
 103,13,20,stone
 103,13,21,stone
 103,13,22,stone
+103,13,23,stone
 103,13,24,stone_bricks
 103,14,14,quartz_block
 103,14,15,stone_bricks
@@ -34734,6 +34795,7 @@
 104,13,20,stone
 104,13,21,stone
 104,13,22,stone
+104,13,23,stone
 104,13,24,stone_bricks
 104,14,14,quartz_block
 104,14,15,stone_bricks
@@ -34982,6 +35044,7 @@
 105,13,20,stone
 105,13,21,stone
 105,13,22,stone
+105,13,23,stone
 105,13,24,stone_bricks
 105,14,14,quartz_block
 105,14,15,stone_bricks
@@ -35222,6 +35285,7 @@
 106,13,20,stone
 106,13,21,stone
 106,13,22,stone
+106,13,23,stone
 106,13,24,stone_bricks
 106,14,14,quartz_block
 106,14,15,stone_bricks
@@ -35462,6 +35526,7 @@
 107,13,20,stone
 107,13,21,stone
 107,13,22,stone
+107,13,23,stone
 107,13,24,stone_bricks
 107,14,14,quartz_block
 107,14,15,stone_bricks
@@ -35692,6 +35757,7 @@
 108,13,20,stone
 108,13,21,stone
 108,13,22,stone
+108,13,23,stone
 108,13,24,stone_bricks
 108,14,14,quartz_block
 108,14,15,stone_bricks
@@ -35920,6 +35986,7 @@
 109,13,20,stone
 109,13,21,stone
 109,13,22,stone
+109,13,23,stone
 109,13,24,stone_bricks
 109,14,14,quartz_block
 109,14,15,stone_bricks
@@ -36140,6 +36207,7 @@
 110,13,20,stone
 110,13,21,stone
 110,13,22,stone
+110,13,23,stone
 110,13,24,stone_bricks
 110,14,14,quartz_block
 110,14,15,stone_bricks
@@ -36360,6 +36428,7 @@
 111,13,20,stone
 111,13,21,stone
 111,13,22,stone
+111,13,23,stone
 111,13,24,stone_bricks
 111,14,14,quartz_block
 111,14,15,stone_bricks
@@ -36570,6 +36639,7 @@
 112,13,20,stone
 112,13,21,stone
 112,13,22,stone
+112,13,23,stone
 112,13,24,stone_bricks
 112,14,14,quartz_block
 112,14,15,stone_bricks
@@ -36778,6 +36848,7 @@
 113,13,20,stone
 113,13,21,stone
 113,13,22,stone
+113,13,23,stone
 113,13,24,stone_bricks
 113,14,14,quartz_block
 113,14,15,stone_bricks
@@ -36978,6 +37049,7 @@
 114,13,20,stone
 114,13,21,stone
 114,13,22,stone
+114,13,23,stone
 114,13,24,stone_bricks
 114,14,14,quartz_block
 114,14,15,stone_bricks
@@ -37178,6 +37250,7 @@
 115,13,20,stone
 115,13,21,stone
 115,13,22,stone
+115,13,23,stone
 115,13,24,stone_bricks
 115,14,14,quartz_block
 115,14,15,stone_bricks
@@ -37369,6 +37442,7 @@
 116,13,20,stone
 116,13,21,stone
 116,13,22,stone
+116,13,23,stone
 116,13,24,stone_bricks
 116,14,14,quartz_block
 116,14,15,stone_bricks
@@ -37557,6 +37631,7 @@
 117,13,20,stone
 117,13,21,stone
 117,13,22,stone
+117,13,23,stone
 117,13,24,stone_bricks
 117,14,14,quartz_block
 117,14,15,stone_bricks
@@ -37737,6 +37812,7 @@
 118,13,20,stone
 118,13,21,stone
 118,13,22,stone
+118,13,23,stone
 118,13,24,stone_bricks
 118,14,14,quartz_block
 118,14,15,stone_bricks
@@ -37917,6 +37993,7 @@
 119,13,20,stone
 119,13,21,stone
 119,13,22,stone
+119,13,23,stone
 119,13,24,stone_bricks
 119,14,14,quartz_block
 119,14,15,stone_bricks
@@ -38086,6 +38163,7 @@
 120,13,20,stone
 120,13,21,stone
 120,13,22,stone
+120,13,23,stone
 120,13,24,stone_bricks
 120,14,14,quartz_block
 120,14,15,stone_bricks
@@ -38253,6 +38331,7 @@
 121,13,20,stone
 121,13,21,stone
 121,13,22,stone
+121,13,23,stone
 121,13,24,stone_bricks
 121,14,14,quartz_block
 121,14,15,stone_bricks
@@ -38422,6 +38501,7 @@
 122,13,20,stone
 122,13,21,stone
 122,13,22,stone
+122,13,23,stone
 122,13,24,stone_bricks
 122,14,14,quartz_block
 122,14,15,stone_bricks
@@ -38591,6 +38671,7 @@
 123,13,20,stone
 123,13,21,stone
 123,13,22,stone
+123,13,23,stone
 123,13,24,stone_bricks
 123,14,14,quartz_block
 123,14,15,stone_bricks
@@ -38760,6 +38841,7 @@
 124,13,20,stone
 124,13,21,stone
 124,13,22,stone
+124,13,23,stone
 124,13,24,stone_bricks
 124,14,14,quartz_block
 124,14,15,stone_bricks
@@ -38928,6 +39010,7 @@
 125,13,20,stone
 125,13,21,stone
 125,13,22,stone
+125,13,23,stone
 125,13,24,stone_bricks
 125,14,14,quartz_block
 125,14,15,stone_bricks
@@ -39097,6 +39180,7 @@
 126,13,20,stone
 126,13,21,stone
 126,13,22,stone
+126,13,23,stone
 126,13,24,stone_bricks
 126,14,14,quartz_block
 126,14,15,stone_bricks
@@ -39266,6 +39350,7 @@
 127,13,20,stone
 127,13,21,stone
 127,13,22,stone
+127,13,23,stone
 127,13,24,stone_bricks
 127,14,14,quartz_block
 127,14,15,stone_bricks
@@ -39435,6 +39520,7 @@
 128,13,20,stone
 128,13,21,stone
 128,13,22,stone
+128,13,23,stone
 128,13,24,stone_bricks
 128,14,14,quartz_block
 128,14,15,stone_bricks
@@ -39602,6 +39688,7 @@
 129,13,20,stone
 129,13,21,stone
 129,13,22,stone
+129,13,23,stone
 129,13,24,stone_bricks
 129,14,14,quartz_block
 129,14,15,stone_bricks
@@ -39771,6 +39858,7 @@
 130,13,20,stone
 130,13,21,stone
 130,13,22,stone
+130,13,23,stone
 130,13,24,stone_bricks
 130,14,14,quartz_block
 130,14,15,stone_bricks
@@ -39940,6 +40028,7 @@
 131,13,20,stone
 131,13,21,stone
 131,13,22,stone
+131,13,23,stone
 131,13,24,stone_bricks
 131,14,14,quartz_block
 131,14,15,stone_bricks
@@ -40109,6 +40198,7 @@
 132,13,20,stone
 132,13,21,stone
 132,13,22,stone
+132,13,23,stone
 132,13,24,stone_bricks
 132,14,14,quartz_block
 132,14,15,stone_bricks
@@ -40276,6 +40366,7 @@
 133,13,20,stone
 133,13,21,stone
 133,13,22,stone
+133,13,23,stone
 133,13,24,stone_bricks
 133,14,14,quartz_block
 133,14,15,stone_bricks
@@ -40445,6 +40536,7 @@
 134,13,20,stone
 134,13,21,stone
 134,13,22,stone
+134,13,23,stone
 134,13,24,stone_bricks
 134,14,14,quartz_block
 134,14,15,stone_bricks
@@ -40614,6 +40706,7 @@
 135,13,20,stone
 135,13,21,stone
 135,13,22,stone
+135,13,23,stone
 135,13,24,stone_bricks
 135,14,14,quartz_block
 135,14,15,stone_bricks
@@ -40783,6 +40876,7 @@
 136,13,20,stone
 136,13,21,stone
 136,13,22,stone
+136,13,23,stone
 136,13,24,stone_bricks
 136,14,14,quartz_block
 136,14,15,stone_bricks
@@ -40809,6 +40903,8 @@
 137,0,22,stone
 137,0,23,stone
 137,0,24,stone
+137,0,25,stone_bricks
+137,0,26,stone_bricks
 137,1,14,stone
 137,1,15,stone
 137,1,16,stone
@@ -40950,6 +41046,7 @@
 137,13,20,stone
 137,13,21,stone
 137,13,22,stone
+137,13,23,stone
 137,13,24,stone_bricks
 137,14,14,quartz_block
 137,14,15,stone_bricks
@@ -40978,6 +41075,11 @@
 138,0,22,stone
 138,0,23,stone
 138,0,24,stone
+138,0,25,stone_bricks
+138,0,26,mossy_stone_bricks
+138,0,27,mossy_stone_bricks
+138,0,28,stone_bricks
+138,0,29,cracked_stone_bricks
 138,1,14,stone
 138,1,15,stone
 138,1,16,stone
@@ -41119,6 +41221,7 @@
 138,13,20,stone
 138,13,21,stone
 138,13,22,stone
+138,13,23,stone
 138,13,24,stone_bricks
 138,14,14,quartz_block
 138,14,15,stone_bricks
@@ -41136,6 +41239,7 @@
 138,16,14,stone_brick_slab[type=bottom,waterlogged=false]
 138,16,24,stone_brick_slab[type=bottom,waterlogged=false]
 138,17,24,stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]
+139,0,13,mossy_stone_bricks
 139,0,14,stone
 139,0,15,stone
 139,0,16,stone
@@ -41147,6 +41251,13 @@
 139,0,22,stone
 139,0,23,stone
 139,0,24,stone
+139,0,25,stone_bricks
+139,0,26,cracked_stone_bricks
+139,0,27,mossy_stone_bricks
+139,0,28,cracked_stone_bricks
+139,0,29,cracked_stone_bricks
+139,0,30,mossy_stone_bricks
+139,0,31,mossy_stone_bricks
 139,1,14,stone
 139,1,15,stone
 139,1,16,stone
@@ -41288,6 +41399,7 @@
 139,13,20,stone
 139,13,21,stone
 139,13,22,stone
+139,13,23,stone
 139,13,24,stone_bricks
 139,14,14,quartz_block
 139,14,15,stone_bricks
@@ -41305,6 +41417,8 @@
 139,16,14,stone_brick_slab[type=bottom,waterlogged=false]
 139,16,24,stone_bricks
 139,17,24,stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]
+140,0,12,cracked_stone_bricks
+140,0,13,mossy_stone_bricks
 140,0,14,stone
 140,0,15,stone
 140,0,16,stone
@@ -41316,6 +41430,13 @@
 140,0,22,stone
 140,0,23,stone
 140,0,24,stone
+140,0,25,stone_bricks
+140,0,26,mossy_stone_bricks
+140,0,27,mossy_stone_bricks
+140,0,28,mossy_stone_bricks
+140,0,29,mossy_stone_bricks
+140,0,30,mossy_stone_bricks
+140,0,31,cracked_stone_bricks
 140,1,14,stone
 140,1,15,stone
 140,1,16,stone
@@ -41457,6 +41578,7 @@
 140,13,20,stone
 140,13,21,stone
 140,13,22,stone
+140,13,23,stone
 140,13,24,stone_bricks
 140,14,14,quartz_block
 140,14,15,stone_bricks
@@ -41472,6 +41594,9 @@
 140,15,14,stone_bricks
 140,15,24,stone_bricks
 140,16,14,stone_brick_slab[type=bottom,waterlogged=false]
+141,0,11,mossy_stone_bricks
+141,0,12,stone_bricks
+141,0,13,cracked_stone_bricks
 141,0,14,stone
 141,0,15,stone
 141,0,16,stone
@@ -41483,6 +41608,13 @@
 141,0,22,stone
 141,0,23,stone
 141,0,24,stone
+141,0,25,stone_bricks
+141,0,26,mossy_stone_bricks
+141,0,27,stone_bricks
+141,0,28,cracked_stone_bricks
+141,0,29,mossy_stone_bricks
+141,0,30,stone_bricks
+141,0,31,mossy_stone_bricks
 141,1,14,stone
 141,1,15,stone
 141,1,16,stone
@@ -41624,6 +41756,7 @@
 141,13,20,stone
 141,13,21,stone
 141,13,22,stone
+141,13,23,stone
 141,13,24,stone_bricks
 141,14,14,quartz_block
 141,14,15,stone_bricks
@@ -41641,6 +41774,11 @@
 141,16,14,stone_brick_slab[type=bottom,waterlogged=false]
 141,16,24,stone_bricks
 141,17,24,stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]
+142,0,9,mossy_stone_bricks
+142,0,10,cracked_stone_bricks
+142,0,11,stone_bricks
+142,0,12,cracked_stone_bricks
+142,0,13,mossy_stone_bricks
 142,0,14,stone
 142,0,15,stone
 142,0,16,stone
@@ -41652,6 +41790,12 @@
 142,0,22,stone
 142,0,23,stone
 142,0,24,stone
+142,0,26,cracked_stone_bricks
+142,0,27,cracked_stone_bricks
+142,0,28,mossy_stone_bricks
+142,0,29,cracked_stone_bricks
+142,0,30,stone_bricks
+142,0,31,cracked_stone_bricks
 142,1,14,stone
 142,1,15,stone
 142,1,16,stone
@@ -41793,6 +41937,7 @@
 142,13,20,stone
 142,13,21,stone
 142,13,22,stone
+142,13,23,stone
 142,13,24,stone_bricks
 142,14,14,quartz_block
 142,14,15,stone_bricks
@@ -41810,6 +41955,12 @@
 142,16,14,stone_brick_slab[type=bottom,waterlogged=false]
 142,16,24,stone_brick_slab[type=bottom,waterlogged=false]
 142,17,24,stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]
+143,0,8,stone_bricks
+143,0,9,stone_bricks
+143,0,10,mossy_stone_bricks
+143,0,11,stone_bricks
+143,0,12,stone_bricks
+143,0,13,stone_bricks
 143,0,14,stone
 143,0,15,stone
 143,0,16,stone
@@ -41821,6 +41972,9 @@
 143,0,22,stone
 143,0,23,stone
 143,0,24,stone
+143,0,29,cracked_stone_bricks
+143,0,30,stone_bricks
+143,0,31,cracked_stone_bricks
 143,1,14,stone
 143,1,15,stone
 143,1,16,stone
@@ -41962,6 +42116,7 @@
 143,13,20,stone
 143,13,21,stone
 143,13,22,stone
+143,13,23,stone
 143,13,24,stone_bricks
 143,14,14,quartz_block
 143,14,15,stone_bricks
@@ -41979,6 +42134,13 @@
 143,16,14,stone_brick_slab[type=bottom,waterlogged=false]
 143,16,24,stone_bricks
 143,17,24,stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]
+144,0,7,mossy_stone_bricks
+144,0,8,mossy_stone_bricks
+144,0,9,mossy_stone_bricks
+144,0,10,cracked_stone_bricks
+144,0,11,mossy_stone_bricks
+144,0,12,stone_bricks
+144,0,13,stone_bricks
 144,0,14,stone
 144,0,15,stone
 144,0,16,stone
@@ -42131,6 +42293,7 @@
 144,13,20,stone
 144,13,21,stone
 144,13,22,stone
+144,13,23,stone
 144,13,24,stone_bricks
 144,14,14,quartz_block
 144,14,15,stone_bricks

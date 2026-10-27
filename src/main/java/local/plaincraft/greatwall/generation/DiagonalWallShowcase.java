@@ -28,6 +28,8 @@ public final class DiagonalWallShowcase {
     private static final int STRAIGHT = 24;
     private static final int TRANSITION = 8;
     private static final int STEPS = STRAIGHT + 2 * TRANSITION + 24;
+    /** 门楼端面处的起始相位：3 让墙的第一道截面正好接上门楼端面的垛口节奏（48 相位里逐格差最小的那个）。 */
+    private static final int PHASE_OFFSET = 3;
 
     private static final List<Job> JOBS = new ArrayList<>();
 
@@ -156,20 +158,123 @@ public final class DiagonalWallShowcase {
     }
 
     /**
-     * Rasterise the wall as a swept volume along the centreline. Each world column is assigned
-     * to the nearest point on the polyline; its lateral coordinate selects the CSV t row and
-     * its longitudinal distance selects the phase. This covers miter/transition areas with the
-     * union of the swept body instead of exposing the seams between adjacent cross-sections.
+     * 直线段直接按模板逐 phase 铺；只有弯曲段才用中心线扫掠。
+     *
+     * <p>直线段本来不需要任何几何处理，扫掠反而会在两端「鼓」出一圈：每列都被投影到折线端点再取整，
+     * 端点处会补出完整的横向截面，俯视就是墙端多出半个圆盘（真机表现为墙端多一截、石英檐露出来）。
+     * 所以直线段严格一 phase 一格，端面永远是模板剖面本身。
      */
     private static void buildBlocks(Job job) {
-        // Build the exact centreline as a polyline, including the bend sectors.
+        Bounds bounds = new Bounds();
+        Set<Long> placed = new HashSet<>();
+        if (job.bend) {
+            buildSwept(job, placed, bounds);
+        } else {
+            buildModuleRun(job, placed, bounds);
+        }
+        mirrorLeft(job, placed, bounds);
+        job.minX = bounds.minX;
+        job.minZ = bounds.minZ;
+        job.maxX = bounds.maxX;
+        job.maxZ = bounds.maxZ;
+    }
+
+    /** 模板行按 phase 索引一次，两条路径共用。 */
+    private static Map<Integer, List<Row>> rowsByPhase(Job job) {
+        Map<Integer, List<Row>> byPhase = new HashMap<>();
+        for (Row row : job.rows) {
+            byPhase.computeIfAbsent(row.phase(), k -> new ArrayList<>()).add(row);
+        }
+        return byPhase;
+    }
+
+    /** 直线段：与模板逐格一致（x 沿路每格一个 phase，z = centreZ + t，y = baseY + 17 - depth）。 */
+    private static void buildModuleRun(Job job, Set<Long> placed, Bounds bounds) {
+        Map<Integer, List<Row>> byPhase = rowsByPhase(job);
+        for (int step = 0; step < job.steps; step++) {
+            List<Row> rows = byPhase.get(Math.floorMod(PHASE_OFFSET + step, 48));
+            if (rows == null) continue;
+            int wx = job.centreX + 73 + step;
+            for (Row row : rows) {
+                add(job, placed, bounds, wx, 17 - row.depth(), job.centreZ + row.t(), row.state());
+            }
+        }
+    }
+
+    /**
+     * 弯曲段：把每列投影到中心线上，横向取 t、纵向取 phase，用扫掠体的并集覆盖斜接与过渡区。
+     * 额外丢掉落在折线两端以外的格子——否则端点会长出半个圆盘。
+     */
+    private static void buildSwept(Job job, Set<Long> placed, Bounds bounds) {
+        List<double[]> line = centreline(job);
+        Map<Integer, List<Row>> byPhase = rowsByPhase(job);
+
+        double minLineX = Double.MAX_VALUE, maxLineX = -Double.MAX_VALUE;
+        double minLineZ = Double.MAX_VALUE, maxLineZ = -Double.MAX_VALUE;
+        for (double[] p : line) {
+            minLineX = Math.min(minLineX, p[0]); maxLineX = Math.max(maxLineX, p[0]);
+            minLineZ = Math.min(minLineZ, p[1]); maxLineZ = Math.max(maxLineZ, p[1]);
+        }
+
+        int fromX = (int) Math.floor(minLineX) - 7;
+        int toX = (int) Math.ceil(maxLineX) + 7;
+        int fromZ = (int) Math.floor(minLineZ) - 7;
+        int toZ = (int) Math.ceil(maxLineZ) + 7;
+
+        for (int wx = fromX; wx <= toX; wx++) {
+            for (int wz = fromZ; wz <= toZ; wz++) {
+                double bestDist2 = Double.MAX_VALUE;
+                double bestS = 0.0D;
+                double bestLat = 0.0D;
+                double bestRawU = 0.0D;
+                int bestSeg = -1;
+                double travelled = 0.0D;
+                for (int i = 1; i < line.size(); i++) {
+                    double ax = line.get(i - 1)[0], az = line.get(i - 1)[1];
+                    double bx = line.get(i)[0], bz = line.get(i)[1];
+                    double vx = bx - ax, vz = bz - az;
+                    double len2 = vx * vx + vz * vz;
+                    if (len2 < 1.0E-9D) continue;
+                    double rawU = ((wx - ax) * vx + (wz - az) * vz) / len2;
+                    double u = Math.max(0.0D, Math.min(1.0D, rawU));
+                    double qx = ax + vx * u, qz = az + vz * u;
+                    double dx = wx - qx, dz = wz - qz;
+                    double d2 = dx * dx + dz * dz;
+                    if (d2 < bestDist2) {
+                        bestDist2 = d2;
+                        double len = Math.sqrt(len2);
+                        bestS = travelled + len * u;
+                        bestLat = dx * (-vz / len) + dz * (vx / len);
+                        bestRawU = rawU;
+                        bestSeg = i;
+                    }
+                    travelled += Math.sqrt(len2);
+                }
+                if (bestSeg < 0 || bestDist2 > 5.55D * 5.55D) continue;
+                // 端点之外不延伸：投影落在首段起点外 / 末段终点外，整列丢掉。
+                if (bestSeg == 1 && bestRawU < 0.0D) continue;
+                if (bestSeg == line.size() - 1 && bestRawU > 1.0D) continue;
+                int t = (int) Math.round(bestLat);
+                if (t < -5 || t > 5) continue;
+                List<Row> rows = byPhase.get(Math.floorMod(PHASE_OFFSET + (int) Math.floor(bestS), 48));
+                if (rows == null) continue;
+                for (Row row : rows) {
+                    if (row.t() != t) continue;
+                    add(job, placed, bounds, wx, 17 - row.depth(), wz, row.state());
+                }
+            }
+        }
+    }
+
+    /** 中心线：从门楼端面外一格起，先直走 STRAIGHT 格，再用两段过渡转到 45°。 */
+    private static List<double[]> centreline(Job job) {
         List<double[]> line = new ArrayList<>();
         double x = job.centreX + 73.0D;
         double z = job.centreZ;
         line.add(new double[] {x, z});
         for (int step = 0; step < job.steps; step++) {
             double angle;
-            if (!job.bend || step < STRAIGHT) {
+            if (step < STRAIGHT) {
                 angle = 0.0D;
             } else if (step < STRAIGHT + TRANSITION) {
                 angle = Math.toRadians(15.0D);
@@ -182,77 +287,20 @@ public final class DiagonalWallShowcase {
             z += Math.sin(angle);
             line.add(new double[] {x, z});
         }
+        return line;
+    }
 
-        // Index the template rows by phase and lateral coordinate.
-        Map<Integer, Map<Integer, List<Row>>> byPhase = new HashMap<>();
-        for (Row row : job.rows) {
-            byPhase.computeIfAbsent(row.phase(), k -> new HashMap<>())
-                    .computeIfAbsent(row.t(), k -> new ArrayList<>())
-                    .add(row);
-        }
+    private static void add(Job job, Set<Long> placed, Bounds bounds, int wx, int wy, int wz,
+                            BlockState state) {
+        long key = ((long) wx & 0x3FFFFFFL) << 38 | ((long) wz & 0x3FFFFFFL) << 12 | (wy & 0xFFFL);
+        if (!placed.add(key)) return;
+        job.blocks.add(new int[] {wx, wy, wz});
+        job.states.add(state);
+        bounds.add(wx, wz);
+    }
 
-        double minLineX = Double.MAX_VALUE, maxLineX = -Double.MAX_VALUE;
-        double minLineZ = Double.MAX_VALUE, maxLineZ = -Double.MAX_VALUE;
-        for (double[] p : line) {
-            minLineX = Math.min(minLineX, p[0]); maxLineX = Math.max(maxLineX, p[0]);
-            minLineZ = Math.min(minLineZ, p[1]); maxLineZ = Math.max(maxLineZ, p[1]);
-        }
-
-        int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
-        Set<Long> placed = new HashSet<>();
-        int fromX = (int) Math.floor(minLineX) - 7;
-        int toX = (int) Math.ceil(maxLineX) + 7;
-        int fromZ = (int) Math.floor(minLineZ) - 7;
-        int toZ = (int) Math.ceil(maxLineZ) + 7;
-
-        for (int wx = fromX; wx <= toX; wx++) {
-            for (int wz = fromZ; wz <= toZ; wz++) {
-                double bestDist2 = Double.MAX_VALUE;
-                double bestS = 0.0D;
-                double bestLat = 0.0D;
-                double travelled = 0.0D;
-                for (int i = 1; i < line.size(); i++) {
-                    double ax = line.get(i - 1)[0], az = line.get(i - 1)[1];
-                    double bx = line.get(i)[0], bz = line.get(i)[1];
-                    double vx = bx - ax, vz = bz - az;
-                    double len2 = vx * vx + vz * vz;
-                    if (len2 < 1.0E-9D) continue;
-                    double u = ((wx - ax) * vx + (wz - az) * vz) / len2;
-                    u = Math.max(0.0D, Math.min(1.0D, u));
-                    double qx = ax + vx * u, qz = az + vz * u;
-                    double dx = wx - qx, dz = wz - qz;
-                    double d2 = dx * dx + dz * dz;
-                    if (d2 < bestDist2) {
-                        bestDist2 = d2;
-                        double len = Math.sqrt(len2);
-                        bestS = travelled + len * u;
-                        bestLat = dx * (-vz / len) + dz * (vx / len);
-                    }
-                    travelled += Math.sqrt(len2);
-                }
-                if (bestDist2 > 5.55D * 5.55D) continue;
-                int t = (int) Math.round(bestLat);
-                if (t < -5 || t > 5) continue;
-                int phase = Math.floorMod(3 + (int) Math.floor(bestS), 48);
-                Map<Integer, List<Row>> lateral = byPhase.get(phase);
-                if (lateral == null) continue;
-                List<Row> rows = lateral.get(t);
-                if (rows == null) continue;
-                for (Row row : rows) {
-                    int by = 17 - row.depth();
-                    long key = ((long) wx & 0x3FFFFFFL) << 38
-                            | ((long) wz & 0x3FFFFFFL) << 12 | (by & 0xFFFL);
-                    if (!placed.add(key)) continue;
-                    job.blocks.add(new int[] {wx, by, wz});
-                    job.states.add(row.state());
-                    minX = Math.min(minX, wx); minZ = Math.min(minZ, wz);
-                    maxX = Math.max(maxX, wx); maxZ = Math.max(maxZ, wz);
-                }
-            }
-        }
-
-        // Mirror onto the gate's other side.
+    /** 镜像到门楼的另一侧；只翻 x，z 方向不动，所以 t 的正负与门楼端面的 +z 侧保持一致。 */
+    private static void mirrorLeft(Job job, Set<Long> placed, Bounds bounds) {
         int rightCount = job.blocks.size();
         for (int i = 0; i < rightCount; i++) {
             int[] p = job.blocks.get(i);
@@ -262,15 +310,21 @@ public final class DiagonalWallShowcase {
             if (!placed.add(key)) continue;
             job.blocks.add(new int[] {leftX, p[1], p[2]});
             job.states.add(job.states.get(i));
-            minX = Math.min(minX, leftX);
-            maxX = Math.max(maxX, leftX);
-            minZ = Math.min(minZ, p[2]);
-            maxZ = Math.max(maxZ, p[2]);
+            bounds.add(leftX, p[2]);
         }
-        job.minX = minX;
-        job.minZ = minZ;
-        job.maxX = maxX;
-        job.maxZ = maxZ;
+    }
+
+    /** 已铺格子的包围盒。 */
+    private static final class Bounds {
+        int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+
+        void add(int x, int z) {
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+            minZ = Math.min(minZ, z);
+            maxZ = Math.max(maxZ, z);
+        }
     }
 
     private static List<Row> load() {
