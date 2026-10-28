@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "#c:rods", "required": false },
+    { "id": "#c:strings", "required": false },
+    "minecraft:string",
+    "minecraft:stick",
+    "minecraft:rotten_flesh",
+    "minecraft:cobweb"
+  ]
+}

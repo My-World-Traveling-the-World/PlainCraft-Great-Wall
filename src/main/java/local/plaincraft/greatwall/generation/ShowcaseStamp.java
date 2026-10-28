@@ -228,6 +228,10 @@ public final class ShowcaseStamp {
                 GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_STAMPED {} blocks={} origin=({},{},{})",
                         resource, coords.size(), originX, originY, originZ);
                 local.plaincraft.greatwall.generation.StampVerify.verify(level, resource, originX, originY, originZ, coords, states);
+                if (resource != null && resource.endsWith("gate.csv")) {
+                    // 门楼的方块实体模板（箱子战利品表 / 书架 / 吊牌）——拼接区与独立区共用同一份
+                    local.plaincraft.greatwall.generation.GateBlockEntities.apply(level, originX, originY, originZ);
+                }
                 filling = true;
             }
             return;

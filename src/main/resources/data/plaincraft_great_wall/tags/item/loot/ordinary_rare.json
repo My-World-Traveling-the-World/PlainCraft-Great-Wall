@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "#minecraft:bookshelf_books", "required": false },
+    "minecraft:book",
+    "minecraft:iron_ingot"
+  ]
+}

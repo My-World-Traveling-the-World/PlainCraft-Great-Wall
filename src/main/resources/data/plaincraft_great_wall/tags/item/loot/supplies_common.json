@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "#c:foods/bread", "required": false },
+    { "id": "#c:foods/cooked_meats", "required": false },
+    { "id": "#c:foods/cooked_fishes", "required": false },
+    { "id": "#c:foods/fruits", "required": false },
+    { "id": "#c:crops", "required": false },
+    "minecraft:bread",
+    "minecraft:cooked_porkchop"
+  ]
+}

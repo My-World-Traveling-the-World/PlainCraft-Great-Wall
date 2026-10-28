@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "#c:nuggets", "required": false },
+    { "id": "#c:strings", "required": false },
+    "minecraft:string",
+    "minecraft:paper",
+    "minecraft:stick",
+    "minecraft:coal"
+  ]
+}
