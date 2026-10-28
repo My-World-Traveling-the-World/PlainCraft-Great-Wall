@@ -42,6 +42,8 @@ public final class GateStamp {
     /** Global lowest template layer and its material; foundation is one slab at this level. */
     private static int bottomLayerY = Integer.MAX_VALUE;
     private static BlockState bottomLayerState;
+    /** 最底层各材质出现次数：地基材质取“最多的那个且排除光源方块”，见 {@link FoundationMaterial}。 */
+    private static final java.util.Map<BlockState, Integer> bottomLayerCounts = new java.util.HashMap<>();
     /** Natural WORLD_SURFACE sampled before the model is written, one value per footprint column. */
     private static int[] groundSurface;
     private static boolean loaded;
@@ -92,6 +94,7 @@ public final class GateStamp {
         columnBottomState = null;
         bottomLayerY = Integer.MAX_VALUE;
         bottomLayerState = null;
+        bottomLayerCounts.clear();
         groundSurface = null;
     }
 
@@ -216,6 +219,7 @@ public final class GateStamp {
         columnBottomState = new BlockState[WIDTH * DEPTH];
         bottomLayerY = Integer.MAX_VALUE;
         bottomLayerState = null;
+        bottomLayerCounts.clear();
         groundSurface = null;
         java.util.Arrays.fill(columnBottom, -1);
         try (InputStream in = GateStamp.class.getResourceAsStream(RESOURCE)) {
@@ -241,10 +245,14 @@ public final class GateStamp {
                     }
                     if (dy < bottomLayerY) {
                         bottomLayerY = dy;
-                        bottomLayerState = parsed;
+                        bottomLayerCounts.clear();
+                        bottomLayerCounts.merge(parsed, 1, Integer::sum);
+                    } else if (dy == bottomLayerY) {
+                        bottomLayerCounts.merge(parsed, 1, Integer::sum);
                     }
                 }
             }
+            bottomLayerState = FoundationMaterial.pick(bottomLayerCounts);
         } catch (Exception broken) {
             // 过去静默吞掉：模板损坏/缺失会表现成「什么都没盖」，排查时毫无线索。
             GreatWallMod.LOGGER.warn("[GreatWall:wonder] TEMPLATE_LOAD_FAILED piece=GateStamp resource={} ({})",

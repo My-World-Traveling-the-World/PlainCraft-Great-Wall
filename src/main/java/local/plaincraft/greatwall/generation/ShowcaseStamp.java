@@ -45,6 +45,8 @@ public final class ShowcaseStamp {
     /** Global lowest template layer and its material; the foundation is a single slab at this level. */
     private int bottomLayerY = Integer.MAX_VALUE;
     private BlockState bottomLayerState;
+    /** 最底层各材质出现次数：地基材质取“最多的那个且排除光源方块”，见 {@link FoundationMaterial}。 */
+    private final java.util.Map<BlockState, Integer> bottomLayerCounts = new java.util.HashMap<>();
     private boolean loaded;
     private boolean settled;
     private boolean filling;
@@ -281,6 +283,7 @@ public final class ShowcaseStamp {
         columnBottomState = new BlockState[width * depth];
         bottomLayerY = Integer.MAX_VALUE;
         bottomLayerState = null;
+        bottomLayerCounts.clear();
         groundSurface = null;
         Arrays.fill(columnBottom, -1);
         try (InputStream in = ShowcaseStamp.class.getResourceAsStream(resource)) {
@@ -310,10 +313,14 @@ public final class ShowcaseStamp {
                     }
                     if (dy < bottomLayerY) {
                         bottomLayerY = dy;
-                        bottomLayerState = parsed;
+                        bottomLayerCounts.clear();
+                        bottomLayerCounts.merge(parsed, 1, Integer::sum);
+                    } else if (dy == bottomLayerY) {
+                        bottomLayerCounts.merge(parsed, 1, Integer::sum);
                     }
                 }
             }
+            bottomLayerState = FoundationMaterial.pick(bottomLayerCounts);
         } catch (Exception broken) {
             // 过去静默吞掉：模板损坏/缺失会表现成「什么都没盖」，排查时毫无线索。
             GreatWallMod.LOGGER.warn("[GreatWall:wonder] TEMPLATE_LOAD_FAILED piece=ShowcaseStamp resource={} ({})",
