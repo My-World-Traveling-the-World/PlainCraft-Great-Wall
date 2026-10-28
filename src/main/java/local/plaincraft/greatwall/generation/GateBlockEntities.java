@@ -7,10 +7,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import local.plaincraft.greatwall.BuildContract;
 import local.plaincraft.greatwall.GreatWallMod;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
@@ -22,6 +26,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootTable;
 
 /**
@@ -42,6 +47,8 @@ import net.minecraft.world.level.storage.loot.LootTable;
 public final class GateBlockEntities {
     private static final String RESOURCE = "/assets/plaincraft-great-wall/templates/gate_be.jsonl";
     private static final long SEED_SALT = 0x9E3779B97F4A7C15L;
+    /** 门楼室内上下层分界（模板局部 y）：≥ 此高度算「上层」，兜底给军械类表。 */
+    static final int UPPER_FLOOR_Y = 20;
 
     /** 一行模板：{@code loot} = 战利品表 id；{@code books} = 随机塞几本书；{@code nbt} = 原始 SNBT。 */
     private record Entry(int x, int y, int z, String loot, int books, String nbt) {
@@ -53,13 +60,29 @@ public final class GateBlockEntities {
     }
 
     public static void apply(ServerLevel level, int originX, int originY, int originZ) {
+        apply(level, originX, originY, originZ, null, null);
+    }
+
+    /**
+     * 先按 {@code gate_be.jsonl} 显式回填，再对**模板里其余容器**套用兜底规则。
+     *
+     * <p>兜底规则的存在意义：玩家在存档里新放一个箱子，只要重采模板，它就应该自带战利品，
+     * 而不是每次都要人工往 jsonl 里补一行坐标。反过来，玩家删掉容器时这里只会找不到方块实体
+     * 而跳过（计入 {@code missing}），不会凭空造内容、也不会抛异常。
+     *
+     * @param coords 模板格子的局部坐标（可空：为空时只做显式回填）
+     * @param states 与 {@code coords} 一一对应的方块状态
+     */
+    public static void apply(ServerLevel level, int originX, int originY, int originZ,
+                             List<int[]> coords, List<BlockState> states) {
         List<Entry> list = entries();
-        if (list.isEmpty()) return;
+        Set<Long> explicit = new HashSet<>();
         int looted = 0;
         int stocked = 0;
         int restored = 0;
         int missing = 0;
         for (Entry entry : list) {
+            explicit.add(localKey(entry.x(), entry.y(), entry.z()));
             BlockPos pos = new BlockPos(originX + entry.x(), originY + entry.y(), originZ + entry.z());
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity == null) {
@@ -82,19 +105,7 @@ public final class GateBlockEntities {
                     missing++;
                     continue;
                 }
-                Random random = new Random(pos.asLong());
-                int size = container.getContainerSize();
-                for (int placed = 0; placed < entry.books() && placed < size; placed++) {
-                    int slot;
-                    int guard = 0;
-                    do {
-                        slot = random.nextInt(size);
-                    } while (!container.getItem(slot).isEmpty() && ++guard < 16);
-                    if (container.getItem(slot).isEmpty()) {
-                        container.setItem(slot, new ItemStack(Items.BOOK));
-                    }
-                }
-                container.setChanged();
+                fillBooks(container, entry.books(), pos);
                 stocked++;
             } else if (entry.nbt() != null) {
                 try {
@@ -108,9 +119,91 @@ public final class GateBlockEntities {
                 }
             }
         }
+
+        // ---- 兜底：模板里没被显式指定的容器按方块类型给默认战利品 ----
+        int autoLoot = 0;
+        int autoBooks = 0;
+        if (coords != null && states != null && coords.size() == states.size()) {
+            for (int i = 0; i < coords.size(); i++) {
+                int[] p = coords.get(i);
+                if (p == null || p.length < 3) continue;
+                if (explicit.contains(localKey(p[0], p[1], p[2]))) continue;
+                BlockState state = states.get(i);
+                if (state == null) continue;
+                String blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+                BlockPos pos = new BlockPos(originX + p[0], originY + p[1], originZ + p[2]);
+                String table = defaultTableFor(blockId, p[1]);
+                if (table != null) {
+                    BlockEntity blockEntity = level.getBlockEntity(pos);
+                    if (!(blockEntity instanceof RandomizableContainerBlockEntity container)) continue;
+                    container.setLootTable(ResourceKey.create(Registries.LOOT_TABLE,
+                            ResourceLocation.fromNamespaceAndPath(BuildContract.MOD_ID, "chests/" + table)),
+                            pos.asLong() ^ SEED_SALT);
+                    container.setChanged();
+                    autoLoot++;
+                    continue;
+                }
+                int books = defaultBooksFor(blockId, pos.asLong());
+                if (books > 0) {
+                    BlockEntity blockEntity = level.getBlockEntity(pos);
+                    if (!(blockEntity instanceof Container container)) continue;
+                    fillBooks(container, books, pos);
+                    autoBooks++;
+                }
+            }
+        }
+
         GreatWallMod.LOGGER.info(
-                "[GreatWall:wonder] GATE_BE_APPLIED loot={} books={} nbt={} missing={} origin=({},{},{})",
-                looted, stocked, restored, missing, originX, originY, originZ);
+                "[GreatWall:wonder] GATE_BE_APPLIED loot={} books={} nbt={} missing={} autoLoot={} autoBooks={} origin=({},{},{})",
+                looted, stocked, restored, missing, autoLoot, autoBooks, originX, originY, originZ);
+    }
+
+    /**
+     * 兜底规则（纯函数，便于回归）：容器方块 id + 模板局部 y → 用哪张表。
+     *
+     * <p>「上层」判定用 y ≥ 20（门楼室内的楼层分界），上层是军械/值钱的，下层是补给/杂物。
+     * 返回 {@code null} 表示不是我们要管的容器。
+     */
+    static String defaultTableFor(String blockId, int localY) {
+        if (blockId == null) return null;
+        boolean upper = localY >= UPPER_FLOOR_Y;
+        switch (blockId) {
+            case "minecraft:chest":
+            case "minecraft:trapped_chest":
+                return upper ? "armory" : "supplies";
+            case "minecraft:barrel":
+                return upper ? "armory" : "ordinary";
+            default:
+                return null;
+        }
+    }
+
+    /** 兜底规则：雕纹书架按坐标派生 2~3 本书，其余方块返回 0。 */
+    static int defaultBooksFor(String blockId, long posSeed) {
+        if ("minecraft:chiseled_bookshelf".equals(blockId)) {
+            return 2 + (int) Math.floorMod(posSeed, 2L);
+        }
+        return 0;
+    }
+
+    private static void fillBooks(Container container, int books, BlockPos pos) {
+        Random random = new Random(pos.asLong());
+        int size = container.getContainerSize();
+        for (int placed = 0; placed < books && placed < size; placed++) {
+            int slot;
+            int guard = 0;
+            do {
+                slot = random.nextInt(size);
+            } while (!container.getItem(slot).isEmpty() && ++guard < 16);
+            if (container.getItem(slot).isEmpty()) {
+                container.setItem(slot, new ItemStack(Items.BOOK));
+            }
+        }
+        container.setChanged();
+    }
+
+    private static long localKey(int x, int y, int z) {
+        return (((long) x) << 42) ^ (((long) y) << 21) ^ (z & 0x1FFFFFL);
     }
 
     private static List<Entry> entries() {

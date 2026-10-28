@@ -115,8 +115,9 @@ public final class GateStamp {
                 GreatWallMod.LOGGER.info("[GreatWall:wonder] GATE_STAMPED blocks={} origin=({},{},{})",
                         coords.size(), originX, originY, originZ);
                 local.plaincraft.greatwall.generation.StampVerify.verify(level, "gate.csv", originX, originY, originZ, coords, states);
-                // 方块实体（箱子战利品表 / 书架塞书 / 吊牌文字）必须在方块全部放完之后回填
-                local.plaincraft.greatwall.generation.GateBlockEntities.apply(level, originX, originY, originZ);
+                // 方块实体（箱子战利品表 / 书架塞书 / 吊牌文字）必须在方块全部放完之后回填；
+                // 传 coords/states 是为了对「jsonl 没显式指定」的容器套兜底规则（新放的箱子自动有战利品）
+                local.plaincraft.greatwall.generation.GateBlockEntities.apply(level, originX, originY, originZ, coords, states);
                 filling = true;
             }
             return;
