@@ -75,7 +75,8 @@ public final class WallStamp {
             int[] p = coords.get(cursor);
             // depth 0 is the top of the section, so it maps to the highest y.
             int y = originY + (WallProfile.DEPTH - 1) - p[2];
-            level.setBlock(new BlockPos(originX + p[0], y, originZ + p[1]), states.get(cursor), 2);
+            level.setBlock(new BlockPos(originX + p[0], y, originZ + p[1]), states.get(cursor),
+                    StampWrite.flags(states.get(cursor)));
             local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(originX + p[0], originZ + p[1]);
             cursor++;
         }

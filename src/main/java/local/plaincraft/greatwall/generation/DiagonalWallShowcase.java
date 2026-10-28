@@ -132,7 +132,8 @@ public final class DiagonalWallShowcase {
                 // 0.7.90：墙抬高 1 格。baseY 是地表上方第一层空气，墙底放到 baseY 上，
                 // 正好和门楼端面的墙接口（gate.csv 局部 y=3）对齐。
                 int y = current.baseY + p[1];
-                level.setBlock(new BlockPos(p[0], y, p[2]), current.states.get(current.cursor), 2);
+                level.setBlock(new BlockPos(p[0], y, p[2]), current.states.get(current.cursor),
+                        StampWrite.flags(current.states.get(current.cursor)));
                 WallRoadGuard.markColumn(p[0], p[2]);
                 current.cursor++;
             }

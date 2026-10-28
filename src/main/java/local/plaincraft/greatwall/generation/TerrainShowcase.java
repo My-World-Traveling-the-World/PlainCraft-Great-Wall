@@ -298,7 +298,8 @@ public final class TerrainShowcase {
     private static void writeComponent(ServerLevel level, ComponentVoxels component) {
         for (VoxelIntent voxel : component.voxels()) {
             BlockState state = local.plaincraft.greatwall.terrain.BlockCatalog.resolveState(voxel.state());
-            level.setBlock(new BlockPos(voxel.pos().x(), voxel.pos().y(), voxel.pos().z()), state, 2);
+            level.setBlock(new BlockPos(voxel.pos().x(), voxel.pos().y(), voxel.pos().z()), state,
+                    local.plaincraft.greatwall.generation.StampWrite.flags(state));
         }
     }
 

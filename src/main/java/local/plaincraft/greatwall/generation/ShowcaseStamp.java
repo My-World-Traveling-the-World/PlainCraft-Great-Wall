@@ -217,7 +217,8 @@ public final class ShowcaseStamp {
             int budget = 6000;
             while (cursor < coords.size() && budget-- > 0) {
                 int[] p = coords.get(cursor);
-                level.setBlock(new BlockPos(originX + p[0], originY + p[1], originZ + p[2]), states.get(cursor), 2);
+                level.setBlock(new BlockPos(originX + p[0], originY + p[1], originZ + p[2]),
+                        states.get(cursor), StampWrite.flags(states.get(cursor)));
                 local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(originX + p[0], originZ + p[2]);
                 cursor++;
             }
