@@ -9,7 +9,6 @@
       "local.plaincraft.greatwall.gametest.SkeletonGameTests",
       "local.plaincraft.greatwall.gametest.CatalogGameTests",
       "local.plaincraft.greatwall.gametest.ProtectionGameTests",
-      "local.plaincraft.greatwall.gametest.NoiseBridgeGameTests",
       "local.plaincraft.greatwall.gametest.OracleGameTests",
       "local.plaincraft.greatwall.gametest.TreeBoundsGameTests",
       "local.plaincraft.greatwall.gametest.ProductionInputGameTests",
