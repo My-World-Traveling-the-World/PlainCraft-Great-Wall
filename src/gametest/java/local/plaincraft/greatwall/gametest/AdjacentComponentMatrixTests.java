@@ -11,7 +11,6 @@ import local.plaincraft.greatwall.decay.DecayField;
 import local.plaincraft.greatwall.diagnostics.StageTrace;
 import local.plaincraft.greatwall.generation.*;
 import local.plaincraft.greatwall.geometry.*;
-import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.GroundExitCodec;
 import local.plaincraft.greatwall.planning.HeightContractPlanner;
@@ -109,20 +108,27 @@ public final class AdjacentComponentMatrixTests implements FabricGameTest {
                     || (bv.kind() == IntentKind.OWNED_VOID && av.kind() == IntentKind.SOLID), "mandatory air versus solid witness");
             var air = av.kind() == IntentKind.OWNED_VOID ? av : bv;
             var obstruction = air == av ? bv : av;
-            require(obstruction.component().kind() != SiteKind.WALL, "wall carving exemption cannot certify this rejection");
+            require(!air.component().equals(obstruction.component()), "the collision must span two components");
             var cells = List.of(cell(0, List.of(a.component())), cell(1, List.of(b.component())));
             var before = new HashMap<Point3i, String>();
             cells.forEach(c -> c.components().forEach(v -> v.voxels().forEach(p -> before.put(p.pos(), Column.AIR))));
             var owner = owner(witness);
+            // 7086de3c replaced the hard failure with a resolution: two sites' footprints overlapping is a
+            // boundary between neighbouring components, not corruption, so the solid keeps the voxel, the
+            // air clearance is dropped and the collision is counted (VOID_OVERLAP_DROPPED). What must still
+            // hold for every ordered input is that the drop is deterministic and never erases the solid.
+            ChunkWritePlan forward = null;
             for (var order : List.of(cells, cells.reversed())) {
-                try {
-                    new ChunkPlanCompiler().compile(owner, H, order, before);
-                    throw new AssertionError("accepted forbidden mandatory clearance collision at " + witness);
-                } catch (WallFailure failure) {
-                    require(failure.code() == FailureCode.OWNERSHIP_CONFLICT
-                                    && failure.getMessage().contains("void is not authorized to erase this component"),
-                            "only the specified mandatory-clearance rejection is accepted: " + failure);
-                }
+                var plan = new ChunkPlanCompiler().compile(owner, H, order, before);
+                var written = plan.voxels().stream().filter(v -> v.pos().equals(witness)).toList();
+                require(written.size() == 1, "exactly one voxel is scheduled at the collision witness " + witness);
+                require(written.getFirst().kind() == IntentKind.SOLID,
+                        "the obstruction keeps the voxel and the air clearance is dropped: " + witness);
+                require(written.getFirst().component().equals(obstruction.component()),
+                        "the obstruction, not the dropped clearance, owns the witness: " + witness);
+                if (forward == null) forward = plan;
+                else require(forward.voxels().equals(plan.voxels()),
+                        "the dropped-overlap resolution is order independent: " + witness);
             }
         });
     }
