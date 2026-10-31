@@ -42,9 +42,9 @@ public final class WallStamp {
         ticket = null;
         load();
         local.plaincraft.greatwall.generation.ShowcaseGate.expect();
-        ShowcaseLayout.add("wall", originX, originZ, originX + 47, originZ + 10);
-        local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(originX, originZ,
-                originX + 47, originZ + WallProfile.DEPTH - 1);
+        ShowcaseLayout.add("wall", originX, originZ - WallProfile.HALF, originX + WallProfile.PERIOD - 1, originZ + WallProfile.HALF);
+        local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(originX, originZ - WallProfile.HALF,
+                originX + WallProfile.PERIOD - 1, originZ + WallProfile.HALF);
     }
 
     /** Releases the old world's ticket and drops template/state references. */
@@ -61,7 +61,7 @@ public final class WallStamp {
 
     public static void tick(ServerLevel level) {
         if (finished || !loaded || coords == null || coords.isEmpty()) return;
-        if (ticket == null) ticket = ChunkHold.hold(level, originX, originZ, originX + (WallProfile.PERIOD) - 1, originZ + (11) - 1);
+        if (ticket == null) ticket = ChunkHold.hold(level, originX, originZ - WallProfile.HALF, originX + (WallProfile.PERIOD) - 1, originZ + WallProfile.HALF);
         if (autoGround) {
             // 直接落地：墙底（depth=17）坐在 footprint 的地表上，与门楼同一口径（中位数）、同一平面。
             int ground = GroundLevel.median(level, originX, originZ - WallProfile.HALF,

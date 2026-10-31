@@ -85,7 +85,7 @@ public final class StairStamp {
             int budget = 4000;
             while (cursor < coords.size() && budget-- > 0) {
                 int[] p = coords.get(cursor);
-                level.setBlock(new BlockPos(originX + p[0], originY + p[1], originZ + p[2]), states.get(cursor), 2);
+                level.setBlock(new BlockPos(originX + p[0], originY + p[1], originZ + p[2]), states.get(cursor), StampWrite.flags(states.get(cursor)));
                 local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(originX + p[0], originZ + p[2]);
                 cursor++;
             }
@@ -134,28 +134,14 @@ public final class StairStamp {
     }
 
     private static boolean settle(ServerLevel level) {
-        int highest = Integer.MIN_VALUE;
-        for (int dx = 0; dx < WIDTH; dx += 4) {
-            for (int dz = 0; dz < DEPTH; dz += 4) {
-                int x = originX + dx;
-                int z = originZ + dz;
-                LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
-                if (chunk == null) return false;
-                highest = Math.max(highest, chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15));
-            }
+        if (groundSurface == null || groundSurface.length != WIDTH * DEPTH) {
+            groundSurface = new int[WIDTH * DEPTH];
         }
-        if (highest == Integer.MIN_VALUE) return false;
-        originY = highest;
-        groundSurface = new int[WIDTH * DEPTH];
-        for (int dx = 0; dx < WIDTH; dx++) {
-            for (int dz = 0; dz < DEPTH; dz++) {
-                int x = originX + dx, z = originZ + dz;
-                LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
-                if (chunk == null) return false;
-                groundSurface[dx * DEPTH + dz] = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
-            }
-        }
+        int ground = GroundLevel.fill(level, originX, originZ, WIDTH, DEPTH, groundSurface);
+        if (ground == GroundLevel.MISSING) return false;
+        originY = ground;
         autoGround = false;
+        GreatWallMod.LOGGER.info("[GreatWall:wonder] STAIR_GROUND median={} (模板最底层 y=0 坐在该层)", ground);
         return true;
     }
 

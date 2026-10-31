@@ -21,7 +21,11 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * <p>Same rules as the gate: the base settles on the highest ground under the footprint, every column is
  * carried down to the real surface with a stone footing, and the wall corridor through the tower is
  * floored so the walkway stays continuous at the wall's walking level.
+ *
+ * @deprecated 死代码：从未接入 start()/tick()（WorldServices 不启动它，服务端 tick 也不驱动它），
+ *             保留仅作历史参考，不要按它理解现役落地口径。
  */
+@Deprecated
 public final class TowerStamp {
     private static final String RESOURCE = "/assets/plaincraft-great-wall/templates/tower.csv";
     public static final int WIDTH = 24;
@@ -76,7 +80,7 @@ public final class TowerStamp {
             int budget = 4000;
             while (cursor < coords.size() && budget-- > 0) {
                 int[] p = coords.get(cursor);
-                level.setBlock(new BlockPos(originX + p[0], originY + p[1], originZ + p[2]), states.get(cursor), 2);
+                level.setBlock(new BlockPos(originX + p[0], originY + p[1], originZ + p[2]), states.get(cursor), StampWrite.flags(states.get(cursor)));
                 local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(originX + p[0], originZ + p[2]);
                 cursor++;
             }
