@@ -1,0 +1,12 @@
+{
+    "sourceCommit":  "15c8b2b05e51124ff87cb6578318d52ceef35a22",
+    "workspace":  "D:\\云游四海-Mod源码\\plaincraft-great-wall",
+    "tag":  "build-a",
+    "command":  "gradlew.bat --offline --dependency-verification=strict clean build verifyReleaseArtifacts --console=plain --no-daemon",
+    "startedUtc":  "2026-10-08T03:45:22.1306329Z",
+    "seed":  9282026,
+    "profile":  "vanilla",
+    "javaHome":  "C:\\Program Files\\Java\\jdk-21",
+    "networkUsed":  false,
+    "purpose":  "s5-release-two-clean-builds"
+}
