@@ -42,6 +42,15 @@ final class NoiseSurfaceSampler {
     /** Vanilla records "the y of the first air above the surface", so ground = surface - 1. */
     private static final int COLUMN_COUNT = 256;
     /**
+     * Solid states kept per column, counted from the topmost one down.
+     *
+     * <p>Four, not three: the foundation certificate reads {@code h-1,h-2,h-3} (the top solid and the two
+     * below it) while the legacy extra-read view reads one further down ({@code h-2,h-3,h-4}), and that
+     * view is what proves the old root call site rejects a roof with three real foundation layers. Three
+     * slots could not answer both.
+     */
+    static final int SUPPORT_STATES = 4;
+    /**
      * Baked cells kept per lane.
      *
      * <p>One siting candidate covers 64x64 blocks - 256 cells - and neighbouring candidates sit about
@@ -153,10 +162,15 @@ final class NoiseSurfaceSampler {
     }
 
     private Heights sweep(int cellX, int cellZ) {
-        Heights fast = sweepCell(cellX, cellZ, 8);
-        if (fast.complete) return fast;
-        // A column the short margin could not resolve gets the road's full margin: correctness first,
-        // but only for the cells that actually need it.
+        // One pass at the full margin, no short-margin fast path.
+        //
+        // The short path assumed the density bisection lands within a handful of blocks of the real
+        // surface. Measured against the native column it does not: in mountains and tall old-growth the
+        // sweep started UNDER the surface and reported a lower stone block as the ground (80 where the
+        // native column says 86, 112 where it says 116). Nothing marked those cells incomplete, because a
+        // surface had been found - just the wrong one - so the full-margin retry never ran, and raising the
+        // short margin only moved the error to the next tall column. Correctness first: the sweep now
+        // always starts from the same margin the retry used.
         return sweepCell(cellX, cellZ, generatorSettings.seaLevel() - noiseSettings.minY() + 32);
     }
 
@@ -181,7 +195,11 @@ final class NoiseSurfaceSampler {
         int[] supportDepth = new int[columns];
         java.util.Arrays.fill(supportDepth, -1);
         byte[] unresolvedMasks = new byte[columns];
-        Arrays.fill(unresolvedMasks, (byte) 0x03);
+        // Three bits, not two: 0x01 worldSurface, 0x02 oceanFloor, 0x04 support still incomplete. Without
+        // the third the sweep cleared both heightmap bits on the same surface block and broke out of the
+        // whole loop right there, so it never collected the blocks below the surface that the foundation
+        // and extra-read views read (they saw one state, or a duplicated one).
+        Arrays.fill(unresolvedMasks, (byte) 0x07);
         int unresolvedColumns = columns;
 
         Predicate<BlockState> worldSurfacePredicate = Heightmap.Types.WORLD_SURFACE_WG.isOpaque();
@@ -196,8 +214,19 @@ final class NoiseSurfaceSampler {
             noiseChunk.advanceCellX(0);
             int repX = minBlockX + (cellWidth >> 1);
             int repZ = minBlockZ + (cellWidth >> 1);
-            int startCellY = Mth.floorDiv(preliminarySurface(repX, repZ) + airSkipMargin, cellHeight)
-                    - cellNoiseMinY;
+            // The estimate is a descent bound, and it reads initialDensityWithoutJaggedness while the blocks
+            // come from finalDensity. Those two disagree wherever a generator (or a test fixture) rewrites
+            // only the final density - there the bisection never crosses its threshold, bottoms out below
+            // the dimension floor, and the sweep would start inside the bedrock and report deep stone as
+            // the surface instead of the real one far above. An estimate that bottoms out is therefore
+            // discarded and the sweep starts from the top of the world; anything still below sea level is
+            // clamped up to it, because ground is never under the water line.
+            int estimate = preliminarySurface(repX, repZ);
+            if (estimate < noiseSettings.minY() + cellHeight) {
+                estimate = noiseSettings.minY() + noiseSettings.height();
+            }
+            estimate = Math.max(estimate, generatorSettings.seaLevel());
+            int startCellY = Mth.floorDiv(estimate + airSkipMargin, cellHeight) - cellNoiseMinY;
             startCellY = Math.max(0, Math.min(cellCountY - 1, startCellY));
             outer:
             for (int cellY = startCellY; cellY >= 0; cellY--) {
@@ -214,25 +243,49 @@ final class NoiseSurfaceSampler {
                             noiseChunk.updateForZ(minBlockZ + inCellZ, (double) inCellZ / cellWidth);
                             BlockState state = noiseChunk.sampleInterpolatedState();
                             if (state == null) state = defaultBlock;
-                            if (state.isAir()) continue;
                             byte next = mask;
-                            if ((next & 0x01) != 0 && worldSurfacePredicate.test(state)) {
-                                worldSurface[index] = blockY + 1;
-                                supportDepth[index] = 0;
-                                if (support[index] == null) support[index] = new BlockState[3];
+                            // One block answers at most one append below. The worldSurface branch already
+                            // records this state as support[0]; letting the tail append run in the same
+                            // iteration stored the same block twice, so the two evidence views read
+                            // [top, top, next] instead of [top, next, next-1].
+                            boolean appended = false;
+                            if (!state.isAir()) {
+                                if ((next & 0x01) != 0 && worldSurfacePredicate.test(state)) {
+                                    worldSurface[index] = blockY + 1;
+                                    next &= ~0x01;
+                                }
+                                if ((next & 0x02) != 0 && oceanFloorPredicate.test(state)) {
+                                    oceanFloor[index] = blockY + 1;
+                                    next &= ~0x02;
+                                    // The evidence is anchored on the first OPAQUE block, not the first
+                                    // non-air one: vanilla's WORLD_SURFACE_WG predicate is "not air", so a
+                                    // river's first non-air block is water and anchoring there filled all
+                                    // three evidence slots with water. The native column walk anchors on
+                                    // the first non-fluid block for the same reason.
+                                    supportDepth[index] = 0;
+                                    if (support[index] == null) support[index] = new BlockState[SUPPORT_STATES];
+                                    support[index][supportDepth[index]++] = state;
+                                    appended = true;
+                                }
+                                // Every opaque block below the anchor is the next evidence slot: the wall
+                                // certifies its base against these states, and reading them from the same
+                                // vanilla sweep is what lets the density walk go away entirely.
+                                if (!appended && supportDepth[index] >= 0 && supportDepth[index] < SUPPORT_STATES) {
+                                    if (support[index] == null) support[index] = new BlockState[SUPPORT_STATES];
+                                    support[index][supportDepth[index]++] = state;
+                                }
+                            } else if (supportDepth[index] >= 1 && supportDepth[index] < SUPPORT_STATES) {
+                                // Air under the anchor is evidence too: an overhang has no support there, and
+                                // the extra-read view exists precisely to prove the old call site rejected such
+                                // a roof. Skipping air made that view unanswerable (it could never fill three).
+                                if (support[index] == null) support[index] = new BlockState[SUPPORT_STATES];
                                 support[index][supportDepth[index]++] = state;
-                                next &= ~0x01;
                             }
-                            if ((next & 0x02) != 0 && oceanFloorPredicate.test(state)) {
-                                oceanFloor[index] = blockY + 1;
-                                next &= ~0x02;
-                            }
-                            // The first solid block under the surface starts the foundation evidence: the
-                            // wall certifies its base against these three states, and reading them from the
-                            // same vanilla sweep is what lets the density walk go away entirely.
-                            if (supportDepth[index] >= 0 && supportDepth[index] < 3) {
-                                if (support[index] == null) support[index] = new BlockState[3];
-                                support[index][supportDepth[index]++] = state;
+                            // The support bit clears once the column has all it can get: either the slots are
+                            // full, or there is no world left below to read. Otherwise the sweep stops on the
+                            // surface block, where both heightmap bits clear together.
+                            if (supportDepth[index] >= SUPPORT_STATES || blockY <= noiseSettings.minY()) {
+                                next &= ~0x04;
                             }
                             if (next != mask) {
                                 unresolvedMasks[index] = next;
@@ -265,7 +318,7 @@ final class NoiseSurfaceSampler {
         return lo;
     }
 
-    /** One cell's heightmaps plus the first three solid blocks under each column's surface. */
+    /** One cell's heightmaps plus the solid blocks under each column's surface. */
     private record Heights(int[] worldSurface, int[] oceanFloor, BlockState[][] support, boolean complete) {
     }
 

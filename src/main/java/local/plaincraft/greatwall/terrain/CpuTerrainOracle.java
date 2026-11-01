@@ -221,14 +221,36 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         }
         if (active != null) throw new IllegalStateException("finish the current natural column before beginning another");
         active = new Cursor(x, z, kind);
+        if (kind == SampleKind.COARSE) {
+            return beginCoarse(active);
+        }
         // Road-style answer: the vanilla sweep already knows this column, so there is nothing to walk.
         // It also hands back the three solid states under the surface, which is what the foundation
         // certificate reads - the density walk existed only to collect them.
         int sea = settings.seaLevel();
         int surface = surfaceSampler.worldSurface(x, z);
         int floor = surfaceSampler.oceanFloor(x, z);
-        int ground = surface - 1;
-        boolean sane = ground > bounds.minY() + 8 && ground < bounds.maxYExclusive();
+        // `surface` is the first NON-AIR block (+1) and `floor` the first OPAQUE one (+1). Which of them is
+        // the ground depends on whether the column is under water:
+        //
+        //  * dry - the first non-air IS the surface, and that is what the native column walk reports: a
+        //    forest's top is its LEAVES, which are non-air but not opaque. Using the floor there reported
+        //    the trunk's base instead (measured: 80 where the native column says 86).
+        //  * submerged - the first non-air is the WATER surface, so the wall would stand on the water;
+        //    the ground is the bed's first block above, exactly the `top` the native walk reports after
+        //    skipping every fluid on the way down.
+        //
+        // WallFoundationPlanner takes max(groundTopY) as the wall base and fills every lower lateral column
+        // up to it, and GroundLevel.median documents the same "first block above the surface" convention
+        // (its javadoc records this exact 0.7.91 field bug), so a base one block off drops the whole wall.
+        boolean submerged = surface <= sea && floor < surface;
+        int ground = submerged ? floor : surface;
+        // Censoring is decided on `surface` (the first non-air block, water included), not on the bed:
+        // water that reaches the build limit is the "clipped open water" case, and the bed alone cannot
+        // see it. `surface` is therefore still the sanity witness even though the height now comes from
+        // the floor.
+        boolean sane = surface > bounds.minY() + 8 && surface < bounds.maxYExclusive()
+                && ground > bounds.minY();
         var water = base(sea, surface, floor);
         String biome = biomeSource.getNoiseBiome(Math.floorDiv(x, 4),
                 Math.floorDiv(sane ? ground : sea, 4), Math.floorDiv(z, 4), randomState.sampler())
@@ -242,27 +264,67 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         BlockState[] support = surfaceSampler.supportColumn(x, z);
         if (support != null) {
             active.firstSolid = support[0];
+            // The sampler fills support[] densely from index 0 and leaves the rest null when a column has
+            // fewer than three solid states above the dimension floor. Counting the slots instead of the
+            // filled ones made the count always 3, so supportEvidence/foundationEvidence read a null slot
+            // and threw NullPointerException inside BlockCatalog.specification on exactly those columns.
+            active.supportCount = 0;
             for (int i = 0; i < support.length && i < active.support.length; i++) {
                 active.support[i] = support[i];
+                if (support[i] != null) active.supportCount = i + 1;
             }
-            active.supportCount = Math.min(support.length, active.support.length);
         }
         active.result = new ColumnSample(active.groundTop, active.waterTop, active.bedTop, biome, quality, active.censored);
         return active;
     }
 
     /**
+     * The cheap probe: density only, stepped on the noise cell height and evaluated on the /4 grid the
+     * router is defined on. It reads no blocks, sees no water and collects no support, so it is a
+     * predictor and never a height the pipeline may publish - every consumer of a wall height requires
+     * {@link Quality#REFERENCE} and treats anything else as invalid. Skipping the sweep is the whole
+     * point: a coarse pass touching thousands of columns must not pay for a NoiseChunk bake each.
+     */
+    private ColumnCursor beginCoarse(Cursor cursor) {
+        int cellHeight = noise.getCellHeight();
+        int qx = Math.floorDiv(cursor.x, 4) * 4;
+        int qz = Math.floorDiv(cursor.z, 4) * 4;
+        var density = randomState.router().initialDensityWithoutJaggedness();
+        int y = bounds.maxYExclusive() - 1;
+        while (y >= bounds.minY()
+                && density.compute(new DensityFunction.SinglePointContext(qx, y, qz)) <= 0.390625) {
+            y -= cellHeight;
+        }
+        cursor.groundTop = y < bounds.minY() ? bounds.minY() : y + 1;
+        cursor.waterTop = OptionalInt.empty();
+        cursor.bedTop = OptionalInt.empty();
+        String biome = biomeSource.getNoiseBiome(Math.floorDiv(cursor.x, 4), Math.floorDiv(settings.seaLevel(), 4),
+                Math.floorDiv(cursor.z, 4), randomState.sampler()).unwrapKey()
+                .orElseThrow(() -> new WallFailure(FailureCode.INVALID_RESOURCE, "unkeyed natural biome"))
+                .location().toString();
+        cursor.result = new ColumnSample(cursor.groundTop, cursor.waterTop, cursor.bedTop,
+                biome, Quality.COARSE, false);
+        return cursor;
+    }
+
+    /**
      * Every column is already answered by {@link #begin}: the vanilla sweep resolves the height,
      * the water and the three foundation states in one pass, so there is nothing left to advance.
+     *
+     * <p>The answer being ready does not remove the step: a caller may not take a column it never
+     * advanced. That is the same contract the walk-based oracle had, and RootSearch, WallFinePlanner and
+     * the planner pump all drive it as `while (!done()) advance(...)` - so the first advance is a real
+     * transition, not a formality the contract can drop.
      */
     @Override public WorkState advance(ColumnCursor cursor, int primitiveLimit) {
-        own(cursor);
+        var c = own(cursor);
         if (primitiveLimit < 1 || primitiveLimit > 4096) throw new IllegalArgumentException("primitive limit 1..4096");
+        c.walked = true;
         return WorkState.DONE;
     }
     @Override public ColumnSample finish(ColumnCursor cursor) {
         var c = own(cursor);
-        if (c.result == null) throw new IllegalStateException("natural column is unfinished");
+        if (c.result == null || !c.walked) throw new IllegalStateException("natural column is unfinished");
         if (active == c) active = null;
         return c.result;
     }
@@ -279,21 +341,26 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         if (active == c) active = null;
     }
 
-    /** Up to three additional native states below the top solid; missing evidence remains censored. */
+    /**
+     * The legacy extra-read view: the states one level further down than the foundation certificate reads
+     * ({@code h-2,h-3,h-4}), so a roof whose top three layers are solid still exposes an air state here.
+     * That is what proves the old root call site rejected such a roof; this is deliberately NOT the
+     * foundation view.
+     */
     public List<BlockSpec> supportEvidence(ColumnCursor cursor) {
         var c = own(cursor);
         if (c.result == null) throw new IllegalStateException("support evidence is unfinished");
-        var result = new ArrayList<BlockSpec>(c.supportCount);
-        for (int i = 0; i < c.supportCount; i++) result.add(BlockCatalog.specification(c.support[i]));
-        return List.copyOf(result);
+        if (c.supportCount < NoiseSurfaceSampler.SUPPORT_STATES) return List.of();
+        return List.of(BlockCatalog.specification(c.support[1]),
+                BlockCatalog.specification(c.support[2]), BlockCatalog.specification(c.support[3]));
     }
-    /** Actual foundation layers h-1,h-2,h-3, distinct from the legacy three additional read states. */
+    /** Actual foundation layers h-1,h-2,h-3, distinct from the legacy extra-read view above. */
     public List<BlockSpec> foundationEvidence(ColumnCursor cursor) {
         var c=own(cursor);
         if(c.result==null)throw new IllegalStateException("foundation evidence is unfinished");
-        if(c.firstSolid==null||c.supportCount<2)return List.of();
-        return List.of(BlockCatalog.specification(c.firstSolid),BlockCatalog.specification(c.support[0]),
-                BlockCatalog.specification(c.support[1]));
+        if(c.firstSolid==null||c.supportCount<3)return List.of();
+        return List.of(BlockCatalog.specification(c.support[0]),BlockCatalog.specification(c.support[1]),
+                BlockCatalog.specification(c.support[2]));
     }
 
     public TimingSnapshot timings() {
@@ -350,7 +417,9 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      */
     private OptionalInt[] base(int sea, int surface, int floor) {
         if (surface <= sea && floor < surface) {
-            return new OptionalInt[] {OptionalInt.of(sea), OptionalInt.of(Math.max(bounds.minY(), floor - 1))};
+            // The bed's first block above the seabed, matching the native column's `top` for a submerged
+            // column - not one below it. A wall that stands on the bed reports the same Y as its ground.
+            return new OptionalInt[] {OptionalInt.of(sea), OptionalInt.of(Math.max(bounds.minY(), floor))};
         }
         return new OptionalInt[] {OptionalInt.empty(), OptionalInt.empty()};
     }
@@ -373,19 +442,34 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     private final class Cursor implements ColumnCursor {
         private final int x, z;
         private final SampleKind kind;
-        private final BlockState[] support = new BlockState[3];
+        private final BlockState[] support = new BlockState[NoiseSurfaceSampler.SUPPORT_STATES];
         private BlockState firstSolid;
         private int groundTop = bounds.minY(), supportCount;
         private OptionalInt waterTop = OptionalInt.empty(), bedTop = OptionalInt.empty();
         private boolean censored;
         private ColumnSample result;
+        /** Set by the first {@link #advance}; {@link #finish} refuses a column that never took that step. */
+        private boolean walked;
 
         private Cursor(int x, int z, SampleKind kind) {
             this.x = x; this.z = z; this.kind = kind;
         }
 
-        /** The cursor is answered the moment it is created: nothing is ever pending. */
-        @Override public boolean done() { return result != null; }
+        /**
+         * False until the caller advances. The answer is computed eagerly in {@link #begin}, but
+         * {@code done()} reports the cursor's protocol state, not whether a result exists - a caller that
+         * never advanced has not been handed the column yet.
+         *
+         * <p>It also enforces the lane contract, because it is the one cursor method that has no
+         * arguments and would otherwise be a side door: reading it from another lane's thread, or after
+         * the owning oracle closed, has to fail rather than quietly answer.
+         */
+        @Override public boolean done() {
+            CpuTerrainOracle owner = oracle();
+            owner.checkOpen();
+            owner.checkOwner();
+            return walked;
+        }
 
         private CpuTerrainOracle oracle() { return CpuTerrainOracle.this; }
     }
