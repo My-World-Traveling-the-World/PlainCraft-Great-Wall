@@ -229,29 +229,28 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         // certificate reads - the density walk existed only to collect them.
         int sea = settings.seaLevel();
         int surface = surfaceSampler.worldSurface(x, z);
-        int floor = surfaceSampler.oceanFloor(x, z);
-        // `surface` is the first NON-AIR block (+1) and `floor` the first OPAQUE one (+1). Which of them is
-        // the ground depends on whether the column is under water:
+        int solid = surfaceSampler.solidTop(x, z);
+        // `solid` is the wall's ground: the first block that is neither air nor a fluid, plus one - the
+        // same block the native column walk calls `solidY`, so a forest counts its canopy and a river
+        // counts its bed. `surface` is the first NON-AIR block, which is one above that same block for a
+        // dry column and several above it once there is water on top.
         //
-        //  * dry - the first non-air IS the surface, and that is what the native column walk reports: a
-        //    forest's top is its LEAVES, which are non-air but not opaque. Using the floor there reported
-        //    the trunk's base instead (measured: 80 where the native column says 86).
-        //  * submerged - the first non-air is the WATER surface, so the wall would stand on the water;
-        //    the ground is the bed's first block above, exactly the `top` the native walk reports after
-        //    skipping every fluid on the way down.
-        //
-        // WallFoundationPlanner takes max(groundTopY) as the wall base and fills every lower lateral column
-        // up to it, and GroundLevel.median documents the same "first block above the surface" convention
-        // (its javadoc records this exact 0.7.91 field bug), so a base one block off drops the whole wall.
-        boolean submerged = surface <= sea && floor < surface;
-        int ground = submerged ? floor : surface;
+        // A fluid above the ground is what makes a column wet, and that is decided from the blocks
+        // themselves, not by comparing against sea level. The old check was
+        // `surface <= sea && floor < surface`, so any inland water at or above sea level reported itself
+        // dry: HydrologyClassifier.wet() then saw no water and applied neither the 50-block crossing rule
+        // nor the terminate rule, FineSamplePlan never escalated its water refinement, and the wall stood
+        // on the water's surface. Comparing the two heightmaps is also exactly what CorridorWaterScan
+        // does for its log line, so the two water notions now agree.
+        boolean submerged = surface > solid;
+        int ground = solid;
         // Censoring is decided on `surface` (the first non-air block, water included), not on the bed:
         // water that reaches the build limit is the "clipped open water" case, and the bed alone cannot
         // see it. `surface` is therefore still the sanity witness even though the height now comes from
         // the floor.
         boolean sane = surface > bounds.minY() + 8 && surface < bounds.maxYExclusive()
                 && ground > bounds.minY();
-        var water = base(sea, surface, floor);
+        var water = base(submerged, surface, solid);
         String biome = biomeSource.getNoiseBiome(Math.floorDiv(x, 4),
                 Math.floorDiv(sane ? ground : sea, 4), Math.floorDiv(z, 4), randomState.sampler())
                 .unwrapKey().orElseThrow(() -> new WallFailure(FailureCode.INVALID_RESOURCE,
@@ -415,13 +414,19 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      * <p>Exponential search, so the number of rungs is logarithmic in the distance to clear air rather
      * than linear in the dimension's height.
      */
-    private OptionalInt[] base(int sea, int surface, int floor) {
-        if (surface <= sea && floor < surface) {
-            // The bed's first block above the seabed, matching the native column's `top` for a submerged
-            // column - not one below it. A wall that stands on the bed reports the same Y as its ground.
-            return new OptionalInt[] {OptionalInt.of(sea), OptionalInt.of(Math.max(bounds.minY(), floor))};
+    /**
+     * The water pair for a column, both taken from the same sweep the ground came from.
+     *
+     * <p>{@code surface} is the water's first block above and {@code bed} the ground under it, so a lake
+     * reports its own level at any altitude. The old version returned {@code seaLevel} as the water top,
+     * which was wrong by the lake's own depth for every inland lake and made {@code HydrologyClassifier}'s
+     * level-consistency check flag whole spans as inconsistent.
+     */
+    private OptionalInt[] base(boolean submerged, int surface, int bed) {
+        if (!submerged) {
+            return new OptionalInt[] {OptionalInt.empty(), OptionalInt.empty()};
         }
-        return new OptionalInt[] {OptionalInt.empty(), OptionalInt.empty()};
+        return new OptionalInt[] {OptionalInt.of(surface), OptionalInt.of(Math.max(bounds.minY(), bed))};
     }
 
     private Cursor own(ColumnCursor cursor) {

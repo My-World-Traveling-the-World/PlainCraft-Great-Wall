@@ -102,10 +102,19 @@ final class NoiseSurfaceSampler {
         return heightsFor(x, z).worldSurface[(x & (cellWidth - 1)) + ((z & (cellWidth - 1)) * cellWidth)];
     }
 
-    /** {@return the vanilla OCEAN_FLOOR_WG height} in heightmap semantics. */
-    int oceanFloor(int x, int z) {
+    /**
+     * {@return the first block that is neither air nor a fluid, plus one} - the wall's ground.
+     *
+     * <p>Neither vanilla heightmap answers this. {@code WORLD_SURFACE_WG} is "not air", so a river
+     * reports its water surface and a forest reports its canopy; {@code OCEAN_FLOOR_WG} is "opaque", so
+     * it skips the canopy and reports the trunk base instead. The wall's ground is the first block it can
+     * actually stand on, which is the same thing the native column walk computes as {@code solidY + 1}.
+     * Anchoring on this one predicate keeps the height and the foundation evidence on the same block, so
+     * they can never disagree by one again.
+     */
+    int solidTop(int x, int z) {
         int cellWidth = noiseSettings.getCellWidth();
-        return heightsFor(x, z).oceanFloor[(x & (cellWidth - 1)) + ((z & (cellWidth - 1)) * cellWidth)];
+        return heightsFor(x, z).solidTop[(x & (cellWidth - 1)) + ((z & (cellWidth - 1)) * cellWidth)];
     }
 
     /** {@return the three solid states under this column's surface, or null when unknown} */
@@ -178,10 +187,10 @@ final class NoiseSurfaceSampler {
         int cellWidth = noiseSettings.getCellWidth();
         int columns = cellWidth * cellWidth;
         int[] worldSurface = new int[columns];
-        int[] oceanFloor = new int[columns];
+        int[] solidTop = new int[columns];
         int minY = noiseSettings.minY();
         Arrays.fill(worldSurface, minY);
-        Arrays.fill(oceanFloor, minY);
+        Arrays.fill(solidTop, minY);
 
         int cellHeight = noiseSettings.getCellHeight();
         int cellCountY = Mth.floorDiv(noiseSettings.height(), cellHeight);
@@ -203,7 +212,10 @@ final class NoiseSurfaceSampler {
         int unresolvedColumns = columns;
 
         Predicate<BlockState> worldSurfacePredicate = Heightmap.Types.WORLD_SURFACE_WG.isOpaque();
-        Predicate<BlockState> oceanFloorPredicate = Heightmap.Types.OCEAN_FLOOR_WG.isOpaque();
+        // The wall's ground, and the anchor the foundation evidence hangs off: the first block that is
+        // neither air nor a fluid. This is exactly what the native column walk treats as `solidY`, so a
+        // canopy counts as the surface and a river's water does not.
+        Predicate<BlockState> solidPredicate = state -> !state.isAir() && state.getFluidState().isEmpty();
 
         int minBlockX = cellX * cellWidth;
         int minBlockZ = cellZ * cellWidth;
@@ -254,14 +266,13 @@ final class NoiseSurfaceSampler {
                                     worldSurface[index] = blockY + 1;
                                     next &= ~0x01;
                                 }
-                                if ((next & 0x02) != 0 && oceanFloorPredicate.test(state)) {
-                                    oceanFloor[index] = blockY + 1;
+                                if ((next & 0x02) != 0 && solidPredicate.test(state)) {
+                                    solidTop[index] = blockY + 1;
                                     next &= ~0x02;
-                                    // The evidence is anchored on the first OPAQUE block, not the first
-                                    // non-air one: vanilla's WORLD_SURFACE_WG predicate is "not air", so a
-                                    // river's first non-air block is water and anchoring there filled all
-                                    // three evidence slots with water. The native column walk anchors on
-                                    // the first non-fluid block for the same reason.
+                                    // The evidence is anchored on the first solid block for the same reason
+                                    // the height is: a fluid is not something the wall can stand on, and a
+                                    // canopy is. Anchoring on OCEAN_FLOOR skipped the canopy; anchoring on
+                                    // WORLD_SURFACE stopped on the water.
                                     supportDepth[index] = 0;
                                     if (support[index] == null) support[index] = new BlockState[SUPPORT_STATES];
                                     support[index][supportDepth[index]++] = state;
@@ -299,7 +310,7 @@ final class NoiseSurfaceSampler {
         } finally {
             noiseChunk.stopInterpolation();
         }
-        return new Heights(worldSurface, oceanFloor, support, unresolvedColumns == 0);
+        return new Heights(worldSurface, solidTop, support, unresolvedColumns == 0);
     }
     /** The same start heuristic the road uses: a cheap descent bound, never the answer itself. */
     private int preliminarySurface(int blockX, int blockZ) {
@@ -319,7 +330,7 @@ final class NoiseSurfaceSampler {
     }
 
     /** One cell's heightmaps plus the solid blocks under each column's surface. */
-    private record Heights(int[] worldSurface, int[] oceanFloor, BlockState[][] support, boolean complete) {
+    private record Heights(int[] worldSurface, int[] solidTop, BlockState[][] support, boolean complete) {
     }
 
     static Aquifer.FluidPicker fluidPicker(NoiseGeneratorSettings settings) {
