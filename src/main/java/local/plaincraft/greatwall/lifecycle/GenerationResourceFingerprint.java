@@ -147,14 +147,14 @@ public final class GenerationResourceFingerprint {
             "minecraft", "c2me", "c2me-base", "c2me-opts", "c2me-opts-accel-opencl", "c2me-opts-allocs",
             "tectonic", "lithostitched", "biomeswevegone", "biomesoplenty", "towns_and_towers", "ctov",
             "terralith", "streamsreflowing", "tanshugetrees", "plaincraft_tanshugetrees_worldgen_fix",
-            "plaincraft-height-6000-patch", "plaincraft_erdtree_sanctuary", "plaincraft-great-wall",
+            "plaincraft-height-6000-patch", "plaincraft_erdtree_sanctuary", "plaincraft_great_wall",
             "roadweaver", "fabric-api");
 
     /** Keyword net for worldgen-surface mods whose exact id is not in the set above. */
     private static final String[] WORLDGEN_HINTS = {
             "worldgen", "world-gen", "world_gen", "terrain", "biome", "noise", "chunk", "structure",
             "height", "cave", "river", "tree", "tectonic", "lithostitched", "c2me", "tanshugetrees",
-            "erdtree", "streams", "roadweaver", "greatwall", "great-wall"};
+            "erdtree", "streams", "roadweaver", "greatwall", "great-wall", "great_wall"};
 
     private static boolean affectsWorldgen(String id, String name) {
         if (WORLDGEN_MOD_IDS.contains(id)) return true;
