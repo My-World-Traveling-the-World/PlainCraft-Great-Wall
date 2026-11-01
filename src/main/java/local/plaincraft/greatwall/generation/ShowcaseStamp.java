@@ -152,7 +152,11 @@ public final class ShowcaseStamp {
         int layoutMinX = atX - cx + clipMinX;
         int layoutMaxX = atX - cx + clipMaxX;
         ShowcaseLayout.add(csvName, layoutMinX, atZ - cz, layoutMaxX, atZ - cz + d - 1);
-        local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(layoutMinX, atZ - cz, layoutMaxX, atZ - cz + d - 1);
+        // Banded layouts answer per row instead of as one box, so the aisles between rows stay open.
+        // ShowcaseLayout keeps the whole footprint: it accounts for what was stamped, not for roads.
+        if (!ShowcaseGuardRects.publish(csvName, layoutMinX, atZ - cz)) {
+            local.plaincraft.greatwall.compat.road.WallRoadGuard.publishRect(layoutMinX, atZ - cz, layoutMaxX, atZ - cz + d - 1);
+        }
     }
 
     /** Advances every registered piece. */

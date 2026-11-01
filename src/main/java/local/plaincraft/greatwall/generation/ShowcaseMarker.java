@@ -104,7 +104,9 @@ public final class ShowcaseMarker {
         WallRoadGuard.publishRect(x - 76, z + 84, x - 53, z + 107);  // tower2 24x24
         WallRoadGuard.publishRect(x - 101, z + 617, x - 28, z + 662); // palace2 74x46
         WallRoadGuard.publishRect(x - 87, z + 698, x - 42, z + 710);  // watergate 46x13
-        WallRoadGuard.publishRect(x + 508, z + 190, x + 1291, z + 610); // kitset 784x421, new area
+        // kitset 784x421 at spawn+508,+190: same bands the stamped path publishes, so an adopted
+        // save and a freshly stamped one guard the identical columns.
+        ShowcaseGuardRects.publish("kitset.csv", x + 508, z + 190);
         // joined gate + left/right wall showcase at spawn+256
         WallRoadGuard.publishRect(x + 184, z - 19, x + 328, z + 12);
         WallRoadGuard.publishRect(x + 136, z - 5, x + 183, z + 5);

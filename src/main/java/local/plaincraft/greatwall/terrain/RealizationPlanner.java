@@ -16,6 +16,10 @@ import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 public final class RealizationPlanner {
     /** Ends whose ground exit could not be proven; the wall ends flush instead of with a cap. */
     private long capsDegraded;
+    /** Cap pairs whose reserved spans overlapped, so neither was kept (see {@link #addCap}). */
+    private long capsMutual;
+    /** A cap already committed to a cell: the span it reserves plus the component that owns the voxels. */
+    private record CapPlacement(long fromQ8,long toQ8,long edgeQ8,ComponentVoxels voxels){}
     public record Input(CellKey key,PlanWindow plans,Map<TerrainTile.Key,TerrainTile> tiles,
             Map<Point3i,SurfaceProbe.ColumnView> columns,List<Bounds> protectedBounds,Map<GateId,Integer> frozenGateY,
             long gateRevision,String protectionHash,Map<Long,Integer> foundationFloor,
@@ -353,10 +357,12 @@ public final class RealizationPlanner {
             return result(input,walkMerged,accepted,t0);
         }
         var capExclusions=new ArrayList<ArcInterval>();
+        // Caps committed so far, so the next one can tell whether it overlaps one already placed.
+        var capPlacements=new ArrayList<CapPlacement>();
         if(decisions==null)for(var gap:walkMerged){
-            addCap(input,wall,gap.range().fromQ8(),false,from,to,terminal,stations,field,maintained,bounds,supported,accepted,capExclusions);
+            addCap(input,wall,gap.range().fromQ8(),false,from,to,terminal,stations,field,maintained,bounds,supported,accepted,capExclusions,capPlacements);
             if(gap.range().toQ8()!=Long.MAX_VALUE&&gap.range().toQ8()<terminal&&gap.range().toQ8()<decayTo)
-                addCap(input,wall,gap.range().toQ8(),true,from,to,terminal,stations,field,maintained,bounds,supported,accepted,capExclusions);
+                addCap(input,wall,gap.range().toQ8(),true,from,to,terminal,stations,field,maintained,bounds,supported,accepted,capExclusions,capPlacements);
         }
         else {
             validateDecisions(input,decisions,from,to);
@@ -558,7 +564,7 @@ public final class RealizationPlanner {
     }
     private void addCap(Input input,String wall,long s,boolean reverse,long from,long to,long terminal,List<Station> stations,
             DecayField field,List<Long> maintained,DimensionBounds bounds,Map<Point3i,ProbeResult> known,List<ComponentVoxels> components,
-            List<ArcInterval> exclusions){
+            List<ArcInterval> exclusions,List<CapPlacement> caps){
         if(s<=0||s<Math.max(0,from-160L*256)||s>to+160L*256||s>stations.getLast().globalSQ8())return;
         var site=site(wall,SiteKind.END_CAP,Math.addExact(Math.multiplyExact(s,2),reverse?1:0),s,stations);
         if(reverse){var f=site.frame();site=new SiteRecord(site.id(),s,new Frame(f.center(),-f.txQ30(),-f.tzQ30(),f.walkY(),!f.mirror()),
@@ -576,7 +582,31 @@ public final class RealizationPlanner {
             }
             if(cap.voxels().isEmpty())continue;
             long actual=attempt.globalSQ8();
-            exclusions.add(reverse?new ArcInterval(s,actual+30L*256):new ArcInterval(Math.max(0,actual-30L*256),s));
+            var span=reverse?new ArcInterval(s,actual+30L*256):new ArcInterval(Math.max(0,actual-30L*256),s);
+            // A cap reserves +/-30 blocks of its own edge, so a pair closer together than one cap is long
+            // interpenetrates: the measured run had two caps 26 blocks apart whose exclusions unioned into a
+            // 34-block hole, and a whole cap's worth of corridor disappeared with it. That is not a boundary
+            // between neighbouring components. GroundExitResolver already answers the certified equivalent
+            // with "keepFrom > keepTo -> both caps void", so mirror it here: drop both and leave the wall
+            // continuous, rather than keeping one cap facing a gap it cannot close.
+            CapPlacement clash=null;
+            for(var earlier:caps){
+                if(earlier.toQ8()>span.fromQ8()&&span.toQ8()>earlier.fromQ8()){clash=earlier;break;}
+            }
+            if(clash!=null){
+                caps.remove(clash);
+                components.remove(clash.voxels());
+                exclusions.remove(new ArcInterval(clash.fromQ8(),clash.toQ8()));
+                capsMutual++;
+                if(capsMutual<=8){
+                    local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                            "[GreatWall:S1C] WALL_END_CAP_MUTUAL dropped both at={} and={} total={}",
+                            s,clash.edgeQ8(),capsMutual);
+                }
+                return;
+            }
+            exclusions.add(span);
+            caps.add(new CapPlacement(span.fromQ8(),span.toQ8(),actual,cap));
             if(s>=from&&(s<to||s==to&&s==stations.getLast().globalSQ8()))components.add(cap);
             return;
         }
