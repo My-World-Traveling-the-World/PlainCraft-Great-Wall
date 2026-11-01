@@ -571,6 +571,13 @@ public final class RealizationPlanner {
                 site.bounds(),site.state(),site.absorbedBy(),site.reason());}
         if(!(templates.get(SiteKind.END_CAP) instanceof EndCap template))throw new IllegalArgumentException("missing EndCap");
         var candidates=EndCap.candidates(site,stations);
+        // A candidate that cannot compile is silently skipped, so the DEGRADED line below could not say
+        // whether the thirty-three attempts threw or compiled to nothing. Those are different faults: a
+        // throw means the fine sample never covered the footprint (T0_MISSING) or the ownership graph
+        // refused it, while empty voxels mean the template itself resolved nothing. One line each, on the
+        // first occurrence only - 132 attempts per cap would otherwise bury the log.
+        int capFailed=0,capEmpty=0;
+        FailureCode capFirstFailure=null;
         for(var attempt:candidates){
             ComponentVoxels cap;
             try{cap=CompiledAllocation.component(()->template.compileAt(componentInput(input,attempt,stations,
@@ -578,9 +585,20 @@ public final class RealizationPlanner {
             catch(WallFailure failure){
                 // Retry the next (more inward) candidate instead of failing the corridor: see compile().
                 if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT&&failure.code()!=FailureCode.T0_MISSING)throw failure;
+                if(capFailed++==0){
+                    capFirstFailure=failure.code();
+                    local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                            "[GreatWall:diag] CAP_CANDIDATE_FAILED s={} code={} detail={}",
+                            s,failure.code(),failure.getMessage());
+                }
                 continue;
             }
-            if(cap.voxels().isEmpty())continue;
+            if(cap.voxels().isEmpty()){
+                if(capEmpty++==0)local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                        "[GreatWall:diag] CAP_EMPTY s={} attemptGlobalSQ8={} walkY={}",
+                        s,attempt.globalSQ8(),attempt.frame().walkY());
+                continue;
+            }
             long actual=attempt.globalSQ8();
             var span=reverse?new ArcInterval(s,actual+30L*256):new ArcInterval(Math.max(0,actual-30L*256),s);
             // A cap reserves +/-30 blocks of its own edge, so a pair closer together than one cap is long
@@ -651,6 +669,54 @@ public final class RealizationPlanner {
             return null;
         }
     }
+    /**
+     * One line per component footprint saying how much of it the fine sample actually covered.
+     *
+     * <p>{@code componentInput} throws on the first footprint column that is absent, and that message
+     * names a single point - which cannot distinguish "the placement reaches outside the sampled band"
+     * from "the sparse plan skipped this column" from "the column was probed and then dropped". This
+     * counts the gaps and their bounding box before the walk begins, and changes nothing else. Silent
+     * when the footprint is fully covered, so an ordinary run gains no noise.
+     */
+    private static void logFootprintCoverage(SiteRecord site,Bounds world,Map<Point3i,SurfaceProbe.ColumnView> columns) {
+        try {
+            int width=world.maxXExclusive()-world.minX(),depth=world.maxZExclusive()-world.minZ();
+            int footprint=width*depth,missing=0;
+            int minX=Integer.MAX_VALUE,maxX=Integer.MIN_VALUE,minZ=Integer.MAX_VALUE,maxZ=Integer.MIN_VALUE;
+            for(int z=world.minZ();z<world.maxZExclusive();z++)for(int x=world.minX();x<world.maxXExclusive();x++) {
+                if(columns.get(new Point3i(x,0,z))!=null)continue;
+                missing++;
+                if(x<minX)minX=x; if(x>maxX)maxX=x;
+                if(z<minZ)minZ=z; if(z>maxZ)maxZ=z;
+            }
+            if(missing==0)return;
+            // How far sideways this footprint reaches, measured in the wall's own frame. The fine sample
+            // hands out the wide band (+/-52) only near the planned gate and fort stations and the narrow
+            // one (+/-16) everywhere else, so a component whose lateral reach exceeds the band it happened
+            // to be sampled under loses the columns it needs - which is precisely what T0_MISSING means
+            // here. Printing the reach beside both band widths turns that from a guess into a number.
+            long nx=-(long)site.frame().tzQ30(),nz=(long)site.frame().txQ30();
+            long cx8=site.frame().center().xQ8(),cz8=site.frame().center().zQ8();
+            int lateralNeed=0;
+            for(int[] corner:new int[][]{{world.minX(),world.minZ()},{world.minX(),world.maxZExclusive()-1},
+                    {world.maxXExclusive()-1,world.minZ()},{world.maxXExclusive()-1,world.maxZExclusive()-1}}) {
+                long dx8=((long)corner[0]<<8)-cx8,dz8=((long)corner[1]<<8)-cz8;
+                long lateralQ8=Math.abs((dx8*nx+dz8*nz)>>30);
+                lateralNeed=Math.max(lateralNeed,(int)(lateralQ8>>8));
+            }
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                    "[GreatWall:diag] COMPONENT_FOOTPRINT site={} kind={} ordinal={} footprint={}x{}={} sampled={} missing={} missingBox=[{},{}]..[{},{}] "
+                            + "lateralNeed={} narrowBand={} wideBand={} exceedsNarrow={}",
+                    site.id().wallId(),site.id().kind(),site.id().ordinal(),width,depth,footprint,
+                    footprint-missing,missing,minX,minZ,maxX,maxZ,
+                    lateralNeed,local.plaincraft.greatwall.planning.WallFinePlanner.BASE_LATERAL,
+                    local.plaincraft.greatwall.planning.WallFinePlanner.LATERAL,
+                    lateralNeed>local.plaincraft.greatwall.planning.WallFinePlanner.BASE_LATERAL);
+        } catch(RuntimeException logOnly) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn("[GreatWall:diag] COMPONENT_FOOTPRINT could not be computed",logOnly);
+        }
+    }
+
     private ComponentInput componentInput(Input input,SiteRecord site,List<Station> stations,DecaySample decay,List<WaterEvidence> waters,
             DimensionBounds bounds,Map<Point3i,ProbeResult> known) {
         var materials=materials(input,stations);
@@ -661,6 +727,13 @@ public final class RealizationPlanner {
         CompiledAllocation.charge(Math.addExact(1024,Math.multiplyExact(columns,256)));
         // Templates only borrow their full authorized footprint, never the unrelated cell support table.
         var supports=new HashMap<Point3i,ProbeResult>();
+        // Count the footprint's missing columns before walking it. The failure below names a single point,
+        // and a component that straddles the sparse fine-sample plan's unprobed wings is missing dozens of
+        // them - one point says nothing about which. This line says how big the footprint is, how much of
+        // it the sample covered, and where the uncovered part lies, which is what decides whether the
+        // sample is too sparse or the placement is out of band. It is a diagnostic only: the walk below
+        // and its throw are unchanged.
+        logFootprintCoverage(site, world, input.columns());
         for(int z=world.minZ();z<world.maxZExclusive();z++)for(int x=world.minX();x<world.maxXExclusive();x++) {
             var pos=new Point3i(x,0,z);var column=input.columns().get(pos);
             if(column==null)throw new WallFailure(FailureCode.T0_MISSING,"complete component T0 column missing: "+pos);

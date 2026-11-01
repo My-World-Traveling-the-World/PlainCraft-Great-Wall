@@ -619,6 +619,7 @@ final class ProductionSession implements AutoCloseable {
                 fineHeightIndex = fineIndex;
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
                         fineIndex.size(), fineIndex.size());
+                logFineCoverage(fineIndex);
             }
         } catch (Throwable publishFailure) {
             GreatWallMod.LOGGER.error("[GreatWall:corridor] publishing the fine sample failed; "
@@ -626,6 +627,42 @@ final class ProductionSession implements AutoCloseable {
         } finally {
             fineSampleSettled = true;
             triggerDeferredCompile();
+        }
+    }
+
+    /**
+     * One line describing what the fine sample actually covered, not just how many columns it holds.
+     *
+     * <p>A component whose footprint reaches a cross-section column the sparse plan skipped fails later
+     * with {@code complete component T0 column missing: (x,0,z)} and leaves a gap in the wall. That
+     * message alone cannot say whether the point was outside the sampled band, inside the band but
+     * never probed, or probed and dropped - the lateral span below separates all three. {@code
+     * lateralSlots} against {@code fullCrossSection} is the coverage ratio of one cross-section.
+     */
+    private static void logFineCoverage(local.plaincraft.greatwall.planning.FineHeightIndex index) {
+        try {
+            int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
+            int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
+            int minLateral = Integer.MAX_VALUE, maxLateral = Integer.MIN_VALUE;
+            var lateralSlots = new java.util.TreeSet<Integer>();
+            for (var column : index.columns()) {
+                minX = Math.min(minX, column.x());
+                maxX = Math.max(maxX, column.x());
+                minZ = Math.min(minZ, column.z());
+                maxZ = Math.max(maxZ, column.z());
+                minLateral = Math.min(minLateral, column.lateral());
+                maxLateral = Math.max(maxLateral, column.lateral());
+                lateralSlots.add(column.lateral());
+            }
+            GreatWallMod.LOGGER.info("[GreatWall:diag] FINE_COVERAGE distinct={} raw={} x=[{},{}] z=[{},{}] "
+                            + "lateral=[{},{}] lateralSlots={} fullCrossSection={} band=+/-{}",
+                    index.size(), index.orderedColumns().size(), minX, maxX, minZ, maxZ,
+                    minLateral, maxLateral, lateralSlots.size(),
+                    2 * local.plaincraft.greatwall.planning.WallFinePlanner.LATERAL + 1,
+                    local.plaincraft.greatwall.planning.WallFinePlanner.LATERAL);
+        } catch (RuntimeException logOnly) {
+            // A diagnostic must never take the stage down with it.
+            GreatWallMod.LOGGER.warn("[GreatWall:diag] FINE_COVERAGE could not be computed", logOnly);
         }
     }
 

@@ -335,6 +335,22 @@ public final class PlannerScheduler implements AutoCloseable {
                 if (error != null) { geometry.close(); prefix.close(); result.completeExceptionally(error); return; }
                 if (closed()) { geometry.close(); prefix.close(); result.completeExceptionally(closedFailure()); return; }
                 if (inputs.prefix.terminal().isPresent() && inputs.prefix.terminal().get().segment() < segment) {
+                    // This segment keeps its geometry but loses every station, break and site, so the wall
+                    // body is still compiled while nothing is ever placed on it. No other line says so:
+                    // the segment reports a successful plan with zero stations, and the stretch it builds
+                    // looks like ordinary plain wall rather than the part of the wall that has no gates,
+                    // no forts and no end caps. Say it, once per segment, with the numbers that prove it.
+                    local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                            "[GreatWall:diag] PLAN_DEAD segment={} terminatedBySegment={} terminalSQ8={} "
+                                    + "ownTerminalSQ8={} routeSQ8={} ratioPct={} - body still compiles, "
+                                    + "stations/breaks/sites/components all empty",
+                            segment, inputs.prefix.terminal().get().segment(),
+                            inputs.prefix.terminal().get().localSQ8(),
+                            inputs.geometry.terminal().map(Terminal::localSQ8).orElse(-1L),
+                            inputs.geometry.localSQ8().getLast(),
+                            inputs.geometry.localSQ8().getLast() == 0L ? 0L
+                                    : Math.round(100.0 * inputs.prefix.terminal().get().localSQ8()
+                                            / inputs.geometry.localSQ8().getLast()));
                     var table = new StationTable(List.of(), List.of(), "0".repeat(64));
                     table = new StationTable(List.of(), List.of(), DeterministicHash.sha256(CanonicalCodec.stations(table)));
                     result.complete(hashedPlan(inputs.geometry, inputs.prefix, table, List.of()));
@@ -1602,6 +1618,22 @@ public final class PlannerScheduler implements AutoCloseable {
                 .map(w -> new Terminal(route.key().index(), w.crossing().fromQ8(), TerminalKind.OCEAN))
                 .min(Comparator.comparingLong(Terminal::localSQ8));
         if (terminal.isEmpty() && last) terminal = Optional.of(new Terminal(route.key().index(), route.localSQ8().getLast(), TerminalKind.WORLD_LIMIT));
+        // Which of the three branches ended this segment, and with what evidence. Only the biome branch
+        // used to say anything, so a wall that stopped a fifth of the way along its own route left no
+        // trace of why: the hydrology branch - "a water span whose width could not be measured is
+        // treated as WIDE" - is the one that silently terminates a segment on dry land, and it printed
+        // nothing at all. A segment with no terminal must say so too, because that is the difference
+        // between "the wall is meant to end here" and "the classifier never reached a verdict".
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:diag] TERMINAL_SOURCE segment={} source={} localSQ8={} routeSQ8={} "
+                        + "waterRuns={} wideRuns={} biomeTerminal={} last={}",
+                route.key().index(),
+                terminal.isEmpty() ? "none" : (terminal.get().localSQ8() == route.localSQ8().getLast()
+                        ? "world-limit" : (water.stream().anyMatch(w -> w.classification() == WaterClass.WIDE)
+                        && !seas.isEmpty() ? "wide-water-or-biome" : "wide-water")),
+                terminal.map(Terminal::localSQ8).orElse(-1L), route.localSQ8().getLast(),
+                water.size(), water.stream().filter(w -> w.classification() == WaterClass.WIDE).count(),
+                !seas.isEmpty(), last);
         var g = new SegmentGeometry(route.key(), route.points(), route.localSQ8(), water, terminal, route.start(), route.end(),
                 route.searchColumns() + route.boundaryColumns() + hydroColumns, route.degradation(), "0".repeat(64));
         return new SegmentGeometry(g.key(), g.points(), g.localSQ8(), g.water(), g.terminal(), g.start(), g.end(), g.logicalColumns(), g.degradation(),

@@ -188,8 +188,16 @@ public final class PrewarmProgress {
         if (previous == next) return;
         long now = System.nanoTime();
         long since = stageSinceNanos;
+        long heldMs = since == 0L ? -1L : Math.max(0L, (now - since) / 1_000_000L);
         if (since != 0L) STAGE_NANOS.addAndGet(previous.ordinal(), Math.max(0L, now - since));
         stageSinceNanos = now;
+        // One line per real transition, and the only point in the code where every stage hand-off is
+        // visible. A stage that is *waiting* on another - the prewarm parks on the fine sample - reads
+        // exactly like a stage that is working from every other log line, so "which stage is slow, and
+        // is it slow or just blocked" could not be answered at all without this. heldMs is -1 for the
+        // first transition of a session, where there is no previous stage to have held.
+        GreatWallMod.LOGGER.info("[GreatWall:diag] STAGE {}->{} heldMs={} at={} thread={}",
+                previous, next, heldMs, java.time.Instant.now(), Thread.currentThread().getName());
     }
 
     /** Publishes the active stage's sub-progress (done/total); total 0 is an indeterminate running

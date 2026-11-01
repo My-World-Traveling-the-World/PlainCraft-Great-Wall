@@ -377,6 +377,18 @@ public final class HydrologyClassifier {
         } else if (allWide) c.classification = WaterClass.WIDE;
         else c.classification = WaterClass.WIDE;
         c.pierS = c.crossing.fromQ8() + 4L * 256;
+        // Which branch decided, and on what evidence. Every fail-open branch lands on WIDE, and WIDE is
+        // what ends a segment - so "the wall is meant to stop here" and "the classifier could not measure
+        // this span and gave up" were the same word in every line that existed. This one separates them,
+        // and the segment-level consequence is logged by TERMINAL_SOURCE / PLAN_DEAD.
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:diag] HYDRO_VERDICT class={} branch={} waterMismatch={} best={} bestDirection={} "
+                        + "allWide={} waterY={} widthQ8={} crossingFrom={} crossingTo={}",
+                c.classification,
+                c.waterMismatch ? "MISMATCH" : (bestDirection >= 0 && best < 50L * 256 ? "MEASURED"
+                        : (allWide ? "ALL_WIDE" : "FALLBACK")),
+                c.waterMismatch, best, bestDirection, allWide, c.waterY, c.width,
+                c.crossing.fromQ8(), c.crossing.toQ8());
         if (c.classification == WaterClass.NARROW) c.phase = 5; else completeEvidence(c);
     }
 
