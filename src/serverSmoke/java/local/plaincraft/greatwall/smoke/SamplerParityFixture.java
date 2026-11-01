@@ -47,12 +47,25 @@ final class SamplerParityFixture {
             int within4 = 0;
             int within16 = 0;
             int gross = 0;
+            int skipped = 0;
             int worst = 0;
             int worstX = 0, worstZ = 0, worstSampled = 0, worstVanilla = 0;
             for (int i = 0; i < SAMPLES; i++) {
                 int x = random.nextInt(2048) - 1024;
                 int z = random.nextInt(2048) - 1024;
-                int vanilla = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) - 1;
+                // Only columns whose two vanilla heightmaps agree are comparable. WORLD_SURFACE_WG is "not
+                // air" (it counts water and canopy) while OCEAN_FLOOR_WG is "opaque" (it counts neither);
+                // they differ exactly where something sits on top of the solid surface - water, leaves,
+                // snow, grass - and there the sampler's ground (first non-air, non-fluid) has no vanilla
+                // counterpart to equal. Where they agree the top block IS the solid surface, and the
+                // sampler must return that heightmap value exactly - no -1.
+                int top = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
+                int floor = level.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z);
+                if (top != floor) {
+                    skipped++;
+                    continue;
+                }
+                int vanilla = top;
                 var cursor = oracle.begin(x, z, local.plaincraft.greatwall.model.WallTypes.SampleKind.REFERENCE);
                 oracle.advance(cursor, 64);
                 int sampled = oracle.finish(cursor).groundTopY();
@@ -69,13 +82,17 @@ final class SamplerParityFixture {
                     worstVanilla = vanilla;
                 }
             }
-            double exactPct = 100.0 * exact / SAMPLES;
+            int compared = exact + within4 + within16 + gross;
+            double exactPct = compared == 0 ? 0.0 : 100.0 * exact / compared;
             String summary = String.format(
-                    "SAMPLER_PARITY samples=%d exact=%d(%.1f%%) within4=%d within16=%d gross=%d "
-                            + "worst=%d at %d,%d sampled=%d vanilla=%d",
-                    SAMPLES, exact, exactPct, within4, within16, gross, worst,
+                    "SAMPLER_PARITY sampled=%d skipped=%d compared=%d exact=%d(%.1f%%) "
+                            + "within4=%d within16=%d gross=%d worst=%d at %d,%d sampled=%d vanilla=%d",
+                    SAMPLES, skipped, compared, exact, exactPct, within4, within16, gross, worst,
                     worstX, worstZ, worstSampled, worstVanilla);
             GreatWallMod.LOGGER.info("[GreatWall:smoke] {}", summary);
+            if (compared == 0) {
+                throw new IllegalStateException("sampler parity compared nothing: " + summary);
+            }
             if (exactPct < 90.0) {
                 throw new IllegalStateException("sampler parity below 90%: " + summary);
             }

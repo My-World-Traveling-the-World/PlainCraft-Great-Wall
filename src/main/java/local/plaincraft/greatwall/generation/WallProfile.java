@@ -11,6 +11,12 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * The wall module, taken verbatim from the player's hand-polished reference wall.
  *
+ * <p><b>Showcase only.</b> The only consumers are {@code WallStamp} (the flat showcase area) and
+ * {@code WonderWall} (a dead experimental line whose entry point is commented out), so editing the
+ * constants here changes the demo wall and nothing in production. Production builds its wall
+ * procedurally from {@code WallSection} and reads no CSV template at all - despite the name, this is not
+ * the {@code wall_module.csv} the showcase stamper loads.
+ *
  * <p>Forty-eight blocks long, eleven wide and sixteen tall: a solid stone core faced with stone bricks,
  * a quartz belt along both edges of the walkway, a continuous slab-capped parapet on one side and
  * three-merlon-one-gap crenellation with stair caps on the other. Because the module carries the whole

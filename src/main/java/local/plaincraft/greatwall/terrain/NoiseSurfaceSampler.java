@@ -39,7 +39,11 @@ import net.minecraft.world.level.levelgen.blending.Blender;
  * oracle that owns it.
  */
 final class NoiseSurfaceSampler {
-    /** Vanilla records "the y of the first air above the surface", so ground = surface - 1. */
+    /**
+     * {@code worldSurface}/{@code solidTop} already carry the "+1" that heightmap semantics put on top of
+     * the block they name, so callers must not subtract one from either: doing that is the 0.7.91 bug that
+     * sank every wall and gate one block into the ground (see generation/GroundLevel).
+     */
     private static final int COLUMN_COUNT = 256;
     /**
      * Solid states kept per column, counted from the topmost one down.
@@ -170,16 +174,21 @@ final class NoiseSurfaceSampler {
         }
     }
 
+    /** Room left above the density estimate on the first pass; a cell that outruns it is redone. */
+    private static final int SHORT_MARGIN = 32;
+
     private Heights sweep(int cellX, int cellZ) {
-        // One pass at the full margin, no short-margin fast path.
+        // Short margin first, and a retry that can actually tell it started too low.
         //
-        // The short path assumed the density bisection lands within a handful of blocks of the real
-        // surface. Measured against the native column it does not: in mountains and tall old-growth the
-        // sweep started UNDER the surface and reported a lower stone block as the ground (80 where the
-        // native column says 86, 112 where it says 116). Nothing marked those cells incomplete, because a
-        // surface had been found - just the wrong one - so the full-margin retry never ran, and raising the
-        // short margin only moved the error to the next tall column. Correctness first: the sweep now
-        // always starts from the same margin the retry used.
+        // The estimate is a density bisection; in mountains and tall old-growth it can sit well below the
+        // real surface (measured: 80 where the native column says 86, 112 where it says 116). The old fast
+        // path could not notice, because the sweep still found *a* surface - just a lower one - so the
+        // retry never ran, and raising the short margin only moved the error to the next tall column.
+        // sweepCell now reports that case explicitly: if the first solid block it meets sits on the very
+        // first row it examines, the start was already inside the ground, so the cell is redone at full
+        // margin. Ordinary terrain never pays for the retry.
+        Heights fast = sweepCell(cellX, cellZ, SHORT_MARGIN);
+        if (fast.complete) return fast;
         return sweepCell(cellX, cellZ, generatorSettings.seaLevel() - noiseSettings.minY() + 32);
     }
 
@@ -219,6 +228,10 @@ final class NoiseSurfaceSampler {
 
         int minBlockX = cellX * cellWidth;
         int minBlockZ = cellZ * cellWidth;
+        // Set when the first solid block the sweep meets sits on its very first row: the start was already
+        // inside the ground, so the height it reports is a lower block than the real surface and sweep()
+        // redoes the cell at full margin. Declared out here because Heights is built after the finally.
+        boolean startedInsideGround = false;
         AccessibleNoiseChunk noiseChunk = new AccessibleNoiseChunk(1, randomState, minBlockX, minBlockZ,
                 noiseSettings, ZeroBeardifier.INSTANCE, generatorSettings, fluidPicker);
         noiseChunk.initializeForFirstCellX();
@@ -240,6 +253,7 @@ final class NoiseSurfaceSampler {
             estimate = Math.max(estimate, generatorSettings.seaLevel());
             int startCellY = Mth.floorDiv(estimate + airSkipMargin, cellHeight) - cellNoiseMinY;
             startCellY = Math.max(0, Math.min(cellCountY - 1, startCellY));
+            final int firstBlockY = (cellNoiseMinY + startCellY) * cellHeight + (cellHeight - 1);
             outer:
             for (int cellY = startCellY; cellY >= 0; cellY--) {
                 noiseChunk.selectCellYZ(cellY, 0);
@@ -268,6 +282,9 @@ final class NoiseSurfaceSampler {
                                 }
                                 if ((next & 0x02) != 0 && solidPredicate.test(state)) {
                                     solidTop[index] = blockY + 1;
+                                    // The surface is the first block the sweep looked at: it started inside
+                                    // the ground, so this answer is too low and the cell needs the retry.
+                                    if (blockY == firstBlockY) startedInsideGround = true;
                                     next &= ~0x02;
                                     // The evidence is anchored on the first solid block for the same reason
                                     // the height is: a fluid is not something the wall can stand on, and a
@@ -310,7 +327,8 @@ final class NoiseSurfaceSampler {
         } finally {
             noiseChunk.stopInterpolation();
         }
-        return new Heights(worldSurface, solidTop, support, unresolvedColumns == 0);
+        return new Heights(worldSurface, solidTop, support,
+                unresolvedColumns == 0 && !startedInsideGround);
     }
     /** The same start heuristic the road uses: a cheap descent bound, never the answer itself. */
     private int preliminarySurface(int blockX, int blockZ) {

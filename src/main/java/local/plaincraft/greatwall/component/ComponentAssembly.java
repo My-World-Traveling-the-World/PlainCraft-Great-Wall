@@ -187,6 +187,10 @@ final class ComponentAssembly {
                             || support.groundTopY() >= column.walkY()))
                         return empty(input.site().id(),worldBounds);
                 }
+                // groundTopY is the column's first block above its solid surface, so groundTopY-1 is that
+                // surface block: the lowest layer a template may write. Keep the -1. Fort's courtyard
+                // floor, Gate's threshold and Ramp's landing all live on exactly that layer
+                // (Fort:89 / Gate:31 / Ramp:113), and dropping to `y < groundTopY` deletes them wholesale.
                 if (y < support.groundTopY() - 1) continue;
                 if (support.thinIceY().isPresent()&&y==support.thinIceY().getAsInt()) {
                     boolean main=input.site().id().kind()==SiteKind.WATER_GATE&&local.x()>=-2&&local.x()<2&&cell.part()==Part.WATER;

@@ -384,9 +384,13 @@ public final class WallBodyBackfill {
             store.write(plan);
             PERSISTED.incrementAndGet();
         } catch (java.io.IOException | RuntimeException failure) {
-            if (PERSIST_FAILURES.incrementAndGet() <= 4) {
-                GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_PERSIST_FAILED owner={},{} reason={}",
-                        plan.owner().x(), plan.owner().z(), failure.toString());
+            // A persist failure is how "the wall is still being painted from the OLD plan on disk" shows
+            // up, and that is exactly the state a terrain-semantics change must not leave behind silently.
+            // The first four carry the detail; every 512th keeps the scale of it visible without flooding.
+            long failed = PERSIST_FAILURES.incrementAndGet();
+            if (failed <= 4 || failed % 512 == 0) {
+                GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_PERSIST_FAILED owner={},{} totalFailures={} reason={}",
+                        plan.owner().x(), plan.owner().z(), failed, failure.toString());
             }
         }
     }

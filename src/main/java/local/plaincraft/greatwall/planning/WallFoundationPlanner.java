@@ -33,8 +33,15 @@ public final class WallFoundationPlanner {
         }
     }
 
-    /** A lateral column at {@code lateral} offset that must be filled from the wall base down to
-     *  {@code surfaceY} (exclusive of surfaceY; the fill occupies [surfaceY, baseY)). */
+    /**
+     * A lateral column at {@code lateral} offset that must be filled from the wall base down to
+     * {@code surfaceY}, the column's own ground (the first block above its solid surface).
+     *
+     * <p>The fill the rasteriser actually writes is {@code [surfaceY - 1, baseY)}: the bottom layer is
+     * the natural surface block itself, compacted into FOUNDATION, which is what Fort's courtyard floor
+     * and Gate's threshold sit on. Do not "fix" ComponentAssembly's {@code y < groundTopY - 1} to match a
+     * narrower reading of this sentence - that deletes those floors.
+     */
     public record FillColumn(int lateral, int surfaceY, int x, int z, int baseY) {
         public FillColumn {
             if (lateral < -WallFinePlanner.LATERAL || lateral > WallFinePlanner.LATERAL)

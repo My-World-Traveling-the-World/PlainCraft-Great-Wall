@@ -139,7 +139,12 @@ public final class RidgePlanner {
                     + FixedMath.mulDiv(offset.zQ8() * 256, recipe.axis().exQ30(), 1L << 30);
             var point = new Point2q(center.xQ8() + dx, center.zQ8() + dz);
             if (!inside(point)) { rejectCandidate(c); return; }
-            ColumnSample value = sample(c, point, SampleKind.COARSE, false);
+            // REFERENCE, not COARSE: the ridge score reads groundTopY (ridge/prominence/slope/climb) and
+            // waterTopY (the wet penalty), and a coarse probe answers neither honestly - it evaluates the
+            // density router only, so its height is quantised to the noise cell height and it carries no
+            // water at all, which silently zeroed the wet term. It is also not cheaper here: this planner
+            // probes nine columns per candidate, not the full fine-sample band.
+            ColumnSample value = sample(c, point, SampleKind.REFERENCE, false);
             if (value == null) return;
             c.samples[c.sampleIndex++] = value;
         } catch (WallFailure failure) {
