@@ -122,18 +122,36 @@ public final class HydrologyClassifier {
         // four missing definitions the final review named.
         long span = continuousWaterBlocks(c, c.run != null ? c.run.from
                 : (c.runs.isEmpty() ? 0 : c.runs.get(Math.min(c.runIndex, c.runs.size() - 1)).from));
-        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                "[GreatWall:hydro] RIVER_SPAN span={} threshold={} documentedDecision={} outcome=WIDE "
-                        + "phase={} stations={} - policy unchanged; this measures the span certification "
-                        + "never had",
-                span, RIVER_CROSS_MAX_BLOCKS, span < RIVER_CROSS_MAX_BLOCKS ? "CROSS" : "WIDE",
-                c.phase, c.trace.size());
+        String documented = span < RIVER_CROSS_MAX_BLOCKS ? "CROSS" : "WIDE";
+        // When the documented rule says CROSS and the policy still ends the wall, the narrow span is the
+        // only thing standing between "there is no river here" and "we censored the column that would have
+        // proved it". A clamped sample fakes a narrow span, so those two cases must not look identical in
+        // the log - report the censored count and raise the level whenever the two disagree.
+        long censored = c.traceSamples.stream()
+                .filter(s -> s.quality() == Quality.CENSORED || s.upperCensored()).count();
+        if (span < RIVER_CROSS_MAX_BLOCKS) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                    "[GreatWall:hydro] RIVER_SPAN span={} threshold={} documentedDecision={} outcome=WIDE "
+                            + "phase={} stations={} censoredSamples={} - policy unchanged; a non-zero "
+                            + "censoredSamples means the narrow span may be an artefact of clamping",
+                    span, RIVER_CROSS_MAX_BLOCKS, documented, c.phase, c.trace.size(), censored);
+        } else {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:hydro] RIVER_SPAN span={} threshold={} documentedDecision={} outcome=WIDE "
+                            + "phase={} stations={} censoredSamples={} - policy unchanged",
+                    span, RIVER_CROSS_MAX_BLOCKS, documented, c.phase, c.trace.size(), censored);
+        }
         // A column that was mid-sample must be finished before the cursor is
         // abandoned, otherwise the oracle still owns an open column and the
         // next begin() refuses with "finish the current natural column".
         drainOpenColumn(c);
         if (c.phase == 0) {
-            // Coarse scan had not finished; there is nothing certified yet.
+            // Coarse scan had not finished; there is nothing certified yet. Clearing this used to be
+            // silent, which left no trace anywhere that a segment lost every certified span it had.
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                    "[GreatWall:hydro] HYDROLOGY_COMPLETED_CLEARED evidence={} phase=0 - the coarse scan "
+                            + "never finished, so every certified span in this segment is discarded",
+                    c.completed.size());
             c.completed.clear();
             c.done = true;
             c.cache.clear();
@@ -179,6 +197,15 @@ public final class HydrologyClassifier {
         c.cache.clear();
     }
 
+    /**
+     * Downgrades a NARROW crossing to {@link WaterClass#SUPPORT_GAP} when a pier has no reachable support.
+     *
+     * <p>Staged on purpose: 1A delivers this as a pure function covered by {@code HydrologyTest} and by the
+     * analytic fixtures in {@code docs/S1A-补充合同.md} §7; production calls it in 1B once the full
+     * cross-segment height contract exists. It has no production caller today, and that is not dead code -
+     * wiring it in 1A would judge support against an incomplete {@code walkY} and turn deep rivers into
+     * SUPPORT_GAP. Do not delete it and do not mark it deprecated.
+     */
     public WaterEvidence resolveSupport(WaterEvidence evidence, ToIntFunction<Point3i> walkY) {
         Objects.requireNonNull(walkY);
         if (evidence.classification() != WaterClass.NARROW) return evidence;

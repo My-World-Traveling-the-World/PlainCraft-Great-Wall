@@ -64,7 +64,13 @@ public final class ChunkPlanCompiler {
             boolean thaw=v.component().kind()==SiteKind.WATER_GATE&&v.part()==Part.WATER&&v.kind()==IntentKind.FLUID
                     &&before.startsWith("minecraft:ice{")&&!be;
             if((v.kind()==IntentKind.OWNED_VOID||v.kind()==IntentKind.FLUID)&&!replaceableVoid(before)&&!thaw)
-                throw failure("negative space cannot carve natural/foreign solid: "+v.pos());
+                // Which component wants this air, which of its parts, and what it would have to carve: a
+                // bare position cannot tell "the arch ran into a mountain" from "a channel hit another
+                // mod's block", and those two call for opposite handling. The code stays
+                // OWNERSHIP_CONFLICT because it is one of eighty call sites' shared vocabulary; the parts
+                // below are what makes this instance decidable.
+                throw failure("negative space cannot carve natural/foreign solid: "+v.pos()
+                        +" kind="+v.kind()+" part="+v.part()+" component="+v.component()+" before="+before);
             String after=token(v.state(),entityPositions.contains(v.pos()));
             voxels.add(v);proofs.add(new BlockProof(v.pos(),before,after,be,v.component()));
             if(v.state().id().endsWith("_stairs")||v.state().id().endsWith("_slab")||v.part()==Part.FENCE) post.add(v.pos());

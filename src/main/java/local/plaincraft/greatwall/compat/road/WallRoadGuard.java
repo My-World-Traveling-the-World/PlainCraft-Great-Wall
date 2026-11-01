@@ -34,6 +34,16 @@ public final class WallRoadGuard {
 
     /** Publishes a footprint before it is stamped, so roads avoid it from the first tick. */
     public static void publishRect(int minX, int minZ, int maxX, int maxZ) {
+        // Entering a world republishes the whole footprint set, and RECTS only ever grew, so the same
+        // dozen rectangles were appended again on every load - (total N) doubled each time while inRect
+        // scanned all of them. Identical repeats are the only case that actually happens, so drop them
+        // here; (total N) is now the number of distinct footprints.
+        for (int[] r : RECTS) {
+            if (r[0] == minX && r[1] == minZ && r[2] == maxX && r[3] == maxZ) {
+                lastMarkMillis = System.currentTimeMillis();
+                return;
+            }
+        }
         RECTS.add(new int[]{minX, minZ, maxX, maxZ});
         lastMarkMillis = System.currentTimeMillis();
         GreatWallMod.LOGGER.info("[GreatWall:road] ROAD_GUARD_RECT {} {} {} {} (total {})",

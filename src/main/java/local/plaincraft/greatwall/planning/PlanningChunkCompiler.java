@@ -297,9 +297,13 @@ public final class PlanningChunkCompiler {
         }
         long now = System.nanoTime();
         double seconds = Math.max(0.001, (now - started) / 1_000_000_000.0);
+        // owners= is how many owners the collection phase admitted, completed= is how many the pool actually
+        // drained. Those are the same number by the time this line runs, but reading owners= alone made an
+        // earlier audit treat a mid-run progress report as "280 owners are done" when it meant "280 were
+        // queued"; both are printed so the distinction cannot be lost again.
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                "[GreatWall:S1C] PLANNING_COMPILE_PROGRESS owners={}/{} failed={} elapsedMs={} msPerOwner={}",
-                done, ownerCount, failed, Math.round(seconds * 1000.0),
+                "[GreatWall:S1C] PLANNING_COMPILE_PROGRESS owners={}/{} completed={} failed={} elapsedMs={} msPerOwner={}",
+                done, ownerCount, doneCounter.get(), failed, Math.round(seconds * 1000.0),
                 String.format(java.util.Locale.ROOT, "%.1f", 1000.0 * seconds / Math.max(1, done)));
         if (failed > 0) {
             local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
