@@ -15,6 +15,8 @@ public final class WaterGate implements ComponentTemplate {
     private record Span(int from,int to) {}
     private final DecayField decay;
     private final PaletteBinding palette;
+    /** Crossings already reported for this planner: one deep river logs one line, not one per cell. */
+    private final java.util.Set<SiteId> depthSkipped = java.util.concurrent.ConcurrentHashMap.newKeySet();
     public WaterGate(DecayField decay,PaletteBinding palette){this.decay=Objects.requireNonNull(decay);this.palette=Objects.requireNonNull(palette);}
     @Override public Bounds localBounds(ComponentInput input) {
         WaterEvidence w=evidence(input);
@@ -38,6 +40,24 @@ public final class WaterGate implements ComponentTemplate {
         int from=FixedMath.floorBlock(evidence.crossing().fromQ8()-input.site().globalSQ8());
         int to=FixedMath.floorBlock(evidence.crossing().toQ8()-input.site().globalSQ8()+255);
         int water=evidence.waterTopY()-w;
+        // The frozen local envelope stops b.minY() (-32) blocks below the walk level. A river whose
+        // surface sits deeper than that is not a crossing this template can carry: the water carve
+        // starts outside the envelope, and the arch height (water+3+arc) would leave a hollow shell
+        // hanging over the river instead of piers standing in it. Refusing the crossing here is the
+        // same contract as the guards above - the caller records a NO_SUPPORT break - and it keeps
+        // "escaped frozen bounds" meaning what it says: our arithmetic, not the terrain.
+        if(water<b.minY()) {
+            // Once per crossing: the same site is asked for by every cell that admits it.
+            if(depthSkipped.add(input.site().id()))
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                        "[GreatWall:S1C] WATER_GATE_SKIPPED reason=below-frozen-envelope site={} s={} walkY={} "
+                                +"waterTopY={} localWaterY={} envelopeMinY={} crossingSpanQ8={} "
+                                +"(the river lies deeper than this template's pier; the crossing stays a "
+                                +"NO_SUPPORT break instead of a floating gate)",
+                        input.site().id(),input.site().globalSQ8(),w,evidence.waterTopY(),water,b.minY(),
+                        evidence.crossingSpanQ8());
+            return ComponentAssembly.empty(input.site().id(),Rasterizer.worldBounds(input.site().frame(),b));
+        }
         var a=new ComponentAssembly(input,b,decay,palette);
         a.foundation(b.minX(),-5,b.maxXExclusive(),5,-16);
         a.box(b.minX(),-16,-5,b.maxXExclusive(),-8,5,Part.CORE,false);

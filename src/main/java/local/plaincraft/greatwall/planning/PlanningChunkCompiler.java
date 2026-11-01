@@ -288,6 +288,10 @@ public final class PlanningChunkCompiler {
             for (var job : pending) { job.run(); reportCompileProgress(doneCounter.incrementAndGet(), total, null); }
         }
         done = ownerCountDone;
+        // Most failures are recorded inside the pool, which drains above this line: re-read the counter
+        // or the summary reports the collection phase alone (measured 0.7.101 run: DONE said failed=181
+        // while the tally already held 182, and the second cause never reached the summary's ledger).
+        failed = failedCounter.get();
         if (progress != null) {
             try { progress.accept(done, ownerCount); } catch (Throwable ignored) { }
         }

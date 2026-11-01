@@ -60,7 +60,7 @@ final class ComponentAssembly {
     void put(int x, int y, int z, Part part, boolean required, boolean walkable, Map<String,String> properties) {
         if(finished)throw new IllegalStateException("assembly already finished");
         Point3i p = new Point3i(x,y,z);
-        if (!contains(localBounds, p)) throw new IllegalArgumentException("template escaped frozen bounds: " + p);
+        if (!contains(localBounds, p)) throw new IllegalArgumentException("template escaped frozen bounds: " + p + " not inside " + localBounds);
         Cell previous = cells.get(p);
         if (previous != null && previous.required() && previous.walkable() && part == Part.FOUNDATION) return;
         if (previous != null && previous.part() == Part.AIR && previous.required() && part != Part.AIR) {

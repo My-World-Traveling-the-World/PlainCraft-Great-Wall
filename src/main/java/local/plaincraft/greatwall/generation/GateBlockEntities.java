@@ -75,7 +75,26 @@ public final class GateBlockEntities {
      */
     public static void apply(ServerLevel level, int originX, int originY, int originZ,
                              List<int[]> coords, List<BlockState> states) {
-        List<Entry> list = entries();
+        // 门楼自己的坐标表 + 未列出容器的兜底。
+        apply(level, originX, originY, originZ, coords, states, true, "gate.csv");
+    }
+
+    /**
+     * 兜底专用入口：**不读** {@code gate_be.jsonl}，只按方块 id 给容器挂默认战利品。
+     *
+     * <p>非门楼模板（水门、堡垒、信标…）走这条。{@code gate_be.jsonl} 里是**门楼局部坐标**
+     * （x 63..76，而水门模板只有 x 0..45），套到别的模板上必然全部落空 —— 0.7.101 的超平坦水门
+     * 就是这样报出 {@code missing=17} 的：方块全对，但 17 个坐标一个都没有落在水门身上。
+     */
+    public static void applyDefaults(ServerLevel level, int originX, int originY, int originZ,
+                                     List<int[]> coords, List<BlockState> states, String template) {
+        apply(level, originX, originY, originZ, coords, states, false, template);
+    }
+
+    private static void apply(ServerLevel level, int originX, int originY, int originZ,
+                              List<int[]> coords, List<BlockState> states,
+                              boolean explicitTable, String template) {
+        List<Entry> list = explicitTable ? entries() : List.of();
         Set<Long> explicit = new HashSet<>();
         int looted = 0;
         int stocked = 0;
@@ -129,7 +148,8 @@ public final class GateBlockEntities {
                 if (p == null || p.length < 3) continue;
                 if (explicit.contains(localKey(p[0], p[1], p[2]))) continue;
                 BlockState state = states.get(i);
-                if (state == null) continue;
+                // 一个大模板能有四十多万格（kitset.csv），只有本身带方块实体的方块才值得查注册表。
+                if (state == null || !state.hasBlockEntity()) continue;
                 String blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
                 BlockPos pos = new BlockPos(originX + p[0], originY + p[1], originZ + p[2]);
                 String table = defaultTableFor(blockId, p[1]);
@@ -154,8 +174,9 @@ public final class GateBlockEntities {
         }
 
         GreatWallMod.LOGGER.info(
-                "[GreatWall:wonder] GATE_BE_APPLIED loot={} books={} nbt={} missing={} autoLoot={} autoBooks={} origin=({},{},{})",
-                looted, stocked, restored, missing, autoLoot, autoBooks, originX, originY, originZ);
+                "[GreatWall:wonder] GATE_BE_APPLIED loot={} books={} nbt={} missing={} autoLoot={} autoBooks={} "
+                        + "origin=({},{},{}) template={}",
+                looted, stocked, restored, missing, autoLoot, autoBooks, originX, originY, originZ, template);
     }
 
     /**

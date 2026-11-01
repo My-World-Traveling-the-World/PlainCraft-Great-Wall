@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.OptionalInt;
 import local.plaincraft.greatwall.decay.DecayField;
+import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import org.junit.jupiter.api.Test;
 
@@ -70,6 +71,33 @@ class WaterFortTest {
             }
         }
     }
+    @Test void waterDeeperThanTheFrozenEnvelopeIsSkippedNotThrown() {
+        // Fixture walk level is 84 and the template's frozen envelope stops at local y=-32, so the river
+        // surface is admitted at 52 (local -32, the last legal row) and refused at 51 (local -33).
+        // 0.7.101 threw "template escaped frozen bounds: Point3i[x=-2, y=-33, z=-5]" out of the whole cell
+        // realization there - 181 of one window's 461 owners lost their plan to it.
+        assertTrue(gateAtWaterTop(51).voxels().isEmpty(),
+                "a river deeper than the pier is a break, not a floating gate");
+        // One row inside the envelope must still reach the template's own code: at the very boundary its
+        // bottom sits on the water line, so the support graph may refuse it. That is the designed
+        // degradation channel (WallFailure, which the realization turns into a break); what must never
+        // come out of here again is an IllegalArgumentException from the frozen-bounds invariant.
+        assertDoesNotThrow(()->{ try { gateAtWaterTop(52); } catch (WallFailure degraded) { } },
+                "no envelope escape is allowed at the boundary");
+    }
+
+    private static ComponentVoxels gateAtWaterTop(int waterTop) {
+        var base=TemplateFixtures.input(SiteKind.WATER_GATE,new Bounds(-34,-32,-6,35,3,6));
+        var supports=new HashMap<>(base.supports());
+        supports.replaceAll((p,v)->p.x()>=-24&&p.x()<25?new ProbeResult(ProbeKind.WATER,waterTop-2,
+                OptionalInt.of(waterTop),OptionalInt.of(waterTop-2),4,TemplateFixtures.HASH):v);
+        var water=new WaterEvidence(new ArcInterval(296L*256,345L*256),WaterClass.NARROW,49L*256,49L*256,waterTop,
+                List.of(),List.of(),TemplateFixtures.HASH);
+        var input=new ComponentInput(base.site(),base.stations(),supports,base.decay(),base.family(),false,
+                List.of(water),List.of());
+        return new WaterGate(new DecayField(0),TemplateFixtures.PALETTE).compile(input);
+    }
+
     @Test void fortStays48AndHasNoGameplayEntities() {
         var template=new FortPlaceholder(new DecayField(0),TemplateFixtures.PALETTE);
         var c=template.compile(TemplateFixtures.input(SiteKind.FORT,new Bounds(-24,-32,-24,24,8,24)));

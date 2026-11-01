@@ -228,9 +228,18 @@ public final class ShowcaseStamp {
                 GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_STAMPED {} blocks={} origin=({},{},{})",
                         resource, coords.size(), originX, originY, originZ);
                 local.plaincraft.greatwall.generation.StampVerify.verify(level, resource, originX, originY, originZ, coords, states);
-                if (resource != null && resource.endsWith("gate.csv")) {
+                // The name test has to be exact: "watergate.csv".endsWith("gate.csv") is TRUE, so the
+                // gate's hand-written block-entity table was applied to the water gate as well and its
+                // 17 gate-local coordinates (x 63..76 against a template that is 46 wide) all fell on
+                // terrain - GATE_BE_APPLIED missing=17 loot=0 on the flat showcase (0.7.101).
+                String template = templateName(resource);
+                if (ownsGateBlockEntityTable(template)) {
                     // 门楼的方块实体模板（箱子战利品表 / 书架 / 吊牌）——拼接区与独立区共用同一份
                     local.plaincraft.greatwall.generation.GateBlockEntities.apply(level, originX, originY, originZ, coords, states);
+                } else {
+                    // 别的模板只吃「按方块 id 的兜底」，绝不套门楼的坐标表。
+                    local.plaincraft.greatwall.generation.GateBlockEntities.applyDefaults(
+                            level, originX, originY, originZ, coords, states, template);
                 }
                 filling = true;
             }
@@ -372,6 +381,24 @@ public final class ShowcaseStamp {
         if (dropped > 0) {
             GreatWallMod.LOGGER.info("[GreatWall:wonder] SHOWCASE_RESET pieces={}", dropped);
         }
+    }
+
+    /** {@return the CSV file name of a template resource, e.g. {@code watergate.csv}} */
+    static String templateName(String resource) {
+        if (resource == null) return "";
+        int slash = resource.lastIndexOf('/');
+        return slash < 0 ? resource : resource.substring(slash + 1);
+    }
+
+    /**
+     * {@return whether this template owns the gate's hand-written block-entity coordinate table}
+     *
+     * <p>Exact, never a suffix: {@code "watergate.csv".endsWith("gate.csv")} is true, and the gate's
+     * table then lands on a template 100 blocks narrower - every entry misses (0.7.101 water gate
+     * logged {@code GATE_BE_APPLIED missing=17 loot=0}).
+     */
+    static boolean ownsGateBlockEntityTable(String templateName) {
+        return "gate.csv".equals(templateName);
     }
 
 }
