@@ -112,14 +112,18 @@ public final class PrewarmProgress {
      * Overall-percent weight of each stage, indexed by {@link Stage#ordinal()}. The weights are the
      * stages' relative measured durations on a real world, and they must sum to 100.
      *
-     * <p>Measured on the 2026-10-15 world: root search 128 s, structure scan 181 s, fine sample
-     * 158 s (708 s on the session before it - it is the one stage whose cost swings with how much
-     * terrain the route crosses), segment prewarm 20.5 s, compile unknown but bounded by the owner
-     * count now that it reports a real total. The previous table gave the prewarm 40 of the 100
-     * points for those 20 seconds and the structure scan only 10 for its 181, so the bar crawled
-     * through the scan and then filled half its length at the very end.
+     * <p>Measured on the 2026-11-01 session ({@code WALL_STARTUP_ACCOUNT totalMs=857886 rootMs=253955
+     * scanMs=213812 fineMs=319649 prewarmMs=0 compileMs=70465}): root 254 s, structure scan 214 s,
+     * fine sample 320 s, compile 70 s. The table before this one was calibrated on a 2026-10-15 run
+     * whose stages took 128/181/158/20 s, so every stage was off by 2-13x and the bar read wrong the
+     * whole way through - that is the "57495/113152 but the card says 80%" people kept reporting.
+     *
+     * <p>The prewarm gets no slice of its own: it overlaps the fine sample and the account folds it
+     * into {@code fineMs} (see the stage bookkeeping in {@code ProductionSession}). Giving it points
+     * would make the total jump ahead of the work it is waiting for. Backfill runs after the road
+     * gate, outside this account.
      */
-    private static final int[] STAGE_WEIGHT = {22, 30, 28, 5, 10, 5, 0};
+    private static final int[] STAGE_WEIGHT = {30, 25, 37, 0, 8, 0, 0};
     /** Monotonic overall peak for the loading card; reset when a new prewarm begins or clears. */
     private static final java.util.concurrent.atomic.AtomicInteger PEAK_OVERALL_PERCENT =
             new java.util.concurrent.atomic.AtomicInteger();
