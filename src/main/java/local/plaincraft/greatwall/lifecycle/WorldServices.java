@@ -649,6 +649,19 @@ public final class WorldServices {
         final boolean[] compiled = {false};
         final boolean[] painted = {false};
         server.managedBlock(() -> {
+            // ── 终态失败必须立刻放行（2026-11-03 实测 bug）───────────────────────────────────
+            // 一个已经 finish(false) 的会话不会再有任何进展：目前两个来源是 bootstrap 拒绝
+            // （RECIPE_REJECTED：存档是用另一套墙体语义生成的，重试一万次也不会匹配）和预热看门狗超时。
+            // 缺少这道守卫时，下面的 compileWhileBlocked 会一直返回 false，
+            // managedBlock 于是无限重试 → 服务器线程永不释放 → 加载界面死锁在 0%，
+            // 同时每轮刷一条 PRODUCTION_STARTUP_COMPILE ran=false。
+            // 实测（新世界存档 + 0.7.107）：4 分钟刷了 137,892 行、日志 50 KB/s 涨到 15.8 MB。
+            if (PrewarmProgress.isFinished() && PrewarmProgress.isFailed()) {
+                GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_TERMINAL_ABORT - 墙体启动阶段已终态失败"
+                        + "（见上方 RECIPE_REJECTED / PREWARM_WAIT_TIMEOUT），立即释放启动阶段，"
+                        + "让道路在没有墙的情况下继续");
+                return true;
+            }
             // Drain every world-local chunk queue: ChunkMap posts its completion callbacks here
             // and they must run for the structure screen's chunk requests to finish.
             for (var level : server.getAllLevels()) {

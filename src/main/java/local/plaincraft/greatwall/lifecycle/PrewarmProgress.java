@@ -574,6 +574,24 @@ public final class PrewarmProgress {
     public static boolean isActive() { return ACTIVE.get(); }
 
     /**
+     * True once {@link #finish(boolean)} has run for the current session.
+     *
+     * <p>Consumers that wait on this stage must combine it with {@link #isFailed()}: a finished
+     * session is not necessarily a successful one, and a failed session will never make any more
+     * progress. Waiting on such a session is a permanent hang.
+     */
+    public static boolean isFinished() { return FINISHED.get(); }
+
+    /**
+     * True when the finished session failed. Only meaningful together with {@link #isFinished()}.
+     *
+     * <p>A failure here is terminal by design - the two current sources are a bootstrap rejection
+     * (a save generated with different wall semantics, which no retry can fix) and the prewarm
+     * watchdog timeout. Neither can be recovered by calling into the session again.
+     */
+    public static boolean isFailed() { return FAILED.get(); }
+
+    /**
      * Blocks until the prewarm finishes, or until {@code timeout} elapses.
      *
      * <p>Returns true if the prewarm settled - successfully or having failed - and false on
