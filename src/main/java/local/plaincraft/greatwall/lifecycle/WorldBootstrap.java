@@ -465,6 +465,17 @@ public final class WorldBootstrap implements AutoCloseable {
 
     /** Best-effort prefetch counters; they never gate the search itself. */
     private final java.util.concurrent.atomic.AtomicLong prefetchBatches = new java.util.concurrent.atomic.AtomicLong();
+    /**
+     * Real drive-loop rounds: one per {@code advance} entry, whether or not a prefetch was scheduled.
+     *
+     * <p>{@code prefetch-batches} only counts rounds whose pending list was non-empty, so it is a lower
+     * bound on rounds and {@code wall / rounds} derived from it is an upper bound on per-round cost.
+     * This one is the true count; the two together separate round-trip overhead from batch work.
+     * Diagnostics only: nothing reads it.
+     */
+    private final java.util.concurrent.atomic.AtomicLong roundTrips = new java.util.concurrent.atomic.AtomicLong();
+    private final java.util.concurrent.atomic.AtomicLong sumSchedulePrefetchNanos = new java.util.concurrent.atomic.AtomicLong();
+    private final java.util.concurrent.atomic.AtomicLong sumSubmitToStartNanos = new java.util.concurrent.atomic.AtomicLong();
     private final java.util.concurrent.atomic.AtomicLong prefetchLaneRefusals = new java.util.concurrent.atomic.AtomicLong();
     private volatile int prefetchLastSize;
     /** Set when a cached root axis was reused, so a session that skipped the search says so. */
@@ -579,16 +590,24 @@ public final class WorldBootstrap implements AutoCloseable {
 
     private void advance(RootSearch search, OracleLane lane, WorldManifest.Creation creation, Frozen inputs) {
         active();
+        roundTrips.incrementAndGet();
         // Widen the search across the idle lanes before asking lane 0 to continue.
         // The root search itself is a serial state machine and stays on lane 0; what
         // parallelises is the column sampling, which is a pure function of the
         // coordinates and therefore produces identical values on every lane.
-        schedulePrefetch(search, lane);
+        long scheduleStarted = System.nanoTime();
+        try {
+            schedulePrefetch(search, lane);
+        } finally {
+            sumSchedulePrefetchNanos.addAndGet(System.nanoTime() - scheduleStarted);
+        }
         final CompletableFuture<RootBatch> submitted;
+        final long submittedAt = System.nanoTime();
         try {
             submitted = lane.submit(oracle -> {
+                sumSubmitToStartNanos.addAndGet(System.nanoTime() - submittedAt);
                 try {
-                    var status = search.advance(oracle, 64);
+                    var status = search.advance(oracle, 256);
                     return new RootBatch(status == WorkState.DONE ? Optional.of(search.finish()) : Optional.empty(), search.progress(),
                             search.needsStructureScreen()?search.pendingStructureCandidates():List.of());
                 } finally {
@@ -726,12 +745,17 @@ public final class WorldBootstrap implements AutoCloseable {
                 : 100.0 * hitsNow / (hitsNow + inlineNow);
         GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SEARCH_DONE columns={} phase={} over40msBatches={} "
                         + "maxBatchMs={} elapsedMs={} prefetchOffThreadPct={} prefetchHits={} inlineSamples={} "
-                        + "prefetchWaits={} discardedPrefetched={} distinctColumns={} columnReads={} {}",
+                        + "prefetchWaits={} discardedPrefetched={} distinctColumns={} columnReads={} "
+                        + "roundTrips={} scheduleMs={} submitToStartMs={} batchMs={} {}",
                 progress.columns(), progress.phase(), progress.over40msBatches(),
                 Math.round(progress.maxBatchNanos() / 1_000_000.0D), Math.round(elapsedMs),
                 String.format(java.util.Locale.ROOT, "%.1f", offThreadPct),
                 hitsNow, inlineNow, search.prefetchWaitCount(), search.discardedPrefetchedCount(),
                 search.distinctColumns(), search.columnReads(),
+                roundTrips.get(),
+                Math.round(sumSchedulePrefetchNanos.get() / 1_000_000.0D),
+                Math.round(sumSubmitToStartNanos.get() / 1_000_000.0D),
+                Math.round(search.batchNanosTotal() / 1_000_000.0D),
                 new java.util.TreeMap<>(prefetchDiagnostics()));
     }
 

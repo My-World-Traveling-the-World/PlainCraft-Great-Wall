@@ -238,8 +238,8 @@ public final class RootSearch {
 
     public WorkState advance(NaturalTerrainOracle oracle, int primitiveLimit) {
         claimOwner();
-        if (primitiveLimit < 1 || primitiveLimit > 64) throw new IllegalArgumentException("root batch limit 1..64");
-        long started = System.nanoTime(), deadline = started + 25_000_000L;
+        if (primitiveLimit < 1 || primitiveLimit > 256) throw new IllegalArgumentException("root batch limit 1..256");
+        long started = System.nanoTime(), deadline = started + 100_000_000L;
         try {
             for (int operation = 0; operation < primitiveLimit && phase != 3 && phase != 4; operation++) {
                 if (Thread.currentThread().isInterrupted()) throw new WallFailure(FailureCode.CLOSED, "root search interrupted");
@@ -259,6 +259,7 @@ public final class RootSearch {
         } finally {
             long elapsed = System.nanoTime() - started;
             maxBatchNanos = Math.max(maxBatchNanos, elapsed);
+            batchNanosTotal += elapsed;
             if (elapsed > 40_000_000L) over40msBatches++;
         }
     }
@@ -1107,6 +1108,16 @@ public final class RootSearch {
     public long discardedPrefetchedCount() { return discardedPrefetched.get(); }
 
     /**
+     * Total wall time the serial advance loop actually spent inside its primitive loop.
+     *
+     * <p>{@code over40msBatches} and {@code maxBatchMs} only describe the tail; this is the sum, so a
+     * caller can subtract it from the stage wall clock and say how much of the stage was NOT batch work.
+     * Owner-confined like the rest of the search state.
+     */
+    public long batchNanosTotal() { claimOwner(); return batchNanosTotal; }
+    private long batchNanosTotal;
+
+    /**
      * How many candidates ahead the phase-1 (footprint) prefetch window enumerates.
      *
      * <p>Phase 0 has always looked several candidates ahead for exactly one reason: the pump walks one
@@ -1123,7 +1134,7 @@ public final class RootSearch {
      */
     private static final int PREFETCH_AHEAD_MAX = 4;
     private static final int PREFETCH_AHEAD_CONFIGURED = Math.max(1, Math.min(PREFETCH_AHEAD_MAX,
-            Integer.getInteger("greatwall.rootPrefetchAhead", 2)));
+            Integer.getInteger("greatwall.rootPrefetchAhead", 4)));
     /** A pad rejected after this few sampled columns counts as an early reject. */
     private static final int EARLY_REJECT_COLUMNS = 8;
     /** Consecutive early rejects that make the wider window a liability rather than a help. */
