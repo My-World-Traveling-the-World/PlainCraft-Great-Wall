@@ -1087,6 +1087,10 @@ final class ProductionSession implements AutoCloseable {
                 (done, total) -> PrewarmProgress.setSubProgress(
                         PrewarmProgress.Stage.COMPILE, done, total));
         long compileMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - compileStartedNanos);
+        // The publish loop below is real work, not part of the compile: it used to land outside every
+        // counter, so a 35.1 s COMPILE stage reported 10.8 s of compile and nothing else. Time it
+        // separately rather than folding it in - the two numbers answer different questions.
+        long publishStartedNanos = System.nanoTime();
         // Publish per owner, isolating each owner's failure: one chunk that cannot take its mask
         // must not cost the wall every other chunk. Failures are counted and reported loudly,
         // because a partially published wall is a state the player has to be told about.
@@ -1121,9 +1125,10 @@ final class ProductionSession implements AutoCloseable {
                         entry.getKey().x(), entry.getKey().z(), ownerFailure.toString());
             }
         }
+        long publishMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - publishStartedNanos);
         GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={} chunks={} published={} "
-                        + "failed={} compileMs={} vegetationLeases={} guardMisses={} suppressed={}",
-                plans.size(), compiled.size(), published, failed, compileMillis,
+                        + "failed={} compileMs={} publishMs={} vegetationLeases={} guardMisses={} suppressed={}",
+                plans.size(), compiled.size(), published, failed, compileMillis, publishMillis,
                 vegetation.leases(), vegetation.misses(), vegetation.suppressed());
         // Queue the published window for the loaded-chunk writer. Loaded chunks are written within
         // seconds; the rest wait for the player, which is the only way a chunk generated before the
