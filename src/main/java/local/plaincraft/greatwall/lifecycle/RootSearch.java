@@ -537,6 +537,7 @@ public final class RootSearch {
                     failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS, true);
             return;
         }
+        noteFootprintLongWalk();
         audit.add(new Audit("footprint", current.origin(), current.radius(), current.angle(), -1,
                 wet, invalidSamples, failedFoundations, min, max, "FOUNDATION_ELIGIBLE"));
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
@@ -550,6 +551,8 @@ public final class RootSearch {
      * counts are the ones that decided the refusal - not always the full 48x48 totals.
      */
     private void rejectFootprint(Candidate current, boolean waterFired, boolean supportFired, boolean reliefFired) {
+        // Early reject versus pad walked to the end decides how far ahead the lanes should run next time.
+        noteFootprintReject(sampleIndex);
         // Name the cause. The three booleans the callers pass are false on the early-exit path, which is
         // why a pad that died of one uncertified column used to print all three as false and say nothing.
         String reason = rejectReason(censoredSamples > 0, supportFired, waterFired, reliefFired);
@@ -848,16 +851,23 @@ public final class RootSearch {
      */
     public List<ColumnKey> pendingFootprintReads() {
         if (phase != 1 || shortlisted.isEmpty()) return List.of();
-        var current = shortlisted.get(selectedIndex);
-        int from = column == null ? sampleIndex : sampleIndex + 1;
-        var result = new ArrayList<ColumnKey>(Math.max(0, 48 * 48 - from));
-        for (int i = from; i < 48 * 48; i++) {
-            var key = new ColumnKey(current.origin().x() + i / 48 - 24,
-                    current.origin().z() + i % 48 - 24, true);
-            // A column a lane already took is not offered again: this list is rebuilt from arithmetic on
-            // every advance, so without the filter the same column went to several lanes and was sampled
-            // over and over, with only the last put surviving.
-            if (!claimed.contains(key)) result.add(key);
+        int ahead = footprintPrefetchAhead;
+        var result = new ArrayList<ColumnKey>(Math.max(0, 48 * 48 * ahead));
+        for (int k = 0; k < ahead; k++) {
+            int index = selectedIndex + k;
+            // The window never runs past the batch of pads shortlisted holds; footprintStep replaces
+            // that list when it walks on to the next batch.
+            if (index >= shortlisted.size()) break;
+            var current = shortlisted.get(index);
+            int from = k == 0 ? (column == null ? sampleIndex : sampleIndex + 1) : 0;
+            for (int i = from; i < 48 * 48; i++) {
+                var key = new ColumnKey(current.origin().x() + i / 48 - 24,
+                        current.origin().z() + i % 48 - 24, true);
+                // A column a lane already took is not offered again: this list is rebuilt from arithmetic on
+                // every advance, so without the filter the same column went to several lanes and was sampled
+                // over and over, with only the last put surviving.
+                if (!claimed.contains(key)) result.add(key);
+            }
         }
         return List.copyOf(result);
     }
@@ -1095,6 +1105,53 @@ public final class RootSearch {
 
     /** Columns sampled by a prefetch that the search then moved past; pure diagnostics. */
     public long discardedPrefetchedCount() { return discardedPrefetched.get(); }
+
+    /**
+     * How many candidates ahead the phase-1 (footprint) prefetch window enumerates.
+     *
+     * <p>Phase 0 has always looked several candidates ahead for exactly one reason: the pump walks one
+     * column at a time and the idle lanes can only work ahead of it. Phase 1 looked at the current
+     * candidate only, so every time the pump moved on to the next pad the lanes had nothing claimed for
+     * it yet and the pump sampled those columns itself. A measured session put 27.2% of all columns on
+     * that inline path ({@code inlineSamples=10831} of {@code columns=39847}) while
+     * {@code prefetchWaits=0} - the lanes were never behind, they were never told what to sample next.
+     *
+     * <p>Prefetching a pad the search then rejects only wastes lane turns: a prefetched sample is a pure
+     * function of (x, z, requireFoundation) and never enters the selection, so widening this window
+     * cannot change the result. Override with {@code -Dgreatwall.rootPrefetchAhead}; 1 restores the old
+     * single-candidate behaviour exactly.
+     */
+    private static final int PREFETCH_AHEAD_MAX = 4;
+    private static final int PREFETCH_AHEAD_CONFIGURED = Math.max(1, Math.min(PREFETCH_AHEAD_MAX,
+            Integer.getInteger("greatwall.rootPrefetchAhead", 2)));
+    /** A pad rejected after this few sampled columns counts as an early reject. */
+    private static final int EARLY_REJECT_COLUMNS = 8;
+    /** Consecutive early rejects that make the wider window a liability rather than a help. */
+    private static final int EARLY_REJECT_STREAK_LIMIT = 2;
+    /** Live window width; starts at the configured value and narrows on a run of early rejects. */
+    private int footprintPrefetchAhead = PREFETCH_AHEAD_CONFIGURED;
+    private int earlyRejectStreak;
+
+    /**
+     * Narrows the phase-1 window when pads keep dying in their first few columns.
+     *
+     * <p>A steep pad crosses {@code failedFoundations > 5% of 48x48} within a handful of columns, so the
+     * next pad's columns are sampled by a lane and then never read. Drop to the old single-candidate
+     * shape until a pad runs long enough to be worth running ahead of. This only ever changes how much
+     * is prefetched; it never changes what the search reads or decides.
+     */
+    private void noteFootprintReject(int sampledColumns) {
+        if (sampledColumns > EARLY_REJECT_COLUMNS) { earlyRejectStreak = 0; return; }
+        earlyRejectStreak++;
+        footprintPrefetchAhead = earlyRejectStreak >= EARLY_REJECT_STREAK_LIMIT
+                ? 1 : PREFETCH_AHEAD_CONFIGURED;
+    }
+
+    /** A pad walked to the end is worth running ahead of again. */
+    private void noteFootprintLongWalk() {
+        earlyRejectStreak = 0;
+        footprintPrefetchAhead = PREFETCH_AHEAD_CONFIGURED;
+    }
 
     /** Signalled by prefetch() when a sampled column lands. */
     private final Object prefetchLock = new Object();
