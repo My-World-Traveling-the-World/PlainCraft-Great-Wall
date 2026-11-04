@@ -648,6 +648,9 @@ public final class WorldServices {
         // it is parked in managedBlock, and the road gate now waits for the compile to publish.
         final boolean[] compiled = {false};
         final boolean[] painted = {false};
+        // One extra compile attempt once the fine sample lands, taken on this thread rather than as a
+        // queued task. One shot: if it cannot run, the queued triggerDeferredCompile path still tries.
+        final boolean[] retriedDeferred = {false};
         server.managedBlock(() -> {
             // ── 终态失败必须立刻放行（2026-11-03 实测 bug）───────────────────────────────────
             // 一个已经 finish(false) 的会话不会再有任何进展：目前两个来源是 bootstrap 拒绝
@@ -661,6 +664,18 @@ public final class WorldServices {
                         + "（见上方 RECIPE_REJECTED / PREWARM_WAIT_TIMEOUT），立即释放启动阶段，"
                         + "让道路在没有墙的情况下继续");
                 return true;
+            }
+            // A compile that deferred for want of the fine sample is normally queued with
+            // server.execute() by triggerDeferredCompile, but this thread is parked in managedBlock and
+            // that queue is only polled between drain rounds - a measured session waited 17.1 s there
+            // after the sample published. Notice the settled sample here, before the drain, and compile on
+            // this thread instead. activate() guards the compile with an atomic "compile-started" key, so
+            // this cannot run it twice, and compileRetryPending() goes false the moment it starts.
+            var startupOwner = SESSIONS.get(server);
+            if (!retriedDeferred[0] && startupOwner != null && startupOwner.production != null
+                    && startupOwner.production.compileRetryPending()) {
+                retriedDeferred[0] = true;
+                compiled[0] = compileWhileBlocked(server) || compiled[0];
             }
             // Drain every world-local chunk queue: ChunkMap posts its completion callbacks here
             // and they must run for the structure screen's chunk requests to finish.

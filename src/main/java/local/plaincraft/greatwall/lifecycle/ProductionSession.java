@@ -668,9 +668,16 @@ final class ProductionSession implements AutoCloseable {
 
     /** Runs the compile if an earlier attempt deferred for want of the fine sample. */
     private void triggerDeferredCompile() {
-        // Consumed here, where the compile is actually queued - not at the point that set the deferral,
-        // which left this check permanently false and the compile never started.
-        if (!compileDeferred.getAndSet(false)) return;
+        // The flag is deliberately NOT consumed here any more. It used to be a getAndSet(false) at this
+        // point; it is now cleared where the compile really starts (compilePlanningPlans0), so that the
+        // thread parked in managedBlock can see it and run the compile itself.
+        //
+        // Why that matters: a task queued with server.execute() onto a server thread that is parked in
+        // managedBlock is only polled between that loop's chunk-queue drain rounds. A measured session
+        // published the fine sample at 17:00:31.9 and did not log PLANNING_COMPILE_BEGIN until 17:00:49 -
+        // 17.1 s of the 35.1 s compile stage spent waiting for a queue hop, while the whole compile is
+        // only 10.7 s. compileRetryPending() lets the parked loop take it on its next round.
+        if (!compileDeferred.get()) return;
         try {
             server.execute(this::compileAtStartup);
         } catch (Throwable cannotQueue) {
@@ -678,6 +685,22 @@ final class ProductionSession implements AutoCloseable {
                     + "releasing the startup stage", cannotQueue);
             local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
         }
+    }
+
+    /**
+     * {@return true when a compile attempt deferred for want of the fine sample and that sample has landed}
+     *
+     * <p>The startup thread parks inside {@code managedBlock} until the wall is published, and a task
+     * queued onto the server task queue is only polled between that loop's chunk-queue drains - a
+     * measured session paid 17.1 s there. This predicate lets the parked loop notice the settled sample
+     * by itself and run the compile on its next round instead of waiting for the queue hop.
+     *
+     * <p>False as soon as the compile starts: {@link #activate} sets {@code compile-started} atomically
+     * and {@code compilePlanningPlans0} clears the deferral once it is past the wait, so the two callers
+     * cannot compile twice.
+     */
+    public boolean compileRetryPending() {
+        return compileDeferred.get() && fineSampleSettled && !state.containsKey("compile-started");
     }
 
     /**
@@ -935,6 +958,9 @@ final class ProductionSession implements AutoCloseable {
                     + "before the fine cross-section sample; the compile runs once the sample publishes");
             return;
         }
+        // Past the wait above means this attempt is going to compile, not defer: release the retry
+        // predicate so the parked startup loop stops looking for a deferred compile.
+        compileDeferred.set(false);
         if (index == null || realization == null || chunkCompiler == null) {
             // A skipped compile used to return with nothing but a WARN. Nothing then released the
             // pinned prewarm leases or opened the peer gate, so the roads waited out the wall's own
