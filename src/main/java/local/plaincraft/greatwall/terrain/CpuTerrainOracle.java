@@ -135,10 +135,11 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      * once its slice walk reported complete ({@code slicesReady}), because a half-baked chunk is not
      * reusable. This map is touched from one lane thread only, like the rest of the oracle.
      */
+    /** Retired with the density walk; the live numbers come from {@link NoiseSurfaceSampler}. */
     private long chunkCacheHits, chunkCacheMisses;
     /** Baked-chunk reuse counters, surfaced so a real session can prove the cache is working. */
-    public long chunkCacheHits() { return chunkCacheHits; }
-    public long chunkCacheMisses() { return chunkCacheMisses; }
+    public long chunkCacheHits() { return surfaceSampler.cacheHits(); }
+    public long chunkCacheMisses() { return surfaceSampler.cacheMisses(); }
     /**
      * Cost model of this lane's column walks.
      *
@@ -167,6 +168,14 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     private long maxConstructNanos, maxCellNanos, maxSlicePointNanos, maxBlockNanos, maxCoarseNanos, maxBiomeNanos;
     private long over40msPrimitives, referencePrimitives, coarsePrimitives;
     private long maxAdvanceNanos, over40msAdvances;
+    /**
+     * Retired with the density walk these measured. {@code begin} is answered whole by the vanilla
+     * sweep now, so there is no block walk, no chunk bake, no slice fill and no lead retry left to
+     * count: {@code walked-blocks}, {@code lead-retries}, {@code construct-ms}, {@code slice-ms},
+     * {@code cell-ms}, {@code block-ms}, {@code biome-ms} and {@code surface-memo-hits} stay at zero
+     * by construction, not by an instrumentation bug. {@code surface-ms} and the two chunk-cache
+     * counters are live.
+     */
     private long walkedBlocks, leadRetries;
     private long constructNanosTotal, sliceNanosTotal, cellNanosTotal, blockNanosTotal, biomeNanosTotal;
     /** Surface-estimate memo: a ring of (4x4 cell column, estimated surface). */
@@ -228,8 +237,10 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         // It also hands back the three solid states under the surface, which is what the foundation
         // certificate reads - the density walk existed only to collect them.
         int sea = settings.seaLevel();
+        long surfaceStarted = System.nanoTime();
         int surface = surfaceSampler.worldSurface(x, z);
         int solid = surfaceSampler.solidTop(x, z);
+        surfaceNanosTotal += System.nanoTime() - surfaceStarted;
         // `solid` is the wall's ground: the first block that is neither air nor a fluid, plus one - the
         // same block the native column walk calls `solidY`, so a forest counts its canopy and a river
         // counts its bed. `surface` is the first NON-AIR block, which is one above that same block for a
@@ -260,7 +271,9 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         active.groundTop = sane ? ground : bounds.minY() + 16;
         active.waterTop = water[0];
         active.bedTop = water[1];
+        long supportStarted = System.nanoTime();
         BlockState[] support = surfaceSampler.supportColumn(x, z);
+        surfaceNanosTotal += System.nanoTime() - supportStarted;
         if (support != null) {
             active.firstSolid = support[0];
             // The sampler fills support[] densely from index 0 and leaves the rest null when a column has

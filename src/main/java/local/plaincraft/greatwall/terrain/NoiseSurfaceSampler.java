@@ -84,6 +84,19 @@ final class NoiseSurfaceSampler {
             new java.util.concurrent.ConcurrentHashMap<>();
 
     private final java.util.concurrent.ConcurrentHashMap<Long, Heights> cache;
+    /**
+     * Per-cell cache hits and misses, so the fine sample can say where its time went.
+     *
+     * <p>These are the numbers {@code CpuTerrainOracle.costModel()} reports as
+     * {@code chunk-cache-hits}/{@code chunk-cache-misses}. The baked-chunk cache the oracle javadoc
+     * describes was replaced by this per-cell cache, so the counters have to live here. Atomic because
+     * the cache instance is shared by every lane built on the same {@code RandomState}.
+     */
+    private final java.util.concurrent.atomic.AtomicLong cacheHits = new java.util.concurrent.atomic.AtomicLong();
+    private final java.util.concurrent.atomic.AtomicLong cacheMisses = new java.util.concurrent.atomic.AtomicLong();
+
+    public long cacheHits() { return cacheHits.get(); }
+    public long cacheMisses() { return cacheMisses.get(); }
     private long sweeps;
     private long corrections;
 
@@ -142,13 +155,17 @@ final class NoiseSurfaceSampler {
         int cellX = Math.floorDiv(x, cellWidth);
         int cellZ = Math.floorDiv(z, cellWidth);
         Heights cached = cache.get(key);
-        if (cached != null) return cached;
+        if (cached != null) {
+            cacheHits.incrementAndGet();
+            return cached;
+        }
         Heights[] built = new Heights[1];
         Heights fresh = cache.computeIfAbsent(key, ignored -> {
             built[0] = sweep(cellX, cellZ);
             return built[0];
         });
         if (built[0] != null) {
+            cacheMisses.incrementAndGet();
             sweeps++;
             evictIfOversized();
         }
