@@ -639,6 +639,14 @@ public final class WorldBootstrap implements AutoCloseable {
                 fail(error);
                 return;
             }
+            // A measured session died exactly here: a getter called below threw
+            // IllegalStateException, the exception landed in the future this whenCompleteAsync
+            // returns - which nobody holds - and the publish chain stopped with an empty log.
+            // Everything from this point runs inside the try so a continuation failure is
+            // reported and reaches the session's own failure channel instead of vanishing.
+            // The body keeps its original indentation on purpose: wrapping it must not move a
+            // single byte of the logic that publishes the recipe.
+            try {
             progress.put("root", batch.progress());
             // Publish the candidate index to the loading card, so the root search shows a
             // moving number rather than an indeterminate "searching" that reads as frozen.
@@ -692,6 +700,21 @@ public final class WorldBootstrap implements AutoCloseable {
             logRootSearchDone(search, batch.progress());
             writeCachedAxis(creation, inputs, selection);
             publishRecipeFor(selection, creation, inputs);
+            } catch (Throwable continuationFailure) {
+                // Reported, not swallowed. fail(...) is this session's existing failure channel:
+                // it sets the failed state, completes ready() exceptionally and closes the
+                // bootstrap, so whoever waits on ready() learns that the recipe will not publish.
+                GreatWallMod.LOGGER.error("[PGW-ROOT-CONTINUATION] root continuation failed, "
+                        + "recipe will not publish thread={} state={}",
+                        Thread.currentThread().getName(), Map.copyOf(state), continuationFailure);
+                try {
+                    fail(continuationFailure);
+                } catch (Throwable reportingFailed) {
+                    // Never lose the original evidence to a secondary failure in reporting it.
+                    GreatWallMod.LOGGER.error("[PGW-ROOT-CONTINUATION] reporting the continuation "
+                            + "failure failed too", reportingFailed);
+                }
+            }
         }, rootPump);
     }
 
