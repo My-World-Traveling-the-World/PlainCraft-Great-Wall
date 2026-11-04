@@ -259,7 +259,7 @@ public final class RootSearch {
         } finally {
             long elapsed = System.nanoTime() - started;
             maxBatchNanos = Math.max(maxBatchNanos, elapsed);
-            batchNanosTotal += elapsed;
+            batchNanosTotal.addAndGet(elapsed);
             if (elapsed > 40_000_000L) over40msBatches++;
         }
     }
@@ -1112,10 +1112,16 @@ public final class RootSearch {
      *
      * <p>{@code over40msBatches} and {@code maxBatchMs} only describe the tail; this is the sum, so a
      * caller can subtract it from the stage wall clock and say how much of the stage was NOT batch work.
-     * Owner-confined like the rest of the search state.
+     *
+     * <p>Deliberately does NOT call {@code claimOwner()}: it is read from the root pump, which is not
+     * the continuation's owning lane. Claiming ownership here threw "root continuation belongs to
+     * another lane" inside the pump's whenComplete callback - whose exception the pump swallows -
+     * so the advance chain died right after the search finished and the recipe was never published.
+     * An AtomicLong because the owner thread accumulates while the pump reads.
      */
-    public long batchNanosTotal() { claimOwner(); return batchNanosTotal; }
-    private long batchNanosTotal;
+    public long batchNanosTotal() { return batchNanosTotal.get(); }
+    private final java.util.concurrent.atomic.AtomicLong batchNanosTotal =
+            new java.util.concurrent.atomic.AtomicLong();
 
     /**
      * How many candidates ahead the phase-1 (footprint) prefetch window enumerates.
