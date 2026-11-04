@@ -324,10 +324,24 @@ public final class GreatWallLoadingProgressRenderer {
                     ? Component.translatable("plaincraft.great_wall.loading_progress.status_scan",
                             snapshot.subDone(), snapshot.subTotal())
                     : Component.translatable("plaincraft.great_wall.loading_progress.status_scan_unknown");
-            case FINE_SAMPLE -> snapshot.subTotal() > 0
-                    ? Component.translatable("plaincraft.great_wall.loading_progress.status_sample",
-                            snapshot.subDone(), snapshot.subTotal())
-                    : Component.translatable("plaincraft.great_wall.loading_progress.status_sample_unknown");
+            case FINE_SAMPLE -> {
+                int sampleDone = snapshot.subDone();
+                int sampleTotal = snapshot.subTotal();
+                // The fine-sample total is a column estimate that starts at 1 and only grows
+                // while slices are enqueued; a cache-hit session answers every column without
+                // enqueueing, so the total stays 1 while done climbs. A total that is still 1
+                // (or 0) with a real done count is therefore untrustworthy: show the running
+                // column count alone instead of a nonsense "29385/1" fraction.
+                if (sampleTotal <= 1 && sampleDone > 1) {
+                    yield Component.translatable(
+                            "plaincraft.great_wall.loading_progress.status_sample_indeterminate",
+                            sampleDone);
+                }
+                yield sampleTotal > 0
+                        ? Component.translatable("plaincraft.great_wall.loading_progress.status_sample",
+                                sampleDone, sampleTotal)
+                        : Component.translatable("plaincraft.great_wall.loading_progress.status_sample_unknown");
+            }
             case PREWARM -> snapshot.total() > 0
                     ? Component.translatable("plaincraft.great_wall.loading_progress.status_prewarm",
                             snapshot.completed(), snapshot.total())
@@ -382,6 +396,12 @@ public final class GreatWallLoadingProgressRenderer {
     private static Component progressLine(PrewarmProgress.Stage stage, String key,
                                           PrewarmProgress.Snapshot snapshot, int done, int total) {
         if (total <= 0) return Component.translatable(key + "_unknown");
+        // Same untrustworthy-total guard as the status line: the fine-sample total starts at 1
+        // and does not grow on a cache-hit session, so a total of 1 with a real done count must
+        // not render as "done/1". Show the running column count alone.
+        if (stage == PrewarmProgress.Stage.FINE_SAMPLE && total <= 1 && done > 1) {
+            return Component.translatable(key + "_indeterminate", done);
+        }
         long elapsedMs = snapshot.elapsedMillis();
         // The two long stages report a rate and a remaining-time estimate: "how many are left" says
         // nothing about whether the stage is moving at all, which is how a real session sat on 0/48 for
