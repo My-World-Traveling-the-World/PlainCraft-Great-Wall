@@ -160,7 +160,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         costs.put("cell-ms", cellNanosTotal / 1_000_000L);
         costs.put("block-ms", blockNanosTotal / 1_000_000L);
         costs.put("biome-ms", biomeNanosTotal / 1_000_000L);
-        costs.put("surface-ms", surfaceNanosTotal / 1_000_000L);
+        costs.put("surface-ms", surfaceNanosTotal.get() / 1_000_000L);
         costs.put("surface-memo-hits", surfaceMemoHits);
         return Map.copyOf(costs);
     }
@@ -183,7 +183,19 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
     private final long[] surfaceMemoKeys = new long[SURFACE_MEMO_ENTRIES];
     private final int[] surfaceMemoValues = new int[SURFACE_MEMO_ENTRIES];
     private int surfaceMemoNext;
-    private long surfaceMemoHits, surfaceNanosTotal;
+    private long surfaceMemoHits;
+    /**
+     * Wall time spent inside the surface sampler, written on the owning lane and read from the root
+     * pump (WorldBootstrap.logRootSearchDone -> OracleLane.diagnostics -> costModel).
+     *
+     * <p>An AtomicLong rather than a plain long because it is the only counter of this group that is
+     * both written and read across threads: the write happens inside begin() on the lane, the read
+     * happens on the pump, and a plain long carries no visibility guarantee. The value is diagnostic
+     * only - it never feeds a decision - so the worst case even with a stale read is a wrong number
+     * in ROOT_SEARCH_DONE, never a wrong wall.
+     */
+    private final java.util.concurrent.atomic.AtomicLong surfaceNanosTotal =
+            new java.util.concurrent.atomic.AtomicLong();
 
     public CpuTerrainOracle(ServerLevel level, String fingerprint) { this(freeze(level, fingerprint)); }
 
@@ -240,7 +252,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         long surfaceStarted = System.nanoTime();
         int surface = surfaceSampler.worldSurface(x, z);
         int solid = surfaceSampler.solidTop(x, z);
-        surfaceNanosTotal += System.nanoTime() - surfaceStarted;
+        surfaceNanosTotal.addAndGet(System.nanoTime() - surfaceStarted);
         // `solid` is the wall's ground: the first block that is neither air nor a fluid, plus one - the
         // same block the native column walk calls `solidY`, so a forest counts its canopy and a river
         // counts its bed. `surface` is the first NON-AIR block, which is one above that same block for a
@@ -273,7 +285,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         active.bedTop = water[1];
         long supportStarted = System.nanoTime();
         BlockState[] support = surfaceSampler.supportColumn(x, z);
-        surfaceNanosTotal += System.nanoTime() - supportStarted;
+        surfaceNanosTotal.addAndGet(System.nanoTime() - supportStarted);
         if (support != null) {
             active.firstSolid = support[0];
             // The sampler fills support[] densely from index 0 and leaves the rest null when a column has
