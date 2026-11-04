@@ -68,7 +68,7 @@ public final class LanePolicy {
         if (override != null && !override.isBlank()) {
             startup = clamp(parse(override));
         } else {
-            startup = clamp(Runtime.getRuntime().availableProcessors());
+            startup = laneCeiling();
         }
         // Heap guard (mirrors RoadWeaver's StartupHardwareProfile memory budget): each lane owns a
         // native NoiseChunk plus a RandomState view, so a small JVM must not start as many lanes as
@@ -89,6 +89,17 @@ public final class LanePolicy {
                 : heapGiB <= 8L ? 8
                 : heapGiB <= 16L ? 12
                 : MAX_LANES;
+    }
+
+    /**
+     * Lanes this machine may create, before the {@code greatwall.lanes} override.
+     *
+     * <p>Exposed so a second scheduler cannot invent its own version of the same number: the
+     * heavy-unit budget ({@link StageBudget}) must cover every lane this can create, or the extra lanes
+     * exist only to wait for a permit. Same expression {@link #resolve()} uses with no override set.
+     */
+    public static int laneCeiling() {
+        return clamp(Math.min(Runtime.getRuntime().availableProcessors(), memoryBudgetLanes()));
     }
 
     /** Explicit policy, used by tests and by callers that already know their budget. */

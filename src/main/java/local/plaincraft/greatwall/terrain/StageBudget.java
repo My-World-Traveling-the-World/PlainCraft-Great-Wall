@@ -19,8 +19,24 @@ import java.util.concurrent.atomic.AtomicLong;
  * one, and a nested acquisition would otherwise deadlock the pool without saying so.
  */
 public final class StageBudget {
-    private static final int PERMITS = Math.max(4,
-            Math.min(16, Runtime.getRuntime().availableProcessors() - 2));
+    /**
+     * Heavy units that may run at once, derived from the lane count instead of a second formula.
+     *
+     * <p>This used to be {@code max(4, min(16, cores - 2))} - 14 on a sixteen-core machine - while
+     * {@link LanePolicy} hands out up to {@link LanePolicy#MAX_LANES} lanes once the heap passes
+     * 16 GiB. Two lanes could then never take a slot: they waited the whole
+     * {@code greatwall.stageBudgetWaitMillis} and ran as counted overflow, which is not a budget.
+     * A permit is only ever taken by a lane batch ({@code OracleLane.submit}), so the budget has to
+     * cover every lane the policy can create while keeping the cores-minus-two reserve that existed
+     * before: {@code max(cores - 2, lane count)}. On a 16 GiB heap that is 14 with 12 lanes -
+     * unchanged - and 16 with 16 lanes, so a heap upgrade buys real lanes rather than two that only
+     * ever wait.
+     *
+     * <p>Pure scheduling: nothing reads this into the world recipe and it is in no hash. Contrast
+     * {@link ConcurrencyPlan#startupGeometryInflight()}, whose value IS written into the recipe.
+     */
+    private static final int PERMITS = Math.max(4, Math.min(LanePolicy.MAX_LANES,
+            Math.max(Runtime.getRuntime().availableProcessors() - 2, LanePolicy.laneCeiling())));
     private static final long WAIT_MILLIS = Long.getLong("greatwall.stageBudgetWaitMillis", 2_000L);
     private static final Semaphore SLOTS = new Semaphore(PERMITS, true);
     private static final AtomicLong OVERFLOWS = new AtomicLong();
