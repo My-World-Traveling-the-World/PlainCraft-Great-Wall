@@ -55,24 +55,37 @@ final class NoiseSurfaceSampler {
      */
     static final int SUPPORT_STATES = 4;
     /**
-     * Baked cells kept per lane.
+     * Baked cells kept per terrain, shared by every lane (see {@link #SHARED}).
      *
      * <p>One siting candidate covers 64x64 blocks - 256 cells - and neighbouring candidates sit about
      * ten blocks apart, so their footprints overlap heavily. A 512-cell cache held barely one
      * candidate, which made every candidate pay for every cell again. Each cell is roughly a
-     * kilobyte, and there are as many caches as lanes, so the default trades reuse against the twelve
-     * caches a full startup opens. Override with the system property greatwall.samplerCacheCells.
+     * kilobyte, and the map is shared, so the default trades reuse against one budget rather than
+     * twelve. Override with the system property greatwall.samplerCacheCells.
      *
-     * <p><b>0.7.120: 65,536 → 131,072.</b> The wall corridor alone is 8,190 blocks long and 105 wide
-     * - about 53,750 cells - which already sat right against the old 65,536 budget, and the ring
-     * extends past the corridor. A measured run baked 124,571 cells to answer 130,155 columns, i.e.
-     * roughly 2.3x the cells it could have needed, which is what eviction looks like. The cache is
-     * shared by every lane (keyed by terrain fingerprint), so this is one 128 MB map, not twelve.
-     * {@code CACHE_EVICTIONS} / {@code CACHE_EVICTED_CELLS} below now report whether the budget is
-     * still the binding constraint.
+     * <p><b>0.7.120: 65,536 → 131,072; 0.7.121: back to 65,536.</b> The doubling bet that the fine
+     * sample's ~124,000 cell bakes were re-bakes caused by eviction: the corridor alone is 8,190 x
+     * 105 blocks - about 53,750 cells at cellWidth 4 - which sat right against the old budget. That
+     * bet was measured and lost. With the 131,072 budget a real session reported
+     * {@code chunkCacheMisses=124,239} (0.7.120: 124,571, i.e. -0.27%) and the
+     * {@code cell cache eviction} log printed <b>zero</b> lines: the map never crossed the budget, so
+     * eviction never ran and the misses were ~124,000 genuinely distinct cells rather than churn.
+     * A larger cache buys nothing here and costs the extra 64 MB, so the default is 65,536 again
+     * (the map is shared by every lane, keyed by the terrain fingerprint, so this is 64 MB in total,
+     * not per lane). Do not raise this again without a run whose {@code CACHE_EVICTIONS} is above 0.
+     *
+     * <p><b>Why the misses are ~1 per column, not ~1/16.</b> {@code heightsFor} keys by noise cell and
+     * {@code cellWidth = QuartPos.toBlock(size_horizontal) = 4} for the overworld (vanilla
+     * {@code overworld.json} has {@code size_horizontal=1}), so one baked cell answers up to 16
+     * columns. A dense sample would thus show about 0.06 misses per column. A measured session instead
+     * showed 124,571 misses for 130,155 columns (0.96 per column; the 0.7.121 run 124,239, the same
+     * within noise) - one fresh cell per sampled column, because neighbours almost never land in a
+     * cell another sampled column already touched. The miss count is therefore structurally equal to
+     * the number of columns sampled; the only ways down are sampling fewer columns or making one
+     * {@code sweep()} cheaper - never a larger cache.
      */
     private static final int CACHE_CELLS = Math.max(512,
-            Integer.getInteger("greatwall.samplerCacheCells", 131072));
+            Integer.getInteger("greatwall.samplerCacheCells", 65536));
 
     private final RandomState randomState;
     private final NoiseSettings noiseSettings;
@@ -193,10 +206,15 @@ final class NoiseSurfaceSampler {
      *
      * <p>真机一局 FINE_SAMPLE_DONE 报 {@code chunkCacheMisses=124,571} 而只采了
      * {@code columns=130,155} 列 —— 几乎每列一次 cell 烘焙，fine 阶段 400~545 s。
-     * 两种解释无法区分：①预算 65,536 不够、cell 被挤出去又重烘；②本来就有一百多万
-     * 个不同 cell 要烘。这两个计数器一条日志就能分开：
-     * {@code evictions≈0} ⇒ 是②，加大预算没用、要找别的路；
-     * {@code evictions} 上千且 {@code evictedTotal} 与 misses 同量级 ⇒ 是①，加预算直接见效。
+     * 两种解释只能靠这两个计数器分开：①预算 65,536 不够、cell 被挤出去又重烘；
+     * ②本来就有一百万个不同的噪声 cell 要烘。
+     *
+     * <p><b>0.7.121 结论：①被实测证伪，真相是②。</b>预算加倍到 131,072 后，真机一局
+     * {@code cell cache eviction} 日志一条都没有（{@code CACHE_EVICTIONS} 从未自增，说明
+     * map 根本没越过预算），而 {@code chunkCacheMisses} 只从 124,571 变到 124,239（−0.27%，
+     * 噪声级）。所以预算不是瓶颈，那 12.4 万次 miss 对应的是 12.4 万个真实且互不相同的 cell。
+     * 两个计数器与这条节流日志保留下来继续做诊断，但<b>不要再往「加大预算」这个方向投入</b>：
+     * 真要降 miss，只能减少要采的列数，或者降低单次 {@code sweep()} 的成本（见 CACHE_CELLS 注释）。
      */
     private static final java.util.concurrent.atomic.AtomicLong CACHE_EVICTIONS =
             new java.util.concurrent.atomic.AtomicLong();

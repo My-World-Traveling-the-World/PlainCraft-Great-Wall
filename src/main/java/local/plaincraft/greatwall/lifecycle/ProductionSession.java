@@ -700,20 +700,46 @@ final class ProductionSession implements AutoCloseable {
     /**
      * Diagnostic probe for the gap between the fine sample landing and the compile starting.
      *
-     * <p>One line per managedBlock round (rate-limited to 4/s) so a measured 22 s wait can be
-     * attributed: if these lines keep printing with {@code predicate=false} the wait is a state
-     * problem; if they stop printing, the parked thread is stuck somewhere before this point
-     * (the chunk-queue drain is the prime suspect). Diagnostics only - reads, never changes state.
+     * <p><b>Prints once per state change, not once per managedBlock round.</b> The four flags below
+     * are the whole state of the wait, and while the fine sample runs they do not move; repeating
+     * the same tuple every round says nothing new. One measured session printed this line 3,057
+     * times between 19:53:37 and 20:06:46 (about 3.9/s, more than half of the whole log) and then
+     * stopped - the last line landed exactly on the fine sample finishing. That is self-limiting,
+     * not a loop: as soon as {@code fineSampleSettled} turns true the wait this probe describes is
+     * over and the parked loop no longer asks. So the volume was log noise, and this de-rating is
+     * noise abatement, not a fix for a spinning probe.
+     *
+     * <p>The dedup key is exactly {@code (predicate, compileDeferred, fineSampleSettled, started)}:
+     * the first occurrence prints, an unchanged repeat stays silent, and a changed tuple prints
+     * again. The 2 s floor on top only bounds the rate if the tuple ever flaps around a transition;
+     * it can delay a transition line by at most 2 s and never suppresses a state that persists.
+     * Diagnostics only - the flags are read here and nothing is written or decided, so the caller's
+     * control flow is untouched.
      */
     public void logCompileRetryProbe() {
+        boolean predicate = compileRetryPending();
+        boolean deferred = compileDeferred.get();
+        boolean settled = fineSampleSettled;
+        boolean started = state.containsKey("compile-started");
+        int signature = (predicate ? 1 : 0) | (deferred ? 2 : 0) | (settled ? 4 : 0) | (started ? 8 : 0);
+        if (signature == lastCompileRetryProbeSignature) return;
         long now = System.nanoTime();
-        if (now - lastCompileRetryProbeNanos < 250_000_000L) return;
+        // Only throttle after a first line exists: System.nanoTime() may legitimately be negative,
+        // so a "now - 0" window cannot be relied on to pass on the very first call.
+        if (lastCompileRetryProbeSignature != -1
+                && now - lastCompileRetryProbeNanos < COMPILE_RETRY_PROBE_FLOOR_NANOS) {
+            return;
+        }
+        lastCompileRetryProbeSignature = signature;
         lastCompileRetryProbeNanos = now;
         GreatWallMod.LOGGER.info("[PGW-COMPILE-RETRY] enter predicate={} compileDeferred={} "
                         + "fineSampleSettled={} started={} thread={}",
-                compileRetryPending(), compileDeferred.get(), fineSampleSettled,
-                state.containsKey("compile-started"), Thread.currentThread().getName());
+                predicate, deferred, settled, started, Thread.currentThread().getName());
     }
+    /** Fallback floor between two probe lines; see {@link #logCompileRetryProbe()}. */
+    private static final long COMPILE_RETRY_PROBE_FLOOR_NANOS = 2_000_000_000L;
+    /** Last printed flag tuple; -1 means nothing has been printed yet. */
+    private volatile int lastCompileRetryProbeSignature = -1;
     private volatile long lastCompileRetryProbeNanos;
 
     /**
