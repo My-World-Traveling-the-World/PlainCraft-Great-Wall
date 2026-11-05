@@ -62,9 +62,17 @@ final class NoiseSurfaceSampler {
      * candidate, which made every candidate pay for every cell again. Each cell is roughly a
      * kilobyte, and there are as many caches as lanes, so the default trades reuse against the twelve
      * caches a full startup opens. Override with the system property greatwall.samplerCacheCells.
+     *
+     * <p><b>0.7.120: 65,536 → 131,072.</b> The wall corridor alone is 8,190 blocks long and 105 wide
+     * - about 53,750 cells - which already sat right against the old 65,536 budget, and the ring
+     * extends past the corridor. A measured run baked 124,571 cells to answer 130,155 columns, i.e.
+     * roughly 2.3x the cells it could have needed, which is what eviction looks like. The cache is
+     * shared by every lane (keyed by terrain fingerprint), so this is one 128 MB map, not twelve.
+     * {@code CACHE_EVICTIONS} / {@code CACHE_EVICTED_CELLS} below now report whether the budget is
+     * still the binding constraint.
      */
     private static final int CACHE_CELLS = Math.max(512,
-            Integer.getInteger("greatwall.samplerCacheCells", 65536));
+            Integer.getInteger("greatwall.samplerCacheCells", 131072));
 
     private final RandomState randomState;
     private final NoiseSettings noiseSettings;
@@ -180,14 +188,37 @@ final class NoiseSurfaceSampler {
      * thousands of chunks wide, so a chunk bake computed 255 columns nobody read - measured 67 ms per
      * answered column, and 3.4 s per siting candidate.
      */
+    /**
+     * 0.7.120 诊断：cell 缓存淘汰了多少（决定 CACHE_CELLS 该不该加大）。
+     *
+     * <p>真机一局 FINE_SAMPLE_DONE 报 {@code chunkCacheMisses=124,571} 而只采了
+     * {@code columns=130,155} 列 —— 几乎每列一次 cell 烘焙，fine 阶段 400~545 s。
+     * 两种解释无法区分：①预算 65,536 不够、cell 被挤出去又重烘；②本来就有一百多万
+     * 个不同 cell 要烘。这两个计数器一条日志就能分开：
+     * {@code evictions≈0} ⇒ 是②，加大预算没用、要找别的路；
+     * {@code evictions} 上千且 {@code evictedTotal} 与 misses 同量级 ⇒ 是①，加预算直接见效。
+     */
+    private static final java.util.concurrent.atomic.AtomicLong CACHE_EVICTIONS =
+            new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong CACHE_EVICTED_CELLS =
+            new java.util.concurrent.atomic.AtomicLong();
+
     /** A shared map has no LRU: drop an eighth of it when the budget is crossed. */
     private void evictIfOversized() {
         if (cache.size() <= CACHE_CELLS) return;
+        int before = cache.size();
         int target = cache.size() - CACHE_CELLS / 8;
         var iterator = cache.keySet().iterator();
         while (cache.size() > target && iterator.hasNext()) {
             iterator.next();
             iterator.remove();
+        }
+        long n = CACHE_EVICTIONS.incrementAndGet();
+        long dropped = CACHE_EVICTED_CELLS.addAndGet(before - cache.size());
+        if (n <= 5 || n % 200 == 0) {
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:sampler] cell cache eviction #{} size={}->{} budget={} evictedTotal={}",
+                    n, before, cache.size(), CACHE_CELLS, dropped);
         }
     }
 
