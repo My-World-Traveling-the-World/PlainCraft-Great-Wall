@@ -171,7 +171,7 @@ public final class GreatWallConfigScreen {
                         conf.chunkCacheLimit())
                 .setDefaultValue(def.chunkCacheLimit())
                 .setTooltip(Component.translatable("config.plaincraft_great_wall.chunk_cache_limit.tooltip"))
-                .setMin(4).setMax(64)
+                .setMin(4).setMax(256)
                 .setSaveConsumer(conf::setChunkCacheLimit)
                 .build());
         sampling.addEntry(eb
