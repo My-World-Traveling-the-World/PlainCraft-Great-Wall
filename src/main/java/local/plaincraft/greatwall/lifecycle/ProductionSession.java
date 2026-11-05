@@ -688,6 +688,25 @@ final class ProductionSession implements AutoCloseable {
     }
 
     /**
+     * Diagnostic probe for the gap between the fine sample landing and the compile starting.
+     *
+     * <p>One line per managedBlock round (rate-limited to 4/s) so a measured 22 s wait can be
+     * attributed: if these lines keep printing with {@code predicate=false} the wait is a state
+     * problem; if they stop printing, the parked thread is stuck somewhere before this point
+     * (the chunk-queue drain is the prime suspect). Diagnostics only - reads, never changes state.
+     */
+    public void logCompileRetryProbe() {
+        long now = System.nanoTime();
+        if (now - lastCompileRetryProbeNanos < 250_000_000L) return;
+        lastCompileRetryProbeNanos = now;
+        GreatWallMod.LOGGER.info("[PGW-COMPILE-RETRY] enter predicate={} compileDeferred={} "
+                        + "fineSampleSettled={} started={} thread={}",
+                compileRetryPending(), compileDeferred.get(), fineSampleSettled,
+                state.containsKey("compile-started"), Thread.currentThread().getName());
+    }
+    private volatile long lastCompileRetryProbeNanos;
+
+    /**
      * {@return true when a compile attempt deferred for want of the fine sample and that sample has landed}
      *
      * <p>The startup thread parks inside {@code managedBlock} until the wall is published, and a task

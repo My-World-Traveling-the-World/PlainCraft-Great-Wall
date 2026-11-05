@@ -672,6 +672,9 @@ public final class WorldServices {
             // this thread instead. activate() guards the compile with an atomic "compile-started" key, so
             // this cannot run it twice, and compileRetryPending() goes false the moment it starts.
             var startupOwner = SESSIONS.get(server);
+            if (startupOwner != null && startupOwner.production != null) {
+                startupOwner.production.logCompileRetryProbe();
+            }
             if (!retriedDeferred[0] && startupOwner != null && startupOwner.production != null
                     && startupOwner.production.compileRetryPending()) {
                 retriedDeferred[0] = true;
