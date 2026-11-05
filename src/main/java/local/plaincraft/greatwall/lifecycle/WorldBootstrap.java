@@ -476,6 +476,15 @@ public final class WorldBootstrap implements AutoCloseable {
     private final java.util.concurrent.atomic.AtomicLong roundTrips = new java.util.concurrent.atomic.AtomicLong();
     private final java.util.concurrent.atomic.AtomicLong sumSchedulePrefetchNanos = new java.util.concurrent.atomic.AtomicLong();
     private final java.util.concurrent.atomic.AtomicLong sumSubmitToStartNanos = new java.util.concurrent.atomic.AtomicLong();
+    /**
+     * The part of a round that no other timer covered: lane work finished -&gt; the whenCompleteAsync
+     * callback actually entered. That hop runs on rootPump, whose queue also carries the io
+     * completions and the screen retries, so this is where a stalled pump or a busy queue shows up.
+     * Diagnostics only.
+     */
+    private final java.util.concurrent.atomic.AtomicLong sumPumpHopNanos = new java.util.concurrent.atomic.AtomicLong();
+    /** Callback body itself: progress/audit publication and the two card atomics, excluding the hop. */
+    private final java.util.concurrent.atomic.AtomicLong sumCallbackNanos = new java.util.concurrent.atomic.AtomicLong();
     private final java.util.concurrent.atomic.AtomicLong prefetchLaneRefusals = new java.util.concurrent.atomic.AtomicLong();
     private volatile int prefetchLastSize;
     /** Set when a cached root axis was reused, so a session that skipped the search says so. */
@@ -603,6 +612,8 @@ public final class WorldBootstrap implements AutoCloseable {
         }
         final CompletableFuture<RootBatch> submitted;
         final long submittedAt = System.nanoTime();
+        // Stamped as the very last thing the lane task does, so the callback can measure the hop.
+        final long[] laneDoneAt = {0L};
         try {
             submitted = lane.submit(oracle -> {
                 sumSubmitToStartNanos.addAndGet(System.nanoTime() - submittedAt);
@@ -613,6 +624,7 @@ public final class WorldBootstrap implements AutoCloseable {
                 } finally {
                     progress.put("root", search.progress());
                     rootAudit.put("root", search.audit());
+                    laneDoneAt[0] = System.nanoTime();
                 }
             });
         } catch (RuntimeException rejected) {
@@ -628,6 +640,8 @@ public final class WorldBootstrap implements AutoCloseable {
             return;
         }
         submitted.whenCompleteAsync((batch, error) -> {
+            final long callbackEntered = System.nanoTime();
+            if (laneDoneAt[0] != 0L) sumPumpHopNanos.addAndGet(callbackEntered - laneDoneAt[0]);
             if (state.containsKey("closed") || state.containsKey("failed")) {
                 GreatWallMod.LOGGER.warn("[GreatWall:DIAG] advance.whenComplete ALREADY_CLOSED thread={} state={}",
                     Thread.currentThread().getName(), Map.copyOf(state));
@@ -714,6 +728,8 @@ public final class WorldBootstrap implements AutoCloseable {
                     GreatWallMod.LOGGER.error("[PGW-ROOT-CONTINUATION] reporting the continuation "
                             + "failure failed too", reportingFailed);
                 }
+            } finally {
+                sumCallbackNanos.addAndGet(System.nanoTime() - callbackEntered);
             }
         }, rootPump);
     }
@@ -769,7 +785,8 @@ public final class WorldBootstrap implements AutoCloseable {
         GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SEARCH_DONE columns={} phase={} over40msBatches={} "
                         + "maxBatchMs={} elapsedMs={} prefetchOffThreadPct={} prefetchHits={} inlineSamples={} "
                         + "prefetchWaits={} discardedPrefetched={} distinctColumns={} columnReads={} "
-                        + "roundTrips={} scheduleMs={} submitToStartMs={} batchMs={} {}",
+                        + "roundTrips={} scheduleMs={} submitToStartMs={} batchMs={} "
+                        + "pumpHopMs={} callbackMs={} {}",
                 progress.columns(), progress.phase(), progress.over40msBatches(),
                 Math.round(progress.maxBatchNanos() / 1_000_000.0D), Math.round(elapsedMs),
                 String.format(java.util.Locale.ROOT, "%.1f", offThreadPct),
@@ -779,6 +796,8 @@ public final class WorldBootstrap implements AutoCloseable {
                 Math.round(sumSchedulePrefetchNanos.get() / 1_000_000.0D),
                 Math.round(sumSubmitToStartNanos.get() / 1_000_000.0D),
                 Math.round(search.batchNanosTotal() / 1_000_000.0D),
+                Math.round(sumPumpHopNanos.get() / 1_000_000.0D),
+                Math.round(sumCallbackNanos.get() / 1_000_000.0D),
                 new java.util.TreeMap<>(prefetchDiagnostics()));
     }
 
