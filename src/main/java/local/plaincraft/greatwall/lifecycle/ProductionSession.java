@@ -92,11 +92,22 @@ final class ProductionSession implements AutoCloseable {
     /**
      * Whether startup stages run one at a time.
      *
-     * <p>True by default: the wall's stages are individually parallel and share one CPU, so running
-     * two of them at once means each waits for the other's threads.
+     * <p><b>False (overlapped) by default as of 0.7.119.</b> This used to default to serial on the
+     * argument that the stages are individually parallel and share one CPU, so overlapping them
+     * makes each wait for the other's threads. Two same-seed 16-core runs measured the opposite:
+     * the overlap run came in at {@code totalMs=869,011} against {@code 981,497} serial — the scan
+     * (291 s) is hidden behind the fine sample almost for free, because the scan is dominated by
+     * chunk loading rather than by arithmetic. Overlapping costs the fine sample itself ~145 s
+     * (545 s overlapped vs 400 s alone) but hides 291 s of scan, so the wall still wins ~112 s.
+     *
+     * <p>The accounting hides this: while overlapped, the FINE_SAMPLE stage timer only starts when
+     * the scan callback runs, so {@code fineMs} reports the tail (254 s) rather than the real
+     * duration (545 s). Compare {@code totalMs}, not the stage rows, when judging this flag.
+     *
+     * <p>{@code -Dgreatwall.startup.serialStages=true} forces the old serial shape for an A/B run.
      */
-    private static final boolean SERIAL_STAGES =
-            !"false".equalsIgnoreCase(System.getProperty("greatwall.startup.serialStages", "true"));
+    private static final boolean SERIAL_STAGES = Boolean.parseBoolean(
+            System.getProperty("greatwall.startup.serialStages", "false"));
     /** Set when a compile attempt deferred for want of the fine sample, so the callback re-triggers it. */
     private final java.util.concurrent.atomic.AtomicBoolean compileDeferred =
             new java.util.concurrent.atomic.AtomicBoolean();
@@ -479,11 +490,10 @@ final class ProductionSession implements AutoCloseable {
         // Start the fine sample NOW, beside the scan. The scan reads the world for 130 s to resolve
         // structure boxes; the sample only needs the recipe's route, so leaving it until the boxes are
         // installed puts the longest stage of the startup behind a stage it does not depend on.
-        // Serial by default: both stages are CPU-bound and each already saturates the machine (twelve
-        // sample lanes plus up to twelve scan workers on sixteen threads), so overlapping them does not
-        // fill idle cores - it oversubscribes the CPU, and the stage that is nearly finished crawls
-        // while the next one takes its threads. The sample starts from installStructuresAndSample
-        // instead. -Dgreatwall.startup.serialStages=false restores the overlap for an A/B run.
+        // Overlapped by default since 0.7.119: two same-seed 16-core runs put the overlap at
+        // totalMs=869,011 against 981,497 serial, because the scan is chunk-load bound and therefore
+        // hides almost entirely behind the sample. See SERIAL_STAGES above for the full numbers and
+        // for why the stage rows mislead. -Dgreatwall.startup.serialStages=true restores serial.
         if (!SERIAL_STAGES) startFineSample(planner);
         // The wall's true corridor band (segment endpoints + half-width): candidates outside it are
         // dropped up front, so an angled wall no longer scans the AABB's 3.5x overscan.
