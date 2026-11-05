@@ -477,6 +477,28 @@ public final class WorldBootstrap implements AutoCloseable {
     private final java.util.concurrent.atomic.AtomicLong sumSchedulePrefetchNanos = new java.util.concurrent.atomic.AtomicLong();
     private final java.util.concurrent.atomic.AtomicLong sumSubmitToStartNanos = new java.util.concurrent.atomic.AtomicLong();
     /**
+     * How many {@code RootSearch.advance} batches one lane submission drives before the chain returns
+     * to the root pump.
+     *
+     * <p>Each round trip costs a measured ~75 ms that is neither batch work nor scheduling
+     * (lane finished -> pump callback -> next submit), and at 1,440 rounds that was 108 s of a 275 s
+     * root search. Driving N batches per submission amortises that fixed cost by N while keeping
+     * every batch on lane 0, which is what {@code RootSearch.claimOwner()} requires. Only the progress
+     * card notices: it refreshes once per submission instead of once per batch.
+     *
+     * <p>1 is the exact previous behaviour - the loop below is skipped entirely - and is the fallback.
+     */
+    private static final int BATCHES_PER_SUBMIT = Math.max(1, Math.min(64,
+            Integer.getInteger("greatwall.batchesPerSubmit", 8)));
+    /**
+     * Wall-clock cap on one lane submission, so a run of slow batches cannot hold lane 0 forever.
+     *
+     * <p>Eight nominal batches are ~890 ms; the cap only matters when individual batches overshoot
+     * (measured maxBatchMs 675), and it keeps the worst case bounded at 2 s instead of 8 x 675 ms.
+     */
+    private static final long LANE_BUDGET_NANOS = java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
+            Math.max(100L, Long.getLong("greatwall.laneBudgetMillis", 2_000L)));
+    /**
      * The part of a round that no other timer covered: lane work finished -&gt; the whenCompleteAsync
      * callback actually entered. That hop runs on rootPump, whose queue also carries the io
      * completions and the screen retries, so this is where a stalled pump or a busy queue shows up.
@@ -619,6 +641,19 @@ public final class WorldBootstrap implements AutoCloseable {
                 sumSubmitToStartNanos.addAndGet(System.nanoTime() - submittedAt);
                 try {
                     var status = search.advance(oracle, 256);
+                    // Only two things can end the drive: the search finished (DONE) or it needs the
+                    // structure screen (phase 4), which must run on the pump. WorkState has no third
+                    // value, so there is nothing else to break on.
+                    if (BATCHES_PER_SUBMIT > 1) {
+                        int batches = 1;
+                        long laneDeadline = System.nanoTime() + LANE_BUDGET_NANOS;
+                        while (status == WorkState.MORE && !search.needsStructureScreen()
+                                && batches < BATCHES_PER_SUBMIT
+                                && System.nanoTime() < laneDeadline) {
+                            status = search.advance(oracle, 256);
+                            batches++;
+                        }
+                    }
                     return new RootBatch(status == WorkState.DONE ? Optional.of(search.finish()) : Optional.empty(), search.progress(),
                             search.needsStructureScreen()?search.pendingStructureCandidates():List.of());
                 } finally {
