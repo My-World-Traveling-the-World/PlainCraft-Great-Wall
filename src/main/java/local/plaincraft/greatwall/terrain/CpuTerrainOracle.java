@@ -178,11 +178,6 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
      */
     private long walkedBlocks, leadRetries;
     private long constructNanosTotal, sliceNanosTotal, cellNanosTotal, blockNanosTotal, biomeNanosTotal;
-    /** Surface-estimate memo: a ring of (4x4 cell column, estimated surface). */
-    private static final int SURFACE_MEMO_ENTRIES = 128;
-    private final long[] surfaceMemoKeys = new long[SURFACE_MEMO_ENTRIES];
-    private final int[] surfaceMemoValues = new int[SURFACE_MEMO_ENTRIES];
-    private int surfaceMemoNext;
     private long surfaceMemoHits;
     /**
      * Wall time spent inside the surface sampler, written on the owning lane and read from the root

@@ -17,6 +17,16 @@ import java.util.concurrent.atomic.AtomicLong;
  * world's own generation keep room. Acquisition is timed rather than unbounded: a unit that cannot get
  * a permit runs anyway after a short wait and is counted, because a slow wall is better than a hung
  * one, and a nested acquisition would otherwise deadlock the pool without saying so.
+ *
+ * <p><b>Scope (accurate as of 0.7.118).</b> A permit is taken in exactly one place — a lane batch
+ * ({@code OracleLane.submit}) — because that is the only stage whose parallelism is owned here.
+ * {@code CorridorStructureScan}, the fine sampler and the compile pool run their own pools and do
+ * <b>not</b> acquire a permit; they are bounded by their own lane/thread counts instead. So this class
+ * is not the global "every heavy stage" budget the first paragraph implies: it keeps the
+ * <i>sampling lanes</i> from oversubscribing the part, and the scan-versus-sample contention quoted
+ * above is handled by staging those two sequentially, not by this semaphore. Treat
+ * {@code scanMs} / {@code fineMs} in {@code WALL_STARTUP_ACCOUNT} as the real evidence for stage
+ * overlap, not this class.
  */
 public final class StageBudget {
     /**

@@ -486,6 +486,15 @@ public final class WallBodyBackfill {
     private static int verifyMissing;
     /** 只读自检（B 线）：抽样回读时"写成了别的方块"的格数。 */
     private static int verifyWrong;
+    /**
+     * 0.7.118：命中 settle() 里「本区块已建成、planHash 一致」早退的区块数。
+     *
+     * <p>专门用来区分两种 written=0：命中它 ⇒ 墙本来就在世界里（不是没铺）；
+     * 没命中它却 written=0 ⇒ 真的一个方块都没写，那才是 bug。此前两者共用 written=0，
+     * 真机上一局 WALL_BACKFILL_DRAIN 三行全 0，被误读成「墙没铺出去」。
+     */
+    private static final java.util.concurrent.atomic.AtomicLong ALREADY_BUILT =
+            new java.util.concurrent.atomic.AtomicLong();
 
     /** A chunk the server just loaded: queue it when a published plan already covers it. */
     public static void onChunkLoaded(ServerLevel level, ChunkKey key) {
@@ -643,10 +652,13 @@ public final class WallBodyBackfill {
         boolean justEmptied = state.pending.isEmpty() && !state.settled.isEmpty();
         if (writtenBlocks > 0 || justEmptied || drainsSinceLog >= 200) {
             drainsSinceLog = 0;
+            // alreadyBuilt：命中 settle() 的「本区块已建成」早退（written 必然是 0）。
+            // written=0 且 alreadyBuilt>0 ⇒ 墙本来就在世界里，不是没铺；
+            // written=0 且 alreadyBuilt=0 ⇒ 真的一个方块都没写，那才是 bug。
             GreatWallMod.LOGGER.info(
-                    "[GreatWall:S1C] WALL_BACKFILL_DRAIN settled={} pending={} written={} voxels={} dropped={} guardSkip={} total={} verifyMissing={} verifyWrong={}",
+                    "[GreatWall:S1C] WALL_BACKFILL_DRAIN settled={} pending={} written={} voxels={} dropped={} guardSkip={} total={} verifyMissing={} verifyWrong={} alreadyBuilt={}",
                     settledThisDrain, state.pending.size(), writtenBlocks, voxelsSeen, dropped.size(),
-                    beforeConflicts, total, verifyMissing, verifyWrong);
+                    beforeConflicts, total, verifyMissing, verifyWrong, ALREADY_BUILT.get());
         }
         openGateIfDrained(level, state);
     }
@@ -778,6 +790,9 @@ public final class WallBodyBackfill {
         if (!forcedRepair && existingMarker != null && existingMarker.complete()
                 && existingMarker.planHash().equals(plan.hash())) {
             // This chunk has already been built and saved. Never turn a player's edit back into wall.
+            // 0.7.118：单独计数。这一条是「written=0 但世界里明明有墙」的唯一出口 —— 之前它与
+            // 「真的什么都没写」共用一个 written=0，导致日志无法区分，误判成墙没铺。
+            ALREADY_BUILT.incrementAndGet();
             WallPlanSupport.markPlannedColumns(plan);
             local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
             return new Sweep(Status.SETTLED, 0);
