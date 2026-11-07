@@ -267,9 +267,26 @@ public final class WallTypes {
         }
     }
 
+    /**
+     * The polyline a fine sample walks: the centre-line points and the arc length at each of them.
+     *
+     * <p>Both the ridge route and the segment geometry carry exactly the same two lists - the geometry
+     * is built from the route and persists them through the world cache - so a sampler that only needs
+     * the centre line can accept either. That is what lets a second entry into the same world sample
+     * from the cached geometry (a few milliseconds) instead of recomputing the ridge search behind the
+     * route: a measured entry spent 66 s in that future while the loading card read
+     * {@code expected=1}. The route stays the producer of the polyline; it is simply no longer the only
+     * object allowed to hand it to the sampler.
+     */
+    public interface RoutePath {
+        SegmentKey key();
+        List<Point2q> points();
+        List<Long> localSQ8();
+    }
+
     public record RouteShape(SegmentKey key, List<Point2q> points, List<Long> localSQ8,
             Boundary start, Boundary end, int searchColumns, int boundaryColumns,
-            int degradation, String hash) {
+            int degradation, String hash) implements RoutePath {
         public RouteShape {
             Objects.requireNonNull(key, "key");
             Objects.requireNonNull(start, "start");
@@ -316,7 +333,7 @@ public final class WallTypes {
 
     public record SegmentGeometry(SegmentKey key, List<Point2q> points,
             List<Long> localSQ8, List<WaterEvidence> water, Optional<Terminal> terminal,
-            Boundary start, Boundary end, int logicalColumns, int degradation, String hash) {
+            Boundary start, Boundary end, int logicalColumns, int degradation, String hash) implements RoutePath {
         public SegmentGeometry {
             Objects.requireNonNull(key, "key");
             points = List.copyOf(points);

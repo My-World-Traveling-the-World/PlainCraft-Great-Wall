@@ -476,7 +476,9 @@ public final class PlannerScheduler implements AutoCloseable {
         // slice deduped only against itself, so the 64-block overlap between neighbouring slices, and
         // the shared ground between the four segments, was walked three to four times over.
         var claims = java.util.concurrent.ConcurrentHashMap.<Long>newKeySet();
-        var leases = new ArrayList<PlanLease<RouteShape>>();
+        // Concurrent: the loop adds one lease per segment from the caller thread, and the
+        // geometry-timeout fallback adds a route lease from the pump.
+        var leases = new java.util.concurrent.CopyOnWriteArrayList<PlanLease<?>>();
         // Two counters, not one. A single counter seeded with the segment count completed the
         // index after the first few slices (it was decremented once per slice, not per segment),
         // so the compile received roughly a twelfth of the sampled columns.
@@ -586,12 +588,41 @@ public final class PlannerScheduler implements AutoCloseable {
         fineSampleAbandon = completion;
         try {
             for (long i = 0; i < target && safeSegment(i); i++) {
-                var lease = requireRoute(i, priority);
+                // Sample the polyline the segment's *geometry* carries, not the route that produced it.
+                //
+                // The geometry and the route hold the same points and arc lengths - the geometry is
+                // built from the route (see geometry()) and persists both lists - so the sampler only
+                // needs a RoutePath, and the cached geometry is one. Asking for the route here was the
+                // stage's longest wait on a world whose geometry was already on disk: the prewarm
+                // serves every plan from the geometry cache (startGeometry answers from readGeometry
+                // before it asks for a single route), so nothing had computed a route in this session,
+                // and this lease then sat inside the ridge search for 66 s. Measured on a second entry
+                // into the same world: FINE_SAMPLE_CALL at 20:55:00, columns=0 expected=1 on both the
+                // 20:55:30 and 20:56:00 progress lines, the first FINE_SAMPLE_SEGMENT (segment=2) only
+                // at 20:56:06 - while the geometry slots on disk kept their previous-session file
+                // timestamps (no rewrite) and the lane counters had walked ~64k columns. The geometry
+                // read is a hash-verified cache hit measured in milliseconds, so the ridge search is
+                // not repeated at all and the stage starts sampling as soon as the cache answers.
+                var lease = requireGeometry(i, priority);
                 leases.add(lease);
                 // Counted before the callback is registered, because only the segments this loop
                 // actually hands to a lane can ever report back.
                 routesPending.incrementAndGet();
                 long segment = i;
+                // Bounded wait, with the route as the fallback: a geometry that never completes must
+                // cost time, not the sample. The normal path no longer waits for a route it does not
+                // need; only a geometry that is still missing after two minutes falls back to one.
+                CompletableFuture<RoutePath> path = lease.future()
+                        .<RoutePath>thenApply(geometry -> geometry)
+                        .completeOnTimeout(null, 120, java.util.concurrent.TimeUnit.SECONDS)
+                        .thenComposeAsync(sampled -> {
+                            if (sampled != null) return CompletableFuture.completedFuture(sampled);
+                            GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_PATH_FALLBACK segment={} "
+                                    + "reason=geometry-timeout; sampling the recomputed route instead", segment);
+                            var routeLease = requireRoute(segment, Priority.PLAYER_PREFETCH);
+                            leases.add(routeLease);
+                            return routeLease.future().thenApply(route -> (RoutePath) route);
+                        }, pump);
                 // Denominator, whole wall, before a single column is sampled.
                 //
                 // The meter used to add each segment's estimate only once that segment's *prefix* index
@@ -599,20 +630,13 @@ public final class PlannerScheduler implements AutoCloseable {
                 // "columns=126638 expected=31860" (402%) for most of the stage: one segment's worth of
                 // denominator against four segments of sampling, which looks exactly like a runaway and
                 // is the reason this stage kept being reported as "sampling way too much". The route
-                // point count, unlike the prefix, is known as soon as the route is, and the full lateral
+                // point count, unlike the prefix, is known as soon as the path is, and the full lateral
                 // band is an upper bound, so this total is complete from the first sample and can only
                 // over-state - which the 99% cap in PrewarmProgress handles correctly.
-                lease.future().thenAcceptAsync(route -> {
-                    if (route == null) return;
-                    // The cut can only exist once this segment has geometry, and nothing had asked
-                    // for it yet: the first requireGeometry happens in the prewarm, which is why the
-                    // diagnostic reported outcome=no-flight on every segment and 121,120 columns went
-                    // uncut. Ask for it here, and build the slices when it answers.
-                    var geometryLease = requireGeometry(segment, Priority.PLAYER_PREFETCH);
-                    geometryLease.future().whenCompleteAsync((geometry, geometryError) -> {
+                path.thenAcceptAsync(sampled -> {
                     // The denominator follows the truncated range too, otherwise the card would stop
                     // short of 100% on exactly the segments the cut applies to.
-                    long points = Math.max(1L, terminalPointLimit(route, route.points().size())
+                    long points = Math.max(1L, terminalPointLimit(sampled, sampled.points().size())
                             + 2L * WallFinePlanner.APRON_BLOCKS);
                     // The number that explains this stage's cost: the route length this segment carries.
                     // Four segments of an 8,190-block wall are four windows of it, so their point counts
@@ -620,7 +644,7 @@ public final class PlannerScheduler implements AutoCloseable {
                     // sampled once per segment and that multiplier is the thing to remove.
                     GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_SEGMENT segment={} routePoints={} "
                                     + "sectionsExpected={} columnsExpected={}",
-                            segment, route.points().size(),
+                            segment, sampled.points().size(),
                             (int) (points / Math.max(1, gridStep)),
                             (int) Math.min(Integer.MAX_VALUE - 1L, (points / Math.max(1, gridStep))
                                     * (2L * (WallFinePlanner.LATERAL / Math.max(1, gridStep)) + 1L)));
@@ -647,9 +671,8 @@ public final class PlannerScheduler implements AutoCloseable {
                     } else {
                         expectedColumns.updateAndGet(current -> Math.max(current, projected));
                     }
-                    }, pump);
                 }, pump);
-                lease.future().whenCompleteAsync((route, error) -> {
+                path.whenCompleteAsync((sampled, error) -> {
                     if (error != null) {
                         aggregate.completeExceptionally(error);
                         if (routesPending.decrementAndGet() == 0) completion.run();
@@ -663,42 +686,33 @@ public final class PlannerScheduler implements AutoCloseable {
                     // The wide arcs sit at absolute stations, so the segment's starting arc has to be
                     // resolved before its cross-sections can be sized. The prefix index answers from its
                     // own cache and its lease closes to a no-op.
-                    // Sampling waits for this segment's geometry, because only the geometry knows where the
-                    // wall stops: a measured run cut nothing at all (121,120 columns, unchanged) because
-                    // the slices were created before any geometry existed and terminalPointLimit fell back
-                    // to "sample the whole route" every time. The wait is bounded - a geometry that never
-                    // completes must not stop the sample, so the timeout falls back to the full route.
-                    CompletableFuture<Void> geometryReady = CompletableFuture.<Void>completedFuture(null);
-                    var flight = geometryFlights.get(route.key());
-                    if (flight != null) {
-                        geometryReady = flight.thenApply(ignored -> (Void) null)
-                                .exceptionally(failed -> null)
-                                .completeOnTimeout(null, 120, java.util.concurrent.TimeUnit.SECONDS);
-                    }
-                    geometryReady.thenComposeAsync(ignored -> prefixes.requireBefore(segment).future(), pump)
+                    prefixes.requireBefore(segment).future()
                             .whenCompleteAsync((prefix, prefixError) -> {
                     try {
                         if (prefixError != null) { aggregate.completeExceptionally(prefixError); return; }
-                        var wideAt = widePoints(route, prefix.lengthBeforeQ8());
-                        int points = route.points().size();
-                        // Past the terminal there is no wall, so sampling there buys nothing. The cut is
-                        // applied only when the geometry has already settled for this segment - the
-                        // sample is pipelined with the prewarm, so an early segment often has none yet -
-                        // and a segment without a terminal is sampled whole, exactly as before.
-                        points = terminalPointLimit(route, points);
+                        var wideAt = widePoints(sampled, prefix.lengthBeforeQ8());
+                        int points = sampled.points().size();
+                        // The terminal cut is reported, never applied: terminalPointLimit reads the
+                        // *flight* map, and a flight leaves that map the moment it completes, so the
+                        // lookup can only ever see an unfinished flight and every measured run logged
+                        // outcome=no-flight and sampled the whole route. Applying the cut now would
+                        // shrink the sampled set to the stretch before the terminal, and the plan-dead
+                        // path in requirePlan still compiles the wall body across the whole segment, so
+                        // those columns are read. It stays a separate, separately verified change.
+                        points = terminalPointLimit(sampled, points);
                         int perSlice = Math.max(1, (points + slices - 1) / slices);
                         for (int s = 0; s < slices; s++) {
                             int from = s * perSlice;
                             if (from >= points) break;
                             int to = Math.min(points, from + perSlice);
                             slicesPending.incrementAndGet();
-                            // The denominator is seeded once per segment in the route callback above, from
+                            // The denominator is seeded once per segment in the path callback above, from
                             // the whole route's point count. Accumulating a second estimate here as well
                             // would double it, and accumulating *only* here is what made the card show one
                             // segment's total while four were sampling (402%). The per-point width split
                             // this used to apply (wide vs base band) is bounded by the LATERAL band the
                             // seed assumes, so the seed is an upper bound and never a lie about being done.
-                            var job = new FineSampleJob(route, from, to, priority,
+                            var job = new FineSampleJob(sampled, from, to, priority,
                                     new CompletableFuture<List<WallFinePlanner.FineColumn>>(), fineSampleCache,
                                     wideAt, walks, claims, prefix.lengthBeforeQ8());
                             enqueue(job);
@@ -707,7 +721,7 @@ public final class PlannerScheduler implements AutoCloseable {
                                     if (sampleError != null) { aggregate.completeExceptionally(sampleError); return; }
                                     final int sliceFrom = from, sliceTo = to;
                                     synchronized (all) {
-                                        all.computeIfAbsent(WallFinePlanner.sampleOrder(route, from, to),
+                                        all.computeIfAbsent(WallFinePlanner.sampleOrder(sampled, from, to),
                                                 ignored -> new ArrayList<>()).addAll(columns);
                                         walked.addAll(job.probed());
                                         sampledColumns.addAndGet(columns.size());
@@ -1343,6 +1357,13 @@ public final class PlannerScheduler implements AutoCloseable {
      * <p>Returns {@code points} unchanged whenever the geometry is not settled yet or the segment has no
      * terminal, so the worst case is the old behaviour - sample the whole route. That is deliberate:
      * over-sampling costs time, under-covering costs a broken compile.
+     *
+     * <p>In practice it has never cut anything: this reads the <em>flight</em> map, and a flight leaves
+     * that map the moment it completes, so the only entries a sample start can see are flights that
+     * have not finished - every measured session logged {@code outcome=no-flight}. Enabling the cut is
+     * a real change to the sampled set (the plan-dead path still compiles the wall body across the whole
+     * segment, so columns past the terminal are read), so it stays a separate, separately verified
+     * change and this method keeps its old "never cut" behaviour.
      */
     /** One line per distinct outcome, so a silent "no cut" cannot hide for a whole release again. */
     private static final java.util.Set<String> TERMINAL_CUT_NOTES =
@@ -1354,16 +1375,16 @@ public final class PlannerScheduler implements AutoCloseable {
                 outcome, cap < 0 ? -1 : cap / 256, before, after);
     }
 
-    private int terminalPointLimit(local.plaincraft.greatwall.model.WallTypes.RouteShape route, int points) {
+    private int terminalPointLimit(RoutePath path, int points) {
         try {
-            var flight = geometryFlights.get(route.key());
+            var flight = geometryFlights.get(path.key());
             if (flight == null) { noteTerminalCut("no-flight", -1L, points, points); return points; }
             if (!flight.isDone()) { noteTerminalCut("flight-pending", -1L, points, points); return points; }
             if (flight.isCompletedExceptionally()) { noteTerminalCut("flight-failed", -1L, points, points); return points; }
             var geometry = flight.getNow(null);
             if (geometry == null || geometry.terminal().isEmpty()) return points;
             long cap = geometry.terminal().get().localSQ8() + 32L * 256;
-            var arcs = route.localSQ8();
+            var arcs = path.localSQ8();
             int lo = 0, hi = arcs.size() - 1;
             while (lo < hi) {
                 int mid = (lo + hi + 1) >>> 1;
@@ -1665,7 +1686,7 @@ public final class PlannerScheduler implements AutoCloseable {
                     // fine sample in flight threw "unknown job", the pump reported PUMP_TASK_FAILED, and that
                     // path releases every startup gate - so RoadWeaver started laying roads while the wall
                     // was still sampling. A bookkeeping lookup must never be able to do that.
-                    case FineSampleJob fine -> fine.route.key().index();
+                    case FineSampleJob fine -> fine.path.key().index();
                     default -> -1L;
                 };
                 if (index < 0L) continue;
@@ -2044,7 +2065,7 @@ public final class PlannerScheduler implements AutoCloseable {
             case PlannerScheduler.RouteJob route -> route.key.index();
             case PlannerScheduler.HydroJob hydro -> hydro.routes.center().key().index();
             case PlannerScheduler.ContractJob contract -> contract.inputs.geometry.key().index();
-            case PlannerScheduler.FineSampleJob fine -> fine.route.key().index();
+            case PlannerScheduler.FineSampleJob fine -> fine.path.key().index();
             // Never fatal: this is a label for diagnostics, and a missing label used to fail the pump.
             default -> -1L;
         };
@@ -2157,7 +2178,7 @@ public final class PlannerScheduler implements AutoCloseable {
     }
 
     private final class FineSampleJob extends Job<List<WallFinePlanner.FineColumn>> {
-        private final RouteShape route;
+        private final RoutePath path;
         /** Point sub-range this job samples: {@code [fromPoint, toPoint)} of the route. */
         private final int fromPoint, toPoint;
         private final local.plaincraft.greatwall.terrain.FineSampleCache cache;
@@ -2169,7 +2190,7 @@ public final class PlannerScheduler implements AutoCloseable {
         /** Columns already claimed by another slice of this session; see WallFinePlanner.begin. */
         private final java.util.Set<Long> claims;
         private WallFinePlanner.Cursor cursor;
-        private FineSampleJob(RouteShape route, int fromPoint, int toPoint, Priority priority,
+        private FineSampleJob(RoutePath path, int fromPoint, int toPoint, Priority priority,
                               CompletableFuture<List<WallFinePlanner.FineColumn>> result,
                               local.plaincraft.greatwall.terrain.FineSampleCache cache,
                               java.util.function.IntPredicate wideAt,
@@ -2177,9 +2198,9 @@ public final class PlannerScheduler implements AutoCloseable {
                               java.util.Set<Long> claims, long globalBaseQ8) {
             super(priority, "FINE_SAMPLE", result);
             this.globalBaseQ8 = globalBaseQ8;
-            this.route = route;
+            this.path = path;
             this.fromPoint = Math.max(0, fromPoint);
-            this.toPoint = Math.min(route.points().size(), Math.max(this.fromPoint, toPoint));
+            this.toPoint = Math.min(path.points().size(), Math.max(this.fromPoint, toPoint));
             this.cache = cache;
             this.wideAt = wideAt;
             this.walks = walks;
@@ -2187,7 +2208,7 @@ public final class PlannerScheduler implements AutoCloseable {
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
             if (cursor == null) {
-                cursor = WallFinePlanner.begin(route, oracle, fromPoint, toPoint, cache, wideAt, walks, claims,
+                cursor = WallFinePlanner.begin(path, oracle, fromPoint, toPoint, cache, wideAt, walks, claims,
                         fromPoint > 0, globalBaseQ8);
             }
             operations += limit;
@@ -2215,8 +2236,8 @@ public final class PlannerScheduler implements AutoCloseable {
      * window no component ends up using costs a few extra columns; missing one would leave the contract
      * without the columns it requires.</p>
      */
-    private java.util.function.IntPredicate widePoints(RouteShape route, long fromQ8) {
-        var arcs = route.localSQ8();
+    private java.util.function.IntPredicate widePoints(RoutePath path, long fromQ8) {
+        var arcs = path.localSQ8();
         int points = arcs.size();
         var wide = new java.util.BitSet(points);
         long toQ8 = fromQ8 + arcs.get(points - 1);

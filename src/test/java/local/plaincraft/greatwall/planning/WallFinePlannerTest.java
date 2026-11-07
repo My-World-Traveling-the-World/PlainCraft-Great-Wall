@@ -265,4 +265,43 @@ class WallFinePlannerTest {
         oracle.close();
         assertThrows(IllegalStateException.class, () -> WallFinePlanner.advance(cursor, 1));
     }
+
+    /**
+     * The fine sample reads its polyline from the segment geometry, not from a freshly recomputed
+     * route (see PlannerScheduler.requireFineSamples). The geometry is built from the route and
+     * persists the same points and arc lengths, so swapping one for the other has to be exact: the
+     * same columns, with the same samples, and the same slice order key. A cached world samples from
+     * the geometry because that is the only view it has without paying for the ridge search again.
+     */
+    @Test void aSegmentGeometrySamplesExactlyTheColumnsItsRouteDoes() {
+        var recipe = PlanningFixtures.recipe(9282026);
+        var route = route(recipe);
+        var geometry = new SegmentGeometry(route.key(), route.points(), route.localSQ8(),
+                java.util.List.of(), java.util.Optional.empty(), route.start(), route.end(),
+                route.searchColumns() + route.boundaryColumns(), route.degradation(), "0".repeat(64));
+        // One 64-point slice is enough to compare the two views, and it keeps the walk short.
+        var fromRoute = slice(route, 0, 64);
+        var fromGeometry = slice(geometry, 0, 64);
+        assertEquals(fromRoute.size(), fromGeometry.size(), "column counts differ");
+        for (int i = 0; i < fromRoute.size(); i++) {
+            var expected = fromRoute.get(i);
+            var actual = fromGeometry.get(i);
+            assertEquals(expected.x(), actual.x(), "x at " + i);
+            assertEquals(expected.z(), actual.z(), "z at " + i);
+            assertEquals(expected.lateral(), actual.lateral(), "lateral at " + i);
+            assertEquals(expected.globalSQ8(), actual.globalSQ8(), "globalSQ8 at " + i);
+            assertEquals(expected.sample(), actual.sample(), "sample at " + i);
+        }
+        assertEquals(WallFinePlanner.sampleOrder(route, 0, 64), WallFinePlanner.sampleOrder(geometry, 0, 64),
+                "the slice order key must not depend on which view supplied the polyline");
+    }
+
+    /** Samples one point range of a polyline the way a fine-sample job does. */
+    private static java.util.List<WallFinePlanner.FineColumn> slice(RoutePath path, int from, int to) {
+        try (var oracle = AnalyticTerrainOracle.ridge(true)) {
+            var cursor = WallFinePlanner.begin(path, oracle, from, to);
+            while (WallFinePlanner.advance(cursor, 64) != WorkState.DONE) { }
+            return WallFinePlanner.finish(cursor);
+        }
+    }
 }

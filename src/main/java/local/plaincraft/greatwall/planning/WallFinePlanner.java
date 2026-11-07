@@ -83,7 +83,7 @@ public final class WallFinePlanner {
         public boolean hasSectionIdentity() { return globalSQ8 != Long.MIN_VALUE; }
     }
 
-    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle) {
+    public static Cursor begin(RoutePath route, NaturalTerrainOracle oracle) {
         return begin(route, oracle, 0, route.points().size());
     }
 
@@ -96,7 +96,7 @@ public final class WallFinePlanner {
      * columns are merged afterwards by (x, z). The route points and their cross-sections are pure
      * functions of the index, so slicing changes no sampled value — only which thread computes it.</p>
      */
-    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex) {
+    public static Cursor begin(RoutePath route, NaturalTerrainOracle oracle, int fromIndex, int toIndex) {
         return begin(route, oracle, fromIndex, toIndex, FineSampleCache.none());
     }
 
@@ -105,7 +105,7 @@ public final class WallFinePlanner {
      * them. A hit emits exactly the sample the oracle would have produced, so the merged index is
      * identical whichever columns the cache answered - only the terrain walks are skipped.
      */
-    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+    public static Cursor begin(RoutePath route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                                FineSampleCache cache) {
         return begin(route, oracle, fromIndex, toIndex, cache, null);
     }
@@ -117,7 +117,7 @@ public final class WallFinePlanner {
      * schedule the contract uses, so the fort and gate AABBs are never sampled narrower than they
      * read.
      */
-    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+    public static Cursor begin(RoutePath route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                                FineSampleCache cache, java.util.function.IntPredicate wideAt) {
         return begin(route, oracle, fromIndex, toIndex, cache, wideAt, null);
     }
@@ -135,7 +135,7 @@ public final class WallFinePlanner {
      *
      * @param walks shared by every slice of one session, or {@code null} to walk every column again
      */
-    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+    public static Cursor begin(RoutePath route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                                FineSampleCache cache, java.util.function.IntPredicate wideAt,
                                java.util.Map<Long, ColumnSample> walks) {
         return begin(route, oracle, fromIndex, toIndex, cache, wideAt, walks, null);
@@ -156,14 +156,14 @@ public final class WallFinePlanner {
      *
      * @param claims shared by every slice of one session, or null to keep the per-cursor behaviour
      */
-    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+    public static Cursor begin(RoutePath route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                                FineSampleCache cache, java.util.function.IntPredicate wideAt,
                                java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims) {
         return begin(route, oracle, fromIndex, toIndex, cache, wideAt, walks, claims, fromIndex > 0, 0L);
     }
 
     /** Production entry with the route's absolute arc origin. */
-    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+    public static Cursor begin(RoutePath route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                                FineSampleCache cache, java.util.function.IntPredicate wideAt,
                                java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims,
                                boolean carryWater, long globalBaseQ8) {
@@ -182,7 +182,7 @@ public final class WallFinePlanner {
      * suppressed. The default is deliberately conservative: any slice that does not begin at the route
      * head assumes water, which can only ever widen the probe band, never narrow it.
      */
-    public static Cursor begin(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+    public static Cursor begin(RoutePath route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                                FineSampleCache cache, java.util.function.IntPredicate wideAt,
                                java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims,
                                boolean carryWater) {
@@ -259,7 +259,7 @@ public final class WallFinePlanner {
     }
 
     /** Stable sampler identity, independent of async callback order. */
-    public static long sampleOrder(RouteShape route, int fromIndex, int toIndex) {
+    public static long sampleOrder(RoutePath route, int fromIndex, int toIndex) {
         return (((long) route.key().index()) << 40) ^ (((long) fromIndex) << 20) ^ (toIndex & 0xfffffL);
     }
 
@@ -547,7 +547,7 @@ public final class WallFinePlanner {
     }
 
     public static final class Cursor {
-        private final RouteShape route;
+        private final RoutePath route;
         private final long globalBaseQ8;
         private final NaturalTerrainOracle oracle;
         /** Point range this cursor covers: {@code [fromIndex, toIndex)} plus any end apron. */
@@ -623,7 +623,7 @@ public final class WallFinePlanner {
         private NaturalTerrainOracle.ColumnCursor column;
         private boolean completed;
 
-        private Cursor(RouteShape route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
+        private Cursor(RoutePath route, NaturalTerrainOracle oracle, int fromIndex, int toIndex,
                        FineSampleCache cache, java.util.function.IntPredicate wideAt,
                        java.util.Map<Long, ColumnSample> walks, java.util.Set<Long> claims,
                        boolean carryWater, long globalBaseQ8) {
