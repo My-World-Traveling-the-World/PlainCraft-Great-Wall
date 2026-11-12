@@ -1,5 +1,8 @@
 package local.plaincraft.greatwall.compat;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import local.plaincraft.greatwall.lifecycle.WorldServices;
 import net.shiroha233.roadweaver.api.incoming.RiverReadinessApi;
 import net.shiroha233.roadweaver.api.incoming.RiverReadinessListener;
@@ -49,12 +52,15 @@ public final class RoadWeaverLifecycleBridge {
     private RoadWeaverLifecycleBridge() {
     }
 
+    private static final Logger LOGGER = LoggerFactory.getLogger("greatwall/api");
+
     /** 在 mod 初始化时调用一次。 */
     public static void register() {
         RiverReadinessApi.addListener(new RiverReadinessListener() {
             @Override
             public void onRiversReady(String providerId) {
                 try {
+                    LOGGER.info("river-readiness: rivers ready from provider={}.", providerId);
                     WorldServices.riversPrewarmed();
                 } catch (Throwable ignored) {
                     // 从别人的启动路径回调进来：长城侧失败绝不能让河流生成失败。
@@ -62,5 +68,9 @@ public final class RoadWeaverLifecycleBridge {
                 }
             }
         });
+        // 自证：长城单独发布、河流没装时，listeners 恒 0 且 alreadyReady=false ——
+        // 一眼能看出"订阅上了但没人会通知我"，而不是误以为接线成功。
+        LOGGER.info("river-readiness: subscribed (listeners={}, alreadyReady={}).",
+                RiverReadinessApi.listenerCount(), RiverReadinessApi.isReady());
     }
 }

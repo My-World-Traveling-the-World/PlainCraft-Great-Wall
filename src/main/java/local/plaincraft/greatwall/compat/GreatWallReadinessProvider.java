@@ -2,6 +2,9 @@ package local.plaincraft.greatwall.compat;
 
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import local.plaincraft.greatwall.lifecycle.PrewarmProgress;
 import local.plaincraft.greatwall.lifecycle.WorldServices;
 import net.shiroha233.roadweaver.api.outgoing.GreatWallReadiness;
@@ -25,6 +28,8 @@ public final class GreatWallReadinessProvider implements GreatWallReadiness {
     /** 注册表里的 id，不要去改（道路的诊断日志按它认长城）。 */
     public static final String OWNER_ID = "great-wall";
 
+    private static final Logger LOGGER = LoggerFactory.getLogger("greatwall/api");
+
     private GreatWallReadinessProvider() {
     }
 
@@ -36,6 +41,9 @@ public final class GreatWallReadinessProvider implements GreatWallReadiness {
      */
     public static void register() {
         GreatWallReadinessRegistry.register(new GreatWallReadinessProvider());
+        // 自证：长城单独发布、道路没装时，这一行就是"我把就绪闸门挂上了"的唯一凭据。
+        // 刻意不在这里报"谁订阅了我" —— 那是订阅方自己的事，长城不该知道。
+        LOGGER.info("greatwall-readiness: provider registered (owner={}).", OWNER_ID);
     }
 
     @Override
