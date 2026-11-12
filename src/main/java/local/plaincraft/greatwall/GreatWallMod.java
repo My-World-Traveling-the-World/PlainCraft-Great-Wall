@@ -20,6 +20,9 @@ public final class GreatWallMod implements ModInitializer {
         // exactly as before.
         local.plaincraft.greatwall.compat.biome.OptionalTreePacks.register();
         WorldServices.register();
+        // 用 RoadWeaver 标准 API 接收「河流预热完成」，替代原来的 @Pseudo @Mixin
+        // （那条注入是 require = 1，道路改方法名会让长城类加载崩溃）。
+        local.plaincraft.greatwall.compat.RoadWeaverLifecycleBridge.register();
         local.plaincraft.greatwall.diagnostics.DebugPayload.registerType();
         // Register the vanilla-feature landing entry (mirrors RoadWeaver). The feature reads the
         // planning-compiled ChunkWritePlan from WallWorldgenPlanCache and paints it; no neighbour

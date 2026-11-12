@@ -14,6 +14,7 @@
     "modmenu": ["local.plaincraft.greatwall.client.config.GreatWallModMenu"]
   },
   "depends": {
+		"roadweaver_api": ">=1",
     "fabricloader": ">=${loader_version}",
     "minecraft": "=1.21.1",
     "java": ">=21",
