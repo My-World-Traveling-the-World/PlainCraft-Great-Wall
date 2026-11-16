@@ -497,7 +497,11 @@ public final class PrewarmProgress {
         var latch = worldgenReady;
         if (latch == null) return false;   // no session registered yet = NOT ready
         try {
-            return latch.await(Math.max(0L, timeout), unit);
+            if (!latch.await(Math.max(0L, timeout), unit)) return false;
+            synchronized (LATCH_LOCK) {
+                // clear也会唤醒旧等待者；必须仍属本世界的闩锁才代表成功发布。
+                return latch == worldgenReady;
+            }
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             return false;
@@ -547,6 +551,14 @@ public final class PrewarmProgress {
         EVER_STARTED.set(false);
         REQUESTED.set(false);
         PUBLISHED.set(false); // A plan from the previous save must not satisfy the new startup.
+        // 阶段与子进度也属于世界会话，不能把旧存档的COMPILE和计数补给新存档。
+        STAGE.set(Stage.ROOT_SEARCH);
+        SUB_STAGE.set(null);
+        SUB_DONE.set(0);
+        SUB_TOTAL.set(0);
+        SUB_BY_STAGE.clear();
+        stageSinceNanos = 0L;
+        for (int i = 0; i < STAGE_NANOS.length(); i++) STAGE_NANOS.set(i, 0L);
         synchronized (LATCH_LOCK) {
             // Release any waiter still parked on the old gate before replacing it: a session that is being
             // torn down must not leave a waiter holding a latch nobody will ever open. Both gates are

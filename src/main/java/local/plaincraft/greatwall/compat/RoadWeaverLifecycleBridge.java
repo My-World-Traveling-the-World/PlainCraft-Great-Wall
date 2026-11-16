@@ -67,9 +67,11 @@ public final class RoadWeaverLifecycleBridge {
                 try {
                     LOGGER.info("river-readiness: rivers ready from provider={}.", providerId);
                     riversReady.run();
-                } catch (Throwable ignored) {
+                } catch (Throwable failure) {
                     // 从别人的启动路径回调进来：长城侧失败绝不能让河流生成失败。
                     // 长城自己的 TAIL 兜底路线依然会跑。
+                    LOGGER.warn("river-readiness: wall callback failed (provider={}); no success implied.",
+                            providerId, failure);
                 }
             }
         };

@@ -60,7 +60,7 @@ public final class WorldServices {
      * to a session the moment it registers, so the wall starts whether the rivers finished
      * before or after it came up.
      */
-    private static final java.util.concurrent.atomic.AtomicBoolean RIVERS_READY = new java.util.concurrent.atomic.AtomicBoolean();
+    private static final RetainedRiverSignal<MinecraftServer> RIVERS_READY = new RetainedRiverSignal<>();
     /** Flat workshops whose completion check waits for the two anchor chunks to load. */
     private static final java.util.concurrent.ConcurrentHashMap<ServerLevel, Long> SHOWCASE_PENDING_CHECK =
             new java.util.concurrent.ConcurrentHashMap<>();
@@ -80,12 +80,7 @@ public final class WorldServices {
         if (!Boolean.getBoolean("greatwall.s0.probe")) {
             planner = null;
             production = new ProductionSession(server, this);
-            // The rivers may have finished before this session registered. Replay the retained
-            // signal so the wall still starts, then the recipe-install path releases the bulk
-            // prewarm once it is durable (ProductionSession.riversPrewarmed is idempotent).
-            if (RIVERS_READY.get()) {
-                production.riversPrewarmed();
-            }
+            // 保留信号的订阅在会话入表后原子完成，不能在构造器先检查再入表而漏掉通知。
             return;
         }
         production = null;
@@ -109,11 +104,7 @@ public final class WorldServices {
 
     public static void register() {
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
-            // Cross-session reset lives in SERVER_STOPPED (below): it already clears RIVERS_READY
-            // and PrewarmProgress when a world stops. Resetting RIVERS_READY here would run BEFORE
-            // the constructor replays it (the "rivers finished before this session registered"
-            // branch in WorldServices.<init>), so the replay could never fire. Only clear the latch;
-            // RIVERS_READY is left to SERVER_STOPPED so an early rivers signal is not lost.
+            // 河流信号在停止时清理，启动时只清长城进度，否则会抹掉早于会话注册的真实通知。
             PrewarmProgress.clear();
             // Arm the gate now, before any peer can ask. The latch alone is not enough: a peer that
             // asks while nothing has been requested is told "ready", which is how a road started
@@ -123,7 +114,12 @@ public final class WorldServices {
             // shape required -Dgreatwall.s1c.productionFixture plus two marker files in the game
             // directory and threw outright when -Dgreatwall.production was set, so a shipped jar
             // could not run as itself. -Dgreatwall.s0.probe still selects the S0 laboratory below.
-            SESSIONS.put(server, new WorldServices(server));
+            WorldServices services = new WorldServices(server);
+            SESSIONS.put(server, services);
+            // 回调只捕获这个世界的生产会话；早到信号与注册交接由同一把锁保证。
+            if (services.production != null) {
+                RIVERS_READY.attach(server, services.production::riversPrewarmed);
+            }
         });
         ServerWorldEvents.LOAD.register((server, level) -> {
             // Install the plan reader before any chunk loads, and seed the queue from the plans on
@@ -271,6 +267,8 @@ public final class WorldServices {
             local.plaincraft.greatwall.generation.ChunkHold.releaseAll(overworld);
             local.plaincraft.greatwall.generation.WallBodyBackfill.clearAll();
             local.plaincraft.greatwall.compat.road.WallRoadGuard.clear();
+            // 停止阶段先注销通知，避免关闭中的生产会话再收到河流广播。
+            RIVERS_READY.detach(server);
             var services = find(server);
             if (services != null) {
                 if (services.production != null) {
@@ -283,6 +281,7 @@ public final class WorldServices {
             }
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            RIVERS_READY.detach(server);
             var services = SESSIONS.remove(server);
             if (services != null) {
                 if (services.production != null) {
@@ -295,7 +294,7 @@ public final class WorldServices {
             // Cross-session reset: the SERVER_STARTING reset covers the next world, but doing
             // it here too means a world that stops without starting another does not leave a
             // spent latch or a stale rivers-ready flag in the shared statics either.
-            RIVERS_READY.set(false);
+            RIVERS_READY.clear();
             PrewarmProgress.clear();
             // Arm the gate now, before any peer can ask. The latch alone is not enough: a peer that
             // asks while nothing has been requested is told "ready", which is how a road started
@@ -532,8 +531,7 @@ public final class WorldServices {
     }
 
     /**
-     * Called from RoadWeaver's river-prewarm return, i.e. once the rivers exist and
-     * before any road is built.
+     * 由河流模组经标准就绪API触发；道路只是契约宿主，不代表河流发布完成。
      *
      * <h2>Where this sits in the startup order</h2>
      * <pre>
@@ -554,16 +552,9 @@ public final class WorldServices {
      * idempotent, so at most one of the two actually starts the prewarm.
      */
     public static void riversPrewarmed() {
-        // Retained so a session that registers after the rivers finish still receives the
-        // signal; the constructor replays it. request() is separate and marks the prewarm as
-        // coming so a peer polling on it waits rather than concluding none will run.
-        RIVERS_READY.set(true);
+        // 同步保留与分发，防止通知落在构造器检查之后、SESSIONS入表之前而永久丢失。
         PrewarmProgress.request();
-        for (var server : SESSIONS.keySet()) {
-            var services = SESSIONS.get(server);
-            if (services == null || services.production == null) continue;
-            services.production.riversPrewarmed();
-        }
+        RIVERS_READY.publish();
     }
 
     /**
@@ -589,7 +580,7 @@ public final class WorldServices {
      * On timeout it returns false and the caller is expected to proceed: a stage that never
      * reports must not turn a slow startup into a hang.
      *
-     * @return true if the wall published, failed, or will not run; false if the wait timed out
+     * @return 仅严格发布门已开且模板盖章不再等待时为true；失败、超时和未启动为false
      */
     public static boolean awaitPrewarm(long timeout, java.util.concurrent.TimeUnit unit) {
         // The gate must not consult SESSIONS. That map is only populated when the S0 probe or the
