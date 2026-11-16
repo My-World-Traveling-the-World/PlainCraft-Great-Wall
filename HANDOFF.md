@@ -64,3 +64,5 @@
 - 公开默认订阅注册测试只注册不广播，避免给WorldServices全局保留信号留下测试污染；实际通知用生产回调端口和真实API广播测试，默认接线另外静态守卫。
 
 终检：长城完整test compileJava为769项（745+24），failures=0 errors=0 skipped=0，BUILD SUCCESSFUL；日志build-round34-full-final.log。16组变异全部还原。道路完整1222与Fabric编译通过，河流82cc818本轮只读且工作区干净。
+
+同步记录：端口92720388、修复及守卫928d3302已push到现有origin的refactor/planning-frozen-feature-paint分支（E盘本地备份远端），未切换或推送main。源码提交后git status --porcelain为空；本条文档另提交后再push。
