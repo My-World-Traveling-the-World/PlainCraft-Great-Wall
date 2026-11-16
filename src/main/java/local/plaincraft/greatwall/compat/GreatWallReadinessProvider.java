@@ -1,6 +1,7 @@
 package local.plaincraft.greatwall.compat;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +30,22 @@ public final class GreatWallReadinessProvider implements GreatWallReadiness {
     public static final String OWNER_ID = "great-wall";
 
     private static final Logger LOGGER = LoggerFactory.getLogger("greatwall/api");
+    private final Awaiter awaiter;
+    private final Supplier<PrewarmProgress.Snapshot> snapshot;
 
     private GreatWallReadinessProvider() {
+        this(WorldServices::awaitPrewarm, WorldServices::prewarmSnapshot);
+    }
+
+    /** 只搬读状态边界，端口测试不需要构造真实服务端或改变预热判据。 */
+    GreatWallReadinessProvider(Awaiter awaiter, Supplier<PrewarmProgress.Snapshot> snapshot) {
+        this.awaiter = awaiter;
+        this.snapshot = snapshot;
+    }
+
+    @FunctionalInterface
+    interface Awaiter {
+        boolean await(long timeout, TimeUnit unit);
     }
 
     /**
@@ -54,7 +69,7 @@ public final class GreatWallReadinessProvider implements GreatWallReadiness {
     @Override
     public boolean isReady() {
         try {
-            return WorldServices.awaitPrewarm(0L, TimeUnit.NANOSECONDS);
+            return awaiter.await(0L, TimeUnit.NANOSECONDS);
         } catch (Throwable failure) {
             // 契约要求：内部出错回「未就绪」，绝不能回「就绪」。
             return false;
@@ -65,7 +80,7 @@ public final class GreatWallReadinessProvider implements GreatWallReadiness {
     public boolean awaitReady(long timeoutMillis) {
         if (timeoutMillis <= 0L) return isReady();
         try {
-            return WorldServices.awaitPrewarm(timeoutMillis, TimeUnit.MILLISECONDS);
+            return awaiter.await(timeoutMillis, TimeUnit.MILLISECONDS);
         } catch (Throwable failure) {
             return false;
         }
@@ -74,7 +89,7 @@ public final class GreatWallReadinessProvider implements GreatWallReadiness {
     @Override
     public String progressSignature() {
         try {
-            PrewarmProgress.Snapshot s = WorldServices.prewarmSnapshot();
+            PrewarmProgress.Snapshot s = snapshot.get();
             if (s == null) return null;
             // 顺序必须与道路历史上那九个字段一致；不含 elapsedMillis。
             return s.active() + "|" + s.failed() + "|" + s.stage() + "|" + s.completed() + "|"

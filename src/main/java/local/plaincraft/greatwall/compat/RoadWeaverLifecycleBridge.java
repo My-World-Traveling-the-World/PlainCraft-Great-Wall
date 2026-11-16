@@ -56,21 +56,28 @@ public final class RoadWeaverLifecycleBridge {
 
     /** 在 mod 初始化时调用一次。 */
     public static void register() {
-        RiverReadinessApi.addListener(new RiverReadinessListener() {
+        register(WorldServices::riversPrewarmed);
+    }
+
+    /** 注入长城会话通知端口，让离线测试直接经过真实订阅与晚订阅补发。 */
+    static RiverReadinessListener register(Runnable riversReady) {
+        RiverReadinessListener listener = new RiverReadinessListener() {
             @Override
             public void onRiversReady(String providerId) {
                 try {
                     LOGGER.info("river-readiness: rivers ready from provider={}.", providerId);
-                    WorldServices.riversPrewarmed();
+                    riversReady.run();
                 } catch (Throwable ignored) {
                     // 从别人的启动路径回调进来：长城侧失败绝不能让河流生成失败。
                     // 长城自己的 TAIL 兜底路线依然会跑。
                 }
             }
-        });
+        };
+        RiverReadinessApi.addListener(listener);
         // 自证：长城单独发布、河流没装时，listeners 恒 0 且 alreadyReady=false ——
         // 一眼能看出"订阅上了但没人会通知我"，而不是误以为接线成功。
         LOGGER.info("river-readiness: subscribed (listeners={}, alreadyReady={}).",
                 RiverReadinessApi.listenerCount(), RiverReadinessApi.isReady());
+        return listener;
     }
 }
