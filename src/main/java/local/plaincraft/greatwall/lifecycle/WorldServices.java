@@ -22,6 +22,8 @@ import local.plaincraft.greatwall.gameplay.IgnitionService;
 import local.plaincraft.greatwall.gameplay.SiteRuntimeIndex;
 import local.plaincraft.greatwall.gameplay.WallSpawnerGuard;
 import local.plaincraft.greatwall.generation.WallStageCoordinator;
+import local.plaincraft.greatwall.generation.ImportedShowcase;
+import local.plaincraft.greatwall.generation.ShowcaseGate;
 import local.plaincraft.greatwall.persistence.GateLedger;
 import local.plaincraft.greatwall.persistence.HistoryJournal;
 import local.plaincraft.greatwall.persistence.WallWorldState;
@@ -223,12 +225,18 @@ public final class WorldServices {
             local.plaincraft.greatwall.generation.ShowcaseStamp.tick(overworld);
             local.plaincraft.greatwall.generation.DiagonalWallShowcase.tick(overworld);
             local.plaincraft.greatwall.generation.TerrainShowcase.tick(overworld);
+            ImportedShowcase.tick(overworld);
             if (local.plaincraft.greatwall.generation.ShowcaseGate.completed()
                     && overworld.getChunkSource().getGenerator()
                             instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
                 local.plaincraft.greatwall.generation.ShowcaseMarker.markComplete(
                         overworld, overworld.getSharedSpawnPos(), "stamped");
             }
+        });
+        // 完整保存之后才承认展位已施工；停服保存到来前不能丢掉本会话的完工状态。
+        ServerLifecycleEvents.AFTER_SAVE.register((server, flush, force) -> {
+            var level = server.overworld();
+            if (level != null) ImportedShowcase.afterSave(level, flush, force);
         });
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, successful) -> {
             var services = find(server);
@@ -262,6 +270,7 @@ public final class WorldServices {
             local.plaincraft.greatwall.generation.StairStamp.reset(overworld);
             local.plaincraft.greatwall.generation.DiagonalWallShowcase.reset(overworld);
             local.plaincraft.greatwall.generation.TerrainShowcase.reset(overworld);
+            ImportedShowcase.reset(overworld);
             local.plaincraft.greatwall.generation.ChunkHold.releaseAll(overworld);
             local.plaincraft.greatwall.generation.WallBodyBackfill.clearAll();
             local.plaincraft.greatwall.compat.road.WallRoadGuard.clear();
@@ -279,6 +288,9 @@ public final class WorldServices {
             }
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            // 停服的最后一次保存已结束，再移除展位和道路等待状态。
+            ImportedShowcase.forget(server.overworld());
+            ShowcaseGate.reset();
             RIVERS_READY.detach(server);
             var services = SESSIONS.remove(server);
             if (services != null) {
@@ -620,6 +632,12 @@ public final class WorldServices {
         if (server.overworld().getChunkSource().getGenerator()
                 instanceof net.minecraft.world.level.levelgen.FlatLevelSource) {
             GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_SKIPPED flat=true reason=wonder-sample-world");
+            // 此时出生点已经确定。先发布新展位和待办，再开长城就绪门，避免道路抢占接缝。
+            var services = find(server);
+            if (services != null && Boolean.parseBoolean(System.getProperty("greatwall.wonderSample", "true"))) {
+                var level = server.overworld();
+                ImportedShowcase.start(level, level.getSharedSpawnPos(), services.authorizedNewWorld);
+            }
             PrewarmProgress.finish(true);
             return;
         }        // No test-mode guard. It used to return here unless the S1C fixture or the S0 probe was

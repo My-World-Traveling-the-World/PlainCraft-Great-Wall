@@ -997,6 +997,8 @@ public final class GreatWallCommands {
         local.plaincraft.greatwall.generation.WallStamp.restart();
         local.plaincraft.greatwall.generation.StairStamp.restart();
         local.plaincraft.greatwall.generation.ShowcaseStamp.restartAll();
+        // 与旧展台一起重画，重新登记新展位，避免旧任务结束时提前打开道路等待门。
+        local.plaincraft.greatwall.generation.ImportedShowcase.restart(source.getLevel());
         // TowerStamp 从来没接过 start()/tick()（WorldServices 不启动它，服务端 tick 也不驱动它），
         // 复位它只会造成"复位但不重画"的假动作，所以这里显式跳过并说明。
         int pending = local.plaincraft.greatwall.generation.ShowcaseGate.remaining();
