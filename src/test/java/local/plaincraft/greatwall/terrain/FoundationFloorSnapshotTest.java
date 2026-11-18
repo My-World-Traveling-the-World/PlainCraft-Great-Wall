@@ -2,6 +2,11 @@ package local.plaincraft.greatwall.terrain;
 
 import java.util.HashMap;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import local.plaincraft.greatwall.component.GroundEntranceContract;
+import local.plaincraft.greatwall.model.WallTypes.*;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,6 +44,28 @@ class FoundationFloorSnapshotTest {
         var second=input(first.foundationFloor());
         assertSame(first.foundationFloor(),second.foundationFloor(),"真实Input不能改回Map.copyOf重建退化表");
         assertThrows(UnsupportedOperationException.class,()->second.foundationFloor().put(0L,1));
+    }
+
+    @Test void componentsReuseTheRealizationSnapshotWithoutAliasingExternalInput() {
+        var key = key(-2, 7);
+        var external = new HashMap<>(Map.of(key, 42));
+        var shared = input(external).foundationFloor();
+        var first = component(shared);
+        var second = component(external);
+        external.put(key, 91);
+        // 同一次取证编译多个构件时，不应为每个构件重建整条走廊的坐标表。
+        assertSame(shared, first.foundationFloor());
+        assertEquals(42, second.foundationFloor().get(key));
+        assertThrows(UnsupportedOperationException.class, () -> second.foundationFloor().put(key, 91));
+    }
+
+    private static ComponentInput component(Map<Long, Integer> floor) {
+        var site = new SiteRecord(new SiteId("fixture", SiteKind.WALL, 0), 0,
+                new Frame(new Point2q(0, 0), 1 << 30, 0, 84, false), new Bounds(0, 0, 0, 1, 1, 1),
+                SiteState.PLANNED, Optional.empty(), Optional.empty());
+        return new ComponentInput(site, List.of(), Map.of(), new DecaySample(DecayState.INTACT, 0, 20),
+                PaletteFamily.STONE, false, List.of(), List.of(), GroundEntranceContract.Evidence.analytic(Map.of()),
+                floor, List.of());
     }
 
     private static RealizationPlanner.Input input(java.util.Map<Long,Integer> floor) {

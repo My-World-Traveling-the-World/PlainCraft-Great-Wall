@@ -3,6 +3,7 @@ package local.plaincraft.greatwall.component;
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import local.plaincraft.greatwall.decay.DecayField;
+import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +45,8 @@ class WallDecayTest {
                 "fill stops below baseY");
         assertFalse(c.voxels().stream().anyMatch(v -> v.pos().y() == 80 && v.pos().z() == 5),
                 "fill must not write at or above baseY");
+        // 钉住旧逐体素扫描的整个构件，包含实体方块、边界与可走路线，不只检查几个点。
+        assertEquals("44b75470560987f6426cf49bf08c7dca2a670f5519537bf031e2a42cd38aa83d", CanonicalCodec.componentHash(c));
     }
 
     @Test void finalPartialCellDoesNotDemandNonexistentFutureStations() {

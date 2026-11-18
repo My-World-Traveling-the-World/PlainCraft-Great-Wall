@@ -24,19 +24,6 @@ public final class WallSection implements ComponentTemplate {
         return new Bounds(-32,-32,-5,32,3,5);
     }
 
-    /** The explicit fill contract, not a window-wide lowest-value bound. */
-    private static int foundationFloor(ComponentInput input, List<Station> stations,
-                                       long from, long to) {
-        int floor = Integer.MAX_VALUE;
-        for (var core : input.foundations()) {
-            if (core.globalSQ8() < from || core.globalSQ8() >= to) continue;
-            for (var fill : core.fills()) {
-                floor = Math.min(floor, fill.surfaceY() - height(stations, core.globalSQ8()) - 1);
-            }
-        }
-        return floor == Integer.MAX_VALUE ? -32 : Math.min(-32, floor);
-    }
-
     @Override public ComponentVoxels compile(ComponentInput input) {
         long center=input.site().globalSQ8();
         return compileIntervals(input,List.of(new ArcInterval(Math.max(0,center-32L*256),center+32L*256)));
@@ -72,7 +59,9 @@ public final class WallSection implements ComponentTemplate {
         long to = Math.min(stations.getLast().globalSQ8(),center+32L*256);
         if (stations.size() < 2 || stations.getFirst().globalSQ8() > from || stations.getLast().globalSQ8() < to)
             throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"wall requires complete station ribbon");
-        Bounds bounds = curveBounds(input,stations,from,to);
+        // 地基扫描上下界和体素规则共用本单元的证据，避免在逐方块回调里重复计算。
+        var foundation = new WallFoundationBands(input.foundations(), center, from, to, s -> height(stations,s));
+        Bounds bounds = curveBounds(stations,from,to,foundation.lowest());
         var assembly = new ComponentAssembly(input,localBounds(input),decay,palette);
         for(var interval:intervals)
             if(interval.fromQ8()<from||interval.toQ8()>to)throw new WallFailure(FailureCode.OWNERSHIP_CONFLICT,"build interval outside cell");
@@ -88,21 +77,7 @@ public final class WallSection implements ComponentTemplate {
             var column=column(stations,x,z,center,from,to,input.site().frame().mirror());
             return column!=null&&intervals.stream().anyMatch(i->column.globalS()>=i.fromQ8()&&column.globalS()<i.toQ8())?column:null;
         },p -> {
-            // Explicit foundation contract: base is the highest sampled surface of this section.
-            // Every lower column is filled from its own natural surface to that base, never to a
-            // different station's floor. This is independent of the fixed -16 wall body above it.
-            for (var core : input.foundations()) {
-                if (core.globalSQ8() != center + (long) p.x() * 256L) continue;
-                for (var fill : core.fills()) {
-                    if (fill.lateral() != p.z()) continue;
-                    int localY = p.y();
-                    int columnWalkY = height(stations, core.globalSQ8());
-                    if (localY < fill.baseY() - columnWalkY
-                            && localY >= fill.surfaceY() - columnWalkY) {
-                        return cell(Part.FOUNDATION,true,false,Map.of());
-                    }
-                }
-            }
+            if (foundation.fills(p.x(),p.y(),p.z())) return cell(Part.FOUNDATION,true,false,Map.of());
             if (!ComponentAssembly.contains(localBounds(input),p)) return null;
             int y = p.y(), z = p.z();
             long globalS = center + (long) p.x()*256;
@@ -172,10 +147,9 @@ public final class WallSection implements ComponentTemplate {
         return new ComponentAssembly.Cell(p,required,walk,properties);
     }
 
-    private static Bounds curveBounds(ComponentInput input, List<Station> stations, long from, long to) {
+    private static Bounds curveBounds(List<Station> stations, long from, long to, int foundationFloor) {
         int x0 = Integer.MAX_VALUE, z0 = Integer.MAX_VALUE, x1 = Integer.MIN_VALUE, z1 = Integer.MIN_VALUE;
         int y0 = Integer.MAX_VALUE, y1 = Integer.MIN_VALUE;
-        int foundationFloor = foundationFloor(input, stations, from, to);
         for (int i = 1; i < stations.size(); i++) {
             Station a = stations.get(i-1), b = stations.get(i);
             if (b.globalSQ8() < from || a.globalSQ8() > to) continue;

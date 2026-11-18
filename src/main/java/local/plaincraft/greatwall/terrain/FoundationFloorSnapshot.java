@@ -9,6 +9,8 @@ import java.util.Set;
 
 /** 地基坐标常有相同Long哈希，避免MapN开放寻址聚集；私有快照可安全跨cell复用。 */
 public final class FoundationFloorSnapshot extends AbstractMap<Long,Integer> {
+    // 大部分独立构件不传地基；共用空表也能避免为这些入口反复分配包装对象。
+    private static final Map<Long, Integer> EMPTY = new FoundationFloorSnapshot(Map.of());
     private final Map<Long,Integer> values;
 
     private FoundationFloorSnapshot(Map<Long,Integer> source) {
@@ -20,7 +22,8 @@ public final class FoundationFloorSnapshot extends AbstractMap<Long,Integer> {
     public static Map<Long,Integer> copyOf(Map<Long,Integer> source) {
         Objects.requireNonNull(source);
         // 仅复用本类拥有的只读存储，不能把调用者的unmodifiableMap误当独立快照。
-        return source instanceof FoundationFloorSnapshot ? source : new FoundationFloorSnapshot(source);
+        if (source instanceof FoundationFloorSnapshot) return source;
+        return source.isEmpty() ? EMPTY : new FoundationFloorSnapshot(source);
     }
 
     @Override public Integer get(Object key) { return values.get(key); }

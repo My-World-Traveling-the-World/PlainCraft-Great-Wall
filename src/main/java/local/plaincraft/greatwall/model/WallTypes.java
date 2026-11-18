@@ -541,7 +541,8 @@ public final class WallTypes {
             waters = List.copyOf(waters);
             materials = List.copyOf(materials);
             Objects.requireNonNull(entranceEvidence,"entranceEvidence");
-            foundationFloor = Map.copyOf(foundationFloor);
+            // 和单元取证共用已经冻结的坐标表；外部可变输入仍复制，避免构件读到后改数据。
+            foundationFloor = local.plaincraft.greatwall.terrain.FoundationFloorSnapshot.copyOf(foundationFloor);
             foundations = List.copyOf(foundations);
         }
     }
