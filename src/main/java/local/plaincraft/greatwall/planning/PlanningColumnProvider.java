@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.ArrayList;
 import local.plaincraft.greatwall.generation.SurfaceProbe;
 import local.plaincraft.greatwall.model.WallTypes.ChunkKey;
@@ -60,6 +61,33 @@ public final class PlanningColumnProvider {
     private final List<Offset> offsets;
     private final Map<Long, List<WallFinePlanner.FineColumn>> byChunk = new HashMap<>();
 
+    /** 编译只依赖区块取证接口，局部证据不需要持有整条路线的精采样索引。 */
+    interface ColumnSource {
+        Map<Point3i, SurfaceProbe.ColumnView> columnsFor(Collection<ChunkKey> owners);
+    }
+
+    /** 已在整窗完成 XZ 裁决；局部只引用需要的桶，保留折返和隔窗的获胜样本。 */
+    ColumnSource restrict(Collection<ChunkKey> captureOwners) {
+        var allowed = Set.copyOf(captureOwners);
+        var local = new HashMap<Long, List<WallFinePlanner.FineColumn>>();
+        var visited = new HashSet<Long>();
+        for (var owner : allowed) {
+            // 填洞仍要读相邻八个区块；取证范围不能按写入区块或段号裁剪。
+            for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+                long key = chunkKey(owner.x() + dx, owner.z() + dz);
+                if (!visited.add(key)) continue;
+                var bucket = byChunk.get(key);
+                if (bucket != null) local.put(key, bucket);
+            }
+        }
+        var order = offsets;
+        return owners -> {
+            // 取证请求遗漏依赖时要结案为失败，不能伪装成走廊外没有采样。
+            if (!allowed.containsAll(owners)) throw new IllegalArgumentException("请求超出本窗的取证区块");
+            return columnsFor(owners, local, order);
+        };
+    }
+
     /** Fills holes at the radius the frozen parameters' sampling grid needs. */
     public PlanningColumnProvider(FineHeightIndex index) {
         this(index, fillRadiusFor(
@@ -83,12 +111,17 @@ public final class PlanningColumnProvider {
      *               written; see the class comment for why a narrower set loses the whole component
      */
     public Map<Point3i, SurfaceProbe.ColumnView> columnsFor(Collection<ChunkKey> owners) {
+        return columnsFor(owners, byChunk, offsets);
+    }
+
+    private static Map<Point3i, SurfaceProbe.ColumnView> columnsFor(Collection<ChunkKey> owners,
+            Map<Long, List<WallFinePlanner.FineColumn>> buckets, List<Offset> offsets) {
         Objects.requireNonNull(owners, "owners");
         // Real columns inside the requested owners. A column belongs to exactly one chunk, so the
         // union has no duplicates and needs no conflict resolution.
         var resolved = new HashMap<Long, WallFinePlanner.FineColumn>();
         var visited = new HashSet<Long>();
-        for (var owner : owners) collectOnce(resolved, visited, owner.x(), owner.z());
+        for (var owner : owners) collectOnce(resolved, visited, buckets, owner.x(), owner.z());
         // Copies may also grow from just outside the requested set: a hole sitting on a chunk border
         // has neighbours on the far side of it.
         var sources = new HashMap<>(resolved);
@@ -96,11 +129,11 @@ public final class PlanningColumnProvider {
             for (int dz = -1; dz <= 1; dz++) {
                 if (dx == 0 && dz == 0) continue;
                 for (var owner : owners) {
-                    collectOnce(sources, visited, owner.x() + dx, owner.z() + dz);
+                    collectOnce(sources, visited, buckets, owner.x() + dx, owner.z() + dz);
                 }
             }
         }
-        fillLadderHoles(resolved, sources, owners);
+        fillLadderHoles(resolved, sources, owners, offsets);
         var result = new HashMap<Point3i, SurfaceProbe.ColumnView>(resolved.size() * 2);
         for (var column : resolved.values()) {
             result.put(new Point3i(column.x(), 0, column.z()),
@@ -118,11 +151,12 @@ public final class PlanningColumnProvider {
         return index;
     }
 
-    private void collectOnce(Map<Long, WallFinePlanner.FineColumn> into, HashSet<Long> visited, int chunkX, int chunkZ) {
+    private static void collectOnce(Map<Long, WallFinePlanner.FineColumn> into, HashSet<Long> visited,
+            Map<Long, List<WallFinePlanner.FineColumn>> buckets, int chunkX, int chunkZ) {
         long key = chunkKey(chunkX, chunkZ);
         // 相邻取证区块的填洞邻域重叠；每桶只读一次，不能让同一列反复插表。
         if (!visited.add(key)) return;
-        var bucket = byChunk.get(key);
+        var bucket = buckets.get(key);
         if (bucket == null) return;
         for (var column : bucket) into.put(pack(column.x(), column.z()), column);
     }
@@ -144,15 +178,15 @@ public final class PlanningColumnProvider {
      * grid the raw set is a lattice rather than a ladder; the radius then follows the grid step
      * (see {@link #fillRadiusFor}) and the nearest copy still closes every cell.</p>
      */
-    private void fillLadderHoles(Map<Long, WallFinePlanner.FineColumn> resolved,
-            Map<Long, WallFinePlanner.FineColumn> sources, Collection<ChunkKey> owners) {
+    private static void fillLadderHoles(Map<Long, WallFinePlanner.FineColumn> resolved,
+            Map<Long, WallFinePlanner.FineColumn> sources, Collection<ChunkKey> owners, List<Offset> offsets) {
         for (var owner : owners) {
             int minX = owner.x() << 4, minZ = owner.z() << 4;
             for (int x = minX; x < minX + 16; x++) {
                 for (int z = minZ; z < minZ + 16; z++) {
                     long key = pack(x, z);
                     if (resolved.containsKey(key)) continue;
-                    var source = nearestSource(sources, x, z);
+                    var source = nearestSource(sources, x, z, offsets);
                     if (source == null) continue;
                     resolved.put(key, new WallFinePlanner.FineColumn(x, z, source.lateral(), source.sample()));
                 }
@@ -160,8 +194,8 @@ public final class PlanningColumnProvider {
         }
     }
 
-    private WallFinePlanner.FineColumn nearestSource(Map<Long, WallFinePlanner.FineColumn> sources,
-            int x, int z) {
+    private static WallFinePlanner.FineColumn nearestSource(Map<Long, WallFinePlanner.FineColumn> sources,
+            int x, int z, List<Offset> offsets) {
         for (var offset : offsets) {
             var column = sources.get(pack(x + offset.dx(), z + offset.dz()));
             if (column != null) return column;

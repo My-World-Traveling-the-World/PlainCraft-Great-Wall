@@ -13,6 +13,7 @@ import local.plaincraft.greatwall.generation.ChunkPlanCompiler;
 import local.plaincraft.greatwall.generation.CoveragePlanner;
 import local.plaincraft.greatwall.generation.SurfaceProbe;
 import local.plaincraft.greatwall.geometry.CanonicalCodec;
+import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.terrain.RealizationPlanner;
@@ -51,7 +52,8 @@ class PlanningChunkCompilerRealizationTest {
 
     @Test void independentOwnerWindowsPreserveTheRealSeamAndIsolateFailedOwners() {
         var plans = new PlanWindow(List.of(segment(0), segment(1)));
-        var heights = samples();
+        // 给沿线重复经过的列加入冲突样本；只从本窗所属段取样会漏掉前一截面的获胜值。
+        var heights = overlappingHeights();
         var healthy = compile(plans, heights, 64, 2);
         var seam = new ChunkKey(DIM, 0, 0);
         var work = PlanningOwnerIndex.prepare(plans, HASH, DIM, new CoveragePlanner());
@@ -85,13 +87,19 @@ class PlanningChunkCompilerRealizationTest {
     private static Map<ChunkKey, ChunkWritePlan> compilePartitions(List<PlanningOwnerIndex.OwnerWork> work,
             FineHeightIndex heights, boolean failLeft) {
         var split = new HashMap<ChunkKey, ChunkWritePlan>();
+        var context = new PlanningCompileContext(heights, List.of());
+        var columns = new PlanningColumnProvider(heights);
         int windowSize = 7;
         assertTrue(work.size() > windowSize * 2 && work.size() % windowSize != 0, "须跨窗且经过不满尾窗");
         for (int start = 0; start < work.size(); start += windowSize) {
             var window = work.subList(start, Math.min(start + windowSize, work.size()));
             var allowed = new HashSet<>(window.stream().map(PlanningOwnerIndex.OwnerWork::owner).toList());
-            // 每窗新建真实构件实现器，不能靠上一窗缓存命中凑出相同结果。
-            compiler(heights, failLeft).compileOwners(window, HASH, null, 3, 2, plan -> {
+            // 用单元完整取证区块裁切桶，每窗新建构件实现器，防止上一个分窗的缓存掩盖丢证据。
+            var captureOwners = window.stream().flatMap(owner -> owner.cells().stream())
+                    .flatMap(cell -> cell.captureOwners().stream()).distinct().toList();
+            var compiler = new PlanningChunkCompiler(resolver(failLeft), new ChunkPlanCompiler(),
+                    columns.restrict(captureOwners), context);
+            compiler.compileOwners(window, HASH, null, 3, 2, plan -> {
                 assertTrue(allowed.remove(plan.owner()), "只能交付当前窗的区块一次");
                 assertNull(split.put(plan.owner(), plan), "每个区块跨窗只能发布一次");
             });
@@ -110,15 +118,7 @@ class PlanningChunkCompilerRealizationTest {
 
     @Test void overlappingSamplesKeepDifferentRulesForEvidenceAndFoundation() {
         var work = new PlanWindow(List.of(segment(0), segment(1)));
-        var original = samples().orderedColumns();
-        var columns = new ArrayList<>(original);
-        // 后一截面折回同一 XZ；坐标择高保留 54，地基仍按后一个弧长采用 53。
-        var flat = original.getFirst().sample();
-        var low = new ColumnSample(53, OptionalInt.empty(), OptionalInt.empty(), "minecraft:plains", Quality.REFERENCE, false);
-        long arc = 192L * 256;
-        columns.add(new WallFinePlanner.FineColumn(SEAM, 0, 0, flat, arc, SEAM, 0));
-        columns.add(new WallFinePlanner.FineColumn(SEAM, 5, 5, low, arc, SEAM, 0));
-        var heights = FineHeightIndex.of(columns);
+        var heights = overlappingHeights();
         assertEquals(54, heights.at(SEAM, 5).groundTopY());
         var resolver = realization();
         int[] visited = {0};
@@ -138,12 +138,62 @@ class PlanningChunkCompilerRealizationTest {
         assertTrue(result.get(new ChunkKey(DIM, 0, 0)).voxels().stream().anyMatch(v -> v.part() == Part.FOUNDATION));
     }
 
+    @Test void scopedEvidenceKeepsGlobalCoverageBoundsAndProtectionIdentity() {
+        var samples = new ArrayList<>(overlappingHeights().orderedColumns());
+        // 远处样本不应被带入本窗列图，但它仍决定整窗覆盖的低、高边界。
+        samples.add(new WallFinePlanner.FineColumn(2048, 0, 0, new ColumnSample(-28,
+                OptionalInt.empty(), OptionalInt.empty(), "minecraft:plains", Quality.REFERENCE, false)));
+        samples.add(new WallFinePlanner.FineColumn(2049, 0, 0, new ColumnSample(140,
+                OptionalInt.empty(), OptionalInt.empty(), "minecraft:plains", Quality.REFERENCE, false)));
+        var index = FineHeightIndex.of(samples);
+        var distant = new Bounds(2048, 40, 0, 2052, 70, 4);
+        var nearby = new Bounds(SEAM, 60, 6, SEAM + 3, 90, 9);
+        var context = new PlanningCompileContext(index, List.of(distant, nearby));
+        var plans = new PlanWindow(List.of(segment(0), segment(1)));
+        var work = PlanningOwnerIndex.prepare(plans, HASH, DIM, new CoveragePlanner()).stream()
+                .filter(owner -> owner.owner().equals(new ChunkKey(DIM, 0, 0))).findFirst().orElseThrow()
+                .cells().stream().filter(cell -> cell.cell().arcCell() == 2).findFirst().orElseThrow();
+        var columns = new PlanningColumnProvider(index).restrict(work.captureOwners()).columnsFor(work.captureOwners());
+        var input = context.input(work, columns);
+        assertFalse(input.columns().containsKey(new Point3i(2048, 0, 0)));
+        assertEquals(54, input.columns().get(new Point3i(SEAM, 0, 5)).highestNonPlantFeet());
+        assertEquals(53, input.foundationFloor().get(((long) SEAM << 32) | 5));
+
+        // 覆盖缺少邻近站时走垂直包络兜底；直接验证其读范围及覆盖版本都用整窗口径。
+        var coverage = new CoveragePlanner();
+        var fallbackOwner = new ChunkKey(DIM, 64, 0);
+        var reference = coverage.forChunk(fallbackOwner, plans, new DimensionBounds(-92, 204, 29_999_000));
+        var actual = coverage.forChunk(fallbackOwner, plans, context.bounds());
+        assertEquals(List.of(-128, 0, 128), actual.tileBases());
+        assertEquals(reference, actual);
+        assertEquals(List.of(distant, nearby), input.protectedBounds());
+        var canonical = List.of(distant.toString(), nearby.toString()).stream().sorted().toList().toString();
+        assertEquals(DeterministicHash.sha256(canonical.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+                input.protectionHash());
+    }
+
+    private static FineHeightIndex overlappingHeights() {
+        var original = samples().orderedColumns();
+        var columns = new ArrayList<>(original);
+        // 后一截面折回同一 XZ；坐标择高保留 54，地基仍按后一个弧长采用 53。
+        var flat = original.getFirst().sample();
+        var low = new ColumnSample(53, OptionalInt.empty(), OptionalInt.empty(), "minecraft:plains", Quality.REFERENCE, false);
+        long arc = 192L * 256;
+        columns.add(new WallFinePlanner.FineColumn(SEAM, 0, 0, flat, arc, SEAM, 0));
+        columns.add(new WallFinePlanner.FineColumn(SEAM, 5, 5, low, arc, SEAM, 0));
+        return FineHeightIndex.of(columns);
+    }
+
     private static PlanningChunkCompiler compiler(FineHeightIndex heights, boolean failLeft) {
+        return new PlanningChunkCompiler(resolver(failLeft), new ChunkPlanCompiler(), heights, List.of());
+    }
+
+    private static PlanningChunkCompiler.CellResolver resolver(boolean failLeft) {
         var real = realization();
-        return new PlanningChunkCompiler(input -> {
+        return input -> {
             if (failLeft && input.key().arcCell() == 0) throw new WallFailure(FailureCode.T0_MISSING, "左端缺证据");
             return real.resolve(input);
-        }, new ChunkPlanCompiler(), heights, List.of());
+        };
     }
 
     private static Map<ChunkKey, ChunkWritePlan> compile(PlanWindow window, FineHeightIndex samples,

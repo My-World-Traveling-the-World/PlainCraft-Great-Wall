@@ -69,10 +69,16 @@ class PlanningColumnProviderTest {
         // 西窗边缘 -1 的最近实测列在东窗；裁掉东窗会改成远处的 61，接缝承重随之变化。
         var whole = provider.columnsFor(List.of(west, east));
         var westOnly = provider.columnsFor(List.of(west));
+        var scoped = provider.restrict(List.of(west));
+        var local = scoped.columnsFor(List.of(west));
         assertEquals(74, feet(whole, -1, 5));
         assertEquals(74, feet(westOnly, -1, 5));
+        assertEquals(74, feet(local, -1, 5), "局部证据须携带填洞所需的邻区块");
         assertEquals(whole.get(new Point3i(-1, 0, 5)).hash(), westOnly.get(new Point3i(-1, 0, 5)).hash());
         assertFalse(westOnly.containsKey(new Point3i(0, 0, 5)), "邻区块样本只供取证，不能算作本窗产物");
+        assertFalse(local.containsKey(new Point3i(0, 0, 5)));
+        assertThrows(IllegalArgumentException.class, () -> scoped.columnsFor(List.of(east)),
+                "未登记取证的区块不能以空样本冒充成功");
     }
 
     @Test void takesNearestOriginalSampleAndKeepsTheOldTieBreak() {

@@ -29,11 +29,8 @@ public final class PlanningChunkCompiler {
     private final CellResolver realization;
     private final ChunkPlanCompiler compiler;
     private final CoveragePlanner coverage = new CoveragePlanner();
-    private final FineHeightIndex index;
-    private final List<Bounds> structures;
-    /** Absolute ground floor per (x,z), produced by WallFoundationPlanner for this window. */
-    private final Map<Long, Integer> foundationFloor;
-    private final FoundationSectionIndex foundationSections;
+    private final PlanningColumnProvider.ColumnSource columns;
+    private final PlanningCompileContext context;
 
     public PlanningChunkCompiler(RealizationPlanner realization, ChunkPlanCompiler compiler,
             FineHeightIndex index, List<Bounds> structures) {
@@ -47,24 +44,17 @@ public final class PlanningChunkCompiler {
 
     PlanningChunkCompiler(CellResolver realization, ChunkPlanCompiler compiler,
             FineHeightIndex index, List<Bounds> structures) {
+        this(realization, compiler, new PlanningColumnProvider(index)::columnsFor,
+                new PlanningCompileContext(index, structures));
+    }
+
+    // 局部编译只接收所需采样桶；覆盖、保护和地基裁决仍共享同一份整窗上下文。
+    PlanningChunkCompiler(CellResolver realization, ChunkPlanCompiler compiler,
+            PlanningColumnProvider.ColumnSource columns, PlanningCompileContext context) {
         this.realization = Objects.requireNonNull(realization, "realization");
         this.compiler = Objects.requireNonNull(compiler, "compiler");
-        this.index = Objects.requireNonNull(index, "index");
-        this.structures = List.copyOf(Objects.requireNonNull(structures, "structures"));
-        // 弧长索引只影响单元的地基查询；世界坐标撞列仍按原截面顺序取最后一个值。
-        var foundations = WallFoundationPlanner.plan(index.orderedColumns());
-        this.foundationSections = new FoundationSectionIndex(foundations);
-        var floor = new HashMap<Long, Integer>();
-        for (var core : foundations) {
-            for (var fill : core.fills()) {
-                floor.put(columnKey(fill.x(), fill.z()), fill.surfaceY());
-            }
-        }
-        // packed-XZ键易形成相同哈希，统一快照避免开放寻址建表及各cell重复复制。
-        this.foundationFloor = local.plaincraft.greatwall.terrain.FoundationFloorSnapshot.copyOf(floor);
-        long fillColumns = foundations.stream().mapToLong(f -> f.fills().size()).sum();
-        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                "[GreatWall:S1C] WALL_FOUNDATION_PLAN cores={} fillColumns={}", foundations.size(), fillColumns);
+        this.columns = Objects.requireNonNull(columns, "columns");
+        this.context = Objects.requireNonNull(context, "context");
     }
 
     private static CellResolver withWindowMemos(RealizationPlanner realization) {
@@ -130,17 +120,9 @@ public final class PlanningChunkCompiler {
         Objects.requireNonNull(output, "output");
         // 工作线程只写当前批；调用线程同步交付后清表，计划不会留在整窗编译器里。
         var batchPlans = new java.util.concurrent.ConcurrentHashMap<ChunkKey, ChunkWritePlan>();
-        var provider = new PlanningColumnProvider(index);
         int ownerCount = owners.size();
         publishProgress(progress, 0, ownerCount);
-        // Two per-window values the per-owner path used to recompute: the sampled vertical extent (one
-        // pass over every indexed column, so a hundred-owner cell paid it a hundred times) and the
-        // protection hash (a sort plus a SHA-256 over every structure box, once per owner). Both are
-        // functions of this compiler's own fields, not of the owner.
-        var windowBounds = recipeBounds();
-        String protectionHash = local.plaincraft.greatwall.geometry.DeterministicHash.sha256(
-                structures.stream().map(Bounds::toString).sorted().toList().toString()
-                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        var windowBounds = context.bounds();
         // 同一弧长单元能被相邻段分别收录。按枚举时共享的工作项复用，区分两份段窗口和取证范围。
         record CellWork(Map<Point3i, SurfaceProbe.ColumnView> columns, RealizationCell cell, CellVoxelOwners voxels) { }
         var cellWork = new java.util.IdentityHashMap<PlanningOwnerIndex.CellWork, CellWork>();
@@ -190,9 +172,9 @@ public final class PlanningChunkCompiler {
                     if (work == null) {
                         try {
                             // 单元只读取枚举它的段的列，不能拿整窗路线去这一小片证据中找出口。
-                            var columns = provider.columnsFor(item.captureOwners());
-                            var cell = resolveCell(item.cell(), columns, item.segmentWindow(), protectionHash);
-                            work = new CellWork(columns, cell, new CellVoxelOwners(cell));
+                            var evidence = columns.columnsFor(item.captureOwners());
+                            var cell = realization.resolve(context.input(item, evidence));
+                            work = new CellWork(evidence, cell, new CellVoxelOwners(cell));
                             cellWork.put(item, work);
                             indexedCells++;
                             peakCells = Math.max(peakCells, cellWork.size());
@@ -337,18 +319,6 @@ public final class PlanningChunkCompiler {
 
     /** {@return the realization of one cell, as the compile input describes it} */
 
-    private RealizationCell resolveCell(CellKey cell,
-            Map<Point3i, SurfaceProbe.ColumnView> columns, PlanWindow plans, String protectionHash) {
-        // 模板只读取本弧长单元的显式填方；保留整窗坐标表供折返处的承重查询。
-        return realization.resolve(new RealizationPlanner.Input(cell, plans, Map.of(), columns,
-                structures, Map.of(), 0, protectionHash, foundationFloor, foundationSections.forCell(cell.arcCell())));
-    }
-
-
-    private static long columnKey(int x, int z) {
-        return ((long) x << 32) ^ (z & 0xffffffffL);
-    }
-
     /** How many owner failures of one cause keep their stack trace; the rest are only counted. */
     static final int FAILURE_DETAIL_LIMIT = 5;
     /** How many distinct causes the end-of-window summary names. */
@@ -435,15 +405,4 @@ public final class PlanningChunkCompiler {
         return line.length() <= 240 ? line : line.substring(0, 240) + "...";
     }
 
-    private DimensionBounds recipeBounds() {
-        // The planning compiler does not hold a WorldRecipe; derive a conservative bound from the
-        // sampled columns' vertical extent (the wall only writes where it sampled).
-        int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
-        for (var column : index.columns()) {
-            minY = Math.min(minY, column.sample().groundTopY() - 64);
-            maxY = Math.max(maxY, column.sample().groundTopY() + 64);
-        }
-        if (minY == Integer.MAX_VALUE) { minY = -64; maxY = 320; }
-        return new DimensionBounds(minY, maxY, 29_999_000);
-    }
 }
