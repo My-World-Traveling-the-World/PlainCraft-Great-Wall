@@ -23,7 +23,7 @@ import local.plaincraft.greatwall.terrain.RealizationPlanner;
  * needed: the decision-free {@code RealizationPlanner.resolve(input)} path computes its own end caps.
  */
 public final class PlanningChunkCompiler {
-    private final RealizationPlanner realization;
+    private final CellResolver realization;
     private final ChunkPlanCompiler compiler;
     private final CoveragePlanner coverage = new CoveragePlanner();
     private final FineHeightIndex index;
@@ -33,6 +33,16 @@ public final class PlanningChunkCompiler {
     private final List<WallFoundationPlanner.ColumnFoundation> foundations;
 
     public PlanningChunkCompiler(RealizationPlanner realization, ChunkPlanCompiler compiler,
+            FineHeightIndex index, List<Bounds> structures) {
+        this(withWindowMemos(realization), compiler, index, structures);
+    }
+
+    @FunctionalInterface
+    interface CellResolver {
+        RealizationCell resolve(RealizationPlanner.Input input);
+    }
+
+    PlanningChunkCompiler(CellResolver realization, ChunkPlanCompiler compiler,
             FineHeightIndex index, List<Bounds> structures) {
         this.realization = Objects.requireNonNull(realization, "realization");
         this.compiler = Objects.requireNonNull(compiler, "compiler");
@@ -53,11 +63,12 @@ public final class PlanningChunkCompiler {
         long fillColumns = foundations.stream().mapToLong(f -> f.fills().size()).sum();
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:S1C] WALL_FOUNDATION_PLAN cores={} fillColumns={}", foundations.size(), fillColumns);
-        // The realization planner recomputes the window's stations, sites and waters for every owner it
-        // compiles - about five merges of the whole window each time, for values that cannot change while
-        // the window is frozen. The memo is keyed by plan instance, so it can live for the compiler's
-        // whole life without ever answering for a re-planned segment.
-        this.realization.useWindowMemos(new RealizationPlanner.WindowMemos());
+    }
+
+    private static CellResolver withWindowMemos(RealizationPlanner realization) {
+        // 生产实现仍复用同一段计划的只读派生数据；离线可注入实现器检验完整编译入口。
+        realization.useWindowMemos(new RealizationPlanner.WindowMemos());
+        return realization::resolve;
     }
 
     /**
@@ -144,18 +155,13 @@ public final class PlanningChunkCompiler {
         // protection hash (a sort plus a SHA-256 over every structure box, once per owner). Both are
         // functions of this compiler's own fields, not of the owner.
         var windowBounds = recipeBounds();
-        var protection = List.copyOf(structures);
         String protectionHash = local.plaincraft.greatwall.geometry.DeterministicHash.sha256(
                 structures.stream().map(Bounds::toString).sorted().toList().toString()
                         .getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        // Per-cell memo shared across owners: a cell's column map and its realization depend on the cell
-        // and the plan window it was resolved with, never on which owner is asking. One resolution per
-        // cell instead of one per (cell, owner) removes about ninety identical realizations per cell -
-        // the wall component alone is ~400 ms of work.
-        var cellColumns = new HashMap<CellKey, Map<Point3i, SurfaceProbe.ColumnView>>();
-        var cellRealizations = new HashMap<CellKey, Object>();
-        // 只按 owner 分配取证位置；编译仍接收整个单元，以保留跨区块台阶与围栏连接。
-        var cellVoxelOwners = new HashMap<CellKey, CellVoxelOwners>();
+        // 同一弧长单元能被相邻段分别收录。按枚举时共享的工作项复用，区分两份段窗口和取证范围。
+        record CellWork(Map<Point3i, SurfaceProbe.ColumnView> columns, RealizationCell cell, CellVoxelOwners voxels) { }
+        var cellWork = new java.util.IdentityHashMap<Owned, CellWork>();
+        var cellFailures = new java.util.IdentityHashMap<Owned, Throwable>();
         long indexedVoxels = 0;
         long previousVoxelChecks = 0;
         int done = 0;
@@ -183,50 +189,33 @@ public final class PlanningChunkCompiler {
             var before = new HashMap<Point3i, String>();
             Throwable cellFailure = null;
             for (var item : items) {
+                // 同一区块仍按原顺序为每个弧长单元选一个来源，否则会提交两个同名墙体构件。
                 if (!seen.add(item.cell())) continue;
                 ownerPlans.add(item.plan());
-                Map<Point3i, SurfaceProbe.ColumnView> columns;
-                try {
-                    columns = cellColumns.computeIfAbsent(
-                            item.cell(), ignored -> provider.columnsFor(item.owners()));
-                } catch (Throwable failure) {
-                    // Gathering a cell's columns is not "one owner's failure" but it is still a cell's
-                    // failure: without this the exception escaped the whole window and took all 2131
-                    // owners with it. Skipping this owner is the same contract as the compile below.
+                var failure = cellFailures.get(item);
+                if (failure != null) {
                     cellFailure = failure;
                     break;
                 }
-                Object realization = cellRealizations.get(item.cell());
-                if (realization == null) {
+                var work = cellWork.get(item);
+                if (work == null) {
                     try {
-                        // Resolved against the plan that enumerates this cell, NOT the whole launch
-                        // window: the realization walks the columns of the cell, and those columns cover
-                        // only the owners of that cell. Resolving against all four segments makes the walk
-                        // look for ground exits far outside the cell and fail - a measured run threw
-                        // "no proven ground exit for break" for 1532 of 2131 owners that way.
-                        realization = resolveCell(item.cell(), columns,
-                                item.segmentWindow(), protectionHash);
-                    } catch (Throwable failure) {
-                        // Memoised so every owner of this cell fails the same way, instead of each paying
-                        // the realization again to hit the same failure.
-                        realization = failure;
+                        // 单元只读取枚举它的段的列，不能拿整窗路线去这一小片证据中找出口。
+                        var columns = provider.columnsFor(item.owners());
+                        var cell = resolveCell(item.cell(), columns, item.segmentWindow(), protectionHash);
+                        work = new CellWork(columns, cell, new CellVoxelOwners(cell));
+                        cellWork.put(item, work);
+                        indexedVoxels += work.voxels().indexedVoxels();
+                    } catch (Throwable unavailable) {
+                        // 同一工作项共享失败，另一段即使同弧长也可以独立编译。
+                        cellFailures.put(item, unavailable);
+                        cellFailure = unavailable;
+                        break;
                     }
-                    cellRealizations.put(item.cell(), realization);
                 }
-                if (realization instanceof Throwable failure) {
-                    cellFailure = failure;
-                    break;
-                }
-                var cellResult = (RealizationCell) realization;
-                cells.add(cellResult);
-                var ownerIndex = cellVoxelOwners.get(item.cell());
-                if (ownerIndex == null) {
-                    ownerIndex = new CellVoxelOwners(cellResult);
-                    cellVoxelOwners.put(item.cell(), ownerIndex);
-                    indexedVoxels += ownerIndex.indexedVoxels();
-                }
-                previousVoxelChecks += ownerIndex.indexedVoxels();
-                ownerIndex.collectBefore(owner, columns, before);
+                cells.add(work.cell());
+                previousVoxelChecks += work.voxels().indexedVoxels();
+                work.voxels().collectBefore(owner, work.columns(), before);
             }
             // One owner's failure must not cost the rest of the window its wall: that owner is skipped,
             // named in the log, and the remaining owners still publish.
@@ -258,7 +247,7 @@ public final class PlanningChunkCompiler {
         }
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:编译] 施工前状态体素分桶 cells={} indexedVoxels={} previousVoxelChecks={}",
-                cellVoxelOwners.size(), indexedVoxels, previousVoxelChecks);
+                cellWork.size(), indexedVoxels, previousVoxelChecks);
         failed = failedCounter.get();
         int ownerCountDone = pending.size();
         // Progress for the compile stage, which used to report only once - at the end - so the bar jumped
