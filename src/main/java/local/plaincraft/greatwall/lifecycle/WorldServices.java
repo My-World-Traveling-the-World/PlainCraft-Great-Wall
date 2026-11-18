@@ -217,7 +217,6 @@ public final class WorldServices {
             var overworld = server.overworld();
             maybeStartFlatShowcase(overworld);
             local.plaincraft.greatwall.generation.WallBodyBackfill.drain(overworld);
-            local.plaincraft.greatwall.generation.WonderWall.tick(overworld);
             local.plaincraft.greatwall.generation.GateStamp.tick(overworld);
             local.plaincraft.greatwall.generation.WallStamp.tick(overworld);
             local.plaincraft.greatwall.generation.StairStamp.tick(overworld);
@@ -263,7 +262,6 @@ public final class WorldServices {
             local.plaincraft.greatwall.generation.StairStamp.reset(overworld);
             local.plaincraft.greatwall.generation.DiagonalWallShowcase.reset(overworld);
             local.plaincraft.greatwall.generation.TerrainShowcase.reset(overworld);
-            local.plaincraft.greatwall.generation.WonderWall.stop();
             local.plaincraft.greatwall.generation.ChunkHold.releaseAll(overworld);
             local.plaincraft.greatwall.generation.WallBodyBackfill.clearAll();
             local.plaincraft.greatwall.compat.road.WallRoadGuard.clear();
@@ -397,8 +395,6 @@ public final class WorldServices {
         local.plaincraft.greatwall.generation.ShowcaseStamp.start("watergate.csv", 46, 27, 13, 23, 6, spawn.getX() - 64, spawn.getZ() + 704);
         // 长城套件：36 件体素化后按行列摆开的选型台
         local.plaincraft.greatwall.generation.ShowcaseStamp.start("kitset.csv", 784, 34, 421, 392, 210, spawn.getX() + 900, spawn.getZ() + 400);
-        // 暂不生成路线墙：只出模板展台，玩家在超平坦里逐个精修。
-        // local.plaincraft.greatwall.generation.WonderWall.startSample(level, spawn.getX() + 64, spawn.getZ(), 320);
     }
 
     /**

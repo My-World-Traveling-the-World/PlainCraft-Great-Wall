@@ -100,8 +100,11 @@ public final class CanonicalCodec {
         return decode(payload, 4096, CanonicalCodec::prefixBody);
     }
 
+    // 这是切区块前的内存构件；澄海楼单件已有 117425 个方块。区块计划的 8 MiB 落盘预算仍独立。
+    private static final int COMPONENT_BYTES = 64 * MIB;
+
     public static byte[] component(ComponentVoxels value) {
-        return encode(8 * MIB, out -> componentBody(out, value));
+        return encode(COMPONENT_BYTES, out -> componentBody(out, value));
     }
 
     private static void componentBody(DataOutputStream out, ComponentVoxels value) throws IOException {
@@ -115,7 +118,7 @@ public final class CanonicalCodec {
     }
 
     public static String hashComponent(ComponentVoxels value) {
-        return CodecIO.hash(8 * MIB, out -> { out.writeInt(1); componentBody(out, value); });
+        return CodecIO.hash(COMPONENT_BYTES, out -> { out.writeInt(1); componentBody(out, value); });
     }
     public static String componentHash(ComponentVoxels value) { return hashComponent(value); }
 
