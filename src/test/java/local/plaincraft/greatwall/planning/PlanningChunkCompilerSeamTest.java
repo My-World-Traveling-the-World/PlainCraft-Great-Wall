@@ -2,6 +2,7 @@ package local.plaincraft.greatwall.planning;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,6 +71,60 @@ class PlanningChunkCompilerSeamTest {
         var east = compiled.get(owner(EAST));
         assertNotNull(east);
         assertEquals(List.of(EAST), east.voxels().stream().map(VoxelIntent::pos).toList());
+    }
+
+    @Test void batchesPreservePlanBytesCoverageAndRejectedOwnersWithoutRepeatingCellWork() {
+        var fixture = new Fixture();
+        var healthy = compileByBatch(fixture, Integer.MAX_VALUE, 1, false);
+        var baseline = compileByBatch(fixture, Integer.MAX_VALUE, 1, true);
+        var rejected = new HashSet<>(healthy.plans().keySet());
+        rejected.removeAll(baseline.plans().keySet());
+        // 先验证故障确实删掉计划、右侧仍有实体落块，避免对拍空表。
+        assertTrue(healthy.plans().size() > 3);
+        assertTrue(rejected.contains(owner(WEST)));
+        assertFalse(rejected.contains(owner(EAST)));
+        assertEquals(List.of(EAST), baseline.plans().get(owner(EAST)).voxels().stream().map(VoxelIntent::pos).toList());
+        assertEquals(1, baseline.visits().get(new Visit(0, SEAM)));
+        assertEquals(1, baseline.visits().get(new Visit(1, SEAM)));
+        assertTrue(baseline.visits().values().stream().allMatch(count -> count == 1));
+        for (int batchSize : List.of(1, 3)) {
+            var batched = compileByBatch(fixture, batchSize, 2, true);
+            var batchedRejected = new HashSet<>(healthy.plans().keySet());
+            batchedRejected.removeAll(batched.plans().keySet());
+            assertEquals(rejected, batchedRejected, "分批后失败区块必须一致");
+            assertEquals(baseline.plans().keySet(), batched.plans().keySet());
+            assertEquals(baseline.visits(), batched.visits(), "跨批的取证和失败仍须复用");
+            baseline.plans().forEach((key, expected) -> {
+                var actual = batched.plans().get(key);
+                assertEquals(expected.metadata().coverageHash(), actual.metadata().coverageHash(), key.toString());
+                assertArrayEquals(CanonicalCodec.writePlan(expected), CanonicalCodec.writePlan(actual), key.toString());
+            });
+            assertEquals(baseline.progress().getFirst(), batched.progress().getFirst());
+            assertEquals(baseline.progress().getLast(), batched.progress().getLast());
+        }
+        assertEquals(new Progress(0, healthy.plans().size()), baseline.progress().getFirst());
+        assertEquals(new Progress(healthy.plans().size(), healthy.plans().size()), baseline.progress().getLast());
+    }
+
+    private record Visit(long segment, CellKey cell) { }
+    private record Progress(int done, int total) { }
+    private record BatchResult(Map<ChunkKey, ChunkWritePlan> plans, Map<Visit, Integer> visits, List<Progress> progress) { }
+
+    private static BatchResult compileByBatch(Fixture fixture, int batchSize, int workers, boolean failLeft) {
+        var visits = new HashMap<Visit, Integer>();
+        var progress = new ArrayList<Progress>();
+        var compiler = fixture.compiler(input -> {
+            long segment = input.plans().plans().getFirst().geometry().key().index();
+            visits.merge(new Visit(segment, input.key()), 1, Integer::sum);
+            if (!input.key().equals(SEAM)) return result(input, List.of());
+            if (failLeft && segment == 0) {
+                throw new local.plaincraft.greatwall.model.WallFailure(FailureCode.T0_MISSING, "跨批左段故障");
+            }
+            return result(input, segment == 0 ? List.of(component(WEST, 1), component(CENTER, 2))
+                    : List.of(component(EAST, 1)));
+        });
+        return new BatchResult(compiler.compileWindow(fixture.both(), HASH, DIM,
+                (done, total) -> progress.add(new Progress(done, total)), batchSize, workers), visits, progress);
     }
 
     private static final class Fixture {

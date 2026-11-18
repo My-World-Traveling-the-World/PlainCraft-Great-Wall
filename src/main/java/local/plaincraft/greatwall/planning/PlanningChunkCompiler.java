@@ -23,6 +23,8 @@ import local.plaincraft.greatwall.terrain.RealizationPlanner;
  * needed: the decision-free {@code RealizationPlanner.resolve(input)} path computes its own end caps.
  */
 public final class PlanningChunkCompiler {
+    // 限制同时保留的区块取证快照；区块的完整输入仍从整个窗口确定。
+    private static final int OWNER_BATCH_SIZE = 64;
     private final CellResolver realization;
     private final ChunkPlanCompiler compiler;
     private final CoveragePlanner coverage = new CoveragePlanner();
@@ -99,6 +101,11 @@ public final class PlanningChunkCompiler {
      */
     public Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash,
                                                        String dimension, OwnerProgress progress) {
+        return compileWindow(plans, recipeHash, dimension, progress, OWNER_BATCH_SIZE, compileWorkers());
+    }
+
+    Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash,
+            String dimension, OwnerProgress progress, int batchSize, int workers) {
         record Owned(CellKey cell, List<ChunkKey> owners, SegmentPlan plan, PlanWindow segmentWindow) { }
         // Group by owner, so a chunk that several cells admit is compiled ONCE with all of them.
         //
@@ -149,7 +156,7 @@ public final class PlanningChunkCompiler {
         var result = new java.util.concurrent.ConcurrentHashMap<ChunkKey, ChunkWritePlan>();
         var provider = new PlanningColumnProvider(index);
         int ownerCount = byOwner.size();
-        if (progress != null) progress.accept(0, ownerCount);
+        publishProgress(progress, 0, ownerCount);
         // Two per-window values the per-owner path used to recompute: the sampled vertical extent (one
         // pass over every indexed column, so a hundred-owner cell paid it a hundred times) and the
         // protection hash (a sort plus a SHA-256 over every structure box, once per owner). Both are
@@ -162,151 +169,128 @@ public final class PlanningChunkCompiler {
         record CellWork(Map<Point3i, SurfaceProbe.ColumnView> columns, RealizationCell cell, CellVoxelOwners voxels) { }
         var cellWork = new java.util.IdentityHashMap<Owned, CellWork>();
         var cellFailures = new java.util.IdentityHashMap<Owned, Throwable>();
+        // 按完整归属表标记最后一次使用，批次边界和区块失败都不决定共享证据的寿命。
+        var lastOwner = new java.util.IdentityHashMap<Owned, Integer>();
+        int ordinal = 0;
+        for (var items : byOwner.values()) {
+            for (var item : items) lastOwner.put(item, ordinal);
+            ordinal++;
+        }
         long indexedVoxels = 0;
         long previousVoxelChecks = 0;
-        int done = 0;
-        int failed = 0;
+        int indexedCells = 0;
+        int peakCells = 0;
         var tally = new FailureTally(FAILURE_DETAIL_LIMIT);
-        var pending = new java.util.ArrayList<Runnable>();
         var failedCounter = new java.util.concurrent.atomic.AtomicInteger();
+        var doneCounter = new java.util.concurrent.atomic.AtomicInteger();
+        int ownerJobs = 0;
+        int peakQueued;
         // 一个窗口共享完整构件的冲突解析，取证和覆盖哈希仍按区块独立计算。
         var windowCompiler = compiler.window();
-        // The per-owner compile is the only expensive part of this stage and every owner is
-        // independent: its inputs are read-only (cells, before-states, coverage) and its output is
-        // one entry of the result map. A measured window of 2188 owners took 57 s on one thread; the
-        // same work on the machine's cores is a few seconds. The collection phase below stays
-        // serial because it fills the shared cell caches.
-        int workers = compileWorkers();
+        // 采集串行维护共享取证缓存；编译只读各自的输入，每批可并行裁切到对应区块。
+        // 进度由采集线程在批次结案后发布，避免多个工作线程把较旧的计数覆盖在较新的计数上。
+        int reported = 0;
         long started = System.nanoTime();
-        for (var entry : byOwner.entrySet()) {
-            var owner = entry.getKey();
-            var items = entry.getValue();
-            var cells = new java.util.ArrayList<RealizationCell>();
-            // The plans that enumerate the cells of this owner, for the coverage lookup below: coverage
-            // is asked per owner, not per cell.
-            var ownerPlans = new java.util.ArrayList<SegmentPlan>();
-            var seen = new java.util.LinkedHashSet<CellKey>();
-            var before = new HashMap<Point3i, String>();
-            Throwable cellFailure = null;
-            for (var item : items) {
-                // 同一区块仍按原顺序为每个弧长单元选一个来源，否则会提交两个同名墙体构件。
-                if (!seen.add(item.cell())) continue;
-                ownerPlans.add(item.plan());
-                var failure = cellFailures.get(item);
-                if (failure != null) {
-                    cellFailure = failure;
-                    break;
-                }
-                var work = cellWork.get(item);
-                if (work == null) {
-                    try {
-                        // 单元只读取枚举它的段的列，不能拿整窗路线去这一小片证据中找出口。
-                        var columns = provider.columnsFor(item.owners());
-                        var cell = resolveCell(item.cell(), columns, item.segmentWindow(), protectionHash);
-                        work = new CellWork(columns, cell, new CellVoxelOwners(cell));
-                        cellWork.put(item, work);
-                        indexedVoxels += work.voxels().indexedVoxels();
-                    } catch (Throwable unavailable) {
-                        // 同一工作项共享失败，另一段即使同弧长也可以独立编译。
-                        cellFailures.put(item, unavailable);
-                        cellFailure = unavailable;
+        ordinal = 0;
+        try (var pending = new OwnerCompileBatch(batchSize, workers)) {
+            for (var entry : byOwner.entrySet()) {
+                var owner = entry.getKey();
+                var items = entry.getValue();
+                var cells = new java.util.ArrayList<RealizationCell>();
+                // 覆盖哈希按区块计算，只传入实际参与这个区块编译的段。
+                var ownerPlans = new java.util.ArrayList<SegmentPlan>();
+                var seen = new java.util.LinkedHashSet<CellKey>();
+                var before = new HashMap<Point3i, String>();
+                Throwable cellFailure = null;
+                for (var item : items) {
+                    // 同一区块仍按原顺序为每个弧长单元选一个来源，否则会提交两个同名墙体构件。
+                    if (!seen.add(item.cell())) continue;
+                    ownerPlans.add(item.plan());
+                    var failure = cellFailures.get(item);
+                    if (failure != null) {
+                        cellFailure = failure;
                         break;
                     }
-                }
-                cells.add(work.cell());
-                previousVoxelChecks += work.voxels().indexedVoxels();
-                work.voxels().collectBefore(owner, work.columns(), before);
-            }
-            // One owner's failure must not cost the rest of the window its wall: that owner is skipped,
-            // named in the log, and the remaining owners still publish.
-            if (cellFailure != null) {
-                recordFailure(owner, cellFailure, tally, failedCounter);
-            } else {
-                var compiledCells = List.copyOf(cells);
-                var compiledBefore = java.util.Collections.unmodifiableMap(new HashMap<>(before));
-                var compiledPlans = List.copyOf(ownerPlans);
-                pending.add(() -> {
-                    try {
-                        var plan = compiler.bindCoverage(
-                                windowCompiler.compile(owner, recipeHash, compiledCells, compiledBefore),
-                                coverage.forChunk(owner, new PlanWindow(compiledPlans), windowBounds).hash());
-                        // A null plan is a legitimate "this owner produces nothing"; the map is a
-                        // ConcurrentHashMap now, which rejects null values outright - that threw the
-                        // NullPointerException that killed a whole window in PLANNING_COMPILE_FAILED.
-                        if (plan == null) return;
-                        if (result.putIfAbsent(owner, plan) != null) {
-                            local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
-                                    "[GreatWall:S1C] PLANNING_COMPILE_DUPLICATE_OWNER owner=[{},{}]",
-                                    owner.x(), owner.z());
+                    var work = cellWork.get(item);
+                    if (work == null) {
+                        try {
+                            // 单元只读取枚举它的段的列，不能拿整窗路线去这一小片证据中找出口。
+                            var columns = provider.columnsFor(item.owners());
+                            var cell = resolveCell(item.cell(), columns, item.segmentWindow(), protectionHash);
+                            work = new CellWork(columns, cell, new CellVoxelOwners(cell));
+                            cellWork.put(item, work);
+                            indexedCells++;
+                            peakCells = Math.max(peakCells, cellWork.size());
+                            indexedVoxels += work.voxels().indexedVoxels();
+                        } catch (Throwable unavailable) {
+                            // 同一工作项共享失败，另一段即使同弧长也可以独立编译。
+                            cellFailures.put(item, unavailable);
+                            cellFailure = unavailable;
+                            break;
                         }
-                    } catch (Throwable failure) {
-                        recordFailure(owner, failure, tally, failedCounter);
                     }
-                });
-            }
-        }
-        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                "[GreatWall:编译] 施工前状态体素分桶 cells={} indexedVoxels={} previousVoxelChecks={}",
-                cellWork.size(), indexedVoxels, previousVoxelChecks);
-        failed = failedCounter.get();
-        int ownerCountDone = pending.size();
-        // Progress for the compile stage, which used to report only once - at the end - so the bar jumped
-        // from nothing to full and looked like it never ran.
-        final int total = pending.size();
-        var doneCounter = new java.util.concurrent.atomic.AtomicInteger();
-        // Run the collected compiles. One worker runs them inline: the pool buys nothing on a
-        // single-core machine and the ordering of the progress log stays unchanged.
-        if (pending.size() > 1 && workers > 1) {
-            var pool = java.util.concurrent.Executors.newFixedThreadPool(workers, task -> {
-                Thread thread = new Thread(task, "pgw-compile");
-                thread.setDaemon(true);
-                return thread;
-            });
-            try {
-                var jobs = pending.toArray(new Runnable[0]);
-                // One future per crew, not one per job. The array used to be sized jobs.length while
-                // only the first crew count entries were filled, and allOf walks every element: the
-                // trailing nulls made it throw NullPointerException out of andTree, which surfaced as
-                // PLANNING_COMPILE_FAILED phase=publish on every session that compiled more owners
-                // than it had workers. That is the failure that kept the wall from painting.
-                int crews = Math.min(workers, jobs.length);
-                var futures = new java.util.concurrent.CompletableFuture[crews];
-                var cursor = new java.util.concurrent.atomic.AtomicInteger();
-                for (int p = 0; p < crews; p++) {
-                    futures[p] = java.util.concurrent.CompletableFuture.runAsync(() -> {
-                        int i;
-                        while ((i = cursor.getAndIncrement()) < jobs.length) {
-                            jobs[i].run();
-                            reportCompileProgress(doneCounter.incrementAndGet(), total, null);
-                        }
-                    }, pool);
+                    cells.add(work.cell());
+                    previousVoxelChecks += work.voxels().indexedVoxels();
+                    work.voxels().collectBefore(owner, work.columns(), before);
                 }
-                java.util.concurrent.CompletableFuture.allOf(futures).join();
-            } finally {
-                pool.shutdownNow();
+                // 单区块取证失败要计入进度和诊断，但不能让其他区块丢失计划。
+                if (cellFailure != null) {
+                    recordFailure(owner, cellFailure, tally, failedCounter);
+                    doneCounter.incrementAndGet();
+                } else {
+                    // 快照只交给本区块任务，采集端不再改写，避免再复制一份证据表。
+                    ownerJobs++;
+                    pending.add(() -> {
+                        try {
+                            var plan = compiler.bindCoverage(
+                                    windowCompiler.compile(owner, recipeHash, cells, before),
+                                    coverage.forChunk(owner, new PlanWindow(ownerPlans), windowBounds).hash());
+                            if (result.putIfAbsent(owner, plan) != null) {
+                                local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
+                                        "[GreatWall:S1C] PLANNING_COMPILE_DUPLICATE_OWNER owner=[{},{}]",
+                                        owner.x(), owner.z());
+                            }
+                        } catch (Throwable failure) {
+                            recordFailure(owner, failure, tally, failedCounter);
+                        } finally {
+                            doneCounter.incrementAndGet();
+                        }
+                    });
+                }
+                for (var item : items) {
+                    // 最后一次可能使用后即可归还取证列；已入队区块只持构件和自身的施工前状态。
+                    // 即使本区块在前一个单元失败，后续单元也要按最后使用次序归还。
+                    if (lastOwner.getOrDefault(item, -1) == ordinal) {
+                        cellWork.remove(item);
+                        cellFailures.remove(item);
+                        lastOwner.remove(item);
+                    }
+                }
+                ordinal++;
+                int complete = doneCounter.get();
+                if (complete < ownerCount && complete - reported >= 32) {
+                    publishProgress(progress, complete, ownerCount);
+                    reported = complete;
+                }
             }
-        } else {
-            for (var job : pending) { job.run(); reportCompileProgress(doneCounter.incrementAndGet(), total, null); }
+            // 尾批可能没凑满，必须显式结案后才能返回完整结果。
+            pending.drain();
+            peakQueued = pending.peak();
         }
-        done = ownerCountDone;
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                "[GreatWall:编译] 构件解析次数 resolutions={} ownerJobs={}", windowCompiler.resolutions(), ownerCountDone);
-        // Most failures are recorded inside the pool, which drains above this line: re-read the counter
-        // or the summary reports the collection phase alone (measured 0.7.101 run: DONE said failed=181
-        // while the tally already held 182, and the second cause never reached the summary's ledger).
-        failed = failedCounter.get();
-        if (progress != null) {
-            try { progress.accept(done, ownerCount); } catch (Throwable ignored) { }
-        }
+                "[GreatWall:编译] 施工前状态体素分桶 cells={} indexedVoxels={} previousVoxelChecks={} peakCells={} peakQueued={}",
+                indexedCells, indexedVoxels, previousVoxelChecks, peakCells, peakQueued);
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:编译] 构件解析次数 resolutions={} ownerJobs={}", windowCompiler.resolutions(), ownerJobs);
+        int done = doneCounter.get();
+        int failed = failedCounter.get();
+        publishProgress(progress, done, ownerCount);
         long now = System.nanoTime();
         double seconds = Math.max(0.001, (now - started) / 1_000_000_000.0);
-        // owners= is how many owners the collection phase admitted, completed= is how many the pool actually
-        // drained. Those are the same number by the time this line runs, but reading owners= alone made an
-        // earlier audit treat a mid-run progress report as "280 owners are done" when it meant "280 were
-        // queued"; both are printed so the distinction cannot be lost again.
+        // 完成数包含失败，计划数单列；避免把所有区块已处理误读为全部成功。
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:S1C] PLANNING_COMPILE_PROGRESS owners={}/{} completed={} failed={} elapsedMs={} msPerOwner={}",
-                done, ownerCount, doneCounter.get(), failed, Math.round(seconds * 1000.0),
+                done, ownerCount, done, failed, Math.round(seconds * 1000.0),
                 String.format(java.util.Locale.ROOT, "%.1f", 1000.0 * seconds / Math.max(1, done)));
         if (failed > 0) {
             local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
@@ -318,10 +302,7 @@ public final class PlanningChunkCompiler {
                     "[GreatWall:S1C] COMPILE_FAILURES failed={} distinct={} {}", failed, tally.distinct(),
                     tally.summary(FAILURE_SUMMARY_LIMIT));
         }
-        // Map.copyOf rejects nulls outright, and a null here would take the whole window down with it,
-        // so drop any owner the compiler refused to produce a plan for. A read-only view rather than a
-        // second full table build: this map holds one plan per owner of the whole window.
-        result.values().removeIf(java.util.Objects::isNull);
+        // 使用只读视图，避免对窗口内的施工计划再复制一份整表。
         // The end of the compile used to be "the progress lines stopped". One line with the three numbers
         // that separate "published" from "published nothing".
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
@@ -331,12 +312,11 @@ public final class PlanningChunkCompiler {
         return java.util.Collections.unmodifiableMap(result);
     }
 
-    /** One owner's failure: counted, summarised by cause, and never allowed to stop the others. */
-    private static void reportCompileProgress(int done, int total, Object unused) {
-        if (total <= 0) return;
-        if (done != total && (done & 31) != 0) return;
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.COMPILE, done, total);
+    /** 进度包含失败区块；显示端故障不能阻止其余施工计划结案。 */
+    private static void publishProgress(OwnerProgress progress, int done, int total) {
+        if (progress != null) {
+            try { progress.accept(done, total); } catch (Throwable ignored) { }
+        }
     }
 
     private static void recordFailure(ChunkKey owner, Throwable failure, FailureTally tally,
