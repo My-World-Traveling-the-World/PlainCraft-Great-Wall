@@ -22,6 +22,64 @@ class ImportedGatePlanTest {
         Bootstrap.bootStrap();
     }
 
+    @Test void lowTerrainFillsOnlyUnderTheOriginalBottomAndLeavesTheGateOpen() {
+        var feet = new Point3i(-19, 81, 29);
+        var site = new SiteId("fixture", SiteKind.GATE, 31);
+        var rotation = Rotation.CLOCKWISE_90;
+        var geometry = ImportedGateGeometry.gate();
+        var obstacle = geometry.place(new Point3i(0, -1, 19), feet, rotation);
+        var columns = new HashSet<Point3i>();
+        var body = ImportedGateBody.compileOnTerrain(site, feet, rotation, 42,
+                new DimensionBounds(-64, 320, 29_999_000), key -> {
+                    assertTrue(columns.add(key), "每个底板列只取一次施工前证据");
+                    return ground(64, columnKey(obstacle).equals(key) ? obstacle.y() : null, null);
+                });
+        var foundation = new HashMap<Point3i, VoxelIntent>();
+        for (var v : body.voxels()) if (v.part() == Part.FOUNDATION) assertNull(foundation.put(v.pos(), v));
+        // 实物底板有 2322 列；两格落差减去一格现有方块，其余用众数石头补齐。
+        assertEquals(2322, columns.size());
+        assertEquals(4643, foundation.size());
+        assertTrue(foundation.values().stream().allMatch(v -> v.state().id().equals("minecraft:stone")));
+        assertEquals(64, body.bounds().minY());
+        assertFalse(foundation.containsKey(obstacle));
+        assertTrue(foundation.containsKey(new Point3i(obstacle.x(), 64, obstacle.z())));
+        // 五格宽门洞的拱顶有方块，但底板留空：即使下方是低地，也不能让拱顶向下长成柱子。
+        for (int x = 54; x < 59; x++) for (int z = 0; z < 32; z++) {
+            var p = geometry.place(new Point3i(x, -1, z), feet, rotation);
+            assertFalse(columns.contains(columnKey(p)), "门洞列不参与底板下填：" + p);
+            assertFalse(foundation.containsKey(p));
+        }
+    }
+
+    @Test void missingOrProtectedFoundationEvidenceRejectsTheBody() {
+        var site = new SiteId("fixture", SiteKind.GATE, 31);
+        var feet = new Point3i(0, 81, 0);
+        var limits = new DimensionBounds(-64, 320, 29_999_000);
+        // 用需要下填的底板列触发保护判据，避免平地夹具根本走不到写前检查。
+        var missing = assertThrows(WallFailure.class, () -> ImportedGateBody.compileOnTerrain(
+                site, feet, Rotation.NONE, 42, limits, p -> null));
+        assertEquals(FailureCode.T0_MISSING, missing.code());
+        var protectedFill = assertThrows(WallFailure.class, () -> ImportedGateBody.compileOnTerrain(
+                site, feet, Rotation.NONE, 42, limits, p -> ground(64, null, 65)));
+        assertEquals(FailureCode.OWNERSHIP_CONFLICT, protectedFill.code());
+    }
+
+    private static Point3i columnKey(Point3i p) { return new Point3i(p.x(), 0, p.z()); }
+
+    private static SurfaceProbe.ColumnView ground(int surface, Integer occupiedY, Integer protectedY) {
+        return new SurfaceProbe.ColumnView() {
+            @Override public String state(int y) {
+                return solidSupport(y) || java.util.Objects.equals(occupiedY, y) ? "minecraft:stone{}" : "minecraft:air{}";
+            }
+            @Override public boolean solidSupport(int y) { return y < surface; }
+            @Override public boolean protectedAt(int y) { return java.util.Objects.equals(protectedY, y); }
+            @Override public boolean water(int y) { return false; }
+            @Override public boolean airOrReplaceablePlant(int y) { return y >= surface && !java.util.Objects.equals(occupiedY, y); }
+            @Override public int highestNonPlantFeet() { return surface; }
+            @Override public String hash() { return "a".repeat(64); }
+        };
+    }
+
     @Test void rotatedWholeGatePreservesLootAndBothPassagesAcrossOwners() {
         var rotation = Rotation.CLOCKWISE_90;
         var feet = new Point3i(-19, 81, 29);
