@@ -61,6 +61,20 @@ class PlanningColumnProviderTest {
         assertEquals(64, feet(columns, 0, 1));
     }
 
+    @Test void fillsAWindowEdgeFromAdjacentChunksWithoutPublishingTheirColumns() {
+        var west = chunk(-1, 0);
+        var east = chunk(0, 0);
+        var provider = new PlanningColumnProvider(FineHeightIndex.of(List.of(
+                column(-4, 5, 61), column(0, 5, 74))), 3);
+        // 西窗边缘 -1 的最近实测列在东窗；裁掉东窗会改成远处的 61，接缝承重随之变化。
+        var whole = provider.columnsFor(List.of(west, east));
+        var westOnly = provider.columnsFor(List.of(west));
+        assertEquals(74, feet(whole, -1, 5));
+        assertEquals(74, feet(westOnly, -1, 5));
+        assertEquals(whole.get(new Point3i(-1, 0, 5)).hash(), westOnly.get(new Point3i(-1, 0, 5)).hash());
+        assertFalse(westOnly.containsKey(new Point3i(0, 0, 5)), "邻区块样本只供取证，不能算作本窗产物");
+    }
+
     @Test void anEmptyIndexStaysEmpty() {
         var provider = new PlanningColumnProvider(FineHeightIndex.of(List.of()));
         assertTrue(provider.columnsFor(List.of(chunk(0, 0))).isEmpty(),

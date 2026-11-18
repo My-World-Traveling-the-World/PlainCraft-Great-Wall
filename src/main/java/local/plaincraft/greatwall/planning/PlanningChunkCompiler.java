@@ -120,62 +120,18 @@ public final class PlanningChunkCompiler {
 
     int compileInto(PlanWindow plans, String recipeHash, String dimension, OwnerProgress progress,
             int batchSize, int workers, Consumer<ChunkWritePlan> output) {
+        return compileOwners(PlanningOwnerIndex.prepare(plans, recipeHash, dimension, coverage), recipeHash,
+                progress, batchSize, workers, output);
+    }
+
+    // 只切分已冻结的区块工作项；不能先按段过滤再重算接缝归属。
+    int compileOwners(List<PlanningOwnerIndex.OwnerWork> owners, String recipeHash, OwnerProgress progress,
+            int batchSize, int workers, Consumer<ChunkWritePlan> output) {
         Objects.requireNonNull(output, "output");
-        record Owned(CellKey cell, List<ChunkKey> owners, SegmentPlan plan, PlanWindow segmentWindow,
-                boolean startsInStationRange) { }
-        // Group by owner, so a chunk that several cells admit is compiled ONCE with all of them.
-        //
-        // The old shape enumerated (cell, owner) pairs and stored each result with a plain put. A seam
-        // chunk - one whose realization every neighbouring cell clips to its own half - was therefore
-        // compiled once per cell, and the later put replaced the earlier plan, so the half the first cell
-        // had built disappeared. A wall 8,190 blocks long has about 128 such chunks and each lost roughly
-        // eight blocks of wall body: about twelve percent of the whole wall, with nothing in the log.
-        // ChunkPlanCompiler.compile already takes a List<RealizationCell> - it was simply always handed
-        // one - so the fix is to hand it every cell that admits the owner.
-        var byOwner = new java.util.LinkedHashMap<ChunkKey, java.util.LinkedHashMap<CellKey, Owned>>();
-        for (var plan : plans.plans()) {
-            try {
-                long from = plan.prefix().lengthBeforeQ8();
-                long to = from + plan.geometry().localSQ8().getLast();
-                var firstCell = Math.floorDiv(from, 64L * 256);
-                var lastCell = Math.floorDiv(to + 64L * 256 - 1, 64L * 256);
-                // 同段重复查询不同 cell；预先建立只读索引，仍保留原窗口和接缝归属。
-                var segmentWindow = new PlanWindow(List.of(plan));
-                var ownerLookup = coverage.prepareOwners(segmentWindow);
-                var stations = plan.stations().stations();
-                for (long cell = firstCell; cell <= lastCell; cell++) {
-                    var cellKey = new CellKey(recipeHash, dimension, cell);
-                    var owners = ownerLookup.forCell(cellKey);
-                    if (owners.isEmpty()) continue;
-                    long cellStart = cell * 64L * 256;
-                    boolean startsInStationRange = stations.size() >= 2
-                            && cellStart >= stations.getFirst().globalSQ8() && cellStart < stations.getLast().globalSQ8();
-                    var admitted = new Owned(cellKey, owners, plan, segmentWindow, startsInStationRange);
-                    for (var owner : owners) {
-                        // The whole owner list travels with the item: a component's support table and its
-                        // ground-exit walk read every cell of its axis-aligned bounds, which reaches into
-                        // the neighbouring chunks, so the column map of one owner alone cannot serve it.
-                        // 保留原顺序和单一来源；有实墙输入时，上一段为取证收录的空尾单元不能抢占它。
-                        byOwner.computeIfAbsent(owner, ignored -> new java.util.LinkedHashMap<>())
-                                .merge(cellKey, admitted, (previous, candidate) ->
-                                        !previous.startsInStationRange() && candidate.startsInStationRange()
-                                                ? candidate : previous);
-                    }
-                }
-            } catch (Throwable failure) {
-                // Enumeration used to sit outside every try: one coverage failure (its CAPACITY guard, an
-                // unknown footprint) threw out of compileWindow and the whole window published nothing.
-                // Dropping this plan's cells costs the owners that only it admits, not the other plans.
-                local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
-                        "[GreatWall:S1C] PLANNING_COMPILE_PLAN_SKIPPED prefix={} failure={} "
-                                + "(only this plan's owners are dropped)",
-                        plan.prefix().lengthBeforeQ8(), summarize(failure), failure);
-            }
-        }
         // 工作线程只写当前批；调用线程同步交付后清表，计划不会留在整窗编译器里。
         var batchPlans = new java.util.concurrent.ConcurrentHashMap<ChunkKey, ChunkWritePlan>();
         var provider = new PlanningColumnProvider(index);
-        int ownerCount = byOwner.size();
+        int ownerCount = owners.size();
         publishProgress(progress, 0, ownerCount);
         // Two per-window values the per-owner path used to recompute: the sampled vertical extent (one
         // pass over every indexed column, so a hundred-owner cell paid it a hundred times) and the
@@ -187,13 +143,13 @@ public final class PlanningChunkCompiler {
                         .getBytes(java.nio.charset.StandardCharsets.UTF_8));
         // 同一弧长单元能被相邻段分别收录。按枚举时共享的工作项复用，区分两份段窗口和取证范围。
         record CellWork(Map<Point3i, SurfaceProbe.ColumnView> columns, RealizationCell cell, CellVoxelOwners voxels) { }
-        var cellWork = new java.util.IdentityHashMap<Owned, CellWork>();
-        var cellFailures = new java.util.IdentityHashMap<Owned, Throwable>();
+        var cellWork = new java.util.IdentityHashMap<PlanningOwnerIndex.CellWork, CellWork>();
+        var cellFailures = new java.util.IdentityHashMap<PlanningOwnerIndex.CellWork, Throwable>();
         // 按完整归属表标记最后一次使用，批次边界和区块失败都不决定共享证据的寿命。
-        var lastOwner = new java.util.IdentityHashMap<Owned, Integer>();
+        var lastOwner = new java.util.IdentityHashMap<PlanningOwnerIndex.CellWork, Integer>();
         int ordinal = 0;
-        for (var items : byOwner.values()) {
-            for (var item : items.values()) lastOwner.put(item, ordinal);
+        for (var owner : owners) {
+            for (var item : owner.cells()) lastOwner.put(item, ordinal);
             ordinal++;
         }
         long indexedVoxels = 0;
@@ -215,9 +171,9 @@ public final class PlanningChunkCompiler {
         long started = System.nanoTime();
         ordinal = 0;
         try (var pending = new OwnerCompileBatch(batchSize, workers)) {
-            for (var entry : byOwner.entrySet()) {
-                var owner = entry.getKey();
-                var items = entry.getValue().values();
+            for (var entry : owners) {
+                var owner = entry.owner();
+                var items = entry.cells();
                 var cells = new java.util.ArrayList<RealizationCell>();
                 // 覆盖哈希按区块计算，只传入实际参与这个区块编译的段。
                 var ownerPlans = new java.util.ArrayList<SegmentPlan>();
@@ -234,7 +190,7 @@ public final class PlanningChunkCompiler {
                     if (work == null) {
                         try {
                             // 单元只读取枚举它的段的列，不能拿整窗路线去这一小片证据中找出口。
-                            var columns = provider.columnsFor(item.owners());
+                            var columns = provider.columnsFor(item.captureOwners());
                             var cell = resolveCell(item.cell(), columns, item.segmentWindow(), protectionHash);
                             work = new CellWork(columns, cell, new CellVoxelOwners(cell));
                             cellWork.put(item, work);
@@ -470,7 +426,7 @@ public final class PlanningChunkCompiler {
      * rotated log loses it - and a run where every owner failed identically then reads as "no reason
      * given" for a thousand lines. This field keeps the reason greppable and countable.
      */
-    private static String summarize(Throwable failure) {
+    static String summarize(Throwable failure) {
         if (failure == null) return "null";
         String type = failure.getClass().getSimpleName();
         String message = failure.getMessage();
