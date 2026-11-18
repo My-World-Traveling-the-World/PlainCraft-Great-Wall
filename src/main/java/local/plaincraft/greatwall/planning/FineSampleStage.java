@@ -6,7 +6,6 @@ import java.util.concurrent.*;
 import java.util.function.Function;
 import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.config.GreatWallConfig;
-import local.plaincraft.greatwall.model.PlanLease;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** 精采样负责切片、进度、汇总及缓存；通过原调度器驱动同一批地形通道。 */
@@ -106,7 +105,6 @@ final class FineSampleStage {
         long target = scheduler.prewarmTargetSegments();
 
         final int projectedSegments = (int) Math.max(1L, target);
-        final int totalSegments = (int) Math.min(Integer.MAX_VALUE, target);
         // 固定 48 片分布到任意数量通道；采样范围不依赖硬件线程数。
         int slices = FINE_SAMPLE_SLICES_PER_SEGMENT;
         // 按列报进度，大切片工作时也能持续更新。
@@ -143,8 +141,8 @@ final class FineSampleStage {
                 local.plaincraft.greatwall.model.WallTypes.ColumnSample>();
         // 跨切片声明列所有权，避免同时探测同一列。
         var claims = java.util.concurrent.ConcurrentHashMap.<Long>newKeySet();
-        // 提交循环与超时回调都可能添加租约，因此需要并发列表。
-        var leases = new java.util.concurrent.CopyOnWriteArrayList<PlanLease<?>>();
+        // 只保留仍在采样的段，避免先完成的几何一直占用缓存，等最慢的段才能归还。
+        var leases = new ConcurrentHashMap<Long, FineSampleSegmentLease>();
         // 只计实际提交的段，配置目标可能大于冻结边界。
         var routesPending = new java.util.concurrent.atomic.AtomicInteger();
         var slicesPending = new java.util.concurrent.atomic.AtomicInteger();
@@ -223,35 +221,43 @@ final class FineSampleStage {
         };
         // 停滞触发后移除提前结案回调，避免重复发布。
         fineSampleAbandon = completion;
+        aggregate.whenComplete((v, e) -> {
+            // 提前结案或失败时扫尾，取消与迟到的备用路线申请可以并发。
+            stopFineSampleDriver();
+            leases.values().forEach(FineSampleSegmentLease::close);
+        });
         try {
-            for (long i = 0; i < target && scheduler.safeSegment(i); i++) {
+            for (long segment = 0; segment < target && !aggregate.isDone(); segment++) {
+                long index = segment;
+                var segmentLease = new FineSampleSegmentLease(() -> leases.remove(index));
+                leases.put(index, segmentLease);
+                if (aggregate.isDone()) { segmentLease.close(); break; }
                 // 缓存几何已经有路线点及弧长，重开不用再做一次山脊搜索。
-                var lease = scheduler.requireGeometry(i, priority);
-                leases.add(lease);
+                var lease = segmentLease.own(scheduler.requireGeometry(index, priority));
                 // 注册前先计数，即时完成的路径也不能漏记。
                 routesPending.incrementAndGet();
-                long segment = i;
                 // 几何等待超过原时限才请求路线，正常缓存命中直接取样。
                 CompletableFuture<RoutePath> path = lease.future()
                         .<RoutePath>thenApply(geometry -> geometry)
                         .completeOnTimeout(null, 120, java.util.concurrent.TimeUnit.SECONDS)
                         .thenComposeAsync(sampled -> {
                             if (sampled != null) return CompletableFuture.completedFuture(sampled);
+                            if (aggregate.isDone()) return CompletableFuture.failedFuture(new CancellationException("采样已结案"));
                             GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_PATH_FALLBACK segment={} "
-                                    + "reason=geometry-timeout; sampling the recomputed route instead", segment);
-                            var routeLease = scheduler.requireRoute(segment, Priority.PLAYER_PREFETCH);
-                            leases.add(routeLease);
+                                    + "reason=geometry-timeout; sampling the recomputed route instead", index);
+                            var routeLease = segmentLease.own(scheduler.requireRoute(index, Priority.PLAYER_PREFETCH));
                             return routeLease.future().thenApply(route -> (RoutePath) route);
                         }, pump);
                 // 路径确定时估算完整窗口，不等各段前缀再叠加分母。
                 path.thenAcceptAsync(sampled -> {
+                    if (aggregate.isDone()) return;
                     // 分母与切片沿用同一末端判定。
                     long points = Math.max(1L, terminalPointLimit(sampled, sampled.points().size())
                             + 2L * WallFinePlanner.APRON_BLOCKS);
                     // 记录各段点数，便于识别重复走了整条路线。
                     GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_SEGMENT segment={} routePoints={} "
                                     + "sectionsExpected={} columnsExpected={}",
-                            segment, sampled.points().size(),
+                            index, sampled.points().size(),
                             (int) (points / Math.max(1, gridStep)),
                             (int) Math.min(Integer.MAX_VALUE - 1L, (points / Math.max(1, gridStep))
                                     * (2L * (WallFinePlanner.LATERAL / Math.max(1, gridStep)) + 1L)));
@@ -269,21 +275,29 @@ final class FineSampleStage {
                     }
                 }, pump);
                 path.whenCompleteAsync((sampled, error) -> {
-                    if (error != null) {
-                        aggregate.completeExceptionally(error);
-                        if (routesPending.decrementAndGet() == 0) completion.run();
-                        return;
-                    }
-                    if (scheduler.closed()) {
-                        aggregate.completeExceptionally(scheduler.closedFailure());
-                        if (routesPending.decrementAndGet() == 0) completion.run();
+                    if (error != null || scheduler.closed() || aggregate.isDone()) {
+                        if (error != null) aggregate.completeExceptionally(error);
+                        else if (scheduler.closed()) aggregate.completeExceptionally(scheduler.closedFailure());
+                        segmentLease.releaseUser();
+                        routesPending.decrementAndGet();
+                        if (!aggregate.isDone()) completion.run();
                         return;
                     }
                     // 建筑按绝对弧长排布，先拿段前缀才能定宽截面。
-                    prefixes.requireBefore(segment).future()
-                            .whenCompleteAsync((prefix, prefixError) -> {
+                    CompletableFuture<PrefixSummary> before;
+                    try {
+                        before = prefixes.requireBefore(index).future();
+                    } catch (RuntimeException failure) {
+                        // 同步拒绝也要结案，否则异常会藏在无人消费的回调 Future 里。
+                        aggregate.completeExceptionally(failure);
+                        segmentLease.releaseUser();
+                        routesPending.decrementAndGet();
+                        return;
+                    }
+                    before.whenCompleteAsync((prefix, prefixError) -> {
                     try {
                         if (prefixError != null) { aggregate.completeExceptionally(prefixError); return; }
+                        if (aggregate.isDone()) return;
                         var wideAt = widePoints(sampled, prefix.lengthBeforeQ8());
                         int points = sampled.points().size();
                         // 保留原几何在途末端判据；缺少就绪证据就采全段，避免编译缺列。
@@ -293,14 +307,16 @@ final class FineSampleStage {
                             int from = s * perSlice;
                             if (from >= points) break;
                             int to = Math.min(points, from + perSlice);
-                            slicesPending.incrementAndGet();
                             // 路径回调已设分母，安排切片不能重复加估值。
                             var job = scheduler.enqueueFineSample(sampled, from, to, priority,
                                     new CompletableFuture<List<WallFinePlanner.FineColumn>>(), fineSampleCache,
                                     wideAt, walks, claims, prefix.lengthBeforeQ8());
+                            slicesPending.incrementAndGet();
+                            segmentLease.retainSlice();
                             job.result().whenCompleteAsync((columns, sampleError) -> {
                                 try {
                                     if (sampleError != null) { aggregate.completeExceptionally(sampleError); return; }
+                                    if (aggregate.isDone()) return;
                                     synchronized (all) {
                                         all.computeIfAbsent(WallFinePlanner.sampleOrder(sampled, from, to),
                                                 ignored -> new ArrayList<>()).addAll(columns);
@@ -315,16 +331,22 @@ final class FineSampleStage {
                                     local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
                                             local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE,
                                             done, expectedColumns.get());
-                                    slicesPending.decrementAndGet();
-                                    completion.run();
                                 } catch (Throwable t) { aggregate.completeExceptionally(t); }
+                                finally {
+                                    // 最后一个切片交回缓存额度，其他段无需等待本轮聚合发布。
+                                    segmentLease.releaseUser();
+                                    slicesPending.decrementAndGet();
+                                    if (!aggregate.isDone()) completion.run();
+                                }
                             }, pump);
                         }
                     } catch (Throwable t) {
                         aggregate.completeExceptionally(t);
                     } finally {
                         // 路径和切片都排空才能发布，单一计数可能过早归零。
-                        if (routesPending.decrementAndGet() == 0) completion.run();
+                        segmentLease.releaseUser();
+                        routesPending.decrementAndGet();
+                        if (!aggregate.isDone()) completion.run();
                     }
                     }, pump);
                 }, pump);
@@ -336,12 +358,7 @@ final class FineSampleStage {
             enqueueing.set(false);
         }
         // 没有安全段的窗口也须结案，此时没有切片回调替它发布。
-        completion.run();
-        aggregate.whenComplete((v, e) -> {
-            // 成功与失败均撤驱动并释放租约，阶段结束后不再发空预算。
-            stopFineSampleDriver();
-            leases.forEach(PlanLease::close);
-        });
+        if (!aggregate.isDone()) completion.run();
         return aggregate;
     }
 
