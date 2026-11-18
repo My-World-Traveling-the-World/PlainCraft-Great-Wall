@@ -8,7 +8,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import local.plaincraft.greatwall.component.S1TemplateSet;
+import local.plaincraft.greatwall.config.GreatWallConfig;
 import local.plaincraft.greatwall.generation.ChunkPlanCompiler;
 import local.plaincraft.greatwall.generation.CoveragePlanner;
 import local.plaincraft.greatwall.generation.SurfaceProbe;
@@ -17,6 +19,8 @@ import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.terrain.RealizationPlanner;
+import local.plaincraft.greatwall.terrain.AnalyticTerrainOracle;
+import local.plaincraft.greatwall.terrain.FineSampleCache;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -82,6 +86,85 @@ class PlanningChunkCompilerRealizationTest {
         failed.removeAll(splitWithFailure.keySet());
         assertEquals(expectedFailures, failed);
         assertEquivalent(wholeWithFailure, splitWithFailure);
+    }
+
+    @Test void independentlyClaimedSamplingWindowsAreNotEquivalentAtTheRealSeam() {
+        var plans = new PlanWindow(List.of(segment(0), segment(1)));
+        var config = GreatWallConfig.get();
+        int savedGrid = config.fineSampleGridStep();
+        int savedStep = config.fineStep();
+        int savedCore = config.coreHalfWidth();
+        boolean savedWater = config.refineWater();
+        try {
+            // 左段窄截面看不到河，右段宽缓冲区遇水升为全采。固定参数隔离玩家配置。
+            config.setFineSampleGridStep(1);
+            config.setFineStep(4);
+            config.setCoreHalfWidth(0);
+            config.setRefineWater(true);
+            GreatWallConfig.freezeParameters();
+            var shared = sampleSeam(plans, true);
+            var reset = sampleSeam(plans, false);
+            assertTrue(shared.size() > 0);
+            assertEquals(shared.size(), reset.size());
+            assertEquals(new HashSet<>(shared.columns().stream().map(c -> new Point3i(c.x(), 0, c.z())).toList()),
+                    new HashSet<>(reset.columns().stream().map(c -> new Point3i(c.x(), 0, c.z())).toList()));
+            assertEquals(64, shared.at(SEAM - 1, 5).groundTopY(), "先认领的窄截面只能用邻列回填");
+            assertEquals(68, reset.at(SEAM - 1, 5).groundTopY(), "重复认领的宽截面遇水后会实测该列");
+
+            // 独立认领留下两份 XZ 相同的截面证据，尽管覆盖列集合不变。
+            var leftOwned = shared.orderedColumns().stream().filter(c -> c.x() == SEAM - 1 && c.z() == 5).toList();
+            var bothOwned = reset.orderedColumns().stream().filter(c -> c.x() == SEAM - 1 && c.z() == 5).toList();
+            assertEquals(1, leftOwned.size());
+            assertEquals(2, bothOwned.size());
+            assertEquals(127L * 256L, leftOwned.getFirst().globalSQ8());
+            assertEquals(leftOwned.getFirst(), bothOwned.getFirst());
+
+            // 用真实地基和墙体编译证明差异，不以两个不相等的内存对象代替产物验证。
+            var foundationShared = WallFoundationPlanner.plan(shared.orderedColumns());
+            var foundationReset = WallFoundationPlanner.plan(reset.orderedColumns());
+            assertNotEquals(foundationShared, foundationReset);
+            var seam = new ChunkKey(DIM, 0, 0);
+            var whole = compile(plans, shared, 64, 1).get(seam);
+            var split = compile(plans, reset, 64, 1).get(seam);
+            assertNotNull(whole);
+            assertNotNull(split);
+            assertTrue(whole.voxels().stream().anyMatch(v -> v.component().kind() == SiteKind.WALL));
+            assertTrue(split.voxels().stream().anyMatch(v -> v.component().kind() == SiteKind.WALL));
+            assertFalse(java.util.Arrays.equals(CanonicalCodec.writePlan(whole), CanonicalCodec.writePlan(split)),
+                    "未证明产物等价前，不得把独立认领接入生产");
+        } finally {
+            config.setFineSampleGridStep(savedGrid);
+            config.setFineStep(savedStep);
+            config.setCoreHalfWidth(savedCore);
+            config.setRefineWater(savedWater);
+            GreatWallConfig.freezeParameters();
+        }
+    }
+
+    /** 走两段生产游标，离线只替换地形；跨段正反向的调度不在此夹具中模拟。 */
+    private static FineHeightIndex sampleSeam(PlanWindow plans, boolean shareClaims) {
+        var claims = new HashSet<Long>();
+        var evidence = new FineSampleEvidence(FineSampleCache.none());
+        try (var oracle = new AnalyticTerrainOracle((x, z) -> {
+            if (x == SEAM - 1 && Math.abs(z) == WallFinePlanner.LATERAL) return AnalyticTerrainOracle.water(65, 62);
+            return AnalyticTerrainOracle.dry(x == SEAM - 1 && z == 5 ? 68 : 64);
+        }, true)) {
+            for (var plan : plans.plans()) {
+                var key = plan.geometry().key();
+                var points = IntStream.rangeClosed(0, 128).mapToObj(x -> new Point2q(
+                        plan.geometry().points().getFirst().xQ8() + 256L * x, 0)).toList();
+                var route = new RouteShape(key, points, IntStream.rangeClosed(0, 128).mapToObj(x -> 256L * x).toList(),
+                        plan.geometry().start(), plan.geometry().end(), 0, 0, 0, HASH);
+                if (!shareClaims) claims.clear();
+                var cursor = WallFinePlanner.begin(route, oracle, 0, points.size(), FineSampleCache.none(),
+                        ignored -> false, new HashMap<>(), claims, false, plan.prefix().lengthBeforeQ8());
+                while (WallFinePlanner.advance(cursor, 64) != WorkState.DONE) { }
+                var columns = WallFinePlanner.finish(cursor);
+                assertFalse(columns.isEmpty(), "两个墙段都应贡献证据");
+                assertTrue(evidence.accept(WallFinePlanner.sampleOrder(route, 0, points.size()), columns, List.of()));
+            }
+        }
+        return evidence.finish();
     }
 
     private static Map<ChunkKey, ChunkWritePlan> compilePartitions(List<PlanningOwnerIndex.OwnerWork> work,
