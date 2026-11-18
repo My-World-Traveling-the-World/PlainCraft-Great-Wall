@@ -47,8 +47,6 @@ import net.minecraft.world.level.storage.loot.LootTable;
 public final class GateBlockEntities {
     private static final String RESOURCE = "/assets/plaincraft-great-wall/templates/gate_be.jsonl";
     private static final long SEED_SALT = 0x9E3779B97F4A7C15L;
-    /** 门楼室内上下层分界（模板局部 y）：≥ 此高度算「上层」，兜底给军械类表。 */
-
     /** 一行模板：{@code loot} = 战利品表 id；{@code books} = 随机塞几本书；{@code nbt} = 原始 SNBT。 */
     private record Entry(int x, int y, int z, String loot, int books, String nbt) {
     }

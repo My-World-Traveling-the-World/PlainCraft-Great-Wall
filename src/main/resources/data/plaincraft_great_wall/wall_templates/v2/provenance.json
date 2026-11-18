@@ -1,0 +1,240 @@
+{
+  "gate.nbt": {
+    "source_sha256": "a116d20dc29f9943939cc5e42d97b3f9fc3c7a07c4ddbecdac72be0711732b9f",
+    "sha256": "67277fa5d8cdc6b55d7650cb58f49cd70afbf1a18667756c8b818fbde7aa206a",
+    "bounds_inclusive": {
+      "min": [
+        -120,
+        -60,
+        -19
+      ],
+      "max": [
+        -8,
+        -19,
+        12
+      ]
+    },
+    "size_xyz": [
+      113,
+      42,
+      32
+    ],
+    "non_air": 37521,
+    "block_entities": 44,
+    "loot_containers": 18,
+    "wall_end_marks": {
+      "west": [
+        [
+          -120,
+          -46,
+          -5
+        ],
+        [
+          -120,
+          -46,
+          5
+        ]
+      ],
+      "east": [
+        [
+          -8,
+          -46,
+          -5
+        ],
+        [
+          -8,
+          -46,
+          5
+        ]
+      ]
+    }
+  },
+  "enemy_tower.nbt": {
+    "source_sha256": "48e0e67120002c6a7e387f00602435e0787805048c76cb4d29926151ccd8cb08",
+    "sha256": "2ee3243cd757e342952a2a3ac1a6a9dbe26dd0d1309efb1e234edb4bdb60c90e",
+    "bounds_inclusive": {
+      "min": [
+        -94,
+        -60,
+        42
+      ],
+      "max": [
+        -24,
+        -22,
+        68
+      ]
+    },
+    "size_xyz": [
+      71,
+      39,
+      27
+    ],
+    "non_air": 19812,
+    "block_entities": 73,
+    "loot_containers": 21,
+    "wall_end_marks": {
+      "west": [
+        [
+          -94,
+          -46,
+          50
+        ],
+        [
+          -94,
+          -46,
+          60
+        ]
+      ],
+      "east": [
+        [
+          -24,
+          -46,
+          50
+        ],
+        [
+          -24,
+          -46,
+          60
+        ]
+      ]
+    }
+  },
+  "beacon.nbt": {
+    "source_sha256": "0e1dd55f25348a5aae3c6ce06c90ad0c222ead5a6ea2c40220845d2ec117f099",
+    "sha256": "9848e6e9d6b215ef3bace1f18e587a983242ec10698c30a06e121fe2abfbb5fb",
+    "bounds_inclusive": {
+      "min": [
+        -90,
+        -60,
+        163
+      ],
+      "max": [
+        -40,
+        -35,
+        173
+      ]
+    },
+    "size_xyz": [
+      51,
+      26,
+      11
+    ],
+    "non_air": 9253,
+    "block_entities": 23,
+    "loot_containers": 4,
+    "wall_end_marks": {
+      "west": [
+        [
+          -90,
+          -46,
+          163
+        ],
+        [
+          -90,
+          -46,
+          173
+        ]
+      ],
+      "east": [
+        [
+          -40,
+          -46,
+          163
+        ],
+        [
+          -40,
+          -46,
+          173
+        ]
+      ]
+    }
+  },
+  "corner_tower.nbt": {
+    "source_sha256": "cf2332574fcb3096e1003744afa01abb5824ae97b35b61a5f162a315eb6b1061",
+    "sha256": "d5b5bac3ad7c9489ca20c7276ee4f42e60cd2f7aab04a88d3fc18fdcef162776",
+    "bounds_inclusive": {
+      "min": [
+        -157,
+        -60,
+        186
+      ],
+      "max": [
+        -126,
+        -33,
+        215
+      ]
+    },
+    "size_xyz": [
+      32,
+      28,
+      30
+    ],
+    "non_air": 9119,
+    "block_entities": 52,
+    "loot_containers": 25,
+    "wall_end_marks": {
+      "north": [
+        [
+          -155,
+          -46,
+          186
+        ],
+        [
+          -145,
+          -46,
+          186
+        ]
+      ],
+      "east": [
+        [
+          -126,
+          -46,
+          203
+        ],
+        [
+          -126,
+          -46,
+          213
+        ]
+      ]
+    }
+  },
+  "chenghai_tower.nbt": {
+    "source_sha256": "f57abda5defb0cb5dfc3b0c7f02335e67dcb23813f563d6719a73f054f1cf09c",
+    "sha256": "58d8a8bdc298a27a78a3418b51edc775f3dbba7c81cde76af3b7c1330afc7ec2",
+    "bounds_inclusive": {
+      "min": [
+        -68,
+        -60,
+        298
+      ],
+      "max": [
+        24,
+        -3,
+        388
+      ]
+    },
+    "size_xyz": [
+      93,
+      58,
+      91
+    ],
+    "non_air": 117425,
+    "block_entities": 439,
+    "loot_containers": 142,
+    "wall_end_marks": {
+      "north": [
+        [
+          -27,
+          -46,
+          298
+        ],
+        [
+          -17,
+          -46,
+          298
+        ]
+      ]
+    }
+  }
+}

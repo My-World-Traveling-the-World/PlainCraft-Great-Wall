@@ -2,13 +2,14 @@ package local.plaincraft.greatwall.generation;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import local.plaincraft.greatwall.gameplay.TemplateLoot;
+import local.plaincraft.greatwall.component.ImportedWallTemplate;
 import local.plaincraft.greatwall.model.WallTypes.BlockEntityIntent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 
 /** 将冻结的计划实体翻译为原版实体 NBT，避免不同施工入口各写一套格式。 */
 final class PlannedBlockEntityNbt {
-    static final String DECORATION = "templateDecoration";
+    static final String DECORATION = ImportedWallTemplate.DECORATION;
 
     private PlannedBlockEntityNbt() {}
 
