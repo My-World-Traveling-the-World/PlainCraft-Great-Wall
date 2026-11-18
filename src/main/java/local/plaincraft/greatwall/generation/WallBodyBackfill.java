@@ -256,10 +256,8 @@ public final class WallBodyBackfill {
      * chunks three hundred blocks away while the wall in front of the player stayed missing.
      */
     private static List<ChunkKey> nearestFirst(ServerLevel level, Set<ChunkKey> pending) {
-        List<ChunkKey> keys = new ArrayList<>(pending);
-        if (keys.size() < 2) return keys;
         var players = level.players();
-        if (players.isEmpty()) return keys;
+        if (players.isEmpty()) return BackfillCandidateSelection.select(pending, MAX_DRAIN_CHECKS, false, 0, 0);
         double cx = 0.0D;
         double cz = 0.0D;
         for (var player : players) {
@@ -268,14 +266,8 @@ public final class WallBodyBackfill {
         }
         cx /= players.size();
         cz /= players.size();
-        final double centreX = cx;
-        final double centreZ = cz;
-        keys.sort(java.util.Comparator.comparingDouble(key -> {
-            double dx = (key.x() << 4) + 8 - centreX;
-            double dz = (key.z() << 4) + 8 - centreZ;
-            return dx * dx + dz * dz;
-        }));
-        return keys;
+        // 下游最多检查64项，仅选择同序前缀，避免为全部待建区块做排序。
+        return BackfillCandidateSelection.select(pending, MAX_DRAIN_CHECKS, true, cx, cz);
     }
 
     /**

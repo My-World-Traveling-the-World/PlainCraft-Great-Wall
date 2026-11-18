@@ -48,7 +48,8 @@ public final class PlanningChunkCompiler {
                 floor.put(columnKey(fill.x(), fill.z()), fill.surfaceY());
             }
         }
-        this.foundationFloor = Map.copyOf(floor);
+        // packed-XZ键易形成相同哈希，统一快照避免开放寻址建表及各cell重复复制。
+        this.foundationFloor = local.plaincraft.greatwall.terrain.FoundationFloorSnapshot.copyOf(floor);
         long fillColumns = foundations.stream().mapToLong(f -> f.fills().size()).sum();
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:S1C] WALL_FOUNDATION_PLAN cores={} fillColumns={}", foundations.size(), fillColumns);

@@ -33,7 +33,8 @@ public final class RealizationPlanner {
         public Input {
             Objects.requireNonNull(key);Objects.requireNonNull(plans);
             tiles=Map.copyOf(tiles);protectedBounds=List.copyOf(protectedBounds);frozenGateY=Map.copyOf(frozenGateY);
-            foundationFloor=Map.copyOf(foundationFloor);
+            // 只复用拥有独立存储的地基快照，其他调用者仍进行防御性复制。
+            foundationFloor=FoundationFloorSnapshot.copyOf(foundationFloor);
             foundations=List.copyOf(foundations);
             // A read-only view of the column map, not a second copy. It holds one entry per sampled column
             // (about 27k on a real cell) and the provider already hands out an unmodifiable view, so
