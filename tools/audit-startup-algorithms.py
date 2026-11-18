@@ -1,4 +1,4 @@
-# 文件职责：提取当前源码中的二分与缓存键，独立检验算法反例和替代内核成本。
+# 文件职责：提取审计基线中的二分与缓存键，独立检验旧算法反例和替代内核成本。
 # 为什么不用游戏耗时冒充结论：这些夹具只有单调密度、模拟缓存键及合成坐标，不运行NoiseChunk。
 # 不修改生产源码，不构建/部署模组；报告明确区分原型、源码行为及历史游戏日志。
 from pathlib import Path
@@ -7,6 +7,7 @@ import argparse,tempfile
 parser=argparse.ArgumentParser(description='仅执行源码提取的Java算法夹具，不构建或启动模组。')
 parser.add_argument('--java-home',required=True)
 parser.add_argument('--output',required=True)
+parser.add_argument('--source-revision',default='c57d9c69',help='修复前审计提交，避免修复后再从现行源码找旧锚点。')
 args=parser.parse_args()
 java_home=Path(args.java_home)
 output=Path(args.output).resolve();output.mkdir(parents=True,exist_ok=True)
@@ -16,7 +17,11 @@ work=Path(scratch.name)
 try_javac=java_home/'bin/javac.exe';try_java=java_home/'bin/java.exe'
 if not try_javac.is_file():try_javac=java_home/'bin/javac';try_java=java_home/'bin/java'
 assert try_javac.is_file() and try_java.is_file()
-source=(root/'src/main/java/local/plaincraft/greatwall/terrain/NoiseSurfaceSampler.java').read_text(encoding='utf-8')
+relative='src/main/java/local/plaincraft/greatwall/terrain/NoiseSurfaceSampler.java'
+source=subprocess.run(['git','show',args.source_revision+':'+relative],cwd=root,check=True,
+                      stdout=subprocess.PIPE).stdout.decode('utf-8')
+baseline_source=source
+print('AUDIT_BASELINE revision='+args.source_revision)
 start=source.index('    private int preliminarySurface(int blockX, int blockZ) {')
 end=source.index(chr(10)+'    }',start)+6
 method=source[start:end]
@@ -86,7 +91,7 @@ run=subprocess.run([str(try_java),'-Xmx512m','-cp',str(work),'WallAlgorithmProbe
 print(run.stdout.decode())
 
 root=Path(__file__).resolve().parents[1]/'src/main/java/local/plaincraft/greatwall'
-source=(root/'terrain/NoiseSurfaceSampler.java').read_text(encoding='utf-8')
+source=baseline_source
 cache=source[source.index('this.cache = SHARED.computeIfAbsent'):source.index('ignored -> new java.util.concurrent.ConcurrentHashMap<>());')+len('ignored -> new java.util.concurrent.ConcurrentHashMap<>());')]
 java='''import java.util.*;import java.util.concurrent.*;
 public class WallCacheProbe {

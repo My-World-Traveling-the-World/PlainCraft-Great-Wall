@@ -442,6 +442,43 @@ class BuildContractTest {
                 "drain() lost its per-call bounds; a long queue would walk every key in one tick");
     }
 
+    /** 行为由端口测试验证，这里补实际入口和结案接线，避免只测Fake而生产继续跳过。 */
+    @Test void firstPaintingUsesPublishedPlanAndOnlyCompleteSweepSettles() throws IOException {
+        String root="src/main/java/local/plaincraft/greatwall/generation/";
+        String backfill=java.nio.file.Files.readString(java.nio.file.Path.of(root+"WallBodyBackfill.java"));
+        String feature=java.nio.file.Files.readString(java.nio.file.Path.of(root+"WallFeature.java"));
+        for(String code:java.util.List.of(backfill,feature)) {
+            assertTrue(code.contains("PublishedPlanPainter.paint(plan,"));
+            assertFalse(code.contains("beforeStates"));
+            assertFalse(code.contains("canReplace(current)"));
+            assertFalse(code.contains("replaceable(current)"));
+            assertTrue(code.contains("existingMarker.complete()")||code.contains("marker.complete()"));
+            assertTrue(code.contains("PublishedPlanPainter.preserveCompleted("));
+            assertTrue(code.contains("planHash(),plan.hash())"));
+            assertTrue(code.contains("WallPlanSupport.writeMarkers(chunk,plan,complete)"));
+        }
+        assertTrue(backfill.contains("result.complete() ? Status.SETTLED : Status.PENDING"));
+        assertTrue(backfill.contains("return level.setBlock(new BlockPos(p.x(),p.y(),p.z()),target,2)"));
+        assertTrue(feature.contains("WallBodyBackfill.enqueuePublished(server,java.util.List.of(plan.owner()))"));
+    }
+
+    /** 验证实际生产工厂和退出路径，缓存组件正确不能代替跨lane共享已接线。 */
+    @Test void productionSamplingSharesSessionCacheAndReleasesItOnClose() throws IOException {
+        var root=java.nio.file.Path.of("src/main/java/local/plaincraft/greatwall");
+        String inputs=java.nio.file.Files.readString(root.resolve("lifecycle/ProductionInputs.java"));
+        String session=java.nio.file.Files.readString(root.resolve("lifecycle/ProductionSession.java"));
+        String oracle=java.nio.file.Files.readString(root.resolve("terrain/CpuTerrainOracle.java"));
+        String sampler=java.nio.file.Files.readString(root.resolve("terrain/NoiseSurfaceSampler.java"));
+        assertTrue(inputs.contains("frozen.sharedFactory()"));
+        assertTrue(inputs.contains("factory.close()"));
+        assertTrue(session.contains("frozenInputs.close()"));
+        assertTrue(oracle.contains("new CpuTerrainOracle(frozen,cache)"));
+        assertTrue(oracle.contains("fluidPicker,shared)"));
+        assertTrue(sampler.contains("cache=ownsCache ? new SessionCellCache<>(CACHE_CELLS) : shared"));
+        assertFalse(sampler.contains("identityHashCode"));
+        assertFalse(sampler.contains("SHARED"));
+    }
+
     private static JsonObject resource(String name) throws IOException {
         var stream = BuildContractTest.class.getClassLoader().getResourceAsStream(name);
         assertNotNull(stream, name);

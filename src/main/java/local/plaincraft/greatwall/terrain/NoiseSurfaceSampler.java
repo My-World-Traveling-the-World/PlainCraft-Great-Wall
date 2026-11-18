@@ -54,37 +54,8 @@ final class NoiseSurfaceSampler {
      * slots could not answer both.
      */
     static final int SUPPORT_STATES = 4;
-    /**
-     * Baked cells kept per terrain, shared by every lane (see {@link #SHARED}).
-     *
-     * <p>One siting candidate covers 64x64 blocks - 256 cells - and neighbouring candidates sit about
-     * ten blocks apart, so their footprints overlap heavily. A 512-cell cache held barely one
-     * candidate, which made every candidate pay for every cell again. Each cell is roughly a
-     * kilobyte, and the map is shared, so the default trades reuse against one budget rather than
-     * twelve. Override with the system property greatwall.samplerCacheCells.
-     *
-     * <p><b>0.7.120: 65,536 → 131,072; 0.7.121: back to 65,536.</b> The doubling bet that the fine
-     * sample's ~124,000 cell bakes were re-bakes caused by eviction: the corridor alone is 8,190 x
-     * 105 blocks - about 53,750 cells at cellWidth 4 - which sat right against the old budget. That
-     * bet was measured and lost. With the 131,072 budget a real session reported
-     * {@code chunkCacheMisses=124,239} (0.7.120: 124,571, i.e. -0.27%) and the
-     * {@code cell cache eviction} log printed <b>zero</b> lines: the map never crossed the budget, so
-     * eviction never ran and the misses were ~124,000 genuinely distinct cells rather than churn.
-     * A larger cache buys nothing here and costs the extra 64 MB, so the default is 65,536 again
-     * (the map is shared by every lane, keyed by the terrain fingerprint, so this is 64 MB in total,
-     * not per lane). Do not raise this again without a run whose {@code CACHE_EVICTIONS} is above 0.
-     *
-     * <p><b>Why the misses are ~1 per column, not ~1/16.</b> {@code heightsFor} keys by noise cell and
-     * {@code cellWidth = QuartPos.toBlock(size_horizontal) = 4} for the overworld (vanilla
-     * {@code overworld.json} has {@code size_horizontal=1}), so one baked cell answers up to 16
-     * columns. A dense sample would thus show about 0.06 misses per column. A measured session instead
-     * showed 124,571 misses for 130,155 columns (0.96 per column; the 0.7.121 run 124,239, the same
-     * within noise) - one fresh cell per sampled column, because neighbours almost never land in a
-     * cell another sampled column already touched. The miss count is therefore structurally equal to
-     * the number of columns sampled; the only ways down are sampling fewer columns or making one
-     * {@code sweep()} cheaper - never a larger cache.
-     */
-    private static final int CACHE_CELLS = Math.max(512,
+    // 一个冻结会话共用此结果容量，而不是按lane分配；是否扩大必须依据实际淘汰/命中数据。
+    static final int CACHE_CELLS = Math.max(512,
             Integer.getInteger("greatwall.samplerCacheCells", 65536));
 
     private final RandomState randomState;
@@ -92,27 +63,9 @@ final class NoiseSurfaceSampler {
     private final NoiseGeneratorSettings generatorSettings;
     private final Aquifer.FluidPicker fluidPicker;
     private final BlockState defaultBlock;
-    /**
-     * Baked cells, shared by every lane of one terrain.
-     *
-     * <p>A result is immutable once built, so lanes can read each other's cells; only the NoiseChunk
-     * used to build one is thread-confined. Sharing matters because the lanes sweep the same ring:
-     * the whole coarse phase touches roughly forty thousand distinct cells, which fits easily in one
-     * shared budget but not in twelve separate ones.
-     */
-    private static final java.util.concurrent.ConcurrentHashMap<String,
-            java.util.concurrent.ConcurrentHashMap<Long, Heights>> SHARED =
-            new java.util.concurrent.ConcurrentHashMap<>();
-
-    private final java.util.concurrent.ConcurrentHashMap<Long, Heights> cache;
-    /**
-     * Per-cell cache hits and misses, so the fine sample can say where its time went.
-     *
-     * <p>These are the numbers {@code CpuTerrainOracle.costModel()} reports as
-     * {@code chunk-cache-hits}/{@code chunk-cache-misses}. The baked-chunk cache the oracle javadoc
-     * describes was replaced by this per-cell cache, so the counters have to live here. Atomic because
-     * the cache instance is shared by every lane built on the same {@code RandomState}.
-     */
+    // 所有权来自显式会话工厂，无静态世界表；单独创建的oracle拥有自己的缓存。
+    private final SessionCellCache<Heights> cache;
+    private final boolean ownsCache;
     private final java.util.concurrent.atomic.AtomicLong cacheHits = new java.util.concurrent.atomic.AtomicLong();
     private final java.util.concurrent.atomic.AtomicLong cacheMisses = new java.util.concurrent.atomic.AtomicLong();
 
@@ -123,16 +76,19 @@ final class NoiseSurfaceSampler {
 
     NoiseSurfaceSampler(RandomState randomState, NoiseSettings noiseSettings,
             NoiseGeneratorSettings generatorSettings, Aquifer.FluidPicker fluidPicker) {
-        this.randomState = randomState;
-        this.noiseSettings = noiseSettings;
-        this.generatorSettings = generatorSettings;
-        this.fluidPicker = fluidPicker;
-        this.defaultBlock = generatorSettings.defaultBlock();
-        // Keyed by the terrain fingerprint so two saves in one JVM can never share heights.
-        this.cache = SHARED.computeIfAbsent(Integer.toHexString(System.identityHashCode(randomState))
-                + ":" + generatorSettings.seaLevel() + ":" + noiseSettings.minY() + ":" + noiseSettings.height(),
-                ignored -> new java.util.concurrent.ConcurrentHashMap<>());
+        this(randomState,noiseSettings,generatorSettings,fluidPicker,null);
     }
+
+    NoiseSurfaceSampler(RandomState randomState, NoiseSettings noiseSettings,
+            NoiseGeneratorSettings generatorSettings, Aquifer.FluidPicker fluidPicker,SessionCellCache<Heights> shared) {
+        this.randomState=randomState;this.noiseSettings=noiseSettings;
+        this.generatorSettings=generatorSettings;this.fluidPicker=fluidPicker;
+        this.defaultBlock=generatorSettings.defaultBlock();
+        ownsCache=shared==null;
+        cache=ownsCache ? new SessionCellCache<>(CACHE_CELLS) : shared;
+    }
+
+    void close() { if(ownsCache)cache.close(); }
 
     /** {@return the vanilla WORLD_SURFACE_WG height} in heightmap semantics, or the dimension floor. */
     int worldSurface(int x, int z) {
@@ -175,69 +131,10 @@ final class NoiseSurfaceSampler {
         long key = ((long) Math.floorDiv(x, cellWidth) << 32) ^ (Math.floorDiv(z, cellWidth) & 0xffffffffL);
         int cellX = Math.floorDiv(x, cellWidth);
         int cellZ = Math.floorDiv(z, cellWidth);
-        Heights cached = cache.get(key);
-        if (cached != null) {
-            cacheHits.incrementAndGet();
-            return cached;
-        }
-        Heights[] built = new Heights[1];
-        Heights fresh = cache.computeIfAbsent(key, ignored -> {
-            built[0] = sweep(cellX, cellZ);
-            return built[0];
-        });
-        if (built[0] != null) {
-            cacheMisses.incrementAndGet();
-            sweeps++;
-            evictIfOversized();
-        }
-        return fresh;
-    }
-
-    /**
-     * Bakes one noise cell: cellWidth x cellWidth columns.
-     *
-     * <p>The port used to bake a whole chunk (256 columns) because that is what the road needs: it
-     * samples a road footprint, which is dense. The wall asks for single columns spread over a ring
-     * thousands of chunks wide, so a chunk bake computed 255 columns nobody read - measured 67 ms per
-     * answered column, and 3.4 s per siting candidate.
-     */
-    /**
-     * 0.7.120 诊断：cell 缓存淘汰了多少（决定 CACHE_CELLS 该不该加大）。
-     *
-     * <p>真机一局 FINE_SAMPLE_DONE 报 {@code chunkCacheMisses=124,571} 而只采了
-     * {@code columns=130,155} 列 —— 几乎每列一次 cell 烘焙，fine 阶段 400~545 s。
-     * 两种解释只能靠这两个计数器分开：①预算 65,536 不够、cell 被挤出去又重烘；
-     * ②本来就有一百万个不同的噪声 cell 要烘。
-     *
-     * <p><b>0.7.121 结论：①被实测证伪，真相是②。</b>预算加倍到 131,072 后，真机一局
-     * {@code cell cache eviction} 日志一条都没有（{@code CACHE_EVICTIONS} 从未自增，说明
-     * map 根本没越过预算），而 {@code chunkCacheMisses} 只从 124,571 变到 124,239（−0.27%，
-     * 噪声级）。所以预算不是瓶颈，那 12.4 万次 miss 对应的是 12.4 万个真实且互不相同的 cell。
-     * 两个计数器与这条节流日志保留下来继续做诊断，但<b>不要再往「加大预算」这个方向投入</b>：
-     * 真要降 miss，只能减少要采的列数，或者降低单次 {@code sweep()} 的成本（见 CACHE_CELLS 注释）。
-     */
-    private static final java.util.concurrent.atomic.AtomicLong CACHE_EVICTIONS =
-            new java.util.concurrent.atomic.AtomicLong();
-    private static final java.util.concurrent.atomic.AtomicLong CACHE_EVICTED_CELLS =
-            new java.util.concurrent.atomic.AtomicLong();
-
-    /** A shared map has no LRU: drop an eighth of it when the budget is crossed. */
-    private void evictIfOversized() {
-        if (cache.size() <= CACHE_CELLS) return;
-        int before = cache.size();
-        int target = cache.size() - CACHE_CELLS / 8;
-        var iterator = cache.keySet().iterator();
-        while (cache.size() > target && iterator.hasNext()) {
-            iterator.next();
-            iterator.remove();
-        }
-        long n = CACHE_EVICTIONS.incrementAndGet();
-        long dropped = CACHE_EVICTED_CELLS.addAndGet(before - cache.size());
-        if (n <= 5 || n % 200 == 0) {
-            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                    "[GreatWall:sampler] cell cache eviction #{} size={}->{} budget={} evictedTotal={}",
-                    n, before, cache.size(), CACHE_CELLS, dropped);
-        }
+        var result=cache.get(key,()->sweep(cellX,cellZ));
+        if(result.built()) { cacheMisses.incrementAndGet();sweeps++; }
+        else cacheHits.incrementAndGet();
+        return result.value();
     }
 
     /** Room left above the density estimate on the first pass; a cell that outruns it is redone. */
@@ -419,7 +316,7 @@ final class NoiseSurfaceSampler {
     }
 
     /** One cell's heightmaps plus the solid blocks under each column's surface. */
-    private record Heights(int[] worldSurface, int[] solidTop, BlockState[][] support, boolean complete) {
+    record Heights(int[] worldSurface, int[] solidTop, BlockState[][] support, boolean complete) {
     }
 
     static Aquifer.FluidPicker fluidPicker(NoiseGeneratorSettings settings) {

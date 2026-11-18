@@ -14,8 +14,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
  *
  * <p>The production landing path used to write only the voxels. That left a perfectly good-looking
  * wall with no campfire/chest identity and no persistent ownership or gameplay index. These helpers
- * deliberately keep the existing ownership checks at the call sites; this is not a second authority
- * allowed to overwrite a player-edited world.
+ * 首次施工按已发布计划写实体；已完成同hash计划由入口提前返回，保留玩家后续编辑。
  */
 public final class WallPlanSupport {
     private WallPlanSupport() {
@@ -37,6 +36,8 @@ public final class WallPlanSupport {
         for (BlockEntityIntent entity : plan.blockEntities()) {
             Point3i p = entity.pos();
             if (!owns(plan, p)) continue;
+            // 部分施工只给已成功落块/已匹配目标的位置安装实体，不能给失败位置预写payload。
+            if (touched != null && !touched.contains(p)) continue;
             BlockPos pos = new BlockPos(p.x(), p.y(), p.z());
             var existing = chunk.getBlockEntity(pos);
             // A block entity that was already present belongs to the world/player. Only fill one we
@@ -54,7 +55,17 @@ public final class WallPlanSupport {
             payload.putInt("localId", entity.localId());
             entity.fields().forEach(payload::putString);
             tag.put("plaincraft_great_wall", payload);
-            chunk.setBlockEntityNbt(tag);
+            if(chunk instanceof net.minecraft.world.level.chunk.LevelChunk loaded) {
+                // 已加载区块不能只存待加载NBT：现有实体会继续生效，重开前看不到计划身份。
+                var replacement=net.minecraft.world.level.block.entity.BlockEntity.loadStatic(
+                        pos,chunk.getBlockState(pos),tag,loaded.getLevel().registryAccess());
+                if(replacement==null)throw new IllegalStateException("无法创建计划方块实体: "+entity.type()+" "+p);
+                loaded.removeBlockEntity(pos);
+                loaded.addAndRegisterBlockEntity(replacement);
+                replacement.setChanged();
+            } else {
+                chunk.setBlockEntityNbt(tag);
+            }
             written++;
         }
         return written;

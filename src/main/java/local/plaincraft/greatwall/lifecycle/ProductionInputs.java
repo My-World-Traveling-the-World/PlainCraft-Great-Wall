@@ -12,7 +12,12 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 
 /** Completed LOAD callbacks are a prerequisite. Only immutable adapters/factories are published. */
-public record ProductionInputs(WorldBootstrap.Frozen bootstrap, BlockCatalog blocks, TreeBoundsCatalog trees) {
+public record ProductionInputs(WorldBootstrap.Frozen bootstrap, BlockCatalog blocks, TreeBoundsCatalog trees) implements AutoCloseable {
+    @Override public void close() {
+        // 工厂生命周期跟随本会话，停止时唤醒等待者并释放所有lane共用的结果。
+        if(bootstrap.factory() instanceof CpuTerrainOracle.SharedOracleFactory factory)factory.close();
+    }
+
     public static ProductionInputs freeze(ServerLevel level) throws IOException {
         var blocks = new BlockCatalog(level.registryAccess());
         var trees = new TreeBoundsCatalog(level.registryAccess(),
@@ -34,7 +39,7 @@ public record ProductionInputs(WorldBootstrap.Frozen bootstrap, BlockCatalog blo
         // invalidates an existing world. Generation changes must bump the mod version instead,
         // which already feeds terrainHash through actual-mod:*.
         String templatesHash = WorldRecipeGuard.fingerprint(versions);
-        var root = new WorldBootstrap.Frozen(frozen.bounds(), terrainHash, paletteHash, templatesHash, frozen::createOracle,
+        var root = new WorldBootstrap.Frozen(frozen.bounds(), terrainHash, paletteHash, templatesHash, frozen.sharedFactory(),
                 (oracle, cursor) -> {
                     if (!(oracle instanceof CpuTerrainOracle cpu)) throw new IllegalStateException("production foundation requires its private CPU oracle");
                     var evidence = cpu.foundationEvidence(cursor);

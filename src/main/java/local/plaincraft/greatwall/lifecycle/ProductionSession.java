@@ -1412,6 +1412,8 @@ final class ProductionSession implements AutoCloseable {
         }
         var journal = (HistoryJournal) gameplay.get("history");
         bootstrap.close();
+        var frozenInputs=inputs.get("frozen");
+        if(frozenInputs!=null)frozenInputs.close();
         bootstrap.drain().whenComplete((value, error) -> {
             // journal 的 WAL force / channel close 必须真正完成后才能宣布 drained，
             // 否则尾写可能丢失或与下一 session 争用文件锁。

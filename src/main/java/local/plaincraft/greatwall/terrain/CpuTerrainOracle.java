@@ -48,6 +48,29 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
             }
         }
         public CpuTerrainOracle createOracle() { return new CpuTerrainOracle(this); }
+
+        /** 冻结输入每次显式创建会话工厂，不按种子字符串复用跨世界状态。 */
+        public SharedOracleFactory sharedFactory() { return new SharedOracleFactory(this); }
+
+    }
+
+    /** 多lane只共享不可变烘焙结果，RandomState与NoiseChunk继续私有。 */
+    public static final class SharedOracleFactory implements java.util.function.Supplier<NaturalTerrainOracle>,AutoCloseable {
+        private final FrozenInput frozen;
+        private final SessionCellCache<NoiseSurfaceSampler.Heights> cache=new SessionCellCache<>(NoiseSurfaceSampler.CACHE_CELLS);
+        private boolean closed;
+        private SharedOracleFactory(FrozenInput frozen) { this.frozen=frozen; }
+        @Override public NaturalTerrainOracle get() {
+            synchronized(this) {
+                if(closed)throw new IllegalStateException("会话地形工厂已关闭");
+            }
+            // Native构造可能很慢，不在工厂锁中执行，否则会把各lane初始化串行化。
+            return new CpuTerrainOracle(frozen,cache);
+        }
+        @Override public synchronized void close() {
+            if(closed)return;
+            closed=true;cache.close();
+        }
     }
 
     /** Native initialization has its own clock; all repeatable sampling clocks retain the 40ms limit. */
@@ -194,7 +217,9 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
 
     public CpuTerrainOracle(ServerLevel level, String fingerprint) { this(freeze(level, fingerprint)); }
 
-    public CpuTerrainOracle(FrozenInput frozen) {
+    public CpuTerrainOracle(FrozenInput frozen) { this(frozen,null); }
+
+    private CpuTerrainOracle(FrozenInput frozen,SessionCellCache<NoiseSurfaceSampler.Heights> shared) {
         OracleLane.claimNativeInitialization();
         Objects.requireNonNull(frozen);
         settings = frozen.settings(); fluidPicker = frozen.fluidPicker(); biomeSource = frozen.biomeSource();
@@ -208,7 +233,7 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         // predicates. It only answers for columns the walk could not certify (and for columns that
         // read at bedrock), which is exactly where the density-only estimate used to be silently
         // wrong - see NoiseSurfaceSampler.
-        surfaceSampler = new NoiseSurfaceSampler(randomState, noise, settings, fluidPicker);
+        surfaceSampler = new NoiseSurfaceSampler(randomState, noise, settings, fluidPicker,shared);
     }
 
     /** Called on server owner after all LOAD callbacks, before publishing a lane factory. */
@@ -417,7 +442,8 @@ public final class CpuTerrainOracle implements NaturalTerrainOracle {
         if (closed) return;
         closed = true;
         active = null;
-        // Cached chunks hold scratch arrays and this lane is going away: release every one.
+        // 独立oracle释放自身缓存；共享结果由会话工厂关闭，不能先退场一个lane就清空其他lane。
+        surfaceSampler.close();
     }
 
     /**

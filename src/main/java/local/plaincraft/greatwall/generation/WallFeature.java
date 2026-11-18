@@ -2,14 +2,12 @@ package local.plaincraft.greatwall.generation;
 
 import java.util.EnumSet;
 import local.plaincraft.greatwall.model.WallTypes.ChunkKey;
-import local.plaincraft.greatwall.model.WallTypes.IntentKind;
 import local.plaincraft.greatwall.model.WallTypes.Point3i;
 import local.plaincraft.greatwall.terrain.BlockCatalog;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -35,7 +33,8 @@ public class WallFeature extends Feature<NoneFeatureConfiguration> {
 
         ChunkAccess chunk = world.getChunk(cx, cz);
         var marker = chunk.getAttached(TerrainMarkers.PRODUCTION);
-        if (marker != null && marker.complete() && marker.planHash().equals(plan.hash())) {
+        if (marker != null && PublishedPlanPainter.preserveCompleted(false,
+                marker.complete(),marker.planHash(),plan.hash())) {
             // An already-written chunk still has to publish its ownership to the road guard and
             // gameplay index after a restart; returning early here used to lose both forever.
             WallPlanSupport.markPlannedColumns(plan);
@@ -43,41 +42,41 @@ public class WallFeature extends Feature<NoneFeatureConfiguration> {
             return true;
         }
 
-        var touched = new java.util.HashSet<Point3i>();
-        for (var voxel : plan.voxels()) {
-            Point3i p = voxel.pos();
-            if (Math.floorDiv(p.x(), 16) != cx || Math.floorDiv(p.z(), 16) != cz) continue;
-            if (voxel.kind() == IntentKind.KEEP) continue;
-            BlockPos pos = new BlockPos(p.x(), p.y(), p.z());
-            BlockState state = BlockCatalog.resolveState(voxel.state());
-            BlockState current = chunk.getBlockState(pos);
-            if (!canReplace(current)) continue;
-            chunk.setBlockState(pos, state, false);
-            touched.add(p);
-            local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(p.x(), p.z());
-        }
-        Heightmap.primeHeightmaps(chunk, EnumSet.of(
-                Heightmap.Types.WORLD_SURFACE_WG,
-                Heightmap.Types.OCEAN_FLOOR_WG,
-                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
-        for (var p : plan.postprocess()) chunk.markPosForPostprocessing(new BlockPos(p.x(), p.y(), p.z()));
-        try {
-            WallPlanSupport.writeBlockEntities(chunk, plan, touched);
-            WallPlanSupport.writeMarkers(chunk, plan);
-        } catch (RuntimeException metadataFailure) {
-            // A template/palette problem must not turn a generated wall chunk into a failed chunk.
-            local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
-                    "[GreatWall:wonder] WALL_PLAN_METADATA_FAILED owner={},{} reason={}",
-                    cx, cz, metadataFailure.toString());
-        }
         WallPlanSupport.markPlannedColumns(plan);
-        local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(server, chunk, plan);
-        return true;
-    }
-
-    private static boolean canReplace(BlockState current) {
-        if (current.isAir()) return true;
-        if (current.hasBlockEntity()) return false;
-        return !current.is(Blocks.BEDROCK);
+        if(marker!=null && marker.complete())WallPlanSupport.writeMarkers(chunk,plan,false);
+        int[] failures={0};
+        var result=PublishedPlanPainter.paint(plan,new PublishedPlanPainter.World<BlockState>() {
+            public boolean validHeight(int y) { return !world.isOutsideBuildHeight(y); }
+            public BlockState resolve(local.plaincraft.greatwall.model.WallTypes.BlockSpec spec) {
+                return BlockCatalog.resolveState(spec);
+            }
+            public BlockState read(Point3i p) { return chunk.getBlockState(new BlockPos(p.x(),p.y(),p.z())); }
+            public boolean write(Point3i p,BlockState target) {
+                var pos=new BlockPos(p.x(),p.y(),p.z());
+                // 与补建采用同一首次施工政策，替换实体后清理旧身份，避免带入漏检建筑的数据。
+                chunk.setBlockState(pos,target,false);
+                if (!target.hasBlockEntity()) chunk.removeBlockEntity(pos);
+                return chunk.getBlockState(pos)==target;
+            }
+            public void finish(java.util.Set<Point3i> satisfied,boolean complete) {
+                Heightmap.primeHeightmaps(chunk,EnumSet.of(Heightmap.Types.WORLD_SURFACE_WG,
+                        Heightmap.Types.OCEAN_FLOOR_WG,Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
+                for(var p:plan.postprocess())chunk.markPosForPostprocessing(new BlockPos(p.x(),p.y(),p.z()));
+                WallPlanSupport.writeBlockEntities(chunk,plan,satisfied);
+                WallPlanSupport.writeMarkers(chunk,plan,complete);
+            }
+            public void failure(Point3i p,RuntimeException failure) {
+                // 坏材料会影响整片体素，每块仅记首个原因，避免异常日志反而拖住生成线程。
+                if(failures[0]++==0)local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
+                        "[GreatWall:施工] 世界生成落块未完成 owner={},{} pos={} 原因={}",cx,cz,p,failure.toString());
+            }
+        });
+        if(result.complete()) {
+            local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(server,chunk,plan);
+        } else {
+            // feature阶段不会重跑，缺口交给已有加载事件与计划缓存补建，不能只返回成功丢失失败。
+            WallBodyBackfill.enqueuePublished(server,java.util.List.of(plan.owner()));
+        }
+        return result.complete();
     }
 }

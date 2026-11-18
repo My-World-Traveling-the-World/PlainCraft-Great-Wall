@@ -11,12 +11,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.model.WallTypes.ChunkKey;
 import local.plaincraft.greatwall.model.WallTypes.ChunkWritePlan;
-import local.plaincraft.greatwall.model.WallTypes.IntentKind;
 import local.plaincraft.greatwall.model.WallTypes.Point3i;
 import local.plaincraft.greatwall.terrain.BlockCatalog;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 
@@ -42,10 +40,8 @@ import net.minecraft.world.level.chunk.LevelChunk;
  *   <li><b>Never block.</b> At most {@link #MAX_CHUNKS_PER_DRAIN} chunks per drain, one drain
  *       every {@link #DRAIN_INTERVAL_TICKS} ticks, and every wait in the startup pass carries a
  *       deadline ({@link #BATCH_TIMEOUT_NANOS}, {@code greatwall.backfillStartupBudgetMs}).</li>
- *   <li><b>Idempotent.</b> A block already equal to its target is skipped, so a restart re-walks
- *       for almost nothing and no durable ledger is needed.</li>
- *   <li><b>Never clobber.</b> Only air, replaceable plants and non-block-entity blocks are
- *       written - the same rule {@code WallFeature} applies during generation.</li>
+ *   <li>相同方块不重复写入；持久完成章负责重开后保留玩家修改，部分施工仍可重试。</li>
+ *   <li>首次落块以已发布计划为准；已完成同hash标记继续保护玩家后续编辑。</li>
  * </ul>
  */
 public final class WallBodyBackfill {
@@ -621,7 +617,11 @@ public final class WallBodyBackfill {
                         markDone(key);
                     }
                     case PENDING -> {
+                        // 部分施工也有真实成功写入，计数与是否结案分别记录。
+                        writtenBlocks += sweep.written();
                         if (state.attempts.merge(key, 1, Integer::sum) >= MAX_ATTEMPTS) {
+                            GreatWallMod.LOGGER.warn("[GreatWall:施工] 补建重试耗尽，未记录完成 owner={},{} attempts={}",
+                                    key.x(),key.z(),MAX_ATTEMPTS);
                             dropped.add(key);
                         }
                     }
@@ -779,8 +779,8 @@ public final class WallBodyBackfill {
         }
         boolean forcedRepair = FORCE_REPAIR.remove(key);
         var existingMarker = chunk.getAttached(TerrainMarkers.PRODUCTION);
-        if (!forcedRepair && existingMarker != null && existingMarker.complete()
-                && existingMarker.planHash().equals(plan.hash())) {
+        if (existingMarker != null && PublishedPlanPainter.preserveCompleted(forcedRepair,
+                existingMarker.complete(),existingMarker.planHash(),plan.hash())) {
             // This chunk has already been built and saved. Never turn a player's edit back into wall.
             // 0.7.118：单独计数。这一条是「written=0 但世界里明明有墙」的唯一出口 —— 之前它与
             // 「真的什么都没写」共用一个 written=0，导致日志无法区分，误判成墙没铺。
@@ -789,90 +789,44 @@ public final class WallBodyBackfill {
             local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
             return new Sweep(Status.SETTLED, 0);
         }
-        int written = 0;
-        boolean fullyWritten = true;
-        var touched = new java.util.HashSet<Point3i>();
-        // Mark the complete plan before any idempotence/conflict skip. These are read-only guard
-        // marks, not writes: an already-built column must be protected just as much as a new one.
         WallPlanSupport.markPlannedColumns(plan);
-        var beforeStates = new java.util.HashMap<Point3i, String>();
-        for (var proof : plan.proofs()) {
-            beforeStates.putIfAbsent(proof.pos(), proof.beforeState());
-        }
-        for (var voxel : plan.voxels()) {
-            try {
-            Point3i p = voxel.pos();
-            if (Math.floorDiv(p.x(), 16) != key.x() || Math.floorDiv(p.z(), 16) != key.z()) continue;
-            if (voxel.kind() == IntentKind.KEEP) continue;
-            BlockPos pos = new BlockPos(p.x(), p.y(), p.z());
-            BlockState target = BlockCatalog.resolveState(voxel.state());
-            BlockState current = chunk.getBlockState(pos);
-            if (current == target) continue;
-            if (!replaceable(current)) { fullyWritten = false; continue; }
-            // The compile recorded the exact state it saw. Comparing only the block id was not
-            // enough: a player could place the same block with different properties, or place a
-            // block where the compiler saw air and have it overwritten anyway.
-            String before = beforeStates.get(p);
-            if (before != null) {
-                String currentToken = BlockCatalog.token(current, current.hasBlockEntity());
-                if (!before.equals(currentToken)) {
-                    if (beforeConflicts++ % 512 == 1) {
-                        GreatWallMod.LOGGER.warn("[GreatWall:S1C] BACKFILL_CONFLICT pos={} before={} current={}",
-                                p, before, currentToken);
-                    }
-                    fullyWritten = false;
-                    continue;
-                }
+        // 强制修复或新版本施工先撤销旧完成章，后续实体失败不能留下旧的成功证据。
+        if (existingMarker != null && existingMarker.complete()) WallPlanSupport.writeMarkers(chunk,plan,false);
+        var result = PublishedPlanPainter.paint(plan, new PublishedPlanPainter.World<BlockState>() {
+            public boolean validHeight(int y) { return !level.isOutsideBuildHeight(y); }
+            public BlockState resolve(local.plaincraft.greatwall.model.WallTypes.BlockSpec spec) {
+                return BlockCatalog.resolveState(spec);
             }
-            // Flag 3 notifies clients and neighbours, and setBlock keeps the heightmaps honest -
-            // the raw ChunkAccess path used during generation has to prime them by hand.
-            // Flag 2 notifies clients but does not cascade neighbour updates: a chunk of wall is two
-            // thousand writes, and eight thousand cascades every half second is a visible stutter. The
-            // chunk still updates its own heightmaps, and lighting is recomputed per section on save.
-            if (!level.setBlock(pos, target, 2)) fullyWritten = false;
-            touched.add(p);
-            local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(pos.getX(),pos.getZ());
-            written++;
-            // ---- 只读自检（B 线）：每 64 个刚写完的体素抽 1 个立刻回读对一遍。
-            // 不补洞、不重试、不改写，只上报 —— 以后任何"盖完却缺格"一次跑就能定位，
-            // 不用像 2026-10-24 那样去解 region 文件猜（当时是道路把墙挖掉的）。
-            if ((written & 63) == 0) {
-                BlockState landed = chunk.getBlockState(pos);
+            public BlockState read(Point3i p) { return chunk.getBlockState(new BlockPos(p.x(),p.y(),p.z())); }
+            public boolean write(Point3i p,BlockState target) {
+                // 规划已经负责结构避让；首次施工按计划覆盖漏检建筑，沿用服务端高度/光照与客户端更新。
+                return level.setBlock(new BlockPos(p.x(),p.y(),p.z()),target,2);
+            }
+            public void written(Point3i p,BlockState target,int count) {
+                if ((count & 63) != 0) return;
+                BlockState landed=read(p);
                 if (landed != target) {
                     if (landed.isAir()) verifyMissing++; else verifyWrong++;
-                    if ((verifyMissing + verifyWrong) % 64 == 1) {
-                        GreatWallMod.LOGGER.warn("[GreatWall:verify] drain owner={},{} pos={} want={} got={}",
-                                key.x(), key.z(), pos, target.getBlock(), landed.getBlock());
-                    }
+                    // 抽样发现未落地也必须保持未完成，不能只有告警却宣布建成。
+                    throw new IllegalStateException("长城方块回读不一致: "+p);
                 }
             }
-            } catch (WallFailure unresolvable) {
-                // A voxel that names a block the registry does not have (a palette referencing a
-                // removed mod, a template drift) would otherwise kill this chunk silently: the
-                // exception escapes, the chunk stays in settling, and every drain retries it.
-                // Drop the voxel, count it, and let the rest of the wall write.
-                fullyWritten = false;
+            public void finish(java.util.Set<Point3i> satisfied,boolean complete) {
+                WallPlanSupport.writeBlockEntities(chunk,plan,satisfied);
+                WallPlanSupport.writeMarkers(chunk,plan,complete);
+            }
+            public void failure(Point3i p,RuntimeException failure) {
                 if (++unresolvableVoxels % 512 == 1) {
-                    GreatWallMod.LOGGER.warn("[GreatWall:S1C] BACKFILL_VOXEL_DROPPED owner={},{} reason={}",
-                            key.x(), key.z(), unresolvable.getMessage());
+                    GreatWallMod.LOGGER.warn("[GreatWall:施工] 首次补建未完成，保留重试 owner={},{} pos={} 原因={}",
+                            key.x(),key.z(),p,failure.toString());
                 }
             }
+        });
+        if (result.complete()) {
+            local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
         }
-        try {
-            WallPlanSupport.writeBlockEntities(chunk, plan, touched);
-            WallPlanSupport.writeMarkers(chunk, plan, fullyWritten);
-        } catch (RuntimeException metadataFailure) {
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_METADATA_FAILED owner={},{} reason={}",
-                    key.x(), key.z(), metadataFailure.toString());
-        }
-        local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
-        return new Sweep(Status.SETTLED, written);
-    }
-
-    private static boolean replaceable(BlockState current) {
-        if (current.isAir()) return true;
-        if (current.hasBlockEntity()) return false;
-        return !current.is(Blocks.BEDROCK);
+        // 不完整计划不得进入SETTLED，否则外层会移出队列并持久写入DONE。
+        return new Sweep(result.complete() ? Status.SETTLED : Status.PENDING,result.written());
     }
 
     private static State state(ServerLevel level) {
