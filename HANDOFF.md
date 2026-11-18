@@ -1,5 +1,44 @@
 # 长城启动契约开发交接
 
+## 2026-11-18：第39轮，缓存 IO、编译去重与启动范围
+
+### 一、改了什么
+
+- `77171d8f`（行为变更）：缓存 IO 从 `PlannerScheduler` 独立到 `PlannerCacheIo`，沿用推进线程、磁盘执行器、128 个请求上限及单操作在途。关闭时回收尚未送往磁盘的额度，磁盘拒绝保留原始异常。
+- `55b16569`（产物等价、性能）：启动窗口复用同一组不可变实现单元的构件校验、冲突裁决和邻接解析；最终写入体素按区块分桶。只保留最近一组解析，区块各自核对施工前证据、覆盖哈希与最终计划。普通入口仍单独记账。日志记录 `resolutions` 和 `ownerJobs`。
+- `1425886c`（行为变更）：`StartupWallRange` 固定会话范围，结构扫描、精采样、批量规划、编译重试及后台续接读取同一份范围决策。无限长新增 `unlimitedPrewarmBlocks`，默认 8192 格，按 2048 格向上取整，界面和文件值一致。有限墙 ≤100,000 格仍全段规划；更长的有限墙仍只在开局规划前四段，保留后续推进及安全包络内的结构扫描。修正超长斜线走廊的整数投影溢出。隔离可重建结构扫描缓存；配方摘要、存档结构与游玩期补建顺序未改。
+
+### 二、验证了什么
+
+`09ba076e` 干净开工，显式 pull 同名分支无更新。外置 Gradle 9.4.1、JDK 21 跑 `test compileJava compileClientJava --offline --daemon --console=plain --dependency-verification=off`，**811 项，失败／错误／跳过均为 0**，`BUILD SUCCESSFUL`，日志 `build-round39-final.log`。接缝夹具在相邻区块逐字节对拍计划，明确断言围栏双向连接、跨界楼梯转角及缺施工前状态只影响当前 owner。伪造构件哈希不能借用已验证结果。涉及长城的守卫都在长城仓。
+
+| 生产变异 | 结果 |
+|---|---|
+| 关闭时不归还已入队的 IO 额度 | `closingReturnsQueuedAndInFlightCapacityExactlyOnce` 红（`build-round39-mutant-io.log`） |
+| 每个区块都重新解析相同构件 | `startupOwnersShareResolutionButKeepSeamAndIndependentProofs` 红（`build-round39-mutant-compiler.log`） |
+| 无限墙范围恒四段 | `unlimitedRangeRoundsUpAndFrozenBoundaryClipsEveryStage` 红（`build-round39-mutant-range.log`） |
+| 结构扫描缓存身份忽略走廊 | `sameChunkBoundsDoNotAliasDifferentCorridorsOrRecipes` 红（`build-round39-mutant-scan-key.log`） |
+| 长斜线退回直接乘积投影 | `worldScaleDiagonalStillContainsItsMiddle` 红（`build-round39-mutant-projection.log`） |
+| 配置重新加载时忽略无限预热范围 | `savedKnobsSurviveAReload` 红（`build-round39-mutant-config.log`） |
+
+均正常编译后由指定 JUnit 断言杀死；各组按唯一锚点替换，从暂存的正确版本精确恢复，再跑全量。
+
+### 三、没能验证什么
+
+没有部署或运行真实整合包、没有读取或修改真实存档。未量化开局时间、峰值内存、MSPT、FPS 或大范围扫描吞吐。范围测试证明决策、配置与缓存身份，未证明 100,000 格在任意整合包都能顺利完成。启动仍可并行扫描和精采样，改变范围后旧几何缓存与新结构边界的真实重开行为需要存档副本对照。停服调度器 `drain` 仍等地形通道，不保证磁盘写完。超长有限墙全长预热未交付。
+
+### 四、遗留半截的东西
+
+测试变异已恢复。当前单窗会一起持有计划、采样和施工证明；不能简单抬高超长有限墙的开局段数。正式建筑模板等素材。游戏内补建仍沿用分批写入，三模组就绪顺序不变。
+
+### 五、下一轮先做什么
+
+将超长有限墙改为有界窗口前，先让按区块取证能接收重叠的相邻段；用真实多段接缝对拍一次性编译和分窗编译的覆盖哈希、施工计划及脚点，确定唯一 owner 发布规则。随后分批归还采样和计划租约，最后一批足迹发布后才放行道路；再测取消、重开和峰值。
+
+### 六、踩到的坑
+
+同一个宣称哈希可以来自不同实例，复用必须依赖已冻结的同组输入，不能跳过内容校验。相同区块外框的走廊也会得到不同候选，结构缓存需隔离内容与范围。默认预热范围的四段仍保留，旧文本和二进制扫描缓存会重新生成一次；整数长度用先减后除，防止 `Long.MAX_VALUE` 向上取整溢出。
+
 ## 2026-11-18：第38轮，长城规划调度拆分
 
 ### 一、改了什么
