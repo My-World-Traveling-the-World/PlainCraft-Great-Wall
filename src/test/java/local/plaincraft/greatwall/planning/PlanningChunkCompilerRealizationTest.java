@@ -34,6 +34,10 @@ class PlanningChunkCompilerRealizationTest {
         assertTrue(witness.voxels().stream().anyMatch(v -> v.pos().x() == SEAM - 1 && v.component().kind() == SiteKind.WALL));
         assertTrue(witness.voxels().stream().anyMatch(v -> v.pos().x() == SEAM && v.component().kind() == SiteKind.WALL));
         assertTrue(witness.voxels().stream().map(VoxelIntent::component).distinct().count() >= 2, "两侧必须来自不同墙体单元");
+        assertTrue(witness.voxels().stream().anyMatch(v -> v.pos().equals(new Point3i(SEAM, 54, 5))
+                && v.part() == Part.FOUNDATION), "接缝下一单元必须保留弧长边界上的深填土");
+        // 用旧整窗截面输入生成的完整计划锁住地基、墙体、覆盖和施工前证明。
+        assertEquals("136663182adf32f52642d84127d1cbc0523de11aab237a3c819fdb4affd0193f", witness.hash());
         assertEquals(witness.voxels().size(), witness.proofs().size());
         assertTrue(whole.values().stream().filter(plan -> !plan.voxels().isEmpty()).count() > 3, "确实跨越多个批次");
         assertEquals(whole.keySet(), batched.keySet());
@@ -72,9 +76,15 @@ class PlanningChunkCompilerRealizationTest {
     private static FineHeightIndex samples() {
         var columns = new ArrayList<WallFinePlanner.FineColumn>();
         var flat = new ColumnSample(64, OptionalInt.empty(), OptionalInt.empty(), "minecraft:plains", Quality.REFERENCE, false);
+        // 比自然承重基准低 10 格，仍在真实探针的寻底范围内，不能把无承重导致的拒绝混入测试。
+        var low = new ColumnSample(54, OptionalInt.empty(), OptionalInt.empty(), "minecraft:plains", Quality.REFERENCE, false);
         // 给墙体足迹两侧都留采样余量，避免把缺证据造成的空计划误当成接缝结果。
         for (int x = SEAM - 144; x <= SEAM + 144; x++) {
-            for (int z = -12; z <= 12; z++) columns.add(new WallFinePlanner.FineColumn(x, z, z, flat));
+            for (int z = -12; z <= 12; z++) {
+                // 只降低一列，让地基来自有弧长标识的真实截面，整段地形保持可走。
+                var height = x == SEAM && z == 5 ? low : flat;
+                columns.add(new WallFinePlanner.FineColumn(x, z, z, height, (x - SEAM + 128) * 256L, x, 0));
+            }
         }
         return FineHeightIndex.of(columns);
     }

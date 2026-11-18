@@ -33,7 +33,7 @@ public final class PlanningChunkCompiler {
     private final List<Bounds> structures;
     /** Absolute ground floor per (x,z), produced by WallFoundationPlanner for this window. */
     private final Map<Long, Integer> foundationFloor;
-    private final List<WallFoundationPlanner.ColumnFoundation> foundations;
+    private final FoundationSectionIndex foundationSections;
 
     public PlanningChunkCompiler(RealizationPlanner realization, ChunkPlanCompiler compiler,
             FineHeightIndex index, List<Bounds> structures) {
@@ -51,10 +51,9 @@ public final class PlanningChunkCompiler {
         this.compiler = Objects.requireNonNull(compiler, "compiler");
         this.index = Objects.requireNonNull(index, "index");
         this.structures = List.copyOf(Objects.requireNonNull(structures, "structures"));
-        // Production wiring for the per-column foundation decision. The WallSection consumes the
-        // same support samples when it expands its foundation floor; this call keeps the planner's
-        // base/fill contract exercised on every compile window and makes omissions visible.
-        this.foundations = WallFoundationPlanner.plan(index.orderedColumns());
+        // 弧长索引只影响单元的地基查询；世界坐标撞列仍按原截面顺序取最后一个值。
+        var foundations = WallFoundationPlanner.plan(index.orderedColumns());
+        this.foundationSections = new FoundationSectionIndex(foundations);
         var floor = new HashMap<Long, Integer>();
         for (var core : foundations) {
             for (var fill : core.fills()) {
@@ -384,8 +383,9 @@ public final class PlanningChunkCompiler {
 
     private RealizationCell resolveCell(CellKey cell,
             Map<Point3i, SurfaceProbe.ColumnView> columns, PlanWindow plans, String protectionHash) {
+        // 模板只读取本弧长单元的显式填方；保留整窗坐标表供折返处的承重查询。
         return realization.resolve(new RealizationPlanner.Input(cell, plans, Map.of(), columns,
-                List.copyOf(structures), Map.of(), 0, protectionHash, foundationFloor, foundations));
+                structures, Map.of(), 0, protectionHash, foundationFloor, foundationSections.forCell(cell.arcCell())));
     }
 
 
