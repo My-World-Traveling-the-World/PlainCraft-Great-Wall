@@ -106,7 +106,8 @@ public final class PlanningChunkCompiler {
 
     Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash,
             String dimension, OwnerProgress progress, int batchSize, int workers) {
-        record Owned(CellKey cell, List<ChunkKey> owners, SegmentPlan plan, PlanWindow segmentWindow) { }
+        record Owned(CellKey cell, List<ChunkKey> owners, SegmentPlan plan, PlanWindow segmentWindow,
+                boolean startsInStationRange) { }
         // Group by owner, so a chunk that several cells admit is compiled ONCE with all of them.
         //
         // The old shape enumerated (cell, owner) pairs and stored each result with a plain put. A seam
@@ -116,7 +117,7 @@ public final class PlanningChunkCompiler {
         // eight blocks of wall body: about twelve percent of the whole wall, with nothing in the log.
         // ChunkPlanCompiler.compile already takes a List<RealizationCell> - it was simply always handed
         // one - so the fix is to hand it every cell that admits the owner.
-        var byOwner = new java.util.LinkedHashMap<ChunkKey, java.util.ArrayList<Owned>>();
+        var byOwner = new java.util.LinkedHashMap<ChunkKey, java.util.LinkedHashMap<CellKey, Owned>>();
         for (var plan : plans.plans()) {
             try {
                 long from = plan.prefix().lengthBeforeQ8();
@@ -126,17 +127,24 @@ public final class PlanningChunkCompiler {
                 // 同段重复查询不同 cell；预先建立只读索引，仍保留原窗口和接缝归属。
                 var segmentWindow = new PlanWindow(List.of(plan));
                 var ownerLookup = coverage.prepareOwners(segmentWindow);
+                var stations = plan.stations().stations();
                 for (long cell = firstCell; cell <= lastCell; cell++) {
                     var cellKey = new CellKey(recipeHash, dimension, cell);
                     var owners = ownerLookup.forCell(cellKey);
                     if (owners.isEmpty()) continue;
-                    var admitted = new Owned(cellKey, owners, plan, segmentWindow);
+                    long cellStart = cell * 64L * 256;
+                    boolean startsInStationRange = stations.size() >= 2
+                            && cellStart >= stations.getFirst().globalSQ8() && cellStart < stations.getLast().globalSQ8();
+                    var admitted = new Owned(cellKey, owners, plan, segmentWindow, startsInStationRange);
                     for (var owner : owners) {
                         // The whole owner list travels with the item: a component's support table and its
                         // ground-exit walk read every cell of its axis-aligned bounds, which reaches into
                         // the neighbouring chunks, so the column map of one owner alone cannot serve it.
-                        byOwner.computeIfAbsent(owner, ignored -> new java.util.ArrayList<>())
-                                .add(admitted);
+                        // 保留原顺序和单一来源；有实墙输入时，上一段为取证收录的空尾单元不能抢占它。
+                        byOwner.computeIfAbsent(owner, ignored -> new java.util.LinkedHashMap<>())
+                                .merge(cellKey, admitted, (previous, candidate) ->
+                                        !previous.startsInStationRange() && candidate.startsInStationRange()
+                                                ? candidate : previous);
                     }
                 }
             } catch (Throwable failure) {
@@ -173,7 +181,7 @@ public final class PlanningChunkCompiler {
         var lastOwner = new java.util.IdentityHashMap<Owned, Integer>();
         int ordinal = 0;
         for (var items : byOwner.values()) {
-            for (var item : items) lastOwner.put(item, ordinal);
+            for (var item : items.values()) lastOwner.put(item, ordinal);
             ordinal++;
         }
         long indexedVoxels = 0;
@@ -195,16 +203,13 @@ public final class PlanningChunkCompiler {
         try (var pending = new OwnerCompileBatch(batchSize, workers)) {
             for (var entry : byOwner.entrySet()) {
                 var owner = entry.getKey();
-                var items = entry.getValue();
+                var items = entry.getValue().values();
                 var cells = new java.util.ArrayList<RealizationCell>();
                 // 覆盖哈希按区块计算，只传入实际参与这个区块编译的段。
                 var ownerPlans = new java.util.ArrayList<SegmentPlan>();
-                var seen = new java.util.LinkedHashSet<CellKey>();
                 var before = new HashMap<Point3i, String>();
                 Throwable cellFailure = null;
                 for (var item : items) {
-                    // 同一区块仍按原顺序为每个弧长单元选一个来源，否则会提交两个同名墙体构件。
-                    if (!seen.add(item.cell())) continue;
                     ownerPlans.add(item.plan());
                     var failure = cellFailures.get(item);
                     if (failure != null) {
