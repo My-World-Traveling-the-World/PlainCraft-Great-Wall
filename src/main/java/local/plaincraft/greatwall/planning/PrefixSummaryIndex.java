@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,11 +18,17 @@ import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.SegmentCacheStore;
 
-/** Ordered reduction, not O(1) cold lookup. No blocking future consumption or world access. */
+/** 按墙段顺序归约弧长、终点和链哈希；冷查找仍需读几何，不阻塞等待任务。 */
 public final class PrefixSummaryIndex implements AutoCloseable {
+    /** 只保留最近推进的少量摘要，连续窗口不必从磁盘检查点重走。 */
+    private static final int RECENT_LIMIT = 64;
+    private static final int CHECKPOINT_STRIDE = 256;
     private final LongFunction<PlanLease<SegmentGeometry>> geometries;
     private final ConcurrentHashMap<Long, CompletableFuture<PrefixSummary>> flights = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Long, PrefixSummary> checkpoints = new ConcurrentHashMap<>();
+    // 两张有序表共用锁：关闭和回调交错时，不能把已清理的摘要重新放回。
+    private final TreeMap<Long, PrefixSummary> checkpoints = new TreeMap<>();
+    private final TreeMap<Long, PrefixSummary> recent = new TreeMap<>();
+    private PrefixSummary terminal;
     private final ConcurrentHashMap<UUID, PlanLease<SegmentGeometry>> leases = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();
     private final Executor owner;
@@ -55,16 +62,24 @@ public final class PrefixSummaryIndex implements AutoCloseable {
                 identity.whenComplete((v, error) -> flights.remove(segment, identity));
                 owner.execute(() -> {
                     if (state.containsKey("closed")) { identity.completeExceptionally(closed()); return; }
-                    var before = checkpoints.values().stream().filter(p -> p.beforeSegment() <= segment)
-                            .max(java.util.Comparator.comparingLong(PrefixSummary::beforeSegment)).orElseThrow();
-                    long diskIndex = segment / 256 * 256;
-                    if (diskIndex > before.beforeSegment() && !state.containsKey("cache-read-disabled")) {
+                    var before = nearestBefore(segment);
+                    long diskIndex = segment / CHECKPOINT_STRIDE * CHECKPOINT_STRIDE;
+                    if (before.terminal().isEmpty() && diskIndex > before.beforeSegment()
+                            && !state.containsKey("cache-read-disabled")) {
                         try { CompletableFuture.supplyAsync(() -> {
                             try { return cache.readPrefix(diskIndex, cache.recipeHash()); }
                             catch (java.io.IOException failure) { state.put("cache-read-disabled", true); return Optional.<PrefixSummary>empty(); }
                         }, io).whenCompleteAsync((cached, failure) -> {
                             if (failure != null) identity.completeExceptionally(failure);
-                            else advance(new Reduction(segment, cached.orElse(before), identity));
+                            else {
+                                cached.ifPresent(this::remember);
+                                // IO 等待期间可能已有较新的归约完成；仍须取不超过目标的摘要。
+                                var now = nearestBefore(segment);
+                                // 较早请求保存的摘要可能已经被淘汰，本次仍可从那里继续。
+                                var resume = now.terminal().isPresent() || now.beforeSegment() >= before.beforeSegment()
+                                        ? now : before;
+                                advance(new Reduction(segment, resume, identity));
+                            }
                         }, owner); }
                         catch (java.util.concurrent.RejectedExecutionException full) {
                             state.put("cache-read-disabled", true); advance(new Reduction(segment, before, identity));
@@ -77,6 +92,38 @@ public final class PrefixSummaryIndex implements AutoCloseable {
     }
 
     public PrefixSummary combine(PrefixSummary before, SegmentGeometry next) { return reduce(before, next); }
+
+    /** 更晚的摘要含有目标之后的弧长和哈希，不能用于回查。 */
+    private PrefixSummary nearestBefore(long segment) {
+        synchronized (checkpoints) {
+            if (terminal != null && terminal.beforeSegment() <= segment) return terminal;
+            var checkpoint = checkpoints.floorEntry(segment);
+            var nearby = recent.floorEntry(segment);
+            if (nearby != null && (checkpoint == null || nearby.getKey() > checkpoint.getKey())) {
+                return nearby.getValue();
+            }
+            // 关闭已清表时只把空摘要交给 advance，由它按关闭状态结束请求。
+            return checkpoint == null ? origin() : checkpoint.getValue();
+        }
+    }
+
+    /** 只保存不可变摘要，不钉住任何几何租约；海洋终点不参与淘汰。 */
+    private void remember(PrefixSummary summary) {
+        synchronized (checkpoints) {
+            if (state.containsKey("closed")) return;
+            long segment = summary.beforeSegment();
+            if (summary.terminal().isPresent() && (terminal == null || segment < terminal.beforeSegment())) {
+                terminal = summary;
+            }
+            if (segment % CHECKPOINT_STRIDE == 0) {
+                checkpoints.putIfAbsent(segment, summary);
+            } else if (summary.terminal().isEmpty()) {
+                // 终点已经单独保留，留出最近摘要的空间给可继续推进的前缀。
+                recent.putIfAbsent(segment, summary);
+                if (recent.size() > RECENT_LIMIT) recent.pollFirstEntry();
+            }
+        }
+    }
 
     public static PrefixSummary reduce(PrefixSummary before, SegmentGeometry next) {
         if (before.terminal().isPresent() || before.beforeSegment() != next.key().index()) {
@@ -111,8 +158,8 @@ public final class PrefixSummaryIndex implements AutoCloseable {
                 try {
                     r.before = reduce(r.before, geometry);
                     r.pending.remove(next); leases.remove(nextLease.id()); nextLease.close();
-                    if (r.before.beforeSegment() % 256 == 0) {
-                        checkpoints.putIfAbsent(r.before.beforeSegment(), r.before);
+                    remember(r.before);
+                    if (r.before.beforeSegment() % CHECKPOINT_STRIDE == 0) {
                         var checkpoint = r.before;
                         if (!state.containsKey("cache-write-disabled")) {
                             try { CompletableFuture.runAsync(() -> {
@@ -139,7 +186,12 @@ public final class PrefixSummaryIndex implements AutoCloseable {
         if (state.putIfAbsent("closed", true) != null) return;
         flights.forEach((key, promise) -> promise.completeExceptionally(closed()));
         leases.forEach((id, lease) -> lease.close());
-        leases.clear(); flights.clear(); checkpoints.clear();
+        leases.clear(); flights.clear();
+        synchronized (checkpoints) {
+            checkpoints.clear();
+            recent.clear();
+            terminal = null;
+        }
     }
 
     private static final class Reduction {
