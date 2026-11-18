@@ -1,7 +1,9 @@
 package local.plaincraft.greatwall.planning;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,7 +55,9 @@ public final class PlanningColumnProvider {
     }
 
     private final FineHeightIndex index;
-    private final int fillRadius;
+    private record Offset(int dx, int dz) { }
+
+    private final List<Offset> offsets;
     private final Map<Long, List<WallFinePlanner.FineColumn>> byChunk = new HashMap<>();
 
     /** Fills holes at the radius the frozen parameters' sampling grid needs. */
@@ -64,7 +68,7 @@ public final class PlanningColumnProvider {
 
     public PlanningColumnProvider(FineHeightIndex index, int fillRadius) {
         this.index = Objects.requireNonNull(index, "index");
-        this.fillRadius = Math.max(FILL_RADIUS, fillRadius);
+        this.offsets = orderedOffsets(Math.max(FILL_RADIUS, fillRadius));
         for (var column : index.columns()) {
             byChunk.computeIfAbsent(chunkKey(column.x() >> 4, column.z() >> 4), key -> new ArrayList<>())
                     .add(column);
@@ -83,7 +87,8 @@ public final class PlanningColumnProvider {
         // Real columns inside the requested owners. A column belongs to exactly one chunk, so the
         // union has no duplicates and needs no conflict resolution.
         var resolved = new HashMap<Long, WallFinePlanner.FineColumn>();
-        for (var owner : owners) collect(resolved, owner);
+        var visited = new HashSet<Long>();
+        for (var owner : owners) collectOnce(resolved, visited, owner.x(), owner.z());
         // Copies may also grow from just outside the requested set: a hole sitting on a chunk border
         // has neighbours on the far side of it.
         var sources = new HashMap<>(resolved);
@@ -91,7 +96,7 @@ public final class PlanningColumnProvider {
             for (int dz = -1; dz <= 1; dz++) {
                 if (dx == 0 && dz == 0) continue;
                 for (var owner : owners) {
-                    collect(sources, new ChunkKey(owner.dimension(), owner.x() + dx, owner.z() + dz));
+                    collectOnce(sources, visited, owner.x() + dx, owner.z() + dz);
                 }
             }
         }
@@ -113,10 +118,13 @@ public final class PlanningColumnProvider {
         return index;
     }
 
-    private void collect(Map<Long, WallFinePlanner.FineColumn> into, ChunkKey owner) {
-        var bucket = byChunk.get(chunkKey(owner.x(), owner.z()));
+    private void collectOnce(Map<Long, WallFinePlanner.FineColumn> into, HashSet<Long> visited, int chunkX, int chunkZ) {
+        long key = chunkKey(chunkX, chunkZ);
+        // 相邻取证区块的填洞邻域重叠；每桶只读一次，不能让同一列反复插表。
+        if (!visited.add(key)) return;
+        var bucket = byChunk.get(key);
         if (bucket == null) return;
-        for (var column : bucket) into.putIfAbsent(pack(column.x(), column.z()), column);
+        for (var column : bucket) into.put(pack(column.x(), column.z()), column);
     }
 
     /**
@@ -154,21 +162,24 @@ public final class PlanningColumnProvider {
 
     private WallFinePlanner.FineColumn nearestSource(Map<Long, WallFinePlanner.FineColumn> sources,
             int x, int z) {
-        WallFinePlanner.FineColumn best = null;
-        int bestDistance = Integer.MAX_VALUE;
-        for (int dx = -fillRadius; dx <= fillRadius; dx++) {
-            for (int dz = -fillRadius; dz <= fillRadius; dz++) {
+        for (var offset : offsets) {
+            var column = sources.get(pack(x + offset.dx(), z + offset.dz()));
+            if (column != null) return column;
+        }
+        return null;
+    }
+
+    private static List<Offset> orderedOffsets(int radius) {
+        var offsets = new ArrayList<Offset>();
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
                 if (dx == 0 && dz == 0) continue;
-                var column = sources.get(pack(x + dx, z + dz));
-                if (column == null) continue;
-                int distance = dx * dx + dz * dz;
-                if (distance < bestDistance) {
-                    bestDistance = distance;
-                    best = column;
-                }
+                offsets.add(new Offset(dx, dz));
             }
         }
-        return best;
+        // 稳定排序令较近的探测先命中；同距仍按旧循环的 dx、dz 顺序裁决。
+        offsets.sort(Comparator.comparingInt(offset -> offset.dx() * offset.dx() + offset.dz() * offset.dz()));
+        return List.copyOf(offsets);
     }
 
     private static long pack(int x, int z) {
