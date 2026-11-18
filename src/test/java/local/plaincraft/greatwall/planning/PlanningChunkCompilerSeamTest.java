@@ -106,6 +106,35 @@ class PlanningChunkCompilerSeamTest {
         assertEquals(new Progress(healthy.plans().size(), healthy.plans().size()), baseline.progress().getLast());
     }
 
+    @Test void outputIsHandedOffBeforeTheNextBatchCollectsEvidence() {
+        var fixture = new Fixture();
+        var expected = compileByBatch(fixture, Integer.MAX_VALUE, 1, false).plans();
+        var delivered = new HashMap<ChunkKey, ChunkWritePlan>();
+        var state = new boolean[2];
+        var caller = Thread.currentThread();
+        var compiler = fixture.compiler(input -> {
+            long segment = input.plans().plans().getFirst().geometry().key().index();
+            if (segment == 1 && !state[0]) {
+                state[0] = true;
+                // 等右段开始真实取证时，左段必须已交付过非空施工计划。
+                state[1] = delivered.containsKey(owner(WEST));
+            }
+            if (!input.key().equals(SEAM)) return result(input, List.of());
+            return result(input, segment == 0 ? List.of(component(WEST, 1), component(CENTER, 2))
+                    : List.of(component(EAST, 1)));
+        });
+        int count = compiler.compileInto(fixture.both(), HASH, DIM, null, 2, 2, plan -> {
+            assertSame(caller, Thread.currentThread(), "发布和磁盘写入由调用线程执行");
+            assertNull(delivered.put(plan.owner(), plan), "每个完整区块只能交付一次");
+        });
+        assertTrue(state[0], "确实取到了第二段列");
+        assertTrue(state[1], "禁止攒完整窗后再交付");
+        assertEquals(expected.size(), count);
+        assertEquals(expected.keySet(), delivered.keySet());
+        expected.forEach((key, plan) -> assertArrayEquals(CanonicalCodec.writePlan(plan),
+                CanonicalCodec.writePlan(delivered.get(key)), key.toString()));
+    }
+
     private record Visit(long segment, CellKey cell) { }
     private record Progress(int done, int total) { }
     private record BatchResult(Map<ChunkKey, ChunkWritePlan> plans, Map<Visit, Integer> visits, List<Progress> progress) { }

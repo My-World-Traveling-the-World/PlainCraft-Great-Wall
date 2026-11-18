@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import local.plaincraft.greatwall.generation.ChunkPlanCompiler;
 import local.plaincraft.greatwall.generation.CoveragePlanner;
 import local.plaincraft.greatwall.generation.SurfaceProbe;
@@ -106,6 +107,21 @@ public final class PlanningChunkCompiler {
 
     Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash,
             String dimension, OwnerProgress progress, int batchSize, int workers) {
+        // 需要整窗快照的调用才收集整窗；启动发布直接消费每个已结案区块。
+        var result = new HashMap<ChunkKey, ChunkWritePlan>();
+        compileInto(plans, recipeHash, dimension, progress, batchSize, workers, plan -> result.put(plan.owner(), plan));
+        return java.util.Collections.unmodifiableMap(result);
+    }
+
+    /** 同步交付编译计划，回调运行在调用线程；返回实际交付的计划数。 */
+    public int compileInto(PlanWindow plans, String recipeHash, String dimension,
+            OwnerProgress progress, Consumer<ChunkWritePlan> output) {
+        return compileInto(plans, recipeHash, dimension, progress, OWNER_BATCH_SIZE, compileWorkers(), output);
+    }
+
+    int compileInto(PlanWindow plans, String recipeHash, String dimension, OwnerProgress progress,
+            int batchSize, int workers, Consumer<ChunkWritePlan> output) {
+        Objects.requireNonNull(output, "output");
         record Owned(CellKey cell, List<ChunkKey> owners, SegmentPlan plan, PlanWindow segmentWindow,
                 boolean startsInStationRange) { }
         // Group by owner, so a chunk that several cells admit is compiled ONCE with all of them.
@@ -157,11 +173,8 @@ public final class PlanningChunkCompiler {
                         plan.prefix().lengthBeforeQ8(), summarize(failure), failure);
             }
         }
-        // Concurrent: the compile tasks write one entry each from several threads at once. A plain
-        // HashMap here is not merely racy - concurrent putIfAbsent corrupts its bucket structure and
-        // the next read throws a NullPointerException, which is exactly how a measured session lost
-        // the whole window (PLANNING_COMPILE_FAILED phase=publish reason=NullPointerException).
-        var result = new java.util.concurrent.ConcurrentHashMap<ChunkKey, ChunkWritePlan>();
+        // 工作线程只写当前批；调用线程同步交付后清表，计划不会留在整窗编译器里。
+        var batchPlans = new java.util.concurrent.ConcurrentHashMap<ChunkKey, ChunkWritePlan>();
         var provider = new PlanningColumnProvider(index);
         int ownerCount = byOwner.size();
         publishProgress(progress, 0, ownerCount);
@@ -192,6 +205,8 @@ public final class PlanningChunkCompiler {
         var failedCounter = new java.util.concurrent.atomic.AtomicInteger();
         var doneCounter = new java.util.concurrent.atomic.AtomicInteger();
         int ownerJobs = 0;
+        int emitted = 0;
+        long outputNanos = 0;
         int peakQueued;
         // 一个窗口共享完整构件的冲突解析，取证和覆盖哈希仍按区块独立计算。
         var windowCompiler = compiler.window();
@@ -245,12 +260,12 @@ public final class PlanningChunkCompiler {
                 } else {
                     // 快照只交给本区块任务，采集端不再改写，避免再复制一份证据表。
                     ownerJobs++;
-                    pending.add(() -> {
+                    boolean drained = pending.add(() -> {
                         try {
                             var plan = compiler.bindCoverage(
                                     windowCompiler.compile(owner, recipeHash, cells, before),
                                     coverage.forChunk(owner, new PlanWindow(ownerPlans), windowBounds).hash());
-                            if (result.putIfAbsent(owner, plan) != null) {
+                            if (batchPlans.putIfAbsent(owner, plan) != null) {
                                 local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
                                         "[GreatWall:S1C] PLANNING_COMPILE_DUPLICATE_OWNER owner=[{},{}]",
                                         owner.x(), owner.z());
@@ -261,6 +276,11 @@ public final class PlanningChunkCompiler {
                             doneCounter.incrementAndGet();
                         }
                     });
+                    if (drained) {
+                        long outputStart = System.nanoTime();
+                        emitted += emitBatch(batchPlans, output);
+                        outputNanos += System.nanoTime() - outputStart;
+                    }
                 }
                 for (var item : items) {
                     // 最后一次可能使用后即可归还取证列；已入队区块只持构件和自身的施工前状态。
@@ -280,6 +300,9 @@ public final class PlanningChunkCompiler {
             }
             // 尾批可能没凑满，必须显式结案后才能返回完整结果。
             pending.drain();
+            long outputStart = System.nanoTime();
+            emitted += emitBatch(batchPlans, output);
+            outputNanos += System.nanoTime() - outputStart;
             peakQueued = pending.peak();
         }
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
@@ -290,8 +313,8 @@ public final class PlanningChunkCompiler {
         int done = doneCounter.get();
         int failed = failedCounter.get();
         publishProgress(progress, done, ownerCount);
-        long now = System.nanoTime();
-        double seconds = Math.max(0.001, (now - started) / 1_000_000_000.0);
+        long compileNanos = System.nanoTime() - started - outputNanos;
+        double seconds = Math.max(0.001, compileNanos / 1_000_000_000.0);
         // 完成数包含失败，计划数单列；避免把所有区块已处理误读为全部成功。
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:S1C] PLANNING_COMPILE_PROGRESS owners={}/{} completed={} failed={} elapsedMs={} msPerOwner={}",
@@ -299,7 +322,7 @@ public final class PlanningChunkCompiler {
                 String.format(java.util.Locale.ROOT, "%.1f", 1000.0 * seconds / Math.max(1, done)));
         if (failed > 0) {
             local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
-                    "[GreatWall:S1C] PLANNING_COMPILE_PARTIAL owners={} failed={}", result.size(), failed);
+                    "[GreatWall:S1C] PLANNING_COMPILE_PARTIAL owners={} failed={}", emitted, failed);
             // The whole point of the tally: a hundred owners failing for one reason is one bug, and the
             // summary says which. A hundred owners failing for a hundred reasons is not, and the summary
             // says that too - without a hundred stack traces.
@@ -307,14 +330,18 @@ public final class PlanningChunkCompiler {
                     "[GreatWall:S1C] COMPILE_FAILURES failed={} distinct={} {}", failed, tally.distinct(),
                     tally.summary(FAILURE_SUMMARY_LIMIT));
         }
-        // 使用只读视图，避免对窗口内的施工计划再复制一份整表。
-        // The end of the compile used to be "the progress lines stopped". One line with the three numbers
-        // that separate "published" from "published nothing".
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:S1C] PLANNING_COMPILE_DONE owners={} plans={} failed={} elapsedMs={}",
-                ownerCount, result.size(), failed,
-                Math.round((System.nanoTime() - started) / 1_000_000.0D));
-        return java.util.Collections.unmodifiableMap(result);
+                ownerCount, emitted, failed, Math.round(compileNanos / 1_000_000.0D));
+        return emitted;
+    }
+
+    private static int emitBatch(Map<ChunkKey, ChunkWritePlan> plans, Consumer<ChunkWritePlan> output) {
+        int count = plans.size();
+        // 发布异常交给调用方结案；不能把部分发布悄悄记成编译成功。
+        plans.values().forEach(output);
+        plans.clear();
+        return count;
     }
 
     /** 进度包含失败区块；显示端故障不能阻止其余施工计划结案。 */

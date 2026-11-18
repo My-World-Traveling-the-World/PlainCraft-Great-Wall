@@ -20,10 +20,13 @@ final class OwnerCompileBatch implements AutoCloseable {
         this.workers = workers;
     }
 
-    void add(Runnable job) {
+    /** 返回本次是否已经结案；发布方只能在工作线程都退出之后读取产物。 */
+    boolean add(Runnable job) {
         jobs.add(job);
         peak = Math.max(peak, jobs.size());
-        if (jobs.size() == limit) drain();
+        if (jobs.size() < limit) return false;
+        drain();
+        return true;
     }
 
     int peak() { return peak; }

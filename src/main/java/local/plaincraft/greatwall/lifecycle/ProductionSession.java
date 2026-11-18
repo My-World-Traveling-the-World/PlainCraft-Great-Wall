@@ -1107,85 +1107,50 @@ final class ProductionSession implements AutoCloseable {
             local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
             return;
         }
-        var window = new PlanWindow(List.copyOf(plans));
-        // Compile progress: owners compiled out of the owners the window holds. The compiler
-        // discovers the whole owner list before it starts compiling, so this is a real fraction
-        // rather than the indeterminate 0 the single-pass shape had to publish - which the card
-        // renders as a stage parked at 0 % for the compile's entire duration.
-        long compileStartedNanos = System.nanoTime();
+        var window = new PlanWindow(plans);
+        var publication = new StartupPlanPublication();
+        java.util.function.Consumer<ChunkWritePlan> install = plan -> WallWorldgenPlanCache.put(level, plan);
+        java.util.function.Consumer<ChunkWritePlan> footprint = plan -> {
+            // 道路依赖全部规划占地；落块队列和就绪信号仍等整个窗口发布完。
+            WallPlanSupport.markPlannedColumns(plan);
+            WallBodyBackfill.persist(plan);
+            vegetation.publish(plan.owner(), window);
+            var biomes = biomeRuntime;
+            if (biomes != null && !biomes.closed()) biomes.publish(plan.owner(), window, 1);
+        };
+        long started = System.nanoTime();
         PrewarmProgress.setSubProgress(0, 0);
-        var compiled = compiler.compileWindow(window, snapshot.recipe().recipeHash(),
-                snapshot.recipe().dimension(),
-                (done, total) -> PrewarmProgress.setSubProgress(
-                        PrewarmProgress.Stage.COMPILE, done, total));
-        long compileMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - compileStartedNanos);
-        // The publish loop below is real work, not part of the compile: it used to land outside every
-        // counter, so a 35.1 s COMPILE stage reported 10.8 s of compile and nothing else. Time it
-        // separately rather than folding it in - the two numbers answer different questions.
-        long publishStartedNanos = System.nanoTime();
-        // Publish per owner, isolating each owner's failure: one chunk that cannot take its mask
-        // must not cost the wall every other chunk. Failures are counted and reported loudly,
-        // because a partially published wall is a state the player has to be told about.
-        int published = 0;
-        int failed = 0;
-        Throwable firstFailure = null;
-        // 用发布时的哈希入队；超过缓存容量时也不能退化为仅认区块坐标。
-        var publishedHashes = new java.util.LinkedHashMap<local.plaincraft.greatwall.model.WallTypes.ChunkKey, String>();
-        for (var entry : compiled.entrySet()) {
-            try {
-                local.plaincraft.greatwall.generation.WallWorldgenPlanCache.put(level, entry.getValue());
-                // The wall body is written by a queue as well as by the worldgen feature: this
-                // corridor was generated before the plan existed (the measured session published
-                // 17.6 minutes after the prewarm finished), so nothing here would ever reach the
-                // feature stage again. See WallBodyBackfill.
-                publishedHashes.put(entry.getKey(), entry.getValue().hash());
-                // The road may be released as soon as this window publishes; mark the plan's
-                // columns now, not one drain later.
-                local.plaincraft.greatwall.generation.WallPlanSupport.markPlannedColumns(entry.getValue());
-                local.plaincraft.greatwall.generation.WallBodyBackfill.persist(entry.getValue());
-                // Publish the planning vegetation corridor + biome mask for this chunk, replacing the
-                // deleted FeatureSlot's per-chunk publication.
-                vegetation.publish(entry.getKey(), window);
-                var biomes = biomeRuntime;
-                if (biomes != null && !biomes.closed()) {
-                    biomes.publish(entry.getKey(), window, 1);
-                }
-                published++;
-            } catch (Throwable ownerFailure) {
-                failed++;
-                if (firstFailure == null) firstFailure = ownerFailure;
-                GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_OWNER_FAILED owner={},{} reason={}",
-                        entry.getKey().x(), entry.getKey().z(), ownerFailure.toString());
-            }
-        }
-        long publishMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - publishStartedNanos);
+        int compiled = compiler.compileInto(window, snapshot.recipe().recipeHash(), snapshot.recipe().dimension(),
+                (done, total) -> PrewarmProgress.setSubProgress(PrewarmProgress.Stage.COMPILE, done, total),
+                plan -> {
+                    active(); // 关闭或失败后的迟到批次不能再写施工数据。
+                    publication.accept(plan, install, footprint);
+                });
+        active();
+        long publishNanos = publication.publishNanos();
+        long compileMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started - publishNanos);
+        int published = publication.published();
+        int failed = publication.failed();
         GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={} chunks={} published={} "
                         + "failed={} compileMs={} publishMs={} vegetationLeases={} guardMisses={} suppressed={}",
-                plans.size(), compiled.size(), published, failed, compileMillis, publishMillis,
+                plans.size(), compiled, published, failed, compileMillis, TimeUnit.NANOSECONDS.toMillis(publishNanos),
                 vegetation.leases(), vegetation.misses(), vegetation.suppressed());
-        // Queue the published window for the loaded-chunk writer. Loaded chunks are written within
-        // seconds; the rest wait for the player, which is the only way a chunk generated before the
-        // plan can ever carry the wall.
-                // A partially published window used to be reported as a failure and returned here - while a later
-        // stage still opened the gate with success=true, so the two signals contradicted each other and
-        // RoadWeaver could read either one. The wall has a better answer now: every published chunk is
-        // written by the backfill, and an owner that failed is a hole, not a dead session. So a small
-        // failure rate is reported and survived; only a window that mostly failed is called a failure.
-        int tolerated = Math.max(8, compiled.size() / 20);
+        // 部分发布沿用原结案阈值；零成功区块始终视为失败。
+        int tolerated = Math.max(8, compiled / 20);
         if (published == 0) {
             // Nothing published is never a tolerable partial: the gate would otherwise open on a
             // wall that does not exist anywhere.
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_EMPTY owners={} failed={}",
-                    compiled.size(), failed);
+                    compiled, failed);
             snapshot.planner().releasePrewarmLeases();
             PrewarmProgress.finish(false);
             return;
         }
-        local.plaincraft.greatwall.generation.WallBodyBackfill.enqueueCompiled(level, publishedHashes);
+        WallBodyBackfill.enqueueCompiled(level, publication.queuedHashes());
         if (failed > tolerated) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_FAILED published={} failed={} of "
                             + "{} owners (tolerated {})",
-                    published, failed, compiled.size(), tolerated, firstFailure);
+                    published, failed, compiled, tolerated, publication.firstFailure());
             snapshot.planner().releasePrewarmLeases();
             PrewarmProgress.finish(false);
             return;
@@ -1193,12 +1158,12 @@ final class ProductionSession implements AutoCloseable {
         if (failed > 0) {
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PARTIAL published={} failed={} of "
                             + "{} owners (tolerated {}); those chunks will not carry the wall",
-                    published, failed, compiled.size(), tolerated, firstFailure);
+                    published, failed, compiled, tolerated, publication.firstFailure());
         }
         // The prewarm's leases have served their purpose: this compile consumed their plans and the
         // window is published, so the memory budget can have them back now.
         snapshot.planner().releasePrewarmLeases();
-        PrewarmProgress.setSubProgress(compiled.size(), compiled.size());
+        PrewarmProgress.setSubProgress(compiled, compiled);
         PrewarmProgress.setStage(PrewarmProgress.Stage.DONE);
         // The wall startup is truly over only now: the bulk prewarm, the fine sample and the
         // chunk compile have all settled, so the loading card closes and the startup peers are
