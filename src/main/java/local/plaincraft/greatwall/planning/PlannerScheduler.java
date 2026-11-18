@@ -1,6 +1,5 @@
 package local.plaincraft.greatwall.planning;
 
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -48,8 +47,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private final BulkPrewarmStage bulkPrewarm;
     private PlanLease<SegmentPlan> backgroundLease;
     private final PrefixSummaryIndex prefixes;
-    private final SegmentCacheStore cache;
-    private final Executor io;
+    private final PlannerCacheIo cacheIo;
     private final AnchorField anchors;
     private final RidgePlanner ridge;
     private final HydrologyClassifier hydrology = new HydrologyClassifier();
@@ -71,10 +69,9 @@ public final class PlannerScheduler implements AutoCloseable {
     private final ArrayDeque<Runnable> geometryQueue = new ArrayDeque<>();
     /** 调用线程入队、推进线程出队；持锁仅操作队列，在锁外执行几何计算。 */
     private final Object geometryLock = new Object();
-    private final ArrayDeque<Runnable> ioQueue = new ArrayDeque<>();
     private final ArrayDeque<Runnable> planAdmissions = new ArrayDeque<>(), geometryAdmissions = new ArrayDeque<>();
     private final Map<UUID, Job<?>> activeJobs = new HashMap<>();
-    private int activeGeometry, credits, activeIo, admittedPlans, admittedGeometries;
+    private int activeGeometry, credits, admittedPlans, admittedGeometries;
     /** 限制并发初始化，防止多个原生噪声状态同时扩大工作集。 */
     private int initializing;
     private long deadline, sequence, background = 4;
@@ -91,7 +88,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private PlannerScheduler(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory,
             List<OracleLane> bootstrapLanes, SegmentCacheStore cache, Executor io) {
         this.recipe = Objects.requireNonNull(recipe);
-        this.cache = Objects.requireNonNull(cache); this.io = Objects.requireNonNull(io);
+        Objects.requireNonNull(cache); Objects.requireNonNull(io);
         if (!"minecraft:overworld".equals(recipe.dimension())) {
             throw new WallFailure(FailureCode.INVALID_RESOURCE, "only the overworld may own a wall planner");
         }
@@ -120,7 +117,8 @@ public final class PlannerScheduler implements AutoCloseable {
                 : lanes(recipe, oracleFactory, LanePolicy.resolve().startupLaneCount());
         this.laneState = this.lanes.stream().map(ignored -> new Lane()).toList();
         this.memory = new BudgetCache<>(recipe.config().segmentBytes(), 256, 4096, pump, PlannerScheduler::retainedBytes);
-        this.prefixes = new PrefixSummaryIndex(i -> requireGeometry(i, Priority.PLAYER_PREFETCH), pump, cache, this::submitIo);
+        this.cacheIo = new PlannerCacheIo(pump, io, cache, state, this::failCacheIo);
+        this.prefixes = new PrefixSummaryIndex(i -> requireGeometry(i, Priority.PLAYER_PREFETCH), pump, cache, cacheIo::execute);
         this.fineSamples = new FineSampleStage(this, pump, prefixes, sites, laneState.size(), geometryFlights::get);
         this.bulkPrewarm = new BulkPrewarmStage(this, pump, state, laneState.size(), recipe.config().maxGeometryInflight());
     }
@@ -183,7 +181,7 @@ public final class PlannerScheduler implements AutoCloseable {
                     result.complete(hashedPlan(inputs.geometry, inputs.prefix, table, List.of()));
                     geometry.close(); prefix.close(); return;
                 }
-                ioRead(() -> cache.readPlan(key)).whenCompleteAsync((cached, cacheError) -> {
+                cacheIo.readPlan(key).whenCompleteAsync((cached, cacheError) -> {
                     if (closed()) { geometry.close(); prefix.close(); result.completeExceptionally(closedFailure()); return; }
                     if (cacheError == null && cached.isPresent() && cached.get().prefix().equals(inputs.prefix)
                             && cached.get().geometry().hash().equals(inputs.geometry.hash())) {
@@ -414,7 +412,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private void startGeometry(SegmentKey key, Priority priority, CompletableFuture<SegmentGeometry> result) {
         activeGeometry++;
         result.whenCompleteAsync((v, error) -> { activeGeometry--; drainGeometry(); }, pump);
-        ioRead(() -> cache.readGeometry(key)).whenCompleteAsync((cached, error) -> {
+        cacheIo.readGeometry(key).whenCompleteAsync((cached, error) -> {
             if (closed()) { result.completeExceptionally(closedFailure()); return; }
             if (error == null && cached.isPresent()) { result.complete(cached.get()); return; }
             var center = requireRoute(key.index(), priority);
@@ -751,78 +749,13 @@ public final class PlannerScheduler implements AutoCloseable {
     /** 诊断可建段数，零代表没有配置上限。 */
     public long configuredSegmentLimitForDiagnostics() { return configuredSegmentLimit(); }
 
-    private <T> CompletableFuture<Optional<T>> ioRead(IoRead<T> operation) {
-        if (state.containsKey("cache-disabled")) return CompletableFuture.completedFuture(Optional.empty());
-        var result = new CompletableFuture<Optional<T>>();
-        try {
-            submitIo(() -> {
-                try { result.complete(operation.read()); }
-                catch (IOException error) { state.put("cache-disabled", 1L); result.complete(Optional.empty()); }
-                catch (Throwable error) { result.completeExceptionally(error); }
-            });
-        } catch (RejectedExecutionException full) {
-            // 队列容量只是临时背压，关闭后无法排空才停用缓存。
-            if (closed()) state.put("cache-disabled", 1L);
-            else state.compute("cache-backpressure", (k, old) -> old == null ? 1L : old + 1L);
-            result.complete(Optional.empty());
-        }
-        return result;
-    }
-
-    private void submitIo(Runnable task) {
-        if (closed()) throw new RejectedExecutionException("planner closed");
-        boolean[] admitted = {false};
-        state.compute("io-pending", (k, old) -> {
-            long count = old == null ? 0 : old;
-            if (count >= 128) return count;
-            admitted[0] = true; return count + 1;
-        });
-        if (!admitted[0]) throw new RejectedExecutionException("planner cache IO queue capacity");
-        try {
-            pump.execute(() -> {
-                ioQueue.add(() -> { try { task.run(); } finally { state.compute("io-pending", (k, old) -> old - 1); } });
-                drainIo();
-            });
-        } catch (RuntimeException rejected) { state.compute("io-pending", (k, old) -> old - 1); throw rejected; }
-    }
-
-    private void drainIo() {
-        if (activeIo != 0 || ioQueue.isEmpty() || closed()) return;
-        activeIo = 1; Runnable next = ioQueue.removeFirst();
-        try { io.execute(() -> {
-            try { next.run(); }
-            finally {
-                try { pump.execute(() -> { activeIo = 0; drainIo(); }); }
-                catch (RejectedExecutionException ignored) { /* 关闭时已结案公开结果。 */ }
-            }
-        }); } catch (RuntimeException rejected) {
-            activeIo = 0; state.put("cache-disabled", 1L);
-            var failure = new WallFailure(FailureCode.IO_FAILED, "IO executor rejected a required continuation", rejected);
-            recordFailure(failure, "CACHE_IO", -1, 0);
-            routeFlights.forEach((key, future) -> future.completeExceptionally(failure));
-            geometryFlights.forEach((key, future) -> future.completeExceptionally(failure));
-            planFlights.forEach((key, future) -> future.completeExceptionally(failure));
-            close();
-        }
-    }
-
-    private void persist(SegmentGeometry value) {
-        if (!state.containsKey("cache-disabled") && !closed()) try {
-            submitIo(() -> { try { cache.writeGeometry(value); } catch (IOException error) { state.put("cache-disabled", 1L); } });
-        } catch (RejectedExecutionException full) {
-                    // 队列满跳过本次缓存写入，后续仍可落盘。
-                    if (closed()) state.put("cache-disabled", 1L);
-                    else state.compute("cache-backpressure", (k, old) -> old == null ? 1L : old + 1L);
-                }
-    }
-    private void persist(SegmentPlan value) {
-        if (!state.containsKey("cache-disabled") && !closed()) try {
-            submitIo(() -> { try { cache.writePlan(value); } catch (IOException error) { state.put("cache-disabled", 1L); } });
-        } catch (RejectedExecutionException full) {
-                    // 队列满跳过本次缓存写入，后续仍可落盘。
-                    if (closed()) state.put("cache-disabled", 1L);
-                    else state.compute("cache-backpressure", (k, old) -> old == null ? 1L : old + 1L);
-                }
+    private void failCacheIo(WallFailure failure) {
+        // 缓存执行器拒绝时也要终结已接收的规划请求，不能把它伪装成普通缓存未命中。
+        recordFailure(failure, "CACHE_IO", -1, 0);
+        routeFlights.forEach((key, future) -> future.completeExceptionally(failure));
+        geometryFlights.forEach((key, future) -> future.completeExceptionally(failure));
+        planFlights.forEach((key, future) -> future.completeExceptionally(failure));
+        close();
     }
 
     private static long retainedBytes(Object value) {
@@ -901,7 +834,7 @@ public final class PlannerScheduler implements AutoCloseable {
             pending.forEach(job -> job.result.completeExceptionally(closedFailure()));
             // 已派发任务不在等待队列，关闭时须主动结束它们，避免晚回调被拒后永久挂起。
             activeJobs.values().forEach(job -> job.result.completeExceptionally(closedFailure()));
-            pending.clear(); synchronized (geometryLock) { geometryQueue.clear(); } ioQueue.clear();
+            pending.clear(); synchronized (geometryLock) { geometryQueue.clear(); } cacheIo.discardQueued();
             planAdmissions.clear(); geometryAdmissions.clear();
             activeJobs.clear(); progress.clear();
             lanes.forEach(OracleLane::close);
@@ -915,7 +848,6 @@ public final class PlannerScheduler implements AutoCloseable {
 
     private record CacheKey(String kind, long segment) {}
     private record Pair(SegmentGeometry geometry, PrefixSummary prefix) {}
-    @FunctionalInterface private interface IoRead<T> { Optional<T> read() throws IOException; }
     private record Batch(boolean finished, Throwable failure, Object value) {}
     private static final class Lane { private Job<?> job; private boolean busy, initializing, ready; }
 
@@ -1014,7 +946,7 @@ public final class PlannerScheduler implements AutoCloseable {
         private NaturalTerrainOracle oracle;
         private HydroJob(RouteNeighborhood routes, Priority priority, CompletableFuture<SegmentGeometry> result) {
             super(priority, "HYDROLOGY", result); this.routes = routes;
-            result.thenAcceptAsync(PlannerScheduler.this::persist, pump);
+            result.thenAcceptAsync(cacheIo::persist, pump);
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
             if (cursor == null) cursor = hydrology.begin(routes, oracle, 96000);
@@ -1052,7 +984,7 @@ public final class PlannerScheduler implements AutoCloseable {
         private NaturalTerrainOracle.ColumnCursor column;
         private ContractJob(Pair inputs, List<SiteRecord> provisional, List<Point2q> points, Priority priority, CompletableFuture<SegmentPlan> result) {
             super(priority, "HEIGHT_CONTRACT", result); this.inputs = inputs; this.provisional = provisional; this.points = points;
-            result.thenAcceptAsync(PlannerScheduler.this::persist, pump);
+            result.thenAcceptAsync(cacheIo::persist, pump);
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
             for (int i = 0; i < limit && index < points.size(); i++) {
