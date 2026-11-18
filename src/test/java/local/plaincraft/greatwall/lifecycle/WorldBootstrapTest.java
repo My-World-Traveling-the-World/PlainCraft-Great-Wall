@@ -135,6 +135,46 @@ final class WorldBootstrapTest {
         }
     }
 
+    @Test void aNewDefaultDoesNotUpgradeAnInterruptedCreationOrAnExistingRecipe() throws Exception {
+        var legacy = WorldBootstrap.defaultConfig();
+        var next = new GenerationConfig(legacy.algorithmVersion(), 2, legacy.segmentBlocks(), legacy.stationBlocks(),
+                legacy.columnBudget(), legacy.carrierAmplitude(), legacy.corridorHalfWidth(), legacy.maxGeometryInflight(),
+                legacy.segmentBytes(), legacy.terrainBytes(), legacy.compiledBytes(), legacy.parametersHash());
+        var oldPath = directory.resolve("old");
+        var old = new WorldManifest(oldPath);
+        var creation = old.authorize(false, 17, WorldManifest.configHash(legacy), legacy.parametersHash());
+        byte[] token = java.nio.file.Files.readAllBytes(oldPath.resolve("creation.json"));
+        assertTrue(old.read().isEmpty(), "夹具必须只有创建凭证，没有已经选好的配方");
+        var interrupted = WorldRecipeSelection.open(old, true, 17, next, java.util.List.of(legacy));
+        assertEquals(legacy, interrupted.config());
+        assertEquals(creation, interrupted.creation());
+        assertTrue(interrupted.saved().isEmpty());
+        try (var io = Executors.newSingleThreadExecutor()) {
+            WorldRecipe first;
+            // 原版尚未标为初始化时会重新探测出生点，给选址器真实的依赖域。
+            var resume = new WorldBootstrap(null, old, io, 17, false, () -> next, java.util.List.of(legacy));
+            try {
+                resume.authorizeSpawnProbe(EARLY, 11);
+                resume.spawnChosen(new Point3i(-1000, 64, -1000));
+                resume.prepareFrozen(frozen(new AtomicInteger()));
+                first = resume.ready().get(30, TimeUnit.SECONDS);
+                assertEquals(legacy, first.config());
+                assertEquals(creation.instance(), first.instance());
+                assertArrayEquals(token, java.nio.file.Files.readAllBytes(oldPath.resolve("creation.json")));
+            } finally { resume.close(); resume.drain().get(10, TimeUnit.SECONDS); }
+            var reopen = new WorldBootstrap(null, old, io, 17, true, () -> next, java.util.List.of(legacy));
+            try {
+                reopen.prepareFrozen(frozen(new AtomicInteger()));
+                assertEquals(first, reopen.ready().get(10, TimeUnit.SECONDS));
+            } finally { reopen.close(); reopen.drain().get(10, TimeUnit.SECONDS); }
+        }
+        var fresh = new WorldManifest(directory.resolve("fresh"));
+        var selected = WorldRecipeSelection.open(fresh, false, 17, next, java.util.List.of(legacy));
+        // 兼容白名单只用于读取；全新创建仍应写入调用者选择的新版摘要。
+        assertEquals(next, selected.config());
+        assertEquals(WorldManifest.configHash(next), selected.creation().configHash());
+    }
+
     @Test void canceledReadyViewCannotCancelRootProducer() throws Exception {
         try (var io = Executors.newSingleThreadExecutor()) {
             var bootstrap = new WorldBootstrap(new WorldManifest(directory.resolve("manifest")), io, 1, false);

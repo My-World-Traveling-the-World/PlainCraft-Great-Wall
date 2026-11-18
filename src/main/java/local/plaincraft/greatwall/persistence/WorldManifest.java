@@ -56,7 +56,14 @@ public final class WorldManifest {
     }
 
     public Creation authorize(boolean vanillaInitialized, long seed, String configHash, String parametersHash) throws IOException {
-        requireHash(configHash);
+        return authorize(vanillaInitialized, seed, configHash, Set.of(), parametersHash);
+    }
+
+    public Creation authorize(boolean vanillaInitialized, long seed, String newConfigHash,
+            Set<String> readableConfigHashes, String parametersHash) throws IOException {
+        requireHash(newConfigHash);
+        var readable = Set.copyOf(readableConfigHashes);
+        readable.forEach(local.plaincraft.greatwall.model.WallTypes::requireHash);
         requireHash(parametersHash);
         return locked(() -> {
             var creation = readCreation();
@@ -74,7 +81,9 @@ public final class WorldManifest {
                     throw new WallFailure(FailureCode.RECIPE_MISMATCH,
                             "generation parameters changed; create a new world");
                 }
-                if (value.seed() != seed || !value.configHash().equals(configHash)) {
+                // 旧创建凭证即使还没有 world.json 也已选定配方，重开不能补写成新版。
+                if (value.seed() != seed || (!value.configHash().equals(newConfigHash)
+                        && !readable.contains(value.configHash()))) {
                     throw new WallFailure(FailureCode.RECIPE_MISMATCH, "new-world creation seed/config changed");
                 }
                 return value;
@@ -82,7 +91,7 @@ public final class WorldManifest {
             if (vanillaInitialized) {
                 throw new WallFailure(FailureCode.EXISTING_WORLD, "initialized world has no Great Wall creation token");
             }
-            var value = new Creation(UUID.randomUUID(), seed, configHash, parametersHash, false);
+            var value = new Creation(UUID.randomUUID(), seed, newConfigHash, parametersHash, false);
             atomicCreate(root.resolve("creation.json"), envelope("creation", JSON.toJsonTree(value).getAsJsonObject()));
             return value;
         });

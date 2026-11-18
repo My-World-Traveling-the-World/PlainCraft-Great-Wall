@@ -49,7 +49,6 @@ public final class WorldBootstrap implements AutoCloseable {
             local.plaincraft.greatwall.model.WallTypes.requireHash(templatesHash);
         }
     }
-    private record Authorized(WorldManifest.Creation creation, Optional<WorldRecipe> saved) {}
     private record RootBatch(Optional<RootSearch.Selection> selected, RootSearch.Progress progress,
             List<RootStructureScreen.Candidate> screen) {}
     private final MinecraftServer server;
@@ -68,22 +67,22 @@ public final class WorldBootstrap implements AutoCloseable {
     private final ConcurrentHashMap<String, WorldRecipe> recipes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, PlannerScheduler> transferred = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, List<CompletableFuture<?>>> ioFlights = new ConcurrentHashMap<>();
-    private final CompletableFuture<Authorized> authorized;
+    private final CompletableFuture<WorldRecipeSelection> authorized;
     private final CompletableFuture<WorldRecipe> ready = new CompletableFuture<>();
     private final CompletableFuture<Void> drained = new CompletableFuture<>();
     private final ScheduledThreadPoolExecutor rootPump;
 
     public WorldBootstrap(MinecraftServer server, WorldManifest manifest, Executor io) {
         this(server, manifest, io, server.getWorldData().worldGenOptions().seed(),
-                server.getWorldData().overworldData().isInitialized());
+                server.getWorldData().overworldData().isInitialized(), WorldBootstrap::defaultConfig, List.of());
     }
 
     WorldBootstrap(WorldManifest manifest, Executor io, long seed, boolean originallyInitialized) {
-        this(null, manifest, io, seed, originallyInitialized);
+        this(null, manifest, io, seed, originallyInitialized, WorldBootstrap::defaultConfig, List.of());
     }
 
-    private WorldBootstrap(MinecraftServer server, WorldManifest manifest, Executor io,
-            long seed, boolean originallyInitialized) {
+    WorldBootstrap(MinecraftServer server, WorldManifest manifest, Executor io, long seed, boolean originallyInitialized,
+            Supplier<GenerationConfig> newWorld, List<GenerationConfig> readable) {
         this.server = server; this.manifest = Objects.requireNonNull(manifest);
         this.io = Objects.requireNonNull(io); this.seed = seed; this.originallyInitialized = originallyInitialized;
         rootPump = new ScheduledThreadPoolExecutor(1, task -> {
@@ -98,8 +97,8 @@ public final class WorldBootstrap implements AutoCloseable {
             var thread = new Thread(task, "pgw-recipe-timeout-" + UUID.randomUUID());
             thread.setDaemon(true); return thread;
         });
-        authorized = io(() -> new Authorized(manifest.authorize(originallyInitialized, seed,
-                WorldManifest.configHash(defaultConfig()), defaultConfig().parametersHash()), manifest.read()));
+        // 授权后沿用所选配置，避免发布配方和读写根缓存各自重新取默认值。
+        authorized = io(() -> WorldRecipeSelection.open(manifest, originallyInitialized, seed, newWorld.get(), readable));
         authorized.whenComplete((value, error) -> {
             if (error != null) fail(error); else requestStart();
         });
@@ -110,7 +109,7 @@ public final class WorldBootstrap implements AutoCloseable {
      *
      * <p>The final component is the digest of the generation parameters in effect. Reading
      * {@code GreatWallConfig.parameters()} here is what freezes them: this method is called first at
-     * {@link #authorize} time, before any planner runs, so a config edit made later cannot reach
+     * authorization time, before any planner runs, so a config edit made later cannot reach
      * generation. An edit made before the world loads changes the digest, and the world's creation
      * token then refuses with a parameter-identity mismatch rather than generating a different wall.
      */
@@ -329,7 +328,7 @@ public final class WorldBootstrap implements AutoCloseable {
                     active();
                     if (authorization.saved().isPresent()) {
                         var recipe = authorization.saved().get();
-                        validateSaved(recipe, inputs);
+                        validateSaved(recipe, inputs, authorization.config());
                         publish(recipe);
                     } else {
                         if(server!=null&&inputs.structures()==null)throw new IllegalStateException("native bootstrap requires a structure screen");
@@ -337,7 +336,7 @@ public final class WorldBootstrap implements AutoCloseable {
                         // Reusing it skips the whole search: a measured session spent about
                         // thirteen of its twenty-two prewarm minutes here, and a session that
                         // failed later in construction paid that cost again on every retry.
-                        var cachedAxis = readCachedAxis(authorization.creation(), inputs);
+                        var cachedAxis = readCachedAxis(authorization.config(), inputs);
                         if (cachedAxis.isPresent()) {
                             rootCacheHits.incrementAndGet();
                             var cachedSelection = new RootSearch.Selection(
@@ -348,11 +347,11 @@ public final class WorldBootstrap implements AutoCloseable {
                                             + "angleIndex={} axisIndex={}",
                                     cachedSelection.axis(), cachedSelection.radiusIndex(),
                                     cachedSelection.angleIndex(), cachedSelection.axisIndex());
-                            publishRecipeFor(cachedSelection, authorization.creation(), inputs);
+                            publishRecipeFor(cachedSelection, authorization, inputs);
                         } else {
                             var search = new RootSearch(spawn.get("chosen"), inputs.bounds(), earlyDomain.snapshot(), inputs.foundation(),inputs.structures()!=null, inputs.sanctuaryAvoidance());
                             rootSearchStartedAt = System.nanoTime();
-                            advance(search, lanes.getFirst(), authorization.creation(), inputs);
+                            advance(search, lanes.getFirst(), authorization, inputs);
                         }
                     }
                 } catch (Throwable failure) { fail(failure); }
@@ -561,13 +560,13 @@ public final class WorldBootstrap implements AutoCloseable {
      * next one while any remain.
      */
     private CompletableFuture<Void> screenThenVote(RootSearch search, OracleLane lane,
-            WorldManifest.Creation creation, Frozen inputs,
+            Frozen inputs,
             List<RootStructureScreen.Candidate> candidates) {
         if (candidates.isEmpty()) {
-            return submitVotesWithRetry(search, lane, creation, inputs, List.of());
+            return submitVotesWithRetry(search, lane, List.of());
         }
         return inputs.structures().inspect(candidates)
-                .thenCompose(votes -> submitVotesWithRetry(search, lane, creation, inputs, votes))
+                .thenCompose(votes -> submitVotesWithRetry(search, lane, votes))
                 .handle((done, error) -> {
                     Throwable cause = error;
                     while (cause instanceof java.util.concurrent.CompletionException && cause.getCause() != null) {
@@ -579,7 +578,7 @@ public final class WorldBootstrap implements AutoCloseable {
                         GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SCREEN_NEXT_BATCH candidates={} - the "
                                 + "previous batch was entirely blocked", candidates.size());
                         if (search.screenNextStructureBatch()) {
-                            return screenThenVote(search, lane, creation, inputs,
+                            return screenThenVote(search, lane, inputs,
                                     search.pendingStructureCandidates());
                         }
                     }
@@ -591,7 +590,7 @@ public final class WorldBootstrap implements AutoCloseable {
     }
 
     private CompletableFuture<Void> submitVotesWithRetry(RootSearch search, OracleLane lane,
-            WorldManifest.Creation creation, Frozen inputs, List<RootStructureScreen.Vote> votes) {
+            List<RootStructureScreen.Vote> votes) {
         CompletableFuture<Void> submitted;
         try {
             submitted = lane.submit(oracle -> {
@@ -609,7 +608,7 @@ public final class WorldBootstrap implements AutoCloseable {
             // A saturated lane is transient; retry shortly on the root pump rather than
             // failing the bootstrap. schedule() tolerates the pump being busy.
             var retry = new CompletableFuture<Void>();
-            rootPump.schedule(() -> submitVotesWithRetry(search, lane, creation, inputs, votes)
+            rootPump.schedule(() -> submitVotesWithRetry(search, lane, votes)
                     .whenComplete((ignored, error) -> {
                         if (error != null) retry.completeExceptionally(error);
                         else retry.complete(null);
@@ -619,7 +618,7 @@ public final class WorldBootstrap implements AutoCloseable {
         return submitted;
     }
 
-    private void advance(RootSearch search, OracleLane lane, WorldManifest.Creation creation, Frozen inputs) {
+    private void advance(RootSearch search, OracleLane lane, WorldRecipeSelection selection, Frozen inputs) {
         active();
         roundTrips.incrementAndGet();
         // Widen the search across the idle lanes before asking lane 0 to continue.
@@ -671,7 +670,7 @@ public final class WorldBootstrap implements AutoCloseable {
             // waited on it forever. Re-queue on the pump instead of dying: a saturated
             // lane is a transient condition, and retrying keeps the search alive.
             if (state.containsKey("closed") || state.containsKey("failed")) return;
-            rootPump.execute(() -> advance(search, lane, creation, inputs));
+            rootPump.execute(() -> advance(search, lane, selection, inputs));
             return;
         }
         submitted.whenCompleteAsync((batch, error) -> {
@@ -720,11 +719,11 @@ public final class WorldBootstrap implements AutoCloseable {
                 GreatWallMod.LOGGER.info("[GreatWall:DIAG] advance STRUCTURE_SCREEN thread={} screenSize={}",
                     Thread.currentThread().getName(), batch.screen().size());
                 try {
-                    screenThenVote(search, lane, creation, inputs, batch.screen())
+                    screenThenVote(search, lane, inputs, batch.screen())
                             .whenCompleteAsync((ignored,failure)->{
                         if(state.containsKey("closed")||state.containsKey("failed"))return;
                         if(failure!=null){fail(failure);return;}
-                        state.put("structure-screen-complete",true);advance(search,lane,creation,inputs);
+                        state.put("structure-screen-complete",true);advance(search,lane,selection,inputs);
                     },rootPump);
                 }catch(Throwable failure){fail(failure);}
                 return;
@@ -736,19 +735,19 @@ public final class WorldBootstrap implements AutoCloseable {
                 // whose exception is swallowed with the queue, so the search would stop
                 // with no log and no future work. Re-queueing on failure keeps it alive.
                 try {
-                    advance(search, lane, creation, inputs);
+                    advance(search, lane, selection, inputs);
                 } catch (RuntimeException failure) {
                     if (state.containsKey("closed") || state.containsKey("failed")) return;
-                    rootPump.execute(() -> advance(search, lane, creation, inputs));
+                    rootPump.execute(() -> advance(search, lane, selection, inputs));
                 }
                 return;
             }
-            var selection = batch.selected().get();
+            var root = batch.selected().get();
             GreatWallMod.LOGGER.info("[GreatWall:DIAG] advance SELECTED thread={} axis={}",
-                Thread.currentThread().getName(), selection.axis());
+                Thread.currentThread().getName(), root.axis());
             logRootSearchDone(search, batch.progress());
-            writeCachedAxis(creation, inputs, selection);
-            publishRecipeFor(selection, creation, inputs);
+            writeCachedAxis(selection.config(), inputs, root);
+            publishRecipeFor(root, selection, inputs);
             } catch (Throwable continuationFailure) {
                 // Reported, not swallowed. fail(...) is this session's existing failure channel:
                 // it sets the failed state, completes ready() exceptionally and closes the
@@ -848,13 +847,14 @@ public final class WorldBootstrap implements AutoCloseable {
      * the same recipe hash as a searched one — the recipe is derived from the axis, so
      * there is no second code path that could disagree.
      */
-    private void publishRecipeFor(RootSearch.Selection selection, WorldManifest.Creation creation, Frozen inputs) {
+    private void publishRecipeFor(RootSearch.Selection selection, WorldRecipeSelection authorization, Frozen inputs) {
         GreatWallMod.LOGGER.info("[GreatWall:DIAG] publishRecipeFor ENTER thread={} state={}", Thread.currentThread().getName(), Map.copyOf(state));
-        var provisional = new WorldRecipe(creation.instance(), "0".repeat(64), seed, "minecraft:overworld",
-                spawn.get("chosen"), selection.axis(), inputs.bounds(), defaultConfig(), inputs.terrainHash(),
+        var instance = authorization.creation().instance();
+        var provisional = new WorldRecipe(instance, "0".repeat(64), seed, "minecraft:overworld",
+                spawn.get("chosen"), selection.axis(), inputs.bounds(), authorization.config(), inputs.terrainHash(),
                 inputs.paletteHash(), inputs.templatesHash(), "0".repeat(64));
         String hash = DeterministicHash.sha256(CanonicalCodec.recipe(provisional));
-        var recipe = new WorldRecipe(creation.instance(), hash, seed, provisional.dimension(), provisional.frozenSpawn(),
+        var recipe = new WorldRecipe(instance, hash, seed, provisional.dimension(), provisional.frozenSpawn(),
                 provisional.axis(), provisional.bounds(), provisional.config(), inputs.terrainHash(),
                 inputs.paletteHash(), inputs.templatesHash(), hash);
         GreatWallMod.LOGGER.info("[GreatWall:DIAG] publishRecipeFor BEFORE_IO thread={}", Thread.currentThread().getName());
@@ -888,7 +888,7 @@ public final class WorldBootstrap implements AutoCloseable {
      * mismatch — so the caller simply searches instead. The cache shortens a launch; it
      * never decides whether one happens.
      */
-    private Optional<RootSearchCache.Entry> readCachedAxis(WorldManifest.Creation creation, Frozen inputs) {
+    private Optional<RootSearchCache.Entry> readCachedAxis(GenerationConfig config, Frozen inputs) {
         var directory = worldDirectory();
         if (directory == null) return Optional.empty();
         var chosen = spawn.get("chosen");
@@ -896,7 +896,7 @@ public final class WorldBootstrap implements AutoCloseable {
         try {
             var identity = RootSearchCache.identityOf(seed, "minecraft:overworld", chosen,
                     inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash(),
-                    defaultConfig().parametersHash());
+                    config.parametersHash());
             var entry = RootSearchCache.read(directory, identity);
             if (entry.isPresent()) return entry;
             GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_CACHE_MISS searching; no usable entry at {}",
@@ -908,7 +908,7 @@ public final class WorldBootstrap implements AutoCloseable {
     }
 
     /** Records the searched axis for the next launch of this world. */
-    private void writeCachedAxis(WorldManifest.Creation creation, Frozen inputs, RootSearch.Selection selection) {
+    private void writeCachedAxis(GenerationConfig config, Frozen inputs, RootSearch.Selection selection) {
         var directory = worldDirectory();
         if (directory == null) return;
         var chosen = spawn.get("chosen");
@@ -916,7 +916,7 @@ public final class WorldBootstrap implements AutoCloseable {
         try {
             var identity = RootSearchCache.identityOf(seed, "minecraft:overworld", chosen,
                     inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash(),
-                    defaultConfig().parametersHash());
+                    config.parametersHash());
             RootSearchCache.write(directory, RootSearchCache.of(identity, selection.axis(),
                     selection.radiusIndex(), selection.angleIndex(), selection.axisIndex()));
             GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_CACHE_STORED axis={} radiusIndex={} angleIndex={} "
@@ -927,11 +927,10 @@ public final class WorldBootstrap implements AutoCloseable {
         }
     }
 
-    private void validateSaved(WorldRecipe recipe, Frozen inputs) {
+    private void validateSaved(WorldRecipe recipe, Frozen inputs, GenerationConfig current) {
         // Reported before the generic comparison because this is the one a player can trigger from the
         // config screen, and "generation parameters changed" is actionable in a way that a field-by-field
         // recipe diff is not. Both digests are printed so the log alone identifies which knob moved.
-        GenerationConfig current = defaultConfig();
         if (!recipe.config().parametersHash().equals(current.parametersHash())) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] parameter identity drifted saved={} current={}",
                     recipe.config().parametersHash(), current.parametersHash());
