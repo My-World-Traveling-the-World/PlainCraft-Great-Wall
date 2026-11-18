@@ -92,7 +92,7 @@ public final class ChunkPlanCompiler {
     }
 
     private record Resolved(Map<SiteId, ComponentVoxels> components, Map<Point3i, VoxelIntent> voxels,
-            Map<ChunkKey, List<VoxelIntent>> byOwner, java.util.Set<Point3i> entityPositions,
+            Map<ChunkKey, List<VoxelIntent>> byOwner, Map<Point3i, BlockEntityIntent> entities,
             TreeSet<String> inputs, TreeSet<String> t0, long revision) { }
 
     private static Resolved resolve(String dimension, String recipeHash, List<RealizationCell> cells, boolean indexOwners) {
@@ -113,10 +113,14 @@ public final class ChunkPlanCompiler {
         for(var c:components.values()) for(var v:c.voxels()) logical.merge(v.pos(),v,ChunkPlanCompiler::winner);
         var resolved=new TreeMap<Point3i,VoxelIntent>(POS);
         for(var v:logical.values()) resolved.put(v.pos(),connections(v,logical));
-        var entityPositions=new java.util.HashSet<Point3i>();
+        // 归属裁决后只配对一次，所有 owner 共用结果，证明和写入不再各判一遍。
+        var entities=new TreeMap<Point3i,BlockEntityIntent>(POS);
         for(var c:components.values()) for(var e:c.blockEntities()) {
             var v=resolved.get(e.pos());
-            if(v!=null&&v.component().equals(e.site())&&v.state().id().equals(e.type()))entityPositions.add(e.pos());
+            if(matchesEntity(v,e)) {
+                var old=entities.putIfAbsent(e.pos(),e);
+                if(old!=null&&!old.equals(e))throw failure("conflicting block entity intent");
+            }
         }
         // 围栏、台阶、脚点仍看完整构件，只对最终遍历分桶，并保留原坐标顺序。
         Map<ChunkKey, List<VoxelIntent>> byOwner = indexOwners ? new HashMap<>() : null;
@@ -125,7 +129,7 @@ public final class ChunkPlanCompiler {
             var key = new ChunkKey(dimension, Math.floorDiv(v.pos().x(), 16), Math.floorDiv(v.pos().z(), 16));
             byOwner.computeIfAbsent(key, unused -> new ArrayList<>()).add(v);
         }
-        return new Resolved(components, resolved, byOwner, entityPositions, inputs, t0, revision);
+        return new Resolved(components, resolved, byOwner, entities, inputs, t0, revision);
     }
 
     private static ChunkWritePlan compileOwner(ChunkKey owner, String recipeHash, Map<Point3i, String> beforeStates,
@@ -133,6 +137,7 @@ public final class ChunkPlanCompiler {
         var components = input.components();
         var resolved = input.voxels();
         var voxels=new ArrayList<VoxelIntent>();var proofs=new ArrayList<BlockProof>();
+        var entities=new ArrayList<BlockEntityIntent>();
         var post=new TreeSet<Point3i>(POS);var fluid=new TreeSet<Point3i>(POS);var feet=new TreeSet<Point3i>(POS);
         var ownerVoxels = input.byOwner() == null ? resolved.values() : input.byOwner().getOrDefault(owner, List.of());
         for(var v:ownerVoxels) {
@@ -151,31 +156,43 @@ public final class ChunkPlanCompiler {
                 // below are what makes this instance decidable.
                 throw failure("negative space cannot carve natural/foreign solid: "+v.pos()
                         +" kind="+v.kind()+" part="+v.part()+" component="+v.component()+" before="+before);
-            String after=token(v.state(),input.entityPositions().contains(v.pos()));
+            // 跟随 owner 的体素顺序收集实体，既不扫其他区块，也保持原有坐标排序。
+            var entity=input.entities().get(v.pos());
+            if(entity!=null)entities.add(entity);
+            String after=token(v.state(),entity!=null);
             voxels.add(v);proofs.add(new BlockProof(v.pos(),before,after,be,v.component()));
             if(v.state().id().endsWith("_stairs")||v.state().id().endsWith("_slab")||v.part()==Part.FENCE) post.add(v.pos());
             if(v.kind()==IntentKind.FLUID||"true".equals(v.state().properties().get("waterlogged"))) fluid.add(v.pos());
             Point3i f=new Point3i(v.pos().x(),Math.addExact(v.pos().y(),1),v.pos().z());
             if(v.walkable()&&!solid(resolved.get(f))&&!solid(resolved.get(new Point3i(f.x(),f.y()+1,f.z())))) feet.add(f);
         }
-        var entities=new TreeMap<Point3i,BlockEntityIntent>(POS);var slots=new ArrayList<SpawnSlot>();var states=new TreeMap<SiteId,DecayState>(SITE);
+        var slots=new ArrayList<SpawnSlot>();var states=new TreeMap<SiteId,DecayState>(SITE);
         for(var c:components.values()) {
             boolean intersects=c.voxels().stream().anyMatch(v->owns(owner,v.pos()));
             if(intersects) states.put(c.id(),c.realizedState());
-            for(var e:c.blockEntities()) if(owns(owner,e.pos())) {
-                var winner=resolved.get(e.pos());
-                if(winner!=null && winner.component().equals(e.site())&&winner.state().id().equals(e.type())) {
-                    var old=entities.putIfAbsent(e.pos(),e);if(old!=null&&!old.equals(e))throw failure("conflicting block entity intent");
-                }
-            }
             for(var s:c.spawnSlots()) if(owns(owner,s.feet())&&feet.contains(s.feet())) slots.add(s);
         }
         slots.sort(Comparator.comparing(SpawnSlot::site,SITE).thenComparingInt(SpawnSlot::slot));
         String inputHash=hash(recipeHash+"\n"+owner+"\n"+String.join("\n",input.inputs()));
         var metadata=new WriteMetadata(hash(String.join("\n",input.t0())),input.revision(),slots,states);
-        var plan=new ChunkWritePlan(owner,recipeHash,inputHash,voxels,proofs,List.copyOf(entities.values()),
+        var plan=new ChunkWritePlan(owner,recipeHash,inputHash,voxels,proofs,entities,
                 List.copyOf(post),List.copyOf(fluid),List.copyOf(feet),metadata,"0".repeat(64));
         return rehash(plan);
+    }
+    private static boolean matchesEntity(VoxelIntent voxel, BlockEntityIntent entity) {
+        if (voxel == null || !voxel.component().equals(entity.site())) return false;
+        if (!entity.fields().containsKey(PlannedBlockEntityNbt.DECORATION)) {
+            // 保留已冻结的旧构件配对规则，不能因导入新模板改变旧计划摘要。
+            return voxel.state().id().equals(entity.type());
+        }
+        // 方块名与实体类型并非同一个注册表；例如红色旗帜的实体类型是 banner。
+        var registry = net.minecraft.core.registries.BuiltInRegistries.BLOCK_ENTITY_TYPE;
+        var type = registry.getOptional(net.minecraft.resources.ResourceLocation.parse(entity.type()));
+        if (voxel.kind()!=IntentKind.SOLID || type.isEmpty()
+                || !type.get().isValid(local.plaincraft.greatwall.terrain.BlockCatalog.resolveState(voxel.state()))) {
+            throw failure("模板方块实体与胜出的方块不兼容: " + entity.pos() + " " + entity.type());
+        }
+        return true;
     }
     /** Coordinator replaces the cell-input digest with this owner's durable coverage digest. */
     public ChunkWritePlan bindCoverage(ChunkWritePlan plan,String coverageHash) {
