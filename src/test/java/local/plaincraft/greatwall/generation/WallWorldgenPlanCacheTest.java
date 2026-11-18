@@ -24,6 +24,52 @@ class WallWorldgenPlanCacheTest {
                 List.of(), WriteMetadata.EMPTY, HASH);
     }
 
+    @Test void diskReadStaysDeduplicatedUntilServerReceivesIt() {
+        var key = new ChunkKey("minecraft:overworld", 1, 2);
+        var session = new WallWorldgenPlanCache.Session();
+        var ticket = session.beginRead(key);
+        assertNotNull(ticket);
+        assertNull(session.beginRead(key));
+        var diskPlan = plan(key, false);
+        assertTrue(session.finishRead(key, ticket, diskPlan));
+        assertSame(diskPlan, session.get(key));
+        assertNull(session.beginRead(key));
+    }
+
+    @Test void publicationWinsEvenAfterCacheEvictsNewPlan() {
+        var key = new ChunkKey("minecraft:overworld", 0, 0);
+        var session = new WallWorldgenPlanCache.Session();
+        var oldRead = session.beginRead(key);
+        assertNotNull(oldRead);
+        var published = plan(key, false);
+        session.put(key, published);
+        assertSame(published, session.get(key));
+        // 填满非空缓存，证明拒绝旧 IO 不依赖当下还能命中刚发布的计划。
+        for (int x = 1; x <= 4096; x++) {
+            var other = new ChunkKey(key.dimension(), x, 0);
+            session.put(other, plan(other, false));
+        }
+        assertNull(session.get(key));
+        assertFalse(session.finishRead(key, oldRead, plan(key, true)));
+        assertNull(session.get(key));
+        assertNotNull(session.beginRead(key));
+    }
+
+    @Test void oldTicketCannotBeReusedInAnotherSessionOrForAnotherOwner() {
+        var key = new ChunkKey("minecraft:overworld", 1, 2);
+        var other = new ChunkKey("minecraft:overworld", 2, 2);
+        var oldSession = new WallWorldgenPlanCache.Session();
+        var newSession = new WallWorldgenPlanCache.Session();
+        var old = oldSession.beginRead(key);
+        var current = newSession.beginRead(key);
+        assertFalse(newSession.finishRead(key, old, plan(key, false)));
+        assertFalse(newSession.finishRead(key, current, plan(other, false)));
+        assertNull(newSession.get(key));
+        var fresh = newSession.beginRead(key);
+        assertNotNull(fresh);
+        assertTrue(newSession.finishRead(key, fresh, plan(key, false)));
+    }
+
     @Test void nullInputsAreNoOps() {
         WallWorldgenPlanCache.put(null, null);
         WallWorldgenPlanCache.invalidate(null);

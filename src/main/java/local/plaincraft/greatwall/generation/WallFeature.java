@@ -75,7 +75,7 @@ public class WallFeature extends Feature<NoneFeatureConfiguration> {
             local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(server,chunk,plan);
         } else {
             // feature阶段不会重跑，缺口交给已有加载事件与计划缓存补建，不能只返回成功丢失失败。
-            WallBodyBackfill.enqueuePublished(server,java.util.List.of(plan.owner()));
+            WallBodyBackfill.enqueueUnfinished(server, plan.owner());
         }
         return result.complete();
     }

@@ -1115,7 +1115,8 @@ final class ProductionSession implements AutoCloseable {
         int published = 0;
         int failed = 0;
         Throwable firstFailure = null;
-        var publishedKeys = new java.util.ArrayList<local.plaincraft.greatwall.model.WallTypes.ChunkKey>();
+        // 用发布时的哈希入队；超过缓存容量时也不能退化为仅认区块坐标。
+        var publishedHashes = new java.util.LinkedHashMap<local.plaincraft.greatwall.model.WallTypes.ChunkKey, String>();
         for (var entry : compiled.entrySet()) {
             try {
                 local.plaincraft.greatwall.generation.WallWorldgenPlanCache.put(level, entry.getValue());
@@ -1123,7 +1124,7 @@ final class ProductionSession implements AutoCloseable {
                 // corridor was generated before the plan existed (the measured session published
                 // 17.6 minutes after the prewarm finished), so nothing here would ever reach the
                 // feature stage again. See WallBodyBackfill.
-                publishedKeys.add(entry.getKey());
+                publishedHashes.put(entry.getKey(), entry.getValue().hash());
                 // The road may be released as soon as this window publishes; mark the plan's
                 // columns now, not one drain later.
                 local.plaincraft.greatwall.generation.WallPlanSupport.markPlannedColumns(entry.getValue());
@@ -1166,7 +1167,7 @@ final class ProductionSession implements AutoCloseable {
             PrewarmProgress.finish(false);
             return;
         }
-        local.plaincraft.greatwall.generation.WallBodyBackfill.enqueuePublished(level, publishedKeys);
+        local.plaincraft.greatwall.generation.WallBodyBackfill.enqueueCompiled(level, publishedHashes);
         if (failed > tolerated) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_FAILED published={} failed={} of "
                             + "{} owners (tolerated {})",

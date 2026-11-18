@@ -1,14 +1,12 @@
 package local.plaincraft.greatwall.generation;
 
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import local.plaincraft.greatwall.model.WallTypes.ChunkKey;
 import local.plaincraft.greatwall.model.WallTypes.ChunkWritePlan;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.ChunkPos;
 
 /**
  * Session-scoped cache of immutable wall write plans, mirroring RoadWeaver's
@@ -50,8 +48,22 @@ public final class WallWorldgenPlanCache {
         return SESSIONS.computeIfAbsent(level, ignored -> new Session());
     }
 
-    private static final class Session {
+    // 读票据只存于在途表；新发布使同区块票据失效，即使新计划已被 LRU 淘汰。
+    static final class ReadTicket {
+        private boolean superseded;
+    }
+
+    static Session readSession(ServerLevel level) {
+        return session(level);
+    }
+
+    static boolean isReadSessionCurrent(ServerLevel level, Session owner) {
+        return SESSIONS.get(level) == owner;
+    }
+
+    static final class Session {
         private final Object lock = new Object();
+        private final Map<ChunkKey, ReadTicket> reads = new HashMap<>();
         private final LinkedHashMap<ChunkKey, ChunkWritePlan> nonEmpty =
                 new LinkedHashMap<>(256, 0.75F, true) {
                     @Override
@@ -77,11 +89,34 @@ public final class WallWorldgenPlanCache {
         void put(ChunkKey key, ChunkWritePlan plan) {
             boolean isEmpty = plan.voxels().isEmpty();
             synchronized (lock) {
-                LinkedHashMap<ChunkKey, ChunkWritePlan> own = isEmpty ? empty : nonEmpty;
-                LinkedHashMap<ChunkKey, ChunkWritePlan> other = isEmpty ? nonEmpty : empty;
-                other.remove(key);
-                own.put(key, plan);
+                var read = reads.get(key);
+                if (read != null) read.superseded = true;
+                store(key, plan, isEmpty);
             }
+        }
+
+        ReadTicket beginRead(ChunkKey key) {
+            synchronized (lock) {
+                if (reads.containsKey(key) || nonEmpty.containsKey(key) || empty.containsKey(key)) return null;
+                var ticket = new ReadTicket();
+                reads.put(key, ticket);
+                return ticket;
+            }
+        }
+
+        boolean finishRead(ChunkKey key, ReadTicket ticket, ChunkWritePlan plan) {
+            synchronized (lock) {
+                if (!reads.remove(key, ticket) || ticket.superseded || plan == null || !key.equals(plan.owner())) return false;
+                store(key, plan, plan.voxels().isEmpty());
+                return true;
+            }
+        }
+
+        private void store(ChunkKey key, ChunkWritePlan plan, boolean isEmpty) {
+            LinkedHashMap<ChunkKey, ChunkWritePlan> own = isEmpty ? empty : nonEmpty;
+            LinkedHashMap<ChunkKey, ChunkWritePlan> other = isEmpty ? nonEmpty : empty;
+            other.remove(key);
+            own.put(key, plan);
         }
     }
 }

@@ -2,7 +2,6 @@ package local.plaincraft.greatwall.generation;
 
 import local.plaincraft.greatwall.model.WallFailure;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -120,7 +119,7 @@ public final class WallBodyBackfill {
                     int x = Integer.parseInt(name.substring(0, split));
                     int z = Integer.parseInt(name.substring(split + 1));
                     ChunkKey key = new ChunkKey(level.dimension().location().toString(), x, z);
-                    if (state.settled.contains(key)) continue;
+                    if (state.completed.contains(key)) continue;
                     // DONE is only a hint that the chunk may have been written. The persistent
                     // PRODUCTION marker is the seal; a crash between ledger append and region save
                     // must still be allowed to finish the missing blocks on next load.
@@ -135,9 +134,9 @@ public final class WallBodyBackfill {
                     evidence, unreadable.toString());
             return added;
         }
-        state.total = Math.max(state.total, state.settled.size() + state.pending.size());
+        state.total = Math.max(state.total, state.completed.size() + state.pending.size());
         GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_SEEDED pending={} added={} settled={}",
-                state.pending.size(), added, state.settled.size());
+                state.pending.size(), added, state.completed.size());
         return added;
     }
     /** How long a request may stay unanswered before its ticket is dropped and the chunk retried. */
@@ -226,22 +225,39 @@ public final class WallBodyBackfill {
         if (done != null) releaseTicket(level, done.pos(), done.ticketId());
     }
 
-    /** Asks the IO pool for one plan; the caller keeps the chunk pending until it arrives. */
-    private static void requestPlanRead(ServerLevel level, ChunkKey key) {
+    /** 去重覆盖从提交到主线程接收的整个窗口，避免同一计划重复读盘。 */
+    private static void requestPlanRead(ServerLevel level, State state, ChunkKey key) {
         PlanStore store = planStore;
-        if (store == null || !LOADING.add(key)) return;
+        if (store == null) return;
+        var session = WallWorldgenPlanCache.readSession(level);
+        var ticket = session.beginRead(key);
+        if (ticket == null) return;
         try {
             IO.execute(() -> {
+                ChunkWritePlan loaded = readPlan(store, key);
                 try {
-                    prefetch(level, key, store);
-                } finally {
-                    // The key alone is not an ownership token: this request may belong to a
-                    // different save whose level was replaced while the IO thread was reading.
-                    if (STATES.containsKey(level)) LOADING.remove(key);
+                    level.getServer().execute(() -> {
+                        // 回到服务器线程后验证原会话与存储，不能借回调重新创建已卸载的状态。
+                        boolean current = STATES.get(level) == state && planStore == store
+                                && WallWorldgenPlanCache.isReadSessionCurrent(level, session);
+                        if (session.finishRead(key, ticket, current ? loaded : null)) state.pending.add(key);
+                    });
+                } catch (java.util.concurrent.RejectedExecutionException closing) {
+                    session.finishRead(key, ticket, null);
                 }
             });
         } catch (java.util.concurrent.RejectedExecutionException closing) {
-            LOADING.remove(key);
+            session.finishRead(key, ticket, null);
+        }
+    }
+
+    private static ChunkWritePlan readPlan(PlanStore store, ChunkKey key) {
+        try {
+            return store.read(key).orElse(null);
+        } catch (java.io.IOException | RuntimeException failure) {
+            GreatWallMod.LOGGER.warn("[GreatWall:施工] 读取施工计划失败 owner={},{} 原因={}",
+                    key.x(), key.z(), failure.toString());
+            return null;
         }
     }
 
@@ -300,7 +316,7 @@ public final class WallBodyBackfill {
                 if (WallWorldgenPlanCache.get(level, key) == null) {
                     // A reloaded save has the plan on disk but not in memory yet; read it off the IO
                     // pool and let the drain write the chunk once it arrives.
-                    requestPlanRead(level, key);
+                    requestPlanRead(level, state, key);
                     continue;
                 }
                 Sweep sweep = settle(level, chunk, key);
@@ -310,7 +326,7 @@ public final class WallBodyBackfill {
                 written += sweep.written();
                 markDone(key);
                 state.pending.remove(key);
-                state.settled.add(key);
+                state.completed.record(key, sweep.planHash());
                 painted++;
             } catch (RuntimeException failed) {
                 // Leave it queued; the in-game drain retries with the server ticking.
@@ -408,7 +424,6 @@ public final class WallBodyBackfill {
             }
         }
         STATES.clear();
-        LOADING.clear();
         FORCE_REPAIR.clear();
         DONE.clear();
         doneFile = null;
@@ -426,24 +441,35 @@ public final class WallBodyBackfill {
     private WallBodyBackfill() {
     }
 
-    /** Queues every chunk of a freshly published plan. Called once per successful compile. */
-    public static void enqueuePublished(ServerLevel level, Collection<ChunkKey> keys) {
-        if (level == null || keys == null || keys.isEmpty()) return;
+    /** 新发布按实际计划哈希判断；旧 DONE 不能吞掉已经加载区块的新计划。 */
+    public static void enqueueCompiled(ServerLevel level, Map<ChunkKey, String> hashes) {
+        if (level == null || hashes.isEmpty()) return;
         State state = state(level);
         int added = 0;
-        int proven = 0;
-        for (ChunkKey key : keys) {
-            if (key == null || state.settled.contains(key)) continue;
-            // DONE is a hint; the chunk's persistent PRODUCTION marker decides whether it is sealed.
-            if (DONE.contains(key.x() + "_" + key.z())) {
-                if (state.doneHint.add(key)) proven++;
-                continue;
+        for (var entry : hashes.entrySet()) {
+            ChunkKey key = entry.getKey();
+            if (state.completed.matches(key, entry.getValue())) continue;
+            boolean replaced = state.completed.forget(key);
+            if (!replaced && DONE.contains(key.x() + "_" + key.z())
+                    && level.getChunkSource().getChunkNow(key.x(), key.z()) == null) {
+                // 未加载的旧完工区块等自然加载验证，不为重新核对强拉整条旧走廊。
+                state.doneHint.add(key);
+            } else {
+                state.doneHint.remove(key);
+                if (state.pending.add(key)) added++;
             }
-            if (state.pending.add(key)) added++;
         }
-        state.total = Math.max(state.total, state.settled.size() + state.pending.size());
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_QUEUED chunks={} added={} settled={} verify={}",
-                state.pending.size(), added, state.settled.size(), proven);
+        state.total = Math.max(state.total, state.completed.size() + state.pending.size());
+        GreatWallMod.LOGGER.info("[GreatWall:施工] 新计划入队 added={} pending={} 同会话完工={} 待加载复核={}",
+                added, state.pending.size(), state.completed.size(), state.doneHint.size());
+    }
+
+    /** Feature 明确报告落块未完成，不受磁盘完成提示影响。 */
+    public static void enqueueUnfinished(ServerLevel level, ChunkKey key) {
+        State state = state(level);
+        state.completed.forget(key);
+        state.doneHint.remove(key);
+        state.pending.add(key);
     }
 
     /**
@@ -464,8 +490,6 @@ public final class WallBodyBackfill {
                 thread.setDaemon(true);
                 return thread;
             });
-    /** Chunks with a plan read in flight, so a burst of loads does not read the same file twice. */
-    private static final Set<ChunkKey> LOADING = ConcurrentHashMap.newKeySet();
     /** Voxels skipped because the world changed after the plan was compiled. */
     private static int beforeConflicts;
     /** Voxels whose block id the registry could not resolve. */
@@ -484,62 +508,16 @@ public final class WallBodyBackfill {
     private static final java.util.concurrent.atomic.AtomicLong ALREADY_BUILT =
             new java.util.concurrent.atomic.AtomicLong();
 
-    /** A chunk the server just loaded: queue it when a published plan already covers it. */
+    /** 加载事件只排队；区块完成章必须在实际施工入口按当前计划哈希验证。 */
     public static void onChunkLoaded(ServerLevel level, ChunkKey key) {
         if (level == null || key == null) return;
         State state = state(level);
-        if (state.settled.contains(key) || state.settling.contains(key)) return;
-        if (state.doneHint.remove(key)) {
-            LevelChunk hinted = level.getChunkSource().getChunkNow(key.x(), key.z());
-            if (hinted != null) {
-                var marker = hinted.getAttached(TerrainMarkers.PRODUCTION);
-                if (marker != null && marker.complete()) {
-                    state.settled.add(key);
-                    return;
-                }
-            }
-            state.pending.add(key);
-        }
-        if (WallWorldgenPlanCache.get(level, key) != null) {
-            state.pending.add(key);
-            return;
-        }
-        PlanStore store = planStore;
-        if (store == null || !LOADING.add(key)) return;
-        try {
-            IO.execute(() -> {
-                try {
-                    prefetch(level, key, store);
-                } finally {
-                    // The key alone is not an ownership token: this request may belong to a
-                    // different save whose level was replaced while the IO thread was reading.
-                    if (STATES.containsKey(level)) LOADING.remove(key);
-                }
-            });
-        } catch (java.util.concurrent.RejectedExecutionException closing) {
-            // The pool is shutting down with the server; the chunk stays queued for the next run.
-            LOADING.remove(key);
-        }
-    }
-
-    /** Reads one durable plan off the IO thread, then hands it back to the server thread. */
-    private static void prefetch(ServerLevel level, ChunkKey key, PlanStore store) {
-        ChunkWritePlan plan = null;
-        try {
-            plan = store.read(key).orElse(null);
-        } catch (java.io.IOException | RuntimeException failure) {
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_READ_FAILED owner={},{} reason={}",
-                    key.x(), key.z(), failure.toString());
-        }
-        if (plan == null) return;
-        ChunkWritePlan loaded = plan;
-        try {
-            level.getServer().execute(() -> {
-                WallWorldgenPlanCache.put(level, loaded);
-                state(level).pending.add(key);
-            });
-        } catch (java.util.concurrent.RejectedExecutionException closing) {
-            // Server is stopping: the durable record stays readable next launch.
+        if (state.settling.contains(key)) return;
+        ChunkWritePlan plan = WallWorldgenPlanCache.get(level, key);
+        if (plan != null && state.completed.matches(key, plan.hash())) return;
+        if (state.doneHint.remove(key) || plan != null) state.pending.add(key);
+        if (plan == null && (!state.completed.contains(key) || state.pending.contains(key))) {
+            requestPlanRead(level, state, key);
         }
     }
 
@@ -593,7 +571,7 @@ public final class WallBodyBackfill {
             // and wrote zero blocks - the drain ran every tick against an empty cache. Fetch the plan
             // here instead, on the IO pool, the way the road reads its construction data each pass.
             if (local.plaincraft.greatwall.generation.WallWorldgenPlanCache.get(level, key) == null) {
-                requestPlanRead(level, key);
+                requestPlanRead(level, state, key);
                 continue; // stays pending; the prefetch wakes it on a later drain
             }
             state.settling.add(key);
@@ -604,16 +582,10 @@ public final class WallBodyBackfill {
                 switch (sweep.status()) {
                     case SETTLED -> {
                         state.pending.remove(key);
-                        state.settled.add(key);
+                        state.completed.record(key, sweep.planHash());
                         state.attempts.remove(key);
                         settledThisDrain++;
                         writtenBlocks += sweep.written();
-                        markDone(key);
-                    }
-                    case FOREIGN -> {
-                        // No plan for this node, or another dimension's chunk: retrying cannot help.
-                        state.pending.remove(key);
-                        state.settled.add(key);
                         markDone(key);
                     }
                     case PENDING -> {
@@ -641,7 +613,7 @@ public final class WallBodyBackfill {
         // that scrolls itself out of the file is a log nobody reads. Speak when blocks were written, when
         // the queue empties, or once every 200 drains as a heartbeat.
         drainsSinceLog++;
-        boolean justEmptied = state.pending.isEmpty() && !state.settled.isEmpty();
+        boolean justEmptied = state.pending.isEmpty() && state.completed.size() != 0;
         if (writtenBlocks > 0 || justEmptied || drainsSinceLog >= 200) {
             drainsSinceLog = 0;
             // alreadyBuilt：命中 settle() 的「本区块已建成」早退（written 必然是 0）。
@@ -676,7 +648,7 @@ public final class WallBodyBackfill {
         State state = level == null ? null : STATES.get(level);
         if (state == null) return 0;
         java.util.Set<ChunkKey> keys = new java.util.LinkedHashSet<>(state.pending);
-        keys.addAll(state.settled);
+        keys.addAll(state.completed.keys());
         keys.addAll(state.doneHint);
         // DONE chunks live in verify, not in pending. Omitting them meant a reloaded save could
         // report missed=0 while every already-built chunk was invisible to the road guard.
@@ -764,9 +736,9 @@ public final class WallBodyBackfill {
         GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_COMPLETE pending={} elapsedMs={} - "
                 + "the road gate is open", state.pending.size(), elapsedMs);
     }
-    private enum Status { SETTLED, PENDING, FOREIGN }
+    private enum Status { SETTLED, PENDING }
 
-    private record Sweep(Status status, int written) {
+    private record Sweep(Status status, int written, String planHash) {
     }
 
     private static Sweep settle(ServerLevel level, LevelChunk chunk, ChunkKey key) {
@@ -775,7 +747,7 @@ public final class WallBodyBackfill {
             // The durable read is prefetched on the IO thread when the chunk loads; doing it here
             // would put a file read on the server thread for every chunk the player walks into.
             // A miss means the prefetch is still in flight, so this chunk stays pending.
-            return new Sweep(Status.PENDING, 0);
+            return new Sweep(Status.PENDING, 0, null);
         }
         boolean forcedRepair = FORCE_REPAIR.remove(key);
         var existingMarker = chunk.getAttached(TerrainMarkers.PRODUCTION);
@@ -787,7 +759,7 @@ public final class WallBodyBackfill {
             ALREADY_BUILT.incrementAndGet();
             WallPlanSupport.markPlannedColumns(plan);
             local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
-            return new Sweep(Status.SETTLED, 0);
+            return new Sweep(Status.SETTLED, 0, plan.hash());
         }
         WallPlanSupport.markPlannedColumns(plan);
         // 强制修复或新版本施工先撤销旧完成章，后续实体失败不能留下旧的成功证据。
@@ -826,7 +798,7 @@ public final class WallBodyBackfill {
             local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
         }
         // 不完整计划不得进入SETTLED，否则外层会移出队列并持久写入DONE。
-        return new Sweep(result.complete() ? Status.SETTLED : Status.PENDING,result.written());
+        return new Sweep(result.complete() ? Status.SETTLED : Status.PENDING, result.written(), plan.hash());
     }
 
     private static State state(ServerLevel level) {
@@ -852,7 +824,7 @@ public final class WallBodyBackfill {
         final Set<ChunkKey> pending = ConcurrentHashMap.newKeySet();
         /** DONE ledger entries waiting for their chunk's persistent PRODUCTION marker check. */
         final Set<ChunkKey> doneHint = ConcurrentHashMap.newKeySet();
-        final Set<ChunkKey> settled = ConcurrentHashMap.newKeySet();
+        final BackfillCompletions completed = new BackfillCompletions();
         final Set<ChunkKey> settling = ConcurrentHashMap.newKeySet();
         final Map<ChunkKey, Integer> attempts = new ConcurrentHashMap<>();
         /** In-game chunk requests in flight; this path never blocks on one. */
@@ -870,13 +842,13 @@ public final class WallBodyBackfill {
         State state = level == null ? null : STATES.get(level);
         if (state == null) return 0;
         java.util.List<ChunkKey> back = new java.util.ArrayList<>();
-        for (ChunkKey k : state.settled) {
+        for (ChunkKey k : state.completed.keys()) {
             if (Math.abs(k.x() - centerChunkX) <= radiusChunks && Math.abs(k.z() - centerChunkZ) <= radiusChunks) {
                 back.add(k);
             }
         }
         for (ChunkKey k : back) {
-            state.settled.remove(k);
+            state.completed.forget(k);
             state.pending.add(k);
             FORCE_REPAIR.add(k);
             DONE.remove(k.x() + "_" + k.z());

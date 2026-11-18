@@ -459,7 +459,7 @@ class BuildContractTest {
         }
         assertTrue(backfill.contains("result.complete() ? Status.SETTLED : Status.PENDING"));
         assertTrue(backfill.contains("return level.setBlock(new BlockPos(p.x(),p.y(),p.z()),target,2)"));
-        assertTrue(feature.contains("WallBodyBackfill.enqueuePublished(server,java.util.List.of(plan.owner()))"));
+        assertTrue(feature.contains("WallBodyBackfill.enqueueUnfinished(server, plan.owner())"));
     }
 
     /** 验证实际生产工厂和退出路径，缓存组件正确不能代替跨lane共享已接线。 */
