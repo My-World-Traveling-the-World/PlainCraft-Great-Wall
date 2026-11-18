@@ -29,13 +29,11 @@ import local.plaincraft.greatwall.terrain.LanePolicy;
 import local.plaincraft.greatwall.terrain.NaturalTerrainOracle;
 import local.plaincraft.greatwall.terrain.OracleLane;
 
-/** Pure S1A scheduler. Integration must acquire its futures before any FEATURES region lock. */
+/** 所有规划任务共用同一个推进器；集成方须在持有 FEATURES 区域锁前获取未来结果。 */
 public final class PlannerScheduler implements AutoCloseable {
     public record FailureEvidence(String phase, long segment, long operations, FailureCode code,
             String exceptionType, String message, String originalStack) {}
     private static final long MIB = 1024L * 1024;
-    /** How many times the fine-sample stage ran in this process; see the FINE_SAMPLE_CALL line. */
-    private static final java.util.concurrent.atomic.AtomicLong FINE_SAMPLE_CALLS = new java.util.concurrent.atomic.AtomicLong();
     private final WorldRecipe recipe;
     private final ConcurrentHashMap<SegmentKey, CompletableFuture<RouteShape>> routeFlights = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<SegmentKey, CompletableFuture<SegmentGeometry>> geometryFlights = new ConcurrentHashMap<>();
@@ -45,23 +43,21 @@ public final class PlannerScheduler implements AutoCloseable {
     private final ConcurrentHashMap<UUID, CompletableFuture<PlanLease<Object>>> acquisitions = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> state = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, FailureEvidence> failures = new ConcurrentHashMap<>();
-    private final ScheduledThreadPoolExecutor pump;
+    private final PlannerPump pump;
+    private final FineSampleStage fineSamples;
+    private final BulkPrewarmStage bulkPrewarm;
+    private PlanLease<SegmentPlan> backgroundLease;
     private final PrefixSummaryIndex prefixes;
     private final SegmentCacheStore cache;
     private final Executor io;
     private final AnchorField anchors;
     private final RidgePlanner ridge;
     private final HydrologyClassifier hydrology = new HydrologyClassifier();
-    /**
-     * Per-segment hydrology operation ceiling. A real-world segment needed
-     * >25M operations before terminating, which exceeded the server watchdog
-     * window. Beyond this ceiling the remaining unresolved water terminates
-     * as WIDE, so a slow island can never stall the whole wall.
-     */
+    /** 单段水文需要设操作上限，避免极端水面阻塞整个启动；保留已认证的证据。 */
     private static final long HYDROLOGY_OPERATION_CEILING = 4_000_000L;
-    /** Opening segments pre-computed by the bulk prewarm, once the blocking startup peer is done. */
+    /** 无显式目标时预热开头四段。 */
     private static final long STARTUP_PREWARM_SEGMENTS = 4;
-    /** Thread-name prefixes owned by this scheduler; used to refuse self-blocking waits. */
+    /** 通过线程名前缀识别执行资源，防止任务阻塞等待自身。 */
     private static final String pumpThreadPrefix = "pgw-planner-";
     private static final String laneThreadPrefix = "pgw-oracle-";
     private final HeightContractPlanner heights;
@@ -73,188 +69,21 @@ public final class PlannerScheduler implements AutoCloseable {
     private final PriorityQueue<Job<?>> pending = new PriorityQueue<>(Comparator.<Job<?>, Priority>comparing(j -> j.priority)
             .thenComparingLong(j -> j.sequence));
     private final ArrayDeque<Runnable> geometryQueue = new ArrayDeque<>();
-    /**
-     * Guards {@link #geometryQueue}, which caller threads enqueue onto while the pump drains it.
-     *
-     * <p>{@code ArrayDeque} is not thread safe, and this queue genuinely has two producers of a race:
-     * {@code requireGeometry} runs on whatever thread asked (the server thread for a {@code /greatwall}
-     * command, the worldgen thread for a plan request), while {@code drainGeometry} also runs from the
-     * pump when a geometry flight completes. Only the queue operations are locked - the dequeued work
-     * runs outside the lock, so a slow geometry job cannot serialise the admission path.
-     */
+    /** 调用线程入队、推进线程出队；持锁仅操作队列，在锁外执行几何计算。 */
     private final Object geometryLock = new Object();
     private final ArrayDeque<Runnable> ioQueue = new ArrayDeque<>();
     private final ArrayDeque<Runnable> planAdmissions = new ArrayDeque<>(), geometryAdmissions = new ArrayDeque<>();
     private final Map<UUID, Job<?>> activeJobs = new HashMap<>();
     private int activeGeometry, credits, activeIo, admittedPlans, admittedGeometries;
-    /** Native lanes currently initializing; bounded by {@link LanePolicy#MAX_CONCURRENT_INITIALIZATIONS}. */
+    /** 限制并发初始化，防止多个原生噪声状态同时扩大工作集。 */
     private int initializing;
     private long deadline, sequence, background = 4;
     private ScheduledFuture<?> startupTimer;
-    /**
-     * Drives the bulk prewarm independently of the server tick.
-     *
-     * <p>Cancelled when the prewarm settles or the scheduler closes. See
-     * {@link #afterRoadBulk()} for why the prewarm does not rely on ticks.
-     */
-    private ScheduledFuture<?> prewarmTimer;
-
-    /**
-     * The fine sample's own driver.
-     *
-     * <p>The prewarm has had a dedicated 1 ms driver for a while, but the fine sample runs <em>before</em>
-     * the prewarm and therefore ran with no driver at all: the startup timer is cancelled by the first
-     * server tick, so the stage was driven only by ticks (about 20 drives/s) plus the stall watchdog.
-     * Each drive grants every idle lane {@link #LANE_BATCH_OPERATIONS} primitive operations, so a
-     * tick-driven stage ran roughly two orders of magnitude below the lanes' capacity. A measured
-     * session spent 27 minutes in the fine sample and never finished it, with 8 of 12 lanes parked at
-     * any instant. This driver is the same shape as the prewarm's.
-     */
-    private ScheduledFuture<?> fineSampleTimer;
-
-    /**
-     * Primitive operations granted to one lane per drive.
-     *
-     * <p>64 was the historical value and the prewarm showed it workable only because the prewarm had a
-     * 1 ms driver (12 lanes x 64 ops x 1000 drives/s). The fine sample received the same 64 ops at tick
-     * rate instead.
-     *
-     * <p><b>4096 is a hard ceiling, not a tuning choice.</b> Both cursor contracts reject more:
-     * {@code CpuTerrainOracle.advance} and {@code WallFinePlanner.advance} each throw on a primitive
-     * limit outside 1..4096 (the legacy 256 ceiling was raised in 7cc3124f; the batch size is clamped
-     * to the same window by {@code GreatWallConfig.laneBatchOperations}). A measured lane round with
-     * 256 ops took about 10 ms, so the batch is not the limiter either: the levers on this stage are
-     * doing less work per column and cutting the retry walks, not a larger batch.
-     */
-    // The batch size is GreatWallConfig.laneBatchOperations (default 256, clamped 1..4096); this class
-    // used to keep a private copy that nothing read, so tuning it changed nothing.
-
-
-    /** How often the fine sample reports progress while it runs. */
-    private static final long FINE_SAMPLE_REPORT_MILLIS = 30_000L;
-
-    /**
-     * Live counters of the running fine sample, published by {@link #requireFineSamples} so the
-     * driver can report progress.
-     *
-     * <p>The fine sample is the longest silent stretch of the startup: it walks a cross-section per
-     * route point and logs nothing until the whole index is complete, so a slow run and a hung one
-     * look identical from the outside - the loading card only shows a column count that the player
-     * cannot tell is moving. These are the same counters the card reads.
-     */
-    private volatile java.util.concurrent.atomic.AtomicInteger fineSampleDone;
-    private volatile java.util.concurrent.atomic.AtomicInteger fineSampleTotal;
-    /** Published for the progress line: emitted-before-dedup, sections walked, wide sections, probes. */
-    private volatile java.util.concurrent.atomic.AtomicInteger fineSampleRaw;
-    private volatile java.util.concurrent.atomic.AtomicLong fineSampleSections;
-    private volatile java.util.concurrent.atomic.AtomicLong fineSampleWideSections;
-    private volatile java.util.concurrent.atomic.AtomicLong fineSampleProbed;
-    private volatile long fineSampleStartNanos;
-    private volatile long fineSampleLastLogNanos;
-    /**
-     * The fine sample's own completion, published so the runaway guard can publish the index early.
-     *
-     * <p>Null once the stage has finished or been abandoned, which makes the guard idempotent.
-     */
-    private volatile Runnable fineSampleAbandon;
-    /** Set when the runaway guard published the index instead of waiting for the work to converge. */
-    private volatile java.util.concurrent.atomic.AtomicBoolean fineSampleForced = new java.util.concurrent.atomic.AtomicBoolean();
-    /**
-     * The columns this session has walked, kept so a close can still write them to disk.
-     *
-     * <p>It is the same list the completion callback persists, so there is one source of truth; it is
-     * published only for the close path.
-     */
-    private volatile List<WallFinePlanner.FineColumn> fineSampleWalked;
-    /**
-     * How far past its own estimate the fine sample may run before it is treated as a runaway.
-     *
-     * <p>An estimate may be a little low; ten times is not an estimate problem. A measured session was
-     * still climbing at 4.5M columns against a 498k estimate after 25 minutes, at a rate that was
-     * <em>rising</em> (1.8k/s to 3.7k/s) with 85% chunk-cache hits - the signature of re-walking columns
-     * the index already holds, not of sampling new terrain. Publishing what has been sampled keeps the
-     * save buildable; waiting for convergence never does.
-     */
-    /** Fixed slice count per segment; see the comment where it is used. */
-    private static final int FINE_SAMPLE_SLICES_PER_SEGMENT = 48;
-    private static final long FINE_SAMPLE_RUNAWAY_NUMERATOR = 4L;
-    /** How often the semantic runaway test samples the counters. */
-    private static final long FINE_SAMPLE_RUNAWAY_WINDOW_NANOS = TimeUnit.SECONDS.toNanos(5);
-    /** Columns that must arrive in one window before "no new terrain" means anything. */
-    private static final long FINE_SAMPLE_RUNAWAY_MIN_COLUMNS = 1_000L;
-    /** Below this the denominator is still the seed value, so the ratio bound means nothing. */
-    private static final long FINE_SAMPLE_RUNAWAY_MIN_EXPECTED = 1_000L;
-    /** Consecutive no-new-terrain windows before the stage is declared a runaway (5 s each). */
-    private static final int FINE_SAMPLE_RUNAWAY_IDLE_WINDOWS = 3;
-    /**
-     * Consecutive windows of "not one column moved while work is still outstanding and every lane is
-     * idle" before the stage is abandoned (5 s each).
-     *
-     * <p>The other two tests both need columns to keep arriving: the ratio test divides by columns, and
-     * the no-new-terrain test ignores a window whose column delta is below its floor. A stage that hangs
-     * - a slice future that never completes, a lane that died holding a job - moves no columns at all, so
-     * both tests zero their counters and wait forever. This one is the liveness test they were missing,
-     * and it is phrased on idleness rather than on a column count so a slow-but-alive stage cannot trip
-     * it: lanes busy means work is progressing even when the counters are flat.
-     */
-    private static final int FINE_SAMPLE_STALL_WINDOWS = 3;
-    private long runawayLastColumns;
-    private long runawayLastMisses;
-    private long runawayLastCheckNanos;
-    private int runawayIdleChecks;
-    private int runawayStallChecks;
-    /** The fine sample's outstanding counters, mirrored so the driver can judge a stall. */
-    private volatile java.util.concurrent.atomic.AtomicInteger fineSampleSlicesPending;
-    private volatile java.util.concurrent.atomic.AtomicInteger fineSampleRoutesPending;
-
-    /**
-     * The prewarm's segment leases, pinned until the planning compile has published them.
-     *
-     * <p>They must outlive the prewarm: closing them releases the cached {@link SegmentPlan}s back
-     * to the memory budget, and the compile does not run until the server has started (minutes
-     * later). A measured session closed them at prewarm completion and then re-planned the whole
-     * opening window during the compile - 22 minutes of silent work that published nothing before
-     * the run ended. Released by {@link #releasePrewarmLeases()} once the compile is done, and by
-     * {@link #close()} on every other path.
-     */
-    private final java.util.List<PlanLease<SegmentPlan>> prewarmLeases =
-            java.util.Collections.synchronizedList(new java.util.ArrayList<>());
-    private PlanLease<SegmentPlan> backgroundLease;
-
-    /**
-     * Runs once the bulk prewarm has settled successfully, on the prewarm's own completion thread.
-     *
-     * <p>Registered by the production session to post the planning compile onto the server queue.
-     * Without it the compile can only be reached from the server tick loop, which a startup peer's
-     * managedBlock holds shut - the peer would wait for a wall that can no longer finish.
-     */
-    private volatile Runnable bulkReadyHook;
-
-    /** Registers the bulk-prewarm completion hook. Replaces any previous one. */
-    public void onBulkReady(Runnable hook) {
-        this.bulkReadyHook = hook;
-    }
-
-    /**
-     * Columns an earlier session already sampled, handed in before {@link #requireFineSamples}.
-     *
-     * <p>The fine sample is the slowest stage of a cold startup and its result is a pure function of
-     * the world, so a session that reuses the previous session's columns skips every terrain walk
-     * the cache answers. The cache is off by default so tests and fixture runs sample everything.</p>
-     */
-    private volatile local.plaincraft.greatwall.terrain.FineSampleCache fineSampleCache =
-            local.plaincraft.greatwall.terrain.FineSampleCache.none();
-
-    /** Installs the fine-sample cache. Must be called before {@link #requireFineSamples}. */
-    public void setFineSampleCache(local.plaincraft.greatwall.terrain.FineSampleCache cache) {
-        this.fineSampleCache = java.util.Objects.requireNonNull(cache, "cache");
-    }
-
     public PlannerScheduler(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory, SegmentCacheStore cache, Executor io) {
         this(recipe, Objects.requireNonNull(oracleFactory), null, cache, io);
     }
 
-    /** Successful construction transfers both session-owned lanes from bootstrap to this scheduler. */
+    /** 构造成功后调度器接管启动通道，负责释放和排空。 */
     public PlannerScheduler(WorldRecipe recipe, List<OracleLane> bootstrapLanes, SegmentCacheStore cache, Executor io) {
         this(recipe, null, List.copyOf(bootstrapLanes), cache, io);
     }
@@ -285,13 +114,15 @@ public final class PlannerScheduler implements AutoCloseable {
         }
         this.anchors = new AnchorField(recipe); this.ridge = new RidgePlanner(recipe, anchors);
         this.heights = new HeightContractPlanner(recipe); this.sites = new SiteScheduler(recipe);
-        this.pump = new Pump(factory("pgw-planner-" + recipe.instance()));
+        this.pump = new PlannerPump(factory("pgw-planner-" + recipe.instance()));
         pump.setRemoveOnCancelPolicy(true);
         this.lanes = bootstrapLanes != null ? List.copyOf(bootstrapLanes)
                 : lanes(recipe, oracleFactory, LanePolicy.resolve().startupLaneCount());
         this.laneState = this.lanes.stream().map(ignored -> new Lane()).toList();
         this.memory = new BudgetCache<>(recipe.config().segmentBytes(), 256, 4096, pump, PlannerScheduler::retainedBytes);
         this.prefixes = new PrefixSummaryIndex(i -> requireGeometry(i, Priority.PLAYER_PREFETCH), pump, cache, this::submitIo);
+        this.fineSamples = new FineSampleStage(this, pump, prefixes, sites, laneState.size(), geometryFlights::get);
+        this.bulkPrewarm = new BulkPrewarmStage(this, pump, state, laneState.size(), recipe.config().maxGeometryInflight());
     }
 
     private static List<OracleLane> lanes(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory,
@@ -335,11 +166,7 @@ public final class PlannerScheduler implements AutoCloseable {
                 if (error != null) { geometry.close(); prefix.close(); result.completeExceptionally(error); return; }
                 if (closed()) { geometry.close(); prefix.close(); result.completeExceptionally(closedFailure()); return; }
                 if (inputs.prefix.terminal().isPresent() && inputs.prefix.terminal().get().segment() < segment) {
-                    // This segment keeps its geometry but loses every station, break and site, so the wall
-                    // body is still compiled while nothing is ever placed on it. No other line says so:
-                    // the segment reports a successful plan with zero stations, and the stretch it builds
-                    // looks like ordinary plain wall rather than the part of the wall that has no gates,
-                    // no forts and no end caps. Say it, once per segment, with the numbers that prove it.
+                    // 终止后的段保留几何供编译墙身，但不生成站点、断点及建筑。
                     local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
                             "[GreatWall:diag] PLAN_DEAD segment={} terminatedBySegment={} terminalSQ8={} "
                                     + "ownTerminalSQ8={} routeSQ8={} ratioPct={} - body still compiles, "
@@ -369,422 +196,29 @@ public final class PlannerScheduler implements AutoCloseable {
         });
     }
 
-    /**
-     * Runs the full-width fine cross-section sampler over the opening segments and publishes the
-     * aggregate {@link FineHeightIndex} once every segment's samples are resolved. The generation
-     * stage reads this index instead of a per-block T0 snapshot, which is the last step of "planning
-     * decides the terrain, landing only paints".
-     */
+    /** 对外保留原调度入口；精采样和批量预热不创建额外线程池。 */
     public CompletableFuture<FineHeightIndex> requireFineSamples(Priority priority) {
-        if (closed()) return CompletableFuture.failedFuture(closedFailure());
-        var aggregate = new CompletableFuture<FineHeightIndex>();
-        var all = new java.util.TreeMap<Long, List<WallFinePlanner.FineColumn>>();
-        /** The subset of {@code all} this run walked or read from the cache; what gets persisted. */
-        var walked = new ArrayList<WallFinePlanner.FineColumn>();
-        fineSampleWalked = walked;
-        var sampledColumns = new java.util.concurrent.atomic.AtomicInteger();
-        // Cross-section columns emitted before the cursor collapsed repeats. The gap between this and
-        // sampledColumns is the duplicate factor the overlapping cross-sections produce, which is the
-        // number that says whether the de-duplication is doing its job on this world.
-        var rawColumns = new java.util.concurrent.atomic.AtomicInteger();
-        // Sections walked, how many of them carried the full wide band, and how many REFERENCE walks
-        // they cost. A measured run emitted 1.35M columns for a corridor of ~8190 blocks, which is far
-        // more per section than the 33-column base band implies: this triple is what tells whether the
-        // wide arcs cover most route points (base band never applied) or the sampling plan's flank
-        // refinement degrades to full resolution. Both are pure "sample less" wins if confirmed.
-        var walkedSections = new java.util.concurrent.atomic.AtomicLong();
-        var wideSections = new java.util.concurrent.atomic.AtomicLong();
-        var probedColumns = new java.util.concurrent.atomic.AtomicLong();
-        // Prewarm already plans the opening segments; sample the same window so the two share the
-        // lane budget and the fine samples land together with the plans.
-        long target = prewarmTargetSegments();
-        if (target <= 0) target = STARTUP_PREWARM_SEGMENTS;
-        // Final copy for the per-segment estimate lambda: target is reassigned above, so it cannot be
-        // captured directly.
-        final int projectedSegments = (int) Math.max(1L, target);
-        final int totalSegments = (int) Math.min(Integer.MAX_VALUE, target);
-        // Fan each segment's point range across the native lanes. One segment is ~2048 points plus the
-        // two end aprons, each point a full cross-section of 2 * WallFinePlanner.LATERAL + 1 columns
-        // (~230k REFERENCE samples); a single job walked them serially on one lane while
-        // every other lane sat idle. The slices are point ranges of the same route, so each lane's
-        // oracle samples exactly the columns it would have sampled serially — the merged index is
-        // identical, only computed concurrently.
-        //
-        // 4x the lane count so the queue holds fine-grained work units: a 12-lane session measured
-        // 26% idle (9/12 RUNNABLE) because its 12 coarse slices per route (~8k columns each) left
-        // the last lane's tail unabsorbed. Smaller slices let the queue work-steal that tail away.
-        // A fixed slice count, not lanes * 4. The slice boundaries are where the session-wide claim set
-        // hands a column from one cursor to the next, so making the count depend on the lane number made
-        // the sampled set depend on how many cores the machine has: the same seed produced a different
-        // fine index on a four-lane and a sixteen-lane session. Forty-eight slices still work-steal across
-        // any lane count, so the parallel win is unchanged and the result no longer varies by machine.
-        int slices = FINE_SAMPLE_SLICES_PER_SEGMENT;
-        // Progress is reported in sampled columns. A slice is roughly eight thousand columns, so a
-        // slice-counting meter only moves every few thousand columns and reads as a hang. The
-        // denominator starts at 1 and grows as slices are enqueued (their point ranges are known
-        // before they are sampled), and max() keeps the fraction monotone.
-        var expectedColumns = new java.util.concurrent.atomic.AtomicInteger(1);
-        // Seeded once from the first segment and projected across the route; see the comment where it is set.
-        var expectedSeeded = new java.util.concurrent.atomic.AtomicBoolean();
-        // The sampling grid decides how many columns this stage emits, so the meter has to count the
-        // same way or the fraction runs away from one. Read from the frozen snapshot: gridStep = 1 -
-        // the default - leaves both the sampler and the meter exactly as they were.
-        final int gridStep = local.plaincraft.greatwall.config.GreatWallConfig.parameters()
-                .fineSampleGridStep();
-        // Publish the counters before the driver starts: the driver reports them every 30 s.
-        fineSampleDone = sampledColumns;
-        fineSampleTotal = expectedColumns;
-        fineSampleRaw = rawColumns;
-        fineSampleSections = walkedSections;
-        fineSampleWideSections = wideSections;
-        fineSampleProbed = probedColumns;
-        fineSampleStartNanos = System.nanoTime();
-        fineSampleLastLogNanos = 0L;
-        // A per-call instance, not a field that lives as long as the scheduler: a forced publish from an
-        // earlier call used to leave the flag set, and the next call then skipped the completion gates and
-        // published an index built from an empty list. This call gets its own flag and its own counters.
-        var forcedFlag = new java.util.concurrent.atomic.AtomicBoolean();
-        fineSampleForced = forcedFlag;
-        runawayLastColumns = 0L;
-        runawayLastMisses = 0L;
-        runawayLastCheckNanos = 0L;
-        runawayIdleChecks = 0;
-        // Drive this stage ourselves: without it the fine sample waits on server ticks, which is how
-        // a measured session spent 27 minutes here without finishing a single slice.
-        startFineSampleDriver();
-        // How many times this stage runs in one session, and over how many points.
-        //
-        // Every counter below (`all`, `walks`, the meters) is method-local, so a second call would
-        // re-walk every column from scratch with nothing to show for it - and a measured session walked
-        // ~29k cross-sections where the estimate implied ~7.4k, a ratio of 3.9 that has no explanation
-        // inside a single call (a cursor cannot walk more indices than its own range). This line is what
-        // separates "the stage ran four times" from "one call enqueued four times the slices", because
-        // the next run prints the call number next to the segment and slice counts that produced it.
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_CALL call={} segments={} slicesPerSegment={}",
-                FINE_SAMPLE_CALLS.incrementAndGet(), (int) Math.min(Integer.MAX_VALUE, target),
-                Math.max(4, Math.min(laneState.size(), 16) * 4));
-        // One memo per session, shared by every slice and every segment: a world column this run has
-        // already walked is answered from here instead of walking the terrain a second time. Slices of
-        // one segment meet at their boundaries and neighbouring cross-sections round to the same
-        // integer columns, so the same column is asked for more than once; the memo turns the repeats
-        // into map hits. Concurrent because the slices run on different lanes, and it holds only
-        // immutable samples.
-        var walks = new java.util.concurrent.ConcurrentHashMap<Long,
-                local.plaincraft.greatwall.model.WallTypes.ColumnSample>();
-        // One claim per world column for the whole session - the way RoadWeaver dedupes its sample
-        // requests before walking them (one key per column, first requester wins). Without it every
-        // slice deduped only against itself, so the 64-block overlap between neighbouring slices, and
-        // the shared ground between the four segments, was walked three to four times over.
-        var claims = java.util.concurrent.ConcurrentHashMap.<Long>newKeySet();
-        // Concurrent: the loop adds one lease per segment from the caller thread, and the
-        // geometry-timeout fallback adds a route lease from the pump.
-        var leases = new java.util.concurrent.CopyOnWriteArrayList<PlanLease<?>>();
-        // Two counters, not one. A single counter seeded with the segment count completed the
-        // index after the first few slices (it was decremented once per slice, not per segment),
-        // so the compile received roughly a twelfth of the sampled columns.
-        // Seeded at zero and incremented per *enqueued* segment, never with the configured target: the
-        // loop below stops at the first segment the frozen envelope cannot hold, and a counter seeded
-        // with the target would then never reach zero - the aggregate would never complete, the driver
-        // below would never be stopped and the startup would sit in FINE_SAMPLE forever.
-        var routesPending = new java.util.concurrent.atomic.AtomicInteger();
-        var slicesPending = new java.util.concurrent.atomic.AtomicInteger();
-        // Published so the driver's stall test can tell "nothing is running and work is outstanding"
-        // from "everything is busy and merely slow".
-        fineSampleRoutesPending = routesPending;
-        fineSampleSlicesPending = slicesPending;
-        runawayStallChecks = 0;
-        // While the enqueue loop below is still running, the counters cannot speak for the segments
-        // that have not been handed to a lane yet: the first route's callback may resolve (and
-        // decrement routesPending to zero) before the loop reaches the second segment, and the index
-        // would then be published missing the columns of every later segment.
-        var enqueueing = new java.util.concurrent.atomic.AtomicBoolean(true);
-        // The body below publishes an index, writes the cache file and prints the stage summary. Five
-        // call sites drive this callback, and once the runaway guard forces a publish every later call
-        // used to re-run all of it: a measured session printed six FINE_SAMPLE_DONE lines, rebuilt the
-        // index five extra times and rewrote the cache file five extra times. After the gates, so an
-        // early return from a half-drained state does not consume the one chance.
-        var published = new java.util.concurrent.atomic.AtomicBoolean(false);
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.PREWARM, 0, 1);
-        var completion = new Runnable() {
-            @Override public void run() {
-                // The runaway guard publishes the index while slices are still in flight, so it skips both
-                // gates: what has been merged so far is a superset of the columns it needs (the excess work
-                // is re-walking columns the index already holds), and waiting for `pending` to drain is
-                // exactly what never happened in the measured session.
-                // This call's own flag, not the field: a later call replaces the field, and a completion
-                // reading the field would then see that call's force state instead of its own.
-                if (!forcedFlag.get()) {
-                    if (enqueueing.get()) return;
-                    if (routesPending.get() > 0 || slicesPending.get() > 0) return;
-                }
-                if (!published.compareAndSet(false, true)) return;
-                int done = sampledColumns.get();
-                // The estimate, not max(done, estimate): clamping the total to the done count made the
-                // fraction identically 100% for the whole tail of a run whose estimate ran low, so the
-                // card read "435385/435385" for eleven minutes while the sampler passed 1.2M columns.
-                // PrewarmProgress caps a running stage at 99% and only the stage transition reports 100.
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE, Math.min(done, Math.max(1, expectedColumns.get())), expectedColumns.get());
-                // Recorded here as well as at PREWARM_COMPLETE: the fine sample is the stage whose
-                // cost scales with the cross-section width, and its cache counters are what decide
-                // whether a slow run is the terrain walk or the chunk cache.
-                // Cost split, so "is the walk or the cache the bottleneck" is readable without dividing
-                // by hand: this is the number the slice-on-demand decision (B2) waits on.
-                long blockMs = laneDiagnostic("block-ms");
-                long sliceMs = laneDiagnostic("slice-ms");
-                long constructMs = laneDiagnostic("construct-ms");
-                long cellMs = laneDiagnostic("cell-ms");
-                long biomeMs = laneDiagnostic("biome-ms");
-                long surfaceMs = laneDiagnostic("surface-ms");
-                long walkMs = blockMs + sliceMs + constructMs + cellMs + biomeMs + surfaceMs;
-                GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_DONE columns={} raw={} repeatedPct={} "
-                                + "expectedColumns={} chunkCacheHits={} chunkCacheMisses={} lanes={} "
-                                + "walkedBlocks={} blocksPerColumn={} leadRetries={} retryPct={} "
-                                + "blockMs={} sliceMs={} constructMs={} cellMs={} biomeMs={} surfaceMs={} "
-                                + "blockPct={} slicePct={} walkMs={} msPerColumn={} "
-                                + "surfaceMemoHits={} sections={} wideSections={} widePct={} "
-                                + "columnsPerSection={} probesPerSection={} probesPerColumn={}",
-                        done, rawColumns.get(),
-                        rawColumns.get() == 0 ? 0 : Math.round(100f * (rawColumns.get() - done) / rawColumns.get()),
-                        expectedColumns.get(),
-                        laneDiagnostic("chunk-cache-hits"), laneDiagnostic("chunk-cache-misses"),
-                        laneState.size(),
-                        laneDiagnostic("walked-blocks"),
-                        done == 0 ? 0 : laneDiagnostic("walked-blocks") / done,
-                        laneDiagnostic("lead-retries"),
-                        done == 0 ? 0 : Math.round(100f * laneDiagnostic("lead-retries") / done),
-                        blockMs, sliceMs, constructMs, cellMs, biomeMs, surfaceMs,
-                        percentOf(blockMs, walkMs), percentOf(sliceMs, walkMs), walkMs,
-                        done == 0 ? 0 : walkMs / done,
-                        laneDiagnostic("surface-memo-hits"),
-                        walkedSections.get(), wideSections.get(),
-                        walkedSections.get() == 0 ? 0
-                                : Math.round(100f * wideSections.get() / walkedSections.get()),
-                        walkedSections.get() == 0 ? 0 : rawColumns.get() / walkedSections.get(),
-                        walkedSections.get() == 0 ? 0 : probedColumns.get() / walkedSections.get(),
-                        done == 0 ? 0 : probedColumns.get() / done);
-                persistFineSamples(walked);
-                var ordered = new ArrayList<WallFinePlanner.FineColumn>();
-                synchronized (all) {
-                    for (var slice : all.values()) ordered.addAll(slice);
-                    // Distinct (x, z) columns actually sampled, next to the emission count: the gap between
-                    // this and `columns` is the real duplication factor, which `repeatedPct` cannot see
-                    // (that one only compares a single cursor's emissions before and after its own collapse,
-                    // so cross-slice repeats read as zero).
-                    java.util.HashSet<Long> distinct = new java.util.HashSet<>(Math.max(16, all.size() * 2));
-                    for (var column : ordered) {
-                        distinct.add(((long) column.x() << 32) ^ (column.z() & 0xffffffffL));
-                    }
-                    GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_COLUMNS emitted={} distinct={} "
-                                    + "duplicatePct={} sections={}",
-                            ordered.size(), distinct.size(),
-                            ordered.isEmpty() ? 0 : Math.round(100f * (ordered.size() - distinct.size()) / ordered.size()),
-                            walkedSections.get());
-                    aggregate.complete(FineHeightIndex.of(ordered));
-                }
-            }
-        };
-        // Published for the runaway guard; cleared on the way out so a guard that fires twice is a no-op.
-        fineSampleAbandon = completion;
-        try {
-            for (long i = 0; i < target && safeSegment(i); i++) {
-                // Sample the polyline the segment's *geometry* carries, not the route that produced it.
-                //
-                // The geometry and the route hold the same points and arc lengths - the geometry is
-                // built from the route (see geometry()) and persists both lists - so the sampler only
-                // needs a RoutePath, and the cached geometry is one. Asking for the route here was the
-                // stage's longest wait on a world whose geometry was already on disk: the prewarm
-                // serves every plan from the geometry cache (startGeometry answers from readGeometry
-                // before it asks for a single route), so nothing had computed a route in this session,
-                // and this lease then sat inside the ridge search for 66 s. Measured on a second entry
-                // into the same world: FINE_SAMPLE_CALL at 20:55:00, columns=0 expected=1 on both the
-                // 20:55:30 and 20:56:00 progress lines, the first FINE_SAMPLE_SEGMENT (segment=2) only
-                // at 20:56:06 - while the geometry slots on disk kept their previous-session file
-                // timestamps (no rewrite) and the lane counters had walked ~64k columns. The geometry
-                // read is a hash-verified cache hit measured in milliseconds, so the ridge search is
-                // not repeated at all and the stage starts sampling as soon as the cache answers.
-                var lease = requireGeometry(i, priority);
-                leases.add(lease);
-                // Counted before the callback is registered, because only the segments this loop
-                // actually hands to a lane can ever report back.
-                routesPending.incrementAndGet();
-                long segment = i;
-                // Bounded wait, with the route as the fallback: a geometry that never completes must
-                // cost time, not the sample. The normal path no longer waits for a route it does not
-                // need; only a geometry that is still missing after two minutes falls back to one.
-                CompletableFuture<RoutePath> path = lease.future()
-                        .<RoutePath>thenApply(geometry -> geometry)
-                        .completeOnTimeout(null, 120, java.util.concurrent.TimeUnit.SECONDS)
-                        .thenComposeAsync(sampled -> {
-                            if (sampled != null) return CompletableFuture.completedFuture(sampled);
-                            GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_PATH_FALLBACK segment={} "
-                                    + "reason=geometry-timeout; sampling the recomputed route instead", segment);
-                            var routeLease = requireRoute(segment, Priority.PLAYER_PREFETCH);
-                            leases.add(routeLease);
-                            return routeLease.future().thenApply(route -> (RoutePath) route);
-                        }, pump);
-                // Denominator, whole wall, before a single column is sampled.
-                //
-                // The meter used to add each segment's estimate only once that segment's *prefix* index
-                // had resolved - and a prefix can take minutes. A four-segment wall therefore read
-                // "columns=126638 expected=31860" (402%) for most of the stage: one segment's worth of
-                // denominator against four segments of sampling, which looks exactly like a runaway and
-                // is the reason this stage kept being reported as "sampling way too much". The route
-                // point count, unlike the prefix, is known as soon as the path is, and the full lateral
-                // band is an upper bound, so this total is complete from the first sample and can only
-                // over-state - which the 99% cap in PrewarmProgress handles correctly.
-                path.thenAcceptAsync(sampled -> {
-                    // The denominator follows the truncated range too, otherwise the card would stop
-                    // short of 100% on exactly the segments the cut applies to.
-                    long points = Math.max(1L, terminalPointLimit(sampled, sampled.points().size())
-                            + 2L * WallFinePlanner.APRON_BLOCKS);
-                    // The number that explains this stage's cost: the route length this segment carries.
-                    // Four segments of an 8,190-block wall are four windows of it, so their point counts
-                    // should sum to the wall length. If every segment reports the whole wall, the wall is
-                    // sampled once per segment and that multiplier is the thing to remove.
-                    GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_SEGMENT segment={} routePoints={} "
-                                    + "sectionsExpected={} columnsExpected={}",
-                            segment, sampled.points().size(),
-                            (int) (points / Math.max(1, gridStep)),
-                            (int) Math.min(Integer.MAX_VALUE - 1L, (points / Math.max(1, gridStep))
-                                    * (2L * (WallFinePlanner.LATERAL / Math.max(1, gridStep)) + 1L)));
-                    // BASE_LATERAL, not LATERAL: only the fort and gate points carry the wide band, so
-                    // seeding with the wide half-width made the total 2.1x too large and the card stalled
-                    // near half at completion. The base band is what most cross-sections emit.
-                    // Base band plus the share of sections that carry the wide band. Seeding with the
-                    // base band alone undershot by 1.6x on a measured run (73,985 against 119,305 columns)
-                    // because about a quarter of the sections are wide - 17 columns each against 53. The
-                    // share is measured, not derived: widePct sat at 24-25% across every run so far.
-                    long baseWidth = 2L * (WallFinePlanner.BASE_LATERAL / Math.max(1, gridStep)) + 1L;
-                    long wideWidth = 2L * (WallFinePlanner.LATERAL / Math.max(1, gridStep)) + 1L;
-                    long perPoint = (3L * baseWidth + wideWidth) / 4L;
-                    long estimated = (points / Math.max(1, gridStep)) * perPoint;
-                    // Project the whole route, do not accumulate it. Adding one segment at a time made
-                    // the denominator climb while the bar was already moving - 28289, then 84865, then
-                    // 113153 - which reads as the sample getting longer the longer it runs. Segments are
-                    // the same length, so one segment's count times the number of segments is the right
-                    // denominator from the first one; later segments only raise it if they genuinely are
-                    // longer.
-                    int projected = (int) Math.min(Integer.MAX_VALUE - 1L, estimated * projectedSegments);
-                    if (expectedSeeded.compareAndSet(false, true)) {
-                        expectedColumns.set(projected);
-                    } else {
-                        expectedColumns.updateAndGet(current -> Math.max(current, projected));
-                    }
-                }, pump);
-                path.whenCompleteAsync((sampled, error) -> {
-                    if (error != null) {
-                        aggregate.completeExceptionally(error);
-                        if (routesPending.decrementAndGet() == 0) completion.run();
-                        return;
-                    }
-                    if (closed()) {
-                        aggregate.completeExceptionally(closedFailure());
-                        if (routesPending.decrementAndGet() == 0) completion.run();
-                        return;
-                    }
-                    // The wide arcs sit at absolute stations, so the segment's starting arc has to be
-                    // resolved before its cross-sections can be sized. The prefix index answers from its
-                    // own cache and its lease closes to a no-op.
-                    prefixes.requireBefore(segment).future()
-                            .whenCompleteAsync((prefix, prefixError) -> {
-                    try {
-                        if (prefixError != null) { aggregate.completeExceptionally(prefixError); return; }
-                        var wideAt = widePoints(sampled, prefix.lengthBeforeQ8());
-                        int points = sampled.points().size();
-                        // The terminal cut is reported, never applied: terminalPointLimit reads the
-                        // *flight* map, and a flight leaves that map the moment it completes, so the
-                        // lookup can only ever see an unfinished flight and every measured run logged
-                        // outcome=no-flight and sampled the whole route. Applying the cut now would
-                        // shrink the sampled set to the stretch before the terminal, and the plan-dead
-                        // path in requirePlan still compiles the wall body across the whole segment, so
-                        // those columns are read. It stays a separate, separately verified change.
-                        points = terminalPointLimit(sampled, points);
-                        int perSlice = Math.max(1, (points + slices - 1) / slices);
-                        for (int s = 0; s < slices; s++) {
-                            int from = s * perSlice;
-                            if (from >= points) break;
-                            int to = Math.min(points, from + perSlice);
-                            slicesPending.incrementAndGet();
-                            // The denominator is seeded once per segment in the path callback above, from
-                            // the whole route's point count. Accumulating a second estimate here as well
-                            // would double it, and accumulating *only* here is what made the card show one
-                            // segment's total while four were sampling (402%). The per-point width split
-                            // this used to apply (wide vs base band) is bounded by the LATERAL band the
-                            // seed assumes, so the seed is an upper bound and never a lie about being done.
-                            var job = new FineSampleJob(sampled, from, to, priority,
-                                    new CompletableFuture<List<WallFinePlanner.FineColumn>>(), fineSampleCache,
-                                    wideAt, walks, claims, prefix.lengthBeforeQ8());
-                            enqueue(job);
-                            job.result.whenCompleteAsync((columns, sampleError) -> {
-                                try {
-                                    if (sampleError != null) { aggregate.completeExceptionally(sampleError); return; }
-                                    final int sliceFrom = from, sliceTo = to;
-                                    synchronized (all) {
-                                        all.computeIfAbsent(WallFinePlanner.sampleOrder(sampled, from, to),
-                                                ignored -> new ArrayList<>()).addAll(columns);
-                                        walked.addAll(job.probed());
-                                        sampledColumns.addAndGet(columns.size());
-                                        rawColumns.addAndGet(job.emittedRaw());
-                                        walkedSections.addAndGet(job.sections());
-                                        wideSections.addAndGet(job.wideSections());
-                                        probedColumns.addAndGet(job.probedColumns());
-                                    }
-                                    int done = sampledColumns.get();
-                                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                                            local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE,
-                                            done, expectedColumns.get());
-                                    slicesPending.decrementAndGet();
-                                    completion.run();
-                                } catch (Throwable t) { aggregate.completeExceptionally(t); }
-                            }, pump);
-                        }
-                    } catch (Throwable t) {
-                        aggregate.completeExceptionally(t);
-                    } finally {
-                        // The index may only complete once every route has resolved AND every slice it
-                        // spawned has finished; either counter alone can hit zero too early.
-                        if (routesPending.decrementAndGet() == 0) completion.run();
-                    }
-                    }, pump);
-                }, pump);
-            }
-        } catch (Throwable t) {
-            // Returning without a completed aggregate here would leave the driver from above ticking
-            // against a queue that no longer receives fine-sample work: the same permanent FINE_SAMPLE
-            // hang, reached by a different route.
-            aggregate.completeExceptionally(t);
-        } finally {
-            enqueueing.set(false);
-        }
-        // Publishes the index when the loop enqueued nothing at all (no safe segment, an empty
-        // window); otherwise the callbacks above decide, and this call returns early.
-        completion.run();
-        aggregate.whenComplete((v, e) -> {
-            // Stop the driver first: the stage is over on both paths, and a timer that keeps granting
-            // credits would spin against a queue that no longer holds fine-sample work.
-            stopFineSampleDriver();
-            leases.forEach(PlanLease::close);
-        });
-        return aggregate;
+        return fineSamples.requireFineSamples(priority);
     }
 
-    /**
-     * Writes the columns this session resolved so the next session can skip the terrain walks. The
-     * verdict is logged either way: the hit ratio is what separates a slow stage that is walking
-     * terrain from one that is re-reading a file.
-     */
-    private void persistFineSamples(List<WallFinePlanner.FineColumn> walked) {
-        var cache = fineSampleCache;
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_CACHE hits={} misses={} cached={} walked={} persistent={}",
-                cache.hits(), cache.misses(), cache.size(), walked.size(), cache.persistent());
-        if (!cache.persistent() || walked.isEmpty()) return;
-        var entries = new ArrayList<local.plaincraft.greatwall.terrain.FineSampleCache.Entry>(walked.size());
-        for (var column : walked) {
-            entries.add(new local.plaincraft.greatwall.terrain.FineSampleCache.Entry(
-                    column.x(), column.z(), column.sample()));
-        }
-        cache.store(entries);
+    public void setFineSampleCache(local.plaincraft.greatwall.terrain.FineSampleCache cache) {
+        fineSamples.setFineSampleCache(cache);
+    }
+
+    public void afterRoadBulk() { bulkPrewarm.afterRoadBulk(); }
+    public void onBulkReady(Runnable hook) { bulkPrewarm.onBulkReady(hook); }
+    public List<PlanLease<SegmentPlan>> prewarmLeases() { return bulkPrewarm.prewarmLeases(); }
+    public void releasePrewarmLeases() { bulkPrewarm.releasePrewarmLeases(); }
+
+    void driveStartupSlice() {
+        // 预热和精采样共享原推进预算，避免新增互相抢占的调度器。
+        credits = 4096;
+        deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25);
+        dispatch();
+    }
+
+    void cancelDemandTimer() {
+        if (startupTimer != null) startupTimer.cancel(false);
     }
 
     public PlanLease<PlanWindow> requireWindow(ChunkKey chunk, int marginBlocks, Priority priority) {
@@ -830,18 +264,7 @@ public final class PlannerScheduler implements AutoCloseable {
                 || p.prefix().terminal().get().segment() >= p.geometry().key().index()).toList())), () -> leases.forEach(PlanLease::close));
     }
 
-    /**
-     * Starts the scheduling pump in <em>demand-only</em> mode: the pump runs so that on-demand
-     * planning (which optional integrations depend on) makes progress, but the bulk prewarm of the
-     * first segments is deliberately not enqueued.
-     *
-     * <p>This split exists to break a startup cycle. RoadWeaver blocks inside
-     * {@code MinecraftServer.prepareLevels} and asks the wall for its recipe and plans while it does
-     * so. If the wall were to spend that window running its own bulk prewarm, both sides would wait
-     * on each other. Demand-only startup satisfies every dependency the other side needs without
-     * competing for the same native lanes, and {@link #afterRoadBulk()} starts the bulk once the
-     * other side has finished.
-     */
+    /** 先启动按需推进供入口查询；结构索引安装后再开始批量预热。 */
     public void startupPump() {
         if (closed()) throw closedFailure();
         if (state.putIfAbsent("startup", 1L) != null) return;
@@ -851,559 +274,33 @@ public final class PlannerScheduler implements AutoCloseable {
                 state.merge("startup-pump-iterations", 1L, Long::sum);
                 credits = 4096; deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25); dispatch();
             }, 0, 1, TimeUnit.MILLISECONDS);
-            // Demand-only: readiness means "the pump is running", not "the first segments are done".
-            // Spawn preparation can still require a segment, and it is served from this pump.
+            // 此处就绪只表示按需推进可用，不表示首批计划已完成。
             state.put("startup-ready", 1L);
-            // Take over as a self-driving pump the moment server ticks stop arriving,
-            // so the server thread and this scheduler can never starve each other.
+            // 服务端暂停 tick 时由看门狗推进，避免启动等待阻塞规划。
             startWatchdog();
         });
     }
 
-    /**
-     * Submits to the pump, reporting a rejection instead of throwing it at the caller.
-     *
-     * <p>{@code afterRoadBulk} checks {@code closed()} and then submits, and those two steps are not atomic:
-     * a close in between raises {@link java.util.concurrent.RejectedExecutionException}. Its only remaining
-     * caller is a {@code whenComplete} whose returned future is discarded, where that exception vanishes and
-     * leaves the startup stage waiting for a prewarm that was never queued - the exact shape of a measured
-     * session that logged no {@code PREWARM_BEGIN} at all and then parked the world for thirty minutes.
-     * Every other pump submission in this class already maps a rejection onto a failed job; this one now
-     * does the same.
-     */
-    private boolean pumpSubmit(Runnable task) {
-        try {
-            pump.execute(task);
-            return true;
-        } catch (java.util.concurrent.RejectedExecutionException stopped) {
-            GreatWallMod.LOGGER.error("[GreatWall:S1C] PREWARM_NOT_QUEUED reason=pump-closed; the wall does "
-                    + "not prewarm in this session and the startup stage is released");
-            local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
-            return false;
-        }
-    }
-
-    /**
-     * Enqueues the bulk prewarm of the opening segments. Call only after any blocking startup peer
-     * has finished, so the two never contend for the same native lanes.
-     *
-     * <p>The count comes from {@link GreatWallConfig#prewarmSegmentsTarget()}: an unbounded wall
-     * prewarms only its opening segments, while a bounded wall short enough to finish prewarms
-     * every segment it will ever build. That is what makes "start the game with the wall already
-     * planned" achievable without ever waiting on an unbounded amount of work.
-     */
-    public void afterRoadBulk() {
-        if (closed()) {
-            // A planning failure closed this session earlier. This entry point is reached from the
-            // server tick (MinecraftServer.prepareLevels TAIL -> WorldServices.afterRoadReached), and
-            // throwing here took the whole game down with a failure it had already reported and
-            // handled: a measured session crashed at 23:43 with
-            // "PlannerScheduler.closedFailure <- afterRoadBulk <- ProductionSession.afterRoadReached".
-            // The wall simply does not get its bulk prewarm; the loading overlay is told so that
-            // nothing waits for a prewarm that will never start, and the worldgen gate opens because a
-            // wall that cannot paint must not hold the roads behind it.
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_SKIPPED reason=planner-closed");
-            local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
-            return;
-        }
-        if (state.putIfAbsent("after-road-bulk", 1L) != null) return;
-        pumpSubmit(() -> {
-            // This body owns the startup gates: only a failure originating here may release them.
-            ((Pump) pump).enterPrewarmBody();
-            long target = prewarmTargetSegments();
-            long started = System.nanoTime();
-            state.put("prewarm-target-segments", target);
-            state.put("prewarm-start-nanos", started);
-            // Published for two consumers: the loading overlay, which draws this as a card
-            // during level loading, and a startup peer (RoadWeaver) that waits for the
-            // prewarm to finish before it begins its own road generation.
-            local.plaincraft.greatwall.lifecycle.PrewarmProgress.begin(
-                    (int) Math.min(Integer.MAX_VALUE, target), laneState.size());
-            local.plaincraft.greatwall.lifecycle.PrewarmProgress.enterPlanning();
-            var completedSegments = new java.util.concurrent.atomic.AtomicInteger();
-            var prewarm = new ArrayList<PlanLease<SegmentPlan>>();
-            for (long i = 0; i < target && safeSegment(i); i++) {
-                // Per-segment timing is logged individually: an operator measuring
-                // how long one segment takes needs the segments separated, and a
-                // single total would hide whether the cost is front-loaded.
-                long segmentStarted = System.nanoTime();
-                var lease = requirePlan(i, Priority.PLAYER_PREFETCH);
-                long segment = i;
-                lease.future().whenCompleteAsync((plan, error) -> {
-                    long elapsedMs = Math.round((System.nanoTime() - segmentStarted) / 1_000_000.0D);
-                    if (error == null) {
-                        // Counted even when a segment fails: the card shows how much of the
-                        // prewarm is behind us, and a failed segment is behind us.
-                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setCompleted(
-                                completedSegments.incrementAndGet());
-                        // stations/terminal are the two numbers that decide whether the fine
-                        // sample and the compile coverage agree. Without them a session cannot
-                        // tell "the plan stopped at the coast" from "the plan covers the whole
-                        // route", and those need opposite fixes.
-                        var segmentPlan = plan;
-                        long terminalSQ8 = segmentPlan == null ? -1L
-                                : segmentPlan.geometry().terminal().map(terminal -> terminal.localSQ8()).orElse(-1L);
-                        int stationCount = segmentPlan == null ? 0 : segmentPlan.stations().stations().size();
-                        int siteCount = segmentPlan == null ? 0 : segmentPlan.sites().size();
-                        GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_SEGMENT segment={} elapsedMs={} "
-                                        + "stations={} sites={} terminalSQ8={} routeSQ8={}",
-                                segment, elapsedMs, stationCount, siteCount, terminalSQ8,
-                                segmentPlan == null ? -1L : segmentPlan.geometry().localSQ8().getLast());
-                    } else {
-                        GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_SEGMENT_FAILED segment={} elapsedMs={} reason={}",
-                                segment, elapsedMs, error.toString());
-                    }
-                }, pump);
-                prewarm.add(lease);
-            }
-            state.put("prewarm-requested-segments", (long) prewarm.size());
-            GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_BEGIN requested={} target={}",
-                    prewarm.size(), target);
-            // A dedicated driver for the duration of the prewarm.
-            //
-            // Until now the only drives were the server tick and the stall watchdog. The
-            // startup timer that originally filled this role is cancelled by the first tick
-            // (see tick()), so once the server is ticking the prewarm advances only as often
-            // as ticks arrive - and a measured session recorded 257 watchdog rescues, meaning
-            // the tick stopped arriving for three seconds at a time, repeatedly, while a
-            // startup peer held the server thread.
-            //
-            // The prewarm is bounded work with a known end, and nothing else in this mod
-            // competes for the native lanes while it runs, so it can drive itself. The timer
-            // is cancelled when the prewarm settles, on either outcome.
-            prewarmTimer = pump.scheduleWithFixedDelay(() -> {
-                if (closed() || state.containsKey("bulk-ready") || state.containsKey("bulk-failed")) return;
-                state.merge("prewarm-driver-iterations", 1L, Long::sum);
-                credits = 4096;
-                deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25);
-                dispatch();
-            }, 0, 1, TimeUnit.MILLISECONDS);
-            CompletableFuture.allOf(prewarm.stream().map(PlanLease::future).toArray(CompletableFuture[]::new))
-                    .whenCompleteAsync((value, error) -> {
-                        long totalMs = Math.round((System.nanoTime() - started) / 1_000_000.0D);
-                        // Stop the dedicated driver first: the prewarm is over on both paths,
-                        // and a timer that keeps granting credits would spin against a queue
-                        // that no longer has prewarm work in it.
-                        stopPrewarmTimer();
-                        // The bulk prewarm (segment sampling) is done. Release the startup-peer
-                        // latch NOW: blockAndPumpUntilPrewarmSettled parks the server thread on
-                        // this latch inside managedBlock, and the chunk compile that still follows
-                        // runs from the server tick loop - which cannot fire until that managedBlock
-                        // returns. Signalling only at publishPlanningWindow (the previous shape)
-                        // therefore deadlocked: managedBlock waits for the latch, the latch waits
-                        // for the compile, and the compile waits for a tick that managedBlock is
-                        // blocking. signalReady() releases the latch WITHOUT closing the loading
-                        // card, so the compile runs on the first post-startup ticks while the card
-                        // stays open; publishPlanningWindow later closes it via finish().
-                        // Do NOT call PrewarmProgress.finish here - that would close the card at
-                        // 100% while the compile is still running.
-                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.signalReady();
-                        if (error == null) {
-                            // Pinned, not closed: the compile reuses these very plans, and closing
-                            // them here would let the memory budget evict them long before the
-                            // compile runs. Released by releasePrewarmLeases()/close().
-                            prewarmLeases.addAll(prewarm);
-                        } else {
-                            prewarm.forEach(PlanLease::close);
-                        }
-                        state.put(error == null ? "bulk-ready" : "bulk-failed", 1L);
-                        state.put("prewarm-total-millis", totalMs);
-                        // The compile must be able to run while somebody else holds the server
-                        // thread. A startup peer (RoadWeaver) parks that thread in its own
-                        // managedBlock waiting for this wall to publish, and the tick loop cannot
-                        // fire while it is parked - so a compile that only waits for a tick would
-                        // wait for the peer, and the peer would wait for the compile. The session
-                        // registers a hook here that posts the compile onto the server queue; the
-                        // peer's managedBlock pump executes exactly those tasks.
-                        if (error == null) {
-                            var hook = bulkReadyHook;
-                            if (hook != null) {
-                                try {
-                                    hook.run();
-                                } catch (Throwable hookFailure) {
-                                    GreatWallMod.LOGGER.warn("[GreatWall:S1C] BULK_READY_HOOK_FAILED",
-                                            hookFailure);
-                                }
-                            }
-                        }
-                        if (error == null) {
-                            // The concurrency numbers are included so one session answers whether
-                            // the hardware-derived limits actually took effect. Comparing this
-                            // line against the previous 22.2-minute run is the point of the
-                            // change, and without the limits recorded here a slower run would
-                            // not say whether the scheduler or the terrain was responsible.
-                            GreatWallMod.LOGGER.info("[GreatWall:S1C] PREWARM_COMPLETE segments={} totalMs={} "
-                                            + "avgMsPerSegment={} geometryInflight={} lanes={} "
-                                            + "chunkCacheHits={} chunkCacheMisses={}",
-                                    prewarm.size(), totalMs,
-                                    prewarm.isEmpty() ? 0L : totalMs / prewarm.size(),
-                                    recipe.config().maxGeometryInflight(), laneState.size(),
-                                    laneDiagnostic("chunk-cache-hits"), laneDiagnostic("chunk-cache-misses"));
-                        } else {
-                            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_FAILED segments={} totalMs={} reason={}",
-                                    prewarm.size(), totalMs, error.toString());
-                        }
-                        if (error != null && startupTimer != null) startupTimer.cancel(false);
-                    }, pump);
-        });
-    }
-
-    /**
-     * Stops the prewarm's dedicated driver, if one is running.
-     *
-     * <p>Separate from the prewarm's own completion callback so {@link #close()} also
-     * releases it: a session that ends mid-prewarm must not leave a timer holding the
-     * scheduler's executor open.
-     */
-    private void stopPrewarmTimer() {
-        var timer = prewarmTimer;
-        prewarmTimer = null;
-        if (timer != null) timer.cancel(false);
-    }
-
-    /**
-     * The scheduler's pump, with a safety net for tasks whose failure would otherwise vanish.
-     *
-     * <h2>Why this exists</h2>
-     * Every task handed to {@code execute} is wrapped in a {@link java.util.concurrent.FutureTask},
-     * and {@code FutureTask.run()} hands a Throwable to {@code setException} instead of letting it
-     * reach the thread's uncaught-exception handler - deliberately, and nothing in this class ever
-     * reads that result. A task that throws therefore leaves whatever it was supposed to release
-     * unreleased. The bulk prewarm body is the one that matters: it starts the loading card, drives
-     * the prewarm and signals the startup peer, so a throw before its release chain is registered
-     * leaves {@code PrewarmProgress} open forever - the card never closes, the worldgen gate never
-     * opens, and a peer that joins on that gate without a timeout (RoadWeaver's
-     * {@code InitialGenManager.awaitGreatWallPrewarm}) parks the server thread on the loading screen
-     * with no failure and no log line. Reading the task's result here turns that silent hang into a
-     * named release.
-     *
-     * <p>Only {@code afterExecute} is overridden, and only the already-done future is read, so this
-     * costs one instanceof and one non-blocking {@code get()} per task.
-     */
-    private static final class Pump extends ScheduledThreadPoolExecutor {
-        /**
-         * Whether the task that just ran is the one that holds the startup gates.
-         *
-         * <p>The pump is single-threaded and {@code afterExecute} runs on that same thread straight after
-         * the task, so a flag set by the task body is still visible here - and still visible when the body
-         * threw, which is exactly the case that matters. It is removed in {@code afterExecute} so the next
-         * task never inherits it.
-         */
-        private final ThreadLocal<Boolean> inPrewarmBody = ThreadLocal.withInitial(() -> Boolean.FALSE);
-
-        Pump(ThreadFactory factory) { super(1, factory); }
-
-        /** Marks the current pump task as the startup-gate holder. First statement of that body. */
-        void enterPrewarmBody() { inPrewarmBody.set(Boolean.TRUE); }
-
-        @Override protected void afterExecute(Runnable task, Throwable failure) {
-            super.afterExecute(task, failure);
-            boolean gateHolder = Boolean.TRUE.equals(inPrewarmBody.get());
-            inPrewarmBody.remove();
-            Throwable actual = failure;
-            if (actual == null && task instanceof java.util.concurrent.FutureTask<?> future && future.isDone()) {
-                try {
-                    future.get();
-                } catch (java.util.concurrent.CancellationException expected) {
-                    return;
-                } catch (java.util.concurrent.ExecutionException failed) {
-                    actual = failed.getCause();
-                } catch (InterruptedException interrupted) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-            }
-            if (actual == null) return;
-            if (!gateHolder) {
-                // A bookkeeping task failed - a priority promotion, an admission, a progress report. The
-                // prewarm it was bookkeeping for is still running and can still finish, so releasing the
-                // gates here is what let RoadWeaver start laying roads while the wall had sampled 7.8% of
-                // its columns. Count it and carry on; the gate has exactly one owner (below).
-                GreatWallMod.LOGGER.warn("[GreatWall:S1C] PUMP_TASK_FAILED_GATE_KEPT reason={} - the startup "
-                        + "gates stay closed; this task does not own them.", actual.toString());
-                return;
-            }
-            GreatWallMod.LOGGER.error("[GreatWall:S1C] PUMP_TASK_FAILED the wall releases its startup gates; "
-                    + "reason={}", actual.toString(), actual);
-            // Idempotent, and the only release that every waiter on this session hangs off: the loading
-            // card, the startup peer's latch and the worldgen gate all clear here.
-            local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
-        }
-    }
-
-    /**
-     * Starts the fine sample's dedicated driver. Idempotent: the fine sample is requested once per
-     * session, but a retry must not stack timers.
-     */
-    private void startFineSampleDriver() {
-        if (fineSampleTimer != null || closed()) return;
-        fineSampleTimer = pump.scheduleWithFixedDelay(() -> {
-            if (closed() || fineSampleTimer == null) return;
-            reportFineSampleProgress();
-            credits = 4096;
-            deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25);
-            dispatch();
-        }, 0, GreatWallConfig.get().fineSampleDriverIntervalMs(), TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * Publishes the index early when the fine sample runs wildly past its own estimate.
-     *
-     * <p>Called once per driver tick (about a millisecond), so it reads two atomics and returns.
-     * {@return true when the stage was abandoned, in which case the caller stops reporting}
-     */
-    private boolean checkFineSampleRunaway() {
-        var abandon = fineSampleAbandon;
-        var done = fineSampleDone;
-        var total = fineSampleTotal;
-        if (abandon == null || done == null || total == null) return false;
-        long expected = total.get();
-        long columns = done.get();
-        // expected starts at 1 while the first slices are still being enqueued; comparing against it
-        // would fire on the first thousand columns of every run.
-        if (expected >= FINE_SAMPLE_RUNAWAY_MIN_EXPECTED
-                && columns > FINE_SAMPLE_RUNAWAY_NUMERATOR * expected) {
-            return abandonFineSample(abandon, columns, expected, "ratio");
-        }
-        // The semantic test, and the one that actually catches this: a runaway keeps producing columns
-        // while it stops producing terrain. Every column in a healthy pass either builds a chunk cell
-        // this run has not sampled yet or is answered by one; once no NEW cell appears for several
-        // windows in a row while columns keep pouring in, every one of them is being answered from a
-        // cell already in the cache - the stage is re-walking its own work, and no amount of waiting
-        // finishes it. The measured session ran at 4.3k columns/s with a chunk-cache hit rate above 85%.
-        long now = System.nanoTime();
-        if (now - runawayLastCheckNanos < FINE_SAMPLE_RUNAWAY_WINDOW_NANOS) return false;
-        runawayLastCheckNanos = now;
-        long misses = laneDiagnostic("chunk-cache-misses");
-        long hits = laneDiagnostic("chunk-cache-hits");
-        if (hits + misses == 0L) {
-            // No oracle lane published cache counters, so "no new terrain" cannot be judged from them.
-            // Disabling the test is the honest answer: it is better to fall back to the ratio bound than
-            // to declare a runaway because the counter happened to read zero.
-            runawayIdleChecks = 0;
-            return false;
-        }
-        long columnDelta = columns - runawayLastColumns;
-        long missDelta = Math.max(0L, misses - runawayLastMisses);
-        runawayLastColumns = columns;
-        runawayLastMisses = misses;
-        // Liveness first: if nothing is running, nothing is outstanding and no column moved, the stage
-        // is hung, not slow. Judged on lane idleness rather than on the counter, because a healthy
-        // stage can also spend a window without producing a column.
-        if (columnDelta == 0L && outstandingFineSampleWork() && lanesIdle()) {
-            if (++runawayStallChecks >= FINE_SAMPLE_STALL_WINDOWS) {
-                return abandonFineSample(abandon, columns, expected, "stalled=" + runawayStallChecks);
-            }
-        } else {
-            runawayStallChecks = 0;
-        }
-        if (columnDelta < FINE_SAMPLE_RUNAWAY_MIN_COLUMNS || missDelta > columnDelta / 50L) {
-            runawayIdleChecks = 0;   // real terrain is still being discovered
-            return false;
-        }
-        if (++runawayIdleChecks < FINE_SAMPLE_RUNAWAY_IDLE_WINDOWS) return false;
-        return abandonFineSample(abandon, columns, expected, "no-new-terrain=" + runawayIdleChecks);
-    }
-
-    /**
-     * Publishes the fine-sample index early and stops the stage.
-     *
-     * @param why which test fired, for the log
-     * @return always true, so the caller can return it directly
-     */
-    private boolean abandonFineSample(Runnable abandon, long columns, long expected, String why) {
-        // Cleared first: two driver ticks cannot both publish, and a second call reads null and returns.
-        fineSampleAbandon = null;
-        if (fineSampleForced != null) fineSampleForced.set(true);
-        stopFineSampleDriver();
-        GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_RUNAWAY reason={} columns={} expected={} ratio={} "
-                        + "sections={} - the stage is re-walking columns the index already holds, so the "
-                        + "index is published as it stands instead of waiting for a convergence that never comes.",
-                why, columns, expected, expected <= 0 ? 0 : columns / expected,
-                fineSampleSections == null ? 0L : fineSampleSections.get());
-        try {
-            abandon.run();
-        } catch (RuntimeException alreadyPublished) {
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_RUNAWAY publish failed", alreadyPublished);
-        }
-        return true;
-    }
-
-    /**
-     * Logs one fine-sample progress line every {@link #FINE_SAMPLE_REPORT_MILLIS} ms while the stage
-     * runs: columns sampled, the stage's own denominator, the rate and an ETA. Called from the fine
-     * sample's own driver (once per millisecond), so it must stay cheap when it does not log.
-     */
-    private void reportFineSampleProgress() {
-        if (checkFineSampleRunaway()) return;
-        var done = fineSampleDone;
-        var total = fineSampleTotal;
-        if (done == null || total == null) return;
-        long start = fineSampleStartNanos;
-        if (start == 0L) return;
-        long now = System.nanoTime();
-        long last = fineSampleLastLogNanos;
-        if (last != 0L && now - last < TimeUnit.MILLISECONDS.toNanos(FINE_SAMPLE_REPORT_MILLIS)) return;
-        fineSampleLastLogNanos = now;
-        int columns = done.get();
-        int expected = total.get();
-        var raw = fineSampleRaw;
-        var sectionCounter = fineSampleSections;
-        var wideCounter = fineSampleWideSections;
-        var probeCounter = fineSampleProbed;
-        long rawColumns = raw == null ? 0L : raw.get();
-        long sections = sectionCounter == null ? 0L : sectionCounter.get();
-        long wideSections = wideCounter == null ? 0L : wideCounter.get();
-        long probes = probeCounter == null ? 0L : probeCounter.get();
-        double seconds = Math.max(0.001, (now - start) / 1_000_000_000.0);
-        double rate = columns / seconds;
-        String eta = expected > columns && rate > 0.0
-                ? String.format(java.util.Locale.ROOT, "%.0f", (expected - columns) / rate)
-                : "?";
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_PROGRESS columns={} expected={} rate={}/s "
-                        + "eta={}s raw={} repeatedPct={} expectedSections={} lanes={} chunkCacheHits={} "
-                        + "chunkCacheMisses={} walkedBlocks={} "
-                        + "blocksPerColumn={} leadRetries={} retryPct={} blockMs={} sliceMs={} constructMs={} "
-                        + "cellMs={} biomeMs={} surfaceMs={} surfaceMemoHits={} sections={} wideSections={} "
-                        + "widePct={} columnsPerSection={} probesPerSection={}",
-                columns, expected, String.format(java.util.Locale.ROOT, "%.0f", rate), eta,
-                // raw vs columns is the duplicate factor the overlapping cross-sections produce, and
-                // expectedSections is the meter's own estimate divided by the width it observed: comparing
-                // it with the walked `sections` is what tells whether the sampler walks the cross-sections
-                // the meter counted, without waiting for the stage to finish.
-                rawColumns,
-                rawColumns == 0 ? 0 : Math.round(100f * (rawColumns - columns) / rawColumns),
-                sections == 0 ? 0 : expected / Math.max(1, rawColumns / sections),
-                laneState.size(), laneDiagnostic("chunk-cache-hits"), laneDiagnostic("chunk-cache-misses"),
-                laneDiagnostic("walked-blocks"),
-                columns == 0 ? 0 : laneDiagnostic("walked-blocks") / columns,
-                laneDiagnostic("lead-retries"),
-                columns == 0 ? 0 : Math.round(100f * laneDiagnostic("lead-retries") / columns),
-                laneDiagnostic("block-ms"), laneDiagnostic("slice-ms"), laneDiagnostic("construct-ms"),
-                laneDiagnostic("cell-ms"), laneDiagnostic("biome-ms"), laneDiagnostic("surface-ms"),
-                laneDiagnostic("surface-memo-hits"),
-                sections, wideSections,
-                sections == 0 ? 0 : Math.round(100f * wideSections / sections),
-                sections == 0 ? 0 : rawColumns / sections,
-                sections == 0 ? 0 : probes / sections);
-    }
-
-    /** Stops the fine sample's driver. Idempotent, and safe to call from any completion path. */
-    private void stopFineSampleDriver() {
-        var timer = fineSampleTimer;
-        fineSampleTimer = null;
-        if (timer != null) timer.cancel(false);
-    }
-
-    /** {@return the share of {@code whole} that {@code part} accounts for, as a whole percent} */
-    private static int percentOf(long part, long whole) {
-        return whole <= 0L ? 0 : (int) Math.round(100.0D * part / whole);
-    }
-
-    /** {@return whether any fine-sample work is still outstanding} */
-    private boolean outstandingFineSampleWork() {
-        var slices = fineSampleSlicesPending;
-        var routes = fineSampleRoutesPending;
-        if (slices == null) return false;
-        return slices.get() > 0 || (routes != null && routes.get() > 0);
-    }
-
-    /** {@return whether every planning lane is idle right now} */
-    private boolean lanesIdle() {
+    /** 初始化中的通道也算忙，精采样不能因此误判停滞。 */
+    boolean lanesIdle() {
         for (var lane : laneState) {
             if (lane.busy || lane.initializing) return false;
         }
         return true;
     }
 
-    /** Sum of one per-lane diagnostic counter across the native lanes. */
-    private long laneDiagnostic(String key) {        long total = 0L;
+    /** 统一聚合原生通道日志指标，便于定位地形成本。 */
+    long laneDiagnostic(String key) {        long total = 0L;
         for (var lane : lanes) total += lane.diagnostics().getOrDefault(key, 0L);
         return total;
     }
 
-    /**
-     * The prewarm's leases, still pinned. Empty until the bulk prewarm settles - and empty forever
-     * if it failed. The compile consumes these instead of re-requesting the plans, so the work the
-     * prewarm already did is the work the compile publishes.
-     */
-    public java.util.List<PlanLease<SegmentPlan>> prewarmLeases() {
-        synchronized (prewarmLeases) {
-            return java.util.List.copyOf(prewarmLeases);
-        }
-    }
-
-    /** Releases the pinned prewarm leases. Idempotent. */
-    public void releasePrewarmLeases() {
-        java.util.List<PlanLease<SegmentPlan>> copy;
-        synchronized (prewarmLeases) {
-            copy = java.util.List.copyOf(prewarmLeases);
-            prewarmLeases.clear();
-        }
-        copy.forEach(PlanLease::close);
-    }
-
-    /**
-     * Segments to prewarm.
-     *
-     * <p>The configured value wins when set; otherwise a bounded wall at or below
-     * the full-prewarm threshold is prewarmed completely and everything else keeps
-     * the historical opening-segment count. The config is read here rather than at
-     * construction so a Mod Menu edit applies to the next world without a restart.
-     */
-    /**
-     * Cuts a segment's sample range at its terminal.
-     *
-     * <p>Returns {@code points} unchanged whenever the geometry is not settled yet or the segment has no
-     * terminal, so the worst case is the old behaviour - sample the whole route. That is deliberate:
-     * over-sampling costs time, under-covering costs a broken compile.
-     *
-     * <p>In practice it has never cut anything: this reads the <em>flight</em> map, and a flight leaves
-     * that map the moment it completes, so the only entries a sample start can see are flights that
-     * have not finished - every measured session logged {@code outcome=no-flight}. Enabling the cut is
-     * a real change to the sampled set (the plan-dead path still compiles the wall body across the whole
-     * segment, so columns past the terminal are read), so it stays a separate, separately verified
-     * change and this method keeps its old "never cut" behaviour.
-     */
-    /** One line per distinct outcome, so a silent "no cut" cannot hide for a whole release again. */
-    private static final java.util.Set<String> TERMINAL_CUT_NOTES =
-            java.util.concurrent.ConcurrentHashMap.newKeySet();
-
-    private static void noteTerminalCut(String outcome, long cap, int before, int after) {
-        if (!TERMINAL_CUT_NOTES.add(outcome + ":" + (cap < 0 ? "-" : String.valueOf(cap / 256)))) return;
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_TERMINAL outcome={} terminalBlock={} pointsBefore={} pointsAfter={}",
-                outcome, cap < 0 ? -1 : cap / 256, before, after);
-    }
-
-    private int terminalPointLimit(RoutePath path, int points) {
-        try {
-            var flight = geometryFlights.get(path.key());
-            if (flight == null) { noteTerminalCut("no-flight", -1L, points, points); return points; }
-            if (!flight.isDone()) { noteTerminalCut("flight-pending", -1L, points, points); return points; }
-            if (flight.isCompletedExceptionally()) { noteTerminalCut("flight-failed", -1L, points, points); return points; }
-            var geometry = flight.getNow(null);
-            if (geometry == null || geometry.terminal().isEmpty()) return points;
-            long cap = geometry.terminal().get().localSQ8() + 32L * 256;
-            var arcs = path.localSQ8();
-            int lo = 0, hi = arcs.size() - 1;
-            while (lo < hi) {
-                int mid = (lo + hi + 1) >>> 1;
-                if (arcs.get(mid) <= cap) lo = mid; else hi = mid - 1;
-            }
-            int cut = Math.max(1, Math.min(points, lo + 1));
-            noteTerminalCut("cut", cap, points, cut);
-            return cut;
-        } catch (RuntimeException unsettled) {
-            return points;
-        }
-    }
-
-    private long prewarmTargetSegments() {
+    long prewarmTargetSegments() {
         try {
             long configured = GreatWallConfig.parameters().prewarmSegmentsTarget();
             return configured > 0L ? configured : STARTUP_PREWARM_SEGMENTS;
         } catch (RuntimeException | LinkageError unavailable) {
-            // A broken client config must not stop planning; fall back to the opening segments.
+            // 配置失败不阻塞规划，保留默认段数。
             state.put("prewarm-config-unavailable", 1L);
             return STARTUP_PREWARM_SEGMENTS;
         }
@@ -1412,7 +309,7 @@ public final class PlannerScheduler implements AutoCloseable {
     public void tick(SliceBudget budget) {
         Objects.requireNonNull(budget);
         if (closed()) return;
-        // Only the most recent server budget is retained; a stalled pump cannot queue unbounded ticks.
+        // 只保留最新 tick 预算，避免推进暂时阻塞时形成无界队列。
         state.put("tick-operations", (long) budget.maxOperations()); state.put("tick-deadline", budget.deadlineNanos());
         state.put("last-tick-nanos", System.nanoTime());
         if (state.putIfAbsent("tick-enqueued", 1L) != null) return;
@@ -1437,36 +334,13 @@ public final class PlannerScheduler implements AutoCloseable {
         });
     }
 
-    /**
-     * Upper bound on how long the scheduler may go without a server tick before
-     * it re-arms its own timer.
-     *
-     * <h2>Why this exists</h2>
-     * {@link #tick} cancels {@code startupTimer} on its first call and takes over
-     * as the only source of {@code credits}/{@code deadline}. That is fine while
-     * the server thread keeps ticking, but the server thread is also the thread
-     * that blocks on a synchronous chunk load. A real session showed the two
-     * starving each other: the server waited for a chunk whose features step was
-     * parked on this scheduler, while this scheduler waited for a server tick
-     * that could not arrive until that chunk resolved. Neither side has a
-     * timeout, so the pair stayed stuck for as long as the session lived.
-     *
-     * <p>The watchdog restores the self-driving pump that {@code startupTimer}
-     * originally provided, but only while ticks have actually stopped, so the
-     * normal case keeps using the server's own budget rather than competing with
-     * it for the native lanes.
-     */
+    /** 首次 tick 撤掉启动定时器，以后由看门狗补足服务端暂停时的推进。 */
     private static final long WATCHDOG_STALL_NANOS =
             java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
                     Math.max(500L, Long.getLong("greatwall.planner.watchdogStallMs", 3_000L)));
     private ScheduledFuture<?> watchdogTimer;
 
-    /**
-     * Starts the stall watchdog. Called once the scheduler is installed.
-     *
-     * <p>Cheap by construction: the task only inspects a timestamp and returns
-     * unless ticks have genuinely stopped.
-     */
+    /** 每轮先检查 tick 时间，仅在停滞时领取预算。 */
     public void startWatchdog() {
         if (closed()) throw closedFailure();
         if (state.putIfAbsent("watchdog", 1L) != null) return;
@@ -1483,11 +357,10 @@ public final class PlannerScheduler implements AutoCloseable {
     private void watchdogCheck() {
         if (closed()) return;
         long last = state.getOrDefault("last-tick-nanos", 0L);
-        // Before the first tick the startup timer is still the driver, so there is
-        // nothing to rescue yet.
+        // 首次 tick 前仍有初始化定时器，不需额外驱动。
         if (last == 0L) return;
         if (System.nanoTime() - last < WATCHDOG_STALL_NANOS) return;
-        // Ticks have stopped. Supply the budget ourselves until they resume.
+        // tick 停止时补预算，恢复后交还服务端。
         state.merge("watchdog-rescues", 1L, Long::sum);
         credits = 4096;
         deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(25);
@@ -1503,11 +376,7 @@ public final class PlannerScheduler implements AutoCloseable {
     }
     public CompletableFuture<Void> drain() { return drained.copy(); }
 
-    /**
-     * Publishes the resolved corridor-structure obstacle index to the ridge planner. Must be called
-     * after the planning-time structure scan settles and before {@link #afterRoadBulk()} starts the
-     * bulk prewarm, so the detour stage observes the final index.
-     */
+    /** 结构扫描结束后才能安装索引并启动批量任务，避免先算出不绕行路线。 */
     public void setObstacles(StructureObstacleIndex index) {
         ridge.setObstacles(index);
     }
@@ -1568,9 +437,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private void drainGeometry() {
         while (!closed() && activeGeometry < recipe.config().maxGeometryInflight()) {
             Runnable next;
-            // Dequeue under the lock, run outside it: the admission gate may be entered from the server
-            // thread while the pump is completing a flight, and running a geometry job inside the lock
-            // would serialise every later admission behind it.
+            // 持锁出队后才执行，避免几何计算堵住调用线程。
             synchronized (geometryLock) { next = geometryQueue.pollFirst(); }
             if (next == null) return;
             next.run();
@@ -1620,9 +487,7 @@ public final class PlannerScheduler implements AutoCloseable {
 
     private SegmentGeometry geometry(RouteShape route, List<WaterEvidence> water, int hydroColumns, boolean last,
             List<local.plaincraft.greatwall.planning.OceanRouteScan.OceanRun> seas) {
-        // The sea is decided from biomes first. It costs one lookup per route point and it is the
-        // same coastline the hydrology stage would have found by measuring every column of water -
-        // including the deep ones, which are the most expensive columns this stage can ask for.
+        // 先用群系识别连续海段，减少已知终止段的测深开销。
         Optional<Terminal> terminal = local.plaincraft.greatwall.planning.OceanRouteScan
                 .firstTerminating(seas)
                 .map(run -> new Terminal(route.key().index(),
@@ -1639,12 +504,7 @@ public final class PlannerScheduler implements AutoCloseable {
                 .map(w -> new Terminal(route.key().index(), w.crossing().fromQ8(), TerminalKind.OCEAN))
                 .min(Comparator.comparingLong(Terminal::localSQ8));
         if (terminal.isEmpty() && last) terminal = Optional.of(new Terminal(route.key().index(), route.localSQ8().getLast(), TerminalKind.WORLD_LIMIT));
-        // Which of the three branches ended this segment, and with what evidence. Only the biome branch
-        // used to say anything, so a wall that stopped a fifth of the way along its own route left no
-        // trace of why: the hydrology branch - "a water span whose width could not be measured is
-        // treated as WIDE" - is the one that silently terminates a segment on dry land, and it printed
-        // nothing at all. A segment with no terminal must say so too, because that is the difference
-        // between "the wall is meant to end here" and "the classifier never reached a verdict".
+        // 分别记录群系、测深或窗口边界，便于定位提前终止。
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:diag] TERMINAL_SOURCE segment={} source={} localSQ8={} routeSQ8={} "
                         + "waterRuns={} wideRuns={} biomeTerminal={} last={}",
@@ -1681,11 +541,7 @@ public final class PlannerScheduler implements AutoCloseable {
                     case RouteJob route -> route.key.index();
                     case HydroJob hydro -> hydro.routes.center().key().index();
                     case ContractJob contract -> contract.inputs.geometry.key().index();
-                    // A fine-sample job belongs to the segment whose route it walks. Leaving it out of this
-                    // switch is what took the whole pump down: a promotion that landed on a segment with a
-                    // fine sample in flight threw "unknown job", the pump reported PUMP_TASK_FAILED, and that
-                    // path releases every startup gate - so RoadWeaver started laying roads while the wall
-                    // was still sampling. A bookkeeping lookup must never be able to do that.
+                    // 精采样也有段号，提权必须识别它，避免误伤原推进器。
                     case FineSampleJob fine -> fine.path.key().index();
                     default -> -1L;
                 };
@@ -1706,15 +562,7 @@ public final class PlannerScheduler implements AutoCloseable {
             if (slot.busy) continue;
             var nativeLane = lanes.get(lane);
             if (!slot.ready) {
-                // Admission for native oracle construction.
-                //
-                // This used to be a constant of four, on the theory that it kept N native
-                // RandomState instances from peaking together. It did not: every lane retains
-                // its oracle for the life of the session, so all N exist at steady state
-                // regardless, and the cap only spread their creation across batches - measured
-                // at about 232 seconds of a startup prewarm on sixteen cores spent before any
-                // planning began. The bound is now the lane ceiling, so all lanes initialize
-                // together and the cost is paid once, concurrently.
+                // 限制原生地形初始化并发，压住多个噪声状态叠加的工作集。
                 if (!slot.initializing && initializing < LanePolicy.MAX_CONCURRENT_INITIALIZATIONS) {
                     slot.initializing = true;
                     initializing++;
@@ -1741,31 +589,7 @@ public final class PlannerScheduler implements AutoCloseable {
                 long started = System.nanoTime();
                 try {
                     if (closed()) throw closedFailure();
-                    // Hand the whole batch budget to one advance call rather than looping
-                    // with a limit of one primitive at a time.
-                    //
-                    // The loop this replaces issued `advance(oracle, 1)` up to 64 times, and
-                    // the difference is not a micro-optimisation. A job's advance is a
-                    // resumable state machine, and several of its steps need a terrain column
-                    // sampled before the state machine can progress at all: RidgePlanner.sample
-                    // issues begin, then returns, then needs one advance per inner step, then
-                    // finish - three or more separate calls, each of which had to be its own
-                    // batch. With a limit of one, every one of those calls ended the loop body
-                    // having done no recoverable work, so the batch budget was spent on
-                    // bookkeeping between steps rather than on the steps themselves.
-                    //
-                    // A measured session ran 1,337,565 batches at 0.995 ms each - 22.2 minutes,
-                    // matching its wall clock almost exactly - for work that the same code
-                    // performs directly in computeGeometryNow via advance(cursor, 64). Passing
-                    // the batch's own operation count lets a column sampling sequence complete
-                    // inside a single batch instead of spanning three.
-                    //
-                    // The 25 ms target still applies, just coarser: it is now checked once per
-                    // batch rather than once per primitive, so an unusually slow primitive can
-                    // overrun it. That is already the case - the same session recorded a
-                    // 108.6 ms batch and only 9 batches over 40 ms out of 1.34 million - and the
-                    // deadline exists to keep a batch from monopolising a lane, not to bound a
-                    // single primitive.
+                    // 每轮交付整批预算，避免每个原语都重复检查分派状态。
                     done = job.advance(oracle, operations);
                     if (done) value = job.value();
                 } catch (Throwable failure) { error = failure; done = true; }
@@ -1778,18 +602,12 @@ public final class PlannerScheduler implements AutoCloseable {
                 try { pump.execute(() -> {
                     slot.busy = false;
                     if (closed()) { job.result.completeExceptionally(closedFailure()); return; }
-                    // A failed job may still own an unfinished native cursor. Never reuse that lane.
+                    // 失败任务可能持有未收口的原生游标，通道不能直接复用。
                     Throwable failure = submitError != null ? submitError : batch.failure();
                     if (failure != null) {
                         recordFailure(failure, job.phase, segmentOf(job), job.operations);
                         job.result.completeExceptionally(failure);
-                        // Declare the prewarm over before the session winds down: closing the planner
-                        // fails every future, and the loading side would otherwise keep waiting for a
-                        // prewarm that can never finish. A measured session sat on the loading card for
-                        // the full 30 minute peer timeout after its hydrology job failed. finish(false)
-                        // records the failure on the card and opens the peer/worldgen gates, which is
-                        // exactly the policy already applied when the bulk is skipped on a closed
-                        // planner: a wall that cannot paint must not hold the roads behind it.
+                        // 先结束加载等待再关闭调度，避免等一个已不可能完成的批次。
                         GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_ABORTED phase={} segment={} reason={}",
                                 job.phase, segmentOf(job), failure.toString());
                         local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
@@ -1857,7 +675,7 @@ public final class PlannerScheduler implements AutoCloseable {
     }
 
     private void drainAdmissions() {
-        // Reserve dependency headroom before allocating a parent plan/geometry reservation.
+        // 预留依赖容量，避免父任务占满缓存后互等。
         while (!closed() && admittedGeometries < 4 && !geometryAdmissions.isEmpty()) geometryAdmissions.removeFirst().run();
         while (!closed() && admittedPlans < 4 && !planAdmissions.isEmpty()) planAdmissions.removeFirst().run();
     }
@@ -1889,27 +707,12 @@ public final class PlannerScheduler implements AutoCloseable {
         return new SegmentKey(recipe.recipeHash(), recipe.dimension(), segment);
     }
 
-    /**
-     * Whether a segment index is inside the region this world may build.
-     *
-     * <h2>Two limits, both required</h2>
-     * The frozen envelope is a generation-semantics boundary: past it the
-     * projection and carrier maths would leave the dimension's horizontal limit,
-     * so it can never be relaxed.
-     *
-     * <p>The configured length is a player choice, applied here because this
-     * method is the single gate every segment access passes through — planning,
-     * background prewarm, neighbour lookups and the terminal check all call it.
-     * Enforcing the length anywhere else would leave paths that bypass it.
-     *
-     * <p>An unconfigured wall keeps the historical behaviour exactly: the whole
-     * frozen envelope is buildable, and no configured terminal is ever produced.
-     */
-    private boolean safeSegment(long segment) {
+    /** 配置长度和冻结包络都必须满足；后台、邻段和终止检查不能绕开。 */
+    boolean safeSegment(long segment) {
         if (segment < 0) return false;
         if (!withinConfiguredLength(segment)) return false;
         try {
-            // 512 carrier + 512 ridge + 96 component + 48 reference side-column envelope.
+            // 预留主廊偏移 512、山脊偏移 512、构件 96、侧列 48 格。
             long radius = 1168L * 256, limit = recipe.bounds().horizontalLimit() * 256L;
             for (long index : new long[] {segment, Math.addExact(segment, 1)}) {
                 long u = Math.multiplyExact(index, 2048L * 256);
@@ -1921,23 +724,13 @@ public final class PlannerScheduler implements AutoCloseable {
         } catch (ArithmeticException overflow) { return false; }
     }
 
-    /**
-     * Configured length gate.
-     *
-     * <p>{@code configuredSegments} is the number of whole 2048-block segments the
-     * requested length spans, so segment {@code n} starts at {@code n * 2048}
-     * blocks along the axis. Segment {@code configuredSegments} is therefore the
-     * first one entirely past the requested length and is refused.
-     *
-     * <p>A configuration that cannot be read leaves the wall unbounded rather
-     * than silently truncating it: a missing file must never shorten a world.
-     */
+    /** 以 2048 格一段向上取整，允许含末端的部分段。 */
     private boolean withinConfiguredLength(long segment) {
         long allowed = configuredSegmentLimit();
         return allowed <= 0L || segment < allowed;
     }
 
-    /** Cached because this is called for every segment access on the planner's hot path. */
+    /** 这是每次段访问的热路径，按会话缓存范围。 */
     private volatile long configuredSegmentLimitCache = Long.MIN_VALUE;
 
     private long configuredSegmentLimit() {
@@ -1947,7 +740,7 @@ public final class PlannerScheduler implements AutoCloseable {
         try {
             limit = GreatWallConfig.parameters().configuredSegments();
         } catch (RuntimeException | LinkageError unavailable) {
-            // Fail open: an unreadable config must not shorten an existing wall.
+            // 配置不可读时不能静默缩短已有墙。
             state.put("wall-length-config-unavailable", 1L);
             limit = 0L;
         }
@@ -1955,7 +748,7 @@ public final class PlannerScheduler implements AutoCloseable {
         return limit;
     }
 
-    /** Segments this wall will build; {@code 0} when unbounded. Exposed for diagnostics. */
+    /** 诊断可建段数，零代表没有配置上限。 */
     public long configuredSegmentLimitForDiagnostics() { return configuredSegmentLimit(); }
 
     private <T> CompletableFuture<Optional<T>> ioRead(IoRead<T> operation) {
@@ -1968,8 +761,7 @@ public final class PlannerScheduler implements AutoCloseable {
                 catch (Throwable error) { result.completeExceptionally(error); }
             });
         } catch (RejectedExecutionException full) {
-            // Capacity, not failure: one burst must not switch the cache off for the whole session. Only a
-            // closed planner does that, because then nothing will ever drain the queue.
+            // 队列容量只是临时背压，关闭后无法排空才停用缓存。
             if (closed()) state.put("cache-disabled", 1L);
             else state.compute("cache-backpressure", (k, old) -> old == null ? 1L : old + 1L);
             result.complete(Optional.empty());
@@ -2001,7 +793,7 @@ public final class PlannerScheduler implements AutoCloseable {
             try { next.run(); }
             finally {
                 try { pump.execute(() -> { activeIo = 0; drainIo(); }); }
-                catch (RejectedExecutionException ignored) { /* Closing already completed public promises. */ }
+                catch (RejectedExecutionException ignored) { /* 关闭时已结案公开结果。 */ }
             }
         }); } catch (RuntimeException rejected) {
             activeIo = 0; state.put("cache-disabled", 1L);
@@ -2018,7 +810,7 @@ public final class PlannerScheduler implements AutoCloseable {
         if (!state.containsKey("cache-disabled") && !closed()) try {
             submitIo(() -> { try { cache.writeGeometry(value); } catch (IOException error) { state.put("cache-disabled", 1L); } });
         } catch (RejectedExecutionException full) {
-                    // Capacity, not failure: the cache stays enabled so the next write can still land.
+                    // 队列满跳过本次缓存写入，后续仍可落盘。
                     if (closed()) state.put("cache-disabled", 1L);
                     else state.compute("cache-backpressure", (k, old) -> old == null ? 1L : old + 1L);
                 }
@@ -2027,7 +819,7 @@ public final class PlannerScheduler implements AutoCloseable {
         if (!state.containsKey("cache-disabled") && !closed()) try {
             submitIo(() -> { try { cache.writePlan(value); } catch (IOException error) { state.put("cache-disabled", 1L); } });
         } catch (RejectedExecutionException full) {
-                    // Capacity, not failure: the cache stays enabled so the next write can still land.
+                    // 队列满跳过本次缓存写入，后续仍可落盘。
                     if (closed()) state.put("cache-disabled", 1L);
                     else state.compute("cache-backpressure", (k, old) -> old == null ? 1L : old + 1L);
                 }
@@ -2045,7 +837,7 @@ public final class PlannerScheduler implements AutoCloseable {
         throw new IllegalArgumentException("unknown cached object");
     }
 
-    private boolean closed() { return state.containsKey("closed"); }
+    boolean closed() { return state.containsKey("closed"); }
     private void recordFailure(Throwable error, String phase, long segment, long operations) {
         Throwable root = error;
         FailureCode code = null;
@@ -2066,23 +858,17 @@ public final class PlannerScheduler implements AutoCloseable {
             case PlannerScheduler.HydroJob hydro -> hydro.routes.center().key().index();
             case PlannerScheduler.ContractJob contract -> contract.inputs.geometry.key().index();
             case PlannerScheduler.FineSampleJob fine -> fine.path.key().index();
-            // Never fatal: this is a label for diagnostics, and a missing label used to fail the pump.
+            // 未知任务只影响日志标签，不能影响推进器生存。
             default -> -1L;
         };
     }
-    private WallFailure closedFailure() {
+    WallFailure closedFailure() {
         var first = failures.get("first");
         return first == null ? new WallFailure(FailureCode.CLOSED, "planner session closed")
                 : new WallFailure(first.code(), "planner failed in " + first.phase() + " segment="
                         + first.segment() + ": " + first.exceptionType() + ": " + first.message());
     }
-    /**
-     * Refuses to run on a thread that the planner itself owns.
-     *
-     * <p>Used by callers that block on planner futures. Waiting on this scheduler from one of its own
-     * threads cannot succeed — the work being awaited can only progress on the pump that is blocked —
-     * so the hazard is converted into an immediate, named failure.
-     */
+    /** 不允许推进线程或地形通道阻塞等待此调度器，所等工作正需要这些线程。 */
     public void assertOutsidePlanningThread(String purpose) {
         String thread = Thread.currentThread().getName();
         if (thread.startsWith(pumpThreadPrefix) || thread.startsWith(laneThreadPrefix)) {
@@ -2101,35 +887,19 @@ public final class PlannerScheduler implements AutoCloseable {
         planFlights.forEach((key, future) -> future.completeExceptionally(closedFailure()));
         acquisitions.forEach((id, future) -> future.completeExceptionally(closedFailure()));
         prefixes.close(); callerLeases.forEach((id, lease) -> lease.close());
-        // The lease map is a weakly consistent view: an entry inserted while that loop ran would keep its
-        // lease - and its memory pin - open forever. close() is idempotent, so sweep again now that the
-        // closed flag is up and every new acquisition is refused.
+        // 关闭后再遍历一次弱一致租约表，防止并发插入让缓存一直被钉住。
         callerLeases.forEach((id, lease) -> lease.close());
-        // A session that ends before the compile must not leave the prewarm's leases holding the
-        // memory budget open.
+        // 未进入编译就退出时也必须归还预热租约。
         releasePrewarmLeases();
-        // Write the columns this session walked before the session is torn down. The cache used to be
-        // written only from the completion callback, so a session that ended early - the measured one
-        // stopped after 50,937 of 230,657 columns - kept nothing and the next session walked them again.
-        var sampled = fineSampleWalked;
-        if (sampled != null && !sampled.isEmpty()) {
-            try {
-                persistFineSamples(sampled);
-            } catch (RuntimeException cannotPersist) {
-                GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_CACHE_CLOSE_FAILED reason={}",
-                        cannotPersist.toString());
-            }
-        }
+        fineSamples.persistOnClose();
         memory.close();
         pump.execute(() -> {
             if (startupTimer != null) startupTimer.cancel(false);
             if (watchdogTimer != null) watchdogTimer.cancel(false);
-            if (prewarmTimer != null) prewarmTimer.cancel(false);
-            if (fineSampleTimer != null) fineSampleTimer.cancel(false);
+            bulkPrewarm.stopPrewarmTimer();
+            fineSamples.stopFineSampleDriver();
             pending.forEach(job -> job.result.completeExceptionally(closedFailure()));
-            // In-flight jobs are not in pending - dispatch() already polled them onto a lane - so they
-            // would otherwise only be completed by their lane callback, which the shutdown below can
-            // refuse. completeExceptionally is idempotent, so completing them twice is harmless.
+            // 已派发任务不在等待队列，关闭时须主动结束它们，避免晚回调被拒后永久挂起。
             activeJobs.values().forEach(job -> job.result.completeExceptionally(closedFailure()));
             pending.clear(); synchronized (geometryLock) { geometryQueue.clear(); } ioQueue.clear();
             planAdmissions.clear(); geometryAdmissions.clear();
@@ -2177,17 +947,27 @@ public final class PlannerScheduler implements AutoCloseable {
         @Override RouteShape value() { return ridge.finish(cursor); }
     }
 
-    private final class FineSampleJob extends Job<List<WallFinePlanner.FineColumn>> {
+    // 阶段只拿完成信号和切片统计，游标调度与提权仍由同一队列负责。
+    FineSampleJob enqueueFineSample(RoutePath path, int fromPoint, int toPoint, Priority priority,
+            CompletableFuture<List<WallFinePlanner.FineColumn>> result,
+            local.plaincraft.greatwall.terrain.FineSampleCache cache, java.util.function.IntPredicate wideAt,
+            Map<Long, ColumnSample> walks, java.util.Set<Long> claims, long globalBaseQ8) {
+        var job = new FineSampleJob(path, fromPoint, toPoint, priority, result, cache, wideAt, walks, claims, globalBaseQ8);
+        enqueue(job);
+        return job;
+    }
+
+    final class FineSampleJob extends Job<List<WallFinePlanner.FineColumn>> {
         private final RoutePath path;
-        /** Point sub-range this job samples: {@code [fromPoint, toPoint)} of the route. */
+        /** 路线半开区间，切片边界不能重复计作完整区间。 */
         private final int fromPoint, toPoint;
         private final local.plaincraft.greatwall.terrain.FineSampleCache cache;
-        /** Points of this route that must carry the full band, because a component sits on them. */
+        /** 建筑邻域需要全幅横截面，避免缺少地形证据。 */
         private final long globalBaseQ8;
         private final java.util.function.IntPredicate wideAt;
-        /** Session-wide memo of already-walked columns; see {@link WallFinePlanner#begin}. */
+        /** 同一会话复用已走过的地形列，降低切片交叠开销。 */
         private final java.util.Map<Long, local.plaincraft.greatwall.model.WallTypes.ColumnSample> walks;
-        /** Columns already claimed by another slice of this session; see WallFinePlanner.begin. */
+        /** 已认领地形列跨切片去重，游标仍在所属原生通道上推进。 */
         private final java.util.Set<Long> claims;
         private WallFinePlanner.Cursor cursor;
         private FineSampleJob(RoutePath path, int fromPoint, int toPoint, Priority priority,
@@ -2215,90 +995,22 @@ public final class PlannerScheduler implements AutoCloseable {
             return WallFinePlanner.advance(cursor, limit) == WorkState.DONE;
         }
         @Override List<WallFinePlanner.FineColumn> value() { return WallFinePlanner.finish(cursor); }
-        /** Columns this slice resolved itself, for the session's cache write. */
+        CompletableFuture<List<WallFinePlanner.FineColumn>> result() { return result; }
+        /** 仅将本切片实际探测的地形列加入缓存。 */
         List<WallFinePlanner.FineColumn> probed() { return WallFinePlanner.probed(cursor); }
-        /** Cross-section columns this slice emitted before repeats were collapsed, for the log. */
+        /** 记录去重前列数，量化截面重叠开销。 */
         int emittedRaw() { return cursor == null ? 0 : WallFinePlanner.emittedRaw(cursor); }
-        /** Cross-sections this slice walked, and how many carried the full wide band. */
+        /** 分开统计总截面和宽截面，以便解释取样量。 */
         long sections() { return cursor == null ? 0 : WallFinePlanner.sections(cursor); }
         long wideSections() { return cursor == null ? 0 : WallFinePlanner.wideSections(cursor); }
-        /** REFERENCE walks this slice started, i.e. columns no cache or memo answered. */
+        /** 仅累加真实探测，缓存或内存命中不算。 */
         long probedColumns() { return cursor == null ? 0 : WallFinePlanner.probedColumns(cursor); }
-    }
-
-    /**
-     * The route points whose cross-section must carry the full {@link WallFinePlanner#LATERAL} band.
-     *
-     * <p>Only forts and gates read past the base width: their axis-aligned box reaches roughly 48
-     * blocks laterally once their frame is rotated. Their stations are a pure function of the absolute
-     * arc - a gate every 800 blocks with a deterministic jitter of ±100, a fort every 4000 with ±500
-     * (see {@link SiteScheduler}) - so the arcs are known before a single column is sampled. Widening a
-     * window no component ends up using costs a few extra columns; missing one would leave the contract
-     * without the columns it requires.</p>
-     */
-    private java.util.function.IntPredicate widePoints(RoutePath path, long fromQ8) {
-        var arcs = path.localSQ8();
-        int points = arcs.size();
-        var wide = new java.util.BitSet(points);
-        long toQ8 = fromQ8 + arcs.get(points - 1);
-        // A component's box reaches at most ~48 blocks along the wall; 96 blocks is slack for the
-        // station's own jitter and for the sampled route drifting off the planned one.
-        long marginQ8 = 96L * 256L;
-        for (long ordinal = Math.max(0L, (fromQ8 - marginQ8) / (800L * 256L) - 1L); ; ordinal++) {
-            long site = sites.gatePositionQ8(ordinal);
-            if (site - marginQ8 > toQ8) break;
-            markWide(wide, arcs, fromQ8, site, marginQ8);
-        }
-        for (long ordinal = Math.max(0L, (fromQ8 - marginQ8) / (4000L * 256L) - 1L); ; ordinal++) {
-            long site = sites.fortPositionQ8(ordinal);
-            if (site - marginQ8 > toQ8) break;
-            markWide(wide, arcs, fromQ8, site, marginQ8);
-        }
-        return wide::get;
-    }
-
-    /** Marks every route point whose arc lies within {@code marginQ8} of the absolute {@code siteQ8}. */
-    private static void markWide(java.util.BitSet wide, List<Long> arcs, long fromQ8, long siteQ8, long marginQ8) {
-        long lowArc = siteQ8 - marginQ8 - fromQ8;
-        long highArc = siteQ8 + marginQ8 - fromQ8;
-        int points = arcs.size();
-        int lo = 0, hi = points;
-        while (lo < hi) {
-            int mid = (lo + hi) >>> 1;
-            if (arcs.get(mid) < lowArc) lo = mid + 1; else hi = mid;
-        }
-        for (int i = lo; i < points && arcs.get(i) <= highArc; i++) wide.set(i);
-    }
-
-    /** Columns the {@code [from, to)} cross-sections emit, the wide points and the sampling grid included. */
-    private static int sliceColumns(List<Long> localSQ8, int from, int to,
-                                    java.util.function.IntPredicate wideAt, int gridStep) {
-        int total = 0;
-        for (int i = from; i < to && i < localSQ8.size(); i++) {
-            // The same rule WallFinePlanner.step applies to a route point index, so the meter counts
-            // the cross-sections the cursor will actually walk.
-            if (gridStep > 1 && Math.floorMod(i, gridStep) != 0) continue;
-            total += gridWidth(wideAt.test(i) ? WallFinePlanner.LATERAL : WallFinePlanner.BASE_LATERAL, gridStep);
-        }
-        return total;
-    }
-
-    /**
-     * Columns one cross-section of half width {@code halfWidth} keeps under the sampling grid.
-     *
-     * <p>Exactly the laterals {@link WallFinePlanner} emits: it keeps the index {@code 0} and every
-     * {@code gridStep}-th lateral either side of it. Only the progress meter uses this, so it has to
-     * track the sampler rather than be exact to the column.
-     */
-    private static int gridWidth(int halfWidth, int gridStep) {
-        if (gridStep <= 1) return 2 * halfWidth + 1;
-        return 2 * (halfWidth / gridStep) + 1;
     }
 
     private final class HydroJob extends Job<SegmentGeometry> {
         private final RouteNeighborhood routes;
         private HydrologyClassifier.Cursor cursor;
-        /** Kept from advance() so value() can ask for biomes without a fresh oracle. */
+        /** 保留游标所属通道供结案识别海域。 */
         private NaturalTerrainOracle oracle;
         private HydroJob(RouteNeighborhood routes, Priority priority, CompletableFuture<SegmentGeometry> result) {
             super(priority, "HYDROLOGY", result); this.routes = routes;
@@ -2309,24 +1021,14 @@ public final class PlannerScheduler implements AutoCloseable {
             this.oracle = oracle;
             operations += limit;
             try {
-                // A segment whose hydrology exceeds this operation ceiling terminates
-                // its remaining unresolved water as WIDE instead of burning unbounded
-                // time certifying an island that terminates either way. Already
-                // certified NARROW/WIDE/SUPPORT_GAP evidence is preserved.
+                // 超出上限仅结束未认证水面，保持已认证的窄水、宽水和地基缺口。
                 if (operations > HYDROLOGY_OPERATION_CEILING && !cursor.done()) {
                     hydrology.forceComplete(cursor);
                     return true;
                 }
                 return hydrology.advance(cursor, limit) == WorkState.DONE;
             } catch (WallFailure unresolved) {
-                // A column the terrain oracle cannot certify used to end the segment, and through the
-                // scheduler's failure policy the whole session with it: a measured world died with
-                // "HYDROLOGY_UNRESOLVED: reference column cannot certify ground or river bed", and the
-                // fine sample and compile that depended on the same planner died with it. The
-                // classifier already has an authorised answer for water it cannot measure - WIDE, the
-                // same terminate-into-sea policy the operation ceiling uses - so take it here instead.
-                // Safe on this lane: the classifier only refuses after its oracle column has finished,
-                // and forceComplete drains any column still open, so the lane keeps a clean oracle.
+                // 单列不能认证河床时沿用宽水域结案，其他异常继续上报；强制结案会清理游标。
                 if (unresolved.code() != FailureCode.HYDROLOGY_UNRESOLVED || cursor.done()) throw unresolved;
                 GreatWallMod.LOGGER.warn("[GreatWall:hydro] HYDROLOGY_FORCED_COMPLETE segment={} reason={}",
                         routes.center().key().index(), unresolved.getMessage());
@@ -2338,15 +1040,6 @@ public final class PlannerScheduler implements AutoCloseable {
             return geometry(routes.center(), hydrology.finish(cursor), cursor.logicalColumns(),
                     routes.next().isEmpty(), oceanRuns(routes.center(), oracle));
         }
-
-        /**
-         * The seas along this segment, from biome data alone.
-         *
-         * <p>One biome lookup per route point costs about a thousandth of a column sample, and it
-         * answers the question the hydrology stage used to answer by measuring: where is the water,
-         * and is it wide enough to end the wall. Returns an empty list whenever the oracle cannot
-         * answer, which leaves the old water-based decision in place.
-         */
 
     }
 

@@ -311,6 +311,14 @@ class PlannerSchedulerTest {
             }
             assertTrue(scheduler.diagnostics().containsKey("startup-ready"), "demand-only pump must start");
             assertTrue(scheduler.diagnostics().containsKey("demand-only"), "early startup must not bulk-prewarm");
+            // 编译回调必须拿到已经钉住的完整批次；否则启动时会丢计划或重新规划。
+            var pinnedAtHook = new CompletableFuture<List<PlanLease<SegmentPlan>>>();
+            var hookCalls = new AtomicInteger();
+            scheduler.onBulkReady(() -> {
+                hookCalls.incrementAndGet();
+                pinnedAtHook.complete(scheduler.prewarmLeases());
+            });
+            scheduler.afterRoadBulk();
             scheduler.afterRoadBulk();
             timeout = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
             while (!scheduler.diagnostics().containsKey("bulk-ready") && System.nanoTime() < timeout) {
@@ -318,6 +326,16 @@ class PlannerSchedulerTest {
                 Thread.sleep(2);
             }
             assertTrue(scheduler.diagnostics().containsKey("bulk-ready"), "bulk prewarm must finish once requested");
+            var pinned = pinnedAtHook.get(5, TimeUnit.SECONDS);
+            assertFalse(pinned.isEmpty());
+            assertEquals((long) pinned.size(), scheduler.diagnostics().get("prewarm-requested-segments"));
+            for (int i = 0; i < pinned.size(); i++) {
+                var plan = pinned.get(i).future().get(1, TimeUnit.SECONDS);
+                assertEquals(i, plan.geometry().key().index());
+            }
+            assertEquals(1, hookCalls.get());
+            scheduler.releasePrewarmLeases();
+            assertTrue(scheduler.prewarmLeases().isEmpty());
             try (var later = scheduler.requirePlan(6, Priority.PLAYER)) {
                 var plan = later.future().get(10, TimeUnit.SECONDS);
                 assertEquals(6, plan.geometry().key().index());
