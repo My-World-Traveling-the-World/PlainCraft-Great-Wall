@@ -31,7 +31,7 @@ final class FineSampleStage {
     /** 用全局调用计数区分多次启动与单次切片重复。 */
     private static final java.util.concurrent.atomic.AtomicLong FINE_SAMPLE_CALLS = new java.util.concurrent.atomic.AtomicLong();
     /** 加载会阻塞服务端 tick，因此用定时预算在原地形通道推进采样。 */
-    private ScheduledFuture<?> fineSampleTimer;
+    private volatile ScheduledFuture<?> fineSampleTimer;
 
     // 原生通道的批量预算由配置给出，游标一次最多接收 4096 个原语。
 
@@ -52,8 +52,9 @@ final class FineSampleStage {
     private volatile Runnable fineSampleAbandon;
     /** 强制标志按调用重建，避免前一次结案影响本次样本。 */
     private volatile java.util.concurrent.atomic.AtomicBoolean fineSampleForced = new java.util.concurrent.atomic.AtomicBoolean();
-    /** 提前关闭也保存已探测列，重开才能复用。 */
-    private volatile List<WallFinePlanner.FineColumn> fineSampleWalked;
+    /** 只记录本轮待落盘证据，正常结案不得通过 Future 长期持有整窗索引。 */
+    private FineSampleEvidence evidenceToClose;
+    private CompletableFuture<FineHeightIndex> activeSample;
 
     /** 固定切片数，避免通道数改变切片边界和认领结果。 */
     private static final int FINE_SAMPLE_SLICES_PER_SEGMENT = 48;
@@ -87,13 +88,18 @@ final class FineSampleStage {
     }
 
     /** 生成开头段的截面地形索引供编译，落块期不需要逐方块重采。 */
-    CompletableFuture<FineHeightIndex> requireFineSamples(Priority priority) {
+    synchronized CompletableFuture<FineHeightIndex> requireFineSamples(Priority priority) {
         if (scheduler.closed()) return CompletableFuture.failedFuture(scheduler.closedFailure());
+        // 启动精采样是单次请求；并发调用共享结果，不能互相覆盖关闭与停滞回调。
+        if (activeSample != null) return activeSample;
+        if (evidenceToClose != null) {
+            return CompletableFuture.failedFuture(new IllegalStateException("本次启动精采样已结案"));
+        }
         var aggregate = new CompletableFuture<FineHeightIndex>();
-        var all = new java.util.TreeMap<Long, List<WallFinePlanner.FineColumn>>();
-        /** 只持久化本轮实际走过的新增列，旧列由缓存层合并。 */
-        var walked = new ArrayList<WallFinePlanner.FineColumn>();
-        fineSampleWalked = walked;
+        var cache = fineSampleCache;
+        var evidence = new FineSampleEvidence(cache);
+        activeSample = aggregate;
+        evidenceToClose = evidence;
         var sampledColumns = new java.util.concurrent.atomic.AtomicInteger();
         // 保留去重前列数，便于发现截面交叠成本。
         var rawColumns = new java.util.concurrent.atomic.AtomicInteger();
@@ -130,8 +136,6 @@ final class FineSampleStage {
         runawayLastMisses = 0L;
         runawayLastCheckNanos = 0L;
         runawayIdleChecks = 0;
-        // 精采样不依赖服务端 tick，定时器只向原调度器发预算。
-        startFineSampleDriver();
         // 将调用计数与实际切片数一并记录，便于排查重复提交。
         GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_CALL call={} segments={} slicesPerSegment={}",
                 FINE_SAMPLE_CALLS.incrementAndGet(), (int) Math.min(Integer.MAX_VALUE, target),
@@ -162,7 +166,7 @@ final class FineSampleStage {
                     if (enqueueing.get()) return;
                     if (routesPending.get() > 0 || slicesPending.get() > 0) return;
                 }
-                if (!published.compareAndSet(false, true)) return;
+                if (aggregate.isDone() || !published.compareAndSet(false, true)) return;
                 int done = sampledColumns.get();
                 // 保留独立估计值，加载界面负责显示限幅。
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
@@ -201,21 +205,21 @@ final class FineSampleStage {
                         walkedSections.get() == 0 ? 0 : rawColumns.get() / walkedSections.get(),
                         walkedSections.get() == 0 ? 0 : probedColumns.get() / walkedSections.get(),
                         done == 0 ? 0 : probedColumns.get() / done);
-                persistFineSamples(walked);
-                var ordered = new ArrayList<WallFinePlanner.FineColumn>();
-                synchronized (all) {
-                    for (var slice : all.values()) ordered.addAll(slice);
-                    // 整体唯一列数与局部去重前计数口径不同，分开诊断。
-                    java.util.HashSet<Long> distinct = new java.util.HashSet<>(Math.max(16, all.size() * 2));
-                    for (var column : ordered) {
-                        distinct.add(((long) column.x() << 32) ^ (column.z() & 0xffffffffL));
-                    }
+                try {
+                    var index = evidence.finish();
+                    if (index == null) return; // 并发取消或关闭已接管结案。
+                    int emitted = index.orderedColumns().size(), distinct = index.size();
+                    // 复用正式索引的大小，避免仅为日志再遍历坐标并建一张集合。
                     GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_COLUMNS emitted={} distinct={} "
                                     + "duplicatePct={} sections={}",
-                            ordered.size(), distinct.size(),
-                            ordered.isEmpty() ? 0 : Math.round(100f * (ordered.size() - distinct.size()) / ordered.size()),
+                            emitted, distinct, emitted == 0 ? 0 : Math.round(100f * (emitted - distinct) / emitted),
                             walkedSections.get());
-                    aggregate.complete(FineHeightIndex.of(ordered));
+                    // 关闭可能发生在坐标索引构建中；旧世界不能在此时发布成功。
+                    if (scheduler.closed()) aggregate.completeExceptionally(scheduler.closedFailure());
+                    else aggregate.complete(index);
+                } catch (Throwable failure) {
+                    // 最后一个切片触发的汇总异常也必须完成等待者。
+                    aggregate.completeExceptionally(failure);
                 }
             }
         };
@@ -223,10 +227,17 @@ final class FineSampleStage {
         fineSampleAbandon = completion;
         aggregate.whenComplete((v, e) -> {
             // 提前结案或失败时扫尾，取消与迟到的备用路线申请可以并发。
-            stopFineSampleDriver();
+            synchronized (this) {
+                activeSample = null;
+                fineSampleAbandon = null;
+                stopFineSampleDriver();
+            }
+            if (e != null) evidence.discardSlices();
             leases.values().forEach(FineSampleSegmentLease::close);
         });
         try {
+            // 先登记清理再启动驱动，防止关闭后留下持有切片的回调。
+            startFineSampleDriver();
             for (long segment = 0; segment < target && !aggregate.isDone(); segment++) {
                 long index = segment;
                 var segmentLease = new FineSampleSegmentLease(() -> leases.remove(index));
@@ -309,7 +320,7 @@ final class FineSampleStage {
                             int to = Math.min(points, from + perSlice);
                             // 路径回调已设分母，安排切片不能重复加估值。
                             var job = scheduler.enqueueFineSample(sampled, from, to, priority,
-                                    new CompletableFuture<List<WallFinePlanner.FineColumn>>(), fineSampleCache,
+                                    new CompletableFuture<List<WallFinePlanner.FineColumn>>(), cache,
                                     wideAt, walks, claims, prefix.lengthBeforeQ8());
                             slicesPending.incrementAndGet();
                             segmentLease.retainSlice();
@@ -317,20 +328,17 @@ final class FineSampleStage {
                                 try {
                                     if (sampleError != null) { aggregate.completeExceptionally(sampleError); return; }
                                     if (aggregate.isDone()) return;
-                                    synchronized (all) {
-                                        all.computeIfAbsent(WallFinePlanner.sampleOrder(sampled, from, to),
-                                                ignored -> new ArrayList<>()).addAll(columns);
-                                        walked.addAll(job.probed());
+                                    if (evidence.accept(WallFinePlanner.sampleOrder(sampled, from, to),
+                                            columns, job.probed())) {
                                         sampledColumns.addAndGet(columns.size());
                                         rawColumns.addAndGet(job.emittedRaw());
                                         walkedSections.addAndGet(job.sections());
                                         wideSections.addAndGet(job.wideSections());
                                         probedColumns.addAndGet(job.probedColumns());
+                                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                                                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE,
+                                                sampledColumns.get(), expectedColumns.get());
                                     }
-                                    int done = sampledColumns.get();
-                                    local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                                            local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE,
-                                            done, expectedColumns.get());
                                 } catch (Throwable t) { aggregate.completeExceptionally(t); }
                                 finally {
                                     // 最后一个切片交回缓存额度，其他段无需等待本轮聚合发布。
@@ -360,20 +368,6 @@ final class FineSampleStage {
         // 没有安全段的窗口也须结案，此时没有切片回调替它发布。
         if (!aggregate.isDone()) completion.run();
         return aggregate;
-    }
-
-    /** 落盘已解析的列，重开时复用原生地形证据。 */
-    private void persistFineSamples(List<WallFinePlanner.FineColumn> walked) {
-        var cache = fineSampleCache;
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_CACHE hits={} misses={} cached={} walked={} persistent={}",
-                cache.hits(), cache.misses(), cache.size(), walked.size(), cache.persistent());
-        if (!cache.persistent() || walked.isEmpty()) return;
-        var entries = new ArrayList<local.plaincraft.greatwall.terrain.FineSampleCache.Entry>(walked.size());
-        for (var column : walked) {
-            entries.add(new local.plaincraft.greatwall.terrain.FineSampleCache.Entry(
-                    column.x(), column.z(), column.sample()));
-        }
-        cache.store(entries);
     }
 
     /** 单阶段复用同一定时器，重复请求不能叠加驱动。 */
@@ -589,11 +583,18 @@ final class FineSampleStage {
     }
 
     void persistOnClose() {
-        // 停服前保存已走过的列，避免下次重复探测。
-        var sampled = fineSampleWalked;
-        if (sampled != null && !sampled.isEmpty()) {
+        CompletableFuture<FineHeightIndex> current;
+        FineSampleEvidence evidence;
+        synchronized (this) {
+            current = activeSample;
+            evidence = evidenceToClose;
+            evidenceToClose = null;
+        }
+        // 先结束等待者，再串行保存已走过的列。构建索引完成也不能抢回已取消的结果。
+        if (current != null) current.completeExceptionally(scheduler.closedFailure());
+        if (evidence != null) {
             try {
-                persistFineSamples(sampled);
+                evidence.close();
             } catch (RuntimeException cannotPersist) {
                 GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_CACHE_CLOSE_FAILED reason={}",
                         cannotPersist.toString());

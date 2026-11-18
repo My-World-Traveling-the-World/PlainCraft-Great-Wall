@@ -207,14 +207,19 @@ public final class FineSampleCache {
      * columns win over carried-over ones for the same column.</p>
      */
     public void store(Collection<Entry> entries) {
-        if (file == null || identity == null || entries.isEmpty()) return;
+        tryStore(entries);
+    }
+
+    /** 区分写失败与无需写入，调用方据此决定是否保留样本供停服重试。 */
+    public boolean tryStore(Collection<Entry> entries) {
+        if (file == null || identity == null || entries.isEmpty()) return true;
         var kept = new ArrayList<Entry>(entries.size() + keys.length);
         for (var entry : entries) {
             var sample = entry.sample();
             if (sample.quality() == Quality.CENSORED || sample.upperCensored()) continue;
             kept.add(entry);
         }
-        if (kept.isEmpty()) return;
+        if (kept.isEmpty()) return true;
         int fresh = kept.size();
         for (int i = 0; i < keys.length; i++) {
             long key = keys[i];
@@ -269,8 +274,10 @@ public final class FineSampleCache {
             Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
             GreatWallMod.LOGGER.info("[GreatWall:S1C] FINE_SAMPLE_CACHE stored columns={} fresh={} carried={} file={}",
                     written, fresh, carried, file);
+            return true;
         } catch (IOException e) {
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] fine sample cache {} could not be written ({})", file, e.toString());
+            return false;
         }
     }
 

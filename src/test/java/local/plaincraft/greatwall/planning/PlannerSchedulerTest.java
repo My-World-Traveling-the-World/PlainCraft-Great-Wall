@@ -230,6 +230,37 @@ class PlannerSchedulerTest {
         }
     }
 
+    @Test void fineSampleRequestsShareTheActiveRunAndCloseWithTheScheduler() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        try (var scheduler = new PlannerScheduler(recipe, () -> {
+            entered.countDown();
+            try {
+                if (!release.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("测试未释放地形通道");
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(interrupted);
+            }
+            return AnalyticTerrainOracle.ridge(true);
+        }, new SegmentCacheStore(directory.resolve("cache"), recipe), Runnable::run)) {
+            try {
+                var running = scheduler.requireFineSamples(Priority.PLAYER);
+                // 保持实际地形请求在途，避免第二次调用碰巧落在第一次已经结束之后。
+                assertTrue(entered.await(5, TimeUnit.SECONDS));
+                assertFalse(running.isDone());
+                assertSame(running, scheduler.requireFineSamples(Priority.PLAYER));
+                scheduler.close();
+                var failure = assertThrows(ExecutionException.class, () -> running.get(5, TimeUnit.SECONDS));
+                assertEquals(FailureCode.CLOSED, assertInstanceOf(WallFailure.class, failure.getCause()).code());
+            } finally {
+                release.countDown();
+                scheduler.close();
+                scheduler.drain().get(10, TimeUnit.SECONDS);
+            }
+        }
+    }
+
     @Test void lateWorldACallbackCannotPublishWorldB() throws Exception {
         var recipe = PlanningFixtures.recipe(0);
         var delayedIo = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();
