@@ -114,6 +114,13 @@ public final class PlanningColumnProvider {
         return columnsFor(owners, byChunk, offsets);
     }
 
+    ColumnSource source() {
+        // 方法引用会连整个 provider 一起保留，连带路线顺序和 XZ 索引；列取证只需桶与填洞偏移。
+        var buckets = byChunk;
+        var order = offsets;
+        return owners -> columnsFor(owners, buckets, order);
+    }
+
     private static Map<Point3i, SurfaceProbe.ColumnView> columnsFor(Collection<ChunkKey> owners,
             Map<Long, List<WallFinePlanner.FineColumn>> buckets, List<Offset> offsets) {
         Objects.requireNonNull(owners, "owners");

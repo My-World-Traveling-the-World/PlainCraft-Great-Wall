@@ -41,6 +41,7 @@ import local.plaincraft.greatwall.persistence.HistoryJournal;
 import local.plaincraft.greatwall.persistence.SegmentCacheStore;
 import local.plaincraft.greatwall.persistence.WallWorldState;
 import local.plaincraft.greatwall.persistence.WorldManifest;
+import local.plaincraft.greatwall.planning.FineHeightIndex;
 import local.plaincraft.greatwall.planning.PlannerScheduler;
 import local.plaincraft.greatwall.planning.StructureObstacleIndex;
 import local.plaincraft.greatwall.terrain.RealizationPlanner;
@@ -80,15 +81,8 @@ final class ProductionSession implements AutoCloseable {
     /** Marker type; carries no data, its completion is the signal. */
     private enum GameplayStamp { INSTANCE }
     private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();
-    /** Set while the fine sample is still in flight; the compile waits on it instead of failing. */
-    private volatile boolean fineSampleSettled;
-    /**
-     * Whether the fine sample has been requested for this session. It is started before the corridor
-     * structure scan, not after it: sampling walks terrain columns along a route the recipe already
-     * fixed, so it needs no obstacle index, and the 130 s scan would otherwise sit in front of the
-     * longest stage of the startup instead of running beside it.
-     */
-    private volatile boolean fineSampleStarted;
+    /** 回调与编译交接一次精采样，避免开局后还由会话持有整条路线的地形列。 */
+    private final StartupSampleHandoff startupSamples = new StartupSampleHandoff();
     /**
      * Whether startup stages run one at a time.
      *
@@ -128,9 +122,6 @@ final class ProductionSession implements AutoCloseable {
     private volatile local.plaincraft.greatwall.generation.CorridorStructureScanner structureScanner;
     // 批量规划和发布共用同一个扫描门，避免晚到的预热通知绕过避让。
     private final StartupStructureGate structureGate = new StartupStructureGate();
-    /** Planning-resolved fine cross-section samples + structure boxes, published once the prewarm
-     *  settles and consumed by the planning-phase chunk compilation. */
-    private volatile local.plaincraft.greatwall.planning.FineHeightIndex fineHeightIndex;
     private volatile java.util.List<local.plaincraft.greatwall.model.WallTypes.Bounds> planningStructures = java.util.List.of();
     /** Realization + chunk-plan compiler, held for the planning-phase compilation. */
     private volatile local.plaincraft.greatwall.terrain.RealizationPlanner realization;
@@ -558,27 +549,17 @@ final class ProductionSession implements AutoCloseable {
      * whole route again and publish a second index.
      */
     private void startFineSample(PlannerScheduler planner) {
-        if (fineSampleStarted) return;
-        fineSampleStarted = true;
-        // Sampled terrain columns do not change between sessions, but the stage used to re-walk every
-        // one of them on every world entry - the single most expensive thing this mod does. Hand it
-        // the previous session's columns instead. The file is bound to the recipe and terrain
-        // identity, so a world whose terrain configuration changed re-probes rather than trusting
-        // columns sampled under different terrain.
-        planner.setFineSampleCache(FineSampleCache.load(
-                root.resolve("samples").resolve("fine-columns.bin"),
-                recipe().recipeHash() + '|' + recipe().terrainHash() + '|' + recipe().dimension()));
-        fineSampleSettled = false;
+        if (!startupSamples.begin()) return;
         try {
+            // 读缓存也走结案路径；身份由配方、地形和维度共同约束，避免复用另一世界的证据。
+            var frozen = recipe();
+            planner.setFineSampleCache(FineSampleCache.load(
+                    root.resolve("samples").resolve("fine-columns.bin"),
+                    frozen.recipeHash() + '|' + frozen.terrainHash() + '|' + frozen.dimension()));
             planner.requireFineSamples(Priority.PLAYER_PREFETCH)
                     .whenComplete((fineIndex, sampleError) -> onFineSampleSettled(fineIndex, sampleError));
         } catch (Throwable couldNotStart) {
-            // Losing the sample must not take the startup stage with it: without this, a throw here would
-            // leave `fineSampleSettled` false forever and a deferred compile would never be re-triggered.
-            fineSampleSettled = true;
-            GreatWallMod.LOGGER.error("[GreatWall:corridor] fine sample could not be started; "
-                    + "the wall will not compile", couldNotStart);
-            triggerDeferredCompile();
+            onFineSampleSettled(null, couldNotStart);
         }
     }
 
@@ -589,23 +570,22 @@ final class ProductionSession implements AutoCloseable {
      * would vanish - the failure mode that once parked the world for thirty minutes. Every path ends by
      * marking the sample settled and re-triggering a deferred compile.
      */
-    private void onFineSampleSettled(local.plaincraft.greatwall.planning.FineHeightIndex fineIndex,
-            Throwable sampleError) {
+    private void onFineSampleSettled(FineHeightIndex fineIndex, Throwable sampleError) {
+        // 关闭后不收回结果，也不为已退出的会话重新排入编译任务。
+        if (!startupSamples.complete(sampleError == null ? fineIndex : null)) return;
         try {
             if (sampleError != null) {
-                GreatWallMod.LOGGER.warn("[GreatWall:corridor] fine sample failed; wall will not compile",
+                GreatWallMod.LOGGER.warn("[GreatWall:corridor] 精采样失败，无法编译长城施工计划",
                         sampleError);
             } else if (fineIndex != null) {
-                fineHeightIndex = fineIndex;
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
-                        fineIndex.size(), fineIndex.size());
+                // 采样与结构扫描重叠，不能把精采样的总数盖到当时正在显示的阶段。
+                PrewarmProgress.setSubProgress(PrewarmProgress.Stage.FINE_SAMPLE, fineIndex.size(), fineIndex.size());
                 logFineCoverage(fineIndex);
             }
         } catch (Throwable publishFailure) {
             GreatWallMod.LOGGER.error("[GreatWall:corridor] publishing the fine sample failed; "
                     + "the wall will not compile", publishFailure);
         } finally {
-            fineSampleSettled = true;
             triggerDeferredCompile();
         }
     }
@@ -657,7 +637,7 @@ final class ProductionSession implements AutoCloseable {
         // published the fine sample at 17:00:31.9 and did not log PLANNING_COMPILE_BEGIN until 17:00:49 -
         // 17.1 s of the 35.1 s compile stage spent waiting for a queue hop, while the whole compile is
         // only 10.7 s. compileRetryPending() lets the parked loop take it on its next round.
-        if (!compileDeferred.get()) return;
+        if (!compileDeferred.get() || state.containsKey("closed")) return;
         try {
             server.execute(this::compileAtStartup);
         } catch (Throwable cannotQueue) {
@@ -675,11 +655,11 @@ final class ProductionSession implements AutoCloseable {
      * the same tuple every round says nothing new. One measured session printed this line 3,057
      * times between 19:53:37 and 20:06:46 (about 3.9/s, more than half of the whole log) and then
      * stopped - the last line landed exactly on the fine sample finishing. That is self-limiting,
-     * not a loop: as soon as {@code fineSampleSettled} turns true the wait this probe describes is
+     * not a loop: as soon as the sample handoff settles, the wait this probe describes is
      * over and the parked loop no longer asks. So the volume was log noise, and this de-rating is
      * noise abatement, not a fix for a spinning probe.
      *
-     * <p>The dedup key is exactly {@code (predicate, compileDeferred, fineSampleSettled, started)}:
+     * <p>The dedup key is exactly {@code (predicate, compileDeferred, sampleSettled, started)}:
      * the first occurrence prints, an unchanged repeat stays silent, and a changed tuple prints
      * again. The 2 s floor on top only bounds the rate if the tuple ever flaps around a transition;
      * it can delay a transition line by at most 2 s and never suppresses a state that persists.
@@ -689,7 +669,7 @@ final class ProductionSession implements AutoCloseable {
     public void logCompileRetryProbe() {
         boolean predicate = compileRetryPending();
         boolean deferred = compileDeferred.get();
-        boolean settled = fineSampleSettled;
+        boolean settled = startupSamples.settled();
         boolean started = state.containsKey("compile-started");
         int signature = (predicate ? 1 : 0) | (deferred ? 2 : 0) | (settled ? 4 : 0) | (started ? 8 : 0);
         if (signature == lastCompileRetryProbeSignature) return;
@@ -725,7 +705,8 @@ final class ProductionSession implements AutoCloseable {
      * cannot compile twice.
      */
     public boolean compileRetryPending() {
-        return compileDeferred.get() && fineSampleSettled && !state.containsKey("compile-started");
+        return compileDeferred.get() && startupSamples.settled()
+                && !state.containsKey("compile-started") && !state.containsKey("closed");
     }
 
     /**
@@ -974,14 +955,15 @@ final class ProductionSession implements AutoCloseable {
     }
 
     private void compilePlanningPlans0(Installed snapshot) {
-        var index = fineHeightIndex;
-        if (index == null && !fineSampleSettled) {
+        // 先登记等待再读取交接状态，避免采样结案恰好落在两步之间、看不到重试请求。
+        compileDeferred.set(true);
+        var sample = startupSamples.claim();
+        if (sample.waiting()) {
             // The bulk prewarm starts as soon as the obstacle index exists (it is what the road gate and
             // the world's own startup stage wait for, and it needs no sampled column), so the compile can
             // now be triggered while the fine sample is still running. It needs both inputs, so it waits -
             // the callback that publishes the index re-triggers it - instead of failing the way a null
             // index used to be reported, which would have turned the reordering into "no wall at all".
-            compileDeferred.set(true);
             GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_WAIT_FOR_SAMPLE the prewarm settled "
                     + "before the fine cross-section sample; the compile runs once the sample publishes");
             return;
@@ -989,6 +971,8 @@ final class ProductionSession implements AutoCloseable {
         // Past the wait above means this attempt is going to compile, not defer: release the retry
         // predicate so the parked startup loop stops looking for a deferred compile.
         compileDeferred.set(false);
+        if (sample.state() == StartupSampleHandoff.State.CLOSED || state.containsKey("closed")) return;
+        var index = sample.index();
         if (index == null || realization == null || chunkCompiler == null) {
             // A skipped compile used to return with nothing but a WARN. Nothing then released the
             // pinned prewarm leases or opened the peer gate, so the roads waited out the wall's own
@@ -1341,6 +1325,8 @@ final class ProductionSession implements AutoCloseable {
     }
     @Override public void close() {
         if (state.putIfAbsent("closed", true) != null) return;
+        // 先释放未领走的样本，随后调度器关闭触发的回调就不能再交付结果。
+        startupSamples.close();
         installed.completeExceptionally(new WallFailure(FailureCode.CLOSED, "production session closed"));
         // Release anyone waiting on gameplay assembly rather than letting them block forever on a
         // session that will never finish assembling.

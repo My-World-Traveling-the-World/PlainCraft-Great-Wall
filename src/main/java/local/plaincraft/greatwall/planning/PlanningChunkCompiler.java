@@ -44,7 +44,7 @@ public final class PlanningChunkCompiler {
 
     PlanningChunkCompiler(CellResolver realization, ChunkPlanCompiler compiler,
             FineHeightIndex index, List<Bounds> structures) {
-        this(realization, compiler, new PlanningColumnProvider(index)::columnsFor,
+        this(realization, compiler, new PlanningColumnProvider(index).source(),
                 new PlanningCompileContext(index, structures));
     }
 
