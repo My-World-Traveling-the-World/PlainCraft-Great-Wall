@@ -5,6 +5,7 @@ import java.util.Set;
 import local.plaincraft.greatwall.model.WallTypes.BlockEntityIntent;
 import local.plaincraft.greatwall.model.WallTypes.ChunkWritePlan;
 import local.plaincraft.greatwall.model.WallTypes.Point3i;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
@@ -42,7 +43,17 @@ public final class WallPlanSupport {
             // A block entity that was already present belongs to the world/player. Only fill one we
             // just created, or a missing one from an older wall, never overwrite custom data.
             if (existing != null && (touched == null || !touched.contains(p))) continue;
-            var tag = PlannedBlockEntityNbt.encode(entity);
+            String receipt = PlannedBlockEntityNbt.lootReceipt(plan.recipeHash(), entity);
+            if (receipt != null) {
+                // 部分施工重试时，已初始化的容器可能还在待加载 NBT 中，也可能已被玩家开空。
+                if (existing != null && receipt.equals(existing.getAttached(TerrainMarkers.TEMPLATE_LOOT_RECEIPT))) continue;
+                if (existing == null && !(chunk instanceof net.minecraft.world.level.chunk.LevelChunk)) {
+                    var pending = chunk.getBlockEntityNbt(pos);
+                    if (pending != null && receipt.equals(pending.getCompound(AttachmentTarget.NBT_ATTACHMENT_KEY)
+                            .getString(TerrainMarkers.TEMPLATE_LOOT_RECEIPT_ID.toString()))) continue;
+                }
+            }
+            var tag = PlannedBlockEntityNbt.encode(entity, receipt);
             if(chunk instanceof net.minecraft.world.level.chunk.LevelChunk loaded) {
                 // 已加载区块不能只存待加载NBT：现有实体会继续生效，重开前看不到计划身份。
                 var replacement=net.minecraft.world.level.block.entity.BlockEntity.loadStatic(

@@ -17,6 +17,11 @@ import net.minecraft.resources.ResourceLocation;
 
 /** Native chunk attachments must survive ProtoChunk promotion and serialization. */
 public final class TerrainMarkers {
+    // 只为新模板容器保存初始化身份，已拿走物资的箱子与尚未初始化的空箱不能混为一谈。
+    static final ResourceLocation TEMPLATE_LOOT_RECEIPT_ID =
+            ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall", "template_loot_receipt");
+    static final AttachmentType<String> TEMPLATE_LOOT_RECEIPT =
+            AttachmentRegistry.createPersistent(TEMPLATE_LOOT_RECEIPT_ID, Codec.STRING);
     public static final AttachmentType<String> T0 = AttachmentRegistry.createPersistent(
             ResourceLocation.fromNamespaceAndPath("plaincraft_great_wall", "s0_t0"), Codec.STRING);
     public static final AttachmentType<String> APPLIED = AttachmentRegistry.createPersistent(

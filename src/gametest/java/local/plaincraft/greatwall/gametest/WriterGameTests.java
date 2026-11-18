@@ -32,6 +32,40 @@ public final class WriterGameTests implements FabricGameTest {
     private static final String H="a".repeat(64);
 
     @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=100)
+    public void partialBackfillDoesNotRestockAnOpenedContainerAfterNbtReload(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var nativePos = helper.absolutePos(new BlockPos(1, 2, 1));
+        var chunk = level.getChunkAt(nativePos);
+        var pos = new Point3i(nativePos.getX(), nativePos.getY(), nativePos.getZ());
+        var owner = new ChunkKey(level.dimension().location().toString(), chunk.getPos().x, chunk.getPos().z);
+        var site = new SiteId("fixture", SiteKind.GATE, 3);
+        var template = ImportedWallTemplate.Asset.GATE.template();
+        var barrel = template.cells().stream().filter(c -> c.entity() != null && c.entity().type().equals("minecraft:barrel"))
+                .findFirst().orElseThrow();
+        var intent = template.entityIntent(barrel, pos, 42, site);
+        var plan = new ChunkWritePlan(owner, H, H, List.of(), List.of(), List.of(intent), List.of(), List.of(), List.of(), H);
+        level.setBlock(nativePos, Blocks.BARREL.defaultBlockState(), 2);
+        var touched = java.util.Set.of(pos);
+        helper.assertTrue(WallPlanSupport.writeBlockEntities(chunk, plan, touched) == 1, "已有原版空桶仍须首次初始化");
+        WallPlanSupport.writeMarkers(chunk, plan, false);
+        var opened = (BarrelBlockEntity) chunk.getBlockEntity(nativePos);
+        helper.assertTrue(opened != null && opened.getLootTable() != null, "首次补建必须安装待抽取表");
+        opened.unpackLootTable(null);
+        helper.assertTrue(!opened.isEmpty(), "容器必须实际抽到物品，避免清空测试空转");
+        opened.clearContent();
+        // 让原版及 Fabric 真实往返实体 NBT；内存中的对象或战利品表都不能充当重试凭据。
+        var stored = opened.saveWithFullMetadata(level.registryAccess());
+        var reloaded = (BarrelBlockEntity) BlockEntity.loadStatic(nativePos, Blocks.BARREL.defaultBlockState(), stored,
+                level.registryAccess());
+        helper.assertTrue(reloaded != null && reloaded.getLootTable() == null, "重载必须得到已开过的容器");
+        chunk.removeBlockEntity(nativePos);
+        chunk.addAndRegisterBlockEntity(reloaded);
+        helper.assertTrue(WallPlanSupport.writeBlockEntities(chunk, plan, touched) == 0, "部分补建重试不能再次初始化");
+        helper.assertTrue(chunk.getBlockEntity(nativePos) == reloaded && reloaded.isEmpty(), "重试后原空桶原样保留");
+        helper.succeed();
+    }
+
+    @GameTest(template=EMPTY_STRUCTURE,timeoutTicks=100)
     public void templateBarrelRollsOnFirstAccessAndCompletedOwnerDoesNotRefill(GameTestHelper helper) {
         var level = helper.getLevel();
         var template = ImportedWallTemplate.Asset.GATE.template();
@@ -62,6 +96,9 @@ public final class WriterGameTests implements FabricGameTest {
                 try {
                     helper.assertTrue(writer.apply(chunk, plan, WriteMode.INITIAL).complete(), "计划必须由真实区块写入器完成");
                 } finally { StageTrace.leaveLockAction(); }
+                // 世代写入器已准备的原版待加载 NBT，应能被另一条入口识别且不重复写入。
+                helper.assertTrue(WallPlanSupport.writeBlockEntities(chunk, plan, java.util.Set.of(pos)) == 0,
+                        "重复施工不能覆盖已有收据的待加载木桶");
             } else {
                 // 与世界生成和加载后补建共用的实体入口也必须安装同样的原版战利品。
                 helper.assertTrue(WallPlanSupport.writeBlockEntities(chunk, plan, java.util.Set.of(pos)) == 1,

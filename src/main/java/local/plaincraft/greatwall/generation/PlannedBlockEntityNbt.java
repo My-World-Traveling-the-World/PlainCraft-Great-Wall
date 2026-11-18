@@ -4,6 +4,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import local.plaincraft.greatwall.gameplay.TemplateLoot;
 import local.plaincraft.greatwall.component.ImportedWallTemplate;
 import local.plaincraft.greatwall.model.WallTypes.BlockEntityIntent;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 
@@ -12,6 +13,23 @@ final class PlannedBlockEntityNbt {
     static final String DECORATION = ImportedWallTemplate.DECORATION;
 
     private PlannedBlockEntityNbt() {}
+
+    static String lootReceipt(String recipe, BlockEntityIntent entity) {
+        if (!entity.fields().containsKey(TemplateLoot.TABLE)) return null;
+        // 区块计划变更不代表是新箱子；只用世界配方和构件内的稳定身份判断是否已经初始化。
+        return recipe + "/" + entity.site().kind().name() + "/" + entity.site().ordinal() + "/" + entity.localId();
+    }
+
+    static CompoundTag encode(BlockEntityIntent entity, String receipt) {
+        var tag = encode(entity);
+        if (receipt != null) {
+            // 原版开箱会删除 LootTable；独立收据通过 Fabric 随方块实体读写，空箱也能认出来。
+            var attachments = new CompoundTag();
+            attachments.putString(TerrainMarkers.TEMPLATE_LOOT_RECEIPT_ID.toString(), receipt);
+            tag.put(AttachmentTarget.NBT_ATTACHMENT_KEY, attachments);
+        }
+        return tag;
+    }
 
     static CompoundTag encode(BlockEntityIntent entity) {
         var fields = entity.fields();

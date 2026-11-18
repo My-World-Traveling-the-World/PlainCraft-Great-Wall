@@ -78,7 +78,7 @@ public final class ChunkWallWriter {
             var e=entities.get(v.pos());
             if(e!=null) {
                 // 待加载区块也持久化原版战利品字段，避免两条施工路径的开箱行为不同。
-                owner.setBlockEntityNbt(PlannedBlockEntityNbt.encode(e));
+                owner.setBlockEntityNbt(PlannedBlockEntityNbt.encode(e, PlannedBlockEntityNbt.lootReceipt(plan.recipeHash(), e)));
             }
         }
         Heightmap.primeHeightmaps(owner,EnumSet.of(Heightmap.Types.WORLD_SURFACE_WG,Heightmap.Types.OCEAN_FLOOR_WG,Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
