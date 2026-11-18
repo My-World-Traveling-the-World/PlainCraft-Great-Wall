@@ -31,10 +31,75 @@ public final class ChunkPlanCompiler {
             if(owns(owner,voxel.pos())&&voxel.kind()!=IntentKind.KEEP)owned++;
         }
         CompiledAllocation.charge(Math.addExact(4096L,Math.addExact(Math.multiplyExact(candidates,128L),Math.multiplyExact(owned,512L))));
+        return compileOwner(owner, recipeHash, beforeStates, resolve(owner.dimension(), recipeHash, cells, false));
+    }
+
+    /** 仅供启动窗口内复用；常规入口仍为每次调用独立记账。 */
+    public Window window() { return new Window(); }
+
+    public final class Window {
+        // 同一批中邻接 owner 先后使用同组，只保留最近一组；旧组只在仍执行的 worker 手里。
+        private Entry recent;
+        private long resolutions;
+
+        /** 对比实际解析次数和 owner 数，确认窗口确实省下重复工作。 */
+        public synchronized long resolutions() { return resolutions; }
+
+        public ChunkWritePlan compile(ChunkKey owner, String recipeHash, List<RealizationCell> cells,
+                Map<Point3i,String> beforeStates) {
+            Entry entry;
+            boolean prepare;
+            synchronized (this) {
+                prepare = recent == null || !recent.matches(owner.dimension(), recipeHash, cells);
+                if (prepare) {
+                    recent = new Entry(owner.dimension(), recipeHash, List.copyOf(cells));
+                    resolutions++;
+                }
+                entry = recent;
+            }
+            // 在锁外解析，避免一组的大墙体阻塞其他组。等待者只复用同一组的结果。
+            if (prepare) {
+                try { entry.result.complete(resolve(entry.dimension, entry.recipeHash, entry.cells, true)); }
+                catch (Throwable failure) { entry.result.completeExceptionally(failure); }
+            }
+            Resolved resolved;
+            try { resolved = entry.result.join(); }
+            catch (java.util.concurrent.CompletionException failure) {
+                if (failure.getCause() instanceof RuntimeException cause) throw cause;
+                if (failure.getCause() instanceof Error cause) throw cause;
+                throw failure;
+            }
+            return compileOwner(owner, recipeHash, beforeStates, resolved);
+        }
+
+        private final class Entry {
+            final String dimension, recipeHash;
+            final List<RealizationCell> cells;
+            final java.util.concurrent.CompletableFuture<Resolved> result = new java.util.concurrent.CompletableFuture<>();
+
+            Entry(String dimension, String recipeHash, List<RealizationCell> cells) {
+                this.dimension = dimension; this.recipeHash = recipeHash; this.cells = cells;
+            }
+
+            boolean matches(String dimension, String recipeHash, List<RealizationCell> cells) {
+                if (!this.dimension.equals(dimension) || !this.recipeHash.equals(recipeHash)
+                        || this.cells.size() != cells.size()) return false;
+                // 不能信任输入宣称的哈希；不同实例仍要独立做完整内容校验。
+                for (int i = 0; i < cells.size(); i++) if (this.cells.get(i) != cells.get(i)) return false;
+                return true;
+            }
+        }
+    }
+
+    private record Resolved(Map<SiteId, ComponentVoxels> components, Map<Point3i, VoxelIntent> voxels,
+            Map<ChunkKey, List<VoxelIntent>> byOwner, java.util.Set<Point3i> entityPositions,
+            TreeSet<String> inputs, TreeSet<String> t0, long revision) { }
+
+    private static Resolved resolve(String dimension, String recipeHash, List<RealizationCell> cells, boolean indexOwners) {
         var components=new TreeMap<SiteId,ComponentVoxels>(SITE);
         var inputs=new TreeSet<String>();var t0=new TreeSet<String>();long revision=0;
         for(var cell:cells) {
-            if(!cell.key().dimension().equals(owner.dimension())||!cell.key().recipeHash().equals(recipeHash))
+            if(!cell.key().dimension().equals(dimension)||!cell.key().recipeHash().equals(recipeHash))
                 throw failure("foreign realization cell");
             inputs.add(cell.hash()+":"+cell.gateRevision()+":"+cell.protectionHash());
             t0.add(cell.t0Hash()); revision=Math.max(revision,cell.gateRevision());
@@ -48,14 +113,29 @@ public final class ChunkPlanCompiler {
         for(var c:components.values()) for(var v:c.voxels()) logical.merge(v.pos(),v,ChunkPlanCompiler::winner);
         var resolved=new TreeMap<Point3i,VoxelIntent>(POS);
         for(var v:logical.values()) resolved.put(v.pos(),connections(v,logical));
-        var voxels=new ArrayList<VoxelIntent>();var proofs=new ArrayList<BlockProof>();
         var entityPositions=new java.util.HashSet<Point3i>();
         for(var c:components.values()) for(var e:c.blockEntities()) {
             var v=resolved.get(e.pos());
             if(v!=null&&v.component().equals(e.site())&&v.state().id().equals(e.type()))entityPositions.add(e.pos());
         }
+        // 围栏、台阶、脚点仍看完整构件，只对最终遍历分桶，并保留原坐标顺序。
+        Map<ChunkKey, List<VoxelIntent>> byOwner = indexOwners ? new HashMap<>() : null;
+        if (indexOwners) for (var v : resolved.values()) {
+            if (v.kind() == IntentKind.KEEP) continue;
+            var key = new ChunkKey(dimension, Math.floorDiv(v.pos().x(), 16), Math.floorDiv(v.pos().z(), 16));
+            byOwner.computeIfAbsent(key, unused -> new ArrayList<>()).add(v);
+        }
+        return new Resolved(components, resolved, byOwner, entityPositions, inputs, t0, revision);
+    }
+
+    private static ChunkWritePlan compileOwner(ChunkKey owner, String recipeHash, Map<Point3i, String> beforeStates,
+            Resolved input) {
+        var components = input.components();
+        var resolved = input.voxels();
+        var voxels=new ArrayList<VoxelIntent>();var proofs=new ArrayList<BlockProof>();
         var post=new TreeSet<Point3i>(POS);var fluid=new TreeSet<Point3i>(POS);var feet=new TreeSet<Point3i>(POS);
-        for(var v:resolved.values()) {
+        var ownerVoxels = input.byOwner() == null ? resolved.values() : input.byOwner().getOrDefault(owner, List.of());
+        for(var v:ownerVoxels) {
             if(!owns(owner,v.pos())||v.kind()==IntentKind.KEEP) continue;
             String before=beforeStates.get(v.pos());
             if(before==null) throw new WallFailure(FailureCode.T0_MISSING,"missing before-state "+v.pos());
@@ -71,7 +151,7 @@ public final class ChunkPlanCompiler {
                 // below are what makes this instance decidable.
                 throw failure("negative space cannot carve natural/foreign solid: "+v.pos()
                         +" kind="+v.kind()+" part="+v.part()+" component="+v.component()+" before="+before);
-            String after=token(v.state(),entityPositions.contains(v.pos()));
+            String after=token(v.state(),input.entityPositions().contains(v.pos()));
             voxels.add(v);proofs.add(new BlockProof(v.pos(),before,after,be,v.component()));
             if(v.state().id().endsWith("_stairs")||v.state().id().endsWith("_slab")||v.part()==Part.FENCE) post.add(v.pos());
             if(v.kind()==IntentKind.FLUID||"true".equals(v.state().properties().get("waterlogged"))) fluid.add(v.pos());
@@ -91,8 +171,8 @@ public final class ChunkPlanCompiler {
             for(var s:c.spawnSlots()) if(owns(owner,s.feet())&&feet.contains(s.feet())) slots.add(s);
         }
         slots.sort(Comparator.comparing(SpawnSlot::site,SITE).thenComparingInt(SpawnSlot::slot));
-        String inputHash=hash(recipeHash+"\n"+owner+"\n"+String.join("\n",inputs));
-        var metadata=new WriteMetadata(hash(String.join("\n",t0)),revision,slots,states);
+        String inputHash=hash(recipeHash+"\n"+owner+"\n"+String.join("\n",input.inputs()));
+        var metadata=new WriteMetadata(hash(String.join("\n",input.t0())),input.revision(),slots,states);
         var plan=new ChunkWritePlan(owner,recipeHash,inputHash,voxels,proofs,List.copyOf(entities.values()),
                 List.copyOf(post),List.copyOf(fluid),List.copyOf(feet),metadata,"0".repeat(64));
         return rehash(plan);

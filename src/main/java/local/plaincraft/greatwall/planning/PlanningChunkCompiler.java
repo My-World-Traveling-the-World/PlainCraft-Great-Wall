@@ -158,6 +158,8 @@ public final class PlanningChunkCompiler {
         var tally = new FailureTally(FAILURE_DETAIL_LIMIT);
         var pending = new java.util.ArrayList<Runnable>();
         var failedCounter = new java.util.concurrent.atomic.AtomicInteger();
+        // 一个窗口共享完整构件的冲突解析，取证和覆盖哈希仍按区块独立计算。
+        var windowCompiler = compiler.window();
         // The per-owner compile is the only expensive part of this stage and every owner is
         // independent: its inputs are read-only (cells, before-states, coverage) and its output is
         // one entry of the result map. A measured window of 2188 owners took 57 s on one thread; the
@@ -232,7 +234,7 @@ public final class PlanningChunkCompiler {
                 pending.add(() -> {
                     try {
                         var plan = compiler.bindCoverage(
-                                compiler.compile(owner, recipeHash, compiledCells, compiledBefore),
+                                windowCompiler.compile(owner, recipeHash, compiledCells, compiledBefore),
                                 coverage.forChunk(owner, new PlanWindow(compiledPlans), windowBounds).hash());
                         // A null plan is a legitimate "this owner produces nothing"; the map is a
                         // ConcurrentHashMap now, which rejects null values outright - that threw the
@@ -293,6 +295,8 @@ public final class PlanningChunkCompiler {
             for (var job : pending) { job.run(); reportCompileProgress(doneCounter.incrementAndGet(), total, null); }
         }
         done = ownerCountDone;
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:编译] 构件解析次数 resolutions={} ownerJobs={}", windowCompiler.resolutions(), ownerCountDone);
         // Most failures are recorded inside the pool, which drains above this line: re-read the counter
         // or the summary reports the collection phase alone (measured 0.7.101 run: DONE said failed=181
         // while the tally already held 182, and the second cause never reached the summary's ledger).
