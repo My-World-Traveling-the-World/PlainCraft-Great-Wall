@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import local.plaincraft.greatwall.generation.CorridorIndex;
+import local.plaincraft.greatwall.generation.VegetationGuard;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.planning.PlanningFixtures;
@@ -63,6 +65,29 @@ final class GreatWallBiomeRuntimeTest {
         assertEquals(1, runtime.leases());
         assertThrows(WallFailure.class, () -> runtime.publish(owner, plans(), 1),
                 "a second lease for the same owner must not silently replace the first");
+    }
+
+    @Test void preparedCorridorIsSharedWhileEachOwnerKeepsItsOwnMaskAndLease() {
+        var runtime = runtime(OVERWORLD);
+        var guard = new VegetationGuard();
+        var first = new ChunkKey(OVERWORLD, 62, 0);
+        var second = new ChunkKey(OVERWORLD, 63, 0);
+        var corridor = CorridorIndex.prepareStartupWindow(plans(), OVERWORLD);
+        var a = runtime.publishPrepared(first, corridor, 1);
+        var b = runtime.publishPrepared(second, corridor, 1);
+        guard.publishPrepared(first, corridor);
+        guard.publishPrepared(second, corridor);
+        assertSame(corridor.boxes(), a.hardBoxes());
+        assertSame(a.hardBoxes(), b.hardBoxes());
+        assertNotEquals(a.domain(), b.domain());
+        // 释放一个区块不能扯掉另一区块使用的完整保护范围。
+        guard.release(first);
+        runtime.release(first);
+        var canopy = new Bounds(1000, 0, 50, 1001, 8, 66);
+        assertFalse(guard.intersects(first, canopy));
+        assertTrue(guard.intersects(second, canopy));
+        assertSame(b, runtime.require(second));
+        assertTrue(b.touchesHard(canopy));
     }
 
     @Test void corruptOwnerKeyStillFailsClosed() {

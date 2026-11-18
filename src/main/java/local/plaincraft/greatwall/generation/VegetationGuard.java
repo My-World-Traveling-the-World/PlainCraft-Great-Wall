@@ -1,6 +1,5 @@
 package local.plaincraft.greatwall.generation;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import local.plaincraft.greatwall.model.WallTypes.*;
@@ -26,7 +25,7 @@ import local.plaincraft.greatwall.model.WallTypes.*;
  * without a map lookup or a miss.
  */
 public final class VegetationGuard {
-    private final ConcurrentHashMap<ChunkKey, List<Bounds>> corridors = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<ChunkKey, CorridorIndex> corridors = new ConcurrentHashMap<>();
     /** Union of every published corridor box: minX, minZ, maxXExclusive, maxZExclusive. */
     private volatile int[] envelope;
     private final AtomicLong misses = new AtomicLong();
@@ -39,9 +38,17 @@ public final class VegetationGuard {
      * that must not abort the compile - it overwrites instead of failing.
      */
     public void publish(ChunkKey featuresOwner, PlanWindow plans) {
-        List<Bounds> snapshot = CorridorBoxes.hard(plans, featuresOwner.dimension());
+        publishPrepared(featuresOwner, CorridorIndex.prepare(plans, featuresOwner.dimension()));
+    }
+
+    /** 按区块保留发布和释放语义，只共享不随区块改变的空间证据。 */
+    public void publishPrepared(ChunkKey featuresOwner, CorridorIndex snapshot) {
+        if (!snapshot.dimension().equals(featuresOwner.dimension())) {
+            throw new IllegalArgumentException("植被保护索引与区块维度不一致");
+        }
         corridors.put(featuresOwner, snapshot);
-        if (!snapshot.isEmpty()) growEnvelope(snapshot);
+        var bounds = snapshot.envelope();
+        if (bounds != null) growEnvelope(bounds);
     }
 
     /** True when {@code featuresOwner} could contain a tree that touches a published corridor band. */
@@ -64,14 +71,9 @@ public final class VegetationGuard {
             misses.incrementAndGet();
             return false;
         }
-        for (var box : snapshot) {
-            if (box.minX() < completeFeatureBounds.maxXExclusive() && box.maxXExclusive() > completeFeatureBounds.minX()
-                    && box.minZ() < completeFeatureBounds.maxZExclusive() && box.maxZExclusive() > completeFeatureBounds.minZ()) {
-                suppresses.incrementAndGet();
-                return true;
-            }
-        }
-        return false;
+        if (!snapshot.intersects(completeFeatureBounds)) return false;
+        suppresses.incrementAndGet();
+        return true;
     }
 
     public void release(ChunkKey featuresOwner) { corridors.remove(featuresOwner); }
@@ -81,18 +83,15 @@ public final class VegetationGuard {
     /** Trees actually suppressed by a corridor band. */
     public long suppressed() { return suppresses.get(); }
 
-    private synchronized void growEnvelope(List<Bounds> snapshot) {
+    private synchronized void growEnvelope(Bounds box) {
         int[] current = envelope;
-        int minX = current == null ? Integer.MAX_VALUE : current[0];
-        int minZ = current == null ? Integer.MAX_VALUE : current[1];
-        int maxX = current == null ? Integer.MIN_VALUE : current[2];
-        int maxZ = current == null ? Integer.MIN_VALUE : current[3];
-        for (var box : snapshot) {
-            minX = Math.min(minX, box.minX());
-            minZ = Math.min(minZ, box.minZ());
-            maxX = Math.max(maxX, box.maxXExclusive());
-            maxZ = Math.max(maxZ, box.maxZExclusive());
+        // 同一窗口已登记时无需再分配边界数组。
+        if (current == null) {
+            envelope = new int[] {box.minX(), box.minZ(), box.maxXExclusive(), box.maxZExclusive()};
+        } else if (box.minX() < current[0] || box.minZ() < current[1]
+                || box.maxXExclusive() > current[2] || box.maxZExclusive() > current[3]) {
+            envelope = new int[] {Math.min(current[0], box.minX()), Math.min(current[1], box.minZ()),
+                    Math.max(current[2], box.maxXExclusive()), Math.max(current[3], box.maxZExclusive())};
         }
-        envelope = new int[] {minX, minZ, maxX, maxZ};
     }
 }

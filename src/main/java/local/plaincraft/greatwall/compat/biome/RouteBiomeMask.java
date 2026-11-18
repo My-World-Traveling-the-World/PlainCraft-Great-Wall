@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import local.plaincraft.greatwall.generation.CorridorBoxes;
+import local.plaincraft.greatwall.generation.CorridorIndex;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
@@ -80,21 +80,21 @@ public final class RouteBiomeMask {
 
     private final MaskKey key;
     private final Map<Long, TileBits> tiles;
-    private final List<Bounds> hardBoxes;
+    private final CorridorIndex corridor;
     private final int writeRadius;
     private final Bounds domain;
 
-    private RouteBiomeMask(MaskKey key, Map<Long, TileBits> tiles, List<Bounds> hardBoxes,
+    private RouteBiomeMask(MaskKey key, Map<Long, TileBits> tiles, CorridorIndex corridor,
                            int writeRadius, Bounds domain) {
         this.key = key;
         this.tiles = Map.copyOf(tiles);
-        this.hardBoxes = List.copyOf(hardBoxes);
+        this.corridor = corridor;
         this.writeRadius = writeRadius;
         this.domain = domain;
     }
 
     public MaskKey key() { return key; }
-    public List<Bounds> hardBoxes() { return hardBoxes; }
+    public List<Bounds> hardBoxes() { return corridor.boxes(); }
     public int writeRadius() { return writeRadius; }
     public int tileCount() { return tiles.size(); }
     /** The half-open XZ rectangle this mask can answer for. */
@@ -118,10 +118,8 @@ public final class RouteBiomeMask {
      * intersects the hard domain is refused.
      */
     public boolean touchesHard(Bounds completeFeatureBounds) {
-        for (var box : hardBoxes) {
-            if (CorridorBoxes.intersects(box, completeFeatureBounds)) return true;
-        }
-        return false;
+        // 树冠可伸出本区块的掩码范围，因此仍向共享索引查询整片足迹。
+        return corridor.intersects(completeFeatureBounds);
     }
 
     /** Exact block-level membership in {@code H}. */
@@ -168,20 +166,23 @@ public final class RouteBiomeMask {
 
     /** A fresh owner-local builder. It is mutable and must never be published. */
     public static Builder builder(MaskKey key, PlanWindow plans, int writeRadius) {
-        return new Builder(key, plans, writeRadius);
+        return new Builder(key, CorridorIndex.prepare(plans, key.dimension()), writeRadius);
     }
 
     /** Owner-local compiler that publishes exactly one immutable {@link RouteBiomeMask}. */
     public static final class Builder {
         private final MaskKey key;
-        private final List<Bounds> hardBoxes;
+        private final CorridorIndex corridor;
         private final int writeRadius;
         private final Map<Long, TileBits> tiles = new LinkedHashMap<>();
 
-        private Builder(MaskKey key, PlanWindow plans, int writeRadius) {
+        private Builder(MaskKey key, CorridorIndex corridor, int writeRadius) {
             if (writeRadius < 0) throw new IllegalArgumentException("negative write radius");
             this.key = Objects.requireNonNull(key);
-            this.hardBoxes = CorridorBoxes.hard(plans, key.dimension());
+            if (!key.dimension().equals(corridor.dimension())) {
+                throw new IllegalArgumentException("群系掩码与走廊索引维度不一致");
+            }
+            this.corridor = corridor;
             this.writeRadius = writeRadius;
         }
 
@@ -213,7 +214,7 @@ public final class RouteBiomeMask {
                 for (int localZ = 0; localZ < TILE_BITS; localZ++) {
                     int blockX = originX + localX;
                     int blockZ = originZ + localZ;
-                    long distance = CorridorBoxes.distance(hardBoxes, blockX, blockZ);
+                    long distance = corridor.distance(blockX, blockZ);
                     int index = localX * TILE_BITS + localZ;
                     set(planes[0], index, distance == 0L);
                     set(planes[1], index, distance <= BIOME_GROWTH);
@@ -244,7 +245,7 @@ public final class RouteBiomeMask {
                     Math.multiplyExact(minTileZ, TILE_BITS),
                     Math.multiplyExact(Math.addExact(maxTileX, 1), TILE_BITS), Integer.MAX_VALUE,
                     Math.multiplyExact(Math.addExact(maxTileZ, 1), TILE_BITS));
-            return new RouteBiomeMask(key, tiles, hardBoxes, writeRadius, domain);
+            return new RouteBiomeMask(key, tiles, corridor, writeRadius, domain);
         }
     }
 
@@ -252,6 +253,14 @@ public final class RouteBiomeMask {
     public static RouteBiomeMask compile(MaskKey key, PlanWindow plans, int writeRadius,
                                          int chunkMinX, int chunkMinZ) {
         var builder = builder(key, plans, writeRadius);
+        builder.compile(chunkMinX, chunkMinZ);
+        return builder.build();
+    }
+
+    /** 各区块只生成自己的位图；最近距离仍针对完整走廊计算。 */
+    static RouteBiomeMask compilePrepared(MaskKey key, CorridorIndex corridor, int writeRadius,
+            int chunkMinX, int chunkMinZ) {
+        var builder = new Builder(key, corridor, writeRadius);
         builder.compile(chunkMinX, chunkMinZ);
         return builder.build();
     }

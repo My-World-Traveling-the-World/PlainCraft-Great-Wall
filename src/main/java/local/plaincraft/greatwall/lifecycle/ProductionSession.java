@@ -1108,15 +1108,20 @@ final class ProductionSession implements AutoCloseable {
             return;
         }
         var window = new PlanWindow(plans);
+        // 整窗的保护几何与区块无关；先建一次索引，批次只登记区块和生成局部群系位图。
+        long corridorStarted = System.nanoTime();
+        var corridor = CorridorIndex.prepareStartupWindow(window, snapshot.recipe().dimension());
+        GreatWallMod.LOGGER.info("[GreatWall:预热] 走廊保护索引已建立 segments={} boxes={} elapsedMs={}",
+                plans.size(), corridor.boxes().size(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - corridorStarted));
         var publication = new StartupPlanPublication();
         java.util.function.Consumer<ChunkWritePlan> install = plan -> WallWorldgenPlanCache.put(level, plan);
         java.util.function.Consumer<ChunkWritePlan> footprint = plan -> {
             // 道路依赖全部规划占地；落块队列和就绪信号仍等整个窗口发布完。
             WallPlanSupport.markPlannedColumns(plan);
             WallBodyBackfill.persist(plan);
-            vegetation.publish(plan.owner(), window);
+            vegetation.publishPrepared(plan.owner(), corridor);
             var biomes = biomeRuntime;
-            if (biomes != null && !biomes.closed()) biomes.publish(plan.owner(), window, 1);
+            if (biomes != null && !biomes.closed()) biomes.publishPrepared(plan.owner(), corridor, 1);
         };
         long started = System.nanoTime();
         PrewarmProgress.setSubProgress(0, 0);

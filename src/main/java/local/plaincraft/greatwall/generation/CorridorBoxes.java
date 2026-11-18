@@ -38,6 +38,15 @@ public final class CorridorBoxes {
      * {@value #SITE_MARGIN}.
      */
     public static List<Bounds> hard(PlanWindow plans, String dimension) {
+        return hard(plans, dimension, true);
+    }
+
+    static List<Bounds> hardForIndex(PlanWindow plans, String dimension) {
+        // 共享索引只存一份走廊；保留逐段容量守卫，避免把合法长走廊按旧的整窗总数拒绝。
+        return hard(plans, dimension, false);
+    }
+
+    private static List<Bounds> hard(PlanWindow plans, String dimension, boolean limitWholeWindow) {
         var boxes = new ArrayList<Bounds>();
         var cap = EndCap.potentialLocalBounds();
         long tangent = Math.max(Math.abs((long) cap.minX()), Math.abs((long) cap.maxXExclusive()));
@@ -45,6 +54,7 @@ public final class CorridorBoxes {
         int exitMargin = Math.addExact(EXIT_MARGIN_BASE,
                 Math.toIntExact((long) StrictMath.ceil(StrictMath.hypot(tangent, normal))));
         for (var plan : plans.plans()) {
+            int prior = boxes.size();
             if (!plan.geometry().key().dimension().equals(dimension)) {
                 throw new IllegalArgumentException("foreign vegetation plan dimension");
             }
@@ -76,9 +86,9 @@ public final class CorridorBoxes {
                         Math.addExact(b.maxXExclusive(), SITE_MARGIN), Integer.MAX_VALUE,
                         Math.addExact(b.maxZExclusive(), SITE_MARGIN)));
             }
-        }
-        if (boxes.size() > MAX_BOXES) {
-            throw new WallFailure(FailureCode.CAPACITY, "vegetation snapshot box capacity");
+            if (boxes.size() - (limitWholeWindow ? 0 : prior) > MAX_BOXES) {
+                throw new WallFailure(FailureCode.CAPACITY, "植被保护盒超出容量");
+            }
         }
         return List.copyOf(boxes);
     }

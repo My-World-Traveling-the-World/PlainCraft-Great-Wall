@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import local.plaincraft.greatwall.generation.CorridorIndex;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import net.minecraft.core.Holder;
@@ -113,16 +114,26 @@ public final class GreatWallBiomeRuntime {
      * Re-publishing the same owner is a protocol error, matching the existing guard's contract.
      */
     public RouteBiomeMask publish(ChunkKey owner, PlanWindow plans, int writeRadius) {
+        requirePublishOwner(owner);
+        return publishMask(owner, CorridorIndex.prepare(plans, dimension), writeRadius);
+    }
+
+    /** 植被与群系共享同一份走廊，避免每个区块重复提取保护盒。 */
+    public RouteBiomeMask publishPrepared(ChunkKey owner, CorridorIndex corridor, int writeRadius) {
+        requirePublishOwner(owner);
+        return publishMask(owner, corridor, writeRadius);
+    }
+
+    private void requirePublishOwner(ChunkKey owner) {
         Objects.requireNonNull(owner, "owner");
-        Objects.requireNonNull(plans, "plans");
         if (state.containsKey("closed")) throw new WallFailure(FailureCode.CLOSED, "biome runtime closed");
         if (!owner.dimension().equals(dimension)) {
             throw new IllegalArgumentException("foreign dimension mask publish: " + owner.dimension());
         }
-        if (!plans.plans().isEmpty() && !plans.plans().get(0).geometry().key().dimension().equals(dimension)) {
-            throw new IllegalArgumentException("foreign dimension plan window");
-        }
-        var mask = RouteBiomeMask.compile(key(owner), plans, writeRadius,
+    }
+
+    private RouteBiomeMask publishMask(ChunkKey owner, CorridorIndex corridor, int writeRadius) {
+        var mask = RouteBiomeMask.compilePrepared(key(owner), corridor, writeRadius,
                 owner.x() * 16, owner.z() * 16);
         if (masks.putIfAbsent(ownerKey(owner), mask) != null) {
             throw new WallFailure(FailureCode.MISSING_FEATURES_PLAN,
