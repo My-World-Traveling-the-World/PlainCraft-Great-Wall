@@ -9,10 +9,7 @@ import java.util.function.Consumer;
 import java.util.concurrent.CompletableFuture;
 import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.compat.road.WallRoadGuard;
-import local.plaincraft.greatwall.component.ImportedGateBody;
-import local.plaincraft.greatwall.component.ImportedTowerBody;
-import local.plaincraft.greatwall.component.ImportedWallPorts;
-import local.plaincraft.greatwall.component.ImportedWallSeam;
+import local.plaincraft.greatwall.component.ImportedWallLayout;
 import local.plaincraft.greatwall.component.ImportedWallTemplate.Asset;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.model.WallTypes.BlockSpec;
@@ -77,53 +74,21 @@ public final class ImportedShowcase {
     }
 
     static ShowcaseLayout.Rect plot(Asset asset, int spawnX, int spawnZ) {
-        var local = anchor(asset);
-        // 启动只发布足迹，避免在主线程同步解压五个 NBT；回归将这里的尺寸与原件对拍。
-        var size = size(asset);
-        int x = spawnX - 400, z = spawnZ + 160 * asset.ordinal();
-        int x0 = x - local.x(), x1 = x0 + size.x() - 1;
-        int z0 = z - local.z(), z1 = z0 + size.z() - 1;
-        for (var port : ImportedWallPorts.of(asset)) {
-            for (int across : new int[] {-5, 5}) {
-                var end = port.cell(WALL_RUN, across, 0);
-                x0 = Math.min(x0, x + end.x() - local.x());
-                x1 = Math.max(x1, x + end.x() - local.x());
-                z0 = Math.min(z0, z + end.z() - local.z());
-                z1 = Math.max(z1, z + end.z() - local.z());
-            }
-        }
-        return new ShowcaseLayout.Rect("实物接墙:" + asset.name(), x0, z0, x1, z1);
+        // 占地和编译用同一锚点；这里只发布水平投影，实际高度等平地生成器决定。
+        var layout = new ImportedWallLayout(asset, new Point3i(spawnX - 400, 0, spawnZ + 160 * asset.ordinal()), Rotation.NONE);
+        var box = layout.boundsWithStraightWalls(WALL_RUN);
+        return new ShowcaseLayout.Rect("实物接墙:" + asset.name(), box.minX(), box.minZ(),
+                box.maxXExclusive() - 1, box.maxZExclusive() - 1);
     }
 
     static ComponentVoxels compile(Asset asset, Point3i feet, long seed) {
-        if (!size(asset).equals(asset.template().size())) {
-            throw new IllegalStateException("实物模板尺寸与发布的展位足迹不符: " + asset);
-        }
         var site = new SiteId(RECEIPT, switch (asset) {
             case GATE -> SiteKind.GATE;
             case ENEMY_TOWER -> SiteKind.ENEMY_TOWER;
             case BEACON -> SiteKind.BEACON;
             case CORNER_TOWER, CHENGHAI_TOWER -> SiteKind.FORT;
         }, asset.ordinal());
-        var local = anchor(asset);
-        var body = asset == Asset.GATE ? ImportedGateBody.compile(site, feet, Rotation.NONE, seed)
-                : ImportedTowerBody.compile(asset, site, local, feet, Rotation.NONE, seed, null, null);
-        return ImportedWallSeam.attach(body, ImportedWallPorts.of(asset).stream()
-                .map(p -> p.place(local, feet, Rotation.NONE)).toList(), WALL_RUN);
-    }
-
-    private static Point3i anchor(Asset asset) {
-        return asset == Asset.GATE ? new Point3i(56, 15, 19) : ImportedWallPorts.of(asset).getFirst().feet();
-    }
-
-    private static Point3i size(Asset asset) {
-        return switch (asset) {
-            case GATE -> new Point3i(113, 42, 32);
-            case ENEMY_TOWER -> new Point3i(71, 39, 27);
-            case BEACON -> new Point3i(51, 26, 11);
-            case CORNER_TOWER -> new Point3i(32, 28, 30);
-            case CHENGHAI_TOWER -> new Point3i(93, 58, 91);
-        };
+        return new ImportedWallLayout(asset, feet, Rotation.NONE).compileStraight(site, seed, WALL_RUN);
     }
 
     static int writeSlice(ComponentVoxels component, int cursor, Consumer<VoxelIntent> write) {

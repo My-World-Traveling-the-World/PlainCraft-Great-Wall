@@ -44,6 +44,11 @@ class ImportedWallSeamTest {
                     : ImportedTowerBody.compile(asset, site, local, world, rotation, 1, null, null);
             var placed = ImportedWallPorts.of(asset).stream().map(port -> port.place(local, world, rotation)).toList();
             var joined = ImportedWallSeam.attach(body, placed, 4);
+            var layout = new ImportedWallLayout(asset, world, rotation);
+            // 以旧编译器的实际产物验证预告范围；不可只对拍两次同一套包围盒计算。
+            assertEquals(placed, layout.ports());
+            assertEquals(body.bounds(), layout.boundsWithStraightWalls(0));
+            assertEquals(joined.bounds(), layout.boundsWithStraightWalls(4));
             var blocks = new HashMap<Point3i, VoxelIntent>();
             for (var voxel : joined.voxels()) assertNull(blocks.put(voxel.pos(), voxel), "接缝不能覆盖建筑或改写同一格");
             // 每四列有 678 个素材方块和 72 个马道净空意图。

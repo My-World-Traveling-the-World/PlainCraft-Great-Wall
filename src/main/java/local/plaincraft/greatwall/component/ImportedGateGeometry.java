@@ -18,8 +18,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 /** 门楼实物的两层通行契约；模板空气只有被明确声明的范围才能变成施工净空。 */
 public final class ImportedGateGeometry {
-    private static final Point3i SIZE = new Point3i(113, 42, 32);
-    private static final Point3i WALK_ANCHOR = new Point3i(56, 15, 19);
+    private static final Point3i SIZE = ImportedWallLayout.GATE_SIZE;
+    private static final Point3i WALK_ANCHOR = ImportedWallLayout.GATE_ANCHOR;
     private static final Bounds ROAD_VOID = new Bounds(54, 0, 0, 59, 5, 32);
     private static final List<Point3i> STEPS = List.of(new Point3i(1, 0, 0), new Point3i(0, 0, 1),
             new Point3i(-1, 0, 0), new Point3i(0, 0, -1));
@@ -42,10 +42,7 @@ public final class ImportedGateGeometry {
 
     public Point3i place(Point3i local, Point3i wallFeet, Rotation rotation) {
         // 对齐行走的脚底，不对齐石英带的方块层；平移和转向对净空、端点、实体统一生效。
-        var d = ImportedWallTemplate.rotateOffset(new Point3i(local.x() - WALK_ANCHOR.x(),
-                local.y() - WALK_ANCHOR.y(), local.z() - WALK_ANCHOR.z()), rotation);
-        return new Point3i(Math.addExact(wallFeet.x(), d.x()), Math.addExact(wallFeet.y(), d.y()),
-                Math.addExact(wallFeet.z(), d.z()));
+        return ImportedWallPorts.place(local, WALK_ANCHOR, wallFeet, rotation);
     }
 
     private static ImportedGateGeometry inspect(ImportedWallTemplate template) {
