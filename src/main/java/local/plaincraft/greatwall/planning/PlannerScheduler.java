@@ -53,8 +53,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private final HydrologyClassifier hydrology = new HydrologyClassifier();
     /** 单段水文需要设操作上限，避免极端水面阻塞整个启动；保留已认证的证据。 */
     private static final long HYDROLOGY_OPERATION_CEILING = 4_000_000L;
-    /** 无显式目标时预热开头四段。 */
-    private static final long STARTUP_PREWARM_SEGMENTS = 4;
+    private final StartupWallRange startupRange;
     /** 通过线程名前缀识别执行资源，防止任务阻塞等待自身。 */
     private static final String pumpThreadPrefix = "pgw-planner-";
     private static final String laneThreadPrefix = "pgw-oracle-";
@@ -74,7 +73,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private int activeGeometry, credits, admittedPlans, admittedGeometries;
     /** 限制并发初始化，防止多个原生噪声状态同时扩大工作集。 */
     private int initializing;
-    private long deadline, sequence, background = 4;
+    private long deadline, sequence, background;
     private ScheduledFuture<?> startupTimer;
     public PlannerScheduler(WorldRecipe recipe, Supplier<NaturalTerrainOracle> oracleFactory, SegmentCacheStore cache, Executor io) {
         this(recipe, Objects.requireNonNull(oracleFactory), null, cache, io);
@@ -109,6 +108,12 @@ public final class PlannerScheduler implements AutoCloseable {
                 }
             }
         }
+        long wallLength = GreatWallConfig.parameters().wallLengthBlocks();
+        long configuredSegments = GreatWallConfig.segmentsFor(wallLength);
+        this.startupRange = StartupWallRange.resolve(wallLength, GreatWallConfig.get().unlimitedPrewarmBlocks(),
+                segment -> StartupWallRange.segmentFits(recipe, configuredSegments, segment));
+        // 后台从预热窗口尾部继续，不让扩大或缩小窗口造成错段重排。
+        this.background = startupRange.segments();
         this.anchors = new AnchorField(recipe); this.ridge = new RidgePlanner(recipe, anchors);
         this.heights = new HeightContractPlanner(recipe); this.sites = new SiteScheduler(recipe);
         this.pump = new PlannerPump(factory("pgw-planner-" + recipe.instance()));
@@ -293,16 +298,9 @@ public final class PlannerScheduler implements AutoCloseable {
         return total;
     }
 
-    long prewarmTargetSegments() {
-        try {
-            long configured = GreatWallConfig.parameters().prewarmSegmentsTarget();
-            return configured > 0L ? configured : STARTUP_PREWARM_SEGMENTS;
-        } catch (RuntimeException | LinkageError unavailable) {
-            // 配置失败不阻塞规划，保留默认段数。
-            state.put("prewarm-config-unavailable", 1L);
-            return STARTUP_PREWARM_SEGMENTS;
-        }
-    }
+    public StartupWallRange startupRange() { return startupRange; }
+
+    long prewarmTargetSegments() { return startupRange.segments(); }
 
     public void tick(SliceBudget budget) {
         Objects.requireNonNull(budget);
@@ -707,47 +705,11 @@ public final class PlannerScheduler implements AutoCloseable {
 
     /** 配置长度和冻结包络都必须满足；后台、邻段和终止检查不能绕开。 */
     boolean safeSegment(long segment) {
-        if (segment < 0) return false;
-        if (!withinConfiguredLength(segment)) return false;
-        try {
-            // 预留主廊偏移 512、山脊偏移 512、构件 96、侧列 48 格。
-            long radius = 1168L * 256, limit = recipe.bounds().horizontalLimit() * 256L;
-            for (long index : new long[] {segment, Math.addExact(segment, 1)}) {
-                long u = Math.multiplyExact(index, 2048L * 256);
-                long x = Math.addExact(recipe.axis().origin().x() * 256L, FixedMath.mulDiv(u, recipe.axis().exQ30(), 1L << 30));
-                long z = Math.addExact(recipe.axis().origin().z() * 256L, FixedMath.mulDiv(u, recipe.axis().ezQ30(), 1L << 30));
-                if (x - radius < -limit || x + radius > limit || z - radius < -limit || z + radius > limit) return false;
-            }
-            return true;
-        } catch (ArithmeticException overflow) { return false; }
-    }
-
-    /** 以 2048 格一段向上取整，允许含末端的部分段。 */
-    private boolean withinConfiguredLength(long segment) {
-        long allowed = configuredSegmentLimit();
-        return allowed <= 0L || segment < allowed;
-    }
-
-    /** 这是每次段访问的热路径，按会话缓存范围。 */
-    private volatile long configuredSegmentLimitCache = Long.MIN_VALUE;
-
-    private long configuredSegmentLimit() {
-        long cached = configuredSegmentLimitCache;
-        if (cached != Long.MIN_VALUE) return cached;
-        long limit;
-        try {
-            limit = GreatWallConfig.parameters().configuredSegments();
-        } catch (RuntimeException | LinkageError unavailable) {
-            // 配置不可读时不能静默缩短已有墙。
-            state.put("wall-length-config-unavailable", 1L);
-            limit = 0L;
-        }
-        configuredSegmentLimitCache = limit;
-        return limit;
+        return StartupWallRange.segmentFits(recipe, startupRange.configuredSegments(), segment);
     }
 
     /** 诊断可建段数，零代表没有配置上限。 */
-    public long configuredSegmentLimitForDiagnostics() { return configuredSegmentLimit(); }
+    public long configuredSegmentLimitForDiagnostics() { return startupRange.configuredSegments(); }
 
     private void failCacheIo(WallFailure failure) {
         // 缓存执行器拒绝时也要终结已接收的规划请求，不能把它伪装成普通缓存未命中。

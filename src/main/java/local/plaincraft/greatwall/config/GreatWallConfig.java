@@ -38,16 +38,13 @@ import net.fabricmc.loader.api.FabricLoader;
 public final class GreatWallConfig {
     /** {@code 0} means "no configured end": the wall runs to the frozen horizontal limit. */
     public static final long UNLIMITED_LENGTH = 0L;
-    /**
-     * Lengths at or below this are prewarmed in full before the player is handed
-     * the world. Above it the wall prewarms only the opening segments, because a
-     * full prewarm of an unbounded wall would never finish.
-     */
-    public static final long FULL_PREWARM_MAX_LENGTH = 100_000L;
-    /** Opening segments prewarmed when the wall is longer than {@link #FULL_PREWARM_MAX_LENGTH}. */
+    /** 保留旧无限墙开头四段的默认值。 */
     public static final int DEFAULT_PREWARM_SEGMENTS = 4;
     /** Segments are 2048 blocks; the value is repeated here so the UI can label lengths without a recipe. */
     public static final int SEGMENT_BLOCKS = 2048;
+    /** 当前启动编译仍需保留整窗证据。超长有限墙继续由后台推进，直到支持跨窗口取证。 */
+    public static final long FULL_PREWARM_MAX_LENGTH = 100_000L;
+    public static final int MAX_UNLIMITED_PREWARM_BLOCKS = (int) FULL_PREWARM_MAX_LENGTH;
     private static final String FILE_NAME = "greatwall.json";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static volatile GreatWallConfig instance;
@@ -61,6 +58,8 @@ public final class GreatWallConfig {
     private static volatile Semantic frozenParameters;
 
     private long wallLengthBlocks = UNLIMITED_LENGTH;
+    // 只影响开局工作的范围，不写进配方摘要；会话启动时取一次。
+    private int unlimitedPrewarmBlocks = DEFAULT_PREWARM_SEGMENTS * SEGMENT_BLOCKS;
 
     // ── 0.1.0 山脊规划打分参数（最细粒度奖励惩罚体系，默认值 = RidgePlanner 原硬编码）──
     /** 刀锋山脊（中心凸起）权重：正值奖励凸起、负值惩罚凸起。默认 +4 保持原行为。 */
@@ -204,15 +203,7 @@ public final class GreatWallConfig {
         /** Segments the frozen length spans; {@code 0} when unbounded. */
         public long configuredSegments() {
             if (!bounded()) return 0L;
-            return Math.max(1L, (wallLengthBlocks + SEGMENT_BLOCKS - 1L) / SEGMENT_BLOCKS);
-        }
-
-        /** Segments that must be ready before gameplay begins; see the accessor's notes. */
-        public long prewarmSegmentsTarget() {
-            if (!bounded()) return DEFAULT_PREWARM_SEGMENTS;
-            long total = configuredSegments();
-            if (wallLengthBlocks <= FULL_PREWARM_MAX_LENGTH) return total;
-            return Math.min(total, DEFAULT_PREWARM_SEGMENTS);
+            return segmentsFor(wallLengthBlocks);
         }
 
         /**
@@ -359,6 +350,18 @@ public final class GreatWallConfig {
         this.wallLengthBlocks = Math.max(0L, value);
     }
 
+    public int unlimitedPrewarmBlocks() { return unlimitedPrewarmBlocks; }
+
+    public void setUnlimitedPrewarmBlocks(int blocks) {
+        // 至少请求一段；禁止配置直接制造超出单窗口工作集的无限墙启动任务。
+        unlimitedPrewarmBlocks = Math.clamp(blocks, 1, MAX_UNLIMITED_PREWARM_BLOCKS);
+    }
+
+    public static long segmentsFor(long blocks) {
+        // 先减后除，避免 Long.MAX_VALUE 向上取整时溢出变成一段。
+        return blocks <= 0 ? 0L : 1L + (blocks - 1L) / SEGMENT_BLOCKS;
+    }
+
     /**
      * Whether the configured length is bounded.
      *
@@ -374,35 +377,24 @@ public final class GreatWallConfig {
      * <p>Live view, like {@link #bounded()}; planning code asks {@link #parameters()}.
      */
     public long configuredSegments() {
-        if (!bounded()) return 0L;
-        return Math.max(1L, (wallLengthBlocks + SEGMENT_BLOCKS - 1L) / SEGMENT_BLOCKS);
+        return segmentsFor(wallLengthBlocks);
     }
 
-    /**
-     * Segments that must be ready before gameplay begins.
-     *
-     * <h2>Derived, never entered</h2>
-     * This is a function of the wall's length alone. An earlier revision exposed it
-     * as a number the player typed, which let the two disagree — a length of 8189
-     * blocks with a prewarm count of 4 silently prewarmed only the first 4 of the 5
-     * segments the wall would build.
-     *
-     * <p>A bounded wall at or below {@link #FULL_PREWARM_MAX_LENGTH} is prewarmed in
-     * full: that is the whole point of setting a length, and it is achievable within
-     * the budget. Anything longer, including an unbounded wall, prewarms only the
-     * opening {@link #DEFAULT_PREWARM_SEGMENTS}: asking for all of it would never
-     * terminate.
-     */
+    /** 配置页展示单窗口段数；具体世界还要按冻结边界再收紧。 */
     public long prewarmSegmentsTarget() {
-        if (!bounded()) return DEFAULT_PREWARM_SEGMENTS;
-        long total = configuredSegments();
-        if (wallLengthBlocks <= FULL_PREWARM_MAX_LENGTH) return total;
-        return Math.min(total, DEFAULT_PREWARM_SEGMENTS);
+        return startupSegments(wallLengthBlocks, unlimitedPrewarmBlocks);
+    }
+
+    public static long startupSegments(long wallLengthBlocks, int unlimitedPrewarmBlocks) {
+        if (wallLengthBlocks <= 0) return segmentsFor(unlimitedPrewarmBlocks);
+        return wallLengthBlocks <= FULL_PREWARM_MAX_LENGTH
+                ? segmentsFor(wallLengthBlocks) : DEFAULT_PREWARM_SEGMENTS;
     }
 
     public GreatWallConfig copy() {
         var copy = new GreatWallConfig();
         copy.wallLengthBlocks = wallLengthBlocks;
+        copy.unlimitedPrewarmBlocks = unlimitedPrewarmBlocks;
         copy.ridgeWeight = ridgeWeight;
         copy.ridgeProminenceWeight = ridgeProminenceWeight;
         copy.ridgeSlopeWeight = ridgeSlopeWeight;
@@ -430,6 +422,7 @@ public final class GreatWallConfig {
     public void applyFrom(GreatWallConfig other) {
         Objects.requireNonNull(other);
         setWallLengthBlocks(other.wallLengthBlocks);
+        setUnlimitedPrewarmBlocks(other.unlimitedPrewarmBlocks);
         ridgeWeight = other.ridgeWeight;
         ridgeProminenceWeight = other.ridgeProminenceWeight;
         ridgeSlopeWeight = other.ridgeSlopeWeight;
@@ -494,6 +487,7 @@ public final class GreatWallConfig {
                 try { config.setWallLengthBlocks(json.get("wallLengthBlocks").getAsLong()); }
                 catch (RuntimeException malformed) { /* keep default */ }
             }
+            readInt(json, "unlimitedPrewarmBlocks", config::setUnlimitedPrewarmBlocks);
             // 0.1.0 山脊打分参数：逐项读取，缺失或畸形回退默认值。
             readInt(json, "ridgeWeight", v -> config.ridgeWeight = v);
             readInt(json, "ridgeProminenceWeight", v -> config.ridgeProminenceWeight = v);
@@ -546,6 +540,7 @@ public final class GreatWallConfig {
         Objects.requireNonNull(config);
         var json = new JsonObject();
         json.addProperty("wallLengthBlocks", config.wallLengthBlocks);
+        json.addProperty("unlimitedPrewarmBlocks", config.unlimitedPrewarmBlocks);
         // Written for a human reading the file: the prewarm count is derived, and
         // showing it here explains what the length implies without being read back.
         json.addProperty("prewarmSegmentsDerived", config.prewarmSegmentsTarget());

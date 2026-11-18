@@ -407,8 +407,17 @@ final class ProductionSession implements AutoCloseable {
         // structure footprint; 576 blocks covers the envelope with a 64-block margin. This trades
         // scan width (more candidates) for never missing a structure the wall can actually reach.
         int corridorHalfWidth = 576;
-        long lengthBlocks = local.plaincraft.greatwall.config.GreatWallConfig.parameters().wallLengthBlocks();
-        if (lengthBlocks <= 0) lengthBlocks = 8190L;
+        var range = planner.startupRange();
+        if (range.segments() == 0) {
+            GreatWallMod.LOGGER.warn("[GreatWall:预热] 冻结边界内没有可完整规划的长城段");
+            PrewarmProgress.finish(false);
+            return;
+        }
+        long lengthBlocks = range.structureScanBlocks();
+        if (range.segments() < range.configuredSegments() || range.segments() < range.requestedSegments()) {
+            GreatWallMod.LOGGER.info("[GreatWall:预热] 本次开局规划 {} 段（请求 {}，总段数 {}），结构扫描 {} 格",
+                    range.segments(), range.requestedSegments(), range.configuredSegments(), lengthBlocks);
+        }
         // Chunk-bounds of the axis-aligned corridor. The axis may run at an angle, so take a
         // generous AABB around the two endpoints and widen by the corridor half-width.
         int originX = recipe.axis().origin().x();
@@ -455,7 +464,8 @@ final class ProductionSession implements AutoCloseable {
         // ~3 minute rescan. The cache is keyed by recipeHash, which already covers the terrain,
         // palette and template fingerprints; changing any structure datapack changes the hash and
         // therefore invalidates the cache.
-        final List<Bounds> cached = loadStructureScanCache(root, recipe.recipeHash());
+        final String scanKey = recipe.recipeHash() + "-l" + lengthBlocks;
+        final List<Bounds> cached = loadStructureScanCache(root, scanKey);
         if (cached != null) {
             GreatWallMod.LOGGER.info("[GreatWall:corridor] structure scan cache hit ({} boxes); skipping rescan", cached.size());
             completeStructureScan(planner, cached, null);
@@ -479,7 +489,7 @@ final class ProductionSession implements AutoCloseable {
         // dropped up front, so an angled wall no longer scans the AABB's 3.5x overscan.
         var corridor = new local.plaincraft.greatwall.generation.CorridorStructureScan.Corridor(
                 originX, originZ, endX, endZ, corridorHalfWidth);
-        scanner.scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor)
+        scanner.scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor, scanKey)
                 .thenApply(boxes -> {
                     var bounds = new ArrayList<Bounds>(boxes.size());
                     for (var owned : boxes) {
@@ -491,7 +501,7 @@ final class ProductionSession implements AutoCloseable {
                 })
                 .whenComplete((structures, error) -> server.execute(() -> {
                     if (completeStructureScan(planner, structures, error)) {
-                        saveStructureScanCache(root, recipe.recipeHash(), structures);
+                        saveStructureScanCache(root, scanKey, structures);
                     }
                 }));
     }
@@ -743,7 +753,7 @@ final class ProductionSession implements AutoCloseable {
      * every world's recipe hash, so putting this there would invalidate existing worlds' walls and demand a
      * new world for a pure cache concern. A mismatch here costs one re-scan instead.
      */
-    private static final String CORRIDOR_SCAN_CACHE_VERSION = "v1";
+    private static final String CORRIDOR_SCAN_CACHE_VERSION = "v2";
 
     private static String cacheKey(String recipeHash) {
         return recipeHash + '-' + CORRIDOR_SCAN_CACHE_VERSION;
@@ -887,7 +897,7 @@ final class ProductionSession implements AutoCloseable {
                     snapshot.recipe().wallId(), snapshot.recipe().axis(),
                     local.plaincraft.greatwall.terrain.RealizationPlanner.rootDegraded(),
                     local.plaincraft.greatwall.config.GreatWallConfig.parameters().wallLengthBlocks(),
-                    local.plaincraft.greatwall.config.GreatWallConfig.parameters().prewarmSegmentsTarget(),
+                    snapshot.planner().startupRange().segments(),
                     summarizeForLog(snapshot.planner().diagnostics()));
         }
         if (state.putIfAbsent("compile-started", true) != null) return;
@@ -1003,8 +1013,12 @@ final class ProductionSession implements AutoCloseable {
         var compiler = new local.plaincraft.greatwall.planning.PlanningChunkCompiler(
                 realization, chunkCompiler, index, planningStructures);
         var planner = snapshot.planner();
-        long target = local.plaincraft.greatwall.config.GreatWallConfig.parameters().prewarmSegmentsTarget();
-        if (target <= 0) target = 4;
+        // 重试也使用已冻结的窗口，避免重新读取配置后请求边界外计划。
+        long target = planner.startupRange().segments();
+        if (target == 0) {
+            failCompile(snapshot, "empty-startup-range", new IllegalStateException("无安全预热段"));
+            return;
+        }
         var collected = new java.util.ArrayList<SegmentPlan>();
         // Reuse the prewarm's own leases: they stay pinned until this compile publishes, so the
         // plans are the exact objects the prewarm produced. Re-requesting them (the previous shape)

@@ -4,6 +4,8 @@
   "option.plaincraft_great_wall.lengthMode.unlimited": "无限（一直延伸到世界边界）",
   "option.plaincraft_great_wall.lengthMode.bounded": "指定长度",
   "option.plaincraft_great_wall.wallLength": "长度（格）",
+  "option.plaincraft_great_wall.unlimitedPrewarmBlocks": "无限长城开局规划范围（格）",
+  "option.plaincraft_great_wall.unlimitedPrewarmBlocks.tooltip": "仅在长度为 0 时生效。按 2048 格向上取整，进游戏后仍分批施工。范围越大，开局需要计算的地形越多。",
   "option.plaincraft_great_wall.prewarmSegments": "开局预热",
   "option.plaincraft_great_wall.prewarmSegments.value": "共 %s 段，预热 %s 段",
   "option.plaincraft_great_wall.prewarmSegments.unlimited": "无限长，预热前 %s 段",

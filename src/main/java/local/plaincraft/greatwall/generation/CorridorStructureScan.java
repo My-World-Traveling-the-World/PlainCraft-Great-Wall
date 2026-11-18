@@ -199,7 +199,7 @@ public final class CorridorStructureScan {
 
     /** The wall corridor segment in block coords plus its half-width; null means no trimming. */
     public record Corridor(int originX, int originZ, int endX, int endZ, int halfWidth) {
-        /** Squared distance from {@code (x,z)} to the segment, or -1 when the segment degenerates. */
+        /** 保留原来向零取整的投影，再判断点是否落入走廊。 */
         boolean within(int x, int z) {
             long dx = (long) endX - originX, dz = (long) endZ - originZ;
             long lenSq = dx * dx + dz * dz;
@@ -211,9 +211,15 @@ public final class CorridorStructureScan {
             long cx, cz;
             if (t <= 0) { cx = originX; cz = originZ; }
             else if (t >= lenSq) { cx = endX; cz = endZ; }
-            else { cx = originX + dx * t / lenSq; cz = originZ + dz * t / lenSq; }
+            else { cx = originX + projectionOffset(dx, t, lenSq); cz = originZ + projectionOffset(dz, t, lenSq); }
             long ddx = x - cx, ddz = z - cz;
             return ddx * ddx + ddz * ddz <= (long) halfWidth * halfWidth;
+        }
+
+        private static long projectionOffset(long delta, long dot, long lengthSquared) {
+            // 超长斜线的三次量级乘积会溢出；绝对值相除再还原符号，保持原取整方向。
+            long magnitude = local.plaincraft.greatwall.geometry.FixedMath.mulDiv(Math.abs(delta), dot, lengthSquared);
+            return delta < 0 ? -magnitude : magnitude;
         }
     }
 

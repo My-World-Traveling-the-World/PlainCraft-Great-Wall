@@ -4,6 +4,8 @@
   "option.plaincraft_great_wall.lengthMode.unlimited": "Unlimited (runs to the world border)",
   "option.plaincraft_great_wall.lengthMode.bounded": "Limited length",
   "option.plaincraft_great_wall.wallLength": "Length in blocks",
+  "option.plaincraft_great_wall.unlimitedPrewarmBlocks": "Unlimited wall startup planning range (blocks)",
+  "option.plaincraft_great_wall.unlimitedPrewarmBlocks.tooltip": "Only applies when the wall length is 0. Rounded up to 2048-block segments. Construction still runs in batches after entering the world. Larger ranges need more startup terrain sampling.",
   "option.plaincraft_great_wall.prewarmSegments": "Startup prewarm",
   "option.plaincraft_great_wall.prewarmSegments.value": "%s segments total, prewarming %s",
   "option.plaincraft_great_wall.prewarmSegments.unlimited": "Unbounded, prewarming the first %s segments",

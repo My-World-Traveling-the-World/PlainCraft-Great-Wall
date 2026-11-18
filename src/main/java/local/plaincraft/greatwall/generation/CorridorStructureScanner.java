@@ -62,6 +62,12 @@ public final class CorridorStructureScanner implements AutoCloseable {
     public CompletableFuture<List<CorridorStructureScan.OwnedBox>> scan(
             ServerLevel level, int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ,
             CorridorStructureScan.Corridor corridor) {
+        return scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor, "");
+    }
+
+    public CompletableFuture<List<CorridorStructureScan.OwnedBox>> scan(
+            ServerLevel level, int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ,
+            CorridorStructureScan.Corridor corridor, String recipeScope) {
         if (level == null || !net.minecraft.world.level.Level.OVERWORLD.equals(level.dimension())
                 || minChunkX > maxChunkX || minChunkZ > maxChunkZ) {
             return CompletableFuture.failedFuture(new IllegalArgumentException("结构扫描需要有效的主世界和区块范围"));
@@ -71,7 +77,8 @@ public final class CorridorStructureScanner implements AutoCloseable {
             // A structure start is a pure function of the seed, the structure sets and the chunk, so
             // the same corridor always resolves to the same boxes. The scan measured 268,569 ms - 4.5
             // minutes - per startup, which is why RoadWeaver caches its structure starts too.
-            String cacheKey = StructureScanCache.key(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ);
+            // 相同 AABB 可以包含不同走廊，注册表键相同也不代表数据包内容相同。
+            String cacheKey = StructureScanCache.key(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor, recipeScope);
             var cached = StructureScanCache.load(level, cacheKey);
             if (cached.isPresent()) {
                 GreatWallMod.LOGGER.info(

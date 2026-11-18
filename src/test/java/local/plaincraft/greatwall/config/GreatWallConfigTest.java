@@ -29,6 +29,7 @@ class GreatWallConfigTest {
         config.setSteepThreshold(9);
         config.setRefineWater(false);
         config.setCoreHalfWidth(5);
+        config.setUnlimitedPrewarmBlocks(8193);
     }
 
     /** Deliberately different values, so an omitted field cannot pass by coincidence. */
@@ -41,6 +42,7 @@ class GreatWallConfigTest {
         config.setSteepThreshold(4);
         config.setRefineWater(true);
         config.setCoreHalfWidth(20);
+        config.setUnlimitedPrewarmBlocks(2048);
     }
 
     private static void assertConfigured(GreatWallConfig config) {
@@ -52,6 +54,7 @@ class GreatWallConfigTest {
         assertEquals(9, config.steepThreshold());
         assertFalse(config.refineWater());
         assertEquals(5, config.coreHalfWidth());
+        assertEquals(8193, config.unlimitedPrewarmBlocks());
     }
 
     /**
@@ -105,6 +108,7 @@ class GreatWallConfigTest {
         config.setFineSampleDriverIntervalMs(9);
         config.setLaneBatchOperations(32);
         config.setChunkCacheLimit(48);
+        config.setUnlimitedPrewarmBlocks(8193);
         assertEquals(reference, config.semantic().digest(),
                 "scheduling knobs must not invalidate an existing world");
     }

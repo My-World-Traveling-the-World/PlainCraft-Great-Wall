@@ -93,13 +93,21 @@ final class StructureScanCache {
     }
 
     /** {@return the cache key for this level and corridor} */
-    static String key(ServerLevel level, int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ) {
+    static String key(ServerLevel level, int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ,
+            CorridorStructureScan.Corridor corridor, String recipeScope) {
+        return key(level.dimension().location().toString(), level.getSeed(), minChunkX, minChunkZ,
+                maxChunkX, maxChunkZ, corridor, recipeScope, structureIdsHash(level));
+    }
+
+    static String key(String dimension, long seed, int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ,
+            CorridorStructureScan.Corridor corridor, String recipeScope, String structureIds) {
+        // 同外框下的端点和半宽仍决定候选集合，缓存身份必须覆盖整个筛选条件。
         StringBuilder material = new StringBuilder(256)
-                .append(level.dimension().location()).append('|')
-                .append(level.getSeed()).append('|')
+                .append(dimension).append('|')
+                .append(seed).append('|')
                 .append(minChunkX).append(',').append(minChunkZ).append(',')
                 .append(maxChunkX).append(',').append(maxChunkZ).append('|')
-                .append(structureIdsHash(level));
+                .append(corridor).append('|').append(recipeScope).append('|').append(structureIds);
         return sha256(material.toString()).substring(0, 32);
     }
 

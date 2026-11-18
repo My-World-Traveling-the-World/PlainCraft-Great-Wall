@@ -50,6 +50,15 @@ public final class GreatWallConfigScreen {
                 .setMin(0L)
                 .setSaveConsumer(v -> GreatWallConfig.get().setWallLengthBlocks(v))
                 .build());
+        // 无限墙只指定开局窗口，不改变墙的终点或已存档的配方。
+        length.addEntry(eb
+                .startIntField(Component.translatable("option.plaincraft_great_wall.unlimitedPrewarmBlocks"),
+                        conf.unlimitedPrewarmBlocks())
+                .setDefaultValue(def.unlimitedPrewarmBlocks()).setMin(1)
+                .setMax(GreatWallConfig.MAX_UNLIMITED_PREWARM_BLOCKS)
+                .setTooltip(Component.translatable("option.plaincraft_great_wall.unlimitedPrewarmBlocks.tooltip"))
+                .setSaveConsumer(conf::setUnlimitedPrewarmBlocks)
+                .build());
 
         // ── 山脊打分（最细粒度奖励惩罚体系）──
         ridge.addEntry(eb

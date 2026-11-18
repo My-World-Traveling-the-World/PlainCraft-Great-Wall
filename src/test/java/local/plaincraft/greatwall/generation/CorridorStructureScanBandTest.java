@@ -18,6 +18,16 @@ class CorridorStructureScanBandTest {
     private static final int MIN = -40;
     private static final int MAX = 40;
 
+    @Test void worldScaleDiagonalStillContainsItsMiddle() {
+        // 中点的点积乘轴长已经超过 long；正反扫描都不能漏掉这排结构。
+        var forward = new CorridorStructureScan.Corridor(-20_000_000, -20_000_000, 20_000_000, 20_000_000, 576);
+        var reverse = new CorridorStructureScan.Corridor(20_000_000, 20_000_000, -20_000_000, -20_000_000, 576);
+        for (var corridor : java.util.List.of(forward, reverse)) {
+            assertTrue(corridor.within(0, 0));
+            org.junit.jupiter.api.Assertions.assertFalse(corridor.within(0, 2000));
+        }
+    }
+
     @Test
     void everyAcceptedPositionFallsInsideTheBandWindow() {
         var random = new Random(20261020L);
