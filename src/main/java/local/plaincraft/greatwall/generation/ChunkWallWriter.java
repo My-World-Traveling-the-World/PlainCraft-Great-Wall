@@ -13,7 +13,6 @@ import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.BlockCatalog;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.block.state.BlockState;
@@ -78,12 +77,8 @@ public final class ChunkWallWriter {
             local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(v.pos().x(),v.pos().z());
             var e=entities.get(v.pos());
             if(e!=null) {
-                var tag=new CompoundTag();tag.putString("id",e.type());
-                tag.putInt("x",e.pos().x());tag.putInt("y",e.pos().y());tag.putInt("z",e.pos().z());
-                var pgw=new CompoundTag();pgw.putString("wall",e.site().wallId());pgw.putString("kind",e.site().kind().name());
-                pgw.putLong("ordinal",e.site().ordinal());pgw.putInt("localId",e.localId());
-                e.fields().forEach(pgw::putString);tag.put("plaincraft_great_wall",pgw);
-                owner.setBlockEntityNbt(tag);
+                // 待加载区块也持久化原版战利品字段，避免两条施工路径的开箱行为不同。
+                owner.setBlockEntityNbt(PlannedBlockEntityNbt.encode(e));
             }
         }
         Heightmap.primeHeightmaps(owner,EnumSet.of(Heightmap.Types.WORLD_SURFACE_WG,Heightmap.Types.OCEAN_FLOOR_WG,Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));

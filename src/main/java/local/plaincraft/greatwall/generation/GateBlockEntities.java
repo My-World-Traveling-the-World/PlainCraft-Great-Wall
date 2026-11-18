@@ -48,7 +48,6 @@ public final class GateBlockEntities {
     private static final String RESOURCE = "/assets/plaincraft-great-wall/templates/gate_be.jsonl";
     private static final long SEED_SALT = 0x9E3779B97F4A7C15L;
     /** 门楼室内上下层分界（模板局部 y）：≥ 此高度算「上层」，兜底给军械类表。 */
-    static final int UPPER_FLOOR_Y = 20;
 
     /** 一行模板：{@code loot} = 战利品表 id；{@code books} = 随机塞几本书；{@code nbt} = 原始 SNBT。 */
     private record Entry(int x, int y, int z, String loot, int books, String nbt) {
@@ -186,17 +185,8 @@ public final class GateBlockEntities {
      * 返回 {@code null} 表示不是我们要管的容器。
      */
     static String defaultTableFor(String blockId, int localY) {
-        if (blockId == null) return null;
-        boolean upper = localY >= UPPER_FLOOR_Y;
-        switch (blockId) {
-            case "minecraft:chest":
-            case "minecraft:trapped_chest":
-                return upper ? "armory" : "supplies";
-            case "minecraft:barrel":
-                return upper ? "armory" : "ordinary";
-            default:
-                return null;
-        }
+        // 展台和正式模板必须使用同一楼层分界，调表时不需要同步两处。
+        return local.plaincraft.greatwall.gameplay.TemplateLoot.tableFor(blockId, localY);
     }
 
     /** 兜底规则：雕纹书架按坐标派生 2~3 本书，其余方块返回 0。 */

@@ -6,7 +6,6 @@ import local.plaincraft.greatwall.model.WallTypes.BlockEntityIntent;
 import local.plaincraft.greatwall.model.WallTypes.ChunkWritePlan;
 import local.plaincraft.greatwall.model.WallTypes.Point3i;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
 /**
@@ -43,18 +42,7 @@ public final class WallPlanSupport {
             // A block entity that was already present belongs to the world/player. Only fill one we
             // just created, or a missing one from an older wall, never overwrite custom data.
             if (existing != null && (touched == null || !touched.contains(p))) continue;
-            CompoundTag tag = new CompoundTag();
-            tag.putString("id", entity.type());
-            tag.putInt("x", p.x());
-            tag.putInt("y", p.y());
-            tag.putInt("z", p.z());
-            CompoundTag payload = new CompoundTag();
-            payload.putString("wall", entity.site().wallId());
-            payload.putString("kind", entity.site().kind().name());
-            payload.putLong("ordinal", entity.site().ordinal());
-            payload.putInt("localId", entity.localId());
-            entity.fields().forEach(payload::putString);
-            tag.put("plaincraft_great_wall", payload);
+            var tag = PlannedBlockEntityNbt.encode(entity);
             if(chunk instanceof net.minecraft.world.level.chunk.LevelChunk loaded) {
                 // 已加载区块不能只存待加载NBT：现有实体会继续生效，重开前看不到计划身份。
                 var replacement=net.minecraft.world.level.block.entity.BlockEntity.loadStatic(

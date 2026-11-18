@@ -32,9 +32,9 @@ final class GateBlockEntityDefaultsTest {
         assertEquals("armory", GateBlockEntities.defaultTableFor("minecraft:barrel", 24));
         // 分界点必须按设计（>= UPPER_FLOOR_Y 才是上层）
         assertEquals("supplies", GateBlockEntities.defaultTableFor("minecraft:chest",
-                GateBlockEntities.UPPER_FLOOR_Y - 1));
+                19));
         assertEquals("armory", GateBlockEntities.defaultTableFor("minecraft:chest",
-                GateBlockEntities.UPPER_FLOOR_Y));
+                20));
     }
 
     @Test
