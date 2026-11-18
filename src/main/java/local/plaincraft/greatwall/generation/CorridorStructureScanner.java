@@ -2,7 +2,11 @@ package local.plaincraft.greatwall.generation;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,6 +26,7 @@ import net.minecraft.server.level.ServerLevel;
 public final class CorridorStructureScanner implements AutoCloseable {
     private final ExecutorService pool;
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final Set<CompletableFuture<?>> pending = ConcurrentHashMap.newKeySet();
 
     public CorridorStructureScanner() {
         // Adaptive rather than a fixed four. This pool bounds how many scans may run at once, and the
@@ -46,7 +51,7 @@ public final class CorridorStructureScanner implements AutoCloseable {
      * @param minChunkZ   corridor north bound (chunk coordinate)
      * @param maxChunkX   corridor east bound (chunk coordinate)
      * @param maxChunkZ   corridor south bound (chunk coordinate)
-     * @return a future of resolved boxes; empty when the scanner is closed or inputs are invalid
+     * @return 扫描完整结果；世界无效或扫描关闭时异常结案，空列表仅表示成功但无结构
      */
     public CompletableFuture<List<CorridorStructureScan.OwnedBox>> scan(
             ServerLevel level, int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ) {
@@ -57,12 +62,11 @@ public final class CorridorStructureScanner implements AutoCloseable {
     public CompletableFuture<List<CorridorStructureScan.OwnedBox>> scan(
             ServerLevel level, int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ,
             CorridorStructureScan.Corridor corridor) {
-        if (closed.get() || level == null) {
-            return CompletableFuture.completedFuture(List.of());
+        if (level == null || !net.minecraft.world.level.Level.OVERWORLD.equals(level.dimension())
+                || minChunkX > maxChunkX || minChunkZ > maxChunkZ) {
+            return CompletableFuture.failedFuture(new IllegalArgumentException("结构扫描需要有效的主世界和区块范围"));
         }
-        Objects.requireNonNull(level, "level");
-        return CompletableFuture.supplyAsync(() -> {
-            if (closed.get()) return List.<CorridorStructureScan.OwnedBox>of();
+        return submit(() -> {
             long startedAt = System.nanoTime();
             // A structure start is a pure function of the seed, the structure sets and the chunk, so
             // the same corridor always resolves to the same boxes. The scan measured 268,569 ms - 4.5
@@ -101,14 +105,45 @@ public final class CorridorStructureScanner implements AutoCloseable {
                     minChunkX, minChunkZ, maxChunkX, maxChunkZ, candidates.size(), boxes.size(),
                     yield[0], yield[1], yield[2], filter[1], filter[0],
                     (System.nanoTime() - startedAt) / 1_000_000L);
+            if (closed.get()) throw new CancellationException("结构扫描已关闭");
             StructureScanCache.store(level, cacheKey, boxes);
             return boxes;
-        }, pool);
+        });
+    }
+
+    <T> CompletableFuture<T> submit(Callable<T> scan) {
+        var future = new CompletableFuture<T>();
+        pending.add(future);
+        future.whenComplete((result, error) -> pending.remove(future));
+        // 注册后再核对关闭：被 shutdownNow 从队列移除的任务也必须通知调用方。
+        if (closed.get()) {
+            future.cancel(false);
+            return future;
+        }
+        try {
+            pool.execute(() -> {
+                if (future.isDone() || closed.get()) {
+                    future.cancel(false);
+                    return;
+                }
+                try {
+                    T result = scan.call();
+                    if (closed.get()) future.cancel(false);
+                    else future.complete(result);
+                } catch (Throwable failure) {
+                    future.completeExceptionally(failure);
+                }
+            });
+        } catch (RejectedExecutionException stopped) {
+            future.completeExceptionally(stopped);
+        }
+        return future;
     }
 
     @Override
     public void close() {
         if (!closed.compareAndSet(false, true)) return;
+        pending.forEach(future -> future.cancel(false));
         pool.shutdownNow();
         try {
             pool.awaitTermination(5, TimeUnit.SECONDS);

@@ -126,6 +126,8 @@ final class ProductionSession implements AutoCloseable {
     /** Planning-time corridor structure scan; constructed once the overworld is known and closed on
      *  session shutdown. */
     private volatile local.plaincraft.greatwall.generation.CorridorStructureScanner structureScanner;
+    // 批量规划和发布共用同一个扫描门，避免晚到的预热通知绕过避让。
+    private final StartupStructureGate structureGate = new StartupStructureGate();
     /** Planning-resolved fine cross-section samples + structure boxes, published once the prewarm
      *  settles and consumed by the planning-phase chunk compilation. */
     private volatile local.plaincraft.greatwall.planning.FineHeightIndex fineHeightIndex;
@@ -175,30 +177,8 @@ final class ProductionSession implements AutoCloseable {
                 var snapshot = new Installed(recipe, planner, frozen);
                 snapshots.put("installed", snapshot);
                 installBiomeRuntime(level, recipe);
-                // Phase split: the pump starts demand-only so a blocking startup peer (RoadWeaver
-                // blocks inside prepareLevels and asks the wall for recipe and plans) is never
-                // competing with the wall's own bulk prewarm.
-                //
-                // Target order is rivers -> wall prewarm -> roads. The prewarm is released by
-                // whichever of the two startup events arrives once the recipe exists:
-                //   * riversPrewarmed()  - RoadWeaver reports the river plates are built; this is
-                //                          the intended release point and fires before any road.
-                //   * afterRoadReached() - prepareLevels TAIL; the fallback for a session without
-                //                          RoadWeaver, and the late release when the recipe only
-                //                          became durable after the rivers were already done.
-                // Both are idempotent, so checking both here cannot double-start the prewarm.
+                // 先让精采样可并行取路线；批量规划必须等结构避让索引装好。
                 planner.startupPump();
-                // 「到谁谁占用主线程」：长城拥有 prepareLevels HEAD(950) 的独占窗口，此刻河流
-                // 已在 createLevels(900) 彻底完成，且主线程正停在 blockAndPumpUntilPrewarmSettled
-                // 里死等预热。recipe 一旦持久化就绪，必须无条件开始批量预热，绝不可依赖
-                // after-road-reached（TAIL 路径，主线程被 HEAD 阻塞永远到不了）或 rivers-prewarmed
-                // （跨阶段易失标志，道路回退 0.8.402 后传递链断裂）。afterRoadBulk 自带幂等保护。
-                //
-                // The corridor structure scan must settle BEFORE the bulk prewarm starts: the ridge
-                // detour stage reads the obstacle index while planning each segment, so a scan that
-                // runs after prewarm would leave the wall cutting through structures. The scan is
-                // fire-and-forget with a degraded fallback (empty index = no structure avoidance =
-                // the pre-refactor behaviour); it must never block or fail the world.
                 startStructureScanAndPrewarm(level, recipe, planner);
                 trace.record("PRODUCTION_RIVERS_BULK", recipe.dimension(), 0, 0, "recipe-installed-unconditional-bulk", "none");
                 trace.record("PRODUCTION_RECIPE_INSTALLED", recipe.dimension(), 0, 0, "recipe-durable-before-generation", "none");
@@ -478,7 +458,7 @@ final class ProductionSession implements AutoCloseable {
         final List<Bounds> cached = loadStructureScanCache(root, recipe.recipeHash());
         if (cached != null) {
             GreatWallMod.LOGGER.info("[GreatWall:corridor] structure scan cache hit ({} boxes); skipping rescan", cached.size());
-            installStructuresAndSample(planner, cached);
+            completeStructureScan(planner, cached, null);
             return;
         }
 
@@ -500,40 +480,42 @@ final class ProductionSession implements AutoCloseable {
         var corridor = new local.plaincraft.greatwall.generation.CorridorStructureScan.Corridor(
                 originX, originZ, endX, endZ, corridorHalfWidth);
         scanner.scan(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor)
-                .whenComplete((boxes, error) -> {
-                    // This callback's returned future is discarded, so a throw here would vanish and take
-                    // the whole startup stage with it (no prewarm, no compile, the world parked until the
-                    // thirty-minute give-up). Everything below is inside the guard for that reason.
-                    try {
-                        final List<Bounds> structures;
-                        if (error != null) {
-                            GreatWallMod.LOGGER.warn("[GreatWall:corridor] structure scan failed; "
-                                    + "falling back to no structure avoidance", error);
-                            structures = List.of();
-                        } else {
-                            var bounds = new java.util.ArrayList<Bounds>(boxes.size());
-                            for (var owned : boxes) {
-                                var b = owned.box();
-                                if (b == null) continue;
-                                bounds.add(new Bounds(b.minX(), b.minY(), b.minZ(),
-                                        b.maxX() + 1, b.maxY() + 1, b.maxZ() + 1));
-                            }
-                            structures = List.copyOf(bounds);
-                            saveStructureScanCache(root, recipe.recipeHash(), structures);
-                        }
-                        installStructuresAndSample(planner, structures);
-                    } catch (Throwable failure) {
-                        GreatWallMod.LOGGER.error("[GreatWall:corridor] installing the structure scan failed; "
-                                + "the startup stage is released without a wall this session", failure);
-                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
+                .thenApply(boxes -> {
+                    var bounds = new ArrayList<Bounds>(boxes.size());
+                    for (var owned : boxes) {
+                        var b = owned.box();
+                        bounds.add(new Bounds(b.minX(), b.minY(), b.minZ(),
+                                b.maxX() + 1, b.maxY() + 1, b.maxZ() + 1));
                     }
-                });
+                    return List.copyOf(bounds);
+                })
+                .whenComplete((structures, error) -> server.execute(() -> {
+                    if (completeStructureScan(planner, structures, error)) {
+                        saveStructureScanCache(root, recipe.recipeHash(), structures);
+                    }
+                }));
     }
 
-    /** Installs the resolved structure footprints as the planner's obstacle index, then chains the
-     *  fine cross-section sample into the bulk prewarm. Reached both from a fresh scan and from a
-     *  cache hit, so it is the single place that advances the prewarm past the structure stage. */
-    private void installStructuresAndSample(PlannerScheduler planner, List<Bounds> structures) {
+    private boolean completeStructureScan(PlannerScheduler planner, List<Bounds> structures, Throwable error) {
+        if (state.containsKey("closed") || state.containsKey("failed")) return false;
+        boolean installed = structureGate.complete(structures, error,
+                boxes -> installStructureIndex(planner, boxes), failure -> {
+                    GreatWallMod.LOGGER.error("[GreatWall:corridor] 结构扫描或索引安装失败；本次会话不发布新长城计划", failure);
+                    PrewarmProgress.finish(false);
+                });
+        if (installed) {
+            // 保留两阶段并行及进度口径；门开后才能安排批量任务。
+            PrewarmProgress.setStage(PrewarmProgress.Stage.PREWARM);
+            startBulkPrewarm(planner, "structures-installed");
+            PrewarmProgress.setStage(PrewarmProgress.Stage.FINE_SAMPLE);
+            PrewarmProgress.setSubProgress(0, 0);
+            startFineSample(planner);
+        }
+        return installed;
+    }
+
+    /** 先安装索引及编译回调，再开放规划门，避免先消费到未避让的路线。 */
+    private void installStructureIndex(PlannerScheduler planner, List<Bounds> structures) {
         int margin = local.plaincraft.greatwall.config.GreatWallConfig.parameters().obstacleMarginBlocks();
         if (structures.isEmpty()) {
             planner.setObstacles(StructureObstacleIndex.empty(margin));
@@ -554,29 +536,7 @@ final class ProductionSession implements AutoCloseable {
         // the wall compiles inside the road's wait and the roads start only after the wall can
         // actually paint. Waiting for a tick instead deadlocked the two against each other.
         planner.onBulkReady(() -> server.execute(this::compileAtStartup));
-        // The bulk prewarm starts HERE, not from the fine-sample callback: it needs nothing but the
-        // obstacle index installed above, and it is precisely what the road gate, the world's startup
-        // stage and the compile's lease release all wait for. Ordering it behind the fine sample (as this
-        // method used to) serialised a bounded stage behind an unbounded one: the measured session logged
-        // zero PREWARM_BEGIN lines because the sample never finished, so the world waited out the wall's
-        // own thirty-minute give-up instead of the two minutes this stage actually needs. The sample still
-        // runs, concurrently, and the compile waits for both (see compilePlanningPlans0).
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.PREWARM);
-        startBulkPrewarm(planner, "structures-installed");
-        // Sampled terrain columns do not change between sessions, but the stage used to re-walk every
-        // one of them on every world entry - the single most expensive thing this mod does. Hand it
-        // the previous session's columns instead. The file is bound to the recipe and terrain
-        // identity, so a world whose terrain configuration changed re-probes rather than trusting
-        // columns sampled under different terrain.
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE);
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
-        // Started here rather than when every segment exists: the sample consumes segment i the
-        // moment that segment's route future completes, so it is pipelined with the prewarm by
-        // design. Waiting for all four only serialises a pipeline that already works - and the
-        // overlap is what keeps the early segments from idling the machine.
-        startFineSample(planner);
+
     }
 
     /**
@@ -766,6 +726,7 @@ final class ProductionSession implements AutoCloseable {
      * a discarded {@code whenComplete} that exception left no trace and the prewarm simply never began.
      */
     private void startBulkPrewarm(PlannerScheduler planner, String reason) {
+        if (!structureGate.ready() || state.containsKey("closed") || state.containsKey("failed")) return;
         try {
             planner.afterRoadBulk();
         } catch (Throwable failure) {
@@ -857,7 +818,7 @@ final class ProductionSession implements AutoCloseable {
         trace.record("PRODUCTION_AFTER_ROAD_REACHED", "minecraft:overworld", 0, 0, "prepareLevels-returned", "none");
         var snapshot = snapshots.get("installed");
         if (snapshot == null) return;
-        snapshot.planner().afterRoadBulk();
+        startBulkPrewarm(snapshot.planner(), "startup-peer-notification");
         trace.record("PRODUCTION_AFTER_ROAD_BULK", snapshot.recipe().dimension(), 0, 0, "post-road-startup", "none");
     }
 
@@ -890,7 +851,7 @@ final class ProductionSession implements AutoCloseable {
             trace.record("PRODUCTION_RIVERS_PREWARM_DEFERRED", "minecraft:overworld", 0, 0, "recipe-not-installed", "none");
             return;
         }
-        snapshot.planner().afterRoadBulk();
+        startBulkPrewarm(snapshot.planner(), "startup-peer-notification");
         trace.record("PRODUCTION_RIVERS_BULK", snapshot.recipe().dimension(), 0, 0, "post-river-startup", "none");
     }
     void tick() {
@@ -918,6 +879,7 @@ final class ProductionSession implements AutoCloseable {
      * for a session whose prewarm settles once the server is already running.
      */
     private void activate(Installed snapshot) {
+        if (!structureGate.ready()) return;
         if (state.putIfAbsent("active", true) == null) {
             trace.record("PRODUCTION_ACTIVE", snapshot.recipe().dimension(), 0, 0, "server-started-and-prewarm-ready", "none");
             GreatWallMod.LOGGER.info("[GreatWall:S1C] PRODUCTION_SUMMARY wall={} axis={} rootDegraded={} "
@@ -956,6 +918,7 @@ final class ProductionSession implements AutoCloseable {
      * @return true when the compile ran, or had already run
      */
     public boolean compileAtStartup() {
+        if (!structureGate.ready()) return false;
         if (state.containsKey("closed") || state.containsKey("failed")) return false;
         var snapshot = snapshots.get("installed");
         if (snapshot == null) return false;
