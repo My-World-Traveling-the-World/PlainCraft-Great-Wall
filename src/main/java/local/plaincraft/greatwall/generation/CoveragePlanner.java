@@ -17,6 +17,8 @@ import local.plaincraft.greatwall.persistence.EvidenceCodec;
 /** A canonical per-owner envelope includes every potential local template/retreat, not just accepted cells. */
 public final class CoveragePlanner {
     private final java.util.Map<SiteKind,ComponentTemplate> templates=S1TemplateSet.create(0);
+    private static final java.util.Comparator<ChunkKey> OWNER_ORDER = java.util.Comparator.comparing(ChunkKey::dimension)
+            .thenComparingInt(ChunkKey::x).thenComparingInt(ChunkKey::z);
     public CoveragePlanner() {}
     public Coverage forChunk(ChunkKey chunk,PlanWindow plans,DimensionBounds bounds) {
         var stations=stations(plans);
@@ -87,46 +89,73 @@ public final class CoveragePlanner {
         if (max > terminalLimit) max = terminalLimit;
         String recipe=plans.plans().getFirst().geometry().key().recipeHash();
         var result=new ArrayList<CellKey>();
+        var ownerLookup = prepareOwners(plans);
         for(long cell=Math.floorDiv(min,64L*256);cell<=Math.floorDiv(max,64L*256);cell++) {
             var candidate=new CellKey(recipe,chunk.dimension(),cell);
-            if(realizationOwners(candidate,plans).contains(chunk)) result.add(candidate);
+            if(ownerLookup.forCell(candidate).contains(chunk)) result.add(candidate);
         }
         return List.copyOf(result);
     }
     public List<ChunkKey> realizationOwners(CellKey cell,PlanWindow plans) {
-        long from=Math.max(0,cell.arcCell()*64L*256-192L*256),to=(cell.arcCell()+1)*64L*256+192L*256;
-        var owners=new TreeSet<ChunkKey>(java.util.Comparator.comparing(ChunkKey::dimension).thenComparingInt(ChunkKey::x).thenComparingInt(ChunkKey::z));
-        for(var s:stations(plans))if(s.globalSQ8()>=from&&s.globalSQ8()<=to) {
-            int x=FixedMath.floorBlock(s.point().xQ8()),z=FixedMath.floorBlock(s.point().zQ8());
-            for(int cx=Math.floorDiv(x-16,16);cx<=Math.floorDiv(x+16,16);cx++)
-                for(int cz=Math.floorDiv(z-16,16);cz<=Math.floorDiv(z+16,16);cz++)
-                    owners.add(new ChunkKey(cell.dimension(),cx,cz));
-        }
+        return prepareOwners(plans).forCell(cell);
+    }
+
+    /** 同一个冻结窗口的多次 owner 查询共用站点顺序和模板足迹，仍逐单元判预算。 */
+    public OwnerLookup prepareOwners(PlanWindow plans) {
+        // 单段站表已校验弧长严格递增；只有多段才需要合并并检查接缝。
+        var orderedStations = plans.plans().size() == 1
+                ? plans.plans().getFirst().stations().stations() : stations(plans);
+        var footprints = new ArrayList<SiteFootprint>();
         for(var plan:plans.plans())for(var site:plan.sites()) {
             var template=templates.get(site.id().kind());
             if(template==null)throw new WallFailure(FailureCode.INVALID_RESOURCE,"unknown capture footprint: "+site.id());
             var provisional=new ComponentInput(site,List.of(),java.util.Map.of(),new DecaySample(DecayState.INTACT,0,20),
                     PaletteFamily.STONE,false,List.of(),List.of());
             var b=Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
-            // The admission window is the one RealizationPlanner.resolveAccounted uses - the cell plus 64
-            // blocks on both sides - widened by the footprint's own reach, because a site whose *centre*
-            // sits just outside this cell still gets realized here and then writes voxels into chunks that
-            // must be owners of this cell. Admitting by the centre alone left exactly that band uncovered:
-            // the component was realized, its footprint chunks were not owners, its columns were missing,
-            // and the component was dropped with a T0_MISSING warning while the compile reported success.
-            long reach=footprintReach(site,b);
-            if(site.globalSQ8()+reach<from-64L*256||site.globalSQ8()-reach>to+64L*256)continue;
-            // More owners than the capture budget allows must never turn into a session failure: keep what
-            // the previous rule admitted and stop adding, which degrades to the old coverage, not to a
-            // failed window.
-            if(owners.size()+footprintOwners(cell.dimension(),b).size()>256) {
-                if(site.globalSQ8()>=from&&site.globalSQ8()<=to) addOwners(owners,cell.dimension(),b);
-                continue;
-            }
-            addOwners(owners,cell.dimension(),b);
+            footprints.add(new SiteFootprint(site.globalSQ8(), footprintReach(site,b), b));
         }
-        if(owners.size()>256)throw new WallFailure(FailureCode.CAPACITY,"realization footprint exceeds 256 capture owners");
-        return List.copyOf(owners);
+        return new OwnerLookup(orderedStations, List.copyOf(footprints));
+    }
+
+    private record SiteFootprint(long arc, long reach, Bounds bounds) { }
+
+    public static final class OwnerLookup {
+        private final List<Station> stations;
+        private final List<SiteFootprint> footprints;
+
+        private OwnerLookup(List<Station> stations, List<SiteFootprint> footprints) {
+            this.stations = stations;
+            this.footprints = footprints;
+        }
+
+        public List<ChunkKey> forCell(CellKey cell) {
+            long from=Math.max(0,cell.arcCell()*64L*256-192L*256),to=(cell.arcCell()+1)*64L*256+192L*256;
+            var owners=new TreeSet<ChunkKey>(OWNER_ORDER);
+            // 从第一个达到下界的站开始，端点仍是闭区间，防止接缝恰好在边界时漏取证。
+            int lo = 0, hi = stations.size();
+            while (lo < hi) {
+                int mid = (lo + hi) >>> 1;
+                if (stations.get(mid).globalSQ8() < from) lo = mid + 1; else hi = mid;
+            }
+            for (int i = lo; i < stations.size(); i++) {
+                var s = stations.get(i);
+                if (s.globalSQ8() > to) break;
+                int x=FixedMath.floorBlock(s.point().xQ8()),z=FixedMath.floorBlock(s.point().zQ8());
+                for(int cx=Math.floorDiv(x-16,16);cx<=Math.floorDiv(x+16,16);cx++)
+                    for(int cz=Math.floorDiv(z-16,16);cz<=Math.floorDiv(z+16,16);cz++)
+                        owners.add(new ChunkKey(cell.dimension(),cx,cz));
+            }
+            // 模板仍按原次序增加 owner：前面站点和模板占了多少额度，决定后面足迹能否加入。
+            for (var footprint : footprints) {
+                long arc = footprint.arc(), reach = footprint.reach();
+                if(arc+reach<from-64L*256||arc-reach>to+64L*256)continue;
+                var b = footprint.bounds();
+                if(owners.size()+footprintOwnerCount(b)>256 && (arc<from || arc>to))continue;
+                addOwners(owners,cell.dimension(),b);
+            }
+            if(owners.size()>256)throw new WallFailure(FailureCode.CAPACITY,"realization footprint exceeds 256 capture owners");
+            return List.copyOf(owners);
+        }
     }
     private static void addOwners(TreeSet<ChunkKey> owners,String dimension,Bounds b){
         for(int cx=Math.floorDiv(b.minX()-1,16);cx<=Math.floorDiv(b.maxXExclusive(),16);cx++)
@@ -134,12 +163,11 @@ public final class CoveragePlanner {
                 owners.add(new ChunkKey(dimension,cx,cz));
     }
 
-    /** {@return the chunks {@link #addOwners} would add for this footprint} */
-    private static TreeSet<ChunkKey> footprintOwners(String dimension,Bounds b){
-        var owners=new TreeSet<ChunkKey>(java.util.Comparator.comparing(ChunkKey::dimension)
-                .thenComparingInt(ChunkKey::x).thenComparingInt(ChunkKey::z));
-        addOwners(owners,dimension,b);
-        return owners;
+    /** 整个矩形格数等于原独立足迹集合大小；不能用与已选 owner 的差集大小替代。 */
+    private static long footprintOwnerCount(Bounds b){
+        long columns = Math.floorDiv(b.maxXExclusive(),16) - (long)Math.floorDiv(b.minX()-1,16) + 1;
+        long rows = Math.floorDiv(b.maxZExclusive(),16) - (long)Math.floorDiv(b.minZ()-1,16) + 1;
+        return Math.max(0,columns) * Math.max(0,rows);
     }
 
     /**

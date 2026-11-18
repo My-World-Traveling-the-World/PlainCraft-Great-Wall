@@ -8,6 +8,50 @@ import org.junit.jupiter.api.Test;
 
 class CoveragePlannerTest {
     private static final String H="a".repeat(64);
+
+    @Test void preparedLookupMatchesFullScanOnBothSidesOfASeam() {
+        String dimension = "minecraft:overworld";
+        var base = window(1280).plans().getFirst();
+        var source = base.stations().stations();
+        // 两段共享 640 格的站；站表从负坐标跨零，且查询边界恰好穿过若干站。
+        var all = source.stream().map(s -> new Station(s.globalSQ8(),
+                new Point2q(s.point().xQ8() - 640L * 256, s.point().zQ8()), s.walkY(), s.flags())).toList();
+        var site = new SiteRecord(new SiteId("fixture", SiteKind.FORT, 0), 640L * 256,
+                new Frame(new Point2q(0, 0), 759250125, 759250125, 84, false),
+                new Bounds(-40, 49, -40, 40, 92, 40), SiteState.PLANNED, Optional.empty(), Optional.empty());
+        var left = new SegmentPlan(base.geometry(), base.prefix(), new StationTable(all.subList(0, 161), List.of(), H),
+                List.of(site), H);
+        var right = new SegmentPlan(base.geometry(), base.prefix(), new StationTable(all.subList(160, all.size()), List.of(), H),
+                List.of(), H);
+        var plans = new PlanWindow(List.of(left, right));
+        var lookup = new CoveragePlanner().prepareOwners(plans);
+        var input = new ComponentInput(site, List.of(), Map.of(), new DecaySample(DecayState.INTACT, 0, 20),
+                PaletteFamily.STONE, false, List.of(), List.of());
+        var bounds = Rasterizer.worldBounds(site.frame(),
+                local.plaincraft.greatwall.component.S1TemplateSet.create(0).get(site.id().kind()).localBounds(input));
+        var footprint = Rasterizer.owners(dimension, new Bounds(bounds.minX() - 1, bounds.minY(), bounds.minZ() - 1,
+                bounds.maxXExclusive() + 1, bounds.maxYExclusive(), bounds.maxZExclusive() + 1));
+        // 原规则逐站检查，不采用索引下界。小夹具远低于 256，确保比对走正常准入路径。
+        for (long cell = 0; cell < 28; cell++) {
+            long from = Math.max(0, cell * 64 - 192), to = (cell + 1) * 64 + 192;
+            var expected = new TreeSet<ChunkKey>(Comparator.comparingInt(ChunkKey::x).thenComparingInt(ChunkKey::z));
+            for (var station : all) {
+                long arc = station.globalSQ8() / 256;
+                if (arc < from || arc > to) continue;
+                int x = (int) (station.point().xQ8() / 256);
+                int z = (int) (station.point().zQ8() / 256);
+                expected.addAll(Rasterizer.owners(dimension, new Bounds(x - 16, 0, z - 16, x + 17, 1, z + 17)));
+            }
+            // 旧准入用旋转后的足迹外包络推算弧长余量；站点即使在窗口外也可以入选。
+            long reach = Math.max(Math.max(Math.abs(bounds.minX()), Math.abs(bounds.maxXExclusive())),
+                    Math.max(Math.abs(bounds.minZ()), Math.abs(bounds.maxZExclusive())));
+            assertTrue(expected.size() + footprint.size() <= 256, "夹具不能误入预算分支");
+            if (640 + reach >= from - 64 && 640 - reach <= to + 64) expected.addAll(footprint);
+            assertEquals(List.copyOf(expected), lookup.forCell(new CellKey(H, dimension, cell)), "cell=" + cell);
+        }
+        assertFalse(lookup.forCell(new CellKey(H, dimension, 10)).isEmpty());
+        assertTrue(lookup.forCell(new CellKey(H, dimension, 27)).isEmpty());
+    }
     @Test void rotatedFortReadDomainIncludesTheActualRasterGuardAndExternalApron(){
         var frame=new Frame(new Point2q(52736,243968),247565951,1044812234,87,false);
         var site=new SiteRecord(new SiteId("fixture",SiteKind.FORT,0),0,frame,

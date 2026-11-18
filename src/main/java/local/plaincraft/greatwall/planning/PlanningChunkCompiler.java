@@ -88,7 +88,7 @@ public final class PlanningChunkCompiler {
      */
     public Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash,
                                                        String dimension, OwnerProgress progress) {
-        record Owned(CellKey cell, ChunkKey owner, List<ChunkKey> owners, SegmentPlan plan) { }
+        record Owned(CellKey cell, List<ChunkKey> owners, SegmentPlan plan, PlanWindow segmentWindow) { }
         // Group by owner, so a chunk that several cells admit is compiled ONCE with all of them.
         //
         // The old shape enumerated (cell, owner) pairs and stored each result with a plain put. A seam
@@ -105,15 +105,20 @@ public final class PlanningChunkCompiler {
                 long to = from + plan.geometry().localSQ8().getLast();
                 var firstCell = Math.floorDiv(from, 64L * 256);
                 var lastCell = Math.floorDiv(to + 64L * 256 - 1, 64L * 256);
+                // 同段重复查询不同 cell；预先建立只读索引，仍保留原窗口和接缝归属。
+                var segmentWindow = new PlanWindow(List.of(plan));
+                var ownerLookup = coverage.prepareOwners(segmentWindow);
                 for (long cell = firstCell; cell <= lastCell; cell++) {
                     var cellKey = new CellKey(recipeHash, dimension, cell);
-                    var owners = coverage.realizationOwners(cellKey, new PlanWindow(List.of(plan)));
+                    var owners = ownerLookup.forCell(cellKey);
+                    if (owners.isEmpty()) continue;
+                    var admitted = new Owned(cellKey, owners, plan, segmentWindow);
                     for (var owner : owners) {
                         // The whole owner list travels with the item: a component's support table and its
                         // ground-exit walk read every cell of its axis-aligned bounds, which reaches into
                         // the neighbouring chunks, so the column map of one owner alone cannot serve it.
                         byOwner.computeIfAbsent(owner, ignored -> new java.util.ArrayList<>())
-                                .add(new Owned(cellKey, owner, owners, plan));
+                                .add(admitted);
                     }
                 }
             } catch (Throwable failure) {
@@ -200,7 +205,7 @@ public final class PlanningChunkCompiler {
                         // look for ground exits far outside the cell and fail - a measured run threw
                         // "no proven ground exit for break" for 1532 of 2131 owners that way.
                         realization = resolveCell(item.cell(), columns,
-                                new PlanWindow(List.of(item.plan())), protectionHash);
+                                item.segmentWindow(), protectionHash);
                     } catch (Throwable failure) {
                         // Memoised so every owner of this cell fails the same way, instead of each paying
                         // the realization again to hit the same failure.
