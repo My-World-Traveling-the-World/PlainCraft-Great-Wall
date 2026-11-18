@@ -173,7 +173,11 @@ class GroundExitReservationTest {
             assertInstanceOf(IOException.class,root(failure));
             assertEquals(0,resolver.diagnostics().get("temporary-bytes"));
             assertEquals(resolver.diagnostics().get("summary-bytes").longValue(),parent.stats().used());
-            resolver.close();assertReleased(resolver,parent);
+            resolver.close();
+            // 结果的副本可以先唤醒等待者；同一执行器上的哨兵等发布线程跑完移表和归还准入回调。
+            worker.submit(() -> {}).get(10,TimeUnit.SECONDS);
+            resolver.drained().get(10,TimeUnit.SECONDS);
+            assertReleased(resolver,parent);
         }
     }
 
