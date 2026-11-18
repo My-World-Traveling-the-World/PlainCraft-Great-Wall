@@ -149,6 +149,10 @@ public final class PlanningChunkCompiler {
         // the wall component alone is ~400 ms of work.
         var cellColumns = new HashMap<CellKey, Map<Point3i, SurfaceProbe.ColumnView>>();
         var cellRealizations = new HashMap<CellKey, Object>();
+        // 只按 owner 分配取证位置；编译仍接收整个单元，以保留跨区块台阶与围栏连接。
+        var cellVoxelOwners = new HashMap<CellKey, CellVoxelOwners>();
+        long indexedVoxels = 0;
+        long previousVoxelChecks = 0;
         int done = 0;
         int failed = 0;
         var tally = new FailureTally(FAILURE_DETAIL_LIMIT);
@@ -208,17 +212,14 @@ public final class PlanningChunkCompiler {
                 }
                 var cellResult = (RealizationCell) realization;
                 cells.add(cellResult);
-                // The pre-write state of this owner's own cells, gathered from every cell that admits it.
-                // ChunkPlanCompiler needs it for T0_MISSING; with one cell it used to see only that cell's
-                // voxels, which is the second half of why a seam chunk lost content.
-                for (var component : cellResult.components()) {
-                    for (var v : component.voxels()) {
-                        if (Math.floorDiv(v.pos().x(), 16) != owner.x()
-                                || Math.floorDiv(v.pos().z(), 16) != owner.z()) continue;
-                        var column = columns.get(new Point3i(v.pos().x(), 0, v.pos().z()));
-                        if (column != null) before.putIfAbsent(v.pos(), column.state(v.pos().y()));
-                    }
+                var ownerIndex = cellVoxelOwners.get(item.cell());
+                if (ownerIndex == null) {
+                    ownerIndex = new CellVoxelOwners(cellResult);
+                    cellVoxelOwners.put(item.cell(), ownerIndex);
+                    indexedVoxels += ownerIndex.indexedVoxels();
                 }
+                previousVoxelChecks += ownerIndex.indexedVoxels();
+                ownerIndex.collectBefore(owner, columns, before);
             }
             // One owner's failure must not cost the rest of the window its wall: that owner is skipped,
             // named in the log, and the remaining owners still publish.
@@ -248,6 +249,9 @@ public final class PlanningChunkCompiler {
                 });
             }
         }
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:编译] 施工前状态体素分桶 cells={} indexedVoxels={} previousVoxelChecks={}",
+                cellVoxelOwners.size(), indexedVoxels, previousVoxelChecks);
         failed = failedCounter.get();
         int ownerCountDone = pending.size();
         // Progress for the compile stage, which used to report only once - at the end - so the bar jumped
