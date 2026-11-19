@@ -135,6 +135,35 @@ class PlanningChunkCompilerSeamTest {
                 CanonicalCodec.writePlan(delivered.get(key)), key.toString()));
     }
 
+    @Test void realizationCancellationIsNotCountedAsAnOrdinaryRejectedOwner() {
+        var fixture=new Fixture();var calls=new java.util.concurrent.atomic.AtomicInteger();
+        var cause=new java.util.concurrent.CancellationException("单元实现取消");
+        var compiler=fixture.compiler(input->{calls.incrementAndGet();throw cause;});
+        assertSame(cause,assertThrows(java.util.concurrent.CancellationException.class,
+                ()->compiler.compileWindow(fixture.both(),HASH,DIM)));
+        assertEquals(1,calls.get(),"取消之后不能继续取下一个单元");
+    }
+
+    @Test void sessionClosureDuringRealizationStopsBeforeAnyPublication() {
+        var fixture=new Fixture();var calls=new java.util.concurrent.atomic.AtomicInteger();
+        var closed=new java.util.concurrent.atomic.AtomicBoolean();
+        var cause=new local.plaincraft.greatwall.model.WallFailure(FailureCode.CLOSED,"会话关闭哨兵");
+        var compiler=fixture.compiler(input->{calls.incrementAndGet();closed.set(true);return result(input,List.of());});
+        assertSame(cause,assertThrows(local.plaincraft.greatwall.model.WallFailure.class,
+                ()->compiler.compileInto(fixture.both(),HASH,DIM,null,p->fail("关闭之后不得发布"),
+                        ()->{if(closed.get())throw cause;})));
+        assertEquals(1,calls.get());
+    }
+
+    @Test void closedSessionDoesNotEnumerateOrRealizeWork() {
+        var fixture=new Fixture();var calls=new java.util.concurrent.atomic.AtomicInteger();
+        var cause=new local.plaincraft.greatwall.model.WallFailure(FailureCode.CLOSED,"枚举前关闭");
+        var compiler=fixture.compiler(input->{calls.incrementAndGet();return result(input,List.of());});
+        assertSame(cause,assertThrows(local.plaincraft.greatwall.model.WallFailure.class,
+                ()->compiler.compileInto(fixture.both(),HASH,DIM,null,p->fail("不得发布"),()->{throw cause;})));
+        assertEquals(0,calls.get());
+    }
+
     private record Visit(long segment, CellKey cell) { }
     private record Progress(int done, int total) { }
     private record BatchResult(Map<ChunkKey, ChunkWritePlan> plans, Map<Visit, Integer> visits, List<Progress> progress) { }

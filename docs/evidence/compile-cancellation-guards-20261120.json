@@ -1,0 +1,26 @@
+[
+  {
+    "mutation": "disable-cancellation",
+    "target_red": true,
+    "log": "build-round85-mutant-disable-cancellation.log",
+    "sha256": "0ba982cb2765a0e3343301e569b712cf54830de30ddd07287fa080f5ec295198"
+  },
+  {
+    "mutation": "ignore-session",
+    "target_red": true,
+    "log": "build-round85-mutant-ignore-session.log",
+    "sha256": "b6eb7ca78fe73c215ec8a891b196ab7294e366178a1b32d9e343c407e196ae13"
+  },
+  {
+    "mutation": "swallow-cell-cancel",
+    "target_red": true,
+    "log": "build-round85-mutant-swallow-cell-cancel.log",
+    "sha256": "1f494915ab0255e006dc25440eead608444ddf99ba32f18be9b2ba12cc8e2d43"
+  },
+  {
+    "mutation": "claim-after-cancel",
+    "target_red": true,
+    "log": "build-round85-mutant-claim-after-cancel.log",
+    "sha256": "c88a9345a098edd6097dd8ef328f4b16ba080e60f344c39703574e4a0353dd13"
+  }
+]

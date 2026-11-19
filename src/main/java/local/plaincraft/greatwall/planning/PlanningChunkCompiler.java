@@ -123,17 +123,34 @@ public final class PlanningChunkCompiler {
 
     int compileInto(PlanWindow plans, String recipeHash, String dimension, OwnerProgress progress,
             int batchSize, int workers, Consumer<ChunkWritePlan> output) {
-        return compileOwners(PlanningOwnerIndex.prepare(plans, recipeHash, dimension, coverage), recipeHash,
-                progress, batchSize, workers, output);
+        return compileInto(plans,recipeHash,dimension,progress,batchSize,workers,output,new CompileCancellation());
+    }
+
+    /** 正式会话关闭检查贯穿枚举、实现和工作项认领，不只停在发布边界。 */
+    public int compileInto(PlanWindow plans,String recipeHash,String dimension,OwnerProgress progress,
+            Consumer<ChunkWritePlan> output,Runnable active) {
+        return compileInto(plans,recipeHash,dimension,progress,OWNER_BATCH_SIZE,compileWorkers(),output,
+                new CompileCancellation(active));
+    }
+
+    private int compileInto(PlanWindow plans,String recipeHash,String dimension,OwnerProgress progress,
+            int batchSize,int workers,Consumer<ChunkWritePlan> output,CompileCancellation cancellation) {
+        var owners=PlanningOwnerIndex.prepare(plans,recipeHash,dimension,coverage,cancellation);
+        return compileOwners(owners,recipeHash,progress,batchSize,workers,output,cancellation);
     }
 
     // 只切分已冻结的区块工作项；不能先按段过滤再重算接缝归属。
     int compileOwners(List<PlanningOwnerIndex.OwnerWork> owners, String recipeHash, OwnerProgress progress,
             int batchSize, int workers, Consumer<ChunkWritePlan> output) {
+        return compileOwners(owners,recipeHash,progress,batchSize,workers,output,new CompileCancellation());
+    }
+
+    private int compileOwners(List<PlanningOwnerIndex.OwnerWork> owners,String recipeHash,OwnerProgress progress,
+            int batchSize,int workers,Consumer<ChunkWritePlan> output,CompileCancellation cancellation) {
         try(var retained=memory.open()) {
             try {
                 sampleMemory(retained);
-                return compileOwnersWindow(owners,recipeHash,progress,batchSize,workers,output,retained);
+                return compileOwnersWindow(owners,recipeHash,progress,batchSize,workers,output,retained,cancellation);
             } finally {
                 if(realizationPlanner!=null) {
                     var stats=realizationPlanner.buildingMemoStats();
@@ -157,7 +174,7 @@ public final class PlanningChunkCompiler {
 
     // 大楼体只在本次窗口循环中保留，发布回调抛错也通过外层finally归还。
     private int compileOwnersWindow(List<PlanningOwnerIndex.OwnerWork> owners, String recipeHash, OwnerProgress progress,
-            int batchSize, int workers, Consumer<ChunkWritePlan> output, CompileWindowMemory.Window retained) {
+            int batchSize, int workers, Consumer<ChunkWritePlan> output, CompileWindowMemory.Window retained, CompileCancellation cancellation) {
         Objects.requireNonNull(output, "output");
         // 工作线程只写当前批；调用线程同步交付后清表，计划不会留在整窗编译器里。
         var batchPlans = new java.util.concurrent.ConcurrentHashMap<ChunkKey, ChunkWritePlan>();
@@ -172,6 +189,7 @@ public final class PlanningChunkCompiler {
         var lastOwner = new java.util.IdentityHashMap<PlanningOwnerIndex.CellWork, Integer>();
         int ordinal = 0;
         for (var owner : owners) {
+            cancellation.check();
             for (var item : owner.cells()) lastOwner.put(item, ordinal);
             ordinal++;
         }
@@ -193,8 +211,9 @@ public final class PlanningChunkCompiler {
         int reported = 0;
         long started = System.nanoTime();
         ordinal = 0;
-        try (var pending = new OwnerCompileBatch(batchSize, workers)) {
+        try (var pending = new OwnerCompileBatch(batchSize, workers,cancellation)) {
             for (var entry : owners) {
+                cancellation.check();
                 var owner = entry.owner();
                 var items = entry.cells();
                 var cells = new java.util.ArrayList<RealizationCell>();
@@ -203,6 +222,7 @@ public final class PlanningChunkCompiler {
                 var before = new HashMap<Point3i, String>();
                 Throwable cellFailure = null;
                 for (var item : items) {
+                    cancellation.check();
                     ownerPlans.add(item.plan());
                     var failure = cellFailures.get(item);
                     if (failure != null) {
@@ -217,12 +237,14 @@ public final class PlanningChunkCompiler {
                             RealizationCell cell;
                             try { cell = realization.resolve(context.input(item, evidence)); }
                             finally { sampleMemory(retained); }
+                            cancellation.check();
                             work = new CellWork(evidence, cell, new CellVoxelOwners(cell));
                             cellWork.put(item, work);
                             indexedCells++;
                             peakCells = Math.max(peakCells, cellWork.size());
                             indexedVoxels += work.voxels().indexedVoxels();
                         } catch (Throwable unavailable) {
+                            cancellation.rethrowCancellation(unavailable);
                             // 同一工作项共享失败，另一段即使同弧长也可以独立编译。
                             cellFailures.put(item, unavailable);
                             cellFailure = unavailable;
@@ -251,6 +273,7 @@ public final class PlanningChunkCompiler {
                                         owner.x(), owner.z());
                             }
                         } catch (Throwable failure) {
+                            cancellation.rethrowCancellation(failure);
                             recordFailure(owner, failure, tally, failedCounter);
                         } finally {
                             doneCounter.incrementAndGet();
@@ -258,6 +281,7 @@ public final class PlanningChunkCompiler {
                     });
                     if (drained) {
                         long outputStart = System.nanoTime();
+                        cancellation.check();
                         emitted += emitBatch(batchPlans, output);
                         outputNanos += System.nanoTime() - outputStart;
                     }
@@ -281,7 +305,8 @@ public final class PlanningChunkCompiler {
             // 尾批可能没凑满，必须显式结案后才能返回完整结果。
             pending.drain();
             long outputStart = System.nanoTime();
-            emitted += emitBatch(batchPlans, output);
+            cancellation.check();
+                        emitted += emitBatch(batchPlans, output);
             outputNanos += System.nanoTime() - outputStart;
             peakQueued = pending.peak();
         }
