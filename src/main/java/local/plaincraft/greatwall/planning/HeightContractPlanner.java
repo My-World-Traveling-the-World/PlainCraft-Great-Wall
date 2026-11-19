@@ -27,6 +27,12 @@ public final class HeightContractPlanner {
         for (long s : values.keySet()) {
             if (s != prefix.lengthBeforeQ8() && s != prefix.lengthBeforeQ8() + geometry.localSQ8().getLast()) {
                 result.add(pointAt(geometry, prefix, sites, s));
+                if (ImportedSiteGeometry.enabled(recipe)) {
+                    // 站点超界后会撤掉接引变形；提前采全候选路线，求解时不能偷读新世界列。
+                    result.add(ArcLength.pointAt(geometry, s - prefix.lengthBeforeQ8()));
+                    for (var site : sites) if (site.state() == SiteState.PLANNED)
+                        result.add(pointAt(geometry, prefix, List.of(site), s));
+                }
             }
         }
         for (var site : sites) if (site.state() == SiteState.PLANNED) result.addAll(platformSamples(site));
@@ -36,12 +42,25 @@ public final class HeightContractPlanner {
     }
 
     public StationTable solve(SegmentGeometry geometry, PrefixSummary prefix, List<SiteRecord> sites, Map<Point2q, ColumnSample> columns) {
+        return solveWithSites(geometry, prefix, sites, columns).stations();
+    }
+
+    /** 同时交付站表和站点裁决，生产编排不得把已拒绝的原始站点重新传回去。 */
+    public record Solution(StationTable stations, List<SiteRecord> sites) {}
+
+    public Solution solveWithSites(SegmentGeometry geometry, PrefixSummary prefix, List<SiteRecord> sites,
+            Map<Point2q, ColumnSample> columns) {
         if (!geometry.key().recipeHash().equals(recipe.recipeHash()) || prefix.beforeSegment() != geometry.key().index()) {
             throw new WallFailure(FailureCode.RECIPE_MISMATCH, "height inputs do not share a segment prefix");
         }
-        var positions = stationPositions(geometry, prefix, sites);
         var breaks = new ArrayList<BreakInterval>();
         long start = prefix.lengthBeforeQ8(), end = Math.addExact(start, geometry.localSQ8().getLast());
+        if (ImportedSiteGeometry.enabled(recipe)) {
+            var decision = ImportedSiteHeightPolicy.apply(recipe, sites, columns, start, end);
+            sites = decision.sites();
+            breaks.addAll(decision.breaks());
+        }
+        var positions = stationPositions(geometry, prefix, sites);
         var nodes = new ArrayList<Node>();
         for (var entry : positions.entrySet()) {
             long s = entry.getKey();
@@ -82,7 +101,8 @@ public final class HeightContractPlanner {
             }
         }
         int min = Math.addExact(recipe.bounds().minY(), ImportedSiteGeometry.enabled(recipe) ? 15 : 20);
-        int max = Math.subtractExact(recipe.bounds().maxYExclusive(), ImportedSiteGeometry.enabled(recipe) ? 43 : 16);
+        // 楼体已按真实高度预检；普通墙最高为 W+2，不能拿最高楼的43格统一限制所有墙站。
+        int max = Math.subtractExact(recipe.bounds().maxYExclusive(), ImportedSiteGeometry.enabled(recipe) ? 3 : 16);
         int n = nodes.size();
         long[] limits = new long[n];
         boolean[] cuts = new boolean[n];
@@ -138,7 +158,8 @@ public final class HeightContractPlanner {
         }
         var merged = mergeBreaks(breaks);
         var table = new StationTable(stations, merged, "0".repeat(64), biomeKeys);
-        return new StationTable(stations, merged, DeterministicHash.sha256(CanonicalCodec.stations(table)), biomeKeys);
+        return new Solution(new StationTable(stations, merged,
+                DeterministicHash.sha256(CanonicalCodec.stations(table)), biomeKeys), List.copyOf(sites));
     }
 
     public int walkY(StationTable table, long globalSQ8) {
@@ -211,7 +232,9 @@ public final class HeightContractPlanner {
         for (var b : sorted) {
             if (!result.isEmpty() && result.getLast().range().toQ8() >= b.range().fromQ8()) {
                 var last = result.removeLast();
-                result.add(new BreakInterval(new ArcInterval(last.range().fromQ8(), Math.max(last.range().toQ8(), b.range().toQ8())), BreakReason.SLOPE, BreakScope.PLANNED));
+                var reason = last.reason() == BreakReason.WORLD_LIMIT || b.reason() == BreakReason.WORLD_LIMIT
+                        ? BreakReason.WORLD_LIMIT : BreakReason.SLOPE;
+                result.add(new BreakInterval(new ArcInterval(last.range().fromQ8(), Math.max(last.range().toQ8(), b.range().toQ8())), reason, BreakScope.PLANNED));
             } else result.add(b);
         }
         return List.copyOf(result);

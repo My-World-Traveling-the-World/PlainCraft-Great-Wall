@@ -959,8 +959,9 @@ public final class PlannerScheduler implements AutoCloseable {
             return index == points.size();
         }
         @Override SegmentPlan value() {
-            var table = heights.solve(inputs.geometry, inputs.prefix, provisional, columns);
-            return hashedPlan(inputs.geometry, inputs.prefix, table, sites.bindHeights(provisional, table));
+            var solved = heights.solveWithSites(inputs.geometry, inputs.prefix, provisional, columns);
+            return hashedPlan(inputs.geometry, inputs.prefix, solved.stations(),
+                    sites.bindHeights(solved.sites(), solved.stations()));
         }
     }
 }

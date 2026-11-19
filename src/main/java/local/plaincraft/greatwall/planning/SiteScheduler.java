@@ -103,9 +103,14 @@ public final class SiteScheduler {
             var f = footprint(reference);
             long start = reference.globalSQ8() + f.minX() * 256L, end = reference.globalSQ8() + f.maxXExclusive() * 256L;
             boolean broken = heights.breaks().stream().anyMatch(b -> b.scope() == BreakScope.PLANNED && b.range().fromQ8() < end && b.range().toQ8() > start);
+            // 预检产生的世界高度拒绝不能在绑定阶段退化为含糊的坡度错误。
+            var reason = s.state() == SiteState.SUPPRESSED ? s.reason() : heights.breaks().stream()
+                    .filter(b -> b.scope() == BreakScope.PLANNED && b.range().fromQ8() < end && b.range().toQ8() > start)
+                    .map(BreakInterval::reason).filter(r -> r == BreakReason.WORLD_LIMIT).findFirst()
+                    .or(() -> broken ? Optional.of(BreakReason.SLOPE) : s.reason());
             result.add(new SiteRecord(s.id(), s.globalSQ8(), frame, worldBounds(s.id(), frame),
                     broken ? SiteState.SUPPRESSED : s.state(), s.absorbedBy(),
-                    broken ? Optional.of(BreakReason.SLOPE) : s.reason()));
+                    reason));
         }
         return List.copyOf(result);
     }
