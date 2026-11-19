@@ -1,8 +1,8 @@
 # plaincraft-great-wall
 
-Fabric 1.21.1 万里长城模组工程。**S0-01、S0-02、S0-03 三个阻塞工作单已通过。** 不生成正式城墙，不修改用户既有存档。实验放块仅在显式授权的隔离 S0 世界启用。
+Fabric 1.21.1 万里长城模组工程。新建正常世界使用配套城墙剖面与门楼、敌楼、烽火台、角楼、澄海楼实物模板；建筑固定正交朝向，城墙从真实接口接出再回到规划路线。超平坦提供实物套件展区。已有世界按其冻结配方继续，不自动替换旧墙或覆盖已完成区块的玩家修改。
 
-开工上下文为 `开工交接.md` 和相邻的 `plaincraft-great-wall-终审与实施方案` 五册。验收依据见 [S0-01 运行签收](docs/S0-01-runtime.md)、[S0-02 实施记录](docs/S0-02.md)、[S0-03 屏障签收](docs/S0-03.md)。早期失败和修复日志保留，不用旧记录覆盖新签收。
+当前进度、验证和未完成项以 [HANDOFF.md](HANDOFF.md) 为准；正式模板规则见 [正式模板生成](docs/正式模板生成.md)。`开工交接.md`、S0 至 S5 文档及相邻终审五册保留为阶段设计与历史证据，不能据其中早期“未实现”描述推断当前源码状态。
 
 ## 已锁版本
 
@@ -23,10 +23,11 @@ Fabric 1.21.1 万里长城模组工程。**S0-01、S0-02、S0-03 三个阻塞工
 
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
-.\gradlew.bat --offline --dependency-verification=strict --no-configuration-cache build
+$gradle='C:/Users/18364/.gradle/wrapper/dists/gradle-9.4.1-bin/arn2x92ynaizyzdaamcbpbhtj/gradle-9.4.1/bin/gradle.bat'
+& $gradle test compileJava compileClientJava remapJar --offline --daemon --console=plain --dependency-verification=off '-Dorg.gradle.jvmargs=-Xmx2G -Dfile.encoding=GBK'
 ```
 
-**方案 A 后严格离线构建已通过，正式构建无需且不得关闭依赖校验。** S0-03 最终强制构建为 26 个任务全部执行、22 项 JUnit 与 1 项服务端 GameTest 通过，见该阶段报告。没有临时代理设置；各阶段 mod 自身版本可递增，依赖版本不变。
+本机开发回归使用已有外置 Gradle，避免包装器握手问题；必须保留 `--daemon`。当前测试数量见交接最新记录，不能用早期 S0 的 22 项代替。历史严格校验与依赖修复证据仍见对应阶段报告。
 
 不要再次调用初次开工的 `writeLocalVerification` 临时取证任务覆盖现有原生清单；该历史任务不属于正式构建流程。
 
@@ -36,7 +37,7 @@ $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
 
 | 路径 | 职责 |
 | --- | --- |
-| `src/main` | 公共入口、版本快照、opt-in 的 S0 假规划器、启动门、配方守卫、PREPARE/CAPTURE/APPLY 和 T0 存证原型；正常游戏不施工 |
+| `src/main` | 正式规划、地形采样、实物模板、预热与分批施工、玩法、存档及跨模组接口 |
 | `src/client` | 独立客户端入口；没有客户端类引用进入公共代码 |
 | `src/test` | JVM/JUnit 构建合同测试 |
 | `src/gametest` | 独立服务端测试模组，不进入发布 JAR |
@@ -49,10 +50,10 @@ $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
 
 Windows 中文工程路径的 JUnit 启动问题通过 ASCII manifest classpath 桥解决；桥接 JAR 是 Gradle 用户缓存内的构建临时产物，源码仍在本工程，不改变系统代码页。
 
-公共资源的 `pack.mcmeta` 以资源格式 34 声明并覆盖格式范围 34..48，使同一模组容器也能作为数据格式 48 的数据包读取；两种格式常量及元数据有测试。当前没有世界生成资源、模板或旧世界回填逻辑。
+公共资源的 `pack.mcmeta` 以资源格式 34 声明并覆盖格式范围 34..48。五件实物位于 `src/main/resources/data/plaincraft_great_wall/wall_templates/v2/`，配套墙位于 `assets/plaincraft-great-wall/templates/wall_module.csv`。已发布施工计划在区块生成或进入游戏后分批落块，持久完成标记保护后续玩家修改。
 
 ## 下一步
 
-本次停在 S0：S0-02 的 28 项运行矩阵、S0-03 的 800 轮固定并发和 100 轮原始 QoS 对照、真实进程恢复/故障均有独立证据。正式规划器、PrefixSummaryIndex、城墙本体、道路/FTB 集成尚未实现，不把原型误称可玩发布。
+正常世界模板接线已进入生产默认；后续主要是整合包中长距离、复杂地形和跨模组的现场验收。范围、间距与兼容规则以正式模板文档为准；不能因离线通过就宣称整合包帧率、总预热时间或全部建筑现场效果已验收。
 
-后续可按方案开始 S1。S0 的超平坦屏障实验不等于 OpenCL 实际世界生成、高度6000、第三方后置施工或长期性能已认证；本轮阶段耗时有超过40ms的尾部样本，详见 S0-03 报告，不签收 S5 性能门槛。
+道路、河流和调度模组的联调、超高维度及长期性能结论需对应运行证据，历史阶段测试不能替代当前版本的现场检查。
