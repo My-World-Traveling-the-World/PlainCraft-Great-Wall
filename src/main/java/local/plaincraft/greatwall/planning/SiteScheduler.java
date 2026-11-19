@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import local.plaincraft.greatwall.component.ImportedSiteGeometry;
 import local.plaincraft.greatwall.geometry.ArcLength;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.geometry.FixedMath;
@@ -55,7 +56,8 @@ public final class SiteScheduler {
             if (prefix == null) throw new IllegalArgumentException("missing exact schedule prefix");
             if (g.terminal().isPresent()) terminalS = Math.min(terminalS, Math.addExact(prefix.lengthBeforeQ8(), g.terminal().get().localSQ8()));
         }
-        long low = Math.max(0, fromQ8 - 256L * 256), high = Math.addExact(toQ8, 256L * 256);
+        long halo = ImportedSiteGeometry.enabled(recipe) ? 512L * 256 : 256L * 256;
+        long low = Math.max(0, fromQ8 - halo), high = Math.addExact(toQ8, halo);
         var sites = new ArrayList<SiteRecord>();
         for (long n = Math.max(1, low / (300 * 256)); n <= high / (300 * 256) + 1; n++) {
             SiteKind kind = (n & 1) == 1 ? SiteKind.ENEMY_TOWER : SiteKind.BEACON;
@@ -69,11 +71,11 @@ public final class SiteScheduler {
             add(sites, new SiteId(recipe.wallId(), SiteKind.FORT, n), fortPositionQ8(n), low, high, terminalS, geometries, prefixes);
         }
         sites.sort(ORDER);
-        var resolved = resolve(sites);
+        var resolved = ImportedSiteGeometry.enabled(recipe) ? resolveImported(sites) : resolve(sites);
         var selected = new ArrayList<SiteRecord>();
         var included = new HashSet<SiteId>();
         for (var s : resolved) {
-            Bounds local = footprint(s.id().kind());
+            Bounds local = footprint(s);
             long start = s.globalSQ8() + local.minX() * 256L, end = s.globalSQ8() + local.maxXExclusive() * 256L;
             if (start < toQ8 && end > fromQ8 || s.globalSQ8() >= fromQ8 && s.globalSQ8() < toQ8) {
                 selected.add(s); included.add(s.id());
@@ -97,10 +99,10 @@ public final class SiteScheduler {
             long sampleS = Math.clamp(reference.globalSQ8(), heights.stations().getFirst().globalSQ8(), heights.stations().getLast().globalSQ8());
             int y = planner.walkY(heights, sampleS);
             var frame = new Frame(s.frame().center(), s.frame().txQ30(), s.frame().tzQ30(), y, s.frame().mirror());
-            var f = footprint(reference.id().kind());
+            var f = footprint(reference);
             long start = reference.globalSQ8() + f.minX() * 256L, end = reference.globalSQ8() + f.maxXExclusive() * 256L;
             boolean broken = heights.breaks().stream().anyMatch(b -> b.scope() == BreakScope.PLANNED && b.range().fromQ8() < end && b.range().toQ8() > start);
-            result.add(new SiteRecord(s.id(), s.globalSQ8(), frame, worldBounds(s.id().kind(), frame),
+            result.add(new SiteRecord(s.id(), s.globalSQ8(), frame, worldBounds(s.id(), frame),
                     broken ? SiteState.SUPPRESSED : s.state(), s.absorbedBy(),
                     broken ? Optional.of(BreakReason.SLOPE) : s.reason()));
         }
@@ -116,6 +118,12 @@ public final class SiteScheduler {
             case RAMP -> new Bounds(-30, -33, -15, 30, 3, 15);
             default -> throw new IllegalArgumentException("not a scheduled fixed-footprint site: " + kind);
         };
+    }
+
+    private Bounds footprint(SiteRecord site) {
+        if (!ImportedSiteGeometry.enabled(recipe)) return footprint(site.id().kind());
+        int reach = ImportedSiteGeometry.reach(site.id());
+        return new Bounds(-reach, -15, -reach, reach + 1, 43, reach + 1);
     }
 
     private void add(List<SiteRecord> sites, SiteId id, long s, long low, long high, long terminal,
@@ -137,10 +145,11 @@ public final class SiteScheduler {
         long total = geometry.localSQ8().getLast();
         int y = Math.toIntExact(geometry.start().walkY() + FixedMath.roundDiv((geometry.end().walkY() - (long) geometry.start().walkY()) * localS, total));
         var frame = new Frame(point, tx, tz, y, mirror);
-        sites.add(new SiteRecord(id, s, frame, worldBounds(id.kind(), frame), SiteState.PLANNED, Optional.empty(), Optional.empty()));
+        if (ImportedSiteGeometry.enabled(recipe)) frame = ImportedSiteGeometry.cardinal(frame);
+        sites.add(new SiteRecord(id, s, frame, worldBounds(id, frame), SiteState.PLANNED, Optional.empty(), Optional.empty()));
     }
 
-    private static List<SiteRecord> resolve(List<SiteRecord> sites) {
+    private List<SiteRecord> resolve(List<SiteRecord> sites) {
         var result = new ArrayList<SiteRecord>();
         var visited = new HashSet<SiteId>();
         for (var start : sites) {
@@ -168,7 +177,7 @@ public final class SiteScheduler {
                     Point2q center = Projection.local(winner.frame(), (sockets++ == 0 ? -12 : 12) * 256, -17 * 256);
                     frame = new Frame(center, winner.frame().txQ30(), winner.frame().tzQ30(), winner.frame().walkY(), frame.mirror());
                 }
-                result.add(new SiteRecord(s.id(), s.globalSQ8(), frame, worldBounds(s.id().kind(), frame),
+                result.add(new SiteRecord(s.id(), s.globalSQ8(), frame, worldBounds(s.id(), frame),
                         absorb ? SiteState.ABSORBED : SiteState.SUPPRESSED, Optional.of(winner.id()),
                         absorb ? Optional.empty() : Optional.of(BreakReason.CONFLICT)));
             }
@@ -183,8 +192,12 @@ public final class SiteScheduler {
         return a.minX() < b.maxXExclusive() && b.minX() < a.maxXExclusive()
                 && a.minZ() < b.maxZExclusive() && b.minZ() < a.maxZExclusive();
     }
-    private static Bounds worldBounds(SiteKind kind, Frame frame) {
-        var f = footprint(kind);
+    private Bounds worldBounds(SiteId id, Frame frame) {
+        // 新配方按真模板预告占地；旧配方仍保留原包围盒，避免重开时改写身份。
+        if (ImportedSiteGeometry.enabled(recipe)) {
+            return ImportedSiteGeometry.layout(id, frame).boundsWithStraightWalls(0);
+        }
+        var f = footprint(id.kind());
         long minX = Long.MAX_VALUE, minZ = Long.MAX_VALUE, maxX = Long.MIN_VALUE, maxZ = Long.MIN_VALUE;
         for (int x : new int[] {f.minX(), f.maxXExclusive()}) for (int z : new int[] {f.minZ(), f.maxZExclusive()}) {
             var p = Projection.local(frame, x * 256L, (frame.mirror() ? -z : z) * 256L);
@@ -194,5 +207,20 @@ public final class SiteScheduler {
         return new Bounds(FixedMath.floorBlock(minX), Math.addExact(frame.walkY(), f.minY()), FixedMath.floorBlock(minZ),
                 Math.toIntExact(-Math.floorDiv(-maxX, 256)), Math.addExact(frame.walkY(), f.maxYExclusive()),
                 Math.toIntExact(-Math.floorDiv(-maxZ, 256)));
+    }
+
+    private List<SiteRecord> resolveImported(List<SiteRecord> sites) {
+        var order = Comparator.<SiteRecord>comparingInt(s -> priority(s.id().kind())).reversed().thenComparing(SiteRecord::id, IDS);
+        var result = new ArrayList<SiteRecord>();
+        for (var site : sites) {
+            // 只比较直接冲突的固定候选，不靠窗口内贪心顺序，跨规划段也能得到同一个赢家。
+            var winner = sites.stream().filter(other -> !other.id().equals(site.id()) && order.compare(other, site) < 0
+                    && (Math.abs(other.globalSQ8() - site.globalSQ8())
+                    < (ImportedSiteGeometry.reach(other.id()) + ImportedSiteGeometry.reach(site.id())) * 256L
+                    || overlaps(other.bounds(), site.bounds()))).min(order);
+            result.add(winner.map(other -> new SiteRecord(site.id(), site.globalSQ8(), site.frame(), site.bounds(),
+                    SiteState.SUPPRESSED, Optional.of(other.id()), Optional.of(BreakReason.CONFLICT))).orElse(site));
+        }
+        return List.copyOf(result);
     }
 }
