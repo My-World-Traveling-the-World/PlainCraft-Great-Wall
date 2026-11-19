@@ -28,6 +28,14 @@ public final class ImportedRibbonSection implements IntervalWallTemplate {
 
     @Override public ComponentVoxels compileIntervals(ComponentInput input, List<ArcInterval> intervals,
             List<ArcInterval> walkable, LongFunction<DecaySample> samples, List<Frame> gates, List<SiteRecord> sites) {
+        return compileIntervals(input, intervals, walkable, samples, gates, sites,
+                new ImportedRibbonProjection(input.stations(), sites));
+    }
+
+    /** 同一次实现复用精确投影，避免取证后再为落块重复建树。 */
+    public ComponentVoxels compileIntervals(ComponentInput input, List<ArcInterval> intervals,
+            List<ArcInterval> walkable, LongFunction<DecaySample> samples, List<Frame> gates,
+            List<SiteRecord> sites, ImportedRibbonProjection projection) {
         var stations = input.stations();
         long from = Math.max(stations.getFirst().globalSQ8(), Math.max(0, input.site().globalSQ8() - 32L * 256));
         long to = Math.min(stations.getLast().globalSQ8(), input.site().globalSQ8() + 32L * 256);
@@ -47,7 +55,6 @@ public final class ImportedRibbonSection implements IntervalWallTemplate {
         var columns = input.entranceEvidence().columns();
         long identity = ComponentAssembly.identityHash(input.site().id());
         var buildingBoxes = sites.stream().filter(s -> s.state() == SiteState.PLANNED).map(ImportedSiteGeometry::bounds).toList();
-        var projection = new ImportedRibbonProjection(stations, sites);
         for (int z = z0; z < z1; z++) for (int x = x0; x < x1; x++) {
             var contract = projection.contract(x, z);
             if (contract == null) continue;

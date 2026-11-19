@@ -437,8 +437,11 @@ public final class RealizationPlanner {
             walkExcluded.addAll(gateWalkIntervals);
             ComponentVoxels component;
             try {
-                component=section.compileIntervals(candidate,buildable,subtract(new ArcInterval(from,to),walkExcluded),
-                        s->field.sample(s,PaletteFamily.STONE,maintained),gateEndPlanes,sites);
+                component=section instanceof ImportedRibbonSection imported
+                        ? imported.compileIntervals(candidate,buildable,subtract(new ArcInterval(from,to),walkExcluded),
+                                s->field.sample(s,PaletteFamily.STONE,maintained),gateEndPlanes,sites,importedProjection)
+                        : section.compileIntervals(candidate,buildable,subtract(new ArcInterval(from,to),walkExcluded),
+                                s->field.sample(s,PaletteFamily.STONE,maintained),gateEndPlanes,sites);
                 if(ImportedSiteGeometry.enabled(recipe))component=ImportedConstructionGuard.validate(component,input,bounds);
             } catch (IllegalArgumentException outsideCell) {
                 // The template validates its own inputs (WallSection throws "build interval outside cell",
