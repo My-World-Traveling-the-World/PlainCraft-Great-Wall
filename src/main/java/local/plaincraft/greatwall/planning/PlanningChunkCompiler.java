@@ -11,6 +11,7 @@ import local.plaincraft.greatwall.generation.CoveragePlanner;
 import local.plaincraft.greatwall.generation.SurfaceProbe;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.RealizationPlanner;
+import local.plaincraft.greatwall.diagnostics.CompileWindowMemory;
 
 /**
  * Planning-time chunk compiler: runs the whole realization + chunk-plan compilation in the planning
@@ -32,6 +33,7 @@ public final class PlanningChunkCompiler {
     private final PlanningColumnProvider.ColumnSource columns;
     private final PlanningCompileContext context;
     private RealizationPlanner realizationPlanner;
+    private CompileWindowMemory memory = new CompileWindowMemory();
 
     public PlanningChunkCompiler(RealizationPlanner realization, ChunkPlanCompiler compiler,
             FineHeightIndex index, List<Bounds> structures) {
@@ -39,6 +41,13 @@ public final class PlanningChunkCompiler {
         // 捕获区块也必须选择同一版模板，否则新楼的高屋顶和宽底板不在证据范围内。
         coverage = new CoveragePlanner(realization.templateVersion());
         realizationPlanner = realization;
+    }
+
+    /** 同一会话的多个编译器共享观测器，避免把每窗口64MiB误读为整个会话的总额。 */
+    public PlanningChunkCompiler(RealizationPlanner realization, ChunkPlanCompiler compiler,
+            FineHeightIndex index, List<Bounds> structures, CompileWindowMemory memory) {
+        this(realization,compiler,index,structures);
+        this.memory=Objects.requireNonNull(memory);
     }
 
     @FunctionalInterface
@@ -121,22 +130,34 @@ public final class PlanningChunkCompiler {
     // 只切分已冻结的区块工作项；不能先按段过滤再重算接缝归属。
     int compileOwners(List<PlanningOwnerIndex.OwnerWork> owners, String recipeHash, OwnerProgress progress,
             int batchSize, int workers, Consumer<ChunkWritePlan> output) {
-        try {
-            return compileOwnersWindow(owners,recipeHash,progress,batchSize,workers,output);
-        } finally {
-            if(realizationPlanner!=null) {
-                var stats=realizationPlanner.buildingMemoStats();
-                realizationPlanner.clearCompiledBuildings();
-                local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
-                        "[GreatWall:编译] 实物楼体复用 编译={} 命中={} 峰值保留字节={} 窗口结束已释放",
-                        stats.loads(),stats.hits(),stats.peak());
+        try(var retained=memory.open()) {
+            try {
+                sampleMemory(retained);
+                return compileOwnersWindow(owners,recipeHash,progress,batchSize,workers,output,retained);
+            } finally {
+                if(realizationPlanner!=null) {
+                    var stats=realizationPlanner.buildingMemoStats();
+                    realizationPlanner.clearCompiledBuildings();
+                    local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                            "[GreatWall:编译] 实物楼体复用 编译={} 命中={} 峰值保留字节={} 窗口结束已释放",
+                            stats.loads(),stats.hits(),stats.peak());
+                }
             }
+        } finally {
+            var stats=memory.snapshot();
+            local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                    "[GreatWall:编译] 会话窗口缓存保留估算 活动窗口={} 峰值窗口={} 当前字节={} 检查点峰值字节={} 已结束窗口={} 不含输出及原生地形",
+                    stats.activeWindows(),stats.peakWindows(),stats.totalBytes(),stats.peakBytes(),stats.closedWindows());
         }
+    }
+
+    private void sampleMemory(CompileWindowMemory.Window retained) {
+        if(realizationPlanner!=null)retained.sample(realizationPlanner.windowMemoStats());
     }
 
     // 大楼体只在本次窗口循环中保留，发布回调抛错也通过外层finally归还。
     private int compileOwnersWindow(List<PlanningOwnerIndex.OwnerWork> owners, String recipeHash, OwnerProgress progress,
-            int batchSize, int workers, Consumer<ChunkWritePlan> output) {
+            int batchSize, int workers, Consumer<ChunkWritePlan> output, CompileWindowMemory.Window retained) {
         Objects.requireNonNull(output, "output");
         // 工作线程只写当前批；调用线程同步交付后清表，计划不会留在整窗编译器里。
         var batchPlans = new java.util.concurrent.ConcurrentHashMap<ChunkKey, ChunkWritePlan>();
@@ -193,7 +214,9 @@ public final class PlanningChunkCompiler {
                         try {
                             // 单元只读取枚举它的段的列，不能拿整窗路线去这一小片证据中找出口。
                             var evidence = columns.columnsFor(item.captureOwners());
-                            var cell = realization.resolve(context.input(item, evidence));
+                            RealizationCell cell;
+                            try { cell = realization.resolve(context.input(item, evidence)); }
+                            finally { sampleMemory(retained); }
                             work = new CellWork(evidence, cell, new CellVoxelOwners(cell));
                             cellWork.put(item, work);
                             indexedCells++;

@@ -33,8 +33,7 @@ final class StartupWindowPublisher {
     // 只搬读写边界；原零成功拒绝、部分失败阈值和预热租约释放次序均原样保留。
     void publish(List<SegmentPlan> plans) {
         if (plans.isEmpty()) {
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_EMPTY no segment plan survived; "
-                    + "wall will not paint");
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_EMPTY 未取得可用分段计划，本次不施工");
             release.run();
             local.plaincraft.greatwall.lifecycle.PrewarmProgress.signalReady();
             local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
@@ -62,12 +61,12 @@ final class StartupWindowPublisher {
         int published = publication.published();
         int failed = publication.failed();
         GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={} chunks={} published={} "
-                        + "failed={} compileMs={} publishMs={} vegetationLeases={} guardMisses={} suppressed={}",
+                        + "failed={} compileMs={} publishMs={} vegetationLeases={} guardMisses={} suppressed={}；整窗编译发布已结案",
                 plans.size(), compiled, published, failed, compileMillis, TimeUnit.NANOSECONDS.toMillis(publishNanos),
                 access.leases(), access.misses(), access.suppressed());
         int tolerated = Math.max(8, compiled / 20);
         if (published == 0) {
-            GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_EMPTY owners={} failed={}",
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_EMPTY owners={} failed={}；没有成功发布的区块，保持未发布状态",
                     compiled, failed);
             release.run();
             PrewarmProgress.finish(false);
@@ -76,7 +75,7 @@ final class StartupWindowPublisher {
         access.enqueue(publication.queuedHashes());
         if (failed > tolerated) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_FAILED published={} failed={} of "
-                            + "{} owners (tolerated {})",
+                            + "{} owners (tolerated {})；发布失败超过容忍上限",
                     published, failed, compiled, tolerated, publication.firstFailure());
             release.run();
             PrewarmProgress.finish(false);
@@ -84,7 +83,7 @@ final class StartupWindowPublisher {
         }
         if (failed > 0) {
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PARTIAL published={} failed={} of "
-                            + "{} owners (tolerated {}); those chunks will not carry the wall",
+                            + "{} owners (tolerated {})；部分区块发布失败，保留已接纳区块的补建队列",
                     published, failed, compiled, tolerated, publication.firstFailure());
         }
         release.run();

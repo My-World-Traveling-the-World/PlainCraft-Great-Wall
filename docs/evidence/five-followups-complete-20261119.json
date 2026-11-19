@@ -1,0 +1,272 @@
+{
+  "date": "2026-11-19",
+  "scope": "five followups after deep review; road round65 + wall rounds80-82",
+  "completed": [
+    "road chunk/config/revision single flight",
+    "actual complex ribbon/dual-building port and reverse-order guards",
+    "frozen v2 bytes, write/reopen/continue and completed player edit guards",
+    "equivalent admission/lease and startup publication responsibility extraction with direct guards",
+    "session aggregate checkpoint cache estimates and success/failure/cancellation cleanup"
+  ],
+  "prior_commits": {
+    "road": "9b0c06d",
+    "wall_fixtures": "97aeea04",
+    "wall_pure_move": "08538566"
+  },
+  "road": {
+    "result": "PASS tests=1683 skipped=0 aborted=0 failed=0",
+    "build_successful": true,
+    "logs": [
+      {
+        "path": ".analysis_tmp/round65-final.log",
+        "bytes": 306648,
+        "sha256": "de8634b8e2193920d7ab95dc287812f9b481c3b1b0cb180de6d49009dbebf2cc"
+      },
+      {
+        "path": ".analysis_tmp/round65-package.log",
+        "bytes": 990,
+        "sha256": "893d97bf2559d8dd8cc645eaf77a557b4eb8c0b39681cb1317b39aad942ae2b4"
+      }
+    ],
+    "artifact": {
+      "path": "fabric/build/libs/roadweaver-fabric-2.3.1-1.21.1-plaincraft-direct-core.0.9.102.jar",
+      "bytes": 7133897,
+      "sha256": "9eb4e0adb8c5d7be5e3bf3311d54b52760bc7e9003a1976142f4aa0871447d0e"
+    },
+    "source": {
+      "files": 715,
+      "effective_over_1000": 0,
+      "normalized_java_sha256": "3f1c1591d7dadc75f0be953c9612ef1986ddce8dcc4ed531f9a88a340869c468",
+      "digest_method": "sorted relative path + NUL + UTF8 LF source + NUL; main/client production Java only",
+      "largest": [
+        {
+          "path": "common/src/main/java/net/shiroha233/roadweaver/pathfinding/sampling/opencl/OpenCLAccurateProgram.java",
+          "effective_lines": 837
+        },
+        {
+          "path": "common/src/main/java/net/shiroha233/roadweaver/client/map/RoadMapScreen.java",
+          "effective_lines": 816
+        },
+        {
+          "path": "common/src/main/java/net/shiroha233/roadweaver/planning/RoadPlanningService.java",
+          "effective_lines": 781
+        },
+        {
+          "path": "common/src/main/java/net/shiroha233/roadweaver/postprocess/RoadSnapService.java",
+          "effective_lines": 779
+        },
+        {
+          "path": "common/src/main/java/net/shiroha233/roadweaver/pathfinding/PathSpanExtractor.java",
+          "effective_lines": 777
+        }
+      ]
+    }
+  },
+  "wall": {
+    "counts": {
+      "tests": 953,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "build_successful": true,
+    "tasks": [
+      "test",
+      "compileClientJava",
+      "remapJar"
+    ],
+    "log": {
+      "path": "build-round82-final.log",
+      "bytes": 82226,
+      "sha256": "58fce093e2c70fc62b90cc25272b6daabadb0b7170d38235fc6202bdb16bbc2a"
+    },
+    "artifact": {
+      "path": "build/libs/plaincraft-great-wall-0.7.126-api-standardization.jar",
+      "bytes": 3656829,
+      "sha256": "cbf8599aaeea1d3952d918e7ed961d38b4d70cd8c86390aab3aacc9ba7d51f15"
+    },
+    "source": {
+      "files": 270,
+      "effective_over_1000": 0,
+      "normalized_java_sha256": "790d937cd570608576c859130292e2595640ecc34a0d5543fd384fb20c5ce428",
+      "digest_method": "sorted relative path + NUL + UTF8 LF source + NUL; main/client production Java only",
+      "largest": [
+        {
+          "path": "src/main/java/local/plaincraft/greatwall/command/GreatWallCommands.java",
+          "effective_lines": 902
+        },
+        {
+          "path": "src/main/java/local/plaincraft/greatwall/lifecycle/ProductionSession.java",
+          "effective_lines": 881
+        },
+        {
+          "path": "src/main/java/local/plaincraft/greatwall/terrain/RealizationPlanner.java",
+          "effective_lines": 801
+        },
+        {
+          "path": "src/main/java/local/plaincraft/greatwall/planning/PlannerScheduler.java",
+          "effective_lines": 793
+        },
+        {
+          "path": "src/main/java/local/plaincraft/greatwall/lifecycle/RootSearch.java",
+          "effective_lines": 762
+        }
+      ]
+    }
+  },
+  "mutations": {
+    "wall_round80": {
+      "table": "docs/evidence/complex-wall-continuation-20261119.json",
+      "count": 5,
+      "log_sha256_verified": true,
+      "rows": [
+        {
+          "mutation": "diagonal",
+          "target": "ImportedComplexWallTest",
+          "target_red": true,
+          "log": "build-round80-mutant-diagonal.log",
+          "sha256": "86f857d00e6f77cd66020a8aa1c4ba3fa68a74c046bdc8c306d18efa9b97abfc"
+        },
+        {
+          "mutation": "cell-phase",
+          "target": "ImportedComplexWallTest",
+          "target_red": true,
+          "log": "build-round80-mutant-cell-phase.log",
+          "sha256": "1081b8ef94c1612828be911df9c7849e2a834c45b13023ea68990fc7d2cdf0d0"
+        },
+        {
+          "mutation": "second-port",
+          "target": "ImportedComplexWallTest",
+          "target_red": true,
+          "log": "build-round80-mutant-second-port.log",
+          "sha256": "283a0d163101a0ba13254eeff9a26011ebf587606a576c39229c6f596758eb0b"
+        },
+        {
+          "mutation": "incomplete",
+          "target": "LegacyWallContinuationTest",
+          "target_red": true,
+          "log": "build-round80-mutant-incomplete.log",
+          "sha256": "13897fd07c735e70a752a69bfe6cbef7a3a5e2124ed13741cfa07a6a8bf8e3aa"
+        },
+        {
+          "mutation": "wrong-hash",
+          "target": "LegacyWallContinuationTest",
+          "target_red": true,
+          "log": "build-round80-mutant-wrong-hash.log",
+          "sha256": "a8a65a1b7c5748372d2e697a8f039c58d7efaf6c462a7f1ace93a6a30ac6bb32"
+        }
+      ]
+    },
+    "wall_round82": {
+      "table": "docs/evidence/window-memory-boundaries-20261119.json",
+      "count": 9,
+      "log_sha256_verified": true,
+      "rows": [
+        {
+          "mutation": "parent-limit",
+          "target": "PlannerAdmissionsTest",
+          "target_red": true,
+          "log": "build-round82-mutant-parent-limit.log",
+          "sha256": "e3c18b6f4e8c61abecfaaa03bafa1f7c19fbe111bfea4b84de83888496cf778f"
+        },
+        {
+          "mutation": "lease-close",
+          "target": "PlannerAdmissionsTest",
+          "target_red": true,
+          "log": "build-round82-mutant-lease-close.log",
+          "sha256": "523d6ee9d6b61f52616513f7eca3c807d5c1407726777ad8417944fddebe8726"
+        },
+        {
+          "mutation": "late-publication",
+          "target": "StartupWindowPublisherTest",
+          "target_red": true,
+          "log": "build-round82-mutant-late-publication.log",
+          "sha256": "47e8019a9b18503f07a855ab887d68e0625396725f1e3a8601b26e08e04320ea"
+        },
+        {
+          "mutation": "failure-threshold",
+          "target": "StartupWindowPublisherTest",
+          "target_red": true,
+          "log": "build-round82-mutant-failure-threshold.log",
+          "sha256": "13c7f8c270b06cd0b346a3b677f8e0c5849578b57ab9b8a3fe71433ac7180eec"
+        },
+        {
+          "mutation": "aggregate",
+          "target": "CompileWindowMemoryIntegrationTest",
+          "target_red": true,
+          "log": "build-round82-mutant-aggregate.log",
+          "sha256": "3f1ba96899fba2135ad44bc3e35dc0b8b420498cf9256ad9b6dfdfb5d314b1c8"
+        },
+        {
+          "mutation": "close-other-window",
+          "target": "CompileWindowMemoryIntegrationTest",
+          "target_red": true,
+          "log": "build-round82-mutant-close-other-window.log",
+          "sha256": "289177d702f7f3ab9e546a32dcbba97138b614ed823cfe128359334a96f206c2"
+        },
+        {
+          "mutation": "derived-release",
+          "target": "CompileWindowMemoryIntegrationTest",
+          "target_red": true,
+          "log": "build-round82-mutant-derived-release.log",
+          "sha256": "d11c509aa2fbbaa908b79d5762f83ab6f723300a83a83b7df62e4affeb6d9568"
+        },
+        {
+          "mutation": "sample-wiring",
+          "target": "CompileWindowMemoryIntegrationTest",
+          "target_red": true,
+          "log": "build-round82-mutant-sample-wiring.log",
+          "sha256": "41e7a1d343b5b0b077a1af645aad76d5e62496b84b6de0de59d147f0ff9e960a"
+        },
+        {
+          "mutation": "duplicate-close",
+          "target": "CompileWindowMemoryTest",
+          "target_red": true,
+          "log": "build-round82-mutant-duplicate-close.log",
+          "sha256": "45d785120e993240a98bcef53bbd51a8e7007fdc41db33cfebe57f67a89fc228"
+        }
+      ]
+    },
+    "road_round65": {
+      "table": "docs/evidence/compilation-single-flight-20261119.json",
+      "count": 4,
+      "log_sha256_verified": true,
+      "rows": [
+        {
+          "mutation": "sharing",
+          "target_red": true,
+          "log": "round65-mutant-sharing.log",
+          "sha256": "6e07a683d563f8862b1e827f72df8fb6e5787c5e96c745732620b2bbe2839d50"
+        },
+        {
+          "mutation": "config",
+          "target_red": true,
+          "log": "round65-mutant-config.log",
+          "sha256": "e872f3e7fe5ef121c386204d797e8806f9e108a6ff6c375e3e92242d132b2632"
+        },
+        {
+          "mutation": "revision",
+          "target_red": true,
+          "log": "round65-mutant-revision.log",
+          "sha256": "70d0655a22819fa65aacbf010e693d7b1a22d0cb1cba2cae83970064d59d7660"
+        },
+        {
+          "mutation": "interrupt",
+          "target_red": true,
+          "log": "round65-mutant-interrupt.log",
+          "sha256": "032b72e2db343ae5f493d00a3be9a84469485e62eca9c13cc0ad532c4f5534b2"
+        }
+      ]
+    }
+  },
+  "mutation_restoration": "each valid mutant compiled and failed its target JUnit; restored with exact git checkout, original normalized bytes checked, then final full suite passed",
+  "diagnostic_correction": "ProductionSession productionWiring=ON and isolatedFixture=false; serverSmoke fixtures unchanged",
+  "boundaries": [
+    "v2 fixture is synthetic original-writer output, not a player historical save",
+    "checkpoint estimates are not actual JVM heap peaks or a session-wide hard memory cap",
+    "estimates exclude output arenas, transient allocations and native terrain",
+    "no real ServerLevel lifecycle, modpack prewarm/FPS/MSPT/GC or 4096 total-workset verification",
+    "no player saves touched and no artifact installed",
+    "schemas, geometric defaults, crossing and long-bridge sine unchanged"
+  ]
+}

@@ -1,0 +1,65 @@
+[
+  {
+    "mutation": "parent-limit",
+    "target": "PlannerAdmissionsTest",
+    "target_red": true,
+    "log": "build-round82-mutant-parent-limit.log",
+    "sha256": "e3c18b6f4e8c61abecfaaa03bafa1f7c19fbe111bfea4b84de83888496cf778f"
+  },
+  {
+    "mutation": "lease-close",
+    "target": "PlannerAdmissionsTest",
+    "target_red": true,
+    "log": "build-round82-mutant-lease-close.log",
+    "sha256": "523d6ee9d6b61f52616513f7eca3c807d5c1407726777ad8417944fddebe8726"
+  },
+  {
+    "mutation": "late-publication",
+    "target": "StartupWindowPublisherTest",
+    "target_red": true,
+    "log": "build-round82-mutant-late-publication.log",
+    "sha256": "47e8019a9b18503f07a855ab887d68e0625396725f1e3a8601b26e08e04320ea"
+  },
+  {
+    "mutation": "failure-threshold",
+    "target": "StartupWindowPublisherTest",
+    "target_red": true,
+    "log": "build-round82-mutant-failure-threshold.log",
+    "sha256": "13c7f8c270b06cd0b346a3b677f8e0c5849578b57ab9b8a3fe71433ac7180eec"
+  },
+  {
+    "mutation": "aggregate",
+    "target": "CompileWindowMemoryIntegrationTest",
+    "target_red": true,
+    "log": "build-round82-mutant-aggregate.log",
+    "sha256": "3f1ba96899fba2135ad44bc3e35dc0b8b420498cf9256ad9b6dfdfb5d314b1c8"
+  },
+  {
+    "mutation": "close-other-window",
+    "target": "CompileWindowMemoryIntegrationTest",
+    "target_red": true,
+    "log": "build-round82-mutant-close-other-window.log",
+    "sha256": "289177d702f7f3ab9e546a32dcbba97138b614ed823cfe128359334a96f206c2"
+  },
+  {
+    "mutation": "derived-release",
+    "target": "CompileWindowMemoryIntegrationTest",
+    "target_red": true,
+    "log": "build-round82-mutant-derived-release.log",
+    "sha256": "d11c509aa2fbbaa908b79d5762f83ab6f723300a83a83b7df62e4affeb6d9568"
+  },
+  {
+    "mutation": "sample-wiring",
+    "target": "CompileWindowMemoryIntegrationTest",
+    "target_red": true,
+    "log": "build-round82-mutant-sample-wiring.log",
+    "sha256": "41e7a1d343b5b0b077a1af645aad76d5e62496b84b6de0de59d147f0ff9e960a"
+  },
+  {
+    "mutation": "duplicate-close",
+    "target": "CompileWindowMemoryTest",
+    "target_red": true,
+    "log": "build-round82-mutant-duplicate-close.log",
+    "sha256": "45d785120e993240a98bcef53bbd51a8e7007fdc41db33cfebe57f67a89fc228"
+  }
+]

@@ -108,9 +108,13 @@ public final class RealizationPlanner {
 
     /** Installs the window memos. Called once, before the compile window is walked. */
     public void useWindowMemos(WindowMemos windowMemos) { this.memos = windowMemos; }
-    /** 窗口成功、失败或发布异常都必须释放大楼体，不能跟随会话无限驻留。 */
+    /** 窗口成功、失败或发布异常都必须释放全部派生数据，不能只清楼体而留下计划强引用。 */
     public void clearCompiledBuildings() {
-        if (memos != null) { memos.buildings.clear(); memos.projections.clear(); }
+        if (memos != null) {
+            memos.buildings.clear(); memos.projections.clear();
+            memos.stations.clear(); memos.sites.clear(); memos.waters.clear();
+            memos.evidence.clear(); memos.contracts.clear();
+        }
     }
     public ImportedBuildingMemo.Stats buildingMemoStats() {
         return memos == null ? new ImportedBuildingMemo.Stats(0,0,0,0,0) : memos.buildings.stats();
@@ -118,6 +122,18 @@ public final class RealizationPlanner {
     /** 计数只在建树/命中时更新，逐列查询不写共享状态。 */
     public ImportedProjectionMemo.Stats projectionMemoStats() {
         return memos == null ? new ImportedProjectionMemo.Stats(0,0,0,0) : memos.projections.stats();
+    }
+    /** 只按表大小作保守估算，不逐列遍历对象图；既不测JVM大小，也不包括输出arena/原生地形。 */
+    public local.plaincraft.greatwall.diagnostics.CompileWindowMemory.Retained windowMemoStats() {
+        if(memos==null)return new local.plaincraft.greatwall.diagnostics.CompileWindowMemory.Retained(0,0,0);
+        long derived=0;
+        for(var values:memos.stations.values())derived+=64+64L*values.size();
+        for(var values:memos.sites.values())derived+=64+128L*values.size();
+        for(var values:memos.waters.values())derived+=64+256L*values.size();
+        for(var values:memos.evidence.values())derived+=64+256L*values.size();
+        for(var values:memos.contracts.values())derived+=64+192L*values.size();
+        return new local.plaincraft.greatwall.diagnostics.CompileWindowMemory.Retained(
+                memos.buildings.stats().bytes(),memos.projections.stats().bytes(),derived);
     }
     public int templateVersion() { return recipe == null ? 1 : recipe.config().templateVersion(); }
 

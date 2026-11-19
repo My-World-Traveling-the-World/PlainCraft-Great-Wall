@@ -127,6 +127,9 @@ final class ProductionSession implements AutoCloseable {
     /** Realization + chunk-plan compiler, held for the planning-phase compilation. */
     private volatile local.plaincraft.greatwall.terrain.RealizationPlanner realization;
     private volatile local.plaincraft.greatwall.generation.ChunkPlanCompiler chunkCompiler;
+    // 仅本会话拥有累计观测，换世界不能继承旧峰值或把仍运行窗口伪装为已释放。
+    private final local.plaincraft.greatwall.diagnostics.CompileWindowMemory compileMemory =
+            new local.plaincraft.greatwall.diagnostics.CompileWindowMemory();
 
     ProductionSession(MinecraftServer server, WorldServices services) {
         this.server = server; this.services = services;
@@ -997,7 +1000,7 @@ final class ProductionSession implements AutoCloseable {
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.COMPILE);
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
         var compiler = new local.plaincraft.greatwall.planning.PlanningChunkCompiler(
-                realization, chunkCompiler, index, planningStructures);
+                realization, chunkCompiler, index, planningStructures, compileMemory);
         var planner = snapshot.planner();
         // 重试也使用已冻结的窗口，避免重新读取配置后请求边界外计划。
         long target = planner.startupRange().segments();
@@ -1240,10 +1243,12 @@ final class ProductionSession implements AutoCloseable {
     Map<String, Object> diagnostics() {
         var result = new TreeMap<String, Object>();
         result.put("runtime", runtime); result.put("state", Map.copyOf(state)); result.put("failures", Map.copyOf(failures));
-        result.put("productionWiring", "OFF"); result.put("isolatedFixture", true);
+        // 正式会话不是serverSmoke夹具；保留旧标签会让真实预热/内存采集被误判为无落块探针。
+        result.put("productionWiring", "ON"); result.put("isolatedFixture", false);
         result.put("counts", counts()); result.put("root", bootstrap.progress()); result.put("bootstrap", bootstrap.diagnostics());
         result.put("rootAudit", bootstrap.rootAudit());
         result.put("vegetationLeases", vegetation.leases());
+        result.put("compileWindowMemory", compileMemory.snapshot());
         var snapshot = snapshots.get("installed");
         if (snapshot != null) {
             result.put("recipe", snapshot.recipe()); result.put("planner", snapshot.planner().diagnostics());
