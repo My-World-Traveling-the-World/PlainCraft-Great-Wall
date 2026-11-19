@@ -1091,10 +1091,9 @@ final class ProductionSession implements AutoCloseable {
                 (window, progress, sink) -> compiler.compileInto(window, snapshot.recipe().recipeHash(),
                         snapshot.recipe().dimension(), progress, sink), new StartupWindowPublisher.Access() {
             public void active() { ProductionSession.this.active(); }
-            public void install(ChunkWritePlan plan) { WallWorldgenPlanCache.put(level,plan); }
+            public void install(ChunkWritePlan plan) { DurablePlanInstall.accept(plan, p -> WallWorldgenPlanCache.put(level,p)); }
             public void footprint(ChunkWritePlan plan,CorridorIndex corridor) {
                 WallPlanSupport.markPlannedColumns(plan);
-                WallBodyBackfill.persist(plan);
                 vegetation.publishPrepared(plan.owner(),corridor);
                 var biomes=biomeRuntime;
                 if(biomes!=null&&!biomes.closed())biomes.publishPrepared(plan.owner(),corridor,1);

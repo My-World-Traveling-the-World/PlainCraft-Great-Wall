@@ -380,22 +380,36 @@ public final class WallBodyBackfill {
         planStore = store;
     }
 
-    /** Writes one published plan to the durable store; a failure costs a backfill, never a session. */
+    /** 先取得持久确认再发布；临时 IO 只重试三次，避免无限卡住整个编译窗口。 */
     public static void persist(ChunkWritePlan plan) {
+        java.util.Objects.requireNonNull(plan, "施工计划不能为空");
         PlanStore store = planStore;
-        if (store == null || plan == null) return;
-        try {
-            store.write(plan);
-            PERSISTED.incrementAndGet();
-        } catch (java.io.IOException | RuntimeException failure) {
-            // A persist failure is how "the wall is still being painted from the OLD plan on disk" shows
-            // up, and that is exactly the state a terrain-semantics change must not leave behind silently.
-            // The first four carry the detail; every 512th keeps the scale of it visible without flooding.
-            long failed = PERSIST_FAILURES.incrementAndGet();
-            if (failed <= 4 || failed % 512 == 0) {
-                GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_PLAN_PERSIST_FAILED owner={},{} totalFailures={} reason={}",
-                        plan.owner().x(), plan.owner().z(), failed, failure.toString());
+        if (store == null) throw new IllegalStateException("长城计划存储未安装，禁止发布未落盘计划");
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            // 取消不是磁盘故障；保留中断位，让会话清理仍能识别关闭请求。
+            if (Thread.currentThread().isInterrupted()) {
+                throw new java.util.concurrent.CancellationException("长城计划持久化已取消");
             }
+            try {
+                store.write(plan);
+                PERSISTED.incrementAndGet();
+                return;
+            } catch (java.io.IOException failure) {
+                recordPersistFailure(plan, failure, attempt);
+                if (attempt == 3) throw new java.io.UncheckedIOException("长城计划写盘失败，禁止发布", failure);
+            } catch (RuntimeException failure) {
+                // 配方/载荷非法不会因重复写入变好，原原因直接交给发布失败台账。
+                recordPersistFailure(plan, failure, attempt);
+                throw failure;
+            }
+        }
+    }
+
+    private static void recordPersistFailure(ChunkWritePlan plan, Exception failure, int attempt) {
+        long failed = PERSIST_FAILURES.incrementAndGet();
+        if (failed <= 4 || failed % 512 == 0) {
+            GreatWallMod.LOGGER.warn("[GreatWall:持久化] 计划写入失败 WALL_PLAN_PERSIST_FAILED owner={},{} attempt={} totalFailures={} reason={}",
+                    plan.owner().x(), plan.owner().z(), attempt, failed, failure.toString());
         }
     }
 
