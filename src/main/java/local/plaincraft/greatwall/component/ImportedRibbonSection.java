@@ -31,6 +31,7 @@ public final class ImportedRibbonSection implements IntervalWallTemplate {
         var stations = input.stations();
         long from = Math.max(stations.getFirst().globalSQ8(), Math.max(0, input.site().globalSQ8() - 32L * 256));
         long to = Math.min(stations.getLast().globalSQ8(), input.site().globalSQ8() + 32L * 256);
+        var phases = new ImportedRibbonPhase(sites, from, to);
         int x0 = Integer.MAX_VALUE, z0 = Integer.MAX_VALUE, x1 = Integer.MIN_VALUE, z1 = Integer.MIN_VALUE;
         int y0 = Integer.MAX_VALUE, y1 = Integer.MIN_VALUE;
         var candidates = new ArrayList<Station>();
@@ -65,7 +66,7 @@ public final class ImportedRibbonSection implements IntervalWallTemplate {
             Direction side = Math.abs(tangent[0]) >= Math.abs(tangent[1])
                     ? tangent[0] >= 0 ? Direction.SOUTH : Direction.NORTH
                     : tangent[1] >= 0 ? Direction.WEST : Direction.EAST;
-            int phase = Math.floorMod(Math.floorDiv(s, 256), 4);
+            int phase = phases.at(s);
             boolean seam = false;
             for (var site : sites) if (site.state() == SiteState.PLANNED) {
                 var ports = ImportedSiteGeometry.layout(site).ports();
@@ -73,7 +74,7 @@ public final class ImportedRibbonSection implements IntervalWallTemplate {
                     long portS = ImportedSiteGeometry.portArc(site, p);
                     long distance = ports.size() == 2 && p == 0 ? portS - s : s - portS;
                     if (distance > 0 && distance <= ImportedSiteGeometry.STRAIGHT * 256L) {
-                        phase = Math.floorMod(Math.toIntExact(FixedMath.roundDiv(distance, 256)) - 1, 4);
+                        // 端面只决定哪侧垛口和完好状态，节拍由连续相位契约统一拥有。
                         side = ports.get(p).merlonSide();
                         seam = true;
                     }
