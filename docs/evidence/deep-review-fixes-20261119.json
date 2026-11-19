@@ -1,0 +1,200 @@
+{
+  "date": "2026-11-19",
+  "historical_audit": "deep-review-20261119.json",
+  "production_head": "b291074c3cb2a52fff95e0c7915efabfd5f8cca2",
+  "completed": [
+    "W1",
+    "W2",
+    "W3",
+    "W4",
+    "W5",
+    "extra-drain"
+  ],
+  "regression": {
+    "tests": 931,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "compileClientJava": true,
+  "remapJar": true,
+  "final_log": "build-round79-final.log",
+  "final_log_sha256": "e6cd510f6ba6479ba716d5dbcb6041bce426bb928e14b661a6b5b205fe735f5b",
+  "mutations": [
+    {
+      "finding": "extra-drain",
+      "target": "GroundExitReservationTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round73-mutant-drain.log",
+      "sha256": "45b8e30c889168eab7d768c205ce21971ac57092160975aa04de2e5b8cd65491"
+    },
+    {
+      "finding": "W1",
+      "target": "ImportedLongWallPhaseTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round74-mutant-phase.log",
+      "sha256": "147ab122282e626da1b81314757c6529536de214b120e23d35fe5aca7659c3ba"
+    },
+    {
+      "finding": "W5",
+      "target": "WallRoadBatchTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round75-mutant-word.log",
+      "sha256": "0fc8ad9e8cd2803d21d524cdcb680117ab73680ada0759e68585d1a7791aef5d"
+    },
+    {
+      "finding": "W5",
+      "target": "WallRoadBatchTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round75-mutant-air.log",
+      "sha256": "c51a5b13f945ab860a235f0d68b3faf73b1387437ad63cac0b5cdb92ab72b591"
+    },
+    {
+      "finding": "W2",
+      "target": "ImportedSiteHeightTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round76-mutant-roof.log",
+      "sha256": "02df83b27e27c2e2721c6869a7dbcc824f68f1676ea68ba84f81205afc3343af"
+    },
+    {
+      "finding": "W2",
+      "target": "ImportedSiteHeightTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round76-mutant-wall-cap.log",
+      "sha256": "62d585d34b7265ab73811c6e4eb054547dc82ad053622398fc626a68b9b0fa67"
+    },
+    {
+      "finding": "W4",
+      "target": "RibbonEdgeIndexTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round77-mutant-tie.log",
+      "sha256": "1b5cfd12962e842709284dcb241449bb5765c77b29ee6fba7a4472ff81e01036"
+    },
+    {
+      "finding": "W4",
+      "target": "RibbonEdgeIndexTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round77-mutant-endpoint.log",
+      "sha256": "b34bed6f7947377412d4b3a18165425f9eff152d4e4eb7ad0d2b47b27336fdd1"
+    },
+    {
+      "finding": "W3",
+      "target": "ImportedBuildingReuseTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round78-mutant-bypass.log",
+      "sha256": "d05c7ad674f1286c52a5657779ff6cba39f7f761112661a0acacecd606614157"
+    },
+    {
+      "finding": "W3",
+      "target": "ImportedBuildingReuseTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round78-mutant-protection.log",
+      "sha256": "459255249270e910a1ec31594718789e6b75a520643cd660c2abad0efe5e6424"
+    },
+    {
+      "finding": "W3",
+      "target": "ImportedBuildingReuseTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round78-mutant-columns.log",
+      "sha256": "c0817512dd4703b52d313b3fe366046f969db59ab0db8496d40d9bab0acd5fcf"
+    },
+    {
+      "finding": "W3",
+      "target": "ImportedBuildingReuseTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round78-mutant-cleanup.log",
+      "sha256": "1f78ad75f78a3cd4059127cc399b4b88fea86ee9a5738b399bf2b0a618dc831c"
+    },
+    {
+      "finding": "W3",
+      "target": "ImportedBuildingMemoTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round78-mutant-arena.log",
+      "sha256": "ee60ef7539e2d570e0d2ebd4e59dfb463f67121424523206cef66218254b8007"
+    },
+    {
+      "finding": "W3",
+      "target": "ImportedBuildingMemoTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round78-mutant-capacity.log",
+      "sha256": "f4a9fced7d48183ae0c6e2ae8aa12781804afbf791d61873eb3117df69c918f0"
+    },
+    {
+      "finding": "W4-window",
+      "target": "ImportedBuildingReuseTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round79-mutant-bypass.log",
+      "sha256": "cfeba046872ed711434b5ff2c1d3a2b4ff68da43723baff3cdd4d445cad52778"
+    },
+    {
+      "finding": "W4-window",
+      "target": "ImportedProjectionMemoTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round79-mutant-version.log",
+      "sha256": "a7067134e40002aa780698c07aa3472f0fe4131c80da06ffb04f028c5a783fe8"
+    },
+    {
+      "finding": "W4-window",
+      "target": "ImportedProjectionMemoTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round79-mutant-capacity.log",
+      "sha256": "0b4f553f53598fea5c4816d52067613522aa57d1c12ab43c7a197711745ac3f4"
+    },
+    {
+      "finding": "W4-window",
+      "target": "ImportedBuildingReuseTest",
+      "red": true,
+      "restored": true,
+      "log": "build-round79-mutant-cleanup.log",
+      "sha256": "d1f69a6d66eb36130491e4503baa18697482b825ebe4de7e37f44a02fc70f856"
+    }
+  ],
+  "exact_index_fixture": {
+    "columns": 53456,
+    "previous_edge_visits": 54738944,
+    "leaf_edge_visits": 227084,
+    "tree_node_visits": 915174,
+    "all_contracts_equal": true
+  },
+  "building_reuse": {
+    "assets": 5,
+    "cells_per_asset": 2,
+    "full_compiles_per_asset": 1,
+    "center_publications_per_asset": 1,
+    "max_retained_estimate_bytes_per_compiler": 67108864,
+    "max_entries": 8,
+    "cleared_on_success_and_publication_failure": true
+  },
+  "not_verified": [
+    "game prewarm/FPS/MSPT/GC",
+    "old v2 built-to-unbuilt phase seam",
+    "integrated river-wall-road sequence",
+    "real saved-world restart"
+  ],
+  "projection_window": {
+    "same_window_builds": 1,
+    "two_cell_hits": 1,
+    "max_entries": 1,
+    "max_retained_estimate_bytes_per_compiler": 4194304,
+    "plan_identity_change_rebuilds": true,
+    "cleared_on_success_and_publication_failure": true
+  },
+  "production_java_sha256_normalized_lf": "cb31a93b330dfc6862309861dc88ee70036b90f3d0b14a3fb751c270b70c3c80"
+}

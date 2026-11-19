@@ -1,0 +1,7 @@
+# 历史反例和索引原型
+
+本目录仅适用修复前长城基线2e74bf88（工具归档提交eedb7286）。DeepAuditWallProbe故意要求第25格双缺、地形280导致上界错误及楼体重复编译；它不是当前版本正确性守卫。ProjectionIndexPrototype为当时原型，正式生成已经使用RibbonEdgeIndex，并把原扫描冻结到测试侧。当前不要运行这些历史工具。
+
+原结果保留在docs/evidence/deep-review-20261119.json。修复后正式验收类：ImportedLongWallPhaseTest/ImportedRibbonPhaseTest、ImportedSiteHeightTest、ImportedProjectionParityTest/RibbonEdgeIndexTest、ImportedBuildingReuseTest/ImportedBuildingMemoTest、WallRoadBatchTest、GroundExitReservationTest。test自动发现这些JUnit类，旧探针不计入931项。
+
+最新18组变异与最终构建证据见docs/evidence/deep-review-fixes-20261119.json和根HANDOFF第73—79轮。不要改写旧反例断言来把历史缺陷包装为正确产物。
