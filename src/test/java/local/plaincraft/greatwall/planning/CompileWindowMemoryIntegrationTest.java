@@ -19,12 +19,15 @@ class CompileWindowMemoryIntegrationTest {
     @Test void simultaneousCompilersReportRealMemosAndReleaseOnSuccessAndCancellation() throws Exception {
         var f=ImportedBuildingReuseTest.planningFixture(Asset.BEACON);
         var memory=new CompileWindowMemory();
-        var a=ImportedProductionPlanTest.planner(f.recipe());var b=ImportedProductionPlanTest.planner(f.recipe());
+        // 同源窗口必须各自拥有状态，构造第二个编译器不能替换第一个窗口的缓存。
+        var source=ImportedProductionPlanTest.planner(f.recipe());
+        var a=source.openWindow();var b=source.openWindow();
         var ca=new PlanningChunkCompiler(a,new ChunkPlanCompiler(),FineHeightIndex.of(List.of()),List.of(),memory);
         var cb=new PlanningChunkCompiler(b,new ChunkPlanCompiler(),FineHeightIndex.of(List.of()),List.of(),memory);
         var input=ImportedProductionPlanTest.input(f,8,List.of());
         a.resolve(input);b.resolve(input);
         var expectedA=a.windowMemoStats();var expectedB=b.windowMemoStats();
+        assertEquals(0,source.windowMemoStats().total(),"源实现器不能被编译器装入可变缓存");
         assertTrue(expectedA.buildingBytes()>0);assertTrue(expectedA.projectionBytes()>0);assertTrue(expectedA.derivedBytes()>0);
         var reached=new CountDownLatch(2);var releaseA=new CountDownLatch(1);var releaseB=new CountDownLatch(1);
         var owners=List.of(new PlanningOwnerIndex.OwnerWork(new ChunkKey(f.recipe().dimension(),0,0),List.of()));

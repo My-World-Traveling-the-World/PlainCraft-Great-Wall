@@ -72,8 +72,7 @@ class RealizationPlannerEvidenceHashTest {
      * ⇒ 静默错墙。这条用单计划窗口把 memo 打开，重复解析、换 cell、换 plan 实例三种情况各钉一次。
      */
     @Test void windowMemosStayCorrectAcrossRepeatedCellsAndPlans() {
-        var memoized=planner();
-        memoized.useWindowMemos(new RealizationPlanner.WindowMemos());
+        var memoized=planner().openWindow();
         var input=input(false,new HashOnly(H));
         // 单计划窗口才会走 memo（多计划窗口按设计直接计算）。
         var single=new PlanWindow(List.of(input.plans().plans().getFirst()));

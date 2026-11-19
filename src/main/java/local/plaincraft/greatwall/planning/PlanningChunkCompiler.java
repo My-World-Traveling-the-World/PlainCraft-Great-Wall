@@ -11,6 +11,7 @@ import local.plaincraft.greatwall.generation.CoveragePlanner;
 import local.plaincraft.greatwall.generation.SurfaceProbe;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.RealizationPlanner;
+import local.plaincraft.greatwall.terrain.RealizationWindow;
 import local.plaincraft.greatwall.diagnostics.CompileWindowMemory;
 
 /**
@@ -32,15 +33,19 @@ public final class PlanningChunkCompiler {
     private CoveragePlanner coverage = new CoveragePlanner();
     private final PlanningColumnProvider.ColumnSource columns;
     private final PlanningCompileContext context;
-    private RealizationPlanner realizationPlanner;
+    private RealizationWindow realizationWindow;
     private CompileWindowMemory memory = new CompileWindowMemory();
 
     public PlanningChunkCompiler(RealizationPlanner realization, ChunkPlanCompiler compiler,
             FineHeightIndex index, List<Bounds> structures) {
-        this(withWindowMemos(realization), compiler, index, structures);
+        this(realization.openWindow(),compiler,index,structures);
+    }
+
+    PlanningChunkCompiler(RealizationWindow window,ChunkPlanCompiler compiler,FineHeightIndex index,List<Bounds> structures){
+        this(window::resolve,compiler,index,structures);
         // 捕获区块也必须选择同一版模板，否则新楼的高屋顶和宽底板不在证据范围内。
-        coverage = new CoveragePlanner(realization.templateVersion());
-        realizationPlanner = realization;
+        coverage = new CoveragePlanner(window.templateVersion());
+        realizationWindow = window;
     }
 
     /** 同一会话的多个编译器共享观测器，避免把每窗口64MiB误读为整个会话的总额。 */
@@ -48,6 +53,11 @@ public final class PlanningChunkCompiler {
             FineHeightIndex index, List<Bounds> structures, CompileWindowMemory memory) {
         this(realization,compiler,index,structures);
         this.memory=Objects.requireNonNull(memory);
+    }
+
+    PlanningChunkCompiler(RealizationWindow window,ChunkPlanCompiler compiler,FineHeightIndex index,
+            List<Bounds> structures,CompileWindowMemory memory){
+        this(window,compiler,index,structures);this.memory=Objects.requireNonNull(memory);
     }
 
     @FunctionalInterface
@@ -68,12 +78,6 @@ public final class PlanningChunkCompiler {
         this.compiler = Objects.requireNonNull(compiler, "compiler");
         this.columns = Objects.requireNonNull(columns, "columns");
         this.context = Objects.requireNonNull(context, "context");
-    }
-
-    private static CellResolver withWindowMemos(RealizationPlanner realization) {
-        // 生产实现仍复用同一段计划的只读派生数据；离线可注入实现器检验完整编译入口。
-        realization.useWindowMemos(new RealizationPlanner.WindowMemos());
-        return realization::resolve;
     }
 
     /**
@@ -135,7 +139,13 @@ public final class PlanningChunkCompiler {
 
     private int compileInto(PlanWindow plans,String recipeHash,String dimension,OwnerProgress progress,
             int batchSize,int workers,Consumer<ChunkWritePlan> output,CompileCancellation cancellation) {
-        var owners=PlanningOwnerIndex.prepare(plans,recipeHash,dimension,coverage,cancellation);
+        List<PlanningOwnerIndex.OwnerWork> owners;
+        try{owners=PlanningOwnerIndex.prepare(plans,recipeHash,dimension,coverage,cancellation);}
+        catch(RuntimeException|Error failure){
+            // 枚举尚未进入编译finally时也要归还调用方预先填充的窗口状态。
+            if(realizationWindow!=null)realizationWindow.close();
+            throw failure;
+        }
         return compileOwners(owners,recipeHash,progress,batchSize,workers,output,cancellation);
     }
 
@@ -152,9 +162,9 @@ public final class PlanningChunkCompiler {
                 sampleMemory(retained);
                 return compileOwnersWindow(owners,recipeHash,progress,batchSize,workers,output,retained,cancellation);
             } finally {
-                if(realizationPlanner!=null) {
-                    var stats=realizationPlanner.buildingMemoStats();
-                    realizationPlanner.clearCompiledBuildings();
+                if(realizationWindow!=null) {
+                    var stats=realizationWindow.buildingMemoStats();
+                    realizationWindow.clearCompiledBuildings();
                     local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                             "[GreatWall:编译] 实物楼体复用 编译={} 命中={} 峰值保留字节={} 窗口结束已释放",
                             stats.loads(),stats.hits(),stats.peak());
@@ -169,7 +179,7 @@ public final class PlanningChunkCompiler {
     }
 
     private void sampleMemory(CompileWindowMemory.Window retained) {
-        if(realizationPlanner!=null)retained.sample(realizationPlanner.windowMemoStats());
+        if(realizationWindow!=null)retained.sample(realizationWindow.windowMemoStats());
     }
 
     // 大楼体只在本次窗口循环中保留，发布回调抛错也通过外层finally归还。

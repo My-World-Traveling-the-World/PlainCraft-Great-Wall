@@ -23,8 +23,7 @@ class ImportedBuildingReuseTest {
     @ParameterizedTest @EnumSource(Asset.class)
     void twoCellsCompileOneWholeBodyWithIdenticalProducts(Asset asset) {
         var f = planningFixture(asset);
-        var planner = ImportedProductionPlanTest.planner(f.recipe());
-        planner.useWindowMemos(new RealizationPlanner.WindowMemos());
+        var planner = ImportedProductionPlanTest.planner(f.recipe()).openWindow();
         var reference = ImportedProductionPlanTest.planner(f.recipe());
         long center = Math.floorDiv(f.site().globalSQ8(),64L*256), neighbour = center == 0 ? 1 : center-1;
         int bodies=0;
@@ -54,7 +53,7 @@ class ImportedBuildingReuseTest {
 
     @Test void actualCompilerReleasesMemoOnSuccessAndPublishingFailure() {
         var f=planningFixture(Asset.BEACON);
-        var planner=ImportedProductionPlanTest.planner(f.recipe());
+        var planner=ImportedProductionPlanTest.planner(f.recipe()).openWindow();
         var compiler=new PlanningChunkCompiler(planner,new ChunkPlanCompiler(),FineHeightIndex.of(List.of()),List.of());
         var input=ImportedProductionPlanTest.input(f,8,List.of());
         planner.resolve(input);
@@ -73,10 +72,21 @@ class ImportedBuildingReuseTest {
         assertEquals(0,planner.projectionMemoStats().bytes());
     }
 
+    @Test void cancellationBeforeOwnerEnumerationStillReleasesTheWindow(){
+        var f=planningFixture(Asset.BEACON);var window=ImportedProductionPlanTest.planner(f.recipe()).openWindow();
+        window.resolve(ImportedProductionPlanTest.input(f,8,List.of()));
+        assertTrue(window.windowMemoStats().buildingBytes()>0);assertTrue(window.windowMemoStats().derivedBytes()>0);
+        var compiler=new PlanningChunkCompiler(window,new ChunkPlanCompiler(),FineHeightIndex.of(List.of()),List.of());
+        var cause=new java.util.concurrent.CancellationException("枚举前取消");
+        assertSame(cause,assertThrows(java.util.concurrent.CancellationException.class,
+                ()->compiler.compileInto(new PlanWindow(List.of(f.plan())),f.recipe().recipeHash(),f.recipe().dimension(),null,
+                        p->fail("取消之后不能发布"),()->{throw cause;})));
+        assertEquals(0,window.windowMemoStats().total());
+    }
+
     @Test void changedActualRoofProtectionCannotReuseAnEarlierSuccess() {
         var f=planningFixture(Asset.GATE);
-        var planner=ImportedProductionPlanTest.planner(f.recipe());
-        planner.useWindowMemos(new RealizationPlanner.WindowMemos());
+        var planner=ImportedProductionPlanTest.planner(f.recipe()).openWindow();
         var first=planner.resolve(ImportedProductionPlanTest.input(f,8,List.of()));
         var body=first.components().stream().filter(c->c.id().equals(f.site().id())).findFirst().orElseThrow();
         var roof=body.voxels().stream().filter(v->v.kind()==IntentKind.SOLID)
@@ -90,8 +100,7 @@ class ImportedBuildingReuseTest {
 
     @Test void changedFrozenColumnCannotBeHiddenByIdenticalHashes() {
         var f=planningFixture(Asset.GATE);
-        var planner=ImportedProductionPlanTest.planner(f.recipe());
-        planner.useWindowMemos(new RealizationPlanner.WindowMemos());
+        var planner=ImportedProductionPlanTest.planner(f.recipe()).openWindow();
         var first=planner.resolve(ImportedProductionPlanTest.input(f,8,List.of()));
         var body=first.components().stream().filter(c->c.id().equals(f.site().id())).findFirst().orElseThrow();
         var voidPoint=body.voxels().stream().filter(v->v.kind()==IntentKind.OWNED_VOID).findFirst().orElseThrow().pos();

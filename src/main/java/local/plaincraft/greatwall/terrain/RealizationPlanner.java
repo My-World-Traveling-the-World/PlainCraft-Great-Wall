@@ -74,97 +74,51 @@ public final class RealizationPlanner {
     }
     public RealizationPlanner(WorldRecipe recipe,SurfaceProbe probe,
             local.plaincraft.greatwall.decay.BiomePaletteIndex biomeIndex,Map<SiteKind,ComponentTemplate> templates){
-        this.recipe=recipe;this.probe=Objects.requireNonNull(probe);this.biomeIndex=biomeIndex;this.templates=Map.copyOf(templates);
+        this(recipe,probe,biomeIndex,templates,null);
+    }
+    private RealizationPlanner(WorldRecipe recipe,SurfaceProbe probe,
+            local.plaincraft.greatwall.decay.BiomePaletteIndex biomeIndex,Map<SiteKind,ComponentTemplate> templates,
+            RealizationWindow memos){
+        this.recipe=recipe;this.probe=Objects.requireNonNull(probe);this.biomeIndex=biomeIndex;
+        this.templates=Map.copyOf(templates);this.memos=memos;
+    }
+    /** 共享不可变配方/模板，窗口独占缓存以及实现期可变计数，不修改源实现器。 */
+    public RealizationWindow openWindow(){return new RealizationWindow(this);}
+    RealizationPlanner forkForWindow(RealizationWindow window){
+        return new RealizationPlanner(recipe,probe,biomeIndex,templates,window);
     }
 
-    /**
-     * Window-scoped memos for the three pure functions of a frozen plan window: {@link #stations},
-     * {@link #sites} and {@link #waters}.
-     *
-     * <p>Each of them merges every plan's records into a sorted map, and the compile asks for them about
-     * five times per owner: with roughly a hundred owners per 64-block cell that is on the order of ten
-     * million red-black insertions and list copies for values that cannot change while the window is
-     * frozen. The keys are plan <em>instances</em>, so a re-planned segment (which is a new instance)
-     * can never read a stale entry, and a window holding more than one plan keeps computing directly.
-     *
-     * <p>Installed by {@link local.plaincraft.greatwall.planning.PlanningChunkCompiler}; a planner used
-     * on its own (the unit tests) leaves it null and behaves exactly as before.
-     */
-    public static final class WindowMemos {
-        private final ImportedBuildingMemo buildings = new ImportedBuildingMemo();
-        private final ImportedProjectionMemo projections = new ImportedProjectionMemo();
-        private final java.util.Map<SegmentPlan, List<Station>> stations = new java.util.IdentityHashMap<>();
-        private final java.util.Map<SegmentPlan, List<SiteRecord>> sites = new java.util.IdentityHashMap<>();
-        private final java.util.Map<SegmentPlan, List<WaterEvidence>> waters = new java.util.IdentityHashMap<>();
-        /** Evidence digests, per plan instance and cell: see {@link #evidenceHashFor}. */
-        private final java.util.Map<SegmentPlan, java.util.Map<CellKey, String>> evidence =
-                new java.util.IdentityHashMap<>();
-        /** Station contracts, per plan instance and packed column key: see {@link #contractFor}. */
-        private final java.util.Map<SegmentPlan, java.util.Map<Long, WallSection.ColumnContract>> contracts =
-                new java.util.IdentityHashMap<>();
-    }
+    private final RealizationWindow memos;
 
-    private WindowMemos memos;
-
-    /** Installs the window memos. Called once, before the compile window is walked. */
-    public void useWindowMemos(WindowMemos windowMemos) { this.memos = windowMemos; }
-    /** 窗口成功、失败或发布异常都必须释放全部派生数据，不能只清楼体而留下计划强引用。 */
-    public void clearCompiledBuildings() {
-        if (memos != null) {
-            memos.buildings.clear(); memos.projections.clear();
-            memos.stations.clear(); memos.sites.clear(); memos.waters.clear();
-            memos.evidence.clear(); memos.contracts.clear();
-        }
+    /** 独占窗口负责所有缓存清理；独立实现器不保留派生缓存。 */
+    public void clearCompiledBuildings(){if(memos!=null)memos.close();}
+    public ImportedBuildingMemo.Stats buildingMemoStats(){
+        return memos==null?new ImportedBuildingMemo.Stats(0,0,0,0,0):memos.buildingMemoStats();
     }
-    public ImportedBuildingMemo.Stats buildingMemoStats() {
-        return memos == null ? new ImportedBuildingMemo.Stats(0,0,0,0,0) : memos.buildings.stats();
+    public ImportedProjectionMemo.Stats projectionMemoStats(){
+        return memos==null?new ImportedProjectionMemo.Stats(0,0,0,0):memos.projectionMemoStats();
     }
-    /** 计数只在建树/命中时更新，逐列查询不写共享状态。 */
-    public ImportedProjectionMemo.Stats projectionMemoStats() {
-        return memos == null ? new ImportedProjectionMemo.Stats(0,0,0,0) : memos.projections.stats();
-    }
-    /** 只按表大小作保守估算，不逐列遍历对象图；既不测JVM大小，也不包括输出arena/原生地形。 */
-    public local.plaincraft.greatwall.diagnostics.CompileWindowMemory.Retained windowMemoStats() {
-        if(memos==null)return new local.plaincraft.greatwall.diagnostics.CompileWindowMemory.Retained(0,0,0);
-        long derived=0;
-        for(var values:memos.stations.values())derived+=64+64L*values.size();
-        for(var values:memos.sites.values())derived+=64+128L*values.size();
-        for(var values:memos.waters.values())derived+=64+256L*values.size();
-        for(var values:memos.evidence.values())derived+=64+256L*values.size();
-        for(var values:memos.contracts.values())derived+=64+192L*values.size();
-        return new local.plaincraft.greatwall.diagnostics.CompileWindowMemory.Retained(
-                memos.buildings.stats().bytes(),memos.projections.stats().bytes(),derived);
+    public local.plaincraft.greatwall.diagnostics.CompileWindowMemory.Retained windowMemoStats(){
+        return memos==null?new local.plaincraft.greatwall.diagnostics.CompileWindowMemory.Retained(0,0,0):memos.windowMemoStats();
     }
     public int templateVersion() { return recipe == null ? 1 : recipe.config().templateVersion(); }
 
     private List<Station> stationList(PlanWindow plans) {
         if (memos == null || plans.plans().size() != 1) return stations(plans);
         var plan = plans.plans().getFirst();
-        var cached = memos.stations.get(plan);
-        if (cached != null) return cached;
-        var computed = stations(plans);
-        memos.stations.put(plan, computed);
-        return computed;
+        return memos.stations(plan,()->stations(plans));
     }
 
     private List<SiteRecord> siteList(PlanWindow plans) {
         if (memos == null || plans.plans().size() != 1) return sites(plans);
         var plan = plans.plans().getFirst();
-        var cached = memos.sites.get(plan);
-        if (cached != null) return cached;
-        var computed = sites(plans);
-        memos.sites.put(plan, computed);
-        return computed;
+        return memos.sites(plan,()->sites(plans));
     }
 
     private List<WaterEvidence> waterList(PlanWindow plans) {
         if (memos == null || plans.plans().size() != 1) return waters(plans);
         var plan = plans.plans().getFirst();
-        var cached = memos.waters.get(plan);
-        if (cached != null) return cached;
-        var computed = waters(plans);
-        memos.waters.put(plan, computed);
-        return computed;
+        return memos.waters(plan,()->waters(plans));
     }
 
     /**
@@ -179,13 +133,8 @@ public final class RealizationPlanner {
     private WallSection.ColumnContract contractFor(Input input, List<Station> stations, int x, int z) {
         if (memos == null || input.plans().plans().size() != 1) return WallSection.contract(stations, x, z);
         var plan = input.plans().plans().getFirst();
-        var byColumn = memos.contracts.computeIfAbsent(plan, ignored -> new java.util.HashMap<>());
         long key = ((long) x << 32) ^ (z & 0xffffffffL);
-        var cached = byColumn.get(key);
-        if (cached != null) return cached;
-        var computed = WallSection.contract(stations, x, z);
-        byColumn.put(key, computed);
-        return computed;
+        return memos.contract(plan,key,()->WallSection.contract(stations,x,z));
     }
 
     /**
@@ -199,12 +148,7 @@ public final class RealizationPlanner {
      */
     private String evidenceHashFor(Input input) {        if (memos == null || input.plans().plans().size() != 1) return evidenceHash(input);
         var plan = input.plans().plans().getFirst();
-        var byCell = memos.evidence.computeIfAbsent(plan, ignored -> new java.util.HashMap<>());
-        var cached = byCell.get(input.key());
-        if (cached != null) return cached;
-        var computed = evidenceHash(input);
-        byCell.put(input.key(), computed);
-        return computed;
+        return memos.evidence(plan,input.key(),()->evidenceHash(input));
     }
     public RealizationCell resolve(Input input) {
         return resolve(input,null,null);
