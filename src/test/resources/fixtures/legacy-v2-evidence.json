@@ -1,0 +1,20 @@
+{
+  "source": "synthetic imported template v2 plans at 50ac545e; not a player save",
+  "records": [
+    {
+      "path": "3f60de212b487e6204ac185257284bcd73de9a987006a6622704f5fe54409bcc/-1_0/build-proof.bin",
+      "bytes": 662702,
+      "sha256": "90e80055d0017cd6f32ffa2bafd3b10e1bfb79b623ee669ec70b835f61d2ac0a"
+    },
+    {
+      "path": "3f60de212b487e6204ac185257284bcd73de9a987006a6622704f5fe54409bcc/-2_0/build-proof.bin",
+      "bytes": 331542,
+      "sha256": "1abdee8819b6a509552cd930b06531b389e845bd32f8aa5c3556dd37d0f6c985"
+    },
+    {
+      "path": "3f60de212b487e6204ac185257284bcd73de9a987006a6622704f5fe54409bcc/0_0/build-proof.bin",
+      "bytes": 331542,
+      "sha256": "8ea36602e8d02d8d170bfda2e5ebc0bf0f962ebe30fb9575a25ea27468a40240"
+    }
+  ]
+}
