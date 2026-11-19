@@ -14,7 +14,6 @@ import java.util.concurrent.*;
 import java.util.function.Supplier;
 import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.config.GreatWallConfig;
-import local.plaincraft.greatwall.diagnostics.BudgetCache;
 import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.geometry.FixedMath;
@@ -38,8 +37,6 @@ public final class PlannerScheduler implements AutoCloseable {
     private final ConcurrentHashMap<SegmentKey, CompletableFuture<SegmentGeometry>> geometryFlights = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<SegmentKey, CompletableFuture<SegmentPlan>> planFlights = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, JobProgress> progress = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, PlanLease<?>> callerLeases = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, CompletableFuture<PlanLease<Object>>> acquisitions = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> state = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, FailureEvidence> failures = new ConcurrentHashMap<>();
     private final PlannerPump pump;
@@ -59,7 +56,8 @@ public final class PlannerScheduler implements AutoCloseable {
     private static final String laneThreadPrefix = "pgw-oracle-";
     private final HeightContractPlanner heights;
     private final SiteScheduler sites;
-    private final BudgetCache<CacheKey, Object> memory;
+    // 准入状态和缓存归协作类拥有，调度器只负责任务推进及生命周期次序。
+    private final PlannerAdmissions admissions;
     private final List<OracleLane> lanes;
     private final CompletableFuture<Void> drained = new CompletableFuture<>();
     private final List<Lane> laneState;
@@ -68,9 +66,8 @@ public final class PlannerScheduler implements AutoCloseable {
     private final ArrayDeque<Runnable> geometryQueue = new ArrayDeque<>();
     /** 调用线程入队、推进线程出队；持锁仅操作队列，在锁外执行几何计算。 */
     private final Object geometryLock = new Object();
-    private final ArrayDeque<Runnable> planAdmissions = new ArrayDeque<>(), geometryAdmissions = new ArrayDeque<>();
     private final Map<UUID, Job<?>> activeJobs = new HashMap<>();
-    private int activeGeometry, credits, admittedPlans, admittedGeometries;
+    private int activeGeometry, credits;
     /** 限制并发初始化，防止多个原生噪声状态同时扩大工作集。 */
     private int initializing;
     private long deadline, sequence, background;
@@ -121,7 +118,8 @@ public final class PlannerScheduler implements AutoCloseable {
         this.lanes = bootstrapLanes != null ? List.copyOf(bootstrapLanes)
                 : lanes(recipe, oracleFactory, LanePolicy.resolve().startupLaneCount());
         this.laneState = this.lanes.stream().map(ignored -> new Lane()).toList();
-        this.memory = new BudgetCache<>(recipe.config().segmentBytes(), 256, 4096, pump, PlannerScheduler::retainedBytes);
+        this.admissions = new PlannerAdmissions(recipe.config().segmentBytes(), pump, state, this::closed,
+                this::closedFailure, PlannerScheduler::retainedBytes);
         this.cacheIo = new PlannerCacheIo(pump, io, cache, state, this::failCacheIo);
         this.prefixes = new PrefixSummaryIndex(i -> requireGeometry(i, Priority.PLAYER_PREFETCH), pump, cache, cacheIo::execute);
         this.fineSamples = new FineSampleStage(this, pump, prefixes, sites, laneState.size(), geometryFlights::get);
@@ -140,7 +138,7 @@ public final class PlannerScheduler implements AutoCloseable {
     public PlanLease<RouteShape> requireRoute(long segment, Priority priority) {
         var key = key(segment);
         promote(segment, priority);
-        return acquire(new CacheKey("route", segment), MIB, RouteShape.class, () -> {
+        return admissions.acquire(new PlannerAdmissions.Key("route", segment), MIB, RouteShape.class, () -> {
             var result = flight(routeFlights, key);
             enqueue(new RouteJob(key, priority, result));
             return result.thenApply(v -> v);
@@ -150,7 +148,7 @@ public final class PlannerScheduler implements AutoCloseable {
     public PlanLease<SegmentGeometry> requireGeometry(long segment, Priority priority) {
         var key = key(segment);
         promote(segment, priority);
-        return acquire(new CacheKey("geometry", segment), 2 * MIB, SegmentGeometry.class, () -> {
+        return admissions.acquire(new PlannerAdmissions.Key("geometry", segment), 2 * MIB, SegmentGeometry.class, () -> {
             var result = flight(geometryFlights, key);
             synchronized (geometryLock) { geometryQueue.add(() -> startGeometry(key, priority, result)); }
             drainGeometry();
@@ -161,7 +159,7 @@ public final class PlannerScheduler implements AutoCloseable {
     public PlanLease<SegmentPlan> requirePlan(long segment, Priority priority) {
         var key = key(segment);
         promote(segment, priority);
-        return acquire(new CacheKey("plan", segment), 4 * MIB, SegmentPlan.class, () -> {
+        return admissions.acquire(new PlannerAdmissions.Key("plan", segment), 4 * MIB, SegmentPlan.class, () -> {
             var result = flight(planFlights, key);
             var geometry = requireGeometry(segment, priority);
             var prefix = prefixes.requireBefore(segment);
@@ -263,7 +261,7 @@ public final class PlannerScheduler implements AutoCloseable {
             leases.forEach(PlanLease::close);
             return new PlanLease<>(UUID.randomUUID(), CompletableFuture.failedFuture(failure), () -> {});
         }
-        return outer(chain.thenApply(list -> new PlanWindow(list.stream().filter(p -> p.prefix().terminal().isEmpty()
+        return admissions.outer(chain.thenApply(list -> new PlanWindow(list.stream().filter(p -> p.prefix().terminal().isEmpty()
                 || p.prefix().terminal().get().segment() >= p.geometry().key().index()).toList())), () -> leases.forEach(PlanLease::close));
     }
 
@@ -629,74 +627,6 @@ public final class PlannerScheduler implements AutoCloseable {
         future.whenComplete((v, error) -> flights.remove(key, future)); return future;
     }
 
-    private <T> PlanLease<T> acquire(CacheKey key, long upper, Class<T> type, Supplier<CompletionStage<Object>> loader) {
-        if (closed()) return new PlanLease<>(UUID.randomUUID(), CompletableFuture.failedFuture(closedFailure()), () -> {});
-        var acquired = new CompletableFuture<PlanLease<Object>>();
-        UUID id = UUID.randomUUID();
-        boolean[] accepted = {false};
-        state.compute("acquisitions", (k, old) -> {
-            long count = old == null ? 0 : old;
-            if (count >= 4096) return count;
-            accepted[0] = true; return count + 1;
-        });
-        if (!accepted[0]) return new PlanLease<>(id, CompletableFuture.failedFuture(
-                new WallFailure(FailureCode.CAPACITY, "planner acquisition capacity")), () -> {});
-        acquisitions.put(id, acquired);
-        acquired.whenComplete((v, e) -> {
-            acquisitions.remove(id); state.compute("acquisitions", (k, old) -> old - 1);
-        });
-        pump.execute(() -> {
-            if (closed()) { acquired.completeExceptionally(closedFailure()); return; }
-            Runnable start = () -> startAcquire(key, upper, loader, acquired);
-            if (key.kind.equals("plan")) planAdmissions.add(start);
-            else if (key.kind.equals("geometry")) geometryAdmissions.add(start);
-            else start.run();
-            drainAdmissions();
-        });
-        CompletableFuture<T> view = acquired.thenCompose(lease -> lease.future().thenApply(type::cast));
-        return outer(view, () -> acquired.thenAccept(PlanLease::close));
-    }
-
-    private void startAcquire(CacheKey key, long upper, Supplier<CompletionStage<Object>> loader,
-            CompletableFuture<PlanLease<Object>> result) {
-        if (key.kind.equals("plan")) admittedPlans++;
-        if (key.kind.equals("geometry")) admittedGeometries++;
-        memory.acquire(key, upper, loader).whenCompleteAsync((lease, failure) -> {
-            if (key.kind.equals("plan")) admittedPlans--;
-            if (key.kind.equals("geometry")) admittedGeometries--;
-            if (failure != null) result.completeExceptionally(failure);
-            else if (!result.complete(lease)) lease.close();
-            drainAdmissions();
-        }, pump);
-    }
-
-    private void drainAdmissions() {
-        // 预留依赖容量，避免父任务占满缓存后互等。
-        while (!closed() && admittedGeometries < 4 && !geometryAdmissions.isEmpty()) geometryAdmissions.removeFirst().run();
-        while (!closed() && admittedPlans < 4 && !planAdmissions.isEmpty()) planAdmissions.removeFirst().run();
-    }
-
-    private <T> PlanLease<T> outer(CompletionStage<T> shared, Runnable release) {
-        UUID id = UUID.randomUUID();
-        boolean[] admitted = {false};
-        state.compute("leases", (k, old) -> {
-            long count = old == null ? 0 : old;
-            if (closed() || count >= 4096) return count;
-            admitted[0] = true; return count + 1;
-        });
-        if (!admitted[0]) {
-            release.run();
-            return new PlanLease<>(id, CompletableFuture.failedFuture(closed() ? closedFailure()
-                    : new WallFailure(FailureCode.CAPACITY, "planner lease limit")), () -> {});
-        }
-        var lease = new PlanLease<T>(id, shared, () -> {
-            callerLeases.remove(id); state.compute("leases", (k, old) -> old - 1); release.run();
-        });
-        callerLeases.put(id, lease);
-        if (closed()) lease.close();
-        return lease;
-    }
-
     private SegmentKey key(long segment) {
         if (closed()) throw closedFailure();
         if (!safeSegment(segment)) throw new WallFailure(FailureCode.OUT_OF_BOUNDS, "segment exceeds complete frozen envelope");
@@ -780,14 +710,14 @@ public final class PlannerScheduler implements AutoCloseable {
         routeFlights.forEach((key, future) -> future.completeExceptionally(closedFailure()));
         geometryFlights.forEach((key, future) -> future.completeExceptionally(closedFailure()));
         planFlights.forEach((key, future) -> future.completeExceptionally(closedFailure()));
-        acquisitions.forEach((id, future) -> future.completeExceptionally(closedFailure()));
-        prefixes.close(); callerLeases.forEach((id, lease) -> lease.close());
+        admissions.failPending();
+        prefixes.close(); admissions.closeLeases();
         // 关闭后再遍历一次弱一致租约表，防止并发插入让缓存一直被钉住。
-        callerLeases.forEach((id, lease) -> lease.close());
+        admissions.closeLeases();
         // 未进入编译就退出时也必须归还预热租约。
         releasePrewarmLeases();
         fineSamples.persistOnClose();
-        memory.close();
+        admissions.closeMemory();
         pump.execute(() -> {
             if (startupTimer != null) startupTimer.cancel(false);
             if (watchdogTimer != null) watchdogTimer.cancel(false);
@@ -797,7 +727,7 @@ public final class PlannerScheduler implements AutoCloseable {
             // 已派发任务不在等待队列，关闭时须主动结束它们，避免晚回调被拒后永久挂起。
             activeJobs.values().forEach(job -> job.result.completeExceptionally(closedFailure()));
             pending.clear(); synchronized (geometryLock) { geometryQueue.clear(); } cacheIo.discardQueued();
-            planAdmissions.clear(); geometryAdmissions.clear();
+            admissions.clearQueued();
             activeJobs.clear(); progress.clear();
             lanes.forEach(OracleLane::close);
             CompletableFuture.allOf(lanes.stream().map(OracleLane::drain).toArray(CompletableFuture[]::new))
@@ -808,7 +738,6 @@ public final class PlannerScheduler implements AutoCloseable {
         });
     }
 
-    private record CacheKey(String kind, long segment) {}
     private record Pair(SegmentGeometry geometry, PrefixSummary prefix) {}
     private record Batch(boolean finished, Throwable failure, Object value) {}
     private static final class Lane { private Job<?> job; private boolean busy, initializing, ready; }

@@ -1083,89 +1083,24 @@ final class ProductionSession implements AutoCloseable {
     private void publishPlanningWindow(Installed snapshot, ServerLevel level,
             local.plaincraft.greatwall.planning.PlanningChunkCompiler compiler,
             java.util.List<SegmentPlan> plans) {
-        if (plans.isEmpty()) {
-            // No plan survived. The wall cannot paint, but the loading card and the startup peer
-            // must still be released rather than waiting on a compile that produced nothing.
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_EMPTY no segment plan survived; "
-                    + "wall will not paint");
-            snapshot.planner().releasePrewarmLeases();
-            local.plaincraft.greatwall.lifecycle.PrewarmProgress.signalReady();
-            local.plaincraft.greatwall.lifecycle.PrewarmProgress.finish(false);
-            return;
-        }
-        var window = new PlanWindow(plans);
-        // 整窗的保护几何与区块无关；先建一次索引，批次只登记区块和生成局部群系位图。
-        long corridorStarted = System.nanoTime();
-        var corridor = CorridorIndex.prepareStartupWindow(window, snapshot.recipe().dimension());
-        GreatWallMod.LOGGER.info("[GreatWall:预热] 走廊保护索引已建立 segments={} boxes={} elapsedMs={}",
-                plans.size(), corridor.boxes().size(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - corridorStarted));
-        var publication = new StartupPlanPublication();
-        java.util.function.Consumer<ChunkWritePlan> install = plan -> WallWorldgenPlanCache.put(level, plan);
-        java.util.function.Consumer<ChunkWritePlan> footprint = plan -> {
-            // 道路依赖全部规划占地；落块队列和就绪信号仍等整个窗口发布完。
-            WallPlanSupport.markPlannedColumns(plan);
-            WallBodyBackfill.persist(plan);
-            vegetation.publishPrepared(plan.owner(), corridor);
-            var biomes = biomeRuntime;
-            if (biomes != null && !biomes.closed()) biomes.publishPrepared(plan.owner(), corridor, 1);
-        };
-        long started = System.nanoTime();
-        PrewarmProgress.setSubProgress(0, 0);
-        int compiled = compiler.compileInto(window, snapshot.recipe().recipeHash(), snapshot.recipe().dimension(),
-                (done, total) -> PrewarmProgress.setSubProgress(PrewarmProgress.Stage.COMPILE, done, total),
-                plan -> {
-                    active(); // 关闭或失败后的迟到批次不能再写施工数据。
-                    publication.accept(plan, install, footprint);
-                });
-        active();
-        long publishNanos = publication.publishNanos();
-        long compileMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started - publishNanos);
-        int published = publication.published();
-        int failed = publication.failed();
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={} chunks={} published={} "
-                        + "failed={} compileMs={} publishMs={} vegetationLeases={} guardMisses={} suppressed={}",
-                plans.size(), compiled, published, failed, compileMillis, TimeUnit.NANOSECONDS.toMillis(publishNanos),
-                vegetation.leases(), vegetation.misses(), vegetation.suppressed());
-        // 部分发布沿用原结案阈值；零成功区块始终视为失败。
-        int tolerated = Math.max(8, compiled / 20);
-        if (published == 0) {
-            // Nothing published is never a tolerable partial: the gate would otherwise open on a
-            // wall that does not exist anywhere.
-            GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_EMPTY owners={} failed={}",
-                    compiled, failed);
-            snapshot.planner().releasePrewarmLeases();
-            PrewarmProgress.finish(false);
-            return;
-        }
-        WallBodyBackfill.enqueueCompiled(level, publication.queuedHashes());
-        if (failed > tolerated) {
-            GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_FAILED published={} failed={} of "
-                            + "{} owners (tolerated {})",
-                    published, failed, compiled, tolerated, publication.firstFailure());
-            snapshot.planner().releasePrewarmLeases();
-            PrewarmProgress.finish(false);
-            return;
-        }
-        if (failed > 0) {
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PARTIAL published={} failed={} of "
-                            + "{} owners (tolerated {}); those chunks will not carry the wall",
-                    published, failed, compiled, tolerated, publication.firstFailure());
-        }
-        // The prewarm's leases have served their purpose: this compile consumed their plans and the
-        // window is published, so the memory budget can have them back now.
-        snapshot.planner().releasePrewarmLeases();
-        PrewarmProgress.setSubProgress(compiled, compiled);
-        PrewarmProgress.setStage(PrewarmProgress.Stage.DONE);
-        // The wall startup is truly over only now: the bulk prewarm, the fine sample and the
-        // chunk compile have all settled, so the loading card closes and the startup peers are
-        // released. This is the single owner of the final finish - the bulk prewarm must not
-        // finish earlier, or the card would close at 100 % mid-compile and RoadWeaver would start
-        // its road generation while the wall is still being compiled. finish() opens both the
-        // card's latch and the worldgen gate the roads wait on.
-        PrewarmProgress.signalReady();
-        // Publishing puts the plans on disk; the gate opens only once they are written into the world,
-        // which the startup stage does on the server thread before calling finish(true).
-        PrewarmProgress.markPublished();
+        // 会话只提供真实世界边界；发布结案由独立协作类统一拥有。
+        new StartupWindowPublisher(snapshot.recipe(), snapshot.planner()::releasePrewarmLeases,
+                (window, progress, sink) -> compiler.compileInto(window, snapshot.recipe().recipeHash(),
+                        snapshot.recipe().dimension(), progress, sink), new StartupWindowPublisher.Access() {
+            public void active() { ProductionSession.this.active(); }
+            public void install(ChunkWritePlan plan) { WallWorldgenPlanCache.put(level,plan); }
+            public void footprint(ChunkWritePlan plan,CorridorIndex corridor) {
+                WallPlanSupport.markPlannedColumns(plan);
+                WallBodyBackfill.persist(plan);
+                vegetation.publishPrepared(plan.owner(),corridor);
+                var biomes=biomeRuntime;
+                if(biomes!=null&&!biomes.closed())biomes.publishPrepared(plan.owner(),corridor,1);
+            }
+            public void enqueue(java.util.Map<ChunkKey,String> hashes) { WallBodyBackfill.enqueueCompiled(level,hashes); }
+            public long leases() { return vegetation.leases(); }
+            public long misses() { return vegetation.misses(); }
+            public long suppressed() { return vegetation.suppressed(); }
+        }).publish(plans);
     }
 
     void validateReload() {
