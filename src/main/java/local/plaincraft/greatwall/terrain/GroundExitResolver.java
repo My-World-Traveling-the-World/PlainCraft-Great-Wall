@@ -72,7 +72,11 @@ public final class GroundExitResolver implements AutoCloseable {
             promise=new CompletableFuture<>();prior=requests.putIfAbsent(cell,promise);
             if(prior!=null){release();return prior.copy();}
             var owned=promise;
-            promise.whenComplete((v,e)->{requests.remove(cell,owned);release();});
+            promise.whenComplete((v,e)->{
+                requests.remove(cell,owned);release();
+                // 对外 Future 的完成可能先唤醒调用者，排空还必须等内部登记与额度都释放。
+                drainIfIdle();
+            });
             long from=Math.multiplyExact(cell.arcCell(),GroundExitDecision.CELL_Q8),to=Math.addExact(from,GroundExitDecision.CELL_Q8);
             execute(()->{
                 var work=new Work();
@@ -156,7 +160,7 @@ public final class GroundExitResolver implements AutoCloseable {
         }
         var promise=new CompletableFuture<GroundExitDecision>();var old=sections.putIfAbsent(key,promise);
         if(old!=null)return old.copy();
-        promise.whenComplete((v,e)->sections.remove(key,promise));
+        promise.whenComplete((v,e)->{sections.remove(key,promise);drainIfIdle();});
         try {
             execute(()->{
                 var work=new Work();
@@ -374,7 +378,9 @@ public final class GroundExitResolver implements AutoCloseable {
     public CompletableFuture<Void> drained(){return drained.copy();}
     private void drainIfIdle(){
         state.compute("running",(k,n)->{
-            if(state.containsKey("closed")&&(n==null||n==0)&&state.putIfAbsent("disposed",1)==null){
+            if(state.containsKey("closed")&&(n==null||n==0)
+                    &&requests.isEmpty()&&sections.isEmpty()&&state.getOrDefault("admitted",0)==0
+                    &&state.putIfAbsent("disposed",1)==null){
                 state.compute("summary-bytes",(key,used)->{
                     summaries.values().forEach(Cached::release);sealed.values().forEach(Cached::release);
                     summaries.clear();sealed.clear();return 0;

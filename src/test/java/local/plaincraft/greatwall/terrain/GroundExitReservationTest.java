@@ -227,6 +227,42 @@ class GroundExitReservationTest {
         }
     }
 
+    @Test @SuppressWarnings("unchecked")
+    void drainedWaitsForAdmittedCleanupAfterRequestIsRemoved() throws Exception {
+        var vote=new CompletableFuture<CapVote>();var capEntered=new CompletableFuture<Void>();
+        var source=new Source(){@Override public CompletableFuture<CapVote> cap(Key key,Edge edge){
+            capEntered.complete(null);return vote;
+        }};
+        var admittedLocked=new CountDownLatch(1);var releaseCleanup=new CountDownLatch(1);
+        try(var parent=new AllocationBudget(1L<<20);var worker=Executors.newSingleThreadExecutor();
+                var blocker=Executors.newSingleThreadExecutor();
+                var resolver=new GroundExitResolver(source,worker,1L<<20,()->parent)){
+            var result=resolver.require(cell(7));capEntered.get(10,TimeUnit.SECONDS);
+            var field=GroundExitResolver.class.getDeclaredField("state");field.setAccessible(true);
+            var accounting=(ConcurrentHashMap<String,Integer>)field.get(resolver);
+            // 真实回调先移除请求再还额度；锁住真实额度键，确定性固定在这两步之间。
+            var lock=blocker.submit(()->accounting.compute("admitted",(key,value)->{
+                admittedLocked.countDown();
+                try {if(!releaseCleanup.await(10,TimeUnit.SECONDS))throw new AssertionError("未释放清理锁");}
+                catch(InterruptedException stopped){Thread.currentThread().interrupt();throw new AssertionError(stopped);}
+                return value;
+            }));
+            assertTrue(admittedLocked.await(10,TimeUnit.SECONDS));
+            worker.submit(()->vote.complete(new CapVote(Optional.empty(),T)));
+            try {
+                long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(10);
+                while(resolver.diagnostics().get("requests")!=0&&System.nanoTime()<deadline)
+                    java.util.concurrent.locks.LockSupport.parkNanos(1_000_000);
+                assertEquals(0,resolver.diagnostics().get("requests"));
+                assertEquals(1,resolver.diagnostics().get("admitted"));
+                resolver.close();
+                assertFalse(resolver.drained().isDone(),"请求额度仍被持有时不能提前宣布排空");
+            } finally {releaseCleanup.countDown();}
+            lock.get(10,TimeUnit.SECONDS);result.get(10,TimeUnit.SECONDS);
+            assertReleased(resolver,parent);
+        }
+    }
+
     private static Throwable root(Throwable error){
         while((error instanceof ExecutionException||error instanceof CompletionException)&&error.getCause()!=null)error=error.getCause();
         return error;
@@ -235,7 +271,9 @@ class GroundExitReservationTest {
         var failure=assertThrows(ExecutionException.class,()->future.get(30,TimeUnit.SECONDS));
         assertEquals(code,assertInstanceOf(WallFailure.class,root(failure)).code());
     }
-    private static void assertReleased(GroundExitResolver resolver,AllocationBudget parent){
+    private static void assertReleased(GroundExitResolver resolver,AllocationBudget parent) throws Exception {
+        // close 是发起关闭；只有 drained 才承诺异步生产者和登记清理结束，不能用立即断言代替。
+        resolver.drained().get(10,TimeUnit.SECONDS);
         var stats=resolver.diagnostics();
         assertEquals(0,stats.get("summary-bytes"));assertEquals(0,stats.get("temporary-bytes"));
         assertEquals(0,stats.get("summaries"));assertEquals(0,stats.get("sealed"));
