@@ -22,11 +22,29 @@ public final class WallPlanSupport {
 
     /** Every planned wall column is protected, including columns already at their target state. */
     public static void markPlannedColumns(ChunkWritePlan plan) {
-        if (plan == null) return;
+        publishPlannedColumns(plan);
+    }
+
+    /** 返回本计划的独立列数，不能把体素层数当保护列数写进诊断。 */
+    public static int publishPlannedColumns(ChunkWritePlan plan) {
+        if (plan == null) return 0;
+        var masks = new java.util.HashMap<Long, long[]>();
         for (var voxel : plan.voxels()) {
             Point3i p = voxel.pos();
-            local.plaincraft.greatwall.compat.road.WallRoadGuard.markColumn(p.x(), p.z());
+            long key = ((long) (p.x() >> 4) << 32) ^ ((p.z() >> 4) & 0xffffffffL);
+            var mask = masks.computeIfAbsent(key, ignored -> new long[4]);
+            int bit = ((p.z() & 15) << 4) | (p.x() & 15);
+            // 空气意图也是已拥有的净空，不能因它没有实体方块而漏掉门洞/马道保护。
+            mask[bit >> 6] |= 1L << (bit & 63);
         }
+        int columns = 0;
+        for (var entry : masks.entrySet()) {
+            long key = entry.getKey(); var mask = entry.getValue();
+            local.plaincraft.greatwall.compat.road.WallRoadGuard.markChunk(
+                    (int) (key >> 32), (int) key, mask[0], mask[1], mask[2], mask[3]);
+            for (long word : mask) columns += Long.bitCount(word);
+        }
+        return columns;
     }
 
     /** Writes the custom block-entity payload for positions this pass actually placed. */

@@ -89,6 +89,19 @@ public final class WallRoadGuard {
         lastMarkMillis = System.currentTimeMillis();
     }
 
+    /** 四个字覆盖区块全部256列；一次合并，避免同列几十层反复查表、加锁与读时钟。 */
+    public static void markChunk(int chunkX, int chunkZ, long a, long b, long c, long d) {
+        if ((a | b | c | d) == 0) return;
+        long[] mask = MASKS.computeIfAbsent(pack(chunkX, chunkZ), unused -> new long[4]);
+        synchronized (mask) {
+            mask[0] |= a;
+            mask[1] |= b;
+            mask[2] |= c;
+            mask[3] |= d;
+        }
+        lastMarkMillis = System.currentTimeMillis();
+    }
+
     /** Marks every column of an inclusive rectangle. */
     public static void markBox(int minX, int minZ, int maxX, int maxZ) {
         for (int x = minX; x <= maxX; x++) {

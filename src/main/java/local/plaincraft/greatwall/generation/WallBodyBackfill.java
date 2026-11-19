@@ -677,8 +677,7 @@ public final class WallBodyBackfill {
                 continue;
             }
             voxels += plan.voxels().size();
-            WallPlanSupport.markPlannedColumns(plan);
-            columns += plan.voxels().size();
+            columns += WallPlanSupport.publishPlannedColumns(plan);
         }
         GreatWallMod.LOGGER.info("[GreatWall:S1C] ROAD_GUARD_SEEDED_FROM_PLANS chunks={} columns={} voxels={} missed={} fromDisk={}",
                 keys.size(), columns, voxels, missed, fromDisk);
