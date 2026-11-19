@@ -87,7 +87,9 @@ public final class WallPlanSupport {
             }
         }
         for (var entity : plan.blockEntities()) {
-            if ("minecraft:campfire".equals(entity.type()) && owns(plan, entity.pos())) {
+            if ("minecraft:campfire".equals(entity.type()) && owns(plan, entity.pos())
+                    && (!entity.fields().containsKey(PlannedBlockEntityNbt.DECORATION)
+                            || entity.fields().containsKey("beaconWall"))) {
                 firepits.add(entity.pos());
             }
         }

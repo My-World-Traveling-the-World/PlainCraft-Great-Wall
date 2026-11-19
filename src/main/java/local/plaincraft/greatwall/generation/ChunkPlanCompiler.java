@@ -111,8 +111,12 @@ public final class ChunkPlanCompiler {
         }
         var logical=new TreeMap<Point3i,VoxelIntent>(POS);
         for(var c:components.values()) for(var v:c.voxels()) logical.merge(v.pos(),v,ChunkPlanCompiler::winner);
+        var authored=new java.util.HashSet<SiteId>();
+        for(var c:components.values())if(c.blockEntities().stream().anyMatch(e->e.fields().containsKey(PlannedBlockEntityNbt.DECORATION)))
+            authored.add(c.id());
         var resolved=new TreeMap<Point3i,VoxelIntent>(POS);
-        for(var v:logical.values()) resolved.put(v.pos(),connections(v,logical));
+        // 实物楼梯的内外拐角来自作者存档，不能按裁切后的邻居重新塑形。
+        for(var v:logical.values()) resolved.put(v.pos(),authored.contains(v.component())?v:connections(v,logical));
         // 归属裁决后只配对一次，所有 owner 共用结果，证明和写入不再各判一遍。
         var entities=new TreeMap<Point3i,BlockEntityIntent>(POS);
         for(var c:components.values()) for(var e:c.blockEntities()) {

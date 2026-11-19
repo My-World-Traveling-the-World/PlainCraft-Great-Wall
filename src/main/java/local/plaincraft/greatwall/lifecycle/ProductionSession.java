@@ -21,6 +21,7 @@ import local.plaincraft.greatwall.command.DiagnosticExporter;
 import local.plaincraft.greatwall.compat.road.NegotiatedGateService;
 import local.plaincraft.greatwall.compat.road.WallArchBackfill;
 import local.plaincraft.greatwall.component.S1TemplateSet;
+import local.plaincraft.greatwall.component.S2TemplateSet;
 import local.plaincraft.greatwall.decay.BiomePaletteIndex;
 import local.plaincraft.greatwall.decay.PaletteResolver;
 import local.plaincraft.greatwall.diagnostics.DebugService;
@@ -384,7 +385,8 @@ final class ProductionSession implements AutoCloseable {
         var catalog = PaletteResolver.load(server.getResourceManager());
         var palette = new PaletteResolver(recipe.seed(), catalog);
         var biome = new BiomePaletteIndex(BiomePaletteIndex.freeze(level.registryAccess(), catalog));
-        return new RealizationPlanner(recipe, new SurfaceProbe(), biome, S1TemplateSet.create(recipe.seed(), palette));
+        return new RealizationPlanner(recipe, new SurfaceProbe(), biome, recipe.config().templateVersion()==2
+                ? S2TemplateSet.create(recipe.seed(), palette) : S1TemplateSet.create(recipe.seed(), palette));
     }
 
     /**
@@ -781,7 +783,7 @@ final class ProductionSession implements AutoCloseable {
         var level = levels.get("minecraft:overworld");
         if (level == null) throw new IllegalStateException("overworld LOAD has not been recorded");
         try {
-            var frozen = ProductionInputs.freeze(level);
+            var frozen = ProductionInputs.freeze(level, bootstrap.configuration().join().templateVersion());
             inputs.put("frozen", frozen);
             if (server.getWorldData().overworldData().isInitialized() && !bootstrap.diagnostics().containsKey("spawn-chosen")) {
                 // A self-created token can resume before world.json. Already frozen recipes ignore this new spawn.
@@ -1170,7 +1172,7 @@ final class ProductionSession implements AutoCloseable {
         var snapshot = snapshots.get("installed");
         if (snapshot == null) { fail(new IllegalStateException("reload during incomplete production bootstrap")); return; }
         try {
-            var next = ProductionInputs.freeze(levels.get("minecraft:overworld")).bootstrap();
+            var next = ProductionInputs.freeze(levels.get("minecraft:overworld"),snapshot.recipe().config().templateVersion()).bootstrap();
             if (!snapshot.recipe().terrainHash().equals(next.terrainHash())
                     || !snapshot.recipe().paletteHash().equals(next.paletteHash())
                     || !snapshot.recipe().templatesHash().equals(next.templatesHash())) {

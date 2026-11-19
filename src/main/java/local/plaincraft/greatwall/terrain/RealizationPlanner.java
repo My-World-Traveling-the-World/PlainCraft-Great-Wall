@@ -106,6 +106,7 @@ public final class RealizationPlanner {
 
     /** Installs the window memos. Called once, before the compile window is walked. */
     public void useWindowMemos(WindowMemos windowMemos) { this.memos = windowMemos; }
+    public int templateVersion() { return recipe == null ? 1 : recipe.config().templateVersion(); }
 
     private List<Station> stationList(PlanWindow plans) {
         if (memos == null || plans.plans().size() != 1) return stations(plans);
@@ -234,8 +235,11 @@ public final class RealizationPlanner {
         // Treating one side as empty and the other as a fatal MISSING_FEATURES_PLAN was asymmetric
         // and stopped the server on an otherwise normal geometry boundary.
         if(from<stations.getFirst().globalSQ8()) {
-            if(inspection!=null)inspection.accept(inspection(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHashFor(input)));
-            return result(input,breaks,accepted,t0);
+            if(ImportedSiteGeometry.enabled(recipe)&&to>stations.getFirst().globalSQ8())from=stations.getFirst().globalSQ8();
+            else {
+                if(inspection!=null)inspection.accept(inspection(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHashFor(input)));
+                return result(input,breaks,accepted,t0);
+            }
         }
         to=Math.min(to,stations.getLast().globalSQ8());
         if(inspection!=null||decisions!=null)requireRibbonColumns(input,stations,from,to);
@@ -277,17 +281,19 @@ public final class RealizationPlanner {
         String evidence=null;
         for(var site:sites) {
             if(site.globalSQ8()<Math.max(0,from-64L*256)||site.globalSQ8()>=to+64L*256||site.state()==SiteState.SUPPRESSED||site.state()==SiteState.ABSORBED)continue;
-            long extent=switch(site.id().kind()){case FORT->24L*256;case GATE->30L*256;case ENEMY_TOWER->6L*256;case BEACON->5L*256;default->0;};
-            if(extent==0)continue;
+            long extent=siteExtent(site);
+            if(extent==0&&!ImportedSiteGeometry.enabled(recipe))continue;
             if(site.globalSQ8()>=terminal)continue;
             // Hydrology owns crossings. Site ordinals remain unchanged even when their body is suppressed.
-            long siteFrom=Math.max(0,site.globalSQ8()-extent),siteTo=site.globalSQ8()+extent;
+            long siteFrom=Math.max(0,site.globalSQ8()-extent),siteTo=site.globalSQ8()+Math.max(256,extent);
             if(waters.stream().anyMatch(w->w.classification()!=WaterClass.DRY&&w.crossing().fromQ8()-8L*256<siteTo
                     &&w.crossing().toQ8()+8L*256>siteFrom))continue;
             // An 11-column tower occupies [-5,6), not the symmetric 12-column planning guard.
             // Preserve that guard for hydrology/exits, but do not remove the connecting wall column.
-            long replacementFrom=site.id().kind()==SiteKind.ENEMY_TOWER?site.globalSQ8()-5L*256:site.globalSQ8()-extent;
-            var replacement=new ArcInterval(Math.max(0,replacementFrom),site.globalSQ8()+extent);
+            long replacementFrom=!ImportedSiteGeometry.enabled(recipe)&&site.id().kind()==SiteKind.ENEMY_TOWER
+                    ?site.globalSQ8()-5L*256:site.globalSQ8()-extent;
+            var replacement=new ArcInterval(Math.max(0,replacementFrom),
+                    site.globalSQ8()+extent+(ImportedSiteGeometry.enabled(recipe)?256:0));
             // All cells can vote on a site's full footprint; only its center cell publishes it.
             ComponentVoxels component=compile(site.id().kind(),()->componentInput(input,site,stations,
                     field.sample(site.globalSQ8(),PaletteFamily.STONE,List.of(site.globalSQ8())),List.of(),bounds,supported),input);
@@ -313,7 +319,7 @@ public final class RealizationPlanner {
                     breaks.add(new BreakInterval(new ArcInterval(Math.max(0,site.globalSQ8()-extent-8L*256),site.globalSQ8()+extent+8L*256),BreakReason.CONFLICT,BreakScope.REALIZED));
                 }
             }else {
-                if(site.id().kind()==SiteKind.GATE) {
+                if(site.id().kind()==SiteKind.GATE&&!ImportedSiteGeometry.enabled(recipe)) {
                     gateEndPlanes.add(site.frame());gateWalkIntervals.add(replacement);
                 }else occupied.add(replacement);
                 maintained.add(site.globalSQ8());
@@ -344,7 +350,8 @@ public final class RealizationPlanner {
         long decayTo=Math.min(stations.getLast().globalSQ8(),Math.min(terminal,to+160L*256));
         for(long s=Math.floorDiv(decayFrom,256)*256;s<decayTo;s+=256){
             var d=field.sample(s,PaletteFamily.STONE,maintained);
-            if(d.state()==DecayState.RUIN||d.state()==DecayState.BURIED)
+            boolean seam=nearImportedSeam(s,sites);
+            if(!seam&&(d.state()==DecayState.RUIN||d.state()==DecayState.BURIED))
                 walkBreaks.add(new BreakInterval(new ArcInterval(s,Math.min(s+256,decayTo)),BreakReason.BURIED,BreakScope.REALIZED));
         }
         var walkMerged=merge(walkBreaks);
@@ -396,7 +403,12 @@ public final class RealizationPlanner {
         excluded.addAll(capExclusions);
         var buildable=subtract(new ArcInterval(from,to),excluded);
         if(!buildable.isEmpty()){
-            var site=site(wall,SiteKind.WALL,input.key().arcCell(),from+32L*256,stations);
+            // 段缝可以穿过 64 格单元，两份半墙用不同身份提交，不能互相去重或报哈希冲突。
+            long segment=input.plans().plans().getFirst().geometry().key().index();
+            if(ImportedSiteGeometry.enabled(recipe)&&(segment<0||segment>Integer.MAX_VALUE||input.key().arcCell()>0xffffffffL))
+                throw new WallFailure(FailureCode.OUT_OF_BOUNDS,"实物墙构件身份超出范围");
+            long ordinal=ImportedSiteGeometry.enabled(recipe)?(segment<<32)|input.key().arcCell():input.key().arcCell();
+            var site=site(wall,SiteKind.WALL,ordinal,input.key().arcCell()*64L*256+32L*256,stations);
             // The wall body is the biggest component of every owner, and it was handed an EMPTY material
             // ribbon: PaletteResolver refuses that, so every voxel of every wall section failed. The
             // error surfaced as "material ribbon lacks the eight-block halo" before the check became an
@@ -404,16 +416,19 @@ public final class RealizationPlanner {
             // halo was never the problem, the empty list was.
             var candidate=new ComponentInput(site,stations,supported,field.sample(site.globalSQ8(),PaletteFamily.STONE,maintained),
                     PaletteFamily.STONE,false,List.of(),wallMaterials(input,stations),
-                    local.plaincraft.greatwall.component.GroundEntranceContract.Evidence.analytic(supported),
+                    ImportedSiteGeometry.enabled(recipe)?new GroundEntranceContract.Evidence(
+                            GroundEntranceContract.Source.DURABLE_T0,bounds,input.columns())
+                            :GroundEntranceContract.Evidence.analytic(supported),
                     input.foundationFloor(),input.foundations());
             var template=templates.get(SiteKind.WALL);
-            if(!(template instanceof WallSection section))throw new IllegalArgumentException("WALL template must support build intervals");
+            if(!(template instanceof IntervalWallTemplate section))throw new IllegalArgumentException("WALL template must support build intervals");
             var walkExcluded=new ArrayList<>(excluded);walkMerged.forEach(b->walkExcluded.add(b.range()));
             walkExcluded.addAll(gateWalkIntervals);
             ComponentVoxels component;
             try {
                 component=section.compileIntervals(candidate,buildable,subtract(new ArcInterval(from,to),walkExcluded),
-                        s->field.sample(s,PaletteFamily.STONE,maintained),gateEndPlanes);
+                        s->field.sample(s,PaletteFamily.STONE,maintained),gateEndPlanes,sites);
+                if(ImportedSiteGeometry.enabled(recipe))component=ImportedConstructionGuard.validate(component,input,bounds);
             } catch (IllegalArgumentException outsideCell) {
                 // The template validates its own inputs (WallSection throws "build interval outside cell",
                 // "walkable interval outside cell", "height contract ..." as plain IllegalArgumentExceptions)
@@ -481,7 +496,13 @@ public final class RealizationPlanner {
         for(var w:water)if(w.classification()!=WaterClass.DRY)result.add(new ArcInterval(Math.max(0,w.crossing().fromQ8()-8*256L),w.crossing().toQ8()+8*256L));
         for(var s:siteList(input.plans())) {
             if(Math.abs(s.globalSQ8()-edge)>192*256L||s.state()==SiteState.SUPPRESSED||s.state()==SiteState.ABSORBED)continue;
-            long extent=switch(s.id().kind()){case FORT->24L*256;case GATE->30L*256;case ENEMY_TOWER->6L*256;case BEACON->5L*256;default->0;};
+            // 实物接口和接引段共同拥有通路；断头坡道不能退让到楼旁再把这段墙裁掉。
+            if(ImportedSiteGeometry.enabled(recipe)) {
+                long reach=ImportedSiteGeometry.reach(s.id())*256L;
+                result.add(new ArcInterval(Math.max(0,s.globalSQ8()-reach),s.globalSQ8()+reach+256));
+                continue;
+            }
+            long extent=siteExtent(s);
             if(extent==0)continue;
             var range=new ArcInterval(Math.max(0,s.globalSQ8()-extent),s.globalSQ8()+extent);
             if(result.stream().anyMatch(r->r.fromQ8()<range.toQ8()&&r.toQ8()>range.fromQ8()))continue;
@@ -580,6 +601,15 @@ public final class RealizationPlanner {
         int capFailed=0,capEmpty=0;
         FailureCode capFirstFailure=null;
         for(var attempt:candidates){
+            if(ImportedSiteGeometry.enabled(recipe)) {
+                long a=reverse?s:Math.max(0,attempt.globalSQ8()-30L*256);
+                long b=reverse?attempt.globalSQ8()+30L*256:s;
+                boolean conflicts=siteList(input.plans()).stream().filter(v->v.state()==SiteState.PLANNED).anyMatch(v->{
+                    long reach=ImportedSiteGeometry.reach(v.id())*256L;
+                    return a<v.globalSQ8()+reach+256&&b>Math.max(0,v.globalSQ8()-reach);
+                });
+                if(conflicts)continue;
+            }
             ComponentVoxels cap;
             try{cap=CompiledAllocation.component(()->template.compileAt(componentInput(input,attempt,stations,
                     new DecaySample(DecayState.INTACT,0,20),List.of(),bounds,known)));}
@@ -649,7 +679,8 @@ public final class RealizationPlanner {
                 Integer ground=input.frozenGateY().get(new GateId(candidate.site().id().wallId(),"planned",candidate.site().id().ordinal()));
                 return ground==null?gate.compile(candidate):gate.compileAtGround(candidate,ground);
             }
-            return template.compile(candidate);
+            var result=template.compile(candidate);
+            return ImportedSiteGeometry.enabled(recipe)?ImportedConstructionGuard.validate(result,input,recipe.bounds()):result;
             });
         }catch(WallFailure failure){
             // A component that cannot be placed is one broken link, not a reason to abandon the whole
@@ -659,7 +690,7 @@ public final class RealizationPlanner {
             // site-local as an ownership conflict. It only happens for a corridor planned with a narrower
             // band than this build uses (a saved plan) or a footprint wider than WallFinePlanner.LATERAL.
             if(failure.code()!=FailureCode.OWNERSHIP_CONFLICT&&failure.code()!=FailureCode.T0_MISSING)throw failure;
-            if(failure.code()==FailureCode.T0_MISSING){
+            if(failure.code()==FailureCode.T0_MISSING||ImportedSiteGeometry.enabled(recipe)){
                 // Dropping a component is the safe cushion, but it is not allowed to be quiet: a hole in
                 // the fine sample means someone is planning with a band narrower than this build widens it
                 // to, and the gap in the wall is the only other symptom.
@@ -723,7 +754,8 @@ public final class RealizationPlanner {
         var materials=materials(input,stations);
         var provisional=new ComponentInput(site,stations,Map.of(),decay,PaletteFamily.STONE,false,waters,materials);
         var template=templates.get(site.id().kind());if(template==null)throw new IllegalArgumentException("missing template "+site.id().kind());
-        Bounds world=Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
+        Bounds world=template instanceof ExactFootprintTemplate exact?exact.worldBounds(provisional)
+                :Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
         long columns=Math.multiplyExact((long)world.maxXExclusive()-world.minX(),(long)world.maxZExclusive()-world.minZ());
         CompiledAllocation.charge(Math.addExact(1024,Math.multiplyExact(columns,256)));
         // Templates only borrow their full authorized footprint, never the unrelated cell support table.
@@ -764,6 +796,15 @@ public final class RealizationPlanner {
                     "[GreatWall:entrance] fort0 frame={} source={} certificate={}",site.frame(),evidence.source(),certificate);
         }
         return candidate;
+    }
+    private long siteExtent(SiteRecord site) {
+        if(ImportedSiteGeometry.enabled(recipe))return ImportedSiteGeometry.extent(site.id())*256L;
+        return switch(site.id().kind()){case FORT->24L*256;case GATE->30L*256;case ENEMY_TOWER->6L*256;case BEACON->5L*256;default->0;};
+    }
+    private boolean nearImportedSeam(long s,List<SiteRecord> sites) {
+        return ImportedSiteGeometry.enabled(recipe)&&sites.stream().anyMatch(site->site.state()==SiteState.PLANNED
+                // 接引区不能被旧断头坡道反向占走，衰败从回到原路线之后再恢复。
+                && Math.abs(site.globalSQ8()-s)<=ImportedSiteGeometry.reach(site.id())*256L);
     }
     /**
      * The material ribbon for a component: one material for the whole wall.

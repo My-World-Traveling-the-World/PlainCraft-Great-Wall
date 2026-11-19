@@ -19,6 +19,10 @@ public record ProductionInputs(WorldBootstrap.Frozen bootstrap, BlockCatalog blo
     }
 
     public static ProductionInputs freeze(ServerLevel level) throws IOException {
+        return freeze(level, 1);
+    }
+
+    public static ProductionInputs freeze(ServerLevel level, int templateVersion) throws IOException {
         var blocks = new BlockCatalog(level.registryAccess());
         var trees = new TreeBoundsCatalog(level.registryAccess(),
                 level.registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE).stream().toList());
@@ -32,13 +36,8 @@ public record ProductionInputs(WorldBootstrap.Frozen bootstrap, BlockCatalog blo
         var biomeSnapshot = local.plaincraft.greatwall.decay.BiomePaletteIndex.freeze(level.registryAccess(), catalog);
         String paletteHash = local.plaincraft.greatwall.geometry.DeterministicHash.sha256(
                 (catalog.hash() + ":" + biomeSnapshot.hash()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        var versions = new TreeMap<String, JsonElement>();
-        versions.put("templateVersion", new JsonPrimitive(1));
-        // The source-byte SHA is intentionally not part of templatesHash: it changes on every
-        // recompile even when the template/generation logic is untouched, which needlessly
-        // invalidates an existing world. Generation changes must bump the mod version instead,
-        // which already feeds terrainHash through actual-mod:*.
-        String templatesHash = WorldRecipeGuard.fingerprint(versions);
+        // 按创建凭证选择摘要，重开旧档不能用当前新世界的模板版本代替。
+        String templatesHash = ProductionRecipeVersions.templatesHash(templateVersion);
         var root = new WorldBootstrap.Frozen(frozen.bounds(), terrainHash, paletteHash, templatesHash, frozen.sharedFactory(),
                 (oracle, cursor) -> {
                     if (!(oracle instanceof CpuTerrainOracle cpu)) throw new IllegalStateException("production foundation requires its private CPU oracle");

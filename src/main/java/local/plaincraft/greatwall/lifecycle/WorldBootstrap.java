@@ -74,7 +74,7 @@ public final class WorldBootstrap implements AutoCloseable {
 
     public WorldBootstrap(MinecraftServer server, WorldManifest manifest, Executor io) {
         this(server, manifest, io, server.getWorldData().worldGenOptions().seed(),
-                server.getWorldData().overworldData().isInitialized(), WorldBootstrap::defaultConfig, List.of());
+                server.getWorldData().overworldData().isInitialized(), ProductionRecipeVersions::newWorld, List.of(defaultConfig()));
     }
 
     WorldBootstrap(WorldManifest manifest, Executor io, long seed, boolean originallyInitialized) {
@@ -245,7 +245,7 @@ public final class WorldBootstrap implements AutoCloseable {
 
     /** WorldServices freezes actual finalized registries and adapters before calling this method. */
     public void prepareLevelsEntered(ServerLevel level) {
-        try { prepareLevelsEntered(level, ProductionInputs.freeze(level).bootstrap()); }
+        try { prepareLevelsEntered(level, ProductionInputs.freeze(level, configuration().join().templateVersion()).bootstrap()); }
         catch (IOException error) { throw new WallFailure(FailureCode.IO_FAILED, "production input freeze failed", error); }
     }
 
@@ -266,6 +266,8 @@ public final class WorldBootstrap implements AutoCloseable {
     }
 
     public CompletableFuture<WorldRecipe> ready() { return ready.copy(); }
+    /** 只等待凭证文件的版本选择，不依赖根选址；冻结资源时就必须使用该版本。 */
+    public CompletableFuture<GenerationConfig> configuration() { return authorized.thenApply(WorldRecipeSelection::config); }
     public CompletableFuture<Void> drain() { return drained.copy(); }
     public Map<String, RootSearch.Progress> progress() { return Map.copyOf(progress); }
     public Map<String, List<RootSearch.Audit>> rootAudit() { return Map.copyOf(rootAudit); }

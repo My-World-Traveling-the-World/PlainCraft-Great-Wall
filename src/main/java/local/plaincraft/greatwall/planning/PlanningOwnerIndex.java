@@ -13,10 +13,11 @@ final class PlanningOwnerIndex {
             boolean startsInStationRange) { }
 
     record OwnerWork(ChunkKey owner, List<CellWork> cells) { }
+    private record SourceCell(CellKey cell, long segment) { }
 
     static List<OwnerWork> prepare(PlanWindow plans, String recipeHash, String dimension, CoveragePlanner coverage) {
         // 保留整窗原枚举次序：同一段的证据由多个区块共享，同一区块的各单元也按原序裁决。
-        var byOwner = new LinkedHashMap<ChunkKey, LinkedHashMap<CellKey, CellWork>>();
+        var byOwner = new LinkedHashMap<ChunkKey, LinkedHashMap<SourceCell, CellWork>>();
         for (var plan : plans.plans()) {
             try {
                 long from = plan.prefix().lengthBeforeQ8();
@@ -38,7 +39,8 @@ final class PlanningOwnerIndex {
                     var work = new CellWork(key, captureOwners, plan, segmentWindow, inside);
                     for (var owner : captureOwners) {
                         byOwner.computeIfAbsent(owner, ignored -> new LinkedHashMap<>())
-                                .merge(key, work, PlanningOwnerIndex::prefer);
+                                .merge(new SourceCell(key,coverage.imported()?plan.geometry().key().index():0),
+                                        work, PlanningOwnerIndex::prefer);
                     }
                 }
             } catch (Throwable failure) {

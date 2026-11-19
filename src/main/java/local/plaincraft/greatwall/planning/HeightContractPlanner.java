@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import local.plaincraft.greatwall.component.ImportedSiteGeometry;
 import local.plaincraft.greatwall.geometry.ArcLength;
 import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
@@ -25,11 +26,12 @@ public final class HeightContractPlanner {
         var result = new LinkedHashSet<Point2q>();
         for (long s : values.keySet()) {
             if (s != prefix.lengthBeforeQ8() && s != prefix.lengthBeforeQ8() + geometry.localSQ8().getLast()) {
-                result.add(ArcLength.pointAt(geometry, s - prefix.lengthBeforeQ8()));
+                result.add(pointAt(geometry, prefix, sites, s));
             }
         }
         for (var site : sites) if (site.state() == SiteState.PLANNED) result.addAll(platformSamples(site));
-        if (result.size() > 5998) throw new WallFailure(FailureCode.BUDGET_EXHAUSTED, "height columns exceed contract budget");
+        int budget = ImportedSiteGeometry.enabled(recipe) ? 65536 : 5998;
+        if (result.size() > budget) throw new WallFailure(FailureCode.BUDGET_EXHAUSTED, "height columns exceed contract budget");
         return List.copyOf(result);
     }
 
@@ -43,13 +45,22 @@ public final class HeightContractPlanner {
         var nodes = new ArrayList<Node>();
         for (var entry : positions.entrySet()) {
             long s = entry.getKey();
-            var point = ArcLength.pointAt(geometry, s - start);
+            var point = pointAt(geometry, prefix, sites, s);
             int target = s == start ? geometry.start().walkY() : s == end ? geometry.end().walkY()
                     : Math.addExact(required(columns, point).groundTopY(), 20);
             nodes.add(new Node(s, point, target, entry.getValue(), s == start || s == end));
         }
         for (var site : sites.stream().filter(s -> s.state() == SiteState.PLANNED)
                 .sorted(Comparator.comparingLong(SiteRecord::globalSQ8).thenComparing(s -> s.id().kind().name())).toList()) {
+            if (ImportedSiteGeometry.enabled(recipe)) {
+                // 按整个实物占地取最高地表；不可拿九点中位数让门楼底层埋进山里。
+                int platformY = Math.addExact(platformSamples(site).stream()
+                        .mapToInt(p -> required(columns, p).groundTopY()).max().orElseThrow(), 15);
+                for (var node : nodes) if (ImportedSiteGeometry.levelAt(site, node.s)) {
+                    node.hard = true; node.target = platformY; node.flags |= 1;
+                }
+                continue;
+            }
             var footprint = SiteScheduler.footprint(site.id().kind());
             long a = site.globalSQ8() + footprint.minX() * 256L, b = site.globalSQ8() + footprint.maxXExclusive() * 256L;
             boolean includesStart = a <= start && b >= start, includesEnd = a <= end && b >= end;
@@ -70,7 +81,8 @@ public final class HeightContractPlanner {
                 node.hard = true; node.target = platformY; node.flags |= 1;
             }
         }
-        int min = Math.addExact(recipe.bounds().minY(), 20), max = Math.subtractExact(recipe.bounds().maxYExclusive(), 16);
+        int min = Math.addExact(recipe.bounds().minY(), ImportedSiteGeometry.enabled(recipe) ? 15 : 20);
+        int max = Math.subtractExact(recipe.bounds().maxYExclusive(), ImportedSiteGeometry.enabled(recipe) ? 43 : 16);
         int n = nodes.size();
         long[] limits = new long[n];
         boolean[] cuts = new boolean[n];
@@ -142,11 +154,15 @@ public final class HeightContractPlanner {
                 b.globalSQ8() - a.globalSQ8()));
     }
 
-    private static TreeMap<Long, Integer> stationPositions(SegmentGeometry g, PrefixSummary prefix, List<SiteRecord> sites) {
+    private TreeMap<Long, Integer> stationPositions(SegmentGeometry g, PrefixSummary prefix, List<SiteRecord> sites) {
         long start = prefix.lengthBeforeQ8(), end = Math.addExact(start, g.localSQ8().getLast());
         var result = new TreeMap<Long, Integer>(); result.put(start, 2); result.put(end, 2);
         for (long s = Math.addExact(start - Math.floorMod(start, 4 * 256), 4 * 256); s < end; s += 4 * 256) result.put(s, 0);
         for (var site : sites) if (site.state() == SiteState.PLANNED) {
+            if (ImportedSiteGeometry.enabled(recipe)) {
+                for (long s : ImportedSiteGeometry.knots(site)) if (s >= start && s <= end) result.merge(s, 1, (a, b) -> a | b);
+                continue;
+            }
             var f = SiteScheduler.footprint(site.id().kind());
             for (int offset : new int[] {f.minX(), 0, f.maxXExclusive()}) {
                 long s = site.globalSQ8() + offset * 256L;
@@ -160,7 +176,14 @@ public final class HeightContractPlanner {
         return result;
     }
 
-    private static List<Point2q> platformSamples(SiteRecord site) {
+    private List<Point2q> platformSamples(SiteRecord site) {
+        if (ImportedSiteGeometry.enabled(recipe)) {
+            var b = ImportedSiteGeometry.bounds(site);
+            var result = new ArrayList<Point2q>();
+            for (int z = b.minZ(); z < b.maxZExclusive(); z++) for (int x = b.minX(); x < b.maxXExclusive(); x++)
+                result.add(new Point2q((long) x * 256 + 128, (long) z * 256 + 128));
+            return result;
+        }
         var f = SiteScheduler.footprint(site.id().kind());
         var result = new ArrayList<Point2q>();
         for (long x : new long[] {f.minX() * 256L + 128, 0, f.maxXExclusive() * 256L - 128}) {
@@ -169,6 +192,10 @@ public final class HeightContractPlanner {
             }
         }
         return List.copyOf(result);
+    }
+    private Point2q pointAt(SegmentGeometry geometry, PrefixSummary prefix, List<SiteRecord> sites, long s) {
+        var original = ArcLength.pointAt(geometry, s - prefix.lengthBeforeQ8());
+        return ImportedSiteGeometry.enabled(recipe) ? ImportedSiteGeometry.routePoint(original, s, sites) : original;
     }
     private static ColumnSample required(Map<Point2q, ColumnSample> columns, Point2q point) {
         var result = columns.get(point);

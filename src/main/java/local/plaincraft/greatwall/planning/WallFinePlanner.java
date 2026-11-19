@@ -646,8 +646,10 @@ public final class WallFinePlanner {
             this.toIndex = Math.min(route.points().size(), Math.max(this.fromIndex, toIndex));
             // Only the cursor that holds a route end samples past it, so every apron column is
             // produced exactly once — PlannerScheduler predicts the same split for its progress bar.
-            this.apronBefore = this.fromIndex == 0 ? APRON_BLOCKS : 0;
-            this.apronAfter = this.toIndex == route.points().size() ? APRON_BLOCKS : 0;
+            // 澄海楼从起点唯一接口向后伸出 91 格，旧端部余量不足以覆盖其真实底板。
+            int apron = route instanceof ImportedSamplePath ? 112 : APRON_BLOCKS;
+            this.apronBefore = this.fromIndex == 0 ? apron : 0;
+            this.apronAfter = this.toIndex == route.points().size() ? apron : 0;
             this.index = -this.apronBefore;
             this.end = this.toIndex + this.apronAfter;
         }

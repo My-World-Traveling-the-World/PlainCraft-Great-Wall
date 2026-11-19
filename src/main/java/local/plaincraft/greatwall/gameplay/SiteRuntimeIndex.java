@@ -60,7 +60,10 @@ public final class SiteRuntimeIndex implements AutoCloseable {
             for (BlockEntityIntent intent : bucket) {
                 if (!intent.pos().equals(pos)) continue;
                 if (!"minecraft:campfire".equals(intent.type())) return Optional.empty();
-                int ordinal = intent.localId();
+                // 新模板里门楼也有装饰营火，只有挂了烽火身份的营火才参与点火接力。
+                if (intent.fields().containsKey(local.plaincraft.greatwall.component.ImportedWallTemplate.DECORATION)
+                        && !intent.fields().containsKey("beaconWall")) return Optional.empty();
+                int ordinal = Integer.parseInt(intent.fields().getOrDefault("firepitOrdinal", Integer.toString(intent.localId())));
                 BeaconId beacon = new BeaconId(intent.site().wallId(), intent.site().ordinal());
                 boolean lit = Boolean.parseBoolean(intent.fields().getOrDefault("lit", "false"));
                 boolean waterlogged = Boolean.parseBoolean(

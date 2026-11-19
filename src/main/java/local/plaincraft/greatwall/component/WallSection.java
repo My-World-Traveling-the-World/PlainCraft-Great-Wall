@@ -11,7 +11,7 @@ import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** A 64-block arc cell, rasterized against the station chain rather than its straight chord. */
-public final class WallSection implements ComponentTemplate {
+public final class WallSection implements IntervalWallTemplate {
     private final DecayField decay;
     private final PaletteBinding palette;
 
@@ -110,6 +110,13 @@ public final class WallSection implements ComponentTemplate {
                 return cell(Part.LAMP,false,false,Map.of("hanging","false","waterlogged","false"));
             return null;
         },samples,p->routeAnchor(input,p));
+    }
+
+    @Override public ComponentVoxels compileIntervals(ComponentInput input, List<ArcInterval> intervals,
+            List<ArcInterval> walkable, java.util.function.LongFunction<DecaySample> samples, List<Frame> gates,
+            List<SiteRecord> sites) {
+        // 旧配方继续走原算法，新接口只解除编排层对具体墙类的依赖。
+        return compileIntervals(input, intervals, walkable, samples, gates);
     }
 
     private static boolean replacedAnchor(ComponentInput input,int localX,List<Frame> gates) {

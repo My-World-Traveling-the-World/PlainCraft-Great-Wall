@@ -764,6 +764,8 @@ public final class WallBodyBackfill {
         WallPlanSupport.markPlannedColumns(plan);
         // 强制修复或新版本施工先撤销旧完成章，后续实体失败不能留下旧的成功证据。
         if (existingMarker != null && existingMarker.complete()) WallPlanSupport.writeMarkers(chunk,plan,false);
+        var services=local.plaincraft.greatwall.lifecycle.WorldServices.find(level.getServer());
+        boolean authored=services!=null&&services.productionFixture()&&services.recipe().config().templateVersion()==2;
         var result = PublishedPlanPainter.paint(plan, new PublishedPlanPainter.World<BlockState>() {
             public boolean validHeight(int y) { return !level.isOutsideBuildHeight(y); }
             public BlockState resolve(local.plaincraft.greatwall.model.WallTypes.BlockSpec spec) {
@@ -772,7 +774,9 @@ public final class WallBodyBackfill {
             public BlockState read(Point3i p) { return chunk.getBlockState(new BlockPos(p.x(),p.y(),p.z())); }
             public boolean write(Point3i p,BlockState target) {
                 // 规划已经负责结构避让；首次施工按计划覆盖漏检建筑，沿用服务端高度/光照与客户端更新。
-                return level.setBlock(new BlockPos(p.x(),p.y(),p.z()),target,2);
+                // 实物已冻结墙连接和楼梯形状；避免补建按临时邻居改形，发光方块仍触发原版光照更新。
+                int flags=updateFlags(authored,target.getLightEmission());
+                return level.setBlock(new BlockPos(p.x(),p.y(),p.z()),target,flags);
             }
             public void written(Point3i p,BlockState target,int count) {
                 if ((count & 63) != 0) return;
@@ -799,6 +803,12 @@ public final class WallBodyBackfill {
         }
         // 不完整计划不得进入SETTLED，否则外层会移出队列并持久写入DONE。
         return new Sweep(result.complete() ? Status.SETTLED : Status.PENDING, result.written(), plan.hash());
+    }
+    /** 旧配方保持原标志，新配方按冻结形状落块并唤醒光照相关邻居。 */
+    static int updateFlags(boolean authored,int emission) {
+        if(!authored)return net.minecraft.world.level.block.Block.UPDATE_CLIENTS;
+        return net.minecraft.world.level.block.Block.UPDATE_CLIENTS|net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE
+                |(emission>0?net.minecraft.world.level.block.Block.UPDATE_NEIGHBORS:0);
     }
 
     private static State state(ServerLevel level) {

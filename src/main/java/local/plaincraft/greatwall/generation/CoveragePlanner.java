@@ -10,16 +10,26 @@ import local.plaincraft.greatwall.geometry.Projection;
 import local.plaincraft.greatwall.geometry.Rasterizer;
 import local.plaincraft.greatwall.component.ComponentTemplate;
 import local.plaincraft.greatwall.component.S1TemplateSet;
+import local.plaincraft.greatwall.component.S2TemplateSet;
+import local.plaincraft.greatwall.component.ExactFootprintTemplate;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.EvidenceCodec;
 
 /** A canonical per-owner envelope includes every potential local template/retreat, not just accepted cells. */
 public final class CoveragePlanner {
-    private final java.util.Map<SiteKind,ComponentTemplate> templates=S1TemplateSet.create(0);
+    private final java.util.Map<SiteKind,ComponentTemplate> templates;
+    private final int version;
     private static final java.util.Comparator<ChunkKey> OWNER_ORDER = java.util.Comparator.comparing(ChunkKey::dimension)
             .thenComparingInt(ChunkKey::x).thenComparingInt(ChunkKey::z);
-    public CoveragePlanner() {}
+    public CoveragePlanner() { this(1); }
+    public CoveragePlanner(int version) {
+        this.version=version;
+        templates=version==2?S2TemplateSet.create(0,(i,p,l,w,s,h)->S1TemplateSet.material(i.family(),i.redSandstone(),p))
+                :S1TemplateSet.create(0);
+    }
+    /** 新配方的跨段半单元必须都保留，不能沿用旧版择一策略。 */
+    public boolean imported() { return version==2; }
     public Coverage forChunk(ChunkKey chunk,PlanWindow plans,DimensionBounds bounds) {
         var stations=stations(plans);
         int min=Integer.MAX_VALUE,max=Integer.MIN_VALUE;
@@ -33,7 +43,8 @@ public final class CoveragePlanner {
         for(var plan:plans.plans())for(var site:plan.sites()) {
             var b=site.bounds();
             if(b.minX()<x0+16+128&&b.maxXExclusive()>x0-128&&b.minZ()<z0+16+128&&b.maxZExclusive()>z0-128) {
-                min=Math.min(min,site.frame().walkY()-35);max=Math.max(max,site.frame().walkY()+8);
+                min=Math.min(min,Math.min(site.frame().walkY()-35,b.minY()));
+                max=Math.max(max,Math.max(site.frame().walkY()+8,b.maxYExclusive()));
             }
         }
         // An owner chunk can be admitted by realizationOwners because it falls inside a site's real
@@ -111,7 +122,8 @@ public final class CoveragePlanner {
             if(template==null)throw new WallFailure(FailureCode.INVALID_RESOURCE,"unknown capture footprint: "+site.id());
             var provisional=new ComponentInput(site,List.of(),java.util.Map.of(),new DecaySample(DecayState.INTACT,0,20),
                     PaletteFamily.STONE,false,List.of(),List.of());
-            var b=Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
+            var b=template instanceof ExactFootprintTemplate exact?exact.worldBounds(provisional)
+                    :Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
             footprints.add(new SiteFootprint(site.globalSQ8(), footprintReach(site,b), b));
         }
         return new OwnerLookup(orderedStations, List.copyOf(footprints));

@@ -24,6 +24,7 @@ public final class SiteScheduler {
     private final WorldRecipe recipe;
 
     public SiteScheduler(WorldRecipe recipe) { this.recipe = Objects.requireNonNull(recipe); }
+    boolean imported() { return ImportedSiteGeometry.enabled(recipe); }
 
     public long gatePositionQ8(long ordinal) {
         if (ordinal < 0) throw new IllegalArgumentException("negative gate ordinal");

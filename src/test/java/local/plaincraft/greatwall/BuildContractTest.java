@@ -458,7 +458,8 @@ class BuildContractTest {
             assertTrue(code.contains("WallPlanSupport.writeMarkers(chunk,plan,complete)"));
         }
         assertTrue(backfill.contains("result.complete() ? Status.SETTLED : Status.PENDING"));
-        assertTrue(backfill.contains("return level.setBlock(new BlockPos(p.x(),p.y(),p.z()),target,2)"));
+        assertTrue(backfill.contains("return level.setBlock(new BlockPos(p.x(),p.y(),p.z()),target,flags)"));
+        assertTrue(backfill.contains("updateFlags(authored,target.getLightEmission())"));
         assertTrue(feature.contains("WallBodyBackfill.enqueueUnfinished(server, plan.owner())"));
     }
 

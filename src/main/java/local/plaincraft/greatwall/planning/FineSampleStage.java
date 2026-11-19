@@ -248,7 +248,12 @@ final class FineSampleStage {
                 // 注册前先计数，即时完成的路径也不能漏记。
                 routesPending.incrementAndGet();
                 // 几何等待超过原时限才请求路线，正常缓存命中直接取样。
-                CompletableFuture<RoutePath> path = lease.future()
+                CompletableFuture<RoutePath> path;
+                if (sites.imported()) {
+                    // 不创建旧超时支线，避免两分钟后又悄悄启动一条未使用的旧路线。
+                    var planLease = segmentLease.own(scheduler.requirePlan(index, priority));
+                    path = planLease.future().thenApply(ImportedSamplePath::of);
+                } else path = lease.future()
                         .<RoutePath>thenApply(geometry -> geometry)
                         .completeOnTimeout(null, 120, java.util.concurrent.TimeUnit.SECONDS)
                         .thenComposeAsync(sampled -> {
@@ -550,6 +555,10 @@ final class FineSampleStage {
 
     /** 城门和堡垒足迹可能超出窄截面，按候选建筑弧长留好证据。 */
     private java.util.function.IntPredicate widePoints(RoutePath path, long fromQ8) {
+        if (path instanceof ImportedSamplePath) {
+            // 实物楼体按固定轴向占地，先完整覆盖；只有验证完终态列集合后才能继续稀疏化。
+            return ignored -> true;
+        }
         var arcs = path.localSQ8();
         int points = arcs.size();
         var wide = new java.util.BitSet(points);

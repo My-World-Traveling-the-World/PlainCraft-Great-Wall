@@ -28,13 +28,15 @@ public final class PlanningChunkCompiler {
     private static final int OWNER_BATCH_SIZE = 64;
     private final CellResolver realization;
     private final ChunkPlanCompiler compiler;
-    private final CoveragePlanner coverage = new CoveragePlanner();
+    private CoveragePlanner coverage = new CoveragePlanner();
     private final PlanningColumnProvider.ColumnSource columns;
     private final PlanningCompileContext context;
 
     public PlanningChunkCompiler(RealizationPlanner realization, ChunkPlanCompiler compiler,
             FineHeightIndex index, List<Bounds> structures) {
         this(withWindowMemos(realization), compiler, index, structures);
+        // 捕获区块也必须选择同一版模板，否则新楼的高屋顶和宽底板不在证据范围内。
+        coverage = new CoveragePlanner(realization.templateVersion());
     }
 
     @FunctionalInterface
