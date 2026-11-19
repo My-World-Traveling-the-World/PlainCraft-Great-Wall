@@ -91,6 +91,7 @@ public final class RealizationPlanner {
      * on its own (the unit tests) leaves it null and behaves exactly as before.
      */
     public static final class WindowMemos {
+        private final ImportedBuildingMemo buildings = new ImportedBuildingMemo();
         private final java.util.Map<SegmentPlan, List<Station>> stations = new java.util.IdentityHashMap<>();
         private final java.util.Map<SegmentPlan, List<SiteRecord>> sites = new java.util.IdentityHashMap<>();
         private final java.util.Map<SegmentPlan, List<WaterEvidence>> waters = new java.util.IdentityHashMap<>();
@@ -106,6 +107,11 @@ public final class RealizationPlanner {
 
     /** Installs the window memos. Called once, before the compile window is walked. */
     public void useWindowMemos(WindowMemos windowMemos) { this.memos = windowMemos; }
+    /** 窗口成功、失败或发布异常都必须释放大楼体，不能跟随会话无限驻留。 */
+    public void clearCompiledBuildings() { if (memos != null) memos.buildings.clear(); }
+    public ImportedBuildingMemo.Stats buildingMemoStats() {
+        return memos == null ? new ImportedBuildingMemo.Stats(0,0,0,0,0) : memos.buildings.stats();
+    }
     public int templateVersion() { return recipe == null ? 1 : recipe.config().templateVersion(); }
 
     private List<Station> stationList(PlanWindow plans) {
@@ -693,9 +699,13 @@ public final class RealizationPlanner {
                 Integer ground=input.frozenGateY().get(new GateId(candidate.site().id().wallId(),"planned",candidate.site().id().ordinal()));
                 return ground==null?gate.compile(candidate):gate.compileAtGround(candidate,ground);
             }
-            var result=template.compile(candidate);
-            // 水门有认证过的水下净空与旧地形规则，实物楼体的禁挖判据不能误施到水门。
-            return template instanceof ImportedBuildingTemplate?ImportedConstructionGuard.validate(result,input,recipe.bounds()):result;
+            if(template instanceof ImportedBuildingTemplate) {
+                java.util.function.Supplier<ComponentVoxels> production = () ->
+                        ImportedConstructionGuard.validate(template.compile(candidate),input,recipe.bounds());
+                return memos == null ? production.get() : memos.buildings.get(candidate,input,production);
+            }
+            // 水门继续走自身认证，不能拿实物楼体缓存或禁挖规则替代。
+            return template.compile(candidate);
             });
         }catch(WallFailure failure){
             // A component that cannot be placed is one broken link, not a reason to abandon the whole

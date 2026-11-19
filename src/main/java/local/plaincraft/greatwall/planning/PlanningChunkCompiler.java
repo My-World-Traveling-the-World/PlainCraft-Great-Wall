@@ -31,12 +31,14 @@ public final class PlanningChunkCompiler {
     private CoveragePlanner coverage = new CoveragePlanner();
     private final PlanningColumnProvider.ColumnSource columns;
     private final PlanningCompileContext context;
+    private RealizationPlanner realizationPlanner;
 
     public PlanningChunkCompiler(RealizationPlanner realization, ChunkPlanCompiler compiler,
             FineHeightIndex index, List<Bounds> structures) {
         this(withWindowMemos(realization), compiler, index, structures);
         // 捕获区块也必须选择同一版模板，否则新楼的高屋顶和宽底板不在证据范围内。
         coverage = new CoveragePlanner(realization.templateVersion());
+        realizationPlanner = realization;
     }
 
     @FunctionalInterface
@@ -118,6 +120,22 @@ public final class PlanningChunkCompiler {
 
     // 只切分已冻结的区块工作项；不能先按段过滤再重算接缝归属。
     int compileOwners(List<PlanningOwnerIndex.OwnerWork> owners, String recipeHash, OwnerProgress progress,
+            int batchSize, int workers, Consumer<ChunkWritePlan> output) {
+        try {
+            return compileOwnersWindow(owners,recipeHash,progress,batchSize,workers,output);
+        } finally {
+            if(realizationPlanner!=null) {
+                var stats=realizationPlanner.buildingMemoStats();
+                realizationPlanner.clearCompiledBuildings();
+                local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                        "[GreatWall:编译] 实物楼体复用 编译={} 命中={} 峰值保留字节={} 窗口结束已释放",
+                        stats.loads(),stats.hits(),stats.peak());
+            }
+        }
+    }
+
+    // 大楼体只在本次窗口循环中保留，发布回调抛错也通过外层finally归还。
+    private int compileOwnersWindow(List<PlanningOwnerIndex.OwnerWork> owners, String recipeHash, OwnerProgress progress,
             int batchSize, int workers, Consumer<ChunkWritePlan> output) {
         Objects.requireNonNull(output, "output");
         // 工作线程只写当前批；调用线程同步交付后清表，计划不会留在整窗编译器里。

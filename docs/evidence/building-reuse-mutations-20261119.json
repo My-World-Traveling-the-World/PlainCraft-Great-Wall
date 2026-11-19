@@ -1,0 +1,38 @@
+[
+  {
+    "mutation": "bypass",
+    "target": "*ImportedBuildingReuseTest",
+    "red": true,
+    "log": "build-round78-mutant-bypass.log"
+  },
+  {
+    "mutation": "protection",
+    "target": "*ImportedBuildingReuseTest",
+    "red": true,
+    "log": "build-round78-mutant-protection.log"
+  },
+  {
+    "mutation": "columns",
+    "target": "*ImportedBuildingReuseTest",
+    "red": true,
+    "log": "build-round78-mutant-columns.log"
+  },
+  {
+    "mutation": "cleanup",
+    "target": "*ImportedBuildingReuseTest",
+    "red": true,
+    "log": "build-round78-mutant-cleanup.log"
+  },
+  {
+    "mutation": "arena",
+    "target": "*ImportedBuildingMemoTest",
+    "red": true,
+    "log": "build-round78-mutant-arena.log"
+  },
+  {
+    "mutation": "capacity",
+    "target": "*ImportedBuildingMemoTest",
+    "red": true,
+    "log": "build-round78-mutant-capacity.log"
+  }
+]

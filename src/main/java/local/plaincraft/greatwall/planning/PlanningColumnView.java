@@ -44,6 +44,9 @@ public final class PlanningColumnView implements SurfaceProbe.ColumnView {
         this.sample = sample;
     }
 
+    /** 样本是不可变记录；跨单元复用比较完整证据，不能仅信任摘要或对象地址。 */
+    public ColumnSample frozenSample() { return sample; }
+
     @Override
     public String state(int y) {
         if (y < sample.groundTopY()) return "minecraft:stone{}";
