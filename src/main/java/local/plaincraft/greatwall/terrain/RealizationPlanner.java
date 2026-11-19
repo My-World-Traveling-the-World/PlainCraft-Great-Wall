@@ -92,6 +92,7 @@ public final class RealizationPlanner {
      */
     public static final class WindowMemos {
         private final ImportedBuildingMemo buildings = new ImportedBuildingMemo();
+        private final ImportedProjectionMemo projections = new ImportedProjectionMemo();
         private final java.util.Map<SegmentPlan, List<Station>> stations = new java.util.IdentityHashMap<>();
         private final java.util.Map<SegmentPlan, List<SiteRecord>> sites = new java.util.IdentityHashMap<>();
         private final java.util.Map<SegmentPlan, List<WaterEvidence>> waters = new java.util.IdentityHashMap<>();
@@ -108,9 +109,15 @@ public final class RealizationPlanner {
     /** Installs the window memos. Called once, before the compile window is walked. */
     public void useWindowMemos(WindowMemos windowMemos) { this.memos = windowMemos; }
     /** 窗口成功、失败或发布异常都必须释放大楼体，不能跟随会话无限驻留。 */
-    public void clearCompiledBuildings() { if (memos != null) memos.buildings.clear(); }
+    public void clearCompiledBuildings() {
+        if (memos != null) { memos.buildings.clear(); memos.projections.clear(); }
+    }
     public ImportedBuildingMemo.Stats buildingMemoStats() {
         return memos == null ? new ImportedBuildingMemo.Stats(0,0,0,0,0) : memos.buildings.stats();
+    }
+    /** 计数只在建树/命中时更新，逐列查询不写共享状态。 */
+    public ImportedProjectionMemo.Stats projectionMemoStats() {
+        return memos == null ? new ImportedProjectionMemo.Stats(0,0,0,0) : memos.projections.stats();
     }
     public int templateVersion() { return recipe == null ? 1 : recipe.config().templateVersion(); }
 
@@ -267,7 +274,8 @@ public final class RealizationPlanner {
         }
         if(terminal!=Long.MAX_VALUE)breaks.add(new BreakInterval(new ArcInterval(terminal,Long.MAX_VALUE),terminalReason,BreakScope.PLANNED));
         var supported=new HashMap<Point3i,ProbeResult>();
-        var importedProjection=ImportedSiteGeometry.enabled(recipe)?new ImportedRibbonProjection(stations,sites):null;
+        var importedProjection=ImportedSiteGeometry.enabled(recipe)
+                ?memos==null?new ImportedRibbonProjection(stations,sites):memos.projections.get(input.plans(),stations,sites):null;
         var importedBoxes=ImportedSiteGeometry.enabled(recipe)?sites.stream().filter(s->s.state()==SiteState.PLANNED)
                 .map(ImportedSiteGeometry::bounds).toList():List.<Bounds>of();
         var columnEntries=input.columns().entrySet().stream().sorted(Map.Entry.<Point3i,SurfaceProbe.ColumnView>comparingByKey(

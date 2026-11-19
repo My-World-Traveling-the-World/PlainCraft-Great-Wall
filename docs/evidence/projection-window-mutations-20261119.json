@@ -1,0 +1,30 @@
+[
+  {
+    "mutation": "bypass",
+    "target": "*ImportedBuildingReuseTest",
+    "red": true,
+    "restored": true,
+    "log": "build-round79-mutant-bypass.log"
+  },
+  {
+    "mutation": "version",
+    "target": "*ImportedProjectionMemoTest",
+    "red": true,
+    "restored": true,
+    "log": "build-round79-mutant-version.log"
+  },
+  {
+    "mutation": "capacity",
+    "target": "*ImportedProjectionMemoTest",
+    "red": true,
+    "restored": true,
+    "log": "build-round79-mutant-capacity.log"
+  },
+  {
+    "mutation": "cleanup",
+    "target": "*ImportedBuildingReuseTest",
+    "red": true,
+    "restored": true,
+    "log": "build-round79-mutant-cleanup.log"
+  }
+]

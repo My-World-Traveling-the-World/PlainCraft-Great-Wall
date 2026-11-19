@@ -45,6 +45,9 @@ public final class ImportedRibbonProjection {
         return index.contract(x, z, null);
     }
 
+    /** 包含边、树节点、两份引用数组的保守估算；窗口缓存据此拒绝超大条目。 */
+    public long estimatedBytes() { return 1024L + 256L * edges.size(); }
+
     /** 只读诊断供离线计数；正常热路径不更新共享计数器。 */
     WallSection.ColumnContract contract(int x, int z, long[] visits) {
         return index.contract(x, z, visits);

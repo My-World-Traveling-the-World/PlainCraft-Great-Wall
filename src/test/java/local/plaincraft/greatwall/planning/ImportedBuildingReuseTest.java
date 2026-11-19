@@ -44,8 +44,12 @@ class ImportedBuildingReuseTest {
         assertEquals(1,stats.loads());assertEquals(1,stats.hits());
         assertEquals(1,stats.entries());assertTrue(stats.bytes()>0);
         assertTrue(stats.bytes()<=ImportedBuildingMemo.MAX_BYTES);
+        assertEquals(1,planner.projectionMemoStats().builds());
+        assertEquals(1,planner.projectionMemoStats().hits());
+        assertTrue(planner.projectionMemoStats().bytes()>0);
         planner.clearCompiledBuildings();
         assertEquals(0,planner.buildingMemoStats().entries());assertEquals(0,planner.buildingMemoStats().bytes());
+        assertEquals(0,planner.projectionMemoStats().bytes());
     }
 
     @Test void actualCompilerReleasesMemoOnSuccessAndPublishingFailure() {
@@ -57,6 +61,7 @@ class ImportedBuildingReuseTest {
         assertTrue(planner.buildingMemoStats().bytes()>0);
         assertEquals(0,compiler.compileOwners(List.of(),f.recipe().recipeHash(),null,1,1,p->fail("无区块不得发布")));
         assertEquals(0,planner.buildingMemoStats().bytes());
+        assertEquals(0,planner.projectionMemoStats().bytes());
         planner.resolve(input);
         assertTrue(planner.buildingMemoStats().bytes()>0);
         var owners=List.of(new PlanningOwnerIndex.OwnerWork(new ChunkKey(f.recipe().dimension(),0,0),List.of()));
@@ -65,6 +70,7 @@ class ImportedBuildingReuseTest {
         assertEquals("故意拒绝发布",error.getMessage());
         assertEquals(0,planner.buildingMemoStats().bytes(),"发布中断也必须归还强引用");
         assertEquals(0,planner.buildingMemoStats().entries());
+        assertEquals(0,planner.projectionMemoStats().bytes());
     }
 
     @Test void changedActualRoofProtectionCannotReuseAnEarlierSuccess() {
