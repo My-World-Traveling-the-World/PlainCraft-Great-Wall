@@ -71,6 +71,42 @@ class ImportedProductionBoundaryTest {
         for(var entry:expected.entrySet())assertEquals(entry.getValue(),actual.get(entry.getKey()),"拆段改变方块: "+entry.getKey());
     }
 
+    @Test void aHigherBuildingPlatformDoesNotCutOffItsFirstWallColumns() {
+        var f=ImportedProductionPlanTest.fixture(Asset.CHENGHAI_TOWER, 0);
+        var frame=f.site().frame();
+        var raisedFrame=new Frame(frame.center(),frame.txQ30(),frame.tzQ30(),frame.walkY()+24,frame.mirror());
+        var site=new SiteRecord(f.site().id(),0,raisedFrame,
+                local.plaincraft.greatwall.component.ImportedSiteGeometry.layout(f.site().id(),raisedFrame).boundsWithStraightWalls(0),
+                SiteState.PLANNED,Optional.empty(),Optional.empty());
+        var stations=f.plan().stations().stations().stream().map(s->new Station(s.globalSQ8(),s.point(),s.walkY()+24,s.flags())).toList();
+        var plan=new SegmentPlan(f.plan().geometry(),f.plan().prefix(),new StationTable(stations,List.of(),f.plan().hash()),
+                List.of(site),f.plan().hash());
+        var elevated=new ImportedProductionPlanTest.Fixture(f.recipe(),plan,site,f.columns());
+        var resolved=ImportedProductionPlanTest.planner(f.recipe()).resolve(ImportedProductionPlanTest.input(elevated,0,List.of()));
+        var wall=resolved.components().stream().filter(c->c.id().kind()==SiteKind.WALL).findFirst().orElseThrow();
+        var port=local.plaincraft.greatwall.component.ImportedSiteGeometry.layout(site).ports().getFirst();
+        for(int n=1;n<=8;n++) {
+            var floor=port.cell(n,0,-1);
+            assertTrue(wall.voxels().stream().anyMatch(v->v.pos().equals(floor)&&v.walkable()),
+                    "远处高点抬升整楼后，第一列墙仍应向下填基: "+floor);
+        }
+    }
+
+    @Test void aKnownWaterTerminalBoundsSamplingAndCompileEnumeration() {
+        var f=ImportedProductionPlanTest.fixture(Asset.GATE,0);
+        var g=f.plan().geometry();
+        var geometry=new SegmentGeometry(g.key(),g.points(),g.localSQ8(),g.water(),
+                Optional.of(new Terminal(0,600L*256,TerminalKind.OCEAN)),g.start(),g.end(),g.logicalColumns(),g.degradation(),g.hash());
+        var plan=new SegmentPlan(geometry,f.plan().prefix(),f.plan().stations(),f.plan().sites(),f.plan().hash());
+        var path=ImportedSamplePath.of(plan);
+        assertTrue(path.points().size()>100,"夹具不能空转");
+        assertTrue(path.localSQ8().getLast()<=632L*256,"不能因在途 Future 已清理而重采终点之后的整条路线");
+        var owners=PlanningOwnerIndex.prepare(new PlanWindow(List.of(plan)),f.recipe().recipeHash(),f.recipe().dimension(),new CoveragePlanner(2));
+        assertFalse(owners.isEmpty());
+        assertTrue(owners.stream().flatMap(o->o.cells().stream()).allMatch(c->c.cell().arcCell()<=10),
+                "不能发布终点远处的空施工单元");
+    }
+
     private static SegmentPlan slice(SegmentPlan source, int index, long from, long to) {
         var stations = new ArrayList<Station>();
         stations.add(at(source.stations().stations(), from));

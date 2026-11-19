@@ -6,13 +6,12 @@ import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** 建筑内部的占位弦不能抢走接口外侧墙列，尤其角楼内部的弦与进墙方向不共线。 */
-final class ImportedRibbonProjection {
+public final class ImportedRibbonProjection {
     private record Edge(Station a, Station b, long dx, long dz, long denominator, long length) {}
     private final List<Edge> edges;
     private final long first, last;
 
-    ImportedRibbonProjection(List<Station> stations, List<SiteRecord> sites) {
-        first=stations.getFirst().globalSQ8(); last=stations.getLast().globalSQ8();
+    public ImportedRibbonProjection(List<Station> stations, List<SiteRecord> sites) {
         var hidden = sites.stream().filter(s -> s.state() == SiteState.PLANNED)
                 .map(s -> new ArcInterval(Math.max(0, s.globalSQ8() - ImportedSiteGeometry.extent(s.id()) * 256L),
                         s.globalSQ8() + ImportedSiteGeometry.extent(s.id()) * 256L + 256)).toList();
@@ -40,9 +39,11 @@ final class ImportedRibbonProjection {
             }
         }
         edges = List.copyOf(result);
+        first=edges.isEmpty()?stations.getFirst().globalSQ8():edges.getFirst().a().globalSQ8();
+        last=edges.isEmpty()?stations.getLast().globalSQ8():edges.getLast().b().globalSQ8();
     }
 
-    WallSection.ColumnContract contract(int x, int z) {
+    public WallSection.ColumnContract contract(int x, int z) {
         long px = x * 256L + 128, pz = z * 256L + 128, best = Long.MAX_VALUE;
         Edge chosen = null; long numerator = 0;
         for (var edge : edges) {

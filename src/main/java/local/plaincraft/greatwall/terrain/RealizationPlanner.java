@@ -261,16 +261,26 @@ public final class RealizationPlanner {
         }
         if(terminal!=Long.MAX_VALUE)breaks.add(new BreakInterval(new ArcInterval(terminal,Long.MAX_VALUE),terminalReason,BreakScope.PLANNED));
         var supported=new HashMap<Point3i,ProbeResult>();
+        var importedProjection=ImportedSiteGeometry.enabled(recipe)?new ImportedRibbonProjection(stations,sites):null;
+        var importedBoxes=ImportedSiteGeometry.enabled(recipe)?sites.stream().filter(s->s.state()==SiteState.PLANNED)
+                .map(ImportedSiteGeometry::bounds).toList():List.<Bounds>of();
         var columnEntries=input.columns().entrySet().stream().sorted(Map.Entry.<Point3i,SurfaceProbe.ColumnView>comparingByKey(
                 Comparator.comparingInt(Point3i::z).thenComparingInt(Point3i::x).thenComparingInt(Point3i::y))).toList();
         for(var e:columnEntries) {
             if(e.getKey().y()!=0)throw new IllegalArgumentException("column keys use y=0, independent of contract W");
-            var contract=contractFor(input,stations,e.getKey().x(),e.getKey().z());
+            int x=e.getKey().x(),z=e.getKey().z();
+            // 大楼背后低地不属于接引墙，不可夹到端面并制造一段假的无支撑缺口。
+            if(importedProjection!=null&&importedBoxes.stream().anyMatch(b->x>=b.minX()&&x<b.maxXExclusive()&&z>=b.minZ()&&z<b.maxZExclusive()))continue;
+            var contract=importedProjection==null?contractFor(input,stations,x,z):importedProjection.contract(x,z);
+            if(contract==null||importedProjection!=null&&(contract.globalSQ8()<stations.getFirst().globalSQ8()
+                    ||contract.globalSQ8()>=stations.getLast().globalSQ8()))continue;
             if(contract.globalSQ8()<Math.max(0,from-160L*256)||contract.globalSQ8()>=to+160L*256)continue;
             var value=ProtectedColumnView.use(e.getValue(),e.getKey(),input.protectedBounds(),
                     column->probe.probe(column,contract.walkY(),bounds));
             supported.put(new Point3i(e.getKey().x(),contract.walkY(),e.getKey().z()),value);
-            if(contract.lateralCell()>=-5&&contract.lateralCell()<5&&value.kind()!=ProbeKind.SUPPORTED&&value.kind()!=ProbeKind.WATER){
+            // 配套墙逐列从真实地表填起，不能再用旧 20 格底座的 12 格挖深阈值裁断高平台。
+            if(contract.lateralCell()>=-5&&contract.lateralCell()<5&&value.kind()!=ProbeKind.SUPPORTED&&value.kind()!=ProbeKind.WATER
+                    &&(importedProjection==null||value.kind()!=ProbeKind.NO_SUPPORT)){
                 long bin=Math.floorDiv(contract.globalSQ8(),256)*256;
                 breaks.add(new BreakInterval(new ArcInterval(Math.max(0,bin-8L*256),bin+9L*256),reason(value.kind()),BreakScope.REALIZED));
             }
@@ -336,6 +346,7 @@ public final class RealizationPlanner {
         for(var water:waters) {
             if(water.classification()!=WaterClass.NARROW)continue;
             long center=(water.crossing().fromQ8()+water.crossing().toQ8())/2;
+            if(ImportedSiteGeometry.enabled(recipe)&&center>=terminal)continue;
             if(center<Math.max(0,from-128L*256)||center>=to+128L*256)continue;
             occupied.add(new ArcInterval(Math.max(0,water.crossing().fromQ8()-8L*256),water.crossing().toQ8()+8L*256));
             var site=site(wall,SiteKind.WATER_GATE,water.crossing().fromQ8(),center,stations);
@@ -680,7 +691,8 @@ public final class RealizationPlanner {
                 return ground==null?gate.compile(candidate):gate.compileAtGround(candidate,ground);
             }
             var result=template.compile(candidate);
-            return ImportedSiteGeometry.enabled(recipe)?ImportedConstructionGuard.validate(result,input,recipe.bounds()):result;
+            // 水门有认证过的水下净空与旧地形规则，实物楼体的禁挖判据不能误施到水门。
+            return template instanceof ImportedBuildingTemplate?ImportedConstructionGuard.validate(result,input,recipe.bounds()):result;
             });
         }catch(WallFailure failure){
             // A component that cannot be placed is one broken link, not a reason to abandon the whole

@@ -25,6 +25,15 @@ record ImportedSamplePath(SegmentKey key, List<Point2q> points, List<Long> local
             }
         }
         if (points.size() < 2) throw new IllegalArgumentException("正式墙线至少需要两个不同点");
+        if (plan.geometry().terminal().isPresent()) {
+            // 完成的几何已从在途表移走，不能靠查询在途 Future 才知道宽水域终点。
+            // 只保留终点后 32 格缓冲，采样器仍会为这条截短路线增加完整端部取证裙边。
+            long cap=plan.geometry().terminal().orElseThrow().localSQ8()+32L*256;
+            int limit=2;
+            while(limit<arcs.size()&&arcs.get(limit)<=cap)limit++;
+            points=new ArrayList<>(points.subList(0,limit));
+            arcs=new ArrayList<>(arcs.subList(0,limit));
+        }
         return new ImportedSamplePath(plan.geometry().key(), List.copyOf(points), List.copyOf(arcs));
     }
 }

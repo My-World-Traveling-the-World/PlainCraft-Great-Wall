@@ -22,6 +22,9 @@ final class PlanningOwnerIndex {
             try {
                 long from = plan.prefix().lengthBeforeQ8();
                 long to = from + plan.geometry().localSQ8().getLast();
+                // 已冻结的宽水域终点之后没有施工，不能为整条原始候选路线发布几百份空计划。
+                if(coverage.imported()&&plan.geometry().terminal().isPresent())
+                    to=Math.min(to,from+plan.geometry().terminal().orElseThrow().localSQ8());
                 long cellSize = 64L * 256;
                 long first = Math.floorDiv(from, cellSize);
                 long last = Math.floorDiv(to + cellSize - 1, cellSize);
