@@ -1,5 +1,32 @@
 # 长城启动契约开发交接
 
+## 2026-11-20：第93轮，消费河流失败状态公开契约
+
+### 一、改了什么
+
+契约/诊断行为变更：RiverStartupQuery隔离可选API链接，读取河流提供方session/phase/reason，不创建引擎、不等待、也不广播ready。/greatwall status先显示河流前置，即使本墙会话尚未建立也能看见原因。API仅compileOnly/testImplementation，由河流成品提供，不改变预热时序或配方/模板/schema。
+
+### 二、我验证了什么（附变异）
+
+完整test/compileClientJava/remapJar成功984项，失败/错误/跳过0；新增2项长城消费者测试，真公开注册表与失败状态、不可变诊断结果、过滤类加载器完全拒绝河流类仍返回ABSENT。负控把FAILED显示COMPLETE、把缺席显示AVAILABLE，各1个实际断言失败、errors/skipped0。按暂存版本checkout恢复，重新2项正控及客户端编译成功。证据docs/evidence/river-startup-api-mutations-20261120.json，日志build/round93-api-*。
+
+### 三、我没能验证什么
+
+未启动Minecraft实际执行命令、模拟真实河流失败或退出重开。墙不拥有河流结果门，其测试留河流；本仓测试不冒充提供方验证。命令接线亲读确认，不声称离线构造过CommandSourceStack。
+
+### 四、遗留半截
+
+外层可恢复施工事务和架构阶段迁移继续；跨tick仍未生产启用，默认范围和生成结果不改。没有部署。push仍被此前自动审批拒绝阻挡（指定目标传输授权未确认），未重试或绕过。
+
+### 五、下一轮先做什么
+
+给单块补建迁出明确prepare/paint/结案/释放的外层状态；先冻结暂停/恢复与换代取消，保持runAll默认，等现场单块尾延迟再决定调度。
+
+### 六、踩到的坑
+
+本仓core.autocrlf使新文件第一次checkout从LF变CRLF；首次字节核对拒绝计入负控。已在Git实际工作行尾上重跑两组，均恢复字节一致；未用行尾差异假报源码没恢复。消费者测试只替代世界入口，不把FAILED伪造成ready放行。
+
+
 ## 2026-11-20：第92轮，河流—长城—道路联合复查
 
 ### 一、改了什么

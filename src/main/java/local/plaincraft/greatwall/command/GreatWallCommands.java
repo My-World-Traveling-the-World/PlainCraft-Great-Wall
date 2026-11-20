@@ -224,6 +224,9 @@ public final class GreatWallCommands {
 
     private static int status(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
+        // 即使长城尚未建立会话，也要解释河流前置是否失败，不能只显示没有会话。
+        var rivers = local.plaincraft.greatwall.compat.RiverStartupQuery.snapshot(source.getLevel());
+        source.sendSuccess(() -> Component.literal("河流前置=" + rivers), false);
         WorldServices svc = WorldServices.find(source.getServer());
         if (svc == null) {
             source.sendFailure(Component.literal("no active GreatWall session"));
