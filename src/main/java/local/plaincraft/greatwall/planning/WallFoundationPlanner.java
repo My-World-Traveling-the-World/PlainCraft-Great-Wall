@@ -2,11 +2,8 @@ package local.plaincraft.greatwall.planning;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import local.plaincraft.greatwall.model.WallTypes.ColumnSample;
 
 /**
  * Planning-time wall-base + fill decision over the full-width cross-section.
@@ -51,19 +48,8 @@ public final class WallFoundationPlanner {
 
     public static List<ColumnFoundation> plan(List<WallFinePlanner.FineColumn> samples) {
         Objects.requireNonNull(samples, "samples");
-        // WallFinePlanner emits one lateral-major cross-section per route point: -L..+L. The old
-        // code opened a group only at lateral==0, which silently discarded the negative half. A
-        // wrap from +L to -L (or the reverse) is the actual cross-section boundary.
-        var grouped = new java.util.TreeMap<Long, List<WallFinePlanner.FineColumn>>();
-        for (var sample : samples) {
-            if (!sample.hasSectionIdentity()) {
-                // Compatibility for analytic fixtures without a route id: each centre owns a section.
-                grouped.computeIfAbsent(Long.MIN_VALUE + sample.centreX(), ignored -> new ArrayList<>()).add(sample);
-            } else {
-                grouped.computeIfAbsent(sample.globalSQ8(), ignored -> new ArrayList<>()).add(sample);
-            }
-        }
-        var groups = new ArrayList<>(grouped.values());
+        // 只改变分组查找方式；组顺序、站内次序和最高点地基规则由独立旧实现对拍。
+        var groups = FoundationGroups.ordered(samples);
         var result = new ArrayList<ColumnFoundation>(groups.size());
         for (var columns : groups) {
             WallFinePlanner.FineColumn centre = null;
@@ -71,11 +57,11 @@ public final class WallFoundationPlanner {
                 if (sample.lateral() == 0) { centre = sample; break; }
             }
             if (centre == null) continue;
-            // Base = highest ground surface across the complete cross-section.
+            // 地基仍取完整横截面最高点，左右两翼都参与，不能只看中心高度。
             int base = Integer.MIN_VALUE;
             for (var sample : columns) base = Math.max(base, sample.sample().groundTopY());
             if (base == Integer.MIN_VALUE) base = 0;
-            // Every column whose surface is below base needs a fill down to its surface.
+            // 每个低于基准的列保留原填充深度，此处不增加地形读取或改变门洞处理。
             var fills = new ArrayList<FillColumn>();
             for (var sample : columns) {
                 int surface = sample.sample().groundTopY();

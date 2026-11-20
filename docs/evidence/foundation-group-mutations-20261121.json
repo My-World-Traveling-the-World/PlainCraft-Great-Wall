@@ -1,0 +1,47 @@
+[
+  {
+    "name": "identities-merged",
+    "file": "src/main/java/local/plaincraft/greatwall/planning/FoundationGroups.java",
+    "tests": 5,
+    "assertion_failures": 4,
+    "errors": 0,
+    "skipped": 0,
+    "restored_sha256": "67f862f7ff65b746b989a67f777da2b0a0736000c8a90182f23eaa550dc1c136"
+  },
+  {
+    "name": "signed-order-reversed",
+    "file": "src/main/java/local/plaincraft/greatwall/planning/FoundationGroups.java",
+    "tests": 5,
+    "assertion_failures": 4,
+    "errors": 0,
+    "skipped": 0,
+    "restored_sha256": "67f862f7ff65b746b989a67f777da2b0a0736000c8a90182f23eaa550dc1c136"
+  },
+  {
+    "name": "station-columns-reversed",
+    "file": "src/main/java/local/plaincraft/greatwall/planning/FoundationGroups.java",
+    "tests": 5,
+    "assertion_failures": 3,
+    "errors": 0,
+    "skipped": 0,
+    "restored_sha256": "67f862f7ff65b746b989a67f777da2b0a0736000c8a90182f23eaa550dc1c136"
+  },
+  {
+    "name": "hash-collision-merged",
+    "file": "src/main/java/local/plaincraft/greatwall/planning/FoundationGroups.java",
+    "tests": 5,
+    "assertion_failures": 2,
+    "errors": 0,
+    "skipped": 0,
+    "restored_sha256": "67f862f7ff65b746b989a67f777da2b0a0736000c8a90182f23eaa550dc1c136"
+  },
+  {
+    "name": "rehash-loses-station",
+    "file": "src/main/java/local/plaincraft/greatwall/planning/FoundationGroups.java",
+    "tests": 5,
+    "assertion_failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "restored_sha256": "67f862f7ff65b746b989a67f777da2b0a0736000c8a90182f23eaa550dc1c136"
+  }
+]

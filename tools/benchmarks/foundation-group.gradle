@@ -1,0 +1,19 @@
+// 使用已编译真实规划器及独立旧实现；清单桥保留Windows中文路径。
+gradle.projectsEvaluated {
+    def p = gradle.rootProject
+    def out = p.layout.buildDirectory.dir('foundation-group-probe')
+    def compile = p.tasks.register('compileFoundationGroupProbe', JavaCompile) {
+        dependsOn p.tasks.named('testClasses')
+        source p.file('tools/benchmarks/FoundationGroupProbe.java')
+        classpath = p.sourceSets.test.runtimeClasspath
+        destinationDirectory.set(out)
+        options.encoding = 'UTF-8'
+    }
+    p.tasks.register('foundationGroupProbe', JavaExec) {
+        dependsOn compile, p.tasks.named('testClasspathBridge')
+        classpath = p.files(p.tasks.named('testClasspathBridge').flatMap { it.archiveFile }) + p.files(out)
+        mainClass = 'local.plaincraft.greatwall.planning.FoundationGroupProbe'
+        args p.file('docs/evidence/foundation-group-benchmark-20261121.json').absolutePath
+        jvmArgs '-Xms512m', '-Xmx512m'
+    }
+}
