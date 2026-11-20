@@ -447,8 +447,11 @@ class BuildContractTest {
         String root="src/main/java/local/plaincraft/greatwall/generation/";
         String backfill=java.nio.file.Files.readString(java.nio.file.Path.of(root+"WallBodyBackfill.java"));
         String feature=java.nio.file.Files.readString(java.nio.file.Path.of(root+"WallFeature.java"));
+        // 两个入口分别钉死，不能用宽松“任意一个实现”掩盖补建外层未接线。
+        assertTrue(feature.contains("PublishedPlanPainter.paint(plan,"));
+        assertTrue(backfill.contains("new WallSettlementCursor<>(plan,"));
+        assertTrue(backfill.contains("return createSettlementWorld(level,chunk,key,plan);"));
         for(String code:java.util.List.of(backfill,feature)) {
-            assertTrue(code.contains("PublishedPlanPainter.paint(plan,"));
             assertFalse(code.contains("beforeStates"));
             assertFalse(code.contains("canReplace(current)"));
             assertFalse(code.contains("replaceable(current)"));

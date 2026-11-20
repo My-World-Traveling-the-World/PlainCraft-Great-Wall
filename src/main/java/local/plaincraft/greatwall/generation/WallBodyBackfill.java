@@ -783,22 +783,38 @@ public final class WallBodyBackfill {
         }
         boolean forcedRepair = FORCE_REPAIR.remove(key);
         var existingMarker = chunk.getAttached(TerrainMarkers.PRODUCTION);
-        if (existingMarker != null && PublishedPlanPainter.preserveCompleted(forcedRepair,
-                existingMarker.complete(),existingMarker.planHash(),plan.hash())) {
-            // This chunk has already been built and saved. Never turn a player's edit back into wall.
-            // 0.7.118：单独计数。这一条是「written=0 但世界里明明有墙」的唯一出口 —— 之前它与
-            // 「真的什么都没写」共用一个 written=0，导致日志无法区分，误判成墙没铺。
-            ALREADY_BUILT.incrementAndGet();
-            WallPlanSupport.markPlannedColumns(plan);
-            local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
-            return new Sweep(Status.SETTLED, 0, plan.hash());
-        }
-        WallPlanSupport.markPlannedColumns(plan);
-        // 强制修复或新版本施工先撤销旧完成章，后续实体失败不能留下旧的成功证据。
-        if (existingMarker != null && existingMarker.complete()) WallPlanSupport.writeMarkers(chunk,plan,false);
+        // 同步入口仍由drain/startup外层持有区块及票据；事务阶段先具备离线恢复能力。
+        var result = new WallSettlementCursor<>(plan, new WallSettlementCursor.Boundary<BlockState>() {
+            public boolean preserveCompleted() {
+                return existingMarker != null && PublishedPlanPainter.preserveCompleted(forcedRepair,
+                        existingMarker.complete(),existingMarker.planHash(),plan.hash());
+            }
+            public void reuseCompleted() {
+                ALREADY_BUILT.incrementAndGet();
+                WallPlanSupport.markPlannedColumns(plan);
+                local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
+            }
+            public void prepare() {
+                WallPlanSupport.markPlannedColumns(plan);
+                // 强制修复先撤销旧完成章，后续实体失败不得留下旧成功证据。
+                if (existingMarker != null && existingMarker.complete()) WallPlanSupport.writeMarkers(chunk,plan,false);
+            }
+            public PublishedPlanPainter.World<BlockState> world() {
+                return createSettlementWorld(level,chunk,key,plan);
+            }
+            public void publish() {
+                local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
+            }
+        }).runAll();
+        // 不完整计划不得进入SETTLED，否则外层会移出队列并持久写入DONE。
+        return new Sweep(result.complete() ? Status.SETTLED : Status.PENDING, result.written(), plan.hash());
+    }
+    /** 世界适配仅搬读写边界，随机、更新标志、抽样回读和元数据次序保持原样。 */
+    private static PublishedPlanPainter.World<BlockState> createSettlementWorld(ServerLevel level, LevelChunk chunk,
+            ChunkKey key, ChunkWritePlan plan) {
         var services=local.plaincraft.greatwall.lifecycle.WorldServices.find(level.getServer());
         boolean authored=services!=null&&services.productionFixture()&&services.recipe().config().templateVersion()==2;
-        var result = PublishedPlanPainter.paint(plan, new PublishedPlanPainter.World<BlockState>() {
+        return new PublishedPlanPainter.World<BlockState>() {
             public boolean validHeight(int y) { return !level.isOutsideBuildHeight(y); }
             public BlockState resolve(local.plaincraft.greatwall.model.WallTypes.BlockSpec spec) {
                 return BlockCatalog.resolveState(spec);
@@ -829,12 +845,7 @@ public final class WallBodyBackfill {
                             key.x(),key.z(),p,failure.toString());
                 }
             }
-        });
-        if (result.complete()) {
-            local.plaincraft.greatwall.lifecycle.WorldServices.onWallChunkReady(level, chunk, plan);
-        }
-        // 不完整计划不得进入SETTLED，否则外层会移出队列并持久写入DONE。
-        return new Sweep(result.complete() ? Status.SETTLED : Status.PENDING, result.written(), plan.hash());
+        };
     }
     /** 旧配方保持原标志，新配方按冻结形状落块并唤醒光照相关邻居。 */
     static int updateFlags(boolean authored,int emission) {
