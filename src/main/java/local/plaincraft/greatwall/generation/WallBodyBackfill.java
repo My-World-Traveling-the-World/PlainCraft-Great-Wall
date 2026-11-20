@@ -44,6 +44,9 @@ import net.minecraft.world.level.chunk.LevelChunk;
  * </ul>
  */
 public final class WallBodyBackfill {
+    // 仅显式采样时输出单轮/单块耗时，避免把持续日志IO计入默认游戏负担。
+    private static final boolean BACKFILL_TIMINGS="on".equalsIgnoreCase(
+            System.getProperty("greatwall.backfillTimings","off"));
     /** Chunks settled per drain. The road uses 8; the wall writes far more blocks per chunk. */
     private static final int MAX_CHUNKS_PER_DRAIN = 4;
     /** Ticks between drains (0.5 s at 20 tps). */
@@ -562,7 +565,9 @@ public final class WallBodyBackfill {
         long voxelsSeen = 0L;
         int inspected = 0;
         List<ChunkKey> dropped = new ArrayList<>();
-        for (ChunkKey key : nearestFirst(level, state.pending)) {
+        List<ChunkKey> candidates=nearestFirst(level,state.pending);
+        long selectionNanos=BACKFILL_TIMINGS?System.nanoTime()-startedAt:0L;
+        for (ChunkKey key : candidates) {
             if (settledThisDrain >= MAX_CHUNKS_PER_DRAIN) break;
             if (inspected++ >= MAX_DRAIN_CHECKS) break;
             if (System.nanoTime() - startedAt >= DRAIN_BUDGET_NANOS) break;
@@ -589,8 +594,11 @@ public final class WallBodyBackfill {
                 continue; // stays pending; the prefetch wakes it on a later drain
             }
             state.settling.add(key);
+            long settleStarted=BACKFILL_TIMINGS?System.nanoTime():0L;
+            Sweep settledSample=null;
             try {
                 Sweep sweep = settle(level, chunk, key);
+                settledSample=sweep;
                 var settledPlan = WallWorldgenPlanCache.get(level, key);
                 if (settledPlan != null) voxelsSeen += settledPlan.voxels().size();
                 switch (sweep.status()) {
@@ -616,6 +624,12 @@ public final class WallBodyBackfill {
                 state.settling.remove(key);
                 // The chunk is in hand, so the ticket that kept it loaded has done its job.
                 releaseDrainRequest(level, state, key);
+                if(BACKFILL_TIMINGS) {
+                    // 量单块完整settle，不把两块之间的预算检查说成硬性150ms上限。
+                    GreatWallMod.LOGGER.info("[GreatWall:耗时] WALL_BACKFILL_CHUNK_TIMING dimension={} owner={},{} outcome={} written={} settleUs={}",
+                            key.dimension(),key.x(),key.z(),settledSample==null?"exception":settledSample.status(),
+                            settledSample==null?-1:settledSample.written(),(System.nanoTime()-settleStarted)/1000);
+                }
             }
         }
         for (ChunkKey key : dropped) {
@@ -639,6 +653,11 @@ public final class WallBodyBackfill {
                     beforeConflicts, total, verifyMissing, verifyWrong, ALREADY_BUILT.get());
         }
         openGateIfDrained(level, state);
+        if(BACKFILL_TIMINGS) {
+            GreatWallMod.LOGGER.info("[GreatWall:耗时] WALL_BACKFILL_TIMING selectionUs={} totalUs={} candidates={} inspected={} settled={} pending={}",
+                    selectionNanos/1000,(System.nanoTime()-startedAt)/1000,candidates.size(),inspected,
+                    settledThisDrain,state.pending.size());
+        }
     }
 
     /** Drops drain requests that expired without their chunk arriving, tickets included. */

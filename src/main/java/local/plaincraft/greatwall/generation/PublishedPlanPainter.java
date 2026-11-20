@@ -1,8 +1,5 @@
 package local.plaincraft.greatwall.generation;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.model.WallTypes.BlockSpec;
@@ -27,36 +24,7 @@ final class PublishedPlanPainter {
     }
 
     static <S> Result paint(ChunkWritePlan plan,World<S> world) {
-        var palette=new HashMap<BlockSpec,S>();
-        var satisfied=new HashSet<Point3i>();
-        int written=0,failed=0;
-        for(var voxel:plan.voxels()) {
-            var p=voxel.pos();
-            if(Math.floorDiv(p.x(),16)!=plan.owner().x()||Math.floorDiv(p.z(),16)!=plan.owner().z()
-                    ||voxel.kind()==IntentKind.KEEP)continue;
-            try {
-                if(!world.validHeight(p.y()))throw new IllegalArgumentException("计划落块超出世界高度: "+p);
-                // 解析同一计划材料一次，避免每个体素重复解析注册表与属性。
-                S target=palette.computeIfAbsent(voxel.state(),world::resolve);
-                if(!Objects.equals(world.read(p),target)) {
-                    if(!world.write(p,target))throw new IllegalStateException("计划落块被世界拒绝: "+p);
-                    written++;
-                    world.written(p,target,written);
-                }
-                // 相同目标块也属于首次未结案计划，实体payload必须可以补齐。
-                satisfied.add(p);
-            } catch(RuntimeException failure) {
-                failed++;
-                world.failure(p,failure);
-            }
-        }
-        try {
-            // 所有必要落块完成后才允许盖完成章；失败仍写不完整标记以便诊断/重试。
-            world.finish(Set.copyOf(satisfied),failed==0);
-        } catch(RuntimeException failure) {
-            failed++;
-            world.failure(null,failure);
-        }
-        return new Result(failed==0,written,failed);
+        // 正式入口仍一次跑完；可暂停状态先离线守卫，不能提前释放区块或给半块盖完成章。
+        return new PublishedPlanCursor<>(plan,world).runAll();
     }
 }
