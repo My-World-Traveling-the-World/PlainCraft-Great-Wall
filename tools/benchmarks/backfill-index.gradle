@@ -1,0 +1,19 @@
+// 快照原型的基准独立于正常构建；使用已有清单桥保留Windows中文类路径。
+gradle.projectsEvaluated {
+    def p = gradle.rootProject
+    def out = p.layout.buildDirectory.dir('backfill-index-probe')
+    def compile = p.tasks.register('compileBackfillIndexProbe', JavaCompile) {
+        dependsOn p.tasks.named('testClasses')
+        source p.file('tools/benchmarks/BackfillIndexProbe.java')
+        classpath = p.sourceSets.test.runtimeClasspath
+        destinationDirectory.set(out)
+        options.encoding = 'UTF-8'
+    }
+    p.tasks.register('backfillIndexProbe', JavaExec) {
+        dependsOn compile, p.tasks.named('testClasspathBridge')
+        classpath = p.files(p.tasks.named('testClasspathBridge').flatMap { it.archiveFile }) + p.files(out)
+        mainClass = 'local.plaincraft.greatwall.generation.BackfillIndexProbe'
+        args p.file('docs/evidence/backfill-index-benchmark-20261120.json').absolutePath
+        jvmArgs '-Xms512m', '-Xmx512m'
+    }
+}

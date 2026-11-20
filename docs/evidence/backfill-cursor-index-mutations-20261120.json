@@ -1,0 +1,65 @@
+{
+  "mutations": [
+    {
+      "name": "budget-ignored",
+      "target": "src/main/java/local/plaincraft/greatwall/generation/PublishedPlanCursor.java",
+      "anchor": "count<maxVoxels",
+      "replacement": "true",
+      "kind": "production behavior",
+      "junit_failed": 4,
+      "log": "build-round91-mut-budget-ignored.log",
+      "sha256": "d07244f15f455e2b553350f93d20b99dc80ecbed8f0b8ccbedc58fcb80722d3d"
+    },
+    {
+      "name": "finish-before-last-voxel",
+      "target": "src/main/java/local/plaincraft/greatwall/generation/PublishedPlanCursor.java",
+      "anchor": "if(next<plan.voxels().size())return false;",
+      "replacement": "if(false)return false;",
+      "kind": "production behavior",
+      "junit_failed": 4,
+      "log": "build-round91-mut-finish-before-last-voxel.log",
+      "sha256": "d07244f15f455e2b553350f93d20b99dc80ecbed8f0b8ccbedc58fcb80722d3d"
+    },
+    {
+      "name": "cancelled-can-replay",
+      "target": "src/main/java/local/plaincraft/greatwall/generation/PublishedPlanCursor.java",
+      "anchor": "state==State.CANCELLED||state==State.FAILED",
+      "replacement": "state==State.FAILED",
+      "kind": "production behavior",
+      "junit_failed": 1,
+      "log": "build-round91-mut-cancelled-can-replay.log",
+      "sha256": "e254381ee89f616123bdebe847b788ea5787fb7221a812e77a5cf3061d204455"
+    },
+    {
+      "name": "failure-count-reset-between-slices",
+      "target": "src/main/java/local/plaincraft/greatwall/generation/PublishedPlanCursor.java",
+      "anchor": "state=State.RUNNING;",
+      "replacement": "state=State.RUNNING; failed=0;",
+      "kind": "production behavior",
+      "junit_failed": 1,
+      "log": "build-round91-mut-failure-count-reset-between-slices.log",
+      "sha256": "fc4d0679638f599fab4b0a421c583d4f496eef5abfe2ad166c708918bc56bc34"
+    },
+    {
+      "name": "equal-bound-pruned",
+      "target": "src/test/java/local/plaincraft/greatwall/generation/BackfillCandidateIndex.java",
+      "anchor": "Double.compare(lower(node),heap.peek().distance())>0",
+      "replacement": "Double.compare(lower(node),heap.peek().distance())>=0",
+      "kind": "prototype behavior",
+      "junit_failed": 1,
+      "log": "build-round91-mut-equal-bound-pruned.log",
+      "sha256": "063ed5be9c418ad29ca583b3124938b84a467c96c90e948a8ecafd775849cb83"
+    },
+    {
+      "name": "index-pruning-disabled",
+      "target": "src/test/java/local/plaincraft/greatwall/generation/BackfillCandidateIndex.java",
+      "anchor": "heap.size()==limit&&Double.compare(lower(node),heap.peek().distance())>0",
+      "replacement": "false",
+      "kind": "prototype performance guard",
+      "junit_failed": 1,
+      "log": "build-round91-mut-index-pruning-disabled.log",
+      "sha256": "033401f41b214948ce40b9fe2b8a7ec104bc0772fe3bd32f8c0280ed244c4327"
+    }
+  ],
+  "restored": true
+}
