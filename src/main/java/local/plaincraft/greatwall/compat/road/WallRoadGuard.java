@@ -195,10 +195,54 @@ public final class WallRoadGuard {
 
     private static boolean markedNear(int x, int z, int reach) {
         if (MASKS.isEmpty()) return false;
-        for (int dx = -reach; dx <= reach; dx++) {
-            for (int dz = -reach; dz <= reach; dz++) {
-                if (isMarked(x + dx, z + dz)) return true;
+        return markedRectangle((long) x - reach, (long) z - reach,
+                (long) x + reach, (long) z + reach);
+    }
+
+    /** 保留旧逐列int坐标的回绕语义；拆区间而不缓存miss，新发布必须立即可查。 */
+    private static boolean markedRectangle(long minX, long minZ, long maxX, long maxZ) {
+        long cycle = 1L << 32;
+        if (minX < Integer.MIN_VALUE)
+            return markedRectangle(minX + cycle, minZ, Integer.MAX_VALUE, maxZ)
+                    || markedRectangle(Integer.MIN_VALUE, minZ, maxX, maxZ);
+        if (maxX > Integer.MAX_VALUE)
+            return markedRectangle(minX, minZ, Integer.MAX_VALUE, maxZ)
+                    || markedRectangle(Integer.MIN_VALUE, minZ, maxX - cycle, maxZ);
+        if (minZ < Integer.MIN_VALUE)
+            return markedRectangle(minX, minZ + cycle, maxX, Integer.MAX_VALUE)
+                    || markedRectangle(minX, Integer.MIN_VALUE, maxX, maxZ);
+        if (maxZ > Integer.MAX_VALUE)
+            return markedRectangle(minX, minZ, maxX, Integer.MAX_VALUE)
+                    || markedRectangle(minX, Integer.MIN_VALUE, maxX, maxZ - cycle);
+        int fromX = (int) minX >> 4, toX = (int) maxX >> 4;
+        int fromZ = (int) minZ >> 4, toZ = (int) maxZ >> 4;
+        // 大半径不枚举空旷世界；小邻域最多访问四块，避免逐列重复查表和加锁。
+        long area = ((long) toX - fromX + 1) * ((long) toZ - fromZ + 1);
+        if (area > Math.max(16L, MASKS.size())) {
+            for (var entry : MASKS.entrySet()) {
+                int cx = (int) (entry.getKey() >> 32), cz = (int) (long) entry.getKey();
+                if (cx >= fromX && cx <= toX && cz >= fromZ && cz <= toZ
+                        && intersects(entry.getValue(), cx, cz, minX, minZ, maxX, maxZ)) return true;
             }
+        } else {
+            for (int cx = fromX; cx <= toX; cx++) for (int cz = fromZ; cz <= toZ; cz++) {
+                long[] mask = MASKS.get(pack(cx, cz));
+                if (mask != null && intersects(mask, cx, cz, minX, minZ, maxX, maxZ)) return true;
+            }
+        }
+        return false;
+    }
+
+    /** 同一块只加一次锁；行掩码不能跨16位扩散，否则会误伤旁行。 */
+    private static boolean intersects(long[] mask, int cx, int cz,
+            long minX, long minZ, long maxX, long maxZ) {
+        long baseX = (long) cx << 4, baseZ = (long) cz << 4;
+        int left = (int) Math.max(0, minX - baseX), right = (int) Math.min(15, maxX - baseX);
+        int top = (int) Math.max(0, minZ - baseZ), bottom = (int) Math.min(15, maxZ - baseZ);
+        long row = ((1L << (right - left + 1)) - 1) << left;
+        synchronized (mask) {
+            for (int z = top; z <= bottom; z++)
+                if ((mask[z >> 2] & (row << ((z & 3) << 4))) != 0) return true;
         }
         return false;
     }

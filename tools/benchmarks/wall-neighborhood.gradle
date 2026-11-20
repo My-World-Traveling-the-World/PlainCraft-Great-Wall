@@ -1,0 +1,19 @@
+// 测试依赖只用于独立探针；清单桥避免Windows中文路径损坏JavaExec类路径。
+gradle.projectsEvaluated {
+    def p = gradle.rootProject
+    def out = p.layout.buildDirectory.dir('wall-neighborhood-probe')
+    def compile = p.tasks.register('compileWallNeighborhoodProbe', JavaCompile) {
+        dependsOn p.tasks.named('testClasses')
+        source p.file('tools/benchmarks/WallNeighborhoodProbe.java')
+        classpath = p.sourceSets.test.runtimeClasspath
+        destinationDirectory.set(out)
+        options.encoding = 'UTF-8'
+    }
+    p.tasks.register('wallNeighborhoodProbe', JavaExec) {
+        dependsOn compile, p.tasks.named('testClasspathBridge')
+        classpath = p.files(p.tasks.named('testClasspathBridge').flatMap { it.archiveFile }) + p.files(out)
+        mainClass = 'local.plaincraft.greatwall.compat.road.WallNeighborhoodProbe'
+        args p.file('docs/evidence/wall-neighborhood-benchmark-20261120.json').absolutePath
+        jvmArgs '-Xms512m', '-Xmx512m'
+    }
+}

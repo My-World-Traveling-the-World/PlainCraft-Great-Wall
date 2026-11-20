@@ -1,0 +1,1 @@
+{"unit":"milliseconds_per_10000_queries","warmups":3,"samples":9,"cases":[{"z":50,"old_ms_p50":1.3823,"new_ms_p50":0.2439},{"z":3,"old_ms_p50":2.2435,"new_ms_p50":0.2218},{"z":2,"old_ms_p50":0.2169,"new_ms_p50":0.2167}]}
