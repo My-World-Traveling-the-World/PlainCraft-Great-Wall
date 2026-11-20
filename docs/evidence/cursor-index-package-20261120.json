@@ -1,0 +1,19 @@
+{
+  "code_commit": "7ab07cac08d59b6c657d38d38d5986569fcc2e49",
+  "junit": {
+    "tests": 982,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "artifact": {
+    "path": "build/libs/plaincraft-great-wall-0.7.126-api-standardization.jar",
+    "bytes": 3667836,
+    "sha256": "1c351319e3583c3a8328082c2a3308aac3186c0314298d7503a5373dff000b5b",
+    "test_class_overlap": []
+  },
+  "log_sha256": "996c4960e3f2255c42aed886dd70d167950f1cef648c2686eb60ef097a2c9ea6",
+  "game_tested": false,
+  "deployed": false,
+  "push_attempted": false
+}
