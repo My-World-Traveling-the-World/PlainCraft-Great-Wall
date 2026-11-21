@@ -29,6 +29,8 @@ Fabric 1.21.1 万里长城模组工程。新建正常世界使用配套城墙剖
 
 ## 构建与测试
 
+先在相邻的道路重制版仓库 `roadweaver-next` 执行 `:api:contractJar :api-fabric:devModJar`，生成长城编译和开发运行使用的两份 API。若 checkout 目录不同，可在长城 Gradle 命令加 `-ProadweaverApiProjectDir=<路径>`。
+
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Java\jdk-21'
 $gradle='C:/Users/18364/.gradle/wrapper/dists/gradle-9.4.1-bin/arn2x92ynaizyzdaamcbpbhtj/gradle-9.4.1/bin/gradle.bat'

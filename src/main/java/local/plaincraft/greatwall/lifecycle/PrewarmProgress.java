@@ -431,13 +431,9 @@ public final class PrewarmProgress {
         if (success) {
             signalWorldgenReady();
         } else {
-            // A failed wall does not open the peer gate. The road waits on its own stall detector
-            // instead of starting on a corridor the wall never published: a measured session opened
-            // the gate with success=false fifty seconds after the compile died, and the roads began
-            // building around a wall that did not exist.
+            // 失败由 API 单独发布，施工门继续关闭，因为无法证明未发布的墙体占地安全。
             local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
-                    "[GreatWall:S1C] ROAD_GATE_HELD success=false stage={} ; the peer waits for its own "+
-                    "timeout instead of starting on an unpublished wall", STAGE.get());
+                    "[GreatWall:S1C] ROAD_GATE_HELD success=false stage={}；长城预热失败，未开放道路施工门", STAGE.get());
         }
     }
 

@@ -87,6 +87,12 @@ public final class GreatWallReadinessProvider implements GreatWallReadiness {
     }
 
     @Override
+    public boolean isTerminalFailure() {
+        // 轮询只读现有终态标志，不分配进度快照，也不把「尚未就绪」误报成失败。
+        return PrewarmProgress.isFailed();
+    }
+
+    @Override
     public String progressSignature() {
         try {
             PrewarmProgress.Snapshot s = snapshot.get();

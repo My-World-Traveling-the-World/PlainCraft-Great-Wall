@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import local.plaincraft.greatwall.generation.ShowcaseGate;
 import local.plaincraft.greatwall.lifecycle.PrewarmProgress;
+import net.shiroha233.roadweaver.api.incoming.GreatWallReadinessApi;
 import net.shiroha233.roadweaver.api.incoming.RiverReadinessApi;
 import net.shiroha233.roadweaver.api.outgoing.GreatWallReadinessRegistry;
 import net.shiroha233.roadweaver.api.outgoing.RiverReadinessBroadcast;
@@ -110,6 +111,23 @@ class WallStartupContractTest {
         assertTrue(provider.isReady());
         PrewarmProgress.clear();
         assertFalse(provider.isReady());
+    }
+
+    @Test
+    void explicitFailureIsPublishedWithoutOpeningTheGateAndClearsForTheNextWorld() {
+        GreatWallReadinessProvider.register();
+        // 使用实际失败和清理入口，防止只把进度签名的变化误当作终态信号。
+        PrewarmProgress.begin(2, 1);
+        assertFalse(GreatWallReadinessApi.isTerminalFailure());
+        PrewarmProgress.finish(false);
+        assertTrue(GreatWallReadinessApi.isTerminalFailure());
+        assertFalse(GreatWallReadinessApi.isReady());
+        PrewarmProgress.clear();
+        assertFalse(GreatWallReadinessApi.isTerminalFailure());
+        PrewarmProgress.begin(2, 1);
+        PrewarmProgress.finish(true);
+        assertFalse(GreatWallReadinessApi.isTerminalFailure());
+        assertTrue(GreatWallReadinessApi.isReady());
     }
 
     @Test
