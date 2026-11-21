@@ -1,6 +1,8 @@
 package local.plaincraft.greatwall.client;
 
 import local.plaincraft.greatwall.lifecycle.PrewarmProgress;
+import local.plaincraft.greatwall.lifecycle.PrewarmUiModel;
+import local.plaincraft.greatwall.lifecycle.LoadingCardLayout;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -53,37 +55,23 @@ public final class GreatWallLoadingProgressRenderer {
 
     public static void render(GuiGraphics graphics) {
         PrewarmProgress.Snapshot snapshot = PrewarmProgress.snapshot();
-        if (!snapshot.active()) return;
+        if (!snapshot.active() && !snapshot.failed()) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft == null) return;
         Font font = minecraft.font;
 
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
         int screenHeight = minecraft.getWindow().getGuiScaledHeight();
-        // The card owns the loading screen while its prewarm runs - the three startup stages run
-        // one at a time, so only one card is ever active. It takes three quarters of the screen
-        // width so the line-art band has room to breathe. The detail area is always shown; there
-        // is no collapsed state any more.
-        int width = Math.max(280, (screenWidth * 9) / 10);
+        // 所有阶段详情保持可见；小屏先缩短装饰，不裁掉末行。
+        LoadingCardLayout layout = LoadingCardLayout.fit(screenWidth, screenHeight, 280, detailLineCount(snapshot));
+        int width = layout.width();
         int innerWidth = width - PADDING * 2;
-
-        // Detail lines, counted so the card height fits its content.
-        int detailLines = detailLineCount(snapshot);
-        int height = PADDING            // top padding
-                + LINE                  // title row
-                + 120                   // line-art band
-                + 6                     // gap
-                + LINE                  // stepper
-                + 4                     // gap
-                + LINE                  // status line
-                + LINE                  // eta line
-                + detailLines * LINE + 4
-                + PADDING;              // bottom padding
-
-        int left = (screenWidth - width) / 2;
-        // Lifted off the bottom edge by about an eighth of the screen height so it does not hug
-        // the corner and leaves the vanilla loading text some air.
-        int top = Math.max(20, screenHeight - height - Math.max(40, (screenHeight * 8) / 100));
+        int height = layout.height();
+        graphics.pose().pushPose();
+        graphics.pose().translate(layout.x(), layout.y(), 0);
+        graphics.pose().scale(layout.scale(), layout.scale(), 1F);
+        int left = 0;
+        int top = 0;
         int right = left + width;
         int bottom = top + height;
         int x = left + PADDING;
@@ -102,13 +90,15 @@ public final class GreatWallLoadingProgressRenderer {
         String pct = snapshot.overallPercent() + "%";
         graphics.drawString(font, pct, right - PADDING - font.width(pct), y, THEME, false);
         Component stageName = stageName(snapshot);
-        graphics.drawString(font, stageName,
-                right - PADDING - font.width(pct) - 6 - font.width(stageName), y, TEXT_SECONDARY, false);
+        // 主阶段文案可能较长，限定在标题与百分比之间，避免小屏文字相互覆盖。
+        int stageX = x + 10 + font.width(title) + 8;
+        drawFitted(graphics, font, stageName, stageX, y,
+                Math.max(0, right - PADDING - font.width(pct) - 6 - stageX), TEXT_SECONDARY);
 
         y += LINE;
-        drawBand(graphics, x, y, innerWidth, 120, snapshot);
+        drawBand(graphics, x, y, innerWidth, layout.bandHeight(), snapshot);
 
-        y += 120 + 6;
+        y += layout.bandHeight() + 6;
         drawStepper(graphics, font, x, y, innerWidth, snapshot);
 
         y += LINE + 4;
@@ -121,6 +111,7 @@ public final class GreatWallLoadingProgressRenderer {
 
         y += LINE + 4;
         drawDetail(graphics, font, snapshot, x, y, innerWidth);
+        graphics.pose().popPose();
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -258,9 +249,8 @@ public final class GreatWallLoadingProgressRenderer {
 
     private static void drawStepper(GuiGraphics graphics, Font font, int x, int y, int width,
                                     PrewarmProgress.Snapshot snapshot) {
-        PrewarmProgress.Stage[] stages = PrewarmProgress.Stage.values();
-        int count = stages.length;
-        int activeOrdinal = snapshot.stage().ordinal();
+        var stages = PrewarmUiModel.stages();
+        int count = stages.size();
         int step = count > 1 ? width / (count - 1) : width;
         // Connecting line first, so the nodes draw over it.
         int lineY = y + 5;
@@ -269,9 +259,9 @@ public final class GreatWallLoadingProgressRenderer {
         graphics.fill(x, lineY, Math.min(x + width, litX), lineY + 1, THEME);
         for (int i = 0; i < count; i++) {
             int cx = x + i * step;
-            if (i < activeOrdinal) {
+            if (PrewarmUiModel.complete(stages.get(i), snapshot)) {
                 drawCheck(graphics, cx, lineY, STEP_DONE);
-            } else if (i == activeOrdinal) {
+            } else if (PrewarmUiModel.running(stages.get(i), snapshot)) {
                 drawPulse(graphics, cx, lineY, THEME);
             } else {
                 drawHollow(graphics, cx, lineY, STEP_PENDING);
@@ -303,11 +293,13 @@ public final class GreatWallLoadingProgressRenderer {
     // ---------------------------------------------------------------------------------------------
 
     private static Component stageName(PrewarmProgress.Snapshot snapshot) {
+        if (snapshot.failed()) return Component.translatable("plaincraft.great_wall.loading_progress.failed");
         return Component.translatable("plaincraft.great_wall.loading_progress.stage."
                 + snapshot.stage().name().toLowerCase(java.util.Locale.ROOT));
     }
 
     private static Component statusLine(PrewarmProgress.Snapshot snapshot) {
+        if (snapshot.failed()) return Component.translatable("plaincraft.great_wall.loading_progress.failed");
         return switch (snapshot.stage()) {
             case ROOT_SEARCH -> {
                 if (snapshot.rootPhase() == 4 && snapshot.structureTotal() > 0) {
@@ -363,17 +355,16 @@ public final class GreatWallLoadingProgressRenderer {
 
     private static int detailLineCount(PrewarmProgress.Snapshot snapshot) {
         // One line per stage, plus the lanes/summary line.
-        return PrewarmProgress.Stage.values().length + 1;
+        return PrewarmUiModel.stages().size() + 1;
     }
 
     private static int drawDetail(GuiGraphics graphics, Font font, PrewarmProgress.Snapshot snapshot,
                                   int x, int y, int width) {
-        PrewarmProgress.Stage[] stages = PrewarmProgress.Stage.values();
-        int activeOrdinal = snapshot.stage().ordinal();
-        for (int i = 0; i < stages.length; i++) {
-            Component line = detailLine(stages[i], snapshot);
-            int color = i < activeOrdinal ? STEP_DONE
-                    : (i == activeOrdinal ? TEXT_SECONDARY : TEXT_MUTED);
+        var stages = PrewarmUiModel.stages();
+        for (int i = 0; i < stages.size(); i++) {
+            Component line = detailLine(stages.get(i), snapshot);
+            int color = PrewarmUiModel.complete(stages.get(i), snapshot) ? STEP_DONE
+                    : (PrewarmUiModel.running(stages.get(i), snapshot) ? TEXT_SECONDARY : TEXT_MUTED);
             drawFitted(graphics, font, line, x, y, width, color);
             y += LINE;
         }
@@ -402,7 +393,7 @@ public final class GreatWallLoadingProgressRenderer {
         if (stage == PrewarmProgress.Stage.FINE_SAMPLE && total <= 1 && done > 1) {
             return Component.translatable(key + "_indeterminate", done);
         }
-        long elapsedMs = snapshot.elapsedMillis();
+        long elapsedMs = snapshot.stageElapsedMillis(stage);
         // The two long stages report a rate and a remaining-time estimate: "how many are left" says
         // nothing about whether the stage is moving at all, which is how a real session sat on 0/48 for
         // 27 minutes. ROOT_SEARCH and COMPILE keep the plain form - they are short, and a rate read off
@@ -412,12 +403,13 @@ public final class GreatWallLoadingProgressRenderer {
         if (!rateWorthy || done <= 0 || total <= done || elapsedMs < 1000L) {
             return Component.translatable(key, done, total);
         }
-        long rate = Math.max(1L, done * 1000L / elapsedMs);
-        long etaMs = (total - done) * 1000L / rate;
+        // 每秒不足一列也是有效速度，不能强行抬成一列/秒并缩短ETA。
+        double rate = done * 1000.0 / elapsedMs;
+        long etaMs = (long) Math.ceil((total - done) * 1000.0 / rate);
         String rateKey = stage == PrewarmProgress.Stage.FINE_SAMPLE
                 ? "plaincraft.great_wall.loading_progress.detail.fine_sample_rate"
                 : "plaincraft.great_wall.loading_progress.detail.structure_scan_rate";
-        return Component.translatable(rateKey, done, total, rate, formatDuration(etaMs));
+        return Component.translatable(rateKey, done, total, String.format(java.util.Locale.ROOT, "%.1f", rate), formatDuration(etaMs));
     }
 
     private static Component detailLine(PrewarmProgress.Stage stage, PrewarmProgress.Snapshot snapshot) {
@@ -445,14 +437,8 @@ public final class GreatWallLoadingProgressRenderer {
             case PREWARM -> snapshot.total() > 0
                     ? Component.translatable(key, snapshot.completed(), snapshot.total())
                     : Component.translatable(key + "_unknown");
-            // Only this stage owns the sub pair while it runs. Without the guard the row showed the fine
-            // sampler's 117597/113152 under "writing the wall" before the write had started: the shared
-            // pair belongs to whichever stage wrote last, and that was the sampler.
-            case BACKFILL -> PrewarmProgress.subTotalFor(PrewarmProgress.Stage.BACKFILL) > 0
-                    ? Component.translatable(key, PrewarmProgress.subDoneFor(PrewarmProgress.Stage.BACKFILL), PrewarmProgress.subTotalFor(PrewarmProgress.Stage.BACKFILL))
-                    : Component.translatable(stage.ordinal() < snapshot.stage().ordinal()
-                            ? "plaincraft.great_wall.loading_progress.detail_done"
-                            : "plaincraft.great_wall.loading_progress.detail_pending");
+            // 补建发生在进入世界以后，永远不能在开局卡片上画成完成。
+            case BACKFILL -> Component.translatable("plaincraft.great_wall.loading_progress.detail_pending");
             case DONE -> Component.translatable(key);
         };
     }

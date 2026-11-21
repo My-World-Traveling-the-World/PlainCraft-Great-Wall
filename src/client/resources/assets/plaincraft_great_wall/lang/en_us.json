@@ -67,7 +67,7 @@
   "plaincraft.great_wall.loading_progress.detail": "%s lanes   overall %s%%   %ss elapsed",
   "plaincraft.great_wall.loading_progress.stage.root_search": "Root search",
   "plaincraft.great_wall.loading_progress.stage.structure_scan": "Scanning structures",
-  "plaincraft.great_wall.loading_progress.stage.fine_sample": "Sampling terrain",
+  "plaincraft.great_wall.loading_progress.stage.fine_sample": "Sampling terrain and planning segments",
   "plaincraft.great_wall.loading_progress.stage.prewarm": "Prewarm",
   "plaincraft.great_wall.loading_progress.stage.compile": "Compiling chunks",
     "plaincraft.great_wall.loading_progress.stage.backfill": "Building the wall",
@@ -108,5 +108,6 @@
     "plaincraft.great_wall.loading_progress.detail.backfill_unknown": "Waiting to build the wall",
   "plaincraft.great_wall.loading_progress.detail.compile_unknown": "Chunk compile  compiling...",
   "plaincraft.great_wall.loading_progress.detail.done": "Done",
-  "plaincraft.great_wall.loading_progress.detail_lanes": "%s lanes · overall %s%%"
+  "plaincraft.great_wall.loading_progress.detail_lanes": "%s lanes · overall %s%%",
+  "plaincraft.great_wall.loading_progress.failed": "Prewarm failed; see logs"
 }

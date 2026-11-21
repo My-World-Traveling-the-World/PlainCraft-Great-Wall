@@ -510,11 +510,9 @@ final class ProductionSession implements AutoCloseable {
                     PrewarmProgress.finish(false);
                 });
         if (installed) {
-            // 保留两阶段并行及进度口径；门开后才能安排批量任务。
-            PrewarmProgress.setStage(PrewarmProgress.Stage.PREWARM);
+            // 两项工作继续并行；主阶段先发布一次，避免预热标题立即跳回采样。
+            PrewarmProgress.beginParallelPlanning();
             startBulkPrewarm(planner, "structures-installed");
-            PrewarmProgress.setStage(PrewarmProgress.Stage.FINE_SAMPLE);
-            PrewarmProgress.setSubProgress(0, 0);
             startFineSample(planner);
         }
         return installed;

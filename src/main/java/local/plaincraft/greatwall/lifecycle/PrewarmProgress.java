@@ -184,7 +184,7 @@ public final class PrewarmProgress {
     }
 
     /** Selects the active large stage; the card dims earlier stages and lights the active one. */
-    public static void setStage(Stage stage) {
+    public static synchronized void setStage(Stage stage) {
         Stage next = stage == null ? Stage.ROOT_SEARCH : stage;
         Stage previous = STAGE.getAndSet(next);
         // A repeated call is a progress tick, not a transition: restarting the clock here would
@@ -421,7 +421,8 @@ public final class PrewarmProgress {
                     accountedMillis(Stage.FINE_SAMPLE), accountedMillis(Stage.PREWARM),
                     accountedMillis(Stage.COMPILE), snap.completed(), snap.total(), snap.lanes());
         }
-        COMPLETED_SEGMENTS.set(TOTAL_SEGMENTS.get());
+        // 失败保留真实完成量，不能把错误包装成所有分段都已完成。
+        if (success) COMPLETED_SEGMENTS.set(TOTAL_SEGMENTS.get());
         FAILED.set(!success);
         ACTIVE.set(false);
         STATE.clear();
@@ -643,13 +644,28 @@ public final class PrewarmProgress {
         }
     }
 
-    public static Snapshot snapshot() {
+    /** 采样与分段规划同时运行，主标题一次进入采样阶段，分段计数仍独立发布。 */
+    public static void beginParallelPlanning() {
+        setStage(Stage.FINE_SAMPLE);
+        setSubProgress(Stage.FINE_SAMPLE, 0, 0);
+    }
+
+    public static synchronized Snapshot snapshot() {
         int total = TOTAL_SEGMENTS.get();
         int completed = Math.min(total, COMPLETED_SEGMENTS.get());
-        long startedAt = STARTED_AT_NANOS.get();
+        long startedAt = SESSION_START_NANOS.get();
+        if (startedAt == 0L) startedAt = STARTED_AT_NANOS.get();
         long elapsedMillis = startedAt == 0L
                 ? 0L
                 : TimeUnit.NANOSECONDS.toMillis(Math.max(0L, System.nanoTime() - startedAt));
+        // 阶段速率使用自己的累计时间，不能拿总会话时间混算。
+        var elapsedByStage = new java.util.EnumMap<Stage, Long>(Stage.class);
+        long now = System.nanoTime();
+        for (Stage stage : Stage.values()) {
+            long nanos = STAGE_NANOS.get(stage.ordinal());
+            if (stage == STAGE.get() && stageSinceNanos != 0L) nanos += Math.max(0L, now - stageSinceNanos);
+            elapsedByStage.put(stage, nanos / 1_000_000L);
+        }
         return new Snapshot(ACTIVE.get(), total, completed, LANES.get(), elapsedMillis,
                 STATE.containsKey("root-search"), FAILED.get(), ROOT_CANDIDATE.get(), ROOT_TOTAL.get(),
                 ROOT_PHASE.get(), STRUCTURE_CANDIDATE.get(), STRUCTURE_TOTAL.get(),
@@ -657,7 +673,7 @@ public final class PrewarmProgress {
                 // Only the stage that wrote the numbers may report them.
                 SUB_STAGE.get() == STAGE.get() ? SUB_DONE.get() : 0,
                 SUB_STAGE.get() == STAGE.get() ? SUB_TOTAL.get() : 0,
-                java.util.Map.copyOf(SUB_BY_STAGE));
+                java.util.Map.copyOf(SUB_BY_STAGE), java.util.Map.copyOf(elapsedByStage));
     }
 
     /**
@@ -683,7 +699,21 @@ public final class PrewarmProgress {
                            boolean rootSearch, boolean failed, int rootCandidate, int rootTotal,
                            int rootPhase, int structureCandidate, int structureTotal,
                            Stage stage, int subDone, int subTotal,
-                           java.util.Map<Stage, int[]> subByStage) {
+                            java.util.Map<Stage, int[]> subByStage,
+                            java.util.Map<Stage, Long> elapsedByStage) {
+        /** 旧的纯数据夹具没有阶段时钟，显示时保持未知速率，不能拿总时长代替。 */
+        public Snapshot(boolean active, int total, int completed, int lanes, long elapsedMillis,
+                        boolean rootSearch, boolean failed, int rootCandidate, int rootTotal,
+                        int rootPhase, int structureCandidate, int structureTotal,
+                        Stage stage, int subDone, int subTotal, java.util.Map<Stage, int[]> subByStage) {
+            this(active, total, completed, lanes, elapsedMillis, rootSearch, failed, rootCandidate, rootTotal,
+                    rootPhase, structureCandidate, structureTotal, stage, subDone, subTotal, subByStage, java.util.Map.of());
+        }
+
+        public long stageElapsedMillis(Stage stage) {
+            return elapsedByStage.getOrDefault(stage, 0L);
+        }
+
         /** {@return {done, total} for one stage; {0, 0} when it has not reported} */
         public int[] subFor(Stage which) {
             int[] pair = subByStage.get(which);

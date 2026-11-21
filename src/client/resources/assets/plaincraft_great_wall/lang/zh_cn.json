@@ -67,7 +67,7 @@
   "plaincraft.great_wall.loading_progress.detail": "并行 %s 路　总进度 %s%%　耗时 %s 秒",
   "plaincraft.great_wall.loading_progress.stage.root_search": "选址",
   "plaincraft.great_wall.loading_progress.stage.structure_scan": "扫描结构",
-  "plaincraft.great_wall.loading_progress.stage.fine_sample": "采样地形",
+  "plaincraft.great_wall.loading_progress.stage.fine_sample": "采样地形与规划分段",
   "plaincraft.great_wall.loading_progress.stage.prewarm": "预热",
   "plaincraft.great_wall.loading_progress.stage.compile": "编译区块",
     "plaincraft.great_wall.loading_progress.stage.backfill": "写入世界",
@@ -108,5 +108,6 @@
     "plaincraft.great_wall.loading_progress.detail.backfill_unknown": "等待写入世界",
   "plaincraft.great_wall.loading_progress.detail.compile_unknown": "编译区块　编译中…",
   "plaincraft.great_wall.loading_progress.detail.done": "完成",
-  "plaincraft.great_wall.loading_progress.detail_lanes": "并行 %s 路 · 总进度 %s%%"
+  "plaincraft.great_wall.loading_progress.detail_lanes": "并行 %s 路 · 总进度 %s%%",
+  "plaincraft.great_wall.loading_progress.failed": "预热失败，请查看日志"
 }
