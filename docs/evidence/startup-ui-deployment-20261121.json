@@ -1,0 +1,25 @@
+{
+  "state": "deployed-hashes-verified",
+  "time": "2026-11-21T16:12:06.9241596+08:00",
+  "mods_dir": "D:\\minecraft\\Plain Craft Launcher 2\\.minecraft\\versions\\【云游四海】WAYFARING\\mods",
+  "backup_dir": "D:\\云游四海-Mod源码\\build\\three-mod-startup-ui-20261121-160927\\backup",
+  "entry": {
+    "id": "plaincraft_great_wall",
+    "version": "0.7.127-api-standardization",
+    "source": "D:\\云游四海-Mod源码\\build\\three-mod-startup-ui-20261121-160927\\new\\plaincraft-great-wall-0.7.127-api-standardization.jar",
+    "sha256": "32d420ea31cb649754bde68f5d50df243891e8caa536653b0133e80e46a9b788",
+    "bytes": 3684649,
+    "target": "D:\\minecraft\\Plain Craft Launcher 2\\.minecraft\\versions\\【云游四海】WAYFARING\\mods\\plaincraft-great-wall-0.7.127-api-standardization.jar",
+    "before": [
+      {
+        "path": "D:\\minecraft\\Plain Craft Launcher 2\\.minecraft\\versions\\【云游四海】WAYFARING\\mods\\plaincraft-great-wall-0.7.126-api-standardization.jar",
+        "sha256": "00f3bd2e9644edb2a396fc12bc521a33c1141c4ee02eb2766dd07215e2fbc11f",
+        "version": "0.7.126-api-standardization"
+      }
+    ],
+    "tests": 998,
+    "production_head": "91694c6d70b4cbcb6d0ec37b7b902ea9ec526a0e"
+  },
+  "all_three_hashes_match": true,
+  "minecraft_launched": false
+}
