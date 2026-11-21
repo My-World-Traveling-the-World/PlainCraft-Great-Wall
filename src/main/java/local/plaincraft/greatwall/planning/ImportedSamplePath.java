@@ -2,11 +2,24 @@ package local.plaincraft.greatwall.planning;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** 精采样沿冻结后的接引墙线走；只给旧路线加宽仍会漏掉建筑正交端面外的弯段。 */
 record ImportedSamplePath(SegmentKey key, List<Point2q> points, List<Long> localSQ8) implements RoutePath {
+    /** 前段已遇海的空计划没有施工足迹；不能让它取消前段有效墙线的整轮取证。 */
+    static Optional<RoutePath> forSampling(SegmentPlan plan) {
+        if (plan.prefix().terminal().filter(t -> t.segment() < plan.geometry().key().index()).isPresent()) {
+            // 只接纳调度器明确定义的终止空段，活动段缺站仍由 of 报错，防止吞掉坏计划。
+            if (!plan.stations().stations().isEmpty() || !plan.sites().isEmpty()) {
+                throw new IllegalArgumentException("终止后的计划不应携带站点或建筑");
+            }
+            return Optional.empty();
+        }
+        return Optional.of(of(plan));
+    }
+
     static ImportedSamplePath of(SegmentPlan plan) {
         var points = new ArrayList<Point2q>();
         var arcs = new ArrayList<Long>();

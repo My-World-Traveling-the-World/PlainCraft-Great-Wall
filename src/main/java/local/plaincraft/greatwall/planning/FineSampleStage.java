@@ -248,11 +248,11 @@ final class FineSampleStage {
                 // 注册前先计数，即时完成的路径也不能漏记。
                 routesPending.incrementAndGet();
                 // 几何等待超过原时限才请求路线，正常缓存命中直接取样。
-                CompletableFuture<RoutePath> path;
+                CompletableFuture<java.util.Optional<RoutePath>> path;
                 if (sites.imported()) {
                     // 不创建旧超时支线，避免两分钟后又悄悄启动一条未使用的旧路线。
                     var planLease = segmentLease.own(scheduler.requirePlan(index, priority));
-                    path = planLease.future().thenApply(ImportedSamplePath::of);
+                    path = planLease.future().thenApply(ImportedSamplePath::forSampling);
                 } else path = lease.future()
                         .<RoutePath>thenApply(geometry -> geometry)
                         .completeOnTimeout(null, 120, java.util.concurrent.TimeUnit.SECONDS)
@@ -263,10 +263,11 @@ final class FineSampleStage {
                                     + "reason=geometry-timeout; sampling the recomputed route instead", index);
                             var routeLease = segmentLease.own(scheduler.requireRoute(index, Priority.PLAYER_PREFETCH));
                             return routeLease.future().thenApply(route -> (RoutePath) route);
-                        }, pump);
+                        }, pump).thenApply(java.util.Optional::of);
                 // 路径确定时估算完整窗口，不等各段前缀再叠加分母。
-                path.thenAcceptAsync(sampled -> {
-                    if (aggregate.isDone()) return;
+                path.thenAcceptAsync(candidate -> {
+                    if (aggregate.isDone() || candidate.isEmpty()) return;
+                    var sampled = candidate.orElseThrow();
                     // 分母与切片沿用同一末端判定。
                     long points = Math.max(1L, terminalPointLimit(sampled, sampled.points().size())
                             + 2L * WallFinePlanner.APRON_BLOCKS);
@@ -290,7 +291,7 @@ final class FineSampleStage {
                         expectedColumns.updateAndGet(current -> Math.max(current, projected));
                     }
                 }, pump);
-                path.whenCompleteAsync((sampled, error) -> {
+                path.whenCompleteAsync((candidate, error) -> {
                     if (error != null || scheduler.closed() || aggregate.isDone()) {
                         if (error != null) aggregate.completeExceptionally(error);
                         else if (scheduler.closed()) aggregate.completeExceptionally(scheduler.closedFailure());
@@ -299,6 +300,15 @@ final class FineSampleStage {
                         if (!aggregate.isDone()) completion.run();
                         return;
                     }
+                    if (candidate.isEmpty()) {
+                        // 合法终止段也归还租约和待完成计数，否则有效前段采完仍无法发布索引。
+                        GreatWallMod.LOGGER.info("【长城精采样跳过已终止空段】 FINE_SAMPLE_TERMINATED segment={}", index);
+                        segmentLease.releaseUser();
+                        routesPending.decrementAndGet();
+                        completion.run();
+                        return;
+                    }
+                    var sampled = candidate.orElseThrow();
                     // 建筑按绝对弧长排布，先拿段前缀才能定宽截面。
                     CompletableFuture<PrefixSummary> before;
                     try {
