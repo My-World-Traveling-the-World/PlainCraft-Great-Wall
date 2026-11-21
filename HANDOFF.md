@@ -1,5 +1,39 @@
 # 长城启动契约开发交接
 
+## 2026-11-21：第98轮，修复遇海终止后整轮精采样丢失
+
+### 一、改了什么
+
+**行为变更**：正式模板计划在前段已遇海时，后段合法空计划通过 Optional 明确跳过；待完成计数与租约同时释放。活动段少于两个有效点仍失败，终止段意外携带站点/建筑也拒绝。没有修改遇海终止策略、墙体几何、预热范围、API 或存档格式。版本 0.7.128-api-standardization。
+
+### 二、我验证了什么（附变异）
+
+客户端快照原始行45308显示 ImportedSamplePath.of 对 PLAN_DEAD 空段抛“正式墙线至少需要两个不同点”，导致首段529站证据也未发布，随后 fineIndex=false。新增真实 PlannerScheduler 回归：首段遇水、有实际墙线，第二段终止且空，聚合须在30秒内返回大于100列的非空索引。另测活动空段仍报错。完整 test/compileJava/compileClientJava/remapJar 成功，1000项，失败/错误/跳过0（原998）。
+
+| 变异 | 结果 | 恢复 |
+| --- | --- | --- |
+| W5：禁用终止空段识别，重新调用 of | 红，AssertionFailedError | 精确 checkout，内容及SHA恢复 |
+| W6：所有空段一律跳过，吞掉活动坏计划 | 红，AssertionFailedError | 精确 checkout，内容及SHA恢复 |
+
+记录 docs/evidence/terminal-sampling-mutations-20261121.json；日志 build/round98-{baseline,target,W5,W6,final}.log。
+
+### 三、我没能验证什么
+
+未启动新 Minecraft 世界；真实模板接缝、所有列编译、最终建筑实际落块及耗时仍需部署后重测。新测试覆盖正式调度和索引发布，不冒充整合包 worldgen/盖章验收。
+
+### 四、遗留半截
+
+本缺陷修复、完整测试和成品构建完成；与道路高程修复一起部署，部署SHA另记。此前其他需真机项保留。
+
+### 五、下一轮先做什么
+
+新建正常世界观察 FINE_SAMPLE_TERMINATED、FINE_SAMPLE_DONE、编译发布及道路就绪门；遇海之后空段应跳过，首段仍实际生成。旧世界已失败的本轮内存会话不会被新jar热替换。
+
+### 六、踩到的坑
+
+PLAN_DEAD 是正常终止，不是活动段坏输入；不能删 ImportedSamplePath 的有效点检查。跳过路径时漏减 routesPending 会从异常变成永久等待。只本地提交，不重试受限远端。新增与改动代码有中文原因注释，单文件均未超1000行。
+
+
 ## 2026-11-21：第97轮，开局UI修复、负控与部署完成
 
 ### 一、改了什么

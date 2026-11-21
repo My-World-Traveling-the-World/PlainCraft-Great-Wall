@@ -36,7 +36,9 @@ class ImportedTerminalSamplingTest {
             assertTrue(live.stations().stations().size() > 2, "先证明首段确有施工墙线");
             assertEquals(0, after.prefix().terminal().orElseThrow().segment());
             assertTrue(after.stations().stations().isEmpty(), "必须走到客户端真实的终止空段");
-            var index = scheduler.requireFineSamples(Priority.PLAYER).get(30, TimeUnit.SECONDS);
+            var sampling = scheduler.requireFineSamples(Priority.PLAYER);
+            var index = assertDoesNotThrow(() -> sampling.get(30, TimeUnit.SECONDS),
+                    "终止空段不能取消有效取证，也不能漏减计数使启动永远等待");
             assertTrue(index.size() > 100, "不能以空索引冒充采样成功");
             assertTrue(index.orderedColumns().stream().anyMatch(c -> c.x() < 1600),
                     "合法首段的实际地形证据必须交给正式编译");
