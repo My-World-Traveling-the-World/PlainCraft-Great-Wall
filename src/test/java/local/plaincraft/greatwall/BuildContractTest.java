@@ -400,14 +400,9 @@ class BuildContractTest {
         assertFalse(pump.contains("paintPendingAtStartup("),
                 "0.7.53 起启动期一律不画方块：墙交给进世界的 drain，启动期只标列不放方块。"
                         + "启动期画墙会让 prepareLevels 停在半画的走廊上（实测 8 分钟只推进 25%）。");
-        int seed = pump.indexOf("seedRoadGuardFromPlans(");
-        assertTrue(seed > 0,
-                "WorldServices no longer seeds the road guard from the compiled plans; the road is "
-                        + "released immediately and would pave over wall columns that are not marked yet");
-        int finish = pump.indexOf("PrewarmProgress.finish(true)", seed);
-        assertTrue(finish > seed,
-                "the guard seed must run before the road gate opens; otherwise the road starts on columns "
-                        + "the wall has not claimed yet");
+        // 只确认正式入口没有旁路，成功、缺失和读失败走独立行为回归。
+        assertTrue(pump.contains(
+                "StartupRoadProtection.finishAfterRestore(() -> WallBodyBackfill.seedRoadGuardFromPlans(server.overworld()))"));
     }
 
     /**

@@ -215,6 +215,29 @@ public final class ChunkEvidenceStore {
             return keepOptional(memory, value);
         }
     }
+
+    /** 区块目录还存地形证据。只有正式施工计划文件才能把区块加入补建和保护恢复。 */
+    public List<ChunkKey> planOwners(String dimension) throws IOException {
+        Path scope = root.resolve(digestText(dimension));
+        if (Files.notExists(scope)) return List.of();
+        var owners = new ArrayList<ChunkKey>();
+        try (var entries = Files.newDirectoryStream(scope)) {
+            for (Path entry : entries) {
+                String name = entry.getFileName().toString();
+                int split = name.indexOf('_');
+                if (split <= 0 || split != name.lastIndexOf('_')) continue;
+                try {
+                    var key = new ChunkKey(dimension, Integer.parseInt(name.substring(0, split)),
+                            Integer.parseInt(name.substring(split + 1)));
+                    // 无权限不等于无计划：只有确认不存在的文件才允许略过。
+                    if (!Files.notExists(directory(key).resolve("build-proof.bin"))) owners.add(key);
+                } catch (NumberFormatException ignored) {
+                    // 同一维度目录还有其他记录，不能把它们当作施工区块。
+                }
+            }
+        }
+        return List.copyOf(owners);
+    }
     public void persistExitDecision(GroundExitDecision decision) throws IOException {
         try (var memory = CodecMemory.open()) {
             GroundExitCodec.validate(decision);

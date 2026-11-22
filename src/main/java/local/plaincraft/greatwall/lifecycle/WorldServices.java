@@ -23,6 +23,7 @@ import local.plaincraft.greatwall.gameplay.SiteRuntimeIndex;
 import local.plaincraft.greatwall.gameplay.WallSpawnerGuard;
 import local.plaincraft.greatwall.generation.WallStageCoordinator;
 import local.plaincraft.greatwall.generation.ImportedShowcase;
+import local.plaincraft.greatwall.generation.WallBodyBackfill;
 import local.plaincraft.greatwall.generation.ShowcaseGate;
 import local.plaincraft.greatwall.persistence.GateLedger;
 import local.plaincraft.greatwall.persistence.HistoryJournal;
@@ -652,7 +653,6 @@ public final class WorldServices {
         // true rather than aspirational: this thread holds the stage, the tick loop cannot run while
         // it is parked in managedBlock, and the road gate now waits for the compile to publish.
         final boolean[] compiled = {false};
-        final boolean[] painted = {false};
         // One extra compile attempt once the fine sample lands, taken on this thread rather than as a
         // queued task. One shot: if it cannot run, the queued triggerDeferredCompile path still tries.
         final boolean[] retriedDeferred = {false};
@@ -716,39 +716,11 @@ public final class WorldServices {
                 compiled[0] = compileWhileBlocked(server);
             }
             if (!compiled[0]) return false;
-            // The wall is planned, published and still holding the stage: paint it now, while nothing else
-            // can run and the loading screen is up. The drain would get there eventually, one batch per ten
-            // ticks, but the player would watch an empty corridor for the first minutes of the world.
             if (PrewarmProgress.awaitWorldgenReadyStrict(0L, java.util.concurrent.TimeUnit.NANOSECONDS)) return true;
-            if (!PrewarmProgress.isPublished()) return false;   // plans not on disk yet
-        // 用户方案（2026-10-24）：启动期一块都不画。预热只负责「规划 + 编译 + 发布足迹」，
-        // 之后立刻放行道路；墙体交给进世界后的 drain（每 tick 150ms）逐区块拉起并写入。
-        // 实测依据：启动期同步拉区块，8 分钟预算只画完 25%（pending 仍 343）；进世界 drain
-        // 456 块约 3 分钟，且完全不占加载界面。
-        // 前提：道路避让不能依赖"写块时打标记"，所以先把规划里每一列墙标进 WallRoadGuard，
-        // 这样墙还没长出来，道路就知道该避开哪里。
-        if (!painted[0]) {
-            painted[0] = true;
-            try {
-                int seeded = local.plaincraft.greatwall.generation.WallBodyBackfill
-                        .seedRoadGuardFromPlans(server.overworld());
-                GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_PAINT_DEFERRED_TO_WORLD pending={} "
-                                + "seededColumns={} - the road gate opens now, the in-game drain paints",
-                        local.plaincraft.greatwall.generation.WallBodyBackfill.pending(server.overworld()),
-                        seeded);
-            } catch (Throwable seedFailed) {
-                GreatWallMod.LOGGER.error("[GreatWall:S1C] ROAD_GUARD_SEED_FAILED", seedFailed);
-            }
-        }
-            // The wall is in the world: only now may the road start.
-            PrewarmProgress.finish(true);
-            // The compile can be deferred: compileAtStartup returns true after asking for it, and the
-            // compile itself only runs once the fine sample publishes (PLANNING_COMPILE_WAIT_FOR_SAMPLE).
-            // Its return value is therefore "I asked", not "it published" - holding the stage on it released
-            // the server thread with nothing published, which is what let the road start at 10:36 while
-            // the wall was still sampling at 76 %. The gate that really opens on publish is worldgenReady,
-            // released by finish(true) after the compile or by finish(false) on failure.
-            return PrewarmProgress.awaitWorldgenReadyStrict(0L, java.util.concurrent.TimeUnit.NANOSECONDS);
+            // 申请编译成功不代表已经发布；启动只还原保护，等待区块生成再落块。
+            if (!PrewarmProgress.isPublished()) return false;
+            StartupRoadProtection.finishAfterRestore(() -> WallBodyBackfill.seedRoadGuardFromPlans(server.overworld()));
+            return true;
         });
     }
 

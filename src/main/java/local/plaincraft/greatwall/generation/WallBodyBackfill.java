@@ -107,35 +107,31 @@ public final class WallBodyBackfill {
     public static int seedFromDisk(ServerLevel level, java.nio.file.Path greatWallRoot) {
         State state = state(level);
         int added = 0;
-        // The plans live at greatwall/evidence/<world hash>/<x>_<z>/, one hash directory per world
-        // and 456 chunk directories under it in the measured save. Scanning greatwall/ itself finds
-        // nothing, which is what the first attempt reported (added=0).
-        java.nio.file.Path evidence = greatWallRoot.resolve("evidence");
-        if (!java.nio.file.Files.isDirectory(evidence)) return added;
-        try (var walk = java.nio.file.Files.walk(evidence, 2)) {
-            for (java.nio.file.Path dir : (Iterable<java.nio.file.Path>) walk::iterator) {
-                if (!java.nio.file.Files.isDirectory(dir)) continue;
-                String name = dir.getFileName().toString();
-                int split = name.indexOf('_');
-                if (split <= 0 || split != name.lastIndexOf('_')) continue;
+        var evidence = greatWallRoot.resolve("evidence");
+        String dimension = level.dimension().location().toString();
+        // 完工提示只由主世界长城写入，没有维度字段；即使计划目录丢了也保留已施工线索。
+        if (level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) {
+            for (String token : DONE) {
+                int split = token.indexOf('_');
+                if (split <= 0) continue;
                 try {
-                    int x = Integer.parseInt(name.substring(0, split));
-                    int z = Integer.parseInt(name.substring(split + 1));
-                    ChunkKey key = new ChunkKey(level.dimension().location().toString(), x, z);
-                    if (state.completed.contains(key)) continue;
-                    // DONE is only a hint that the chunk may have been written. The persistent
-                    // PRODUCTION marker is the seal; a crash between ledger append and region save
-                    // must still be allowed to finish the missing blocks on next load.
-                    if (DONE.contains(x + "_" + z)) { state.doneHint.add(key); continue; }
-                    if (state.pending.add(key)) added++;
-                } catch (NumberFormatException notAChunkDirectory) {
-                    // FILES/ and the world hash directory are not chunk directories.
+                    state.doneHint.add(new ChunkKey(dimension, Integer.parseInt(token.substring(0, split)),
+                            Integer.parseInt(token.substring(split + 1))));
+                } catch (NumberFormatException ignored) {
+                    // 不把非法坐标伪造成某个区块。
                 }
             }
-        } catch (java.io.IOException unreadable) {
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_SEED_FAILED root={} reason={}",
+        }
+        try {
+            var store = local.plaincraft.greatwall.persistence.ChunkEvidenceStore.production(evidence);
+            for (ChunkKey key : store.planOwners(dimension)) {
+                if (state.completed.contains(key) || state.doneHint.contains(key)) continue;
+                if (state.pending.add(key)) added++;
+            }
+        } catch (java.io.IOException | java.nio.file.DirectoryIteratorException unreadable) {
+            state.inventoryFailed = true;
+            GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_SEED_FAILED 无法盘点长城计划 root={} reason={}",
                     evidence, unreadable.toString());
-            return added;
         }
         state.total = Math.max(state.total, state.completed.size() + state.pending.size());
         GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_SEEDED pending={} added={} settled={}",
@@ -349,13 +345,15 @@ public final class WallBodyBackfill {
     private static void loadDone(java.nio.file.Path greatWallRoot) {
         doneFile = greatWallRoot.resolve("backfilled.txt");
         DONE.clear();
-        if (!java.nio.file.Files.isRegularFile(doneFile)) return;
+        doneReadFailed = false;
+        if (java.nio.file.Files.notExists(doneFile)) return;
         try {
             for (String line : java.nio.file.Files.readAllLines(doneFile)) {
                 if (line != null && !line.isBlank()) DONE.add(line.trim());
             }
             GreatWallMod.LOGGER.info("[GreatWall:S1C] WALL_BACKFILL_DONE_LOADED chunks={}", DONE.size());
         } catch (java.io.IOException | RuntimeException unreadable) {
+            doneReadFailed = true;
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_DONE_LOAD_FAILED reason={}",
                     unreadable.toString());
         }
@@ -444,6 +442,7 @@ public final class WallBodyBackfill {
         FORCE_REPAIR.clear();
         DONE.clear();
         doneFile = null;
+        doneReadFailed = false;
         installedRoot = null;
         planStore = null;
         gateDeferredAtNanos = 0L;
@@ -677,49 +676,18 @@ public final class WallBodyBackfill {
      * 避让不能再依赖"写块时打标记"。这里直接把 ChunkWritePlan 里的每个体素列标进
      * {@code WallRoadGuard}，道路在墙还没长出来之前就能正确避开。
      */
-    public static int seedRoadGuardFromPlans(ServerLevel level) {
+    public static WallRoadRecovery.Report seedRoadGuardFromPlans(ServerLevel level) {
         State state = level == null ? null : STATES.get(level);
-        if (state == null) return 0;
+        if (state == null) return new WallRoadRecovery.Report(0, 0, 0, 0, 0, 0, doneReadFailed);
         java.util.Set<ChunkKey> keys = new java.util.LinkedHashSet<>(state.pending);
         keys.addAll(state.completed.keys());
         keys.addAll(state.doneHint);
-        // DONE chunks live in verify, not in pending. Omitting them meant a reloaded save could
-        // report missed=0 while every already-built chunk was invisible to the road guard.
-        int columns = 0;
-        int voxels = 0;
-        int missed = 0;
-        int fromDisk = 0;
-        for (ChunkKey key : keys) {
-            ChunkWritePlan plan = WallWorldgenPlanCache.get(level, key);
-            if (plan == null && planStore != null) {
-                try {
-                    plan = planStore.read(key).orElse(null);
-                    if (plan != null) {
-                        WallWorldgenPlanCache.put(level, plan);
-                        fromDisk++;
-                    }
-                } catch (java.io.IOException | RuntimeException unreadable) {
-                    GreatWallMod.LOGGER.warn("[GreatWall:S1C] ROAD_GUARD_PLAN_READ_FAILED owner={},{} reason={}",
-                            key.x(), key.z(), unreadable.toString());
-                }
-            }
-            if (plan == null) {
-                // A missing plan is a real coverage hole. Report it instead of silently marking fewer
-                // columns than the world contains.
-                missed++;
-                continue;
-            }
-            voxels += plan.voxels().size();
-            columns += WallPlanSupport.publishPlannedColumns(plan);
-        }
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] ROAD_GUARD_SEEDED_FROM_PLANS chunks={} columns={} voxels={} missed={} fromDisk={}",
-                keys.size(), columns, voxels, missed, fromDisk);
-        if (missed > 0) {
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] ROAD_GUARD_SEED_INCOMPLETE missed={}/{} chunks had no plan in the "
-                    + "in-memory cache; the road is already released and those wall columns are unmarked until the "
-                    + "chunk is written by the drain (or /greatwall repaint)", missed, keys.size());
-        }
-        return columns;
+        // 已完工区块也需恢复保护；否则旧档漏墙列却能通过只看待办的检查。
+        PlanStore store = planStore;
+        return WallRoadRecovery.restore(keys, state.inventoryFailed || doneReadFailed,
+                key -> WallWorldgenPlanCache.get(level, key),
+                key -> store == null ? null : store.read(key).orElse(null),
+                plan -> WallWorldgenPlanCache.put(level, plan));
     }
     /** Whether every planned chunk loaded so far has been written. */
     public static boolean complete(ServerLevel level) {
@@ -869,6 +837,7 @@ public final class WallBodyBackfill {
     /** Chunks already written, as "x_z" lines in greatwall/backfilled.txt; empty until installed. */
     private static final java.util.Set<String> DONE = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static volatile java.nio.file.Path doneFile;
+    private static volatile boolean doneReadFailed;
     /** The save this process last installed the plan reader for; a second world re-installs. */
     private static volatile java.nio.file.Path installedRoot;
     private static final java.util.concurrent.atomic.AtomicInteger DONE_PENDING = new java.util.concurrent.atomic.AtomicInteger();
@@ -884,6 +853,7 @@ public final class WallBodyBackfill {
         final Map<ChunkKey, StartupRequest> requests = new ConcurrentHashMap<>();
         int tick;
         int total;
+        boolean inventoryFailed;
     }
     /**
      * 把某片已经"画完"的区块重新排队，让 drain 再画一遍。
