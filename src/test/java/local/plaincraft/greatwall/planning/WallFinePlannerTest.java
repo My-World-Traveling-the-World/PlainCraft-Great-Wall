@@ -296,6 +296,26 @@ class WallFinePlannerTest {
                 "the slice order key must not depend on which view supplied the polyline");
     }
 
+    @Test void importedSlicesOnlyWalkTheirOwnRangeAndKeepBothEndAprons() {
+        var key = route(PlanningFixtures.recipe(9282026)).key();
+        var arcs = java.util.stream.LongStream.range(0, 192).map(i -> i * 256L).boxed().toList();
+        var path = new ImportedSamplePath(key, arcs.stream().map(x -> new Point2q(x, 0)).toList(), arcs);
+        var head = slice(path, 0, 64);
+        var middle = slice(path, 64, 128);
+        var tail = slice(path, 128, 192);
+
+        // 不让共享去重掩盖前缀重复。中片必须真的采满自己的区间，且不能走到相邻切片。
+        assertFalse(middle.isEmpty());
+        assertEquals(64L * 256, middle.getFirst().globalSQ8());
+        assertTrue(middle.stream().allMatch(c -> c.globalSQ8() >= 64L * 256 && c.globalSQ8() < 128L * 256));
+        assertTrue(head.getFirst().globalSQ8() < 0, "起点外的裙边仍要采样");
+        assertTrue(tail.getLast().globalSQ8() > arcs.getLast(), "终点外的裙边仍要采样");
+        // 直线地形按站对拍，确保切片没有少采站或改变网格相位。
+        var partitioned = java.util.stream.Stream.of(head, middle, tail).flatMap(java.util.List::stream)
+                .map(WallFinePlanner.FineColumn::globalSQ8).toList();
+        assertEquals(slice(path, 0, 192).stream().map(WallFinePlanner.FineColumn::globalSQ8).toList(), partitioned);
+    }
+
     /** Samples one point range of a polyline the way a fine-sample job does. */
     private static java.util.List<WallFinePlanner.FineColumn> slice(RoutePath path, int from, int to) {
         try (var oracle = AnalyticTerrainOracle.ridge(true)) {

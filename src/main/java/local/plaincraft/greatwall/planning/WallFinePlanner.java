@@ -650,7 +650,8 @@ public final class WallFinePlanner {
             int apron = route instanceof ImportedSamplePath ? 112 : APRON_BLOCKS;
             this.apronBefore = this.fromIndex == 0 ? apron : 0;
             this.apronAfter = this.toIndex == route.points().size() ? apron : 0;
-            this.index = -this.apronBefore;
+            // 内部切片只走自己的站点；共享去重省不掉重复构造前缀截面及认领列的开销。
+            this.index = this.fromIndex - this.apronBefore;
             this.end = this.toIndex + this.apronAfter;
         }
 
