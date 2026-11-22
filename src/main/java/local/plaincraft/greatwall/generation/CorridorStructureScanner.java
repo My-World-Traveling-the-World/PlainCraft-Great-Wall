@@ -87,8 +87,11 @@ public final class CorridorStructureScanner implements AutoCloseable {
                         (System.nanoTime() - startedAt) / 1_000_000L);
                 return cached.get();
             }
+            // 候选筛选与原版拼装的成本不同，分开计时才能决定下一步该优化哪一段。
+            long predictStarted = System.nanoTime();
             var candidates = CorridorStructureScan.predictCandidates(
                     level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor);
+            long resolveStarted = System.nanoTime();
             // The loading card's structure-scan stage: candidates known up front, done count ticking
             // live as the scan walks them, total/total once resolved.
             local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
@@ -98,6 +101,7 @@ public final class CorridorStructureScanner implements AutoCloseable {
                     done -> local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
                             local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.STRUCTURE_SCAN,
                             done, candidates.size()));
+            long resolveFinished = System.nanoTime();
             // The finished count stays in the candidate口径 even though the result is shorter: the live
             // ticks above count candidates, so reporting boxes here would walk the displayed number
             // backwards (13085 candidates resolving to 4262 boxes reads as a stalled meter).
@@ -107,11 +111,13 @@ public final class CorridorStructureScanner implements AutoCloseable {
             long[] yield = CorridorStructureScan.scanYield();
             long[] filter = CorridorStructureScan.filterYield();
             GreatWallMod.LOGGER.info(
-                    "[GreatWall:corridor] structure scan corridor=[{},{}]..[{},{}] candidates={} boxes={} "
-                            + "starts={} emptyCandidates={} pieces={} filterWouldSkip={}/{} elapsedMs={}",
+                    "[GreatWall:corridor] 结构扫描完成 corridor=[{},{}]..[{},{}] candidates={} boxes={} "
+                            + "starts={} emptyCandidates={} pieces={} filterWouldSkip={}/{} elapsedMs={} predictMs={} resolveMs={}",
                     minChunkX, minChunkZ, maxChunkX, maxChunkZ, candidates.size(), boxes.size(),
                     yield[0], yield[1], yield[2], filter[1], filter[0],
-                    (System.nanoTime() - startedAt) / 1_000_000L);
+                    (resolveFinished - startedAt) / 1_000_000L,
+                    (resolveStarted - predictStarted) / 1_000_000L,
+                    (resolveFinished - resolveStarted) / 1_000_000L);
             if (closed.get()) throw new CancellationException("结构扫描已关闭");
             StructureScanCache.store(level, cacheKey, boxes);
             return boxes;

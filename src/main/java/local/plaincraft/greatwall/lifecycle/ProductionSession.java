@@ -737,10 +737,9 @@ final class ProductionSession implements AutoCloseable {
      * every world's recipe hash, so putting this there would invalidate existing worlds' walls and demand a
      * new world for a pure cache concern. A mismatch here costs one re-scan instead.
      */
-    private static final String CORRIDOR_SCAN_CACHE_VERSION = "v2";
-
     private static String cacheKey(String recipeHash) {
-        return recipeHash + '-' + CORRIDOR_SCAN_CACHE_VERSION;
+        // 文本和二进制都是同一算法的派生数据，只要求重扫，不改变世界配方。
+        return recipeHash + '-' + local.plaincraft.greatwall.generation.CorridorStructureScan.CACHE_REVISION;
     }
 
     private static List<Bounds> loadStructureScanCache(Path root, String recipeHash) {

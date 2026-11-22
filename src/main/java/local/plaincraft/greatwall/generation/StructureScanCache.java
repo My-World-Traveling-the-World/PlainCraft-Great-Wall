@@ -103,7 +103,8 @@ final class StructureScanCache {
             CorridorStructureScan.Corridor corridor, String recipeScope, String structureIds) {
         // 同外框下的端点和半宽仍决定候选集合，缓存身份必须覆盖整个筛选条件。
         StringBuilder material = new StringBuilder(256)
-                .append(dimension).append('|')
+                // 箱体编码没变，但修正候选后不能复用上一版漏扫的箱体列表。
+                .append(CorridorStructureScan.CACHE_REVISION).append('|').append(dimension).append('|')
                 .append(seed).append('|')
                 .append(minChunkX).append(',').append(minChunkZ).append(',')
                 .append(maxChunkX).append(',').append(maxChunkZ).append('|')

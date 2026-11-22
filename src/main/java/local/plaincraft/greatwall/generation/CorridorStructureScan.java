@@ -5,7 +5,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import net.minecraft.core.BlockPos;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -34,11 +38,14 @@ import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement
  * prewarm's managed block.
  */
 public final class CorridorStructureScan {
+    /** 两级派生缓存共用修订号；候选坐标修正后，旧的漏扫结果不能参与新计划。 */
+    public static final String CACHE_REVISION = "v3";
+
     private CorridorStructureScan() {
     }
 
-    /** A predicted locate point plus the structure set it came from. */
-    public record Candidate(BlockPos pos, Holder<StructureSet> structureSet) {
+    /** 保留起点区块：定位偏移可以跨区块，不能用定位点还原生成种子和坐标。 */
+    public record Candidate(ChunkPos startChunk, Holder<StructureSet> structureSet) {
     }
 
     /** One resolved structure-piece box with its owner identity. */
@@ -52,52 +59,6 @@ public final class CorridorStructureScan {
      * or dimension-incompatible sets are skipped so the scan cannot balloon into tens of thousands of
      * candidates for a surface wall.
      */
-    /**
-     * The z window a corridor can possibly reach at one x, or null when it cannot reach x at all.
-     *
-     * <p>Conservative by construction: the returned window contains every z for which
-     * {@link Corridor#within} is true, and may contain more. Callers still filter with within(), so
-     * narrowing can only skip positions that would have been rejected - never one that would have
-     * counted. That is the whole safety argument for this optimisation, and
-     * {@code CorridorStructureScanBandTest} asserts it against a brute-force sweep.
-     *
-     * <p>What it buys: the corridor is a thin band across a 465x402 rectangle, so 92% of the old
-     * enumeration was positions the filter then threw away - 187000 reads of the generator state to
-     * keep 15000.
-     */
-    static int[] bandZRange(Corridor corridor, int x, int minZ, int maxZ) {
-        if (corridor == null) return new int[] {minZ, maxZ};
-        long dx = (long) corridor.endX() - corridor.originX();
-        long dz = (long) corridor.endZ() - corridor.originZ();
-        long half = corridor.halfWidth();
-        long lenSq = dx * dx + dz * dz;
-        if (lenSq == 0) {
-            if (Math.abs((long) x - corridor.originX()) > half) return null;
-            return new int[] {(int) Math.max(minZ, corridor.originZ() - half),
-                    (int) Math.min(maxZ, corridor.originZ() + half)};
-        }
-        // The cap circles reach half a width past each end of the segment.
-        long xLo = Math.min(corridor.originX(), corridor.endX()) - half;
-        long xHi = Math.max(corridor.originX(), corridor.endX()) + half;
-        if (x < xLo || x > xHi) return null;
-        double lineZ;
-        double spread;
-        if (dx == 0) {
-            lineZ = (corridor.originZ() + corridor.endZ()) / 2.0;
-            spread = Math.abs(dz) / 2.0 + 2.0 * half;
-        } else {
-            double slope = (double) dz / (double) dx;
-            lineZ = corridor.originZ() + (x - corridor.originX()) * slope;
-            // Perpendicular half-width converts to a z half-height by 1/cos(theta), and the end caps
-            // add a full half-width; both are covered by the factors below.
-            spread = half * Math.sqrt(1.0 + slope * slope) + half + 1.0;
-        }
-        int lo = (int) Math.max(minZ, Math.floor(lineZ - spread));
-        int hi = (int) Math.min(maxZ, Math.ceil(lineZ + spread));
-        if (lo > hi) return null;
-        return new int[] {lo, hi};
-    }
-
     public static List<Candidate> predictCandidates(ServerLevel level, int minChunkX, int minChunkZ,
             int maxChunkX, int maxChunkZ) {
         return predictCandidates(level, minChunkX, minChunkZ, maxChunkX, maxChunkZ, null);
@@ -142,59 +103,62 @@ public final class CorridorStructureScan {
                 }
                 continue;
             }
-            // Custom placements expose no region formula; the native predicate is authoritative.
-            //
-            // This is where a modded pack spends its scan time, and it used to run on one thread: a
-            // 464x420 corridor is 194880 positions per custom-placement structure, and a measured
-            // pack had several. The rows are independent, so they are split across the same pool the
-            // resolve stage uses - the predicate is a pure read of the frozen generator state.
-            int rows = maxChunkX - minChunkX + 1;
-            int crews = Math.min(adaptiveScanWorkers(), Math.max(1, rows));
-            if (crews <= 1) {
-                for (int x = minChunkX; x <= maxChunkX; x++) {
-                    int[] window = bandZRange(corridor, x, minChunkZ, maxChunkZ);
-                    if (window == null) continue;
-                    for (int z = window[0]; z <= window[1]; z++) {
-                        addCandidate(state, holder, placement, new ChunkPos(x, z), minChunkX, minChunkZ,
-                                maxChunkX, maxChunkZ, corridor, result);
-                    }
-                }
-            } else {
-                var bands = new ArrayList<List<Candidate>>(crews);
-                for (int crew = 0; crew < crews; crew++) bands.add(new ArrayList<>(1024));
-                var pool = java.util.concurrent.Executors.newFixedThreadPool(crews, task -> {
-                    Thread thread = new Thread(task, "pgw-corridor-predict");
-                    thread.setDaemon(true);
-                    return thread;
-                });
-                try {
-                    int band = Math.max(1, (rows + crews - 1) / crews);
-                    var futures = new ArrayList<java.util.concurrent.CompletableFuture<Void>>(crews);
-                    for (int crew = 0; crew < crews; crew++) {
-                        int from = minChunkX + crew * band;
-                        int to = Math.min(maxChunkX, from + band - 1);
-                        if (from > maxChunkX) break;
-                        var into = bands.get(crew);
-                        futures.add(java.util.concurrent.CompletableFuture.runAsync(() -> {
-                            for (int x = from; x <= to; x++) {
-                                int[] window = bandZRange(corridor, x, minChunkZ, maxChunkZ);
-                                if (window == null) continue;
-                                for (int z = window[0]; z <= window[1]; z++) {
-                                    addCandidate(state, holder, placement, new ChunkPos(x, z),
-                                            minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor, into);
-                                }
-                            }
-                        }, pool));
-                    }
-                    java.util.concurrent.CompletableFuture.allOf(
-                            futures.toArray(new java.util.concurrent.CompletableFuture[0])).join();
-                } finally {
-                    pool.shutdownNow();
-                }
-                for (var part : bands) result.addAll(part);
-            }
+            predictCustom(state, holder, placement, minChunkX, minChunkZ, maxChunkX, maxChunkZ, corridor, result);
         }
         return List.copyOf(result);
+    }
+
+    /** 自定义定位点可随区块变化；只按真实定位点过滤，不能拿区块坐标裁方块走廊。 */
+    static void predictCustom(ChunkGeneratorStructureState state, Holder<StructureSet> holder,
+                              StructurePlacement placement, int minX, int minZ, int maxX, int maxZ,
+                              Corridor corridor, List<Candidate> result) {
+        // 已取消的扫描不分派工作；否则快速完成的首带可能先被收进半批结果。
+        if (Thread.currentThread().isInterrupted()) throw new CancellationException("长城候选扫描已中止");
+        int rows = maxX - minX + 1;
+        int crews = Math.min(adaptiveScanWorkers(), rows);
+        if (crews <= 1) {
+            predictCustomRows(state, holder, placement, minX, minZ, maxX, maxZ, corridor, result);
+            return;
+        }
+        // 各带独立扫描，最后按原来的 X/Z 顺序合并，解析不依赖线程先后。
+        int rowsPerCrew = Math.ceilDiv(rows, crews);
+        var pool = Executors.newFixedThreadPool(crews, task -> {
+            Thread thread = new Thread(task, "pgw-corridor-predict");
+            thread.setDaemon(true);
+            return thread;
+        });
+        try {
+            var bands = new ArrayList<Future<List<Candidate>>>(crews);
+            for (int x = minX; x <= maxX; x += rowsPerCrew) {
+                int from = x;
+                int to = Math.min(maxX, from + rowsPerCrew - 1);
+                bands.add(pool.submit(() -> {
+                    var matches = new ArrayList<Candidate>();
+                    predictCustomRows(state, holder, placement, from, minZ, to, maxZ, corridor, matches);
+                    return matches;
+                }));
+            }
+            for (var band : bands) result.addAll(band.get());
+        } catch (InterruptedException stopped) {
+            // 退出世界时停止整带枚举，别把尚未扫完的候选作为可缓存的空结果。
+            Thread.currentThread().interrupt();
+            throw new CancellationException("长城候选扫描已中止");
+        } catch (ExecutionException failure) {
+            throw new CompletionException(failure.getCause());
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    private static void predictCustomRows(ChunkGeneratorStructureState state, Holder<StructureSet> holder,
+                                          StructurePlacement placement, int fromX, int minZ, int toX, int maxZ,
+                                          Corridor corridor, List<Candidate> result) {
+        for (int x = fromX; x <= toX; x++) {
+            if (Thread.currentThread().isInterrupted()) throw new CancellationException("长城候选扫描已中止");
+            for (int z = minZ; z <= maxZ; z++) {
+                addCandidate(state, holder, placement, new ChunkPos(x, z), fromX, minZ, toX, maxZ, corridor, result);
+            }
+        }
     }
 
     /** The wall corridor segment in block coords plus its half-width; null means no trimming. */
@@ -378,8 +342,8 @@ public final class CorridorStructureScan {
             if (sliceProgress != null && (processed % 8) == 0) sliceProgress.accept(8);
             Holder<StructureSet> setHolder = candidate.structureSet();
             StructureSet structureSet = setHolder.value();
-            ChunkPos pos = new ChunkPos(candidate.pos());
-            if (!structureSet.placement().isStructureChunk(generatorState, pos.x, pos.z)) continue;
+            // 候选已用原始区块通过放置规则，这里沿用同一区块；再查一次只会重复排斥区计算。
+            ChunkPos pos = candidate.startChunk();
             List<StructureSet.StructureSelectionEntry> entries = structureSet.structures();
             if (entries.isEmpty()) continue;
             // DRY_RUN only: count the candidates a dimension-level biome filter would never generate.
@@ -460,11 +424,13 @@ public final class CorridorStructureScan {
             int maxChunkX, int maxChunkZ, Corridor corridor, List<Candidate> result) {
         if (candidate.x < minChunkX || candidate.x > maxChunkX
                 || candidate.z < minChunkZ || candidate.z > maxChunkZ) return;
+        // 走廊外无需调用原版放置与排斥区判定；模组自定义偏移仍由它自己的定位规则解释。
+        if (corridor != null) {
+            var locatePos = placement.getLocatePos(candidate);
+            if (!corridor.within(locatePos.getX(), locatePos.getZ())) return;
+        }
         if (!placement.isStructureChunk(state, candidate.x, candidate.z)) return;
-        var locatePos = placement.getLocatePos(candidate);
-        // Drop chunks the wall can never reach: only candidates within the corridor band count.
-        if (corridor != null && !corridor.within(locatePos.getX(), locatePos.getZ())) return;
-        result.add(new Candidate(locatePos, setHolder));
+        result.add(new Candidate(candidate, setHolder));
     }
 
     private static boolean isSurfaceRelevant(Holder<StructureSet> structureSet) {
