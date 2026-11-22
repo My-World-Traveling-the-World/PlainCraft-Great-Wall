@@ -1,7 +1,9 @@
 package local.plaincraft.greatwall.generation;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import local.plaincraft.greatwall.compat.road.WallRoadGuard;
 import local.plaincraft.greatwall.model.WallTypes.BlockEntityIntent;
 import local.plaincraft.greatwall.model.WallTypes.ChunkWritePlan;
 import local.plaincraft.greatwall.model.WallTypes.Point3i;
@@ -28,23 +30,37 @@ public final class WallPlanSupport {
     /** 返回本计划的独立列数，不能把体素层数当保护列数写进诊断。 */
     public static int publishPlannedColumns(ChunkWritePlan plan) {
         if (plan == null) return 0;
-        var masks = new java.util.HashMap<Long, long[]>();
+        int ownerX = plan.owner().x(), ownerZ = plan.owner().z();
+        long[] ownerMask = new long[4];
+        HashMap<Long, long[]> spill = null;
         for (var voxel : plan.voxels()) {
             Point3i p = voxel.pos();
-            long key = ((long) (p.x() >> 4) << 32) ^ ((p.z() >> 4) & 0xffffffffL);
-            var mask = masks.computeIfAbsent(key, ignored -> new long[4]);
+            int cx = p.x() >> 4, cz = p.z() >> 4;
+            long[] mask = ownerMask;
+            // 正式编译按区块交付。同一区块的每层体素可以直接写四个字，跨块输入仍按旧规则分桶。
+            if (cx != ownerX || cz != ownerZ) {
+                if (spill == null) spill = new HashMap<>();
+                long key = ((long) cx << 32) ^ (cz & 0xffffffffL);
+                mask = spill.computeIfAbsent(key, ignored -> new long[4]);
+            }
             int bit = ((p.z() & 15) << 4) | (p.x() & 15);
-            // 空气意图也是已拥有的净空，不能因它没有实体方块而漏掉门洞/马道保护。
+            // 空气意图也是已拥有的净空，不能漏掉门洞/马道保护。
             mask[bit >> 6] |= 1L << (bit & 63);
         }
-        int columns = 0;
-        for (var entry : masks.entrySet()) {
-            long key = entry.getKey(); var mask = entry.getValue();
-            local.plaincraft.greatwall.compat.road.WallRoadGuard.markChunk(
-                    (int) (key >> 32), (int) key, mask[0], mask[1], mask[2], mask[3]);
-            for (long word : mask) columns += Long.bitCount(word);
+        int columns = publishMask(ownerX, ownerZ, ownerMask);
+        if (spill != null) {
+            for (var entry : spill.entrySet()) {
+                long key = entry.getKey();
+                columns += publishMask((int) (key >> 32), (int) key, entry.getValue());
+            }
         }
         return columns;
+    }
+
+    private static int publishMask(int chunkX, int chunkZ, long[] mask) {
+        WallRoadGuard.markChunk(chunkX, chunkZ, mask[0], mask[1], mask[2], mask[3]);
+        return Long.bitCount(mask[0]) + Long.bitCount(mask[1])
+                + Long.bitCount(mask[2]) + Long.bitCount(mask[3]);
     }
 
     /** Writes the custom block-entity payload for positions this pass actually placed. */

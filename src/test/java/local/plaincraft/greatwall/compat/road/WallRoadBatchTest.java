@@ -31,6 +31,25 @@ class WallRoadBatchTest {
         assertArrayEquals(expected, answers(voxels, false), "clear后不能合并到脱离当前世界的旧数组");
     }
 
+    @Test void ownerChunkMaskKeepsSparseNegativeColumnsAndDeduplicatesLayers() {
+        var voxels = new ArrayList<VoxelIntent>();
+        var owner = new ChunkKey("minecraft:overworld", -3, 1);
+        for (int y = -60; y < -20; y++) {
+            voxels.add(voxel(-48, y, 16, IntentKind.SOLID));
+            voxels.add(voxel(-38, y, 21, IntentKind.OWNED_VOID));
+            voxels.add(voxel(-33, y, 31, IntentKind.SOLID));
+        }
+        // 120 个体素只占三列，低位、跨字和最后一位都必须被标记。
+        assertEquals(3, WallPlanSupport.publishPlannedColumns(plan(owner, voxels)));
+        assertEquals(1, WallRoadGuard.markedChunks());
+        assertEquals(3, WallRoadGuard.markedColumnsIn(-3, 1));
+        assertTrue(WallRoadGuard.isMarked(-48, 16));
+        assertTrue(WallRoadGuard.isMarked(-38, 21));
+        assertTrue(WallRoadGuard.isMarked(-33, 31));
+        assertFalse(WallRoadGuard.isMarked(-39, 21));
+        assertFalse(WallRoadGuard.isMarked(16, -48));
+    }
+
     @Test void pureAirAndEveryWordAreRetained() {
         var voxels = new ArrayList<VoxelIntent>();
         for (int z = -16; z < 0; z++) for (int x = -16; x < 0; x++)
@@ -62,6 +81,9 @@ class WallRoadBatchTest {
                 new SiteId("wall", SiteKind.WALL, 0), 100, true, false);
     }
     private static ChunkWritePlan plan(List<VoxelIntent> voxels) {
-        return new ChunkWritePlan(new ChunkKey("minecraft:overworld",0,0),HASH,HASH,voxels,List.of(),List.of(),List.of(),List.of(),List.of(),HASH);
+        return plan(new ChunkKey("minecraft:overworld", 0, 0), voxels);
+    }
+    private static ChunkWritePlan plan(ChunkKey owner, List<VoxelIntent> voxels) {
+        return new ChunkWritePlan(owner, HASH, HASH, voxels, List.of(), List.of(), List.of(), List.of(), List.of(), HASH);
     }
 }
