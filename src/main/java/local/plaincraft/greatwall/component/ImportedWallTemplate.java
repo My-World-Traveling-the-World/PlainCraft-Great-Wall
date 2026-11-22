@@ -6,6 +6,7 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import local.plaincraft.greatwall.gameplay.TemplateLoot;
 import local.plaincraft.greatwall.model.WallTypes.BlockEntityIntent;
 import local.plaincraft.greatwall.model.WallTypes.BlockSpec;
@@ -15,7 +16,12 @@ import local.plaincraft.greatwall.terrain.BlockCatalog;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.LanternBlock;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.state.BlockState;
 
 /** 冻结已核验的实心模板和装饰；净空、地基及接墙规则由构件规划单独决定。 */
 public final class ImportedWallTemplate {
@@ -39,7 +45,7 @@ public final class ImportedWallTemplate {
             if (current != null) return current;
             synchronized (this) {
                 // 只首次解压；跨区块与多个站点共用不可变体素和调色板。
-                if (loaded == null) loaded = read(name);
+                if (loaded == null) loaded = read(name, ImportedWallTemplate::runtimeLanternEntity);
                 return loaded;
             }
         }
@@ -77,7 +83,21 @@ public final class ImportedWallTemplate {
         };
     }
 
-    private static ImportedWallTemplate read(String name) {
+    /** 模板来源是原版存档；联动模组给悬挂灯笼增加的实体由当前方块工厂提供。 */
+    private static Entity runtimeLanternEntity(BlockState state) {
+        if (!state.hasBlockEntity()) return null;
+        if (state.getBlock() instanceof EntityBlock factory) {
+            var entity = factory.newBlockEntity(BlockPos.ZERO, state);
+            if (entity != null && entity.getType().isValid(state)) {
+                var type = BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(entity.getType());
+                // 悬挂效果由运行时创建；不复制探测用的坐标或样板库存。
+                if (type != null) return new Entity(type.toString(), "{}");
+            }
+        }
+        throw new IllegalStateException("运行时灯笼没有兼容的方块实体工厂: " + state);
+    }
+
+    static ImportedWallTemplate read(String name, Function<BlockState, Entity> defaultLantern) {
         try (var in = ImportedWallTemplate.class.getResourceAsStream(DIRECTORY + name + ".nbt")) {
             if (in == null) throw new IOException("缺少内置模板资源");
             var root = NbtIo.readCompressed(in, NbtAccounter.create(96L * 1024 * 1024));
@@ -107,6 +127,8 @@ public final class ImportedWallTemplate {
             var blocks = root.getList("blocks", Tag.TAG_COMPOUND);
             if (blocks.isEmpty() || blocks.size() > volume) throw new IOException("模板未包含有效体素");
             var used = new BitSet((int) volume);
+            // 同一调色板状态可能有数百格，默认实体描述只向工厂取一次，不能逐格创建临时实体。
+            var lanternDefaults = new HashMap<Integer, java.util.Optional<Entity>>();
             var cells = new ArrayList<Cell>(blocks.size());
             for (int i = 0; i < blocks.size(); i++) {
                 var block = blocks.getCompound(i);
@@ -119,21 +141,30 @@ public final class ImportedWallTemplate {
                 }
                 int localId = (y * size.z() + z) * size.x() + x;
                 var state = nativeStates.get(index);
-                if (used.get(localId) || state.isAir() || state.hasBlockEntity() != block.contains("nbt", Tag.TAG_COMPOUND)) {
-                    throw new IOException("模板含重复格、非稀疏空气或缺失实体: " + localId);
+                if (used.get(localId) || state.isAir()) {
+                    throw new IOException("模板含重复格或非稀疏空气: " + localId);
                 }
                 used.set(localId);
                 Entity entity = null;
-                if (state.hasBlockEntity()) {
+                if (block.contains("nbt", Tag.TAG_COMPOUND)) {
                     var payload = block.getCompound("nbt").copy();
                     String type = payload.getString("id");
                     var registryType = net.minecraft.core.registries.BuiltInRegistries.BLOCK_ENTITY_TYPE
                             .getOptional(net.minecraft.resources.ResourceLocation.parse(type));
-                    if (registryType.isEmpty() || !registryType.get().isValid(state)) {
+                    if (!state.hasBlockEntity() || registryType.isEmpty() || !registryType.get().isValid(state)) {
                         throw new IOException("模板方块与实体类型不匹配: " + localId + " " + type);
                     }
                     payload.remove("id");
                     entity = new Entity(type, payload.toString());
+                } else {
+                    if (block.contains("nbt")) throw new IOException("模板方块实体格式错误: " + localId);
+                    if (state.getBlock() instanceof LanternBlock) {
+                        entity = lanternDefaults.computeIfAbsent(index,
+                                ignored -> java.util.Optional.ofNullable(defaultLantern.apply(state))).orElse(null);
+                    }
+                    if (entity == null && state.hasBlockEntity()) {
+                        throw new IOException("模板缺失方块实体: " + localId + " " + state);
+                    }
                 }
                 cells.add(new Cell(new Point3i(x, y, z), index, localId, entity));
             }

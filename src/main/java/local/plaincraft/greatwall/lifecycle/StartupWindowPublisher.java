@@ -12,7 +12,8 @@ import local.plaincraft.greatwall.planning.PlanningChunkCompiler;
 /** 拥有整窗编译发布的结案规则；只有发布及足迹处理后才通知就绪，不能在采样完成时提前开门。 */
 final class StartupWindowPublisher {
     @FunctionalInterface interface Compile {
-        int compile(PlanWindow window, PlanningChunkCompiler.OwnerProgress progress, Consumer<ChunkWritePlan> sink);
+        PlanningChunkCompiler.CompileReport compile(
+                PlanWindow window, PlanningChunkCompiler.OwnerProgress progress, Consumer<ChunkWritePlan> sink);
     }
     interface Access {
         void active();
@@ -30,7 +31,7 @@ final class StartupWindowPublisher {
     StartupWindowPublisher(WorldRecipe recipe,Runnable release,Compile compiler,Access access) {
         this.recipe=recipe;this.release=release;this.compiler=compiler;this.access=access;
     }
-    // 只搬读写边界；原零成功拒绝、部分失败阈值和预热租约释放次序均原样保留。
+    // 发布失败与编译失败分开计数；否则少量空计划发布成功也会让受损范围对道路宣告就绪。
     void publish(List<SegmentPlan> plans) {
         if (plans.isEmpty()) {
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_EMPTY 未取得可用分段计划，本次不施工");
@@ -49,7 +50,7 @@ final class StartupWindowPublisher {
         java.util.function.Consumer<ChunkWritePlan> footprint = plan -> access.footprint(plan,corridor);
         long started = System.nanoTime();
         PrewarmProgress.setSubProgress(0, 0);
-        int compiled = compiler.compile(window,
+        var report = compiler.compile(window,
                 (done, total) -> PrewarmProgress.setSubProgress(PrewarmProgress.Stage.COMPILE, done, total),
                 plan -> {
                     access.active(); // 关闭或失败后的迟到批次不能再写施工数据。
@@ -59,15 +60,16 @@ final class StartupWindowPublisher {
         long publishNanos = publication.publishNanos();
         long compileMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started - publishNanos);
         int published = publication.published();
-        int failed = publication.failed();
-        GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={} chunks={} published={} "
-                        + "failed={} compileMs={} publishMs={} vegetationLeases={} guardMisses={} suppressed={}；整窗编译发布已结案",
-                plans.size(), compiled, published, failed, compileMillis, TimeUnit.NANOSECONDS.toMillis(publishNanos),
+        int failed = report.failed() + publication.failed();
+        GreatWallMod.LOGGER.info("[GreatWall:S1C] PLANNING_COMPILE_TRIGGERED segments={} owners={} chunks={} published={} "
+                        + "failed={} compileFailed={} publishFailed={} compileMs={} publishMs={} vegetationLeases={} guardMisses={} suppressed={}；整窗编译发布已结案",
+                plans.size(), report.owners(), report.emitted(), published, failed, report.failed(), publication.failed(),
+                compileMillis, TimeUnit.NANOSECONDS.toMillis(publishNanos),
                 access.leases(), access.misses(), access.suppressed());
-        int tolerated = Math.max(8, compiled / 20);
+        int tolerated = Math.max(8, (report.emitted() + report.failed()) / 20);
         if (published == 0) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_EMPTY owners={} failed={}；没有成功发布的区块，保持未发布状态",
-                    compiled, failed);
+                    report.owners(), failed);
             release.run();
             PrewarmProgress.finish(false);
             return;
@@ -76,7 +78,7 @@ final class StartupWindowPublisher {
         if (failed > tolerated) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_FAILED published={} failed={} of "
                             + "{} owners (tolerated {})；发布失败超过容忍上限",
-                    published, failed, compiled, tolerated, publication.firstFailure());
+                            published, failed, report.owners(), tolerated, publication.firstFailure());
             release.run();
             PrewarmProgress.finish(false);
             return;
@@ -84,10 +86,10 @@ final class StartupWindowPublisher {
         if (failed > 0) {
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PARTIAL published={} failed={} of "
                             + "{} owners (tolerated {})；部分区块发布失败，保留已接纳区块的补建队列",
-                    published, failed, compiled, tolerated, publication.firstFailure());
+                            published, failed, report.owners(), tolerated, publication.firstFailure());
         }
         release.run();
-        PrewarmProgress.setSubProgress(compiled, compiled);
+        PrewarmProgress.setSubProgress(report.owners(), report.owners());
         PrewarmProgress.setStage(PrewarmProgress.Stage.DONE);
         PrewarmProgress.signalReady();
         PrewarmProgress.markPublished();

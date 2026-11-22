@@ -1086,7 +1086,7 @@ final class ProductionSession implements AutoCloseable {
             java.util.List<SegmentPlan> plans) {
         // 会话只提供真实世界边界；发布结案由独立协作类统一拥有。
         new StartupWindowPublisher(snapshot.recipe(), snapshot.planner()::releasePrewarmLeases,
-                (window, progress, sink) -> compiler.compileInto(window, snapshot.recipe().recipeHash(),
+                (window, progress, sink) -> compiler.compileIntoReport(window, snapshot.recipe().recipeHash(),
                         snapshot.recipe().dimension(), progress, sink, ProductionSession.this::active), new StartupWindowPublisher.Access() {
             public void active() { ProductionSession.this.active(); }
             public void install(ChunkWritePlan plan) { DurablePlanInstall.accept(plan, p -> WallWorldgenPlanCache.put(level,p)); }

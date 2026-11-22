@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 import local.plaincraft.greatwall.generation.CorridorIndex;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.planning.PlanningFixtures;
+import local.plaincraft.greatwall.planning.PlanningChunkCompiler.CompileReport;
 import local.plaincraft.greatwall.planning.PrefixSummaryIndex;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +25,7 @@ class StartupWindowPublisherTest {
             assertFalse(PrewarmProgress.isPublished());release[0]++;access.events.add("release");
         },(window,progress,sink)->{
             for(int x=0;x<3;x++){assertFalse(PrewarmProgress.isPublished());sink.accept(plan(x));progress.accept(x+1,3);}
-            return 3;
+            return new CompileReport(3, 3, 0);
         },access);
         publisher.publish(List.of(segment()));
         assertEquals(List.of("active","install:0","footprint:0","active","install:1","footprint:1",
@@ -44,7 +45,7 @@ class StartupWindowPublisherTest {
     @Test void zeroSuccessfulOwnersCannotBeDeclaredPublished() {
         var access=new Access();access.rejectAll=true;var release=new int[1];
         new StartupWindowPublisher(PlanningFixtures.recipe(0),()->release[0]++,(w,p,s)->{
-            s.accept(plan(0));s.accept(plan(1));return 2;
+            s.accept(plan(0));s.accept(plan(1));return new CompileReport(2, 2, 0);
         },access).publish(List.of(segment()));
         assertFalse(PrewarmProgress.isPublished());assertEquals(1,release[0]);assertTrue(access.queued.isEmpty());
     }
@@ -54,7 +55,7 @@ class StartupWindowPublisherTest {
             PrewarmProgress.clear();PrewarmProgress.begin(1,2);
             var access=new Access();access.rejected=failures;var releases=new int[1];
             new StartupWindowPublisher(PlanningFixtures.recipe(0),()->releases[0]++,(w,p,s)->{
-                for(int x=0;x<=failures;x++)s.accept(plan(x));return failures+1;
+                for(int x=0;x<=failures;x++)s.accept(plan(x));return new CompileReport(failures+1, failures+1, 0);
             },access).publish(List.of(segment()));
             assertEquals(failures<=8,PrewarmProgress.isPublished(),"原8项容忍边界不能在拆分时改变");
             assertEquals(1,access.queued.size(),"已接纳计划仍须进入补建，不因其他区块失败而丢弃");
@@ -62,10 +63,21 @@ class StartupWindowPublisherTest {
         }
     }
 
+    @Test void failedCompilationCannotLookReadyWhenAllTwelveOutputsInstall() {
+        var access = new Access();
+        // 复现现场：所有收到的计划都安装成功，但大部分工作在发布前已经失败。
+        new StartupWindowPublisher(PlanningFixtures.recipe(0), () -> {}, (w, p, sink) -> {
+            for (int x = 0; x < 12; x++) sink.accept(plan(x));
+            return new CompileReport(291, 12, 279);
+        }, access).publish(List.of(segment()));
+        assertEquals(12, access.queued.size(), "保留确实接纳的补建任务");
+        assertFalse(PrewarmProgress.isPublished(), "发布层成功不能掩盖上游编译失败");
+    }
+
     @Test void lateBatchAfterClosureDoesNotInstallOrPublish() {
         var access=new Access();
         var publisher=new StartupWindowPublisher(PlanningFixtures.recipe(0),()->{},(w,p,s)->{
-            s.accept(plan(0));access.closed=true;s.accept(plan(1));return 2;
+            s.accept(plan(0));access.closed=true;s.accept(plan(1));return new CompileReport(2, 2, 0);
         },access);
         assertThrows(CancellationException.class,()->publisher.publish(List.of(segment())));
         assertEquals(List.of("active","install:0","footprint:0","active"),access.events);

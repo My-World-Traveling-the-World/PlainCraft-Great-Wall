@@ -93,6 +93,9 @@ public final class PlanningChunkCompiler {
         void accept(int done, int total);
     }
 
+    /** 空覆盖可以正常结案；只能用明确的失败计数，不能拿区块总数减产出推断失败。 */
+    public record CompileReport(int owners, int emitted, int failed) {}
+
     /** Compiles every wall-touched chunk of the given plan window into a {@link ChunkWritePlan}. */
     public Map<ChunkKey, ChunkWritePlan> compileWindow(PlanWindow plans, String recipeHash, String dimension) {
         return compileWindow(plans, recipeHash, dimension, null);
@@ -127,17 +130,23 @@ public final class PlanningChunkCompiler {
 
     int compileInto(PlanWindow plans, String recipeHash, String dimension, OwnerProgress progress,
             int batchSize, int workers, Consumer<ChunkWritePlan> output) {
-        return compileInto(plans,recipeHash,dimension,progress,batchSize,workers,output,new CompileCancellation());
+        return compileInto(plans,recipeHash,dimension,progress,batchSize,workers,output,new CompileCancellation()).emitted();
     }
 
     /** 正式会话关闭检查贯穿枚举、实现和工作项认领，不只停在发布边界。 */
     public int compileInto(PlanWindow plans,String recipeHash,String dimension,OwnerProgress progress,
             Consumer<ChunkWritePlan> output,Runnable active) {
+        return compileIntoReport(plans,recipeHash,dimension,progress,output,active).emitted();
+    }
+
+    /** 启动放行使用结案报告；只传产出数会吞掉正式编译失败。 */
+    public CompileReport compileIntoReport(PlanWindow plans,String recipeHash,String dimension,OwnerProgress progress,
+            Consumer<ChunkWritePlan> output,Runnable active) {
         return compileInto(plans,recipeHash,dimension,progress,OWNER_BATCH_SIZE,compileWorkers(),output,
                 new CompileCancellation(active));
     }
 
-    private int compileInto(PlanWindow plans,String recipeHash,String dimension,OwnerProgress progress,
+    private CompileReport compileInto(PlanWindow plans,String recipeHash,String dimension,OwnerProgress progress,
             int batchSize,int workers,Consumer<ChunkWritePlan> output,CompileCancellation cancellation) {
         List<PlanningOwnerIndex.OwnerWork> owners;
         try{owners=PlanningOwnerIndex.prepare(plans,recipeHash,dimension,coverage,cancellation);}
@@ -152,10 +161,10 @@ public final class PlanningChunkCompiler {
     // 只切分已冻结的区块工作项；不能先按段过滤再重算接缝归属。
     int compileOwners(List<PlanningOwnerIndex.OwnerWork> owners, String recipeHash, OwnerProgress progress,
             int batchSize, int workers, Consumer<ChunkWritePlan> output) {
-        return compileOwners(owners,recipeHash,progress,batchSize,workers,output,new CompileCancellation());
+        return compileOwners(owners,recipeHash,progress,batchSize,workers,output,new CompileCancellation()).emitted();
     }
 
-    private int compileOwners(List<PlanningOwnerIndex.OwnerWork> owners,String recipeHash,OwnerProgress progress,
+    private CompileReport compileOwners(List<PlanningOwnerIndex.OwnerWork> owners,String recipeHash,OwnerProgress progress,
             int batchSize,int workers,Consumer<ChunkWritePlan> output,CompileCancellation cancellation) {
         try(var retained=memory.open()) {
             try {
@@ -183,7 +192,7 @@ public final class PlanningChunkCompiler {
     }
 
     // 大楼体只在本次窗口循环中保留，发布回调抛错也通过外层finally归还。
-    private int compileOwnersWindow(List<PlanningOwnerIndex.OwnerWork> owners, String recipeHash, OwnerProgress progress,
+    private CompileReport compileOwnersWindow(List<PlanningOwnerIndex.OwnerWork> owners, String recipeHash, OwnerProgress progress,
             int batchSize, int workers, Consumer<ChunkWritePlan> output, CompileWindowMemory.Window retained, CompileCancellation cancellation) {
         Objects.requireNonNull(output, "output");
         // 工作线程只写当前批；调用线程同步交付后清表，计划不会留在整窗编译器里。
@@ -348,7 +357,7 @@ public final class PlanningChunkCompiler {
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:S1C] PLANNING_COMPILE_DONE owners={} plans={} failed={} elapsedMs={}",
                 ownerCount, emitted, failed, Math.round(compileNanos / 1_000_000.0D));
-        return emitted;
+        return new CompileReport(ownerCount, emitted, failed);
     }
 
     private static int emitBatch(Map<ChunkKey, ChunkWritePlan> plans, Consumer<ChunkWritePlan> output) {
