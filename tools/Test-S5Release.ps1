@@ -39,7 +39,8 @@ if ($liveStress.Count -gt 0) {
 }
 
 $id = "s5-release-$Profile-$((Get-Date).ToString('yyyyMMdd'))-$([Guid]::NewGuid().ToString('N').Substring(0,8))"
-$evidence = Join-Path $project "docs\evidence\s5\$id"
+# 放在 build 外，发布验证调用 Gradle clean 后还需要这些报告。
+$evidence = Join-Path $project "test-output\s5\$id"
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 
 function Invoke-GradleBuild([string]$tag, [string[]]$extraArgs) {

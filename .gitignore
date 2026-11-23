@@ -10,6 +10,9 @@ logs/
 # 本机编译输入，不进入成品。
 libs/
 
+# 压测和发布验证跨越 Gradle clean，报告放到独立输出路径。
+/test-output/
+
 # 不再提交阶段存档、日志和批量结果，只保留现有构建需要的锁定输入。
 /docs/evidence/*
 !/docs/evidence/s0-01/

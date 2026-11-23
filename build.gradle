@@ -12,7 +12,7 @@ repositories {
 }
 
 // 开发端用 Mojang named，正式服烟测改用同一项目的重映射前置；两者都不进长城成品。
-ext.roadApiRoot = rootProject.file(providers.gradleProperty('roadweaverApiProjectDir').orElse('../roadweaver-next').get())
+ext.roadApiRoot = rootProject.file(providers.gradleProperty('worldgenApiProjectDir').orElse('../plaincraft-worldgen-api').get())
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
@@ -24,7 +24,7 @@ dependencies {
     def roadApiContract = new File(roadApiRoot, 'api/build/contract/roadweaver-api-contract-named.jar')
     def roadApiDevMod = new File(roadApiRoot, 'api-fabric/build/contract/roadweaver-api-fabric-devmod.jar')
     if (!roadApiContract.isFile() || !roadApiDevMod.isFile()) {
-        throw new GradleException('缺独立 RoadWeaver API，请先执行 -PapiOnly :api:contractJar :api-fabric:devModJar')
+        throw new GradleException('缺云游四海世界生成 API，请先在独立前置仓库执行 :api:contractJar :api-fabric:devModJar')
     }
     compileOnly files(roadApiContract)
     // 状态契约由河流成品自己提供；长城只编译和测试，绝不重复打包可选API。

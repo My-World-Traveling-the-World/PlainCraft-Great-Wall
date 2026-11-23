@@ -2,6 +2,15 @@
 
 阶段报告、旧日志和更早交接见[清理前快照](https://github.com/My-World-Traveling-the-World/PlainCraft-Great-Wall/blob/92ade7445194ba20ff0d104b5a2b6373/HANDOFF.md)。
 
+## 第113轮：前置改用独立源码仓库（2026-11-23，API 1.1.2）
+
+1. **改了什么（生成行为等价）**：编译、开发启动和发布烟测从独立的云游四海世界生成 API 工程取前置。
+2. **验证**：外置 Gradle 9.4.1 构建成功。1025 项单测零失败、零跳过，3 项群系 GameTest 通过。Fabric Loader 0.19.3 接受长城和发布版 1.1.2。
+3. **我没能验证什么**：未跑整合包完整预热和 S5 长时间压测。
+4. **负控记录**：移除前置后，隔离环境的 Loader 以缺少 roadweaver_api 拒绝长城。
+5. **文档及下一步**：删除旧开工交接、已归档报告导出器和本地 11 份旧日志。S5 新报告输出至 test-output/s5，保留本机输入锁定清单。实机继续核对长城和道路接口位置。
+6. **交付与回退**：长城成品版本沿用 0.7.137。独立前置从 [云游四海世界生成 API](https://github.com/My-World-Traveling-the-World/PlainCraft-Worldgen-API/releases/tag/v1.1.2) 下载。本轮未替换本机整合包的 JAR。
+
 ## 第112轮：前置独立发包与文档瘦身（2026-11-23，0.7.137）
 
 ### 一、改了什么

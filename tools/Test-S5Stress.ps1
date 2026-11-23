@@ -19,7 +19,8 @@ if (!$root.StartsWith($allowed, [StringComparison]::OrdinalIgnoreCase)) {
     throw "TestRoot must resolve under $allowed (got $root)."
 }
 $id = "s5-stress-$Profile-$((Get-Date).ToString('yyyyMMdd'))-$([Guid]::NewGuid().ToString('N').Substring(0,8))"
-$evidence = Join-Path $project "docs\evidence\s5\$id"
+# 放在 build 外，发布验证调用 Gradle clean 后还需要这些报告。
+$evidence = Join-Path $project "test-output\s5\$id"
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 
 # 24h stress: duration measured in hours by the driver, converted to minutes for the in-server

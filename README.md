@@ -10,7 +10,7 @@
 
 **Minecraft 1.21.1、Fabric Loader 0.19.3 或以上、Java 21 或以上、Fabric API 0.116.14+1.21.1 或以上，以及 RoadWeaver API 1.x。**
 
-只想玩长城时，安装长城和[**独立 RoadWeaver API**](https://github.com/My-World-Traveling-the-World/Roadweaver-Remastered/releases/tag/api-v1.1.1)，无需安装道路或河流模组。三者合装时前置只放一份。需要游戏内配置界面时，再安装 **Mod Menu 和 Cloth Config API**。
+只想玩长城时，安装长城和[**云游四海世界生成 API**](https://github.com/My-World-Traveling-the-World/PlainCraft-Worldgen-API/releases)，无需安装道路或河流模组。三者合装时前置只放一份。需要游戏内配置界面时，再安装 **Mod Menu 和 Cloth Config API**。
 
 ## 一起安装有什么变化
 
