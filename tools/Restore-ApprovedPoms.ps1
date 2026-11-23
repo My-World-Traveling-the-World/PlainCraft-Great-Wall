@@ -5,9 +5,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path -Parent $PSScriptRoot
 $evidence = [IO.Path]::GetFullPath($EvidenceDirectory)
-$allowed = [IO.Path]::GetFullPath((Join-Path $workspace 'docs\evidence\build')) + [IO.Path]::DirectorySeparatorChar
+$allowed = [IO.Path]::GetFullPath((Join-Path $workspace 'test-output\evidence\build')) + [IO.Path]::DirectorySeparatorChar
 if (-not $evidence.StartsWith($allowed, [StringComparison]::OrdinalIgnoreCase)) {
-    throw 'Evidence must stay under this workspace docs/evidence/build'
+    throw 'Evidence must stay under this workspace test-output/evidence/build'
 }
 if (Test-Path -LiteralPath $evidence) { throw 'Choose a new evidence directory; prior results are immutable' }
 New-Item -ItemType Directory -Path $evidence | Out-Null

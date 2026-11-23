@@ -13,7 +13,7 @@ $sourceCommit = (& git -C $project rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0) { throw 'Production source changed from the frozen baseline' }
 $env:JAVA_HOME = 'C:\Program Files\Java\jdk-21'
 $id = "root-hydro-40-$((Get-Date).ToString('yyyyMMdd'))-$([Guid]::NewGuid().ToString('N').Substring(0,8))"
-$evidence = Join-Path $project "docs\evidence\s1c\$id"
+$evidence = Join-Path $project "test-output\evidence\s1c\$id"
 $runtimeId = "$id-runtime"
 $runtimeRoot = Join-Path $project "build\run\serverSmoke\vanilla\$runtimeId"
 if (Test-Path -LiteralPath $evidence) { throw 'Survey evidence directory must be new' }
@@ -32,7 +32,7 @@ $started = [DateTime]::UtcNow
     networkUsed=$false;javaHome=$env:JAVA_HOME
 } | ConvertTo-Json -Depth 10),$utf8)
 & (Join-Path $PSScriptRoot 'Stage-SmokeProfile.ps1') -SourceInstance $SourceInstance -Profile vanilla -RunId $runtimeId -EvidenceStage s1c
-Copy-Item -LiteralPath (Join-Path $project "docs\evidence\s1c\runtime\$runtimeId-inputs.json") -Destination (Join-Path $evidence 'runtime-staging.json')
+Copy-Item -LiteralPath (Join-Path $project "test-output\evidence\s1c\runtime\$runtimeId-inputs.json") -Destination (Join-Path $evidence 'runtime-staging.json')
 $prepCommand = @('--offline','--dependency-verification=strict','prepareSeedSurveyRuntime',
     '-PsmokeProfile=vanilla',"-PsmokeRunId=$runtimeId",'-Ps1cSeedSurvey=true','-Ps1cSeed=0','--console=plain','--no-daemon')
 Push-Location -LiteralPath $project

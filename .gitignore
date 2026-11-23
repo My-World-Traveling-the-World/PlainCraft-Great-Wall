@@ -13,12 +13,6 @@ libs/
 # 压测和发布验证跨越 Gradle clean，报告放到独立输出路径。
 /test-output/
 
-# 不再提交阶段存档、日志和批量结果，只保留现有构建需要的锁定输入。
-/docs/evidence/*
-!/docs/evidence/s0-01/
-/docs/evidence/s0-01/*
-!/docs/evidence/s0-01/environment.json
-
 # Test byproduct. GreatWallConfig.file() falls back to Path.of("config", ...) when
 # FabricLoader.getConfigDir() throws, which is what happens in a bare JUnit JVM. Any
 # test that reads or writes the config therefore creates this inside the project root,

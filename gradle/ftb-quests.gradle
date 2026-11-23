@@ -4,7 +4,7 @@
 // Nothing is downloaded and nothing is bundled: a missing or altered local
 // input blocks the S3 quest compilation with the id and expected SHA.
 def optionalMods = providers.provider {
-    def environment = new groovy.json.JsonSlurper().parse(file('docs/evidence/s0-01/environment.json'))
+    def environment = new groovy.json.JsonSlurper().parse(file('gradle/local-inputs.json'))
     def wanted = ['ftbquests', 'ftblibrary', 'ftbteams', 'architectury']
     def modsDir = new File(environment.artifacts.find { it.id == 'ftbquests' }.path).parentFile
     def result = []

@@ -18,7 +18,7 @@ if (!$root.StartsWith($allowedRun, [StringComparison]::OrdinalIgnoreCase)) {
     throw "TestRoot must resolve under $allowedRun (got $root)."
 }
 $id = "s4-gallery-$Profile-$((Get-Date).ToString('yyyyMMdd'))-$([Guid]::NewGuid().ToString('N').Substring(0,8))"
-$evidence = Join-Path $project "docs\evidence\s4\$id"
+$evidence = Join-Path $project "test-output\evidence\s4\$id"
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 
 $files = @(Get-ChildItem -LiteralPath (Join-Path $project 'src'), (Join-Path $project 'gradle'), (Join-Path $project 'tools') -Recurse -File)

@@ -2,7 +2,7 @@ param()
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 $project=Split-Path $PSScriptRoot -Parent
-$root=Join-Path $project 'docs\evidence\s0-03'
+$root=Join-Path $project 'test-output\evidence\s0-03'
 $matrix=@(Get-Content -LiteralPath (Join-Path $root 'final-matrix-results.json') -Raw | ConvertFrom-Json)
 $recovery=@(Get-Content -LiteralPath (Join-Path $root 'final-recovery-results.json') -Raw | ConvertFrom-Json)
 $skip=@(Get-Content -LiteralPath (Join-Path $root 'final-skip-results.json') -Raw | ConvertFrom-Json)

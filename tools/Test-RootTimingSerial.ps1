@@ -28,7 +28,7 @@ function Assert-EnvironmentFree {
 }
 Assert-EnvironmentFree
 $id="root-timing-serial-$((Get-Date).ToString('yyyyMMdd'))-$([Guid]::NewGuid().ToString('N').Substring(0,8))"
-$evidence=Join-Path $project "docs\evidence\s1c\$id"
+$evidence=Join-Path $project "test-output\evidence\s1c\$id"
 New-Item -ItemType Directory -Path $evidence | Out-Null
 $runtimeId="$id-runtime"
 $runtimeRoot=Join-Path $project "build\run\serverSmoke\vanilla\$runtimeId"
@@ -44,7 +44,7 @@ $sourceInputs=@($inputFiles | Sort-Object FullName | ForEach-Object {
     purpose='root steady latency attribution only';productionWiring='OFF';networkUsed=$false
 } | ConvertTo-Json -Depth 9),$utf8)
 & (Join-Path $PSScriptRoot 'Stage-SmokeProfile.ps1') -SourceInstance $SourceInstance -Profile vanilla -RunId $runtimeId -EvidenceStage s1c
-Copy-Item -LiteralPath (Join-Path $project "docs\evidence\s1c\runtime\$runtimeId-inputs.json") -Destination (Join-Path $evidence 'runtime-staging.json')
+Copy-Item -LiteralPath (Join-Path $project "test-output\evidence\s1c\runtime\$runtimeId-inputs.json") -Destination (Join-Path $evidence 'runtime-staging.json')
 Push-Location -LiteralPath $project
 try {
     & .\gradlew.bat --offline --dependency-verification=strict prepareSeedSurveyRuntime -PsmokeProfile=vanilla "-PsmokeRunId=$runtimeId" -Ps1cSeedSurvey=true -Ps1cSeed=4 --console=plain --no-daemon 2>&1 |

@@ -13,7 +13,10 @@ gradle.projectsEvaluated {
         dependsOn compile, p.tasks.named('testClasspathBridge')
         classpath = p.files(p.tasks.named('testClasspathBridge').flatMap { it.archiveFile }) + p.files(out)
         mainClass = 'local.plaincraft.greatwall.planning.FoundationGroupProbe'
-        args p.file('docs/evidence/foundation-group-benchmark-20261121.json').absolutePath
+        def report = p.file('test-output/evidence/foundation-group-benchmark-20261121.json')
+        // 首次运行也能导出，因为报告目录不纳入版本控制。
+        doFirst { report.parentFile.mkdirs() }
+        args report.absolutePath
         jvmArgs '-Xms512m', '-Xmx512m'
     }
 }

@@ -10,7 +10,7 @@ if ($Fault -ne 'none' -and $CrashPoint -ne 'saved') { throw 'Evidence-loss tests
 $project = Split-Path $PSScriptRoot -Parent
 $id = "s003-recovery-$Profile-$CrashPoint-$Fault-$([Guid]::NewGuid().ToString('N').Substring(0,8))"
 $root = [IO.Path]::GetFullPath((Join-Path $project "build\run\serverSmoke\$Profile\$id"))
-$output = Join-Path $project "docs\evidence\s0-03\recovery\$id"
+$output = Join-Path $project "test-output\evidence\s0-03\recovery\$id"
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 if ($Profile -ne 'vanilla') {
     & (Join-Path $PSScriptRoot 'Stage-SmokeProfile.ps1') -SourceInstance $SourceInstance -Profile $Profile -RunId $id -EvidenceStage s0-03

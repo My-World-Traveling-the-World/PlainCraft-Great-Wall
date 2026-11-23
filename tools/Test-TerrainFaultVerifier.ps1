@@ -22,5 +22,8 @@ Test-Rejected 'terrain recaptured' { Assert-TerrainFaultScope $before $after $ba
 $badOutput=@($after | ConvertTo-Json -Depth 5 | ConvertFrom-Json)
 $badOutput[0].finalHash='0' * 64
 Test-Rejected 'healthy result altered' { Assert-TerrainFaultScope $before $badOutput $events $session $name } '*healthy recovery changed*'
-$checks.ToArray() | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $project 'docs\evidence\s0-03\fault-verifier-tests.json') -Encoding utf8
+# 首次运行也能导出，因为报告目录不纳入版本控制。
+$reportDir = Join-Path $project 'test-output\evidence\s0-03'
+$null = [IO.Directory]::CreateDirectory($reportDir)
+$checks.ToArray() | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $reportDir 'fault-verifier-tests.json') -Encoding utf8
 $checks.ToArray()

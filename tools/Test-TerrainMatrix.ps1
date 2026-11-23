@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $project = Split-Path $PSScriptRoot -Parent
-$evidence = Join-Path $project "docs\evidence\$EvidenceStage\matrix"
+$evidence = Join-Path $project "test-output\evidence\$EvidenceStage\matrix"
 if ($EvidenceRun) { $evidence = Join-Path $evidence $EvidenceRun }
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 $results = [Collections.Generic.List[object]]::new()

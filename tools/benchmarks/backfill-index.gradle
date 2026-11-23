@@ -13,7 +13,10 @@ gradle.projectsEvaluated {
         dependsOn compile, p.tasks.named('testClasspathBridge')
         classpath = p.files(p.tasks.named('testClasspathBridge').flatMap { it.archiveFile }) + p.files(out)
         mainClass = 'local.plaincraft.greatwall.generation.BackfillIndexProbe'
-        args p.file('docs/evidence/backfill-index-benchmark-20261120.json').absolutePath
+        def report = p.file('test-output/evidence/backfill-index-benchmark-20261120.json')
+        // 首次运行也能导出，因为报告目录不纳入版本控制。
+        doFirst { report.parentFile.mkdirs() }
+        args report.absolutePath
         jvmArgs '-Xms512m', '-Xmx512m'
     }
 }

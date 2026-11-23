@@ -1,19 +1,22 @@
 # 万里长城 · PlainCraft Great Wall
 
-在 Minecraft 世界里生成一条可以登上去探索的长城。墙体随山势延伸，将门楼、敌楼、烽火台、角楼和澄海楼连在一起。
+**在 Minecraft 越过山脊，沿城墙走进门楼和烽火台。**
 
-- 正常世界根据地形规划城墙，建筑用实物模板生成，墙体从建筑预留的接口接出。
-- 烽火台可参与烽火接力，建筑内的容器可以找到战利品。
-- 超平坦世界提供建筑套件展区，方便近距离参观墙段与建筑的接法。
+`Minecraft 1.21.1` · `Fabric` · `Java 21+`
 
-## 安装需要什么
+[安装](#安装) · [模组联动](#模组联动) · [版本更新](CHANGELOG.md) · [开发指南](HANDOFF.md)
 
-**Minecraft 1.21.1、Fabric Loader 0.19.3 或以上、Java 21 或以上、Fabric API 0.116.14+1.21.1 或以上，以及 RoadWeaver API 1.x。**
+| 功能 | 游戏里的体验 |
+| --- | --- |
+| 随地形延伸的城墙 | 普通世界沿规划路线生成城墙、马道和垛口，通过预留墙节连接楼体。 |
+| 五种实物楼体 | 沿路可遇门楼、敌楼、烽火台、角楼和澄海楼。 |
+| 烽火与战利品 | 烽火台参与烽火接力，楼内容器可提供战利品。 |
+| 超平坦展区 | 近距离查看建筑套件、墙体剖面与模板接法。 |
 
-只想玩长城时，安装长城和[**云游四海世界生成 API**](https://github.com/My-World-Traveling-the-World/PlainCraft-Worldgen-API/releases)，无需安装道路或河流模组。三者合装时前置只放一份。需要游戏内配置界面时，再安装 **Mod Menu 和 Cloth Config API**。
+## 安装
 
-## 一起安装有什么变化
+使用 **Fabric Loader 0.19.3+**，安装长城、Fabric API 0.116.14+1.21.1 或更高的 1.21.1 版本，以及[云游四海世界生成 API](https://github.com/My-World-Traveling-the-World/PlainCraft-Worldgen-API/releases)。游戏内配置界面需要 **Mod Menu 和 Cloth Config API**。
 
-兼容版本的 StreamsReflowing 会先准备河流，长城随后开始自己的开局预热。合装 [RoadWeaver 重制版](https://github.com/My-World-Traveling-the-World/Roadweaver-Remastered)时，长城发布墙体保护范围，道路随后规划并在铺设时避让受保护的墙体。三个模组都装时，开局顺序是 **河流 → 长城 → 道路**。
+## 模组联动
 
-[开发文档](docs/DEVELOPMENT.md) · [模板生成说明](docs/正式模板生成.md)
+长城可以独立生成。合装兼容版本时，河流先准备水系，长城随后预热并公布保护范围，道路据此避开墙体。三者的开局顺序为 **河流 → 长城 → 道路**，前置只装一份。[RoadWeaver 重制版](https://github.com/My-World-Traveling-the-World/Roadweaver-Remastered)

@@ -49,7 +49,7 @@ foreach ($object in ($objects | Sort-Object Hash -Unique)) {
 New-Item -ItemType Directory -Path (Join-Path $target 'indexes') -Force | Out-Null
 $targetIndex = Join-Path $target 'indexes\1.21.1-17.json'
 Copy-Item -LiteralPath $index -Destination $targetIndex
-$evidence = Join-Path $project 'docs\evidence\s0-01\runtime'
+$evidence = Join-Path $project 'test-output\evidence\s0-01\runtime'
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 $report = [ordered]@{
     collectedAt = (Get-Date).ToString('o')

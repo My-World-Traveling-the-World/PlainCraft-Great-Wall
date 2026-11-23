@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 if ($EvidenceId -notmatch '^[a-zA-Z0-9_-]+$') { throw 'Invalid evidence id' }
-$evidence = Join-Path $workspace "docs/evidence/s1c/owner-coverage-ac-20261002/$EvidenceId"
+$evidence = Join-Path $workspace "test-output/evidence/s1c/owner-coverage-ac-20261002/$EvidenceId"
 if (Test-Path -LiteralPath $evidence) { throw 'Refusing to overwrite prior evidence' }
 $java = 'C:\Program Files\Java\jdk-21\bin\java.exe'
 $javac = 'C:\Program Files\Java\jdk-21\bin\javac.exe'

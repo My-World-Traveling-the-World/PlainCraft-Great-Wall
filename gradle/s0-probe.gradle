@@ -1,7 +1,7 @@
 // Compile-only Rx API from the already certified, local patched C2ME artifact.
 // No repository resolution, installation or binary modification is involved.
 def rxFiles = providers.provider {
-    def environment = new groovy.json.JsonSlurper().parse(file('docs/evidence/s0-01/environment.json'))
+    def environment = new groovy.json.JsonSlurper().parse(file('gradle/local-inputs.json'))
     def c2me = environment.artifacts.find { it.id == 'c2me' }
     def source = file(c2me.path)
     def digest = java.security.MessageDigest.getInstance('SHA-256')

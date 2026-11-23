@@ -272,7 +272,7 @@ def prepareProductionInputs = { runtimeSource, String gameJarName, File smokeFil
         path.contains('/modules-2/files-2.1/') && !path.contains('/net.fabricmc.fabric-api/') &&
                 !it.name.startsWith('dev-launch-injector-')
     }
-    def evidence = new groovy.json.JsonSlurper().parse(file('docs/evidence/s0-01/environment.json'))
+    def evidence = new groovy.json.JsonSlurper().parse(file('gradle/local-inputs.json'))
     def api = evidence.artifacts.find { it.id == 'fabric-api' }
     def apiFile = file(api.path)
     def digest = java.security.MessageDigest.getInstance('SHA-256')

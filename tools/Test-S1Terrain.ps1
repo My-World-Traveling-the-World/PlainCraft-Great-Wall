@@ -21,11 +21,11 @@ foreach ($profile in $Profiles) {
     foreach ($seed in $Seeds) {
         $id = "s1c-wall-$profile-$((Get-Date).ToString('yyyyMMdd'))-$([Guid]::NewGuid().ToString('N').Substring(0,8))"
         $root = Join-Path $project "build\run\serverSmoke\$profile\$id"
-        $evidence = Join-Path $project "docs\evidence\s1c\$id"
+        $evidence = Join-Path $project "test-output\evidence\s1c\$id"
         if (Test-Path -LiteralPath $evidence) { throw "Evidence directory collision: $id" }
         New-Item -ItemType Directory -Path $evidence | Out-Null
         & (Join-Path $PSScriptRoot 'Stage-SmokeProfile.ps1') -SourceInstance $SourceInstance -Profile $profile -RunId $id -EvidenceStage s1c
-        Copy-Item -LiteralPath (Join-Path $project "docs\evidence\s1c\runtime\$id-inputs.json") -Destination (Join-Path $evidence 'staged-inputs.json')
+        Copy-Item -LiteralPath (Join-Path $project "test-output\evidence\s1c\runtime\$id-inputs.json") -Destination (Join-Path $evidence 'staged-inputs.json')
         $phases = @('generated')
         if ($Reopen) { $phases += 'reopened' }
         foreach ($phase in $phases) {

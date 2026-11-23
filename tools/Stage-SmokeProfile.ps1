@@ -78,7 +78,7 @@ if ($Profile -eq 'pack-opencl') {
         $configs.Add([pscustomobject]@{path='config\c2me.toml'; sha256=(Get-FileHash -LiteralPath $from -Algorithm SHA256).Hash.ToLowerInvariant()})
     }
 }
-$evidence = Join-Path $project "docs\evidence\$EvidenceStage\runtime"
+$evidence = Join-Path $project "test-output\evidence\$EvidenceStage\runtime"
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 $report = [ordered]@{
     collectedAt=(Get-Date).ToString('o'); source=$source; destination=$root

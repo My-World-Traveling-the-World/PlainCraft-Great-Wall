@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $project = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$out = Join-Path $project 'docs\evidence\s0-01'
+$out = Join-Path $project 'gradle'
 $mods = Join-Path $InstanceDirectory 'mods'
 if (!(Test-Path -LiteralPath $mods -PathType Container)) { throw "Missing mods directory: $mods" }
 [IO.Directory]::CreateDirectory($out) | Out-Null
@@ -85,7 +85,7 @@ $report = [ordered]@{
     wrapperFiles = @($wrappers)
     loomArtifact = Archive-Record $loomJars[0].FullName 'fabric-loom' '1.16.3' 'build'
 }
-$report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $out 'environment.json') -Encoding utf8
+$report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $out 'local-inputs.json') -Encoding utf8
 $records | ForEach-Object { "{0} {1} {2}" -f $_.id, $_.version, $_.sha256 }
 if ($report.missingRequestedModIds.Count -gt 0) {
     Write-Warning "Missing requested ids: $($report.missingRequestedModIds -join ', ')"

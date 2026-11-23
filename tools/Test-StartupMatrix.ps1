@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $project = Split-Path $PSScriptRoot -Parent
-$evidence = Join-Path $project 'docs\evidence\s0-02\matrix'
+$evidence = Join-Path $project 'test-output\evidence\s0-02\matrix'
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 $cases = [Collections.Generic.List[object]]::new()
 if ($DisableRewrite -and ($Profiles.Count -ne 1 -or $Profiles[0] -ne 'tectonic-c2me')) {

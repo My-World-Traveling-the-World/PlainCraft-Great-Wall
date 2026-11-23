@@ -45,11 +45,11 @@ Set-Location -LiteralPath $root
 if ((git status --porcelain).Length -ne 0) { throw 'Freeze and commit the source before starting regression' }
 $Snapshot = (git rev-parse HEAD).Trim()
 $scratch = Join-Path $root "build\curved-gate-shards\$RunId"
-$archive = Join-Path $root "docs\evidence\s1b-curved-gate\$RunId"
+$archive = Join-Path $root "test-output\evidence\s1b-curved-gate\$RunId"
 if ((Test-Path -LiteralPath $scratch) -or (Test-Path -LiteralPath $archive)) { throw 'Never overwrite an existing run' }
 New-Item -ItemType Directory -Path $scratch,$archive | Out-Null
 $zip = Join-Path $scratch 'inputs.zip'
-git archive --format=zip "--output=$zip" $Snapshot src gradle tools build.gradle settings.gradle gradle.properties gradle.lockfile gradlew gradlew.bat docs/evidence/s0-01/environment.json
+git archive --format=zip "--output=$zip" $Snapshot src gradle tools build.gradle settings.gradle gradle.properties gradle.lockfile gradlew gradlew.bat
 if ($LASTEXITCODE -ne 0) { throw 'Unable to snapshot tracked inputs' }
 $specs = @(
     @{name='curved-sites'; classes='CurvedSiteMatrixTests'; combinations=64},
