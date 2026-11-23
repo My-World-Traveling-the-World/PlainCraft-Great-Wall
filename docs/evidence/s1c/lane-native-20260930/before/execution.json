@@ -1,8 +1,0 @@
-{
-  "sourceCommit": "fad944e4a2d331d6bcd397e4215d67f836891eca",
-  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.planning.PlannerSchedulerTest.hundredCallersShareOneCompute --rerun-tasks --no-build-cache --console=plain --no-daemon",
-  "startedUtc": "2026-09-30T13:52:28.6175169Z",
-  "finishedUtc": "2026-09-30T13:52:53.1819543Z",
-  "exitCode": 1,
-  "expected": "RED: old per-job factory count 3 instead of per-lane count 2"
-}

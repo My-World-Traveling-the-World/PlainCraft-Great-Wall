@@ -1,9 +1,0 @@
-{
-  "sourceCommit": "6da64e66ebb3f62ad4d802a370cd170a2183665e",
-  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.planning.PlannerSchedulerTest.samplingFailureIsNotReplacedByGenericClosedInParentPlan --rerun-tasks --no-build-cache --console=plain --no-daemon",
-  "startedUtc": "2026-09-30T17:09:23.0694921Z",
-  "finishedUtc": "2026-09-30T17:09:44.9871886Z",
-  "exitCode": 1,
-  "productionWiring": "OFF",
-  "testSha256": "a86769fc1f47e9ad4850d2488fe6d9fc4e553599a97608ff6047b4cc7efe6eca"
-}

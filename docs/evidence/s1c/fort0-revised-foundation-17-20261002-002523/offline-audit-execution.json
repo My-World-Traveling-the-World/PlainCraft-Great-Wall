@@ -1,9 +1,0 @@
-{
-  "exitCode": 1,
-  "finishedUtc": "2026-10-01T17:23:08.4565520Z",
-  "sourceCommit": "65bea36ad1a8bb5f2c6e06fecffbaf4f480b848a",
-  "toolDirty": true,
-  "scope": "read-only original T0 and cached exact fort frame; no live world, no block writes",
-  "initialLauncherError": "First attempt used a nonexistent project-local bridge, corrected to the existing ASCII Gradle bridge; no analysis was produced then",
-  "encodingCorrection": "Initial successful JSON had a mojibake fixture field; original retained, UTF-8 writer used for this result"
-}

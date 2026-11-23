@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.terrain.GroundExitFallbackTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-02T05:20:18.083Z" hostname="CAIMEO" time="7.853">
-  <properties/>
-  <testcase name="finiteRetreatCanFailAfterAnEarlierValidGroundExit()" classname="local.plaincraft.greatwall.terrain.GroundExitFallbackTest" time="2.777"/>
-  <testcase name="missingFootprintColumnFailsBeforeExitCanBeVotedDown()" classname="local.plaincraft.greatwall.terrain.GroundExitFallbackTest" time="0.613"/>
-  <testcase name="exhaustedCapSearchMustFallBackToTheEarlierGroundExitWithoutFatalGeneration()" classname="local.plaincraft.greatwall.terrain.GroundExitFallbackTest" time="4.461"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

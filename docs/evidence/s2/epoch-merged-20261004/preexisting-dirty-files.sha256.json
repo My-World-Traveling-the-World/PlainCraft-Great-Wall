@@ -1,8 +1,0 @@
-{
-  "common/build.gradle": "fdbeb917ce976332712f548065b575c7c8314d889b12eca93b191b972a5ea180",
-  "common/src/main/java/net/shiroha233/roadweaver/api/RoadNetworkApi.java": "16a0bb1af7bac2e232fa9de47a07207059771705a43da405267a0da965b75fa3",
-  "common/src/main/java/net/shiroha233/roadweaver/planning/RoadPlanningReadinessIndex.java": "e711f737225b8df769cdb3ced4292d58601b3e9537cc47b2611a96af96ef8b5c",
-  "common/src/main/java/net/shiroha233/roadweaver/planning/RoadPlanningService.java": "40b59b3004bc148e003a5714b5c48f44e693c20d3c5124e358ed0acf2e0e33cc",
-  "common/src/main/java/net/shiroha233/roadweaver/runtime/RuntimeLoadPolicy.java": "fd305af2dfeb3c75dabdb5312a7b1d2bc90c26228386f8d33032023ee56f4646",
-  "common/src/test/java/net/shiroha233/roadweaver/runtime/GameplayCoordinatorGateGuardTest.java": "c2af24881d7341ad034b8b2dac841388a5776dcc99f382b5cafaac0e4b241fd1"
-}

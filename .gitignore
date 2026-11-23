@@ -7,10 +7,14 @@ out/
 *.log
 logs/
 
-# Machine-local compile-only inputs (never bundled into the release jar).
-# libs/roadweaver-interop-compile-only.jar provides the RoadWeaver interop ABI
-# for S2; regenerate it from the roadweaver checkout, see gradle/README-local-inputs.md.
+# 本机编译输入，不进入成品。
 libs/
+
+# 不再提交阶段存档、日志和批量结果，只保留现有构建需要的锁定输入。
+/docs/evidence/*
+!/docs/evidence/s0-01/
+/docs/evidence/s0-01/*
+!/docs/evidence/s0-01/environment.json
 
 # Test byproduct. GreatWallConfig.file() falls back to Path.of("config", ...) when
 # FabricLoader.getConfigDir() throws, which is what happens in a bare JUnit JVM. Any

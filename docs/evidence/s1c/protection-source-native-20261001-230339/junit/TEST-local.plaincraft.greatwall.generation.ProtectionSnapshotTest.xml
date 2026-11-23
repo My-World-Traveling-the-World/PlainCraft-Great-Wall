@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.generation.ProtectionSnapshotTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-01T15:03:50.807Z" hostname="CAIMEO" time="0.053">
-  <properties/>
-  <testcase name="orderingAndDuplicateBoxesDoNotChangeHashButTamperingFails()" classname="local.plaincraft.greatwall.generation.ProtectionSnapshotTest" time="0.038"/>
-  <testcase name="immutableHalfOpenProtectionPreservesTallCoordinates()" classname="local.plaincraft.greatwall.generation.ProtectionSnapshotTest" time="0.002"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

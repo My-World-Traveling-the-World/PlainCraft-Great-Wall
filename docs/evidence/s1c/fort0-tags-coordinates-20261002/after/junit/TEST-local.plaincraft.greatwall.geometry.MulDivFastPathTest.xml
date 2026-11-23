@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.geometry.MulDivFastPathTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-02T01:50:02.925Z" hostname="CAIMEO" time="0.223">
-  <properties/>
-  <testcase name="integerFastPathAndWideFallbackMatchIndependentFloorDivision()" classname="local.plaincraft.greatwall.geometry.MulDivFastPathTest" time="0.222"/>
-  <testcase name="invalidDivisorsAreStillRejectedBeforeMultiplication()" classname="local.plaincraft.greatwall.geometry.MulDivFastPathTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

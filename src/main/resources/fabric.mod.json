@@ -3,7 +3,7 @@
   "id": "plaincraft_great_wall",
   "version": "${version}",
   "name": "PlainCraft Great Wall",
-  "description": "Great Wall infrastructure prototype. World generation is not implemented or enabled.",
+  "description": "Generates the Great Wall and its towers, gates and forts in new worlds.",
   "environment": "*",
   "mixins": ["plaincraft_great_wall.mixins.json",
     {"config": "plaincraft_great_wall.client.mixins.json", "environment": "client"}],

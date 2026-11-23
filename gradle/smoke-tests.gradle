@@ -283,7 +283,12 @@ def prepareProductionInputs = { runtimeSource, String gameJarName, File smokeFil
     if (digest.digest().encodeHex().toString() != api.sha256) {
         throw new GradleException('Local Fabric API differs from recorded locked artifact')
     }
-    def artifacts = [apiFile, tasks.named('remapJar').get().archiveFile.get().asFile]
+    // 正式烟测的 mods 目录需要外置前置；开发期 named 包不能用于生产加载。
+    def worldgenApi = new File(project.roadApiRoot, 'api-fabric/build/contract/roadweaver-api-intermediary.jar')
+    if (!worldgenApi.isFile()) {
+        throw new GradleException('缺独立前置的正式烟测包，请先执行 -PapiOnly :api-fabric:contractIntermediaryJar')
+    }
+    def artifacts = [apiFile, worldgenApi, tasks.named('remapJar').get().archiveFile.get().asFile]
     if (smokeFile != null) artifacts.add(smokeFile)
     copy {
         from artifacts

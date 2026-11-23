@@ -1,7 +1,0 @@
-{
-  "sourceCommit": "6026605204cfc73f5219c13918e6402b34cd5b76",
-  "scope": "final compiled OracleLane/CpuTerrainOracle/PlannerScheduler method refs",
-  "forbiddenMethodReferenceHits": 0,
-  "productionWorldgenSentinel": "NOT_RUN",
-  "notes": "Supplier.get and Map.get allowed; native init explicit dedicated lanes; test-only diagnostic Future.get occurs only off-server/worldgen"
-}

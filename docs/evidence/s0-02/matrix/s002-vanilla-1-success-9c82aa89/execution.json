@@ -1,9 +1,0 @@
-{
-  "id": "s002-vanilla-1-success-9c82aa89",
-  "timedOut": false,
-  "exitCode": 0,
-  "expectedFailure": false,
-  "cancelSent": false,
-  "seconds": 28.7600481,
-  "command": "gradlew.bat --offline runServerSmoke -PsmokeProfile=vanilla -PsmokeRunId=s002-vanilla-1-success-9c82aa89 -Ps0Probe=true -Ps0DelayMs=1 -Ps0Outcome=SUCCESS -Ps0Reload=changed -Ps0ExpectedFailure=false --dependency-verification=strict --no-daemon --console=plain"
-}

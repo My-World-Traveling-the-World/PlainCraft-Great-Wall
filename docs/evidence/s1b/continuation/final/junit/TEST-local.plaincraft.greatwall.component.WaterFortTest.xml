@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.component.WaterFortTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-29T07:58:13.621Z" hostname="CAIMEO" time="0.338">
-  <properties/>
-  <testcase name="fortStays48AndHasNoGameplayEntities()" classname="local.plaincraft.greatwall.component.WaterFortTest" time="0.225"/>
-  <testcase name="width49Crosses50And51AreRejectedWithoutWaterRise()" classname="local.plaincraft.greatwall.component.WaterFortTest" time="0.113"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

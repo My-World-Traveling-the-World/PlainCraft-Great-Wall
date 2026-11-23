@@ -10,10 +10,10 @@
 
 **Minecraft 1.21.1、Fabric Loader 0.19.3 或以上、Java 21 或以上、Fabric API 0.116.14+1.21.1 或以上，以及 RoadWeaver API 1.x。**
 
-只想玩长城时，在上述基础依赖之外安装长城和独立的 **RoadWeaver API**，无需安装道路或河流模组。如果已经安装 [RoadWeaver 重制版](https://github.com/My-World-Traveling-the-World/Roadweaver-Remastered)成品，API 已随道路提供，无需重复安装。需要游戏内配置界面时，再安装 **Mod Menu 和 Cloth Config API**。
+只想玩长城时，安装长城和[**独立 RoadWeaver API**](https://github.com/My-World-Traveling-the-World/Roadweaver-Remastered/releases/tag/api-v1.1.1)，无需安装道路或河流模组。三者合装时前置只放一份。需要游戏内配置界面时，再安装 **Mod Menu 和 Cloth Config API**。
 
 ## 一起安装有什么变化
 
-兼容版本的 StreamsReflowing 会先准备河流，长城随后开始自己的开局预热。合装 RoadWeaver 时，长城发布墙体保护范围，道路随后规划并在铺设时避让受保护的墙体。三个模组都装时，开局顺序是 **河流 → 长城 → 道路**。
+兼容版本的 StreamsReflowing 会先准备河流，长城随后开始自己的开局预热。合装 [RoadWeaver 重制版](https://github.com/My-World-Traveling-the-World/Roadweaver-Remastered)时，长城发布墙体保护范围，道路随后规划并在铺设时避让受保护的墙体。三个模组都装时，开局顺序是 **河流 → 长城 → 道路**。
 
 [开发文档](docs/DEVELOPMENT.md) · [模板生成说明](docs/正式模板生成.md)

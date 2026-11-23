@@ -1,9 +1,0 @@
-{
-  "sourceCommit": "b440e33649c7c6598b7bded395f03f7b0f8ae1ae",
-  "command": "gradlew.bat --offline --dependency-verification=strict test --tests local.plaincraft.greatwall.smoke.SeedSurveyLocationsTest compileServerSmokeJava --rerun-tasks --no-build-cache --console=plain --no-daemon",
-  "startedUtc": "2026-10-01T01:26:17.3479843Z",
-  "finishedUtc": "2026-10-01T01:26:44.1673850Z",
-  "exitCode": 0,
-  "productionWiring": "OFF",
-  "scope": "test-only diagnostic compilation and coordinate unit tests, not seed outcomes"
-}

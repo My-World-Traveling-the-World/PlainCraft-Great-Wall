@@ -1,3 +1,0 @@
-[08:55:17] [main/INFO]: [STDERR]: java.lang.IllegalStateException: baseline failed to reproduce archived original facts: {PROTECTED=343, SUPPORTED=3257}
-[08:55:17] [main/INFO]: [STDERR]: 	at PolicyPreflight.main(PolicyPreflight.java:186)
-Exception in thread "main" 

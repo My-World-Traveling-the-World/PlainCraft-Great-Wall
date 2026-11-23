@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.planning.PrefixSummaryIndexTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-03T22:45:07.153Z" hostname="CAIMEO" time="0.011">
-  <properties/>
-  <testcase name="callerCancellationAndCloseAreIsolated()" classname="local.plaincraft.greatwall.planning.PrefixSummaryIndexTest" time="0.003"/>
-  <testcase name="earliestOceanWinsAllOrders()" classname="local.plaincraft.greatwall.planning.PrefixSummaryIndexTest" time="0.004"/>
-  <testcase name="coldPrefixDoesNotClaimConstantTime()" classname="local.plaincraft.greatwall.planning.PrefixSummaryIndexTest" time="0.003"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

@@ -1,9 +1,0 @@
-{
-  "verifiedUtc": "2026-10-01T18:18:50.0543874Z",
-  "originalFiles": 239,
-  "originalVsArchivedSHA256": "all match",
-  "archivedVsGitIndexBlobSHA1": "all match",
-  "totalOriginalBytes": 2533000,
-  "scope": "239 original isolated fixture files; no live world, no test acceptance",
-  "note": "Git emitted Windows long-path warnings during traversal. Every intended original file is nevertheless indexed, and all indexed blobs match byte-for-byte."
-}

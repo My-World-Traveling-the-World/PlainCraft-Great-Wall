@@ -1,9 +1,0 @@
-{
-  "sourceCommit": "37ca4febfe1e25c9488d031d19bad508c75feb43",
-  "exitCode": 0,
-  "finishedUtc": "2026-10-01T07:20:41.2804449Z",
-  "tests": 343,
-  "failed": 0,
-  "production": "OFF",
-  "command": "gradlew.bat --offline --dependency-verification=strict test --no-daemon"
-}

@@ -1,9 +1,0 @@
-{
-  "kind": "FOLLOWUP_CORRECTION_NOT_ORIGINAL_PROCESS_LOG",
-  "originalExecutionRecord": "execution.json",
-  "javaExitCode": 0,
-  "wrapperExitCode": 1,
-  "failure": "Copy-Item failed because Java stdout encoding corrupted the non-ASCII region path.",
-  "evidenceSource": "Same-conversation terminal execution result a1f618; not a newly executed run.",
-  "scope": "The original execution.json was written before archiving. Its completed status does not certify the whole wrapper. Original JSON and output remain unchanged."
-}

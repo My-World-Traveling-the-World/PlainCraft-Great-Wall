@@ -1,3 +1,0 @@
-regression-20260930-gate-v2/** -text whitespace=cr-at-eol
-final-build-20260930/** -text whitespace=cr-at-eol
-*.log -text -whitespace

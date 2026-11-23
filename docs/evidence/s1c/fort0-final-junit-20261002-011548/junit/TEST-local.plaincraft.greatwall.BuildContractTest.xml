@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.BuildContractTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T17:16:02.307Z" hostname="CAIMEO" time="0.047">
-  <properties/>
-  <testcase name="commonMetadataSeparatesClientEntrypoint()" classname="local.plaincraft.greatwall.BuildContractTest" time="0.031"/>
-  <testcase name="combinedModPackSupportsBothMinecraftPackFormats()" classname="local.plaincraft.greatwall.BuildContractTest" time="0.001"/>
-  <testcase name="javaAndMinecraftTargetAreFrozen()" classname="local.plaincraft.greatwall.BuildContractTest" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

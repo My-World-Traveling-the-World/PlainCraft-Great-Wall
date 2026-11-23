@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.persistence.ProductionEvidenceTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-30T12:07:59.925Z" hostname="CAIMEO" time="0.029">
-  <properties/>
-  <testcase name="coverageIsDurableIdempotentAndCorruptionDoesNotReset()" classname="local.plaincraft.greatwall.persistence.ProductionEvidenceTest" time="0.019"/>
-  <testcase name="proofKeepsRevisionAndCannotBeReplaced()" classname="local.plaincraft.greatwall.persistence.ProductionEvidenceTest" time="0.01"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.component.WallDecayTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-29T07:58:12.350Z" hostname="CAIMEO" time="0.133">
-  <properties/>
-  <testcase name="oneCellRendersLowRuinsWithoutKeepingTheirSkyWalkway()" classname="local.plaincraft.greatwall.component.WallDecayTest" time="0.068"/>
-  <testcase name="finalPartialCellDoesNotDemandNonexistentFutureStations()" classname="local.plaincraft.greatwall.component.WallDecayTest" time="0.064"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

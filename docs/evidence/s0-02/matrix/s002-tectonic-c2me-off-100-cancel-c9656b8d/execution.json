@@ -1,9 +1,0 @@
-{
-  "id": "s002-tectonic-c2me-off-100-cancel-c9656b8d",
-  "timedOut": false,
-  "exitCode": 0,
-  "expectedFailure": true,
-  "cancelSent": false,
-  "seconds": 34.3708506,
-  "command": "gradlew.bat --offline runServerSmoke -PsmokeProfile=tectonic-c2me -PsmokeRunId=s002-tectonic-c2me-off-100-cancel-c9656b8d -Ps0Probe=true -Ps0DelayMs=100 -Ps0Outcome=CANCEL -Ps0Reload=none -Ps0ExpectedFailure=true -Ps0Entries=false -Ps0DisableRewrite=true --dependency-verification=strict --no-daemon --console=plain"
-}

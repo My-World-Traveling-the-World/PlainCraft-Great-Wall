@@ -11,34 +11,20 @@ repositories {
     maven { url = 'https://maven.fabricmc.net/' }
 }
 
+// 开发端用 Mojang named，正式服烟测改用同一项目的重映射前置；两者都不进长城成品。
+ext.roadApiRoot = rootProject.file(providers.gradleProperty('roadweaverApiProjectDir').orElse('../roadweaver-next').get())
+
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    // RoadWeaver interop is gone, and so is its compile-only ABI jar.
-    //
-    // The five compat/road classes that imported net.shiroha233.roadweaver.api.interop were compiled
-    // against libs/roadweaver-interop-compile-only.jar - a 6.3 MB copy of RoadWeaver 0.8.405 - while every
-    // shipped RoadWeaver since 0.8.406 contains no api/interop classes at all. Nothing instantiated them
-    // (WallObstacleProvider.bind had no callers), but the tests ran against that same ghost jar as
-    // testRuntimeOnly, so the suite stayed green while the contract was already dead: enabling the bridge
-    // would have thrown NoClassDefFoundError at class-link time. Both sides were removed rather than
-    // documented, because a compile-only jar that no longer matches any deployed peer is a trap, not a
-    // dependency.
-
-    // RoadWeaver 对外契约（标准 API）。compileOnly：运行期由独立部署的
-    // roadweaver_api mod 提供。**注意 roadweaver_api ≠ roadweaver**：
-    // 契约模块永远在，道路本体仍是可选 peer —— 没有道路时本 mod 照常加载，
-    // 只是注册进去的回调永远不会被触发（与原来 @Pseudo 的语义一致）。
-    // 用同一 checkout 的契约编译和运行，避免测试读到旧仓的 API 而漏掉新接线。
-    def roadApiRoot = rootProject.file(providers.gradleProperty('roadweaverApiProjectDir')
-            .orElse('../roadweaver-next').get())
+    // 长城单独安装也能生成；道路仍只是可选协作者。
     def roadApiContract = new File(roadApiRoot, 'api/build/contract/roadweaver-api-contract-named.jar')
     def roadApiDevMod = new File(roadApiRoot, 'api-fabric/build/contract/roadweaver-api-fabric-devmod.jar')
     if (!roadApiContract.isFile() || !roadApiDevMod.isFile()) {
-        throw new GradleException('缺道路重制版 API，请先执行 :api:contractJar :api-fabric:devModJar')
+        throw new GradleException('缺独立 RoadWeaver API，请先执行 -PapiOnly :api:contractJar :api-fabric:devModJar')
     }
     compileOnly files(roadApiContract)
     // 状态契约由河流成品自己提供；长城只编译和测试，绝不重复打包可选API。

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.terrain.RealizationPlannerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-29T07:59:10.183Z" hostname="CAIMEO" time="7.583">
-  <properties/>
-  <testcase name="partialTerminalCellKeepsOneNearSideCapAndOriginalReason()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="3.48"/>
-  <testcase name="orderIndependentCellKeepsStationContractImmutable()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="2.032"/>
-  <testcase name="frozenGateRevisionChangesCellHashWithoutChangingGeometry()" classname="local.plaincraft.greatwall.terrain.RealizationPlannerTest" time="2.071"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

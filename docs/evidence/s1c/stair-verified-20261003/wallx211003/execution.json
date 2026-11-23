@@ -1,8 +1,0 @@
-{
-  "sourceCommit": "b8de7d4a807fd8b9c054381a2751a608e542075b",
-  "runId": "wallx211003",
-  "command": "runServerSmoke --dependency-verification=strict -PsmokeProfile=vanilla -PsmokeRunId=wallx211003 -Ps1cRealWall=true -Ps1cSeed=17 -Ps1cRepresentativeBlocks=100 --no-daemon --console=plain",
-  "started": "2026-10-03T21:10:04.0924253+08:00",
-  "finished": "2026-10-03T21:50:15.9599776+08:00",
-  "exitCode": 1
-}

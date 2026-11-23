@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.diagnostics.AllocationBudgetTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-07T21:57:19.372Z" hostname="CAIMEO" time="0.003">
-  <properties/>
-  <testcase name="refusesBeforeCallingProducerAndNeverChangesUsageOnRejection()" classname="local.plaincraft.greatwall.diagnostics.AllocationBudgetTest" time="0.002"/>
-  <testcase name="ownerCloseRejectsLateProducersAndLatePinCloseIsIdempotent()" classname="local.plaincraft.greatwall.diagnostics.AllocationBudgetTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

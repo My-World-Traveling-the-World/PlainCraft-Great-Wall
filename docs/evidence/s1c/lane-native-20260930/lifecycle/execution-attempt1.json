@@ -1,7 +1,0 @@
-{
-  "sourceCommit": "fad944e4a2d331d6bcd397e4215d67f836891eca",
-  "startedUtc": "2026-09-30T13:56:11.9868369Z",
-  "finishedUtc": "2026-09-30T13:56:35.9543241Z",
-  "exitCode": 0,
-  "scope": "OracleLaneTest + PlannerSchedulerTest; dirty source recorded in following commit"
-}

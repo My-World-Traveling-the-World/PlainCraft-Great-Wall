@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.terrain.GroundExitEvidenceTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-29T10:06:34.109Z" hostname="CAIMEO" time="0.147">
-  <properties/>
-  <testcase name="ownerWithoutExitBindingCannotReplayProduction()" classname="local.plaincraft.greatwall.terrain.GroundExitEvidenceTest" time="0.017"/>
-  <testcase name="missingOrCorruptDecisionNeverSilentlyRebuildsOwnerProof()" classname="local.plaincraft.greatwall.terrain.GroundExitEvidenceTest" time="0.067"/>
-  <testcase name="durableCertificateAndOwnerBindingSurviveColdReopen()" classname="local.plaincraft.greatwall.terrain.GroundExitEvidenceTest" time="0.063"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

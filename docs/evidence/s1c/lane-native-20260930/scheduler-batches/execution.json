@@ -1,7 +1,0 @@
-{
-  "sourceCommit": "cd5a354678b6f3587d0f61f19cb794a1cd34fed3",
-  "command": "gradlew.bat --offline --dependency-verification=strict test assemble compileServerSmokeJava runGameTest -PgreatwallGameTestClasses=OracleGameTests,NoiseBridgeGameTests --rerun-tasks --no-build-cache --console=plain --no-daemon",
-  "startedUtc": "2026-09-30T14:13:46.8770771Z",
-  "finishedUtc": "2026-09-30T14:15:51.1110962Z",
-  "exitCode": 0
-}

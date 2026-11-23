@@ -1,7 +1,0 @@
-{
-  "command": ".\\gradlew.bat --offline --dependency-verification=strict test --no-daemon --console=plain --info --stacktrace",
-  "started": "2026-10-03T20:33:04.2356788+08:00",
-  "finished": "2026-10-03T20:33:15.6999688+08:00",
-  "exitCode": 1,
-  "scope": "Offline diagnostic only"
-}

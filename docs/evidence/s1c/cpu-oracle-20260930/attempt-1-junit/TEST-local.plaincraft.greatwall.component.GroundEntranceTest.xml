@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.component.GroundEntranceTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-30T11:53:50.709Z" hostname="CAIMEO" time="3.871">
-  <properties/>
-  <testcase name="fortCourtyardAndBothInternalRampsMeetNaturalGround()" classname="local.plaincraft.greatwall.component.GroundEntranceTest" time="3.607"/>
-  <testcase name="nominalGroundFormulaIsNotAnExitWhenFoundationDropIsNonzero()" classname="local.plaincraft.greatwall.component.GroundEntranceTest" time="0.0"/>
-  <testcase name="enemyTowerHasARealGroundExitForEverySupportedFoundationDrop()" classname="local.plaincraft.greatwall.component.GroundEntranceTest" time="0.263"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

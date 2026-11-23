@@ -7,7 +7,6 @@ import com.google.gson.JsonParser;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.regex.Pattern;
 import local.plaincraft.greatwall.geometry.Projection;
 import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.model.WallTypes.*;
@@ -17,7 +16,8 @@ import org.junit.jupiter.api.Test;
 /** Read-only reconstruction of the archived request domain, not a world rerun. */
 class ArchivedOwnerCoverageTest {
     @Test void archivedRequestsAreComparedWithActualDurableCaptureOwners() throws Exception {
-        var root=Path.of("docs/evidence/s1c/entrance-ab-20261002/entrance-ab17-final-20261002-134025");
+        // 固定归档计划和日志中真实捕获的所有者；回归不需要整套测试存档和原始日志。
+        var root=Path.of("src/test/fixtures/archived-owner-coverage");
         var world=root.resolve("world/greatwall");
         var payload=JsonParser.parseString(Files.readString(world.resolve("manifest/world.json")))
                 .getAsJsonObject().getAsJsonObject("payload");
@@ -44,12 +44,10 @@ class ArchivedOwnerCoverageTest {
                     ordered.add(new ChunkKey(recipe.dimension(),x,z));
         }
         var captured=new HashSet<ChunkKey>();
-        var pattern=Pattern.compile("metadataSource=\\w+ owner=ChunkKey\\[dimension=([^,]+), x=(-?\\d+), z=(-?\\d+)\\]");
-        try(var lines=Files.lines(root.resolve("run.log"))) {
+        try(var lines=Files.lines(root.resolve("owners.csv"))) {
             lines.forEach(line->{
-                var matcher=pattern.matcher(line);
-                if(matcher.find())captured.add(new ChunkKey(matcher.group(1),
-                        Integer.parseInt(matcher.group(2)),Integer.parseInt(matcher.group(3))));
+                var fields=line.split(",",-1);
+                captured.add(new ChunkKey(fields[0], Integer.parseInt(fields[1]), Integer.parseInt(fields[2])));
             });
         }
         var coverage=new CoveragePlanner();

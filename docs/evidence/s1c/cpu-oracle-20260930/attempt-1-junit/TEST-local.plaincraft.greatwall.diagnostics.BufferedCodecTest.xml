@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="local.plaincraft.greatwall.diagnostics.BufferedCodecTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-30T11:54:01.836Z" hostname="CAIMEO" time="0.01">
-  <properties/>
-  <testcase name="byteLengthShaCrcAndTargetMatchAnIndependentUnbufferedReference()" classname="local.plaincraft.greatwall.diagnostics.BufferedCodecTest" time="0.008"/>
-  <testcase name="exhaustedBudgetRejectsTheFixedBufferBeforeCallingTheProducer()" classname="local.plaincraft.greatwall.diagnostics.BufferedCodecTest" time="0.001"/>
-  <testcase name="countingPassDoesNotAllocateAHarmlessButUnneededHashBuffer()" classname="local.plaincraft.greatwall.diagnostics.BufferedCodecTest" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
