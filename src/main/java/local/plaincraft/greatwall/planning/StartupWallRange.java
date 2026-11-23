@@ -10,12 +10,13 @@ public record StartupWallRange(long requestedSegments, long segments, long confi
         long structureScanBlocks) {
 
     static StartupWallRange resolve(long wallLength, int unlimitedPrewarmBlocks, LongPredicate safeSegment) {
-        long configured = GreatWallConfig.segmentsFor(wallLength);
-        long requested = GreatWallConfig.startupSegments(wallLength, unlimitedPrewarmBlocks);
+        long length = GreatWallConfig.clampWallLengthBlocks(wallLength);
+        long configured = GreatWallConfig.segmentsFor(length);
+        long requested = configured != 0 ? configured : GreatWallConfig.segmentsFor(unlimitedPrewarmBlocks);
         long segments = safePrefix(requested, safeSegment);
-        // 有限墙原来还为后续游戏内段扫描结构，保留这个能力；无限墙只索引开局窗口。
+        // 有限墙完整规划，避让与采样共用一次安全边界查找，不为超过设置的范围多扫。
         long scanBlocks = configured == 0 ? segments * GreatWallConfig.SEGMENT_BLOCKS
-                : Math.min(wallLength, safePrefix(configured, safeSegment) * GreatWallConfig.SEGMENT_BLOCKS);
+                : Math.min(length, segments * GreatWallConfig.SEGMENT_BLOCKS);
         return new StartupWallRange(requested, segments, configured, scanBlocks);
     }
 

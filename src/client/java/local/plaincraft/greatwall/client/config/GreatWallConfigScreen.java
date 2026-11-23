@@ -47,7 +47,8 @@ public final class GreatWallConfigScreen {
                         conf.wallLengthBlocks())
                 .setDefaultValue(def.wallLengthBlocks())
                 .setTooltip(Component.translatable("option.plaincraft_great_wall.wallLength.tooltip"))
-                .setMin(0L)
+                // 界面和服务端读取 JSON 限制相同；保留 0 的独立无限模式。
+                .setMin(0L).setMax(GreatWallConfig.MAX_WALL_LENGTH_BLOCKS)
                 .setSaveConsumer(v -> GreatWallConfig.get().setWallLengthBlocks(v))
                 .build());
         // 无限墙只指定开局窗口，不改变墙的终点或已存档的配方。

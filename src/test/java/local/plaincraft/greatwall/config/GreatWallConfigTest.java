@@ -171,6 +171,32 @@ class GreatWallConfigTest {
         assertConfigured(target);
     }
 
+    @Test void finiteLengthStaysEditableAndManualJsonUsesTheSameCap() throws IOException {
+        var config = new GreatWallConfig();
+        config.setWallLengthBlocks(12_345L);
+        assertEquals(12_345L, config.semantic().wallLengthBlocks());
+        config.setWallLengthBlocks(100_001L);
+        assertEquals(100_000L, config.semantic().wallLengthBlocks());
+        assertEquals(49L, config.prewarmSegmentsTarget());
+        config.setWallLengthBlocks(0L);
+        assertFalse(config.bounded(), "以前的无限模式仍有独立的预热配置");
+
+        // 用真实配置读取入口，防止菜单限制了上限但手改文件能绕开。
+        Path path = GreatWallConfig.file();
+        byte[] original = Files.isRegularFile(path) ? Files.readAllBytes(path) : null;
+        try {
+            Files.createDirectories(path.getParent());
+            Files.writeString(path, "{\"wallLengthBlocks\":900000}");
+            GreatWallConfig.reload();
+            assertEquals(100_000L, GreatWallConfig.get().wallLengthBlocks());
+            assertEquals(49L, GreatWallConfig.get().prewarmSegmentsTarget());
+        } finally {
+            if (original == null) Files.deleteIfExists(path);
+            else Files.write(path, original);
+            GreatWallConfig.reload();
+        }
+    }
+
     @Test void savedKnobsSurviveAReload() throws IOException {
         Path path = GreatWallConfig.file();
         byte[] original = Files.isRegularFile(path) ? Files.readAllBytes(path) : null;

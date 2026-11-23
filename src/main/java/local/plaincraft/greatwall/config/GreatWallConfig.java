@@ -43,8 +43,8 @@ public final class GreatWallConfig {
     /** Segments are 2048 blocks; the value is repeated here so the UI can label lengths without a recipe. */
     public static final int SEGMENT_BLOCKS = 2048;
     /** 当前启动编译仍需保留整窗证据。超长有限墙继续由后台推进，直到支持跨窗口取证。 */
-    public static final long FULL_PREWARM_MAX_LENGTH = 100_000L;
-    public static final int MAX_UNLIMITED_PREWARM_BLOCKS = (int) FULL_PREWARM_MAX_LENGTH;
+    public static final long MAX_WALL_LENGTH_BLOCKS = 100_000L;
+    public static final int MAX_UNLIMITED_PREWARM_BLOCKS = (int) MAX_WALL_LENGTH_BLOCKS;
     private static final String FILE_NAME = "greatwall.json";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static volatile GreatWallConfig instance;
@@ -347,7 +347,12 @@ public final class GreatWallConfig {
     public void setObstacleMarginBlocks(int v) { this.obstacleMarginBlocks = v; }
 
     public void setWallLengthBlocks(long value) {
-        this.wallLengthBlocks = Math.max(0L, value);
+        this.wallLengthBlocks = clampWallLengthBlocks(value);
+    }
+
+    public static long clampWallLengthBlocks(long blocks) {
+        // 界面与手改 JSON 的有限长度共用一个上限；0 仍是既有无限模式标记。
+        return Math.clamp(blocks, UNLIMITED_LENGTH, MAX_WALL_LENGTH_BLOCKS);
     }
 
     public int unlimitedPrewarmBlocks() { return unlimitedPrewarmBlocks; }
@@ -387,8 +392,7 @@ public final class GreatWallConfig {
 
     public static long startupSegments(long wallLengthBlocks, int unlimitedPrewarmBlocks) {
         if (wallLengthBlocks <= 0) return segmentsFor(unlimitedPrewarmBlocks);
-        return wallLengthBlocks <= FULL_PREWARM_MAX_LENGTH
-                ? segmentsFor(wallLengthBlocks) : DEFAULT_PREWARM_SEGMENTS;
+        return segmentsFor(clampWallLengthBlocks(wallLengthBlocks));
     }
 
     public GreatWallConfig copy() {

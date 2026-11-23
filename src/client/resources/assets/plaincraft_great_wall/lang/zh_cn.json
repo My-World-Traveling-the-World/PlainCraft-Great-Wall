@@ -14,7 +14,7 @@
   "text.plaincraft_great_wall.configButton": "长城配置",
   "config.plaincraft_great_wall.category.length": "长度",
   "config.plaincraft_great_wall.category.ridge": "山脊规划",
-  "option.plaincraft_great_wall.wallLength.tooltip": "长城长度（格）。0 表示无限，一直延伸到世界边界。",
+  "option.plaincraft_great_wall.wallLength.tooltip": "指定长度为 1～100,000 格；0 使用独立的无限模式。",
   "config.plaincraft_great_wall.ridge_weight": "刀锋山脊权重",
   "config.plaincraft_great_wall.ridge_weight.tooltip": "中心相对两侧凸起（ridge）的权重。正值奖励凸起，负值惩罚凸起。",
   "config.plaincraft_great_wall.ridge_prominence_weight": "突出度权重",

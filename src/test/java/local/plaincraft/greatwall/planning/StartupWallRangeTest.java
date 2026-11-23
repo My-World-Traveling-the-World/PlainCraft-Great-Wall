@@ -20,12 +20,14 @@ class StartupWallRangeTest {
         assertFalse(StartupWallRange.segmentFits(recipe, 0, 2));
     }
 
-    @Test void finiteLengthOverridesUnlimitedSettingAndKeepsLongWallFallback() {
+    @Test void finiteLengthPlansItsFullConfiguredRangeAtAndBelowTheCap() {
+        var regular = StartupWallRange.resolve(8190, 1, i -> i < 100);
+        assertEquals(new StartupWallRange(4, 4, 4, 8190), regular);
         var full = StartupWallRange.resolve(100_000, 1, i -> i < 100);
         assertEquals(new StartupWallRange(49, 49, 49, 100_000), full);
         var longWall = StartupWallRange.resolve(100_001, 1, i -> i < 100);
-        // 跨窗编译接通以前仍索引超长有限墙，但不同时钉住所有计划。
-        assertEquals(new StartupWallRange(4, 4, 49, 100_001), longWall);
+        // 即使绕过配置调用，开局范围也不能回到旧的四段降档。
+        assertEquals(full, longWall);
     }
 
     @Test void hugeLengthDoesNotOverflowAndEmptyEnvelopeDoesNotStart() {

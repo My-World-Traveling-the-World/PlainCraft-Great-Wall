@@ -14,7 +14,7 @@
   "text.plaincraft_great_wall.configButton": "Great Wall config",
   "config.plaincraft_great_wall.category.length": "Length",
   "config.plaincraft_great_wall.category.ridge": "Ridge Planning",
-  "option.plaincraft_great_wall.wallLength.tooltip": "Wall length in blocks. 0 means unlimited, running to the world border.",
+  "option.plaincraft_great_wall.wallLength.tooltip": "Set a length of 1 to 100,000 blocks. Use 0 for the separate unlimited mode.",
   "config.plaincraft_great_wall.ridge_weight": "Knife-Ridge Weight",
   "config.plaincraft_great_wall.ridge_weight.tooltip": "Weight of the centre's lift over its two side samples (ridge). Positive rewards a convex crest, negative penalises it.",
   "config.plaincraft_great_wall.ridge_prominence_weight": "Prominence Weight",
