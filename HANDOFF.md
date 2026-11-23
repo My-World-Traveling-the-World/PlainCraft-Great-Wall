@@ -28,3 +28,11 @@
 4. **负控**：把每 tick 体素上限由 512 改成 2048，`tickSlicesCapWorkAndOnlyPublishAfterAFullPaint` 因第一批超过 512 失败；原文已恢复并重新跑全量验证。
 5. **下一步**：同种子分别记录总补建时间与慢 tick，带上 `-Dgreatwall.backfillTimings=on` 的 `WALL_BACKFILL_SLICE`；检查跨 tick 卸载、重进、门洞、容器及道路保护范围。
 6. **历史与回退**：基线 `3db30ae2`，本次提交可单独回退，不修改模板或存档格式。[清理前开发记录](https://github.com/My-World-Traveling-the-World/PlainCraft-Great-Wall/tree/f26341ee71fa1dfe460ad0af4976137952afa0a3)。
+## 2026-11-24 · 施工结案减负
+
+1. **改动**：新区块首次施工和游戏内补建仅记录已满足的实体坐标，普通墙砖不再进入哈希集合或结案快照。仍逐格落块，保持完成章和实体执行顺序。
+2. **验证**：1028 项单测，零跳过、失败和错误；群系组 3 项 GameTest、remapJar 和 interopJar 通过。
+3. **未验证**：未在整合包测分配量、垃圾回收和慢 tick；未运行其余 GameTest 分组。
+4. **负控**：临时恢复记录普通墙砖，实体专用集合断言报错；原文件按字节恢复后重验全量单测与构建。
+5. **下一步**：同种子记录无实体墙段与楼体补建的单 tick 和总耗时，再判断下一瓶颈是否为光照更新或区块调度。
+6. **历史与回退**：基线 f22f6d02；无需重建已有墙体或迁移数据。

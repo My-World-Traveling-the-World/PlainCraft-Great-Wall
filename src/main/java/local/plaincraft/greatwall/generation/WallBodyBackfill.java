@@ -800,6 +800,8 @@ public final class WallBodyBackfill {
                     throw new IllegalStateException("长城方块回读不一致: "+p);
                 }
             }
+            // 跨 tick 只保留需复核的实体坐标；普通墙体仍逐格校验写入结果。
+            public boolean trackOnlyEntityPositions() { return true; }
             public void finish(java.util.Set<Point3i> satisfied,boolean complete) {
                 // 跨 tick 时实体位置可能已变；重试该块，不能把模板数据装到别的方块上。
                 WallPlanSupport.requireCurrentEntityBlocks(chunk, plan, satisfied);

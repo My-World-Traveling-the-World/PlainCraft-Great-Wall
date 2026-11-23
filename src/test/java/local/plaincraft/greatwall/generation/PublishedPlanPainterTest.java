@@ -111,6 +111,28 @@ class PublishedPlanPainterTest {
         assertThrows(IllegalStateException.class,cursor::result);
     }
 
+    @Test void entityOnlySettlementTracksMatchedEntityButNeverOrdinaryOrFailedVoxels() {
+        var original = plan();
+        var entityPos = original.voxels().getFirst().pos();
+        var entity = new BlockEntityIntent(entityPos, "minecraft:chest", ID, 0, Map.of());
+        var withEntity = new ChunkWritePlan(original.owner(), original.recipeHash(), original.inputHash(),
+                original.voxels(), original.proofs(), List.of(entity), original.postprocess(), original.fluidTicks(),
+                original.walkwayFeet(), original.metadata(), original.hash());
+        for (boolean reject : List.of(false, true)) {
+            var world = new Fake();
+            world.onlyEntities = true;
+            // 已正确的实体底块也要结案；普通墙砖成功写入后不进入结案集合。
+            if (reject) world.rejectX = entityPos.x(); else world.blocks.put(entityPos, "minecraft:stone");
+            var cursor = new PublishedPlanCursor<>(withEntity, world);
+            assertFalse(cursor.advance(1, () -> false));
+            assertTrue(world.seals.isEmpty());
+            assertTrue(cursor.advance(1, () -> false));
+            assertEquals(1, cursor.result().written());
+            assertEquals(!reject, cursor.result().complete());
+            assertEquals(reject ? Set.of() : Set.of(entityPos), world.satisfied);
+        }
+    }
+
     @Test void failuresRemainAcrossSlicesAndStillFinishOnlyOnce() {
         var world=new Fake();world.rejectX=0;
         var cursor=new PublishedPlanCursor<>(plan(),world);
@@ -194,7 +216,8 @@ class PublishedPlanPainterTest {
         final List<String> events=new ArrayList<>(),failures=new ArrayList<>();
         final List<Boolean> seals=new ArrayList<>();
         Set<Point3i> satisfied=Set.of();int resolves,reads,rejectX=-99;
-        boolean metadataFailure,resolveFailure,validHeight=true;
+        boolean metadataFailure,resolveFailure,onlyEntities,validHeight=true;
+        public boolean trackOnlyEntityPositions(){return onlyEntities;}
         public boolean validHeight(int y){return validHeight;}
         public String resolve(BlockSpec spec){resolves++;if(resolveFailure)throw new IllegalArgumentException("missing block");return spec.id();}
         public String read(Point3i p){reads++;return blocks.getOrDefault(p,"minecraft:air");}

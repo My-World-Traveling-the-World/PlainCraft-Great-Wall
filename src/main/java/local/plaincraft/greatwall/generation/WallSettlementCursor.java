@@ -89,6 +89,8 @@ final class WallSettlementCursor<S> {
             public S read(Point3i p) { return world.read(p); }
             public boolean write(Point3i p, S state) { return world.write(p, state); }
             public void written(Point3i p, S state, int count) { world.written(p, state, count); }
+            // 暂停封装只延迟结案，保留正式施工所需的坐标范围。
+            public boolean trackOnlyEntityPositions() { return world.trackOnlyEntityPositions(); }
             public void failure(Point3i p, RuntimeException failure) { world.failure(p, failure); }
             public void finish(Set<Point3i> points, boolean success) {
                 // 只暂存真实满足集合；取消/换代不能把实体或完成章写入旧计划。

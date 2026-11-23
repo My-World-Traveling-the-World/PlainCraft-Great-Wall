@@ -16,12 +16,21 @@ final class PublishedPlanCursor<S> {
     private final Thread owner=Thread.currentThread();
     private final HashMap<BlockSpec,S> palette=new HashMap<>();
     private final HashSet<Point3i> satisfied=new HashSet<>();
+    private final Set<Point3i> trackedPositions;
     private State state=State.NEW;
     private int next,written,failed;
 
     PublishedPlanCursor(ChunkWritePlan plan,PublishedPlanPainter.World<S> world) {
         this.plan=Objects.requireNonNull(plan);
         this.world=Objects.requireNonNull(world);
+        // 普通墙段没有实体，不为成千上万的地基和墙砖分配集合节点。
+        if (world.trackOnlyEntityPositions()) {
+            var positions = new HashSet<Point3i>();
+            for (var entity : plan.blockEntities()) positions.add(entity.pos());
+            trackedPositions = positions.isEmpty() ? Set.of() : positions;
+        } else {
+            trackedPositions = null;
+        }
     }
 
     State state() { return state; }
@@ -77,7 +86,7 @@ final class PublishedPlanCursor<S> {
                 world.written(p,target,written);
             }
             // 相同状态仍需实体payload补齐，不能只收集实际写过的点。
-            satisfied.add(p);
+            if (trackedPositions == null || trackedPositions.contains(p)) satisfied.add(p);
         } catch(RuntimeException failure) {
             failed++;
             world.failure(p,failure);

@@ -14,6 +14,8 @@ final class PublishedPlanPainter {
         void finish(Set<Point3i> satisfied,boolean complete);
         void failure(Point3i point,RuntimeException failure);
         default void written(Point3i point,S state,int count) {}
+        /** 正式施工只有实体结案消费满足坐标，其他调用方仍可读取完整集合。 */
+        default boolean trackOnlyEntityPositions() { return false; }
     }
 
     record Result(boolean complete,int written,int failed) {}

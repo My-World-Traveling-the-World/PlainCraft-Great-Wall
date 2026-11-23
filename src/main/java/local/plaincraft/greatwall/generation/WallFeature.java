@@ -58,6 +58,8 @@ public class WallFeature extends Feature<NoneFeatureConfiguration> {
                 if (!target.hasBlockEntity()) chunk.removeBlockEntity(pos);
                 return chunk.getBlockState(pos)==target;
             }
+            // 高度图和标记按计划处理，只有实体安装需要逐点满足记录。
+            public boolean trackOnlyEntityPositions() { return true; }
             public void finish(java.util.Set<Point3i> satisfied,boolean complete) {
                 Heightmap.primeHeightmaps(chunk,EnumSet.of(Heightmap.Types.WORLD_SURFACE_WG,
                         Heightmap.Types.OCEAN_FLOOR_WG,Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
