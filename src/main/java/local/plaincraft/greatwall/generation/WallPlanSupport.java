@@ -63,6 +63,25 @@ public final class WallPlanSupport {
                 + Long.bitCount(mask[2]) + Long.bitCount(mask[3]);
     }
 
+    /** 只在有实体且跨 tick 施工时复核已落块的实体列，防止使用暂停前的满足记录。 */
+    static void requireCurrentEntityBlocks(ChunkAccess chunk, ChunkWritePlan plan, Set<Point3i> touched) {
+        if (plan.blockEntities().isEmpty()) return;
+        Set<Point3i> entityPositions = new HashSet<>();
+        for (var entity : plan.blockEntities()) {
+            if (touched.contains(entity.pos())) entityPositions.add(entity.pos());
+        }
+        if (entityPositions.isEmpty()) return;
+        for (var voxel : plan.voxels()) {
+            var p = voxel.pos();
+            if (!entityPositions.remove(p)) continue;
+            if (chunk.getBlockState(new BlockPos(p.x(), p.y(), p.z()))
+                    != local.plaincraft.greatwall.terrain.BlockCatalog.resolveState(voxel.state())) {
+                throw new IllegalStateException("长城实体方块在补建暂停时变化: " + p);
+            }
+            if (entityPositions.isEmpty()) return;
+        }
+    }
+
     /** Writes the custom block-entity payload for positions this pass actually placed. */
     public static int writeBlockEntities(ChunkAccess chunk, ChunkWritePlan plan, Set<Point3i> touched) {
         if (chunk == null || plan == null) return 0;
@@ -127,10 +146,7 @@ public final class WallPlanSupport {
                 firepits.add(entity.pos());
             }
         }
-        // The plan is the durable authority for the wall footprint. Reading every voxel back here
-        // would spend the drain's 150 ms budget; individual writes and conflicts are already
-        // checked in settle(), and the mask deliberately protects the planned column even when a
-        // player has replaced one block.
+        // 归属来自持久计划；实体转正前另行复核，不为生成保护范围再回读所有体素。
         chunk.setAttached(TerrainMarkers.OWNERSHIP,
                 new TerrainMarkers.Ownership(plan.metadata().gateRevision(), owned, firepits));
         chunk.setAttached(TerrainMarkers.PRODUCTION, new TerrainMarkers.Marker(

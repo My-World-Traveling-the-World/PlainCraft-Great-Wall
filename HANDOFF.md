@@ -22,9 +22,9 @@
 
 ## 当前交接 · 2026-11-23
 
-1. **改动**：集中模板、构建与联动说明，迁移 Gradle 本机输入和脚本报告路径，清理旧阶段报告导出器。
-2. **验证**：1025 项单测、3 项 `BiomeWriterGameTests` 与 Fabric 重映射构建通过，16 个改动过的 PowerShell 脚本通过语法解析。此次本机 Loom 映射缓存未通过严格校验，离线回归命令临时使用 `--dependency-verification=off`。
-3. **未验证**：真实整合包的完整预热、全线落块、隔离目录曲门压测及 S5 长时间压测。
-4. **负控**：本轮沿用现有单测和游戏内测试，未新增生成守卫。
-5. **下一步**：同种子查双向长度、短水门、宽水两岸、地基及道路实际接口，分别记录规划和实际施工。
-6. **历史与回退**：[清理前开发记录](https://github.com/My-World-Traveling-the-World/PlainCraft-Great-Wall/tree/f26341ee71fa1dfe460ad0af4976137952afa0a3)。
+1. **改动**：进世界后的区块补建按 tick 暂停和续扫，一份计划每 tick 最多访问 512 体素，体素之间检查 4 ms 软预算。区块卸载或计划换代撤销游标；实体结案前复核方块，结案后才记完工。开局规划及放行顺序维持原样。
+2. **验证**：1027 项单测，零跳过、失败和错误；3 项 `BiomeWriterGameTests` 和 Fabric `remapJar`、`interopJar` 成功。按现有本机构建方式，离线验证临时使用 `--dependency-verification=off`。
+3. **未验证**：尚无整合包同种子对照。4 ms 只限制扫描/落块阶段，队列选择、光照调用、写实体、标记和台账仍可能占用更长时间；总补建时间也待测。
+4. **负控**：把每 tick 体素上限由 512 改成 2048，`tickSlicesCapWorkAndOnlyPublishAfterAFullPaint` 因第一批超过 512 失败；原文已恢复并重新跑全量验证。
+5. **下一步**：同种子分别记录总补建时间与慢 tick，带上 `-Dgreatwall.backfillTimings=on` 的 `WALL_BACKFILL_SLICE`；检查跨 tick 卸载、重进、门洞、容器及道路保护范围。
+6. **历史与回退**：基线 `3db30ae2`，本次提交可单独回退，不修改模板或存档格式。[清理前开发记录](https://github.com/My-World-Traveling-the-World/PlainCraft-Great-Wall/tree/f26341ee71fa1dfe460ad0af4976137952afa0a3)。

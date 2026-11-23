@@ -424,7 +424,11 @@ class BuildContractTest {
         assertTrue(start >= 0, "drain(ServerLevel) moved; this guard would check nothing");
         int end = text.indexOf("\n    }", start);
         assertTrue(end > start, "could not find the end of drain(ServerLevel)");
-        var code = text.substring(start, end)
+        int resume = text.indexOf("private static void advanceActive(", end);
+        assertTrue(resume > end, "续建入口移走后应更新守卫");
+        int resumeEnd = text.indexOf("\n    }", resume);
+        assertTrue(resumeEnd > resume, "找不到续建入口结束位置");
+        var code = (text.substring(start, end) + text.substring(resume, resumeEnd))
                 .replaceAll("(?s)/\\*.*?\\*/", "")
                 .replaceAll("(?m)//.*$", "");
         assertFalse(code.contains("managedBlock("),
@@ -435,6 +439,7 @@ class BuildContractTest {
                 "drain() must not use the blocking chunk request; see requestChunk");
         assertTrue(code.contains("MAX_DRAIN_CHECKS") && code.contains("DRAIN_BUDGET_NANOS"),
                 "drain() lost its per-call bounds; a long queue would walk every key in one tick");
+        assertTrue(code.contains("WallBackfillSlice.advance(cursor,"), "游戏内补建必须经过分批事务");
     }
 
     /** 行为由端口测试验证，这里补实际入口和结案接线，避免只测Fake而生产继续跳过。 */

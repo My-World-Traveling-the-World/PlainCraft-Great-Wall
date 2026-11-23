@@ -9,6 +9,41 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** 外层事务与独立冻结Painter联合对拍，不能用两个新游标互相证明等价。 */
 class WallSettlementCursorTest {
+    @Test void tickSlicesCapWorkAndOnlyPublishAfterAFullPaint() {
+        var plan = plan(1100);
+        var expected = new Fake(0);
+        var result = frozen(plan, expected);
+        var actual = new Fake(0);
+        var cursor = new WallSettlementCursor<>(plan, actual);
+        for (int written : List.of(512, 1024, 1100)) {
+            WallBackfillSlice.advance(cursor, () -> false);
+            assertEquals(written, actual.blocks.size());
+            assertFalse(actual.events.contains("finish:true"));
+            assertFalse(actual.events.contains("publish"));
+        }
+        WallBackfillSlice.advance(cursor, () -> false);
+        assertEquals(result, cursor.result());
+        assertEquals(expected.events, actual.events);
+        assertEquals(expected.blocks, actual.blocks);
+    }
+
+    @Test void timeBudgetStopsMidBatchAndLeaseLossPreventsFinishingOldPlan() {
+        var actual = new Fake(0);
+        var cursor = new WallSettlementCursor<>(plan(600), actual);
+        // 用已访问体素模拟时钟，不依赖测试机速度，确保惰性暂停发生在批内。
+        WallBackfillSlice.advance(cursor, () -> actual.blocks.size() >= 21);
+        assertEquals(21, actual.blocks.size());
+        WallBackfillSlice.advance(cursor, () -> actual.blocks.size() >= 32);
+        assertEquals(32, actual.blocks.size());
+        actual.current = false;
+        WallBackfillSlice.advance(cursor, () -> false);
+        assertEquals(WallSettlementCursor.Stage.CANCELLED, cursor.stage());
+        assertEquals(32, actual.blocks.size());
+        assertFalse(actual.events.contains("finish:true"));
+        assertFalse(actual.events.contains("publish"));
+        assertEquals(1, Collections.frequency(actual.events, "release"));
+    }
+
     @Test void everyPauseMatchesFrozenOuterOrderAndRealPlan() {
         var plan = plan();
         int compared = 0;
@@ -99,18 +134,26 @@ class WallSettlementCursorTest {
     }
 
     private static ChunkWritePlan plan() {
+        return plan(2);
+    }
+
+    private static ChunkWritePlan plan(int count) {
         String hash = "a".repeat(64);
         var id = new SiteId("wall", SiteKind.WALL, 1);
-        var voxels = List.of(0, 1).stream().map(x -> new VoxelIntent(new Point3i(x, 1, 0),
+        // 测试计划始终在同一 owner 内，不能靠跳过越界体素凑够分批数。
+        var voxels = java.util.stream.IntStream.range(0, count).mapToObj(i -> new VoxelIntent(
+                new Point3i(i & 15, 1 + (i >> 8), (i >> 4) & 15),
                 IntentKind.SOLID, Part.CORE, new BlockSpec("minecraft:stone", Map.of()), id, 400, true, true)).toList();
-        var body = new ComponentVoxels(id, new Bounds(0, 0, 0, 2, 3, 1), voxels, List.of(), List.of(), List.of(), hash);
+        var body = new ComponentVoxels(id, new Bounds(0, 0, 0, 16, 3 + (count >> 8), 16),
+                voxels, List.of(), List.of(), List.of(), hash);
         var component = new ComponentVoxels(body.id(), body.bounds(), body.voxels(), body.blockEntities(),
                 body.spawnSlots(), body.requiredRoutes(), CanonicalCodec.componentHash(body));
         var cell = new RealizationCell(new CellKey(hash, "minecraft:overworld", 0), List.of(), List.of(component),
                 hash, 0, hash, hash);
-        var plan = new ChunkPlanCompiler().compile(new ChunkKey("minecraft:overworld", 0, 0), hash, List.of(cell),
-                Map.of(new Point3i(0, 1, 0), "minecraft:air{}", new Point3i(1, 1, 0), "minecraft:air{}"));
-        assertEquals(2, plan.voxels().size());
+        var before = new HashMap<Point3i, String>();
+        for (var voxel : voxels) before.put(voxel.pos(), "minecraft:air{}");
+        var plan = new ChunkPlanCompiler().compile(new ChunkKey("minecraft:overworld", 0, 0), hash, List.of(cell), before);
+        assertEquals(count, plan.voxels().size());
         return plan;
     }
 

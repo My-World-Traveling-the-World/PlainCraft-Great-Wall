@@ -1,6 +1,7 @@
 package local.plaincraft.greatwall.generation;
 
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.model.WallTypes.BlockSpec;
 
@@ -34,6 +35,10 @@ final class WallSettlementCursor<S> {
     Stage stage() { return stage; }
     boolean terminal() { return stage == Stage.CLOSED || stage == Stage.CANCELLED || stage == Stage.FAILED; }
     boolean advance(int maxVoxels) {
+        return advance(maxVoxels, () -> false);
+    }
+    /** 体素之间也检查时间，避免少量昂贵的光照更新耗尽整 tick。 */
+    boolean advance(int maxVoxels, BooleanSupplier shouldYield) {
         checkThread();
         if (maxVoxels <= 0) throw new IllegalArgumentException("体素预算必须为正数");
         if (terminal()) return true;
@@ -53,7 +58,7 @@ final class WallSettlementCursor<S> {
                     stage = Stage.PAINT;
                 }
                 case PAINT -> {
-                    if (painter.advance(maxVoxels, () -> false)) {
+                    if (painter.advance(maxVoxels, shouldYield)) {
                         result = painter.result();
                         stage = Stage.METADATA;
                     }

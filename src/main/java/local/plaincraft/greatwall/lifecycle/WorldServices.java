@@ -208,7 +208,7 @@ public final class WorldServices {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             var services = find(server);
             if (services != null && services.production != null) services.production.tick();
-            // Rate limited inside: four chunks per ten ticks, loaded chunks only.
+            // 等待候选时节流；已经加载的大区块跨 tick 落块，避免堵住游戏线程。
             // A reloaded save has no production session, so install the reader here before draining:
 
             // otherwise every loaded chunk drains against an empty plan cache and the world stays bare.
