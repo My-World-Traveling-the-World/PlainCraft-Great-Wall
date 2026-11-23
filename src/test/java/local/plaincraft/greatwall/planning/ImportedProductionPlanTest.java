@@ -32,6 +32,72 @@ class ImportedProductionPlanTest {
 
     @BeforeAll static void bootstrap() { SharedConstants.tryDetectVersion(); Bootstrap.bootStrap(); }
 
+    @Test void intactRecipeKeepsAuthoredWalkwayWhereLegacyMakesARuin() {
+        var base = fixture(Asset.GATE, 0);
+        var original = base.plan();
+        // 去掉楼体，避免接口两侧原本就强制完好的规则遮住破坏反例。
+        var ribbon = new SegmentPlan(original.geometry(), original.prefix(), original.stations(), List.of(), original.hash());
+        var legacy = new Fixture(base.recipe(), ribbon, null, base.columns());
+        var intact = new Fixture(ImportedSiteScheduleTest.recipe(3), ribbon, null, base.columns());
+        var v2 = planner(legacy.recipe());
+        long cell = -1;
+        for (long candidate = 1; candidate < 12; candidate++) {
+            long middle = candidate * 64L * 256 + 32L * 256;
+            if (v2.resolve(input(legacy, candidate, List.of())).breaks().stream()
+                    .anyMatch(b -> b.reason() == BreakReason.BURIED
+                            && b.range().fromQ8() <= middle && middle < b.range().toQ8())) {
+                cell = candidate;
+                break;
+            }
+        }
+        assertTrue(cell > 0, "旧配方必须先复现实际马道被截的单元");
+        var result = planner(intact.recipe()).resolve(input(intact, cell, List.of()));
+        assertTrue(result.breaks().stream().noneMatch(b -> b.reason() == BreakReason.BURIED));
+        var wall = result.components().stream().filter(c -> c.id().kind() == SiteKind.WALL).findFirst().orElseThrow();
+        assertTrue(wall.voxels().stream().filter(v -> v.part() == Part.FLOOR).count() > 300,
+                "真实模板墙必须恢复足量马道方块");
+        assertTrue(wall.voxels().stream().anyMatch(v -> v.part() == Part.PARAPET));
+    }
+
+    @Test void waterGateBuildsOnShortWaterAndWideWaterLeavesBothBanks() {
+        var recipe = ImportedSiteScheduleTest.recipe(3);
+        var stations = new ArrayList<Station>();
+        for (int x = 0; x <= 384; x += 4)
+            stations.add(new Station(x * 256L, new Point2q(x * 256L + 128, 128), 84, 0));
+        var shortWater = new WaterEvidence(new ArcInterval(84 * 256L, 98 * 256L),
+                WaterClass.NARROW, 14 * 256L, 14 * 256L, 63,
+                List.of(new Point3i(83, 63, 0), new Point3i(98, 63, 0)),
+                List.of(new Point3i(88, 58, 0), new Point3i(94, 58, 0)), H);
+        var wideWater = new WaterEvidence(new ArcInterval(176 * 256L, 231 * 256L),
+                WaterClass.WIDE, 0, 55 * 256L, 63, List.of(), List.of(), H);
+        var a = stations.getFirst().point();
+        var b = stations.getLast().point();
+        var geometry = new SegmentGeometry(new SegmentKey(recipe.recipeHash(), recipe.dimension(), 0),
+                List.of(a, b), List.of(0L, 384 * 256L), List.of(shortWater, wideWater), Optional.empty(),
+                new Boundary(0, a, 84, H), new Boundary(1, b, 84, H), 0, 0, H);
+        var ribbon = new SegmentPlan(geometry, PrefixSummaryIndex.origin(), new StationTable(stations, List.of(), H),
+                List.of(), H);
+        var columns = new HashMap<Point3i, SurfaceProbe.ColumnView>();
+        for (int x = -16; x < 400; x++) for (int z = -40; z <= 40; z++)
+            columns.put(new Point3i(x, 0, z), x >= 84 && x < 98 || x >= 176 && x < 231 ? WATER : FLAT);
+        var fixture = new Fixture(recipe, ribbon, null, columns);
+        var planner = planner(recipe);
+        var cross = planner.resolve(input(fixture, 1, List.of()));
+        var gate = cross.components().stream().filter(c -> c.id().kind() == SiteKind.WATER_GATE).findFirst().orElseThrow();
+        // 短水的地面不是假设在桥下平地：真实构件必须既有马道也保住水源。
+        assertTrue(gate.voxels().stream().anyMatch(v -> v.part() == Part.FLOOR));
+        assertTrue(gate.voxels().stream().anyMatch(v -> v.state().id().equals("minecraft:water")));
+        var left = planner.resolve(input(fixture, 2, List.of()));
+        var right = planner.resolve(input(fixture, 4, List.of()));
+        assertTrue(left.breaks().stream().anyMatch(g -> g.reason() == BreakReason.RIVER_WIDE && g.range().equals(wideWater.crossing())));
+        var placed = java.util.stream.Stream.concat(left.components().stream(), right.components().stream())
+                .filter(c -> c.id().kind() == SiteKind.WALL)
+                .flatMap(c -> c.voxels().stream()).filter(v -> v.part() == Part.FLOOR).toList();
+        assertTrue(placed.stream().anyMatch(v -> v.pos().x() < 176));
+        assertTrue(placed.stream().anyMatch(v -> v.pos().x() > 231));
+        assertFalse(placed.stream().anyMatch(v -> v.pos().x() >= 176 && v.pos().x() < 231));
+    }
+
     @ParameterizedTest @EnumSource(Asset.class)
     void productionRealizationKeepsEveryBodyAndConnectsBothActualEnds(Asset asset) {
         for (int orientation = 0; orientation < 4; orientation++) {
@@ -190,6 +256,15 @@ class ImportedProductionPlanTest {
         public boolean protectedAt(int y) { return false; }
         public boolean water(int y) { return false; }
         public boolean airOrReplaceablePlant(int y) { return y >= 64; }
+        public int highestNonPlantFeet() { return 64; }
+        public String hash() { return H; }
+    };
+    private static final SurfaceProbe.ColumnView WATER = new SurfaceProbe.ColumnView() {
+        public String state(int y) { return y <= 58 ? "minecraft:stone{}" : y <= 63 ? "minecraft:water{level=0}" : "minecraft:air{}"; }
+        public boolean solidSupport(int y) { return y <= 58; }
+        public boolean protectedAt(int y) { return false; }
+        public boolean water(int y) { return y > 58 && y <= 63; }
+        public boolean airOrReplaceablePlant(int y) { return y > 63; }
         public int highestNonPlantFeet() { return 64; }
         public String hash() { return H; }
     };

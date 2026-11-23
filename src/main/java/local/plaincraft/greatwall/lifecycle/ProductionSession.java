@@ -388,7 +388,7 @@ final class ProductionSession implements AutoCloseable {
         var catalog = PaletteResolver.load(server.getResourceManager());
         var palette = new PaletteResolver(recipe.seed(), catalog);
         var biome = new BiomePaletteIndex(BiomePaletteIndex.freeze(level.registryAccess(), catalog));
-        return new RealizationPlanner(recipe, new SurfaceProbe(), biome, recipe.config().templateVersion()==2
+        return new RealizationPlanner(recipe, new SurfaceProbe(), biome, local.plaincraft.greatwall.component.ImportedSiteGeometry.enabled(recipe)
                 ? S2TemplateSet.create(recipe.seed(), palette) : S1TemplateSet.create(recipe.seed(), palette));
     }
 

@@ -4,17 +4,29 @@ import java.util.List;
 import java.util.Objects;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.geometry.FixedMath;
+import local.plaincraft.greatwall.model.WallRecipeRules;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** Immutable Q16 field sampled by global arc length, never by chunk arrival order. */
 public final class DecayField {
+    private static final DecaySample BUILT_INTACT = new DecaySample(DecayState.INTACT, 0, 20);
     private final long seed;
+    private final boolean weathers;
 
-    public DecayField(long seed) { this.seed = seed; }
+    public DecayField(long seed) { this(seed, WallRecipeRules.AUTHORED); }
+
+    public DecayField(long seed, int recipeVersion) {
+        this.seed = seed;
+        this.weathers = WallRecipeRules.weathers(recipeVersion);
+    }
+
+    public boolean weathers() { return weathers; }
 
     public DecaySample sample(long globalSQ8, PaletteFamily family, List<Long> maintainedSitesQ8) {
         if (globalSQ8 < 0) throw new IllegalArgumentException("global S must be nonnegative");
         Objects.requireNonNull(family); Objects.requireNonNull(maintainedSitesQ8);
+        // 正式墙的马道和垛口按图施工，不做噪声求值，也不把完好的道路截成废墟。
+        if (!weathers) return BUILT_INTACT;
         int amount = noise(globalSQ8, 320) * 55 / 100 + noise(globalSQ8, 80) * 45 / 100;
         amount += switch (family) { case STONE -> 0; case DEEPSLATE -> 3277; case SANDSTONE -> 5243; };
         long distance = 48L * 256;

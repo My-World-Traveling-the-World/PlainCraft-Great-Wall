@@ -61,23 +61,7 @@ public final class GreatWallConfigScreen {
                 .setSaveConsumer(conf::setUnlimitedPrewarmBlocks)
                 .build());
 
-        // ── 山脊打分（最细粒度奖励惩罚体系）──
-        ridge.addEntry(eb
-                .startIntField(Component.translatable("config.plaincraft_great_wall.ridge_weight"),
-                        conf.ridgeWeight())
-                .setDefaultValue(def.ridgeWeight())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.ridge_weight.tooltip"))
-                .setMin(-20).setMax(20)
-                .setSaveConsumer(conf::setRidgeWeight)
-                .build());
-        ridge.addEntry(eb
-                .startIntField(Component.translatable("config.plaincraft_great_wall.ridge_prominence_weight"),
-                        conf.ridgeProminenceWeight())
-                .setDefaultValue(def.ridgeProminenceWeight())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.ridge_prominence_weight.tooltip"))
-                .setMin(-20).setMax(20)
-                .setSaveConsumer(conf::setRidgeProminenceWeight)
-                .build());
+        // 六个旧山顶权重保留在配置读取和配方摘要里，避免改变已有世界；新版界面不再展示。
         ridge.addEntry(eb
                 .startIntField(Component.translatable("config.plaincraft_great_wall.ridge_slope_weight"),
                         conf.ridgeSlopeWeight())
@@ -109,38 +93,6 @@ public final class GreatWallConfigScreen {
                 .setTooltip(Component.translatable("config.plaincraft_great_wall.ridge_departure_weight.tooltip"))
                 .setMin(-20).setMax(20)
                 .setSaveConsumer(conf::setRidgeDepartureWeight)
-                .build());
-        ridge.addEntry(eb
-                .startIntField(Component.translatable("config.plaincraft_great_wall.summit_flat_threshold"),
-                        conf.summitFlatThreshold())
-                .setDefaultValue(def.summitFlatThreshold())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.summit_flat_threshold.tooltip"))
-                .setMin(0).setMax(16)
-                .setSaveConsumer(conf::setSummitFlatThreshold)
-                .build());
-        ridge.addEntry(eb
-                .startIntField(Component.translatable("config.plaincraft_great_wall.summit_flat_reward"),
-                        conf.summitFlatReward())
-                .setDefaultValue(def.summitFlatReward())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.summit_flat_reward.tooltip"))
-                .setMin(-20).setMax(20)
-                .setSaveConsumer(conf::setSummitFlatReward)
-                .build());
-        ridge.addEntry(eb
-                .startIntField(Component.translatable("config.plaincraft_great_wall.knife_ridge_penalty"),
-                        conf.knifeRidgePenalty())
-                .setDefaultValue(def.knifeRidgePenalty())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.knife_ridge_penalty.tooltip"))
-                .setMin(-20).setMax(20)
-                .setSaveConsumer(conf::setKnifeRidgePenalty)
-                .build());
-        ridge.addEntry(eb
-                .startIntField(Component.translatable("config.plaincraft_great_wall.ridge_asymmetry_weight"),
-                        conf.ridgeAsymmetryWeight())
-                .setDefaultValue(def.ridgeAsymmetryWeight())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.ridge_asymmetry_weight.tooltip"))
-                .setMin(-20).setMax(20)
-                .setSaveConsumer(conf::setRidgeAsymmetryWeight)
                 .build());
         ridge.addEntry(eb
                 .startIntField(Component.translatable("config.plaincraft_great_wall.ridge_accumulated_slope_weight"),

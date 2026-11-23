@@ -83,36 +83,39 @@ public final class GreatWallBiomeWriter {
         boolean changed = false;
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
             var section = sections[sectionIndex];
-            if (section == null || section.hasOnlyAir()) continue;
+            // 空气层也保存群系，玩家站在墙顶时通常正好在这样的截面里。
+            if (section == null) continue;
             int quartY = QuartPos.fromSection(chunk.getMinSection() + sectionIndex);
-            if (!touchesBand(columns, quartY)) continue;
-            PalettedContainerRO<Holder<Biome>> original = section.getBiomes();
-            int baseQuartX = quartX;
-            int baseQuartY = quartY;
-            int baseQuartZ = quartZ;
-            Column[] frozen = columns;
-            section.fillBiomesFromNoise((sampleQuartX, sampleQuartY, sampleQuartZ, ignored) -> {
-                var column = frozen[QuartPos.quartLocal(sampleQuartX)
-                        + QuartPos.quartLocal(sampleQuartZ) * 4];
-                int localY = QuartPos.quartLocal(sampleQuartY);
-                if (column != null && column.minQuartY() <= localY && localY < column.maxQuartYExclusive()) {
-                    return identity;
-                }
-                return original.get(QuartPos.quartLocal(sampleQuartX), localY,
-                        QuartPos.quartLocal(sampleQuartZ));
-            }, sampler, baseQuartX, baseQuartY, baseQuartZ);
-            changed = true;
+            changed |= paintSection(section, sampler, columns, identity, quartX, quartY, quartZ);
         }
         if (changed) chunk.setUnsaved(true);
         return changed;
     }
 
-    private static boolean touchesBand(Column[] columns, int quartY) {
-        for (var column : columns) {
+    static boolean paintSection(LevelChunkSection section, Climate.Sampler sampler, Column[] columns,
+            Holder<Biome> identity, int quartX, int quartY, int quartZ) {
+        PalettedContainerRO<Holder<Biome>> original = section.getBiomes();
+        boolean differs = false;
+        for (int index = 0; index < columns.length && !differs; index++) {
+            var column = columns[index];
             if (column == null) continue;
-            if (column.minQuartY() < quartY + 4 && column.maxQuartYExclusive() > quartY) return true;
+            for (int y = Math.max(quartY, column.minQuartY()); y < Math.min(quartY + 4, column.maxQuartYExclusive()); y++) {
+                if (!identity.equals(original.get(index % 4, y - quartY, index / 4))) {
+                    differs = true;
+                    break;
+                }
+            }
         }
-        return false;
+        // 补建重读完成章时会再走这里；没有变化就不重建调色板，也不发给客户端。
+        if (!differs) return false;
+        section.fillBiomesFromNoise((x, y, z, ignored) -> {
+            int localX = QuartPos.quartLocal(x), localZ = QuartPos.quartLocal(z);
+            var column = columns[localX + localZ * 4];
+            // 高度带按世界坐标存储；只有读截面调色板才转换为 0～3。
+            if (column != null && column.minQuartY() <= y && y < column.maxQuartYExclusive()) return identity;
+            return original.get(localX, QuartPos.quartLocal(y), localZ);
+        }, sampler, quartX, quartY, quartZ);
+        return true;
     }
 
     /**
@@ -152,7 +155,7 @@ public final class GreatWallBiomeWriter {
             net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE;
 
     /** Painted quart-Y band for one owner-local column. */
-    private record Column(int minQuartY, int maxQuartYExclusive) {
+    record Column(int minQuartY, int maxQuartYExclusive) {
         Column {
             if (maxQuartYExclusive <= minQuartY) {
                 throw new WallFailure(FailureCode.INVALID_RESOURCE, "empty biome paint band");

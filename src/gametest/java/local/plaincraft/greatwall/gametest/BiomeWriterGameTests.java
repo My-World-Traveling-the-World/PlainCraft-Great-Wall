@@ -71,7 +71,7 @@ public final class BiomeWriterGameTests implements FabricGameTest {
     @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 200)
     public void paintRespectsTheSurfaceRelativeBand(GameTestHelper helper) {
         var chunk = chunk(helper, 1, true);
-        int surface = helper.getLevel().getMinBuildHeight() + 96;
+        int surface = chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.WORLD_SURFACE).getHighestTaken(8, 8);
         var identity = identity(helper);
         var mask = mask(helper, chunk, 1, 32);
 
@@ -84,6 +84,9 @@ public final class BiomeWriterGameTests implements FabricGameTest {
 
         boolean painted = GreatWallBiomeWriter.paint(chunk, sampler(helper), mask, identity);
         helper.assertTrue(painted, "a chunk with a covered column must report a change");
+        // 补建可能再次确认同一计划；没有新写入就不触发客户端区块群系重发。
+        helper.assertFalse(GreatWallBiomeWriter.paint(chunk, sampler(helper), mask, identity),
+                "repainting the same shape must leave the existing biome data alone");
 
         int loQuart = QuartPos.fromBlock(surface - GreatWallBiomeWriter.BAND_BELOW);
         int hiQuartExclusive = QuartPos.fromBlock(surface + GreatWallBiomeWriter.BAND_ABOVE - 1) + 1;
@@ -248,6 +251,9 @@ public final class BiomeWriterGameTests implements FabricGameTest {
         Registry<Biome> biomes = level.registryAccess().registryOrThrow(Registries.BIOME);
         var chunk = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomes, null);
         chunk.setPersistedStatus(ChunkStatus.FEATURES);
+        // 默认调色板可能已是 plains，显式换成沙漠才能证明测试真的改写了群系。
+        var original = biomes.getHolderOrThrow(net.minecraft.world.level.biome.Biomes.DESERT);
+        chunk.fillBiomesFromNoise((x, y, z, noise) -> original, sampler(helper));
         if (!withSurface) return chunk;
 
         int surfaceY = level.getMinBuildHeight() + 96;

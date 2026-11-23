@@ -11,6 +11,7 @@ import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.model.WallFailure;
+import local.plaincraft.greatwall.model.WallRecipeRules;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.NaturalTerrainOracle;
 
@@ -21,8 +22,10 @@ public final class RidgePlanner {
             new Point2q(-48, 0), new Point2q(0, 48), new Point2q(0, -48),
             new Point2q(32, 32), new Point2q(32, -32), new Point2q(-32, 32), new Point2q(-32, -32));
     private static final String ZERO = "0".repeat(64);
+    private static final int[] SEAM_OFFSETS = {0, -16, 16, -32, 32, -64, 64};
     private final WorldRecipe recipe;
     private final AnchorField anchors;
+    private final boolean gentle;
     /**
      * Resolved structure footprints along the corridor, injected after the planning-time scan
      * completes. Empty until then, so the ridge behaves exactly as before the refactor when no
@@ -37,6 +40,7 @@ public final class RidgePlanner {
     public RidgePlanner(WorldRecipe recipe, AnchorField anchors) {
         this.recipe = Objects.requireNonNull(recipe, "recipe");
         this.anchors = Objects.requireNonNull(anchors, "anchors");
+        this.gentle = recipe.config().templateVersion() >= WallRecipeRules.INTACT;
         if (recipe.config().columnBudget() != 150000 || recipe.config().corridorHalfWidth() != 512) {
             throw new IllegalArgumentException("requires frozen 150000/512 budget and corridor");
         }
@@ -85,13 +89,41 @@ public final class RidgePlanner {
 
     private void boundaryStep(Cursor c) {
         var anchor = c.boundaryIndex == 0 ? c.first : c.last;
-        ColumnSample sample = sample(c, anchor.point(), SampleKind.REFERENCE, true);
+        int offset = gentle ? SEAM_OFFSETS[c.seamProbe] : 0;
+        Point2q point = anchor.point();
+        if (offset != 0) {
+            // 左右段都从同一轴上取缝两侧的高点，各自独立调度也会得到同一个接缝高度。
+            long u = anchor.index() * 2048L + offset;
+            if (u < 0) {
+                c.seamProbe++;
+                return;
+            }
+            try {
+                point = anchors.carrier(u / 2048, (int) (u % 2048) * 256);
+            } catch (WallFailure outside) {
+                if (outside.code() != FailureCode.OUT_OF_BOUNDS) throw outside;
+                if (++c.seamProbe == SEAM_OFFSETS.length) finishBoundary(c, anchor);
+                return;
+            }
+        }
+        ColumnSample sample = sample(c, point, SampleKind.REFERENCE, offset == 0);
         if (sample == null) return;
-        int y = Math.addExact(sample.groundTopY(), 20);
+        if (offset == 0) {
+            c.seamGround = sample.groundTopY();
+            c.seamWalkY = Math.addExact(c.seamGround, 20);
+        } else {
+            c.seamWalkY = Math.max(c.seamWalkY, sample.groundTopY() + 20 - Math.abs(offset) / 2);
+        }
+        if (!gentle || ++c.seamProbe == SEAM_OFFSETS.length) finishBoundary(c, anchor);
+    }
+
+    private void finishBoundary(Cursor c, Anchor anchor) {
+        int y = gentle ? Math.min(c.seamWalkY, recipe.bounds().maxYExclusive() - 3) : c.seamWalkY;
         String identity = DeterministicHash.sha256((recipe.recipeHash() + ":boundary:" + anchor.index()
                 + ":" + anchor.point().xQ8() + ":" + anchor.point().zQ8() + ":" + y).getBytes(StandardCharsets.UTF_8));
         var boundary = new Boundary(anchor.index(), anchor.point(), y, identity);
-        if (c.boundaryIndex++ == 0) { c.start = boundary; c.previousHeight = sample.groundTopY(); }
+        c.seamProbe = 0;
+        if (c.boundaryIndex++ == 0) { c.start = boundary; c.previousHeight = c.seamGround; }
         else { c.end = boundary; c.phase = 1; c.step = 1; }
     }
 
@@ -106,7 +138,8 @@ public final class RidgePlanner {
             if (c.searchColumns >= 100000 && Math.abs(delta) > 4 || Math.abs(delta * 256L - c.previousDeltaQ8) > 8 * 256L) {
                 c.candidate++; return;
             }
-            c.lookaheadLimit = c.searchColumns < 60000 ? 3 : 1;
+            // 新墙不奖励顶峰，用省下的侧点采样看远一点，给山腰和岸线绕行留空间。
+            c.lookaheadLimit = c.searchColumns < 60000 ? (gentle ? 6 : 3) : 1;
             c.degradation = Math.max(c.degradation, c.searchColumns < 60000 ? 0 : c.searchColumns < 100000 ? 1 : 2);
             c.lookaheadLimit = Math.min(c.lookaheadLimit, 129 - c.step);
             c.candidateOffset = c.previousOffsetQ8 + delta * 256L;
@@ -151,11 +184,8 @@ public final class RidgePlanner {
             if (failure.code() != FailureCode.OUT_OF_BOUNDS) throw failure;
             rejectCandidate(c); return;
         }
-        if (c.sampleIndex != 9) return;
+        if (c.sampleIndex != (gentle ? 1 : 9)) return;
         var h = c.samples[0];
-        long ridge = Math.clamp(Math.floorDiv((2L * h.groundTopY() - c.samples[3].groundTopY() - c.samples[4].groundTopY()) * 256, 96), -256, 256);
-        long sum = 0; for (int i = 1; i < 9; i++) sum += c.samples[i].groundTopY();
-        long prominence = Math.clamp(Math.floorDiv((8L * h.groundTopY() - sum) * 256, 8 * 48), -256, 256);
         long slope = Math.min(1024, Math.abs((long) h.groundTopY() - c.candidatePreviousHeight) * 256 / 16);
         // 累计爬升（0.1.0 补上实现）：只累加上坡，下坡不得奖励，刻度与 slope 一致（每格 16）。
         // slope 罚的是「任何单步高差」，这一项罚的是「一直往上爬」——同样爬 5 格，
@@ -166,12 +196,35 @@ public final class RidgePlanner {
         long turn = Math.abs(DELTAS.get(c.candidate) * 256L - c.previousDeltaQ8) / 16;
         long wet = h.waterTopY().isPresent() || h.upperCensored() ? 256 : 0;
         long departure = Math.abs(rawOffset) / 512;
+        var cfg = local.plaincraft.greatwall.config.GreatWallConfig.parameters();
+        long score = cfg.ridgeSlopeWeight() * slope
+                + cfg.ridgeAccumulatedSlopeWeight() * c.candidateClimb
+                + cfg.ridgeTurnWeight() * turn
+                + cfg.ridgeWetWeight() * wet * (gentle ? 2 : 1)
+                + cfg.ridgeDepartureWeight() * departure;
+        if (!gentle) score += legacySummitScore(c, h, cfg);
+        c.candidateScore += score * (c.lookahead == 0 ? 4 : c.lookahead == 1 ? 2 : 1);
+        if (c.lookahead == 0) c.candidateFirstHeight = h.groundTopY();
+        c.candidatePreviousHeight = h.groundTopY(); c.lookaheadPoint = center;
+        if (++c.lookahead < c.lookaheadLimit) { c.sampleIndex = 0; return; }
+        if (c.candidateScore > c.bestScore) {
+            c.bestScore = c.candidateScore; c.bestCandidate = c.candidate;
+            c.bestHeight = c.candidateFirstHeight; c.bestOffset = c.candidateOffset;
+        }
+        rejectCandidate(c);
+    }
+
+    /** 旧存档续建仍使用冻结的登顶权重；新配方不会为这些权重额外读八列。 */
+    private static long legacySummitScore(Cursor c, ColumnSample h,
+            local.plaincraft.greatwall.config.GreatWallConfig.Semantic cfg) {
+        long ridge = Math.clamp(Math.floorDiv((2L * h.groundTopY() - c.samples[3].groundTopY() - c.samples[4].groundTopY()) * 256, 96), -256, 256);
+        long sum = 0; for (int i = 1; i < 9; i++) sum += c.samples[i].groundTopY();
+        long prominence = Math.clamp(Math.floorDiv((8L * h.groundTopY() - sum) * 256, 8 * 48), -256, 256);
         // 0.1.0 山顶宽度分界平衡：中心凸起量按「平坦山顶 / 窄刀锋」区分奖惩。
         // 凸起（prominence）是中心相对 8 个周边的突出度；ridge 是中心相对两侧（samples[3/4]）的高度。
         // 平坦山顶（凸起小）→ 奖励；窄刀锋（凸起大）→ 惩罚。
         // 读冻结快照而不是当前配置：世界打开后改配置不得让后半段路线按另一套山脊权重重算
         // （两半接缝处的路线会跳变）。摘要已随世界冻结，改了配置的世界会拒绝打开而不是生成一半。
-        var cfg = local.plaincraft.greatwall.config.GreatWallConfig.parameters();
         int flatThreshold = cfg.summitFlatThreshold();
         long centreLift = Math.abs(ridge); // 中心相对两侧的抬升，作为「山顶宽度」的代理
         long knifePart;
@@ -182,24 +235,10 @@ public final class RidgePlanner {
         }
         // 对称性：中心两侧（samples[3] vs samples[4]）落差 = 斜坡，惩罚不对称。
         long asymmetry = Math.abs(c.samples[3].groundTopY() - c.samples[4].groundTopY());
-        long score = cfg.ridgeWeight() * ridge
+        return cfg.ridgeWeight() * ridge
                 + cfg.ridgeProminenceWeight() * prominence
                 + knifePart
-                + cfg.ridgeSlopeWeight() * slope
-                + cfg.ridgeAccumulatedSlopeWeight() * c.candidateClimb
-                + cfg.ridgeTurnWeight() * turn
-                + cfg.ridgeWetWeight() * wet
-                + cfg.ridgeDepartureWeight() * departure
                 + cfg.ridgeAsymmetryWeight() * asymmetry;
-        c.candidateScore += score * (c.lookahead == 0 ? 4 : c.lookahead == 1 ? 2 : 1);
-        if (c.lookahead == 0) c.candidateFirstHeight = h.groundTopY();
-        c.candidatePreviousHeight = h.groundTopY(); c.lookaheadPoint = center;
-        if (++c.lookahead < c.lookaheadLimit) { c.sampleIndex = 0; return; }
-        if (c.candidateScore > c.bestScore) {
-            c.bestScore = c.candidateScore; c.bestCandidate = c.candidate;
-            c.bestHeight = c.candidateFirstHeight; c.bestOffset = c.candidateOffset;
-        }
-        rejectCandidate(c);
     }
 
     private static void rejectCandidate(Cursor c) { c.candidateActive = false; c.candidate++; }
@@ -356,7 +395,8 @@ public final class RidgePlanner {
         private final NaturalTerrainOracle oracle;
         private Thread owner;
         private int phase, step, candidate, lookahead, sampleIndex, logicalColumns, searchColumns, boundaryColumns;
-        private int boundaryIndex, degradation, lookaheadLimit, bestCandidate = -1, previousHeight, candidatePreviousHeight;
+        private int boundaryIndex, seamProbe, seamGround, seamWalkY;
+        private int degradation, lookaheadLimit, bestCandidate = -1, previousHeight, candidatePreviousHeight;
         private int candidateFirstHeight, bestHeight, curveIndex;
         private long previousOffsetQ8, previousDeltaQ8, bestScore = Long.MIN_VALUE, candidateScore, candidateOffset, bestOffset;
         /** 当前候选在自己那段前瞻里的累计爬升（只算上坡，刻度同 slope：每格 16）。 */

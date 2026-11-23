@@ -364,7 +364,7 @@ public final class NegotiatedGateService implements AutoCloseable {
         for (SegmentPlan plan : window.plans()) {
             for (SiteRecord site : plan.sites()) {
                 SiteKind kind = site.id().kind();
-                if (services.recipe().config().templateVersion()==2
+                if (local.plaincraft.greatwall.component.ImportedSiteGeometry.enabled(services.recipe())
                         && site.state()==local.plaincraft.greatwall.model.WallTypes.SiteState.PLANNED
                         && (kind==SiteKind.GATE||kind==SiteKind.FORT||kind==SiteKind.ENEMY_TOWER||kind==SiteKind.BEACON)) {
                     // 实物楼旁的墙线会正交接引，旧轴线上的道路门不能裁穿楼体或接引段。

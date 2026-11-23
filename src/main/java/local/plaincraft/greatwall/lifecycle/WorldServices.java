@@ -458,6 +458,16 @@ public final class WorldServices {
         local.plaincraft.greatwall.generation.WallPlanSupport.markPlannedColumns(plan);
         var services = find(level.getServer());
         if (services == null || services.production == null) return;
+        // 开局加载区块可能先于走廊发布；落地后补刷本区块，且只同步确实改变的群系。
+        var runtime = services.production.biomeRuntime();
+        if (runtime != null && runtime.identityBound() && level.dimension() == net.minecraft.world.level.Level.OVERWORLD) {
+            var mask = runtime.find(plan.owner()).orElse(null);
+            if (mask != null && local.plaincraft.greatwall.compat.biome.GreatWallBiomeWriter.paint(
+                    chunk, level.getChunkSource().randomState().sampler(), mask, runtime.requireIdentity())
+                    && chunk instanceof net.minecraft.world.level.chunk.LevelChunk) {
+                level.getChunkSource().chunkMap.resendBiomesForChunks(java.util.List.of(chunk));
+            }
+        }
         var sites = services.production.sitesIfReady();
         if (sites == null) return;
         if (!(chunk instanceof net.minecraft.world.level.chunk.LevelChunk loadedChunk)) return;

@@ -12,10 +12,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ImportedSiteScheduleTest {
     static WorldRecipe recipe() {
+        return recipe(2);
+    }
+
+    static WorldRecipe recipe(int version) {
         var old = PlanningFixtures.recipe(9282026);
         var c = old.config();
         return new WorldRecipe(old.instance(), old.wallId(), old.seed(), old.dimension(), old.frozenSpawn(), old.axis(), old.bounds(),
-                new GenerationConfig(c.algorithmVersion(), 2, c.segmentBlocks(), c.stationBlocks(), c.columnBudget(),
+                new GenerationConfig(c.algorithmVersion(), version, c.segmentBlocks(), c.stationBlocks(), c.columnBudget(),
                         c.carrierAmplitude(), c.corridorHalfWidth(), c.maxGeometryInflight(), c.segmentBytes(), c.terrainBytes(), c.compiledBytes(),
                         c.parametersHash()), old.terrainHash(), old.paletteHash(), old.templatesHash(), old.recipeHash());
     }

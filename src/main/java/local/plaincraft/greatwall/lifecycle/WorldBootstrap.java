@@ -74,7 +74,7 @@ public final class WorldBootstrap implements AutoCloseable {
 
     public WorldBootstrap(MinecraftServer server, WorldManifest manifest, Executor io) {
         this(server, manifest, io, server.getWorldData().worldGenOptions().seed(),
-                server.getWorldData().overworldData().isInitialized(), ProductionRecipeVersions::newWorld, List.of(defaultConfig()));
+                server.getWorldData().overworldData().isInitialized(), ProductionRecipeVersions::newWorld, ProductionRecipeVersions.readable());
     }
 
     WorldBootstrap(WorldManifest manifest, Executor io, long seed, boolean originallyInitialized) {
@@ -852,8 +852,12 @@ public final class WorldBootstrap implements AutoCloseable {
     private void publishRecipeFor(RootSearch.Selection selection, WorldRecipeSelection authorization, Frozen inputs) {
         GreatWallMod.LOGGER.info("[GreatWall:DIAG] publishRecipeFor ENTER thread={} state={}", Thread.currentThread().getName(), Map.copyOf(state));
         var instance = authorization.creation().instance();
+        // 选址仍围绕出生点做，存进配方的轴首向反方向退半长。
+        var axis = local.plaincraft.greatwall.model.WallRecipeRules.centerFiniteAxis(selection.axis(),
+                local.plaincraft.greatwall.config.GreatWallConfig.parameters().wallLengthBlocks(),
+                authorization.config().templateVersion());
         var provisional = new WorldRecipe(instance, "0".repeat(64), seed, "minecraft:overworld",
-                spawn.get("chosen"), selection.axis(), inputs.bounds(), authorization.config(), inputs.terrainHash(),
+                spawn.get("chosen"), axis, inputs.bounds(), authorization.config(), inputs.terrainHash(),
                 inputs.paletteHash(), inputs.templatesHash(), "0".repeat(64));
         String hash = DeterministicHash.sha256(CanonicalCodec.recipe(provisional));
         var recipe = new WorldRecipe(instance, hash, seed, provisional.dimension(), provisional.frozenSpawn(),

@@ -31,9 +31,16 @@ public final class HydrologyClassifier {
     public HydrologyClassifier() {}
 
     public Cursor begin(RouteNeighborhood routes, NaturalTerrainOracle oracle, int columnBudget) {
+        return begin(routes, oracle, columnBudget, false);
+    }
+
+    public Cursor begin(RouteNeighborhood routes, NaturalTerrainOracle oracle, int columnBudget, boolean useRouteSpan) {
         if (columnBudget < 1 || columnBudget > 120000) throw new IllegalArgumentException("hydrology budget 1..120000");
         var c = new Cursor();
         c.routes = Objects.requireNonNull(routes); c.oracle = Objects.requireNonNull(oracle); c.budget = columnBudget;
+        // 新墙验证实际要跨的线路而不是横扫水域；短且两岸齐全才有资格试水门。
+        c.useRouteSpan = useRouteSpan;
+        if (useRouteSpan) c.phase = 1;
         var nodes = new ArrayList<Node>();
         routes.previous().ifPresent(r -> {
             long length = r.localSQ8().getLast();
@@ -45,7 +52,7 @@ public final class HydrologyClassifier {
             int end = Math.min(r.points().size() - 1, ArcLength.edgeAt(r.localSQ8(), Math.min(r.localSQ8().getLast(), 128L * 256)) + 1);
             appendNodes(nodes, r, 0, end, routes.center().localSQ8().getLast());
         });
-        for (Node n : nodes) if (Math.floorMod(n.absoluteU, 4) == 0) c.coarse.add(new Cell(
+        for (Node n : nodes) if (!useRouteSpan && Math.floorMod(n.absoluteU, 4) == 0) c.coarse.add(new Cell(
                 FixedMath.floorBlock(n.point.xQ8()), FixedMath.floorBlock(n.point.zQ8()), n.s));
         for (int i = 1; i < nodes.size(); i++) {
             Node a = nodes.get(i - 1), b = nodes.get(i);
@@ -258,7 +265,9 @@ public final class HydrologyClassifier {
         var value = sample(c, c.trace.get(c.routeIndex));
         if (value == null) return;
         c.traceSamples.add(value);
-        if (wet(value)) { if (c.runStart < 0) c.runStart = c.routeIndex; }
+        if (c.useRouteSpan ? value.waterTopY().isPresent() : wet(value)) {
+            if (c.runStart < 0) c.runStart = c.routeIndex;
+        }
         else if (c.runStart >= 0) { c.runs.add(new Run(c.runStart, c.routeIndex, c.runStart != 0, true)); c.runStart = -1; }
         c.routeIndex++;
     }
@@ -269,11 +278,15 @@ public final class HydrologyClassifier {
         long from = c.trace.get(c.run.from).s;
         long to = c.run.to < c.trace.size() ? c.trace.get(c.run.to).s : c.trace.getLast().s;
         if (to <= 0 || from >= c.routes.center().localSQ8().getLast() || to <= from) return;
-        if (!c.run.leftBank && c.routes.center().key().index() == 0 && from <= 0) {
+        if (!c.useRouteSpan && !c.run.leftBank && c.routes.center().key().index() == 0 && from <= 0) {
             throw new WallFailure(FailureCode.ROOT_NOT_FOUND, "wall root is wet without an entry bank");
         }
         c.crossing = new ArcInterval(from, to); c.centers.clear(); c.evidence.clear(); c.piers.clear();
         long span = to - from;
+        if (c.useRouteSpan) {
+            classifyRouteSpan(c, span);
+            return;
+        }
         for (long target : new long[] {from + Math.min(4L * 256, span / 2), from + span / 2, to - Math.min(4L * 256, span / 2)}) {
             int index = c.run.from;
             while (index + 1 < c.run.to && c.trace.get(index + 1).s <= target) index++;
@@ -298,6 +311,36 @@ public final class HydrologyClassifier {
         }
         c.results = new Side[c.centers.size()][16][2];
         c.centerIndex = 0; c.transect = 0; c.side = 0; c.ray = null; c.phase = 3;
+    }
+
+    private static void classifyRouteSpan(Cursor c, long span) {
+        c.waterY = c.traceSamples.get(c.run.from).waterTopY().orElseThrow();
+        c.banks.clear();
+        boolean narrow = span < RIVER_CROSS_MAX_BLOCKS * 256L && c.run.leftBank && c.run.rightBank
+                && isCertifiedDry(c.traceSamples.get(c.run.from - 1))
+                && isCertifiedDry(c.traceSamples.get(c.run.to));
+        for (int i = c.run.from; i < c.run.to; i++) {
+            var sample = c.traceSamples.get(i);
+            c.evidence.put(columnKey(c.trace.get(i)), sample);
+            narrow &= wet(sample) && Math.abs((long) sample.waterTopY().orElseThrow() - c.waterY) <= 1;
+        }
+        c.width = narrow ? span : 0;
+        c.classification = narrow ? WaterClass.NARROW : WaterClass.WIDE;
+        if (!narrow) {
+            completeEvidence(c);
+            return;
+        }
+        for (int i : new int[]{c.run.from - 1, c.run.to}) {
+            var bank = c.trace.get(i);
+            c.banks.add(new Point3i(bank.x, c.waterY, bank.z));
+        }
+        // 同一条走线上的真实河床继续供水门验证，宽水和缺证无需另外射线。
+        c.pierS = c.crossing.fromQ8() + 4L * 256;
+        c.phase = 5;
+    }
+
+    private static boolean isCertifiedDry(ColumnSample sample) {
+        return sample.quality() == Quality.REFERENCE && !sample.upperCensored() && sample.waterTopY().isEmpty();
     }
 
     private static void transect(Cursor c) {
@@ -454,8 +497,8 @@ public final class HydrologyClassifier {
         }
         if (!c.column.done()) { c.oracle.advance(c.column, 1); return null; }
         var value = c.oracle.finish(c.column); c.column = null;
-        if (value.quality() != Quality.REFERENCE || value.upperCensored()
-                || value.waterTopY().isPresent() && value.bedTopY().isEmpty()) {
+        if (!c.useRouteSpan && (value.quality() != Quality.REFERENCE || value.upperCensored()
+                || value.waterTopY().isPresent() && value.bedTopY().isEmpty())) {
             // Name the column before refusing: the failure itself is handled a level up (the job turns
             // it into the authorised WIDE outcome), and "which column and why" is the only thing an
             // operator can act on afterwards. A measured world died on this line at a wall site on a
@@ -552,7 +595,7 @@ public final class HydrologyClassifier {
         private int budget, phase, routeIndex, transect, centerIndex, side, distance, dryRun, charged, runStart = -1, runIndex;
         private int waterY;
         private long width, pierS;
-        private boolean done, continuous, waterMismatch;
+        private boolean done, continuous, waterMismatch, useRouteSpan;
         private NaturalTerrainOracle.ColumnCursor column;
         private final List<WaterEvidence> completed = new ArrayList<>();
         private final List<Cell> coarse = new ArrayList<>(), trace = new ArrayList<>(), centers = new ArrayList<>();

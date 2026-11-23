@@ -221,7 +221,7 @@ public final class RealizationPlanner {
                 input.tiles().keySet().stream().mapToInt(k->k.maxY()+1).max().orElseThrow(),29_999_000);
         String wall=recipe!=null?recipe.wallId():input.plans().plans().stream().flatMap(p->p.sites().stream()).findFirst()
                 .map(s->s.id().wallId()).orElse(input.key().recipeHash());
-        var field=new DecayField(recipe==null?0:recipe.seed());
+        var field=new DecayField(recipe==null?0:recipe.seed(),templateVersion());
         var sites=siteList(input.plans());var maintained=new ArrayList<Long>();var exits=new ArrayList<GroundExitDecision.Exit>();
         var waters=waterList(input.plans());long terminal=Long.MAX_VALUE;BreakReason terminalReason=BreakReason.RIVER_WIDE;
         for(var p:input.plans().plans()){
@@ -233,6 +233,15 @@ public final class RealizationPlanner {
             }
         }
         if(terminal!=Long.MAX_VALUE)breaks.add(new BreakInterval(new ArcInterval(terminal,Long.MAX_VALUE),terminalReason,BreakScope.PLANNED));
+        if(!field.weathers()) {
+            // 宽水只收口这一段；两岸陆地都留给原施工链，不得沿段号把对岸整段作废。
+            for(var w:waters) {
+                if(w.classification()==WaterClass.WIDE)
+                    breaks.add(new BreakInterval(w.crossing(),BreakReason.RIVER_WIDE,BreakScope.PLANNED));
+                else if(w.classification()==WaterClass.SUPPORT_GAP)
+                    breaks.add(new BreakInterval(w.crossing(),BreakReason.NO_SUPPORT,BreakScope.PLANNED));
+            }
+        }
         var supported=new HashMap<Point3i,ProbeResult>();
         var importedProjection=ImportedSiteGeometry.enabled(recipe)
                 ?memos==null?new ImportedRibbonProjection(stations,sites):memos.projections.get(input.plans(),stations,sites):null;
@@ -321,6 +330,10 @@ public final class RealizationPlanner {
             if(water.classification()!=WaterClass.NARROW)continue;
             long center=(water.crossing().fromQ8()+water.crossing().toQ8())/2;
             if(ImportedSiteGeometry.enabled(recipe)&&center>=terminal)continue;
+            if(!field.weathers()&&water.crossing().toQ8()+8L*256>terminal) {
+                breaks.add(new BreakInterval(water.crossing(),BreakReason.RIVER_WIDE,BreakScope.PLANNED));
+                continue;
+            }
             if(center<Math.max(0,from-128L*256)||center>=to+128L*256)continue;
             occupied.add(new ArcInterval(Math.max(0,water.crossing().fromQ8()-8L*256),water.crossing().toQ8()+8L*256));
             var site=site(wall,SiteKind.WATER_GATE,water.crossing().fromQ8(),center,stations);
@@ -333,7 +346,8 @@ public final class RealizationPlanner {
         var walkBreaks=new ArrayList<>(merged);
         long decayFrom=Math.max(stations.getFirst().globalSQ8(),Math.max(0,from-160L*256));
         long decayTo=Math.min(stations.getLast().globalSQ8(),Math.min(terminal,to+160L*256));
-        for(long s=Math.floorDiv(decayFrom,256)*256;s<decayTo;s+=256){
+        // 从源头跳过废墟断点，通行证明与实际落下的马道必须一致。
+        if(field.weathers())for(long s=Math.floorDiv(decayFrom,256)*256;s<decayTo;s+=256){
             var d=field.sample(s,PaletteFamily.STONE,maintained);
             boolean seam=nearImportedSeam(s,sites);
             if(!seam&&(d.state()==DecayState.RUIN||d.state()==DecayState.BURIED))
@@ -479,7 +493,7 @@ public final class RealizationPlanner {
         return new ArcInterval(min,max);
     }
     private List<ArcInterval> capObstacles(Input input,List<Station> ribbon,DimensionBounds limits,long edge) {
-        var result=new ArrayList<ArcInterval>();var field=new DecayField(recipe==null?0:recipe.seed());
+        var result=new ArrayList<ArcInterval>();var field=new DecayField(recipe==null?0:recipe.seed(),templateVersion());
         var water=waterList(input.plans());
         for(var w:water)if(w.classification()!=WaterClass.DRY)result.add(new ArcInterval(Math.max(0,w.crossing().fromQ8()-8*256L),w.crossing().toQ8()+8*256L));
         for(var s:siteList(input.plans())) {

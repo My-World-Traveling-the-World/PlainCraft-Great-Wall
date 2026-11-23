@@ -51,6 +51,8 @@ public final class PlannerScheduler implements AutoCloseable {
     /** 单段水文需要设操作上限，避免极端水面阻塞整个启动；保留已认证的证据。 */
     private static final long HYDROLOGY_OPERATION_CEILING = 4_000_000L;
     private final StartupWallRange startupRange;
+    private final long configuredWallLength;
+    private final boolean usesLocalWaterBreaks;
     /** 通过线程名前缀识别执行资源，防止任务阻塞等待自身。 */
     private static final String pumpThreadPrefix = "pgw-planner-";
     private static final String laneThreadPrefix = "pgw-oracle-";
@@ -106,6 +108,9 @@ public final class PlannerScheduler implements AutoCloseable {
             }
         }
         long wallLength = GreatWallConfig.parameters().wallLengthBlocks();
+        this.configuredWallLength = wallLength;
+        this.usesLocalWaterBreaks = recipe.config().templateVersion()
+                >= local.plaincraft.greatwall.model.WallRecipeRules.INTACT;
         long configuredSegments = GreatWallConfig.segmentsFor(wallLength);
         this.startupRange = StartupWallRange.resolve(wallLength, GreatWallConfig.get().unlimitedPrewarmBlocks(),
                 segment -> StartupWallRange.segmentFits(recipe, configuredSegments, segment));
@@ -389,10 +394,11 @@ public final class PlannerScheduler implements AutoCloseable {
             var center = computeRoute(segment, oracle);
             var previous = segment == 0 ? Optional.<RouteShape>empty() : Optional.of(computeRoute(segment - 1, oracle));
             var next = safeSegment(segment + 1) ? Optional.of(computeRoute(segment + 1, oracle)) : Optional.<RouteShape>empty();
-            var cursor = hydrology.begin(new RouteNeighborhood(center, previous, next), oracle, 96000);
+            var cursor = hydrology.begin(new RouteNeighborhood(center, previous, next), oracle, 96000,
+                    usesLocalWaterBreaks);
             while (hydrology.advance(cursor, 64) != WorkState.DONE) if (closed()) throw closedFailure();
             return geometry(center, hydrology.finish(cursor), cursor.logicalColumns(), next.isEmpty(),
-                    oceanRuns(center, oracle));
+                    usesLocalWaterBreaks ? List.of() : oceanRuns(center, oracle));
         } finally {
             state.merge("synchronous-count", 1L, Long::sum);
             state.merge("synchronous-max-nanos", System.nanoTime() - started, Math::max);
@@ -481,8 +487,8 @@ public final class PlannerScheduler implements AutoCloseable {
 
     private SegmentGeometry geometry(RouteShape route, List<WaterEvidence> water, int hydroColumns, boolean last,
             List<local.plaincraft.greatwall.planning.OceanRouteScan.OceanRun> seas) {
-        // 先用群系识别连续海段，减少已知终止段的测深开销。
-        Optional<Terminal> terminal = local.plaincraft.greatwall.planning.OceanRouteScan
+        // 历史配方按首个海面截断；新配方以真实水段局部收口，计划终点只受长度/世界边界限制。
+        Optional<Terminal> terminal = usesLocalWaterBreaks ? Optional.empty() : OceanRouteScan
                 .firstTerminating(seas)
                 .map(run -> new Terminal(route.key().index(),
                         route.localSQ8().get(Math.min(route.localSQ8().size() - 1,
@@ -493,17 +499,24 @@ public final class PlannerScheduler implements AutoCloseable {
                     "[GreatWall:S1C] OCEAN_ROUTE_SCAN segment={} seas={} terminal=biome localSQ8={}",
                     route.key().index(), seas.size(), terminal.get().localSQ8());
         }
-        if (terminal.isEmpty()) terminal = water.stream().filter(w -> w.classification() == WaterClass.WIDE
+        if (!usesLocalWaterBreaks && terminal.isEmpty()) terminal = water.stream().filter(w -> w.classification() == WaterClass.WIDE
                 && w.crossing().fromQ8() >= 0 && w.crossing().fromQ8() < route.localSQ8().getLast())
                 .map(w -> new Terminal(route.key().index(), w.crossing().fromQ8(), TerminalKind.OCEAN))
                 .min(Comparator.comparingLong(Terminal::localSQ8));
-        if (terminal.isEmpty() && last) terminal = Optional.of(new Terminal(route.key().index(), route.localSQ8().getLast(), TerminalKind.WORLD_LIMIT));
+        if (terminal.isEmpty() && last) {
+            int index = route.points().size() - 1;
+            if (usesLocalWaterBreaks && configuredWallLength > 0) {
+                long remainingU = configuredWallLength - route.key().index() * GreatWallConfig.SEGMENT_BLOCKS;
+                index = Math.toIntExact(Math.clamp(remainingU, 1, index));
+            }
+            terminal = Optional.of(new Terminal(route.key().index(), route.localSQ8().get(index), TerminalKind.WORLD_LIMIT));
+        }
         // 分别记录群系、测深或窗口边界，便于定位提前终止。
         local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
                 "[GreatWall:diag] TERMINAL_SOURCE segment={} source={} localSQ8={} routeSQ8={} "
                         + "waterRuns={} wideRuns={} biomeTerminal={} last={}",
                 route.key().index(),
-                terminal.isEmpty() ? "none" : (terminal.get().localSQ8() == route.localSQ8().getLast()
+                terminal.isEmpty() ? "none" : (terminal.get().kind() == TerminalKind.WORLD_LIMIT
                         ? "world-limit" : (water.stream().anyMatch(w -> w.classification() == WaterClass.WIDE)
                         && !seas.isEmpty() ? "wide-water-or-biome" : "wide-water")),
                 terminal.map(Terminal::localSQ8).orElse(-1L), route.localSQ8().getLast(),
@@ -840,7 +853,7 @@ public final class PlannerScheduler implements AutoCloseable {
             result.thenAcceptAsync(cacheIo::persist, pump);
         }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
-            if (cursor == null) cursor = hydrology.begin(routes, oracle, 96000);
+            if (cursor == null) cursor = hydrology.begin(routes, oracle, 96000, usesLocalWaterBreaks);
             this.oracle = oracle;
             operations += limit;
             try {
@@ -861,7 +874,7 @@ public final class PlannerScheduler implements AutoCloseable {
         }
         @Override SegmentGeometry value() {
             return geometry(routes.center(), hydrology.finish(cursor), cursor.logicalColumns(),
-                    routes.next().isEmpty(), oceanRuns(routes.center(), oracle));
+                    routes.next().isEmpty(), usesLocalWaterBreaks ? List.of() : oceanRuns(routes.center(), oracle));
         }
 
     }

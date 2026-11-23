@@ -14,7 +14,7 @@ public final class ImportedSiteGeometry {
     private ImportedSiteGeometry() {}
 
     public static boolean enabled(WorldRecipe recipe) {
-        return recipe != null && recipe.config().templateVersion() == 2;
+        return recipe != null && local.plaincraft.greatwall.model.WallRecipeRules.usesAuthoredTemplates(recipe.config().templateVersion());
     }
 
     public static Asset asset(SiteId id) {

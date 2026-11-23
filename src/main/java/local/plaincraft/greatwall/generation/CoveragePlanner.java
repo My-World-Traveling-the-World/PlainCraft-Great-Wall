@@ -13,6 +13,7 @@ import local.plaincraft.greatwall.component.S1TemplateSet;
 import local.plaincraft.greatwall.component.S2TemplateSet;
 import local.plaincraft.greatwall.component.ExactFootprintTemplate;
 import local.plaincraft.greatwall.model.WallFailure;
+import local.plaincraft.greatwall.model.WallRecipeRules;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.EvidenceCodec;
 
@@ -25,11 +26,11 @@ public final class CoveragePlanner {
     public CoveragePlanner() { this(1); }
     public CoveragePlanner(int version) {
         this.version=version;
-        templates=version==2?S2TemplateSet.create(0,(i,p,l,w,s,h)->S1TemplateSet.material(i.family(),i.redSandstone(),p))
+        templates=imported()?S2TemplateSet.create(0,(i,p,l,w,s,h)->S1TemplateSet.material(i.family(),i.redSandstone(),p))
                 :S1TemplateSet.create(0);
     }
     /** 新配方的跨段半单元必须都保留，不能沿用旧版择一策略。 */
-    public boolean imported() { return version==2; }
+    public boolean imported() { return WallRecipeRules.usesAuthoredTemplates(version); }
     public Coverage forChunk(ChunkKey chunk,PlanWindow plans,DimensionBounds bounds) {
         var stations=stations(plans);
         int min=Integer.MAX_VALUE,max=Integer.MIN_VALUE;

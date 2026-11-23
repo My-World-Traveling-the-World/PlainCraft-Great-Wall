@@ -14,6 +14,7 @@ import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.geometry.Projection;
 import local.plaincraft.greatwall.model.WallFailure;
+import local.plaincraft.greatwall.model.WallRecipeRules;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** Frozen walk-height contract. Only supplied columns are read; construction never adjusts W. */
@@ -104,9 +105,14 @@ public final class HeightContractPlanner {
         // 楼体已按真实高度预检；普通墙最高为 W+2，不能拿最高楼的43格统一限制所有墙站。
         int max = Math.subtractExact(recipe.bounds().maxYExclusive(), ImportedSiteGeometry.enabled(recipe) ? 3 : 16);
         int n = nodes.size();
+        boolean gentle = recipe.config().templateVersion() >= WallRecipeRules.INTACT;
         long[] limits = new long[n];
         boolean[] cuts = new boolean[n];
-        for (int i = 1; i < n; i++) limits[i] = Math.floorDiv(3 * (nodes.get(i).s - nodes.get(i - 1).s), 4 * 256);
+        for (int i = 1; i < n; i++) {
+            long distance = nodes.get(i).s - nodes.get(i - 1).s;
+            // 两格最多抬一级，为对角落列余出余量，避免台阶跳两级。
+            limits[i] = gentle ? distance / (2 * 256) : Math.floorDiv(3 * distance, 4 * 256);
+        }
         int lastHard = -1;
         long reach = 0;
         for (int i = 0; i < n; i++) {
@@ -132,6 +138,17 @@ public final class HeightContractPlanner {
         for (int i = n - 2; i >= 0; i--) if (!cuts[i + 1]) {
             low[i] = Math.max(low[i], low[i + 1] - limits[i + 1]); high[i] = Math.min(high[i], high[i + 1] + limits[i + 1]);
         }
+        long[] envelope = null;
+        if (gentle) {
+            envelope = new long[n];
+            for (int i = 0; i < n; i++) envelope[i] = Math.clamp(nodes.get(i).target, low[i], high[i]);
+            // 采完一段再双向传播高点：取满足坡度的最低上包络，让低地向上接到山坡。
+            // 两次线性扫描就够；平台、段缝和已判定的真实断口不会被抬动。
+            for (int i = 1; i < n; i++)
+                if (!cuts[i]) envelope[i] = Math.max(envelope[i], envelope[i - 1] - limits[i]);
+            for (int i = n - 2; i >= 0; i--)
+                if (!cuts[i + 1]) envelope[i] = Math.max(envelope[i], envelope[i + 1] - limits[i + 1]);
+        }
         var stations = new ArrayList<Station>();
         for (int i = 0; i < n; i++) {
             var node = nodes.get(i);
@@ -140,7 +157,7 @@ public final class HeightContractPlanner {
                 high[i] = Math.min(high[i], stations.getLast().walkY() + limits[i]);
             }
             if (low[i] > high[i]) throw new IllegalStateException("infeasible interval escaped hard-break classification");
-            int y = Math.toIntExact(Math.clamp(node.target, low[i], high[i]));
+            int y = Math.toIntExact(envelope == null ? Math.clamp(node.target, low[i], high[i]) : envelope[i]);
             int flags = node.flags | (cuts[i] || i + 1 < n && cuts[i + 1] ? 16 : 0);
             stations.add(new Station(node.s, node.point, y, flags));
         }

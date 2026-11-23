@@ -781,7 +781,8 @@ public final class WallBodyBackfill {
     private static PublishedPlanPainter.World<BlockState> createSettlementWorld(ServerLevel level, LevelChunk chunk,
             ChunkKey key, ChunkWritePlan plan) {
         var services=local.plaincraft.greatwall.lifecycle.WorldServices.find(level.getServer());
-        boolean authored=services!=null&&services.productionFixture()&&services.recipe().config().templateVersion()==2;
+        boolean authored=services!=null&&services.productionFixture()
+                &&local.plaincraft.greatwall.component.ImportedSiteGeometry.enabled(services.recipe());
         return new PublishedPlanPainter.World<BlockState>() {
             public boolean validHeight(int y) { return !level.isOutsideBuildHeight(y); }
             public BlockState resolve(local.plaincraft.greatwall.model.WallTypes.BlockSpec spec) {

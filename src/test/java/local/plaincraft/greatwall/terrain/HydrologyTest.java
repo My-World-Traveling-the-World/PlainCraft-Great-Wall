@@ -26,16 +26,45 @@ class HydrologyTest {
 
     private static List<WaterEvidence> classify(long segment, boolean diagonal, int slice,
             BiFunction<Integer, Integer, ColumnSample> terrain) {
+        return classify(segment, diagonal, slice, terrain, false);
+    }
+
+    private static List<WaterEvidence> classify(long segment, boolean diagonal, int slice,
+            BiFunction<Integer, Integer, ColumnSample> terrain, boolean routeSpan) {
         var center = route(segment, diagonal);
         var neighborhood = new RouteNeighborhood(center, segment == 0 ? Optional.empty() : Optional.of(route(segment - 1, diagonal)),
                 Optional.of(route(segment + 1, diagonal)));
         var classifier = new HydrologyClassifier();
         try (var oracle = new AnalyticTerrainOracle(terrain, true)) {
-            var cursor = classifier.begin(neighborhood, oracle, 24000);
+            var cursor = classifier.begin(neighborhood, oracle, 24000, routeSpan);
             while (classifier.advance(cursor, slice) != WorkState.DONE) { }
             assertTrue(cursor.logicalColumns() <= 24000);
             return classifier.finish(cursor);
         }
+    }
+
+    @Test void certifiedShortWaterCrossesAndLongWaterDoesNotEraseLaterEvidence() {
+        var water = classify(0, false, 7, (x, z) -> {
+            if (x >= 100 && x < 149 || x >= 200 && x < 250 || x >= 400 && x < 408)
+                return AnalyticTerrainOracle.water(63, 58);
+            return AnalyticTerrainOracle.dry(64);
+        }, true);
+        assertEquals(List.of(WaterClass.NARROW, WaterClass.WIDE, WaterClass.NARROW),
+                water.stream().map(WaterEvidence::classification).toList());
+        assertEquals(49 * 256L, water.getFirst().crossingSpanQ8());
+        assertEquals(2, water.getFirst().banks().size());
+        assertTrue(water.getFirst().piers().size() > 5);
+        assertEquals(50 * 256L, water.get(1).crossingSpanQ8());
+        assertTrue(water.get(1).piers().isEmpty());
+        assertEquals(400 * 256L, water.getLast().crossing().fromQ8());
+    }
+
+    @Test void openWaterAtTheEndNeverInventsTheOppositeBank() {
+        var water = classify(0, false, 64, (x, z) -> x >= 0 && x < 12
+                ? AnalyticTerrainOracle.water(63, 58) : AnalyticTerrainOracle.dry(64), true);
+        assertEquals(1, water.size());
+        assertEquals(WaterClass.WIDE, water.getFirst().classification());
+        assertEquals(12 * 256L, water.getFirst().crossingSpanQ8());
     }
 
     private static BiFunction<Integer, Integer, ColumnSample> river(int start, int width, int bed) {

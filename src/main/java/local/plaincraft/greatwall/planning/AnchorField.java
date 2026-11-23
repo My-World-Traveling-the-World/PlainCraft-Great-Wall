@@ -5,6 +5,7 @@ import java.util.Objects;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.model.WallFailure;
+import local.plaincraft.greatwall.model.WallRecipeRules;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** Stateless Hermite carrier. Shared boundary values depend on the boundary index only. */
@@ -24,6 +25,8 @@ public final class AnchorField {
     public long lateral(long boundaryIndex) {
         if (boundaryIndex < -1) throw new IllegalArgumentException("only -1 is a virtual boundary");
         Math.multiplyExact(Math.addExact(boundaryIndex, 1), LENGTH);
+        // 新墙由真实地形驱动转向，不再随机移动段缝；这样出生点中轴不会先被偏移几百格。
+        if (recipe.config().templateVersion() >= WallRecipeRules.INTACT) return 0;
         return boundaryIndex == 0 ? 0 : 256L * (DeterministicHash.bounded(
                 DeterministicHash.fields(recipe.seed(), "anchor", boundaryIndex), 769) - 384);
     }
@@ -41,6 +44,8 @@ public final class AnchorField {
 
     public Point2q carrier(long segment, int localUQ8) {
         if (segment < 0 || localUQ8 < 0 || localUQ8 > LENGTH) throw new IllegalArgumentException("carrier range");
+        if (recipe.config().templateVersion() >= WallRecipeRules.INTACT)
+            return world(Math.addExact(Math.multiplyExact(segment, LENGTH), localUQ8), 0);
         if (localUQ8 == 0) return at(segment).point();
         if (localUQ8 == LENGTH) return at(Math.addExact(segment, 1)).point();
         long b0 = lateral(segment), b1 = lateral(Math.addExact(segment, 1));
