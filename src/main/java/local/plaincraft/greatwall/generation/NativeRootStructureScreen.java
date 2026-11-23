@@ -4,7 +4,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import local.plaincraft.greatwall.GreatWallMod;
 import local.plaincraft.greatwall.lifecycle.RootStructureScreen;
-import local.plaincraft.greatwall.mixin.ChunkMapAccess;
 import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import net.minecraft.core.registries.Registries;
@@ -26,7 +25,12 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
      */
     private static final int STRUCTURE_BATCH = 8;
     private record Fact(String id,Bounds box) {}
-    private record References(Map<ChunkPos,ChunkAccess> chunks,List<ChunkPos> starts) {}
+    private static final class Window {
+        // STARTS 不能冒充 REFERENCES；两个状态独立去重，全部投票结束才释放本批票据。
+        final RootStructureRequests<ChunkAccess> references = new RootStructureRequests<>();
+        final RootStructureRequests<ChunkAccess> starts = new RootStructureRequests<>();
+        final List<StructureLease> leases = new ArrayList<>();
+    }
     private final ServerLevel level;
     private final Map<Structure,String> ids;
     private final Executor nativeOwner;
@@ -77,46 +81,75 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
             int to=Math.min(frozen.size(),from+STRUCTURE_BATCH);
             final int start=from;
             chain=chain.thenComposeAsync(ignored->{
-                var window=new ArrayList<CompletableFuture<Vote>>(to-start);
-                for(int i=start;i<to;i++)window.add(check(frozen.get(i)));
-                return CompletableFuture.allOf(window.toArray(CompletableFuture[]::new))
-                        .thenAccept(done->{
-                            for(int i=start;i<to;i++){
-                                var vote=window.get(i-start).join();
-                                votes.add(vote);
+                var window=new Window();
+                var pending=new ArrayList<CompletableFuture<Vote>>(to-start);
+                try {
+                    for(int i=start;i<to;i++)pending.add(check(frozen.get(i),window));
+                } catch(RuntimeException | Error failure) {
+                    window.leases.forEach(this::release);
+                    throw failure;
+                }
+                return CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new))
+                        .thenAcceptAsync(done->{
+                            for(var waiting:pending){
+                                votes.add(waiting.join());
                                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStructureProgress(
                                         completed.incrementAndGet(), frozen.size());
                             }
-                        });
+                        },nativeOwner)
+                        .whenCompleteAsync((done,failure)->window.leases.forEach(this::release),nativeOwner);
             },nativeOwner);
         }
         CompletableFuture<List<Vote>> result=chain.thenApply(ignored->List.copyOf(votes));
         result.whenComplete((v,error)->{producers.compute("count",(k,n)->n-1);completeDrain();});
         return result.copy();
     }
-    private CompletableFuture<Vote> check(Candidate candidate) {
+    private CompletableFuture<Vote> check(Candidate candidate,Window window) {
         active();
         var footprints=candidate.axes().stream().map(NativeRootStructureScreen::footprint).toList();
-        var positions=new TreeSet<ChunkPos>(Comparator.comparingInt((ChunkPos p)->p.x).thenComparingInt(p->p.z));
-        for(var b:footprints)for(int x=Math.floorDiv(b.minX()-1,16);x<=Math.floorDiv(b.maxXExclusive(),16);x++)
-            for(int z=Math.floorDiv(b.minZ()-1,16);z<=Math.floorDiv(b.maxZExclusive(),16);z++)positions.add(new ChunkPos(x,z));
-        if(positions.size()>81)throw new WallFailure(FailureCode.CAPACITY,"root reference footprint exceeds finite lease");
-        var referenceLease=track(new StructureLease(level,List.copyOf(positions),ChunkStatus.STRUCTURE_REFERENCES));
-        return referenceLease.ready().thenApplyAsync(chunks->{
-            active();var starts=new TreeSet<ChunkPos>(positions.comparator());
-            for(var chunk:chunks.values())for(var refs:chunk.getAllReferences().values())
-                for(long ref:refs)if(!chunks.containsKey(new ChunkPos(ref)))starts.add(new ChunkPos(ref));
-            if(chunks.size()+starts.size()>81)throw new WallFailure(FailureCode.CAPACITY,"root reference/starts union exceeds 81");
-            return new References(chunks,List.copyOf(starts));
-        },nativeOwner).thenComposeAsync(refs->{
-            if(refs.starts().isEmpty())return CompletableFuture.completedFuture(vote(candidate,footprints,refs.chunks(),refs.chunks()));
-            var startLease=track(new StructureLease(level,refs.starts(),ChunkStatus.STRUCTURE_STARTS));
-            return startLease.ready().thenApplyAsync(extra->{
-                active();var combined=new HashMap<>(refs.chunks());combined.putAll(extra);
-                return vote(candidate,footprints,refs.chunks(),Map.copyOf(combined));
-            },nativeOwner).whenComplete((v,e)->release(startLease));
-        },nativeOwner).whenComplete((v,e)->release(referenceLease));
+        var positions=referencePositions(footprints);
+        return window.references.get(positions,missing->request(window,missing,ChunkStatus.STRUCTURE_REFERENCES))
+                .thenComposeAsync(chunks->{
+                    active();
+                    var starts=new TreeSet<>(CHUNK_ORDER);
+                    for(var chunk:chunks.values())for(var refs:chunk.getAllReferences().values())
+                        for(long ref:refs)if(!chunks.containsKey(new ChunkPos(ref)))starts.add(new ChunkPos(ref));
+                    if(chunks.size()+starts.size()>81)
+                        throw new WallFailure(FailureCode.CAPACITY,"root reference/starts union exceeds 81");
+                    if(starts.isEmpty()) return CompletableFuture.completedFuture(vote(candidate,footprints,chunks,chunks));
+                    return window.starts.get(List.copyOf(starts),missing->request(window,missing,ChunkStatus.STRUCTURE_STARTS))
+                            .thenApplyAsync(extra->{
+                                active();
+                                var combined=new HashMap<>(chunks);
+                                combined.putAll(extra);
+                                return vote(candidate,footprints,chunks,combined);
+                            },nativeOwner);
+                },nativeOwner);
     }
+
+    private static final Comparator<ChunkPos> CHUNK_ORDER =
+            Comparator.comparingInt((ChunkPos p)->p.x).thenComparingInt(p->p.z);
+
+    static List<ChunkPos> referencePositions(List<Bounds> footprints) {
+        var positions=new TreeSet<>(CHUNK_ORDER);
+        for(int i=0;i<footprints.size();i++){
+            var b=footprints.get(i);
+            // 同原点不同朝向的五个包围盒相同，只枚举一次区块。
+            if(i>0&&b.equals(footprints.getFirst()))continue;
+            for(int x=Math.floorDiv(b.minX()-1,16);x<=Math.floorDiv(b.maxXExclusive(),16);x++)
+                for(int z=Math.floorDiv(b.minZ()-1,16);z<=Math.floorDiv(b.maxZExclusive(),16);z++)
+                    positions.add(new ChunkPos(x,z));
+        }
+        if(positions.size()>81)throw new WallFailure(FailureCode.CAPACITY,"root reference footprint exceeds finite lease");
+        return List.copyOf(positions);
+    }
+
+    private Map<ChunkPos,CompletableFuture<ChunkAccess>> request(Window window,List<ChunkPos> missing,ChunkStatus status) {
+        var lease=track(new StructureLease(level,missing,status));
+        window.leases.add(lease);
+        return lease.chunks();
+    }
+
     private Vote vote(Candidate candidate,List<Bounds> footprints,Map<ChunkPos,ChunkAccess> referenceChunks,
             Map<ChunkPos,ChunkAccess> prepared) {
         active();
@@ -135,12 +168,12 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
             });
         }
         var allowed=new ArrayList<Integer>();var reasons=new ArrayList<String>();
+        var firstFootprint=footprints.getFirst();
+        String firstReason=reason(candidate,firstFootprint,facts,missing);
         for(int index=0;index<5;index++){
             var footprint=footprints.get(index);
-            var surface=new Bounds(footprint.minX(),candidate.origin().y()-1,footprint.minZ(),
-                    footprint.maxXExclusive(),candidate.origin().y()+1,footprint.maxZExclusive());
-            var hits=facts.values().stream().filter(f->intersects(surface,f.box())).map(f->f.id()+":"+f.box()).toList();
-            String reason=!missing.isEmpty()?"UNRESOLVED_REFERENCE:"+missing:!hits.isEmpty()?"STRUCTURE_CONFLICT:"+hits:"CLEAR";
+            // 正式候选五个方向同原点，结构判定的探测盒相同；只有不同盒才重扫证据。
+            String reason=firstFootprint.equals(footprint) ? firstReason : reason(candidate,footprint,facts,missing);
             if(reason.equals("CLEAR"))allowed.add(index);
             reasons.add(reason);
         }
@@ -154,6 +187,14 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
                 uniform, allowed.size(), footprints.get(0));
         return new Vote(candidate.radiusIndex(),candidate.angleIndex(),allowed,reasons);
     }
+    private static String reason(Candidate candidate,Bounds footprint,Map<String,Fact> facts,Set<String> missing) {
+        if(!missing.isEmpty())return "UNRESOLVED_REFERENCE:"+missing;
+        var surface=new Bounds(footprint.minX(),candidate.origin().y()-1,footprint.minZ(),
+                footprint.maxXExclusive(),candidate.origin().y()+1,footprint.maxZExclusive());
+        var hits=facts.values().stream().filter(f->intersects(surface,f.box())).map(f->f.id()+":"+f.box()).toList();
+        return hits.isEmpty() ? "CLEAR" : "STRUCTURE_CONFLICT:"+hits;
+    }
+
     private String id(Structure structure) {
         var id=ids.get(structure);
         if(id==null)throw new WallFailure(FailureCode.INVALID_RESOURCE,"root encountered an unregistered structure identity");
