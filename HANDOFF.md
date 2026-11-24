@@ -7,7 +7,7 @@
 3. **未验证**：尚无整合包全程步行、实际截图坐标复现、多种子或无限墙后续窗口缓坡验收。零失败不能证明收口完整：普通世界烟测仍有END_CAP缺列与CAP_EMPTY降级。大海专用远距离绕行尚未实现，仅沿用既有局部避水和新增宏观选轴；海洋仍按原始群系键含ocean识别，未支持任意改名海洋标签。结构拦截只覆盖标准结构入口与已发布/恢复占地，不删除已生成建筑，非结构Feature直写不在此入口内。最终站线是施工高度权威，几何边界仍为路线阶段高度。旧坡度拒绝的楼址未重新复选。采样分母仍估算偏大（本次202607/806696），尚未修ETA。放行后继续分批补建，不能宣称进世界前全长落块。道路三条失败仍未修：(-32,-208)→(832,304)、(1632,-2176)→(2128,-1328)、(1280,1808)→(1840,464)；未采集完整失败地形重放。
 4. **负控**：楼梯放回地板层→坡面落块测试红；坡度恢复两格一级→IntactWallAlignmentTest红；不填水→ContinuousRiverWallTest红；阈值写死50→ContinuousWallHydrologyTest红；保护边距改0、宏观评分忽略水域、缓坡忽略地表→对应6项全部红；禁用最终站线查询、禁用重进档结构保护→对应2项全部红。均以暂存正确版本作为恢复锚点，用精确文件的git checkout恢复；最终全量回归通过。负控日志在build下的slope/grade/water-foundation/ocean-mutation、three-guards-mutation、reopen-integration-mutation。
 5. **下一步**：先修收口姿态取证与实际试建的缺列，再统一采样分母与唯一列口径；补标准结构入口真实取消放置的集成验证（当前GameTest仅证明Mixin已加载）。按新世界验收河湖全宽下填、弯坡两侧、楼口及建筑保护。之后实现达到海洋阈值后的明确绕行尝试，并验证无限墙后续窗口与启动尾缝；道路失败需重放真实走廊，不能靠放松覆土或静默丢路过关。
-6. **历史与回退**：基线5cab561d；构建号0.7.140-api-standardization，属于行为变更，只验收新世界。未改玩家存档，旧开发世界不迁移。RootSearch/ProductionSession/PlannerScheduler/WallBodyBackfill剔除注释空行后约786/884/846/673行，新增算法独立成小类。GitHub拉取此前因127.0.0.1代理失败，推送与部署状态以本轮最终回复为准。
+6. **历史与回退**：基线5cab561d；实现提交6dd09d2c，构建号0.7.140-api-standardization，属于行为变更，只验收新世界。已推送GitHub的refactor/planning-frozen-feature-paint分支；普通沙箱推送遇到代理失败，获准联网后推送成功。已部署到【云游四海】WAYFARING/mods，旧0.7.139移至build/deployment-backups/0.7.139-before-0.7.140；目标与构建JAR的SHA256均为E43A739507DF345E3DCA739C980529F7170DDA0B329489C03D5BD88F98342B6B。运行中的游戏需重启才会加载。未改玩家存档，旧开发世界不迁移。RootSearch/ProductionSession/PlannerScheduler/WallBodyBackfill剔除注释空行后约786/884/846/673行，新增算法独立成小类。
 
 ## 2026-11-24 · 实机弯坡、跨水与宏观选线待修
 
