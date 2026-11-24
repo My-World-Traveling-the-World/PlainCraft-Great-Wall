@@ -283,9 +283,8 @@ public final class PlanningChunkCompiler {
                     ownerJobs++;
                     boolean drained = pending.add(() -> {
                         try {
-                            var plan = compiler.bindCoverage(
-                                    windowCompiler.compile(owner, recipeHash, cells, before),
-                                    coverage.forChunk(owner, new PlanWindow(ownerPlans), windowBounds).hash());
+                            var plan = windowCompiler.compileWithCoverage(owner, recipeHash, cells, before,
+                                    () -> coverage.forChunk(owner, new PlanWindow(ownerPlans), windowBounds).hash());
                             if (batchPlans.putIfAbsent(owner, plan) != null) {
                                 local.plaincraft.greatwall.GreatWallMod.LOGGER.error(
                                         "[GreatWall:S1C] PLANNING_COMPILE_DUPLICATE_OWNER owner=[{},{}]",

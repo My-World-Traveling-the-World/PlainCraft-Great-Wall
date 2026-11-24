@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 import local.plaincraft.greatwall.geometry.CanonicalCodec;
 import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallFailure;
@@ -31,7 +32,7 @@ public final class ChunkPlanCompiler {
             if(owns(owner,voxel.pos())&&voxel.kind()!=IntentKind.KEEP)owned++;
         }
         CompiledAllocation.charge(Math.addExact(4096L,Math.addExact(Math.multiplyExact(candidates,128L),Math.multiplyExact(owned,512L))));
-        return compileOwner(owner, recipeHash, beforeStates, resolve(owner.dimension(), recipeHash, cells, false));
+        return compileOwner(owner, recipeHash, beforeStates, resolve(owner.dimension(), recipeHash, cells, false), null);
     }
 
     /** 仅供启动窗口内复用；常规入口仍为每次调用独立记账。 */
@@ -47,6 +48,17 @@ public final class ChunkPlanCompiler {
 
         public ChunkWritePlan compile(ChunkKey owner, String recipeHash, List<RealizationCell> cells,
                 Map<Point3i,String> beforeStates) {
+            return compileOwnerInWindow(owner, recipeHash, cells, beforeStates, null);
+        }
+
+        /** 启动发布直接绑定最终覆盖证据，避免先为临时计划序列化整份写集。 */
+        public ChunkWritePlan compileWithCoverage(ChunkKey owner, String recipeHash, List<RealizationCell> cells,
+                Map<Point3i,String> beforeStates, Supplier<String> coverageHash) {
+            return compileOwnerInWindow(owner, recipeHash, cells, beforeStates, Objects.requireNonNull(coverageHash));
+        }
+
+        private ChunkWritePlan compileOwnerInWindow(ChunkKey owner, String recipeHash, List<RealizationCell> cells,
+                Map<Point3i,String> beforeStates, Supplier<String> coverageHash) {
             Entry entry;
             boolean prepare;
             synchronized (this) {
@@ -69,7 +81,7 @@ public final class ChunkPlanCompiler {
                 if (failure.getCause() instanceof Error cause) throw cause;
                 throw failure;
             }
-            return compileOwner(owner, recipeHash, beforeStates, resolved);
+            return compileOwner(owner, recipeHash, beforeStates, resolved, coverageHash);
         }
 
         private final class Entry {
@@ -137,7 +149,7 @@ public final class ChunkPlanCompiler {
     }
 
     private static ChunkWritePlan compileOwner(ChunkKey owner, String recipeHash, Map<Point3i, String> beforeStates,
-            Resolved input) {
+            Resolved input, Supplier<String> coverageHash) {
         var components = input.components();
         var resolved = input.voxels();
         var voxels=new ArrayList<VoxelIntent>();var proofs=new ArrayList<BlockProof>();
@@ -178,7 +190,9 @@ public final class ChunkPlanCompiler {
         }
         slots.sort(Comparator.comparing(SpawnSlot::site,SITE).thenComparingInt(SpawnSlot::slot));
         String inputHash=hash(recipeHash+"\n"+owner+"\n"+String.join("\n",input.inputs()));
-        var metadata=new WriteMetadata(hash(String.join("\n",input.t0())),input.revision(),slots,states);
+        // 缺施工前状态等错误仍优先报告，按区块求覆盖摘要只在写集通过验证后执行。
+        String coverage = coverageHash == null ? hash(String.join("\n",input.t0())) : coverageHash.get();
+        var metadata=new WriteMetadata(coverage,input.revision(),slots,states);
         var plan=new ChunkWritePlan(owner,recipeHash,inputHash,voxels,proofs,entities,
                 List.copyOf(post),List.copyOf(fluid),List.copyOf(feet),metadata,"0".repeat(64));
         return rehash(plan);

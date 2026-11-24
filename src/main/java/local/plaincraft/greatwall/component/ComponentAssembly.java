@@ -290,7 +290,7 @@ final class ComponentAssembly {
             if (world != null) worldSpawns.add(new SpawnSlot(s.site(),s.slot(),world,s.entityType()));
         }
         voxels.sort(Comparator.comparing(VoxelIntent::pos,ORDER));
-        var result = state(hashed(input.site().id(),worldBounds,voxels,worldEntities,worldSpawns,worldRoutes),realizedState);
+        var result = hashed(input.site().id(),worldBounds,voxels,worldEntities,worldSpawns,worldRoutes,realizedState);
         var groups=new ArrayList<SupportGraph.Span>();
         for(int n=0;n<spans.size();n++)groups.add(new SupportGraph.Span(loads.get(n),lefts.get(n),rights.get(n)));
         return new SupportGraph().validate(result,roots,groups);
@@ -312,16 +312,20 @@ final class ComponentAssembly {
         return result;
     }
 
-    static ComponentVoxels empty(SiteId id, Bounds bounds) { return hashed(id,bounds,List.of(),List.of(),List.of(),List.of()); }
+    static ComponentVoxels empty(SiteId id, Bounds bounds) {
+        return hashed(id,bounds,List.of(),List.of(),List.of(),List.of());
+    }
 
     static ComponentVoxels hashed(SiteId id, Bounds b, List<VoxelIntent> v, List<BlockEntityIntent> be,
             List<SpawnSlot> spawns, List<List<Point3i>> routes) {
-        var value = new ComponentVoxels(id,b,v,be,spawns,routes,"0".repeat(64));
-        return new ComponentVoxels(id,b,v,be,spawns,routes,CanonicalCodec.componentHash(value));
+        // 没有单独状态的实物模板沿用默认完整状态，保持原构件摘要。
+        return hashed(id,b,v,be,spawns,routes,DecayState.INTACT);
     }
 
-    static ComponentVoxels state(ComponentVoxels c,DecayState state) {
-        var value=new ComponentVoxels(c.id(),c.bounds(),c.voxels(),c.blockEntities(),c.spawnSlots(),c.requiredRoutes(),state,"0".repeat(64));
+    static ComponentVoxels hashed(SiteId id, Bounds b, List<VoxelIntent> v, List<BlockEntityIntent> be,
+            List<SpawnSlot> spawns, List<List<Point3i>> routes, DecayState state) {
+        // 先写入最终状态再计算摘要，避免将整个构件按默认状态编码一次后立即重算。
+        var value = new ComponentVoxels(id,b,v,be,spawns,routes,state,"0".repeat(64));
         return new ComponentVoxels(value.id(),value.bounds(),value.voxels(),value.blockEntities(),value.spawnSlots(),
                 value.requiredRoutes(),state,CanonicalCodec.componentHash(value));
     }

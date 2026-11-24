@@ -85,6 +85,32 @@ class ChunkPlanCompilerTest {
         assertEquals(1, window.resolutions());
     }
 
+    @Test void directCoverageMatchesPublishBytesWithoutChangingEmptyOrFailedOwners() {
+        var c = component(List.of(voxel(0, IntentKind.SOLID, "minecraft:stone"),
+                voxel(16, IntentKind.KEEP, "minecraft:air")));
+        var cells = List.of(cell(c, 7));
+        var compiler = new ChunkPlanCompiler();
+        var window = compiler.window();
+        var before = Map.of(new Point3i(0, 1, 0), AIR);
+        var coverage = "b".repeat(64);
+        for (int x = 0; x < 3; x++) {
+            var owner = new ChunkKey("minecraft:overworld", x, 0);
+            var expected = compiler.bindCoverage(compiler.compile(owner, H, cells, before), coverage);
+            var actual = window.compileWithCoverage(owner, H, cells, before, () -> coverage);
+            // 保留只读体素也能提供构件状态，不能把零写入误判为零元数据或缺失计划。
+            assertEquals(x == 0 ? 1 : 0, actual.voxels().size());
+            assertEquals(x < 2 ? Map.of(ID, DecayState.INTACT) : Map.of(), actual.metadata().realizedStates());
+            assertEquals(7, actual.metadata().gateRevision());
+            assertEquals(coverage, actual.metadata().coverageHash());
+            assertEquals(expected.hash(), actual.hash());
+            assertArrayEquals(CanonicalCodec.writePlan(expected), CanonicalCodec.writePlan(actual));
+        }
+        var owner = new ChunkKey("minecraft:overworld", 0, 0);
+        var failure = assertThrows(WallFailure.class, () -> window.compileWithCoverage(owner, H, cells, Map.of(),
+                () -> fail("取证失败后不能继续计算覆盖摘要")));
+        assertEquals(FailureCode.T0_MISSING, failure.code());
+    }
+
     @Test void forgedComponentHashCannotBorrowValidResolution() {
         var good = component(List.of(voxel(0, IntentKind.SOLID, "minecraft:stone")));
         var forged = new ComponentVoxels(good.id(), good.bounds(),
