@@ -45,6 +45,9 @@ public final class WallBodyBackfill {
     // 仅显式采样时输出单轮/单块耗时，避免把持续日志IO计入默认游戏负担。
     private static final boolean BACKFILL_TIMINGS="on".equalsIgnoreCase(
             System.getProperty("greatwall.backfillTimings","off"));
+    // 只在刷新峰值时输出，不让逐 slice 日志干扰主线程计时。
+    private static final boolean PEAK_TIMINGS = "on".equalsIgnoreCase(
+            System.getProperty("greatwall.backfillPeakTimings", "off"));
     /** 没有可续建工作时节流，避免每 tick 重扫候选队列。 */
     private static final int DRAIN_INTERVAL_TICKS = 10;
     /** A chunk that cannot settle after this many drains leaves the queue. */
@@ -536,64 +539,82 @@ public final class WallBodyBackfill {
     public static void drain(ServerLevel level) {
         if (level == null) return;
         State state = state(level);
-        if (state.active != null) {
-            advanceActive(level, state, System.nanoTime());
-            openGateIfDrained(level, state);
-            return;
-        }
-        if (++state.tick < DRAIN_INTERVAL_TICKS) return;
-        state.tick = 0;
-        pollDrainRequests(level, state);
-        if (state.pending.isEmpty()) {
-            openGateIfDrained(level, state);
-            return;
-        }
+        // 空闲节流不取时钟；实际有工作才计完整回调，包含排队、落块、结案和放行。
+        boolean measure = PEAK_TIMINGS && (state.active != null
+                || state.tick + 1 >= DRAIN_INTERVAL_TICKS && (!state.pending.isEmpty() || !state.requests.isEmpty()));
+        ChunkKey resumedOwner = measure && state.active != null ? state.active.key() : null;
+        long tickStarted = measure ? System.nanoTime() : 0L;
+        try {
+            if (state.active != null) {
+                advanceActive(level, state, System.nanoTime());
+                openGateIfDrained(level, state);
+                return;
+            }
+            if (++state.tick < DRAIN_INTERVAL_TICKS) return;
+            state.tick = 0;
+            pollDrainRequests(level, state);
+            if (state.pending.isEmpty()) {
+                openGateIfDrained(level, state);
+                return;
+            }
 
-        long startedAt = System.nanoTime();
-        List<ChunkKey> candidates = nearestFirst(level, state.pending);
-        long selectionNanos = BACKFILL_TIMINGS ? System.nanoTime() - startedAt : 0L;
-        // 选择开销单独计时，否则大队列选候选超时会导致每一轮都不检查区块。
-        long scanStartedAt = System.nanoTime();
-        int inspected = 0;
-        for (ChunkKey key : candidates) {
-            if (inspected == MAX_DRAIN_CHECKS || System.nanoTime() - scanStartedAt >= DRAIN_BUDGET_NANOS) break;
-            inspected++;
-            LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
-            if (chunk == null) {
-                if (FORCE_LOAD.get() && state.requests.size() < MAX_DRAIN_REQUESTS
-                        && !state.requests.containsKey(key)) {
-                    StartupRequest request = requestChunk(level, key, "drain");
-                    if (request != null) state.requests.put(key, request);
+            long startedAt = System.nanoTime();
+            List<ChunkKey> candidates = nearestFirst(level, state.pending);
+            long selectionNanos = BACKFILL_TIMINGS ? System.nanoTime() - startedAt : 0L;
+            // 选择开销单独计时，否则大队列选候选超时会导致每一轮都不检查区块。
+            long scanStartedAt = System.nanoTime();
+            int inspected = 0;
+            for (ChunkKey key : candidates) {
+                if (inspected == MAX_DRAIN_CHECKS || System.nanoTime() - scanStartedAt >= DRAIN_BUDGET_NANOS) break;
+                inspected++;
+                LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
+                if (chunk == null) {
+                    if (FORCE_LOAD.get() && state.requests.size() < MAX_DRAIN_REQUESTS
+                            && !state.requests.containsKey(key)) {
+                        StartupRequest request = requestChunk(level, key, "drain");
+                        if (request != null) state.requests.put(key, request);
+                    }
+                    continue;
                 }
-                continue;
+                var session = WallWorldgenPlanCache.readSession(level);
+                ChunkWritePlan plan = session.get(key);
+                if (plan == null) {
+                    // 区块可能比计划更早加载；异步读盘后才能开始施工。
+                    requestPlanRead(level, state, key);
+                    continue;
+                }
+                var cursor = createSettlement(level, chunk, key, plan,
+                        () -> WallWorldgenPlanCache.isReadSessionCurrent(level, session)
+                                && level.getChunkSource().getChunkNow(key.x(), key.z()) == chunk
+                                && session.get(key) == plan);
+                state.settling.add(key);
+                state.active = new ActiveBackfill(key, plan.hash(), cursor);
+                advanceActive(level, state, scanStartedAt);
+                break;
             }
-            var session = WallWorldgenPlanCache.readSession(level);
-            ChunkWritePlan plan = session.get(key);
-            if (plan == null) {
-                // 区块可能比计划更早加载；异步读盘后才能开始施工。
-                requestPlanRead(level, state, key);
-                continue;
+            if (!state.pending.isEmpty() && ++drainsSinceLog >= 200) {
+                drainsSinceLog = 0;
+                GreatWallMod.LOGGER.info("[GreatWall:施工] 长城补建进度 pending={} settled={} totalWritten={} alreadyBuilt={}",
+                        state.pending.size(), state.completed.size(), TOTAL_BLOCKS.get(), ALREADY_BUILT.get());
             }
-            var cursor = createSettlement(level, chunk, key, plan,
-                    () -> WallWorldgenPlanCache.isReadSessionCurrent(level, session)
-                            && level.getChunkSource().getChunkNow(key.x(), key.z()) == chunk
-                            && session.get(key) == plan);
-            state.settling.add(key);
-            state.active = new ActiveBackfill(key, plan.hash(), cursor);
-            advanceActive(level, state, scanStartedAt);
-            break;
+            if (BACKFILL_TIMINGS) {
+                GreatWallMod.LOGGER.info("[GreatWall:耗时] WALL_BACKFILL_TIMING selectionUs={} totalUs={} candidates={} inspected={} pending={}",
+                        selectionNanos / 1000, (System.nanoTime() - startedAt) / 1000,
+                        candidates.size(), inspected, state.pending.size());
+            }
+            openGateIfDrained(level, state);
+        } finally {
+            if (measure) recordDrainPeak(state, resumedOwner, System.nanoTime() - tickStarted);
         }
-        if (!state.pending.isEmpty() && ++drainsSinceLog >= 200) {
-            drainsSinceLog = 0;
-            GreatWallMod.LOGGER.info("[GreatWall:施工] 长城补建进度 pending={} settled={} totalWritten={} alreadyBuilt={}",
-                    state.pending.size(), state.completed.size(), TOTAL_BLOCKS.get(), ALREADY_BUILT.get());
-        }
-        if (BACKFILL_TIMINGS) {
-            GreatWallMod.LOGGER.info("[GreatWall:耗时] WALL_BACKFILL_TIMING selectionUs={} totalUs={} candidates={} inspected={} pending={}",
-                    selectionNanos / 1000, (System.nanoTime() - startedAt) / 1000,
-                    candidates.size(), inspected, state.pending.size());
-        }
-        openGateIfDrained(level, state);
+    }
+
+    private static void recordDrainPeak(State state, ChunkKey resumedOwner, long elapsed) {
+        long samples = ++state.measuredDrainTicks;
+        if (elapsed <= state.maxDrainNanos) return;
+        state.maxDrainNanos = elapsed;
+        GreatWallMod.LOGGER.info(
+                "【长城单次 tick 补建耗时峰值】 WALL_BACKFILL_TICK_PEAK maxUs={} measuredTicks={} pending={} resumedOwner={}",
+                elapsed / 1000, samples, state.pending.size(), resumedOwner);
     }
 
     /** 只有施工终态失败才消耗重试次数；区块卸载或换计划只撤销临时游标。 */
@@ -858,6 +879,8 @@ public final class WallBodyBackfill {
         ActiveBackfill active;
         int tick;
         int total;
+        long measuredDrainTicks;
+        long maxDrainNanos;
         boolean inventoryFailed;
     }
     /**
