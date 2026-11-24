@@ -695,10 +695,12 @@ public final class WallBodyBackfill {
         keys.addAll(state.doneHint);
         // 已完工区块也需恢复保护；否则旧档漏墙列却能通过只看待办的检查。
         PlanStore store = planStore;
+        var services = local.plaincraft.greatwall.lifecycle.WorldServices.find(level.getServer());
         return WallRoadRecovery.restore(keys, state.inventoryFailed || doneReadFailed,
                 key -> WallWorldgenPlanCache.get(level, key),
                 key -> store == null ? null : store.read(key).orElse(null),
-                plan -> WallWorldgenPlanCache.put(level, plan));
+                plan -> WallWorldgenPlanCache.put(level, plan),
+                services == null || !services.productionFixture() ? null : services.structures());
     }
     /** Whether every planned chunk loaded so far has been written. */
     public static boolean complete(ServerLevel level) {

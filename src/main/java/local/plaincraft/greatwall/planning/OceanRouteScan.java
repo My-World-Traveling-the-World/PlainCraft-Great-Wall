@@ -18,9 +18,8 @@ import java.util.List;
  *
  * <h2>What counts as sea</h2>
  * <ul>
- *   <li>An ocean biome: {@code #minecraft:is_ocean} when the pack provides the tag, else any biome
- *       whose key contains {@code ocean}. A pack that renames its seas simply gets no runs, and the
- *       caller keeps its old water-based decision.</li>
+ *   <li>这里只检查群系键名中的 {@code ocean}，不读取注册表标签；重命名海洋需由地形实采补充，
+ *       不能把本工具当作完整的模组海洋分类器。</li>
  *   <li>At least {@link #MIN_RUN_POINTS} consecutive points. A pond crossed by a two-point dip in
  *       the biome map is not a coastline.</li>
  *   <li>Land islands shorter than {@link #MAX_ISLAND_GAP_POINTS} do not split a run: an archipelago

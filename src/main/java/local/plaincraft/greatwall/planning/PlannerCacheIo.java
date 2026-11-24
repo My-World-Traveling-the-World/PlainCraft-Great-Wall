@@ -55,6 +55,18 @@ final class PlannerCacheIo {
     void persist(SegmentGeometry value) { write(() -> store.writeGeometry(value)); }
     void persist(SegmentPlan value) { write(() -> store.writePlan(value)); }
 
+    CompletableFuture<Void> persistFinalPlans(java.util.List<SegmentPlan> plans) {
+        var result = new CompletableFuture<Void>();
+        // 与前序原始计划共用串行IO队列，最终高度不能被迟到的旧写盘覆盖。
+        try { execute(() -> {
+            try {
+                for (var plan : plans) store.writePlan(plan);
+                result.complete(null);
+            } catch (Throwable failure) { result.completeExceptionally(failure); }
+        }); } catch (RuntimeException failure) { result.completeExceptionally(failure); }
+        return result;
+    }
+
     private void write(IoWrite operation) {
         if (state.containsKey("cache-disabled") || closed()) return;
         try {

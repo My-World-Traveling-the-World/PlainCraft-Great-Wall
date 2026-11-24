@@ -36,6 +36,8 @@ public final class PlannerScheduler implements AutoCloseable {
     private final ConcurrentHashMap<SegmentKey, CompletableFuture<RouteShape>> routeFlights = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<SegmentKey, CompletableFuture<SegmentGeometry>> geometryFlights = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<SegmentKey, CompletableFuture<SegmentPlan>> planFlights = new ConcurrentHashMap<>();
+    // 仅保留已冻结的有限启动窗口；旧租约不可改写，新查询必须看到实际施工高度。
+    private volatile Map<Long, SegmentPlan> finalStartupPlans = Map.of();
     private final ConcurrentHashMap<UUID, JobProgress> progress = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> state = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, FailureEvidence> failures = new ConcurrentHashMap<>();
@@ -47,7 +49,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private final PlannerCacheIo cacheIo;
     private final AnchorField anchors;
     private final RidgePlanner ridge;
-    private final HydrologyClassifier hydrology = new HydrologyClassifier();
+    private final HydrologyClassifier hydrology;
     /** 单段水文需要设操作上限，避免极端水面阻塞整个启动；保留已认证的证据。 */
     private static final long HYDROLOGY_OPERATION_CEILING = 4_000_000L;
     private final StartupWallRange startupRange;
@@ -110,6 +112,8 @@ public final class PlannerScheduler implements AutoCloseable {
         }
         long wallLength = GreatWallConfig.parameters().wallLengthBlocks();
         this.configuredWallLength = wallLength;
+        this.hydrology = new HydrologyClassifier(landFirstPlanning()
+                ? GreatWallConfig.parameters().oceanBreakLengthBlocks() : 0);
         this.usesLocalWaterBreaks = recipe.config().templateVersion()
                 >= local.plaincraft.greatwall.model.WallRecipeRules.INTACT;
         long configuredSegments = GreatWallConfig.segmentsFor(wallLength);
@@ -165,7 +169,7 @@ public final class PlannerScheduler implements AutoCloseable {
     public PlanLease<SegmentPlan> requirePlan(long segment, Priority priority) {
         var key = key(segment);
         promote(segment, priority);
-        return admissions.acquire(new PlannerAdmissions.Key("plan", segment), 4 * MIB, SegmentPlan.class, () -> {
+        var lease = admissions.acquire(new PlannerAdmissions.Key("plan", segment), 4 * MIB, SegmentPlan.class, () -> {
             var result = flight(planFlights, key);
             var geometry = requireGeometry(segment, priority);
             var prefix = prefixes.requireBefore(segment);
@@ -201,6 +205,23 @@ public final class PlannerScheduler implements AutoCloseable {
             }, pump);
             return result.thenApply(v -> v);
         });
+        return new PlanLease<>(lease.id(), lease.future().thenApply(plan ->
+                finalStartupPlans.getOrDefault(segment, plan)), lease::close);
+    }
+
+    /** 最终缓坡先持久化再交给施工；重进档和运行中查询共享同一版站线。 */
+    public CompletableFuture<Void> freezeStartupPlans(List<SegmentPlan> plans) {
+        var frozen = List.copyOf(plans);
+        var result = new CompletableFuture<Void>();
+        pump.execute(() -> {
+            var values = new java.util.HashMap<Long, SegmentPlan>();
+            for (var plan : frozen) values.put(plan.geometry().key().index(), plan);
+            finalStartupPlans = Map.copyOf(values);
+            cacheIo.persistFinalPlans(frozen).whenCompleteAsync((ignored, failure) -> {
+                if (failure == null) result.complete(null); else result.completeExceptionally(failure);
+            }, pump);
+        });
+        return result;
     }
 
     /** 对外保留原调度入口；精采样和批量预热不创建额外线程池。 */
@@ -898,7 +919,9 @@ public final class PlannerScheduler implements AutoCloseable {
         private NaturalTerrainOracle.ColumnCursor column;
         private ContractJob(Pair inputs, List<SiteRecord> provisional, List<Point2q> points, Priority priority, CompletableFuture<SegmentPlan> result) {
             super(priority, "HEIGHT_CONTRACT", result); this.inputs = inputs; this.provisional = provisional; this.points = points;
-            result.thenAcceptAsync(cacheIo::persist, pump);
+            // 最终冻结可能先于此完成回调排队，迟到写盘也必须使用已冻结版本。
+            result.thenAcceptAsync(plan -> cacheIo.persist(finalStartupPlans.getOrDefault(
+                    plan.geometry().key().index(), plan)), pump);
         }
         private ContractJob(Pair inputs, AdaptiveSiteSearch search, Priority priority, CompletableFuture<SegmentPlan> result) {
             this(inputs, null, null, priority, result);

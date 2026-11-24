@@ -21,6 +21,12 @@ public final class WallRoadRecovery {
 
     static Report restore(Set<ChunkKey> keys, boolean inventoryFailed, Function<ChunkKey, ChunkWritePlan> cached,
                           Load load, Consumer<ChunkWritePlan> cacheRecovered) {
+        return restore(keys, inventoryFailed, cached, load, cacheRecovered, null);
+    }
+
+    // 重进档必须同时恢复道路与建筑保护，二者读取同一份持久施工证据。
+    static Report restore(Set<ChunkKey> keys, boolean inventoryFailed, Function<ChunkKey, ChunkWritePlan> cached,
+                          Load load, Consumer<ChunkWritePlan> cacheRecovered, StructurePlacementGuard structures) {
         int columns = 0, missing = 0, failed = 0, fromDisk = 0;
         long voxels = 0;
         for (ChunkKey key : keys) {
@@ -43,7 +49,7 @@ public final class WallRoadRecovery {
                 fromDisk++;
             }
             voxels += plan.voxels().size();
-            columns += WallPlanSupport.publishPlannedColumns(plan);
+            columns += WallPlanSupport.publishPlannedColumns(plan, structures);
         }
         return new Report(keys.size(), columns, voxels, missing, failed, fromDisk, inventoryFailed);
     }

@@ -28,7 +28,10 @@ public final class HydrologyClassifier {
      */
     public static final int RIVER_CROSS_MAX_BLOCKS = 50;
     private static final List<Point2q> DIRECTIONS = directions();
-    public HydrologyClassifier() {}
+    private final int oceanBreakBlocks;
+    public HydrologyClassifier() { this(0); }
+    /** 正式新世界使用海洋阈值；旧的测宽夹具仍独立验证历史水门契约。 */
+    public HydrologyClassifier(int oceanBreakBlocks) { this.oceanBreakBlocks = oceanBreakBlocks; }
 
     public Cursor begin(RouteNeighborhood routes, NaturalTerrainOracle oracle, int columnBudget) {
         return begin(routes, oracle, columnBudget, false);
@@ -40,16 +43,19 @@ public final class HydrologyClassifier {
         c.routes = Objects.requireNonNull(routes); c.oracle = Objects.requireNonNull(oracle); c.budget = columnBudget;
         // 新墙验证实际要跨的线路而不是横扫水域；短且两岸齐全才有资格试水门。
         c.useRouteSpan = useRouteSpan;
+        c.oceanBreakBlocks = useRouteSpan ? oceanBreakBlocks : 0;
         if (useRouteSpan) c.phase = 1;
         var nodes = new ArrayList<Node>();
         routes.previous().ifPresent(r -> {
             long length = r.localSQ8().getLast();
-            int start = ArcLength.edgeAt(r.localSQ8(), Math.max(0, length - 128L * 256));
+            // 取满阈值邻域，跨段的512格海水不能被旧128格窗口误判为短海湾。
+            int start = ArcLength.edgeAt(r.localSQ8(), Math.max(0, length - Math.max(128L, c.oceanBreakBlocks) * 256));
             appendNodes(nodes, r, start, r.points().size() - 1, -length);
         });
         appendNodes(nodes, routes.center(), 0, routes.center().points().size() - 1, 0);
         routes.next().ifPresent(r -> {
-            int end = Math.min(r.points().size() - 1, ArcLength.edgeAt(r.localSQ8(), Math.min(r.localSQ8().getLast(), 128L * 256)) + 1);
+            int end = Math.min(r.points().size() - 1, ArcLength.edgeAt(r.localSQ8(), Math.min(r.localSQ8().getLast(),
+                    Math.max(128L, c.oceanBreakBlocks) * 256)) + 1);
             appendNodes(nodes, r, 0, end, routes.center().localSQ8().getLast());
         });
         for (Node n : nodes) if (!useRouteSpan && Math.floorMod(n.absoluteU, 4) == 0) c.coarse.add(new Cell(
@@ -123,6 +129,11 @@ public final class HydrologyClassifier {
         Objects.requireNonNull(c, "cursor");
         c.claimOwner();
         if (c.done) return;
+        if (c.oceanBreakBlocks > 0) {
+            // 超预算不是“大海达到阈值”的证据；新墙必须明确失败，不能悄悄退回逢水收口。
+            drainOpenColumn(c);
+            throw new WallFailure(FailureCode.HYDROLOGY_UNRESOLVED, "连续墙水文未完成，禁止伪造海洋收口");
+        }
         // Measure the span before abandoning the segment, and report what the documented rule would have
         // decided. The outcome stays WIDE - that is the approved policy - but this line turns "how much are
         // we losing to an uncertifiable width" into a number instead of a guess, which is the first of the
@@ -316,6 +327,10 @@ public final class HydrologyClassifier {
     private static void classifyRouteSpan(Cursor c, long span) {
         c.waterY = c.traceSamples.get(c.run.from).waterTopY().orElseThrow();
         c.banks.clear();
+        if (c.oceanBreakBlocks > 0) {
+            classifyContinuousWall(c, span);
+            return;
+        }
         boolean narrow = span < RIVER_CROSS_MAX_BLOCKS * 256L && c.run.leftBank && c.run.rightBank
                 && isCertifiedDry(c.traceSamples.get(c.run.from - 1))
                 && isCertifiedDry(c.traceSamples.get(c.run.to));
@@ -337,6 +352,39 @@ public final class HydrologyClassifier {
         // 同一条走线上的真实河床继续供水门验证，宽水和缺证无需另外射线。
         c.pierS = c.crossing.fromQ8() + 4L * 256;
         c.phase = 5;
+    }
+
+    /** 水域只决定哪里允许收口；河湖墙直接依靠逐列河床下填，不借用旧水门跨度上限。 */
+    private static void classifyContinuousWall(Cursor c, long span) {
+        boolean certified = true;
+        for (int i = c.run.from; i < c.run.to; i++) {
+            var sample = c.traceSamples.get(i);
+            c.evidence.put(columnKey(c.trace.get(i)), sample);
+            certified &= wet(sample);
+        }
+        if (!certified) {
+            c.width = span; c.classification = WaterClass.SUPPORT_GAP; completeEvidence(c); return;
+        }
+        // 河口可能与大海连成一个湿段。只给达到阈值的海洋子段收口，不能连河一起删掉。
+        String hash = evidenceHash(c.evidence);
+        for (int from = c.run.from; from < c.run.to;) {
+            boolean ocean = oceanAt(c, from);
+            int to = from + 1;
+            while (to < c.run.to && oceanAt(c, to) == ocean) to++;
+            long a = c.trace.get(from).s;
+            long b = to < c.trace.size() ? c.trace.get(to).s : c.trace.getLast().s;
+            if (b > a && b > 0 && a < c.routes.center().localSQ8().getLast()) {
+                var kind = ocean && b - a >= c.oceanBreakBlocks * 256L ? WaterClass.WIDE : WaterClass.NARROW;
+                c.completed.add(new WaterEvidence(new ArcInterval(a, b), kind, b - a, b - a, c.waterY,
+                        List.of(), List.of(), hash));
+            }
+            from = to;
+        }
+        c.phase = 2;
+    }
+
+    private static boolean oceanAt(Cursor c, int index) {
+        return local.plaincraft.greatwall.planning.OceanRouteScan.isOcean(c.traceSamples.get(index).biomeKey());
     }
 
     private static boolean isCertifiedDry(ColumnSample sample) {
@@ -589,6 +637,7 @@ public final class HydrologyClassifier {
     private record Side(boolean bank, long extent, long lower, Cell bankCell) {}
 
     public static final class Cursor {
+        private int oceanBreakBlocks;
         private Thread owner;
         private RouteNeighborhood routes;
         private NaturalTerrainOracle oracle;

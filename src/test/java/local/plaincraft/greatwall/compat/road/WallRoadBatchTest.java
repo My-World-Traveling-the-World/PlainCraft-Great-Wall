@@ -62,6 +62,17 @@ class WallRoadBatchTest {
         assertEquals(1, WallRoadGuard.markedChunks(), "空批次不能制造保护区块");
     }
 
+    @Test void structureProtectionReceivesActualOwnerAndSpillColumnsInTheSamePublish() {
+        var guard = new local.plaincraft.greatwall.generation.StructurePlacementGuard();
+        var voxels = List.of(voxel(-48, 20, 16, IntentKind.SOLID),
+                voxel(80, 40, 100, IntentKind.OWNED_VOID));
+        assertEquals(2, WallPlanSupport.publishPlannedColumns(plan(voxels), guard));
+        assertTrue(guard.intersects(new Bounds(-64, 0, 16, -63, 100, 17)));
+        assertTrue(guard.intersects(new Bounds(96, 0, 100, 97, 100, 101)));
+        assertFalse(guard.intersects(new Bounds(97, 0, 100, 98, 100, 101)));
+        assertFalse(guard.intersects(new Bounds(0, 0, 0, 1, 100, 1)));
+    }
+
     private static boolean[] answers(List<VoxelIntent> voxels, boolean publish) {
         if (publish) {
             WallRoadGuard.clear();

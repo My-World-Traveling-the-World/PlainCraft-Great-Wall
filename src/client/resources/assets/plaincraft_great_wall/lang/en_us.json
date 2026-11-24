@@ -1,4 +1,7 @@
 {
+  "option.plaincraft_great_wall.oceanBreakLengthBlocks": "Ocean closure threshold (continuous water blocks)",
+  "option.plaincraft_great_wall.oceanBreakLengthBlocks.tooltip": "Allows closure for continuous ocean water at this length. Rivers, lakes and shorter bays retain a continuous wall with filled foundations. New worlds only.",
+  "biome.plaincraft_great_wall.great_wall": "Great Wall",
   "screen.plaincraft_great_wall.config": "Great Wall Configuration",
   "option.plaincraft_great_wall.lengthMode": "Wall length",
   "option.plaincraft_great_wall.lengthMode.unlimited": "Unlimited (runs to the world border)",

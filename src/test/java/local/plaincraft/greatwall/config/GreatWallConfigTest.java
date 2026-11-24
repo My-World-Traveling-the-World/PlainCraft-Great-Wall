@@ -18,6 +18,16 @@ import org.junit.jupiter.api.Test;
  * live for the session and silently back to the default after a restart.
  */
 class GreatWallConfigTest {
+    @Test void oceanThresholdUsesTheSameHonestBoundsAndChangesTheFrozenLandFirstDigest() {
+        var config = new GreatWallConfig();
+        var before = config.semantic().landFirstDigest();
+        config.setOceanBreakLengthBlocks(1024);
+        assertNotEquals(before, config.semantic().landFirstDigest());
+        config.setOceanBreakLengthBlocks(100000);
+        assertEquals(2048, config.oceanBreakLengthBlocks());
+        config.setOceanBreakLengthBlocks(0);
+        assertEquals(64, config.oceanBreakLengthBlocks());
+    }
 
     /** Distinct, legal values for every knob the round trip has to carry. */
     private static void configure(GreatWallConfig config) {
@@ -30,6 +40,7 @@ class GreatWallConfigTest {
         config.setRefineWater(false);
         config.setCoreHalfWidth(5);
         config.setUnlimitedPrewarmBlocks(8193);
+        config.setOceanBreakLengthBlocks(1024);
     }
 
     /** Deliberately different values, so an omitted field cannot pass by coincidence. */
@@ -43,6 +54,7 @@ class GreatWallConfigTest {
         config.setRefineWater(true);
         config.setCoreHalfWidth(20);
         config.setUnlimitedPrewarmBlocks(2048);
+        config.setOceanBreakLengthBlocks(256);
     }
 
     private static void assertConfigured(GreatWallConfig config) {
@@ -55,6 +67,7 @@ class GreatWallConfigTest {
         assertFalse(config.refineWater());
         assertEquals(5, config.coreHalfWidth());
         assertEquals(8193, config.unlimitedPrewarmBlocks());
+        assertEquals(1024, config.oceanBreakLengthBlocks());
     }
 
     /**
@@ -83,7 +96,8 @@ class GreatWallConfigTest {
                     config -> config.setFineSampleGridStep(2),
                     config -> config.setSteepThreshold(8),
                     config -> config.setRefineWater(false),
-                    config -> config.setCoreHalfWidth(20));
+                    config -> config.setCoreHalfWidth(20),
+                    config -> config.setOceanBreakLengthBlocks(1024));
 
     @Test void everySemanticValueMovesTheDigest() {
         var config = new GreatWallConfig();

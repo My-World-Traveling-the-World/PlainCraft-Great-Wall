@@ -114,7 +114,8 @@ public final class RidgePlanner {
             c.seamGround = sample.groundTopY();
             c.seamWalkY = Math.addExact(c.seamGround, 20);
         } else {
-            c.seamWalkY = Math.max(c.seamWalkY, sample.groundTopY() + 20 - Math.abs(offset) / 2);
+            // 接缝和段内使用同一缓坡，避免边界预留的抬升距离只有实际所需的一半。
+            c.seamWalkY = Math.max(c.seamWalkY, sample.groundTopY() + 20 - Math.abs(offset) / 4);
         }
         if (!gentle || ++c.seamProbe == SEAM_OFFSETS.length) finishBoundary(c, anchor);
     }

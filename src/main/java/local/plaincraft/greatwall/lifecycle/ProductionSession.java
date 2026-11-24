@@ -63,6 +63,8 @@ final class ProductionSession implements AutoCloseable {
     private final Path root;
     private final StageTrace trace = new StageTrace(runtime);
     private final VegetationGuard vegetation = new VegetationGuard();
+    // 仅保存本世界已编译占地，禁止跨存档复用结构屏蔽范围。
+    private final StructurePlacementGuard structures = new StructurePlacementGuard();
     /** Null until the recipe hash is known; the dedicated biome identity is opt-in per run. */
     private volatile local.plaincraft.greatwall.compat.biome.GreatWallBiomeRuntime biomeRuntime;
     /**
@@ -274,6 +276,7 @@ final class ProductionSession implements AutoCloseable {
     UUID runtime() { return runtime; }
     WorldBootstrap bootstrap() { return bootstrap; }
     VegetationGuard vegetation() { return vegetation; }
+    StructurePlacementGuard structures() { return structures; }
     /** The dedicated biome runtime for this run, or null when the biome identity mode is off. */
     local.plaincraft.greatwall.compat.biome.GreatWallBiomeRuntime biomeRuntime() { return biomeRuntime; }
 
@@ -1035,7 +1038,7 @@ final class ProductionSession implements AutoCloseable {
                         return;
                     }
                     if (remaining.decrementAndGet() == 0) {
-                        publishOrFail(snapshot, level, compiler, collected);
+                        publishOrFail(snapshot, level, compiler, collected, index);
                     }
                 });
             }
@@ -1060,13 +1063,13 @@ final class ProductionSession implements AutoCloseable {
                         }
                     } finally {
                         lease.close();
-                        if (remaining.decrementAndGet() == 0) publishOrFail(snapshot, level, compiler, collected);
+                        if (remaining.decrementAndGet() == 0) publishOrFail(snapshot, level, compiler, collected, index);
                     }
                 });
             } catch (RuntimeException error) {
                 GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PLAN_REQUEST_FAILED segment={} reason={}",
                         segment, error.toString());
-                if (remaining.decrementAndGet() == 0) publishOrFail(snapshot, level, compiler, collected);
+                if (remaining.decrementAndGet() == 0) publishOrFail(snapshot, level, compiler, collected, index);
             }
         }
     }
@@ -1074,9 +1077,16 @@ final class ProductionSession implements AutoCloseable {
     /** Publishes the window, turning any failure into a reported, released outcome. */
     private void publishOrFail(Installed snapshot, ServerLevel level,
             local.plaincraft.greatwall.planning.PlanningChunkCompiler compiler,
-            java.util.List<SegmentPlan> plans) {
+            java.util.List<SegmentPlan> plans, FineHeightIndex terrain) {
         try {
-            publishPlanningWindow(snapshot, level, compiler, plans);
+            // 全窗精采已齐才解最终缓坡，跨段高点不能再被局部硬边界压回山体。
+            var raised = local.plaincraft.greatwall.planning.WindowHeightEnvelope.solve(snapshot.recipe(), plans, terrain);
+            snapshot.planner().freezeStartupPlans(raised).whenComplete((ignored, error) -> {
+                // 不阻塞推进线程等磁盘；持久化失败不能继续宣告最终高度已经冻结。
+                if (error != null) { failCompile(snapshot, "final-plan-write", error); return; }
+                try { publishPlanningWindow(snapshot, level, compiler, raised); }
+                catch (Throwable failure) { failCompile(snapshot, "publish", failure); }
+            });
         } catch (Throwable failure) {
             failCompile(snapshot, "publish", failure);
         }
@@ -1092,7 +1102,7 @@ final class ProductionSession implements AutoCloseable {
             public void active() { ProductionSession.this.active(); }
             public void install(ChunkWritePlan plan) { DurablePlanInstall.accept(plan, p -> WallWorldgenPlanCache.put(level,p)); }
             public void footprint(ChunkWritePlan plan,CorridorIndex corridor) {
-                WallPlanSupport.markPlannedColumns(plan);
+                WallPlanSupport.publishPlannedColumns(plan, structures);
                 vegetation.publishPrepared(plan.owner(),corridor);
                 var biomes=biomeRuntime;
                 if(biomes!=null&&!biomes.closed())biomes.publishPrepared(plan.owner(),corridor,1);

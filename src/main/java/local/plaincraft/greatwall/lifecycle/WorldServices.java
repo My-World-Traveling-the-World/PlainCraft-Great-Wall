@@ -436,6 +436,10 @@ public final class WorldServices {
     public PlannerScheduler planning() { return requireProductionSession().planning(); }
     public WorldBootstrap bootstrap() { return requireProductionSession().bootstrap(); }
     public VegetationGuard vegetation() { return requireProductionSession().vegetation(); }
+    /** 结构放置使用本世界实际施工占地，不能借用宽幅植被走廊。 */
+    public local.plaincraft.greatwall.generation.StructurePlacementGuard structures() {
+        return requireProductionSession().structures();
+    }
     /** Dedicated biome runtime, or null when the biome identity mode is off for this run. */
     public local.plaincraft.greatwall.compat.biome.GreatWallBiomeRuntime biomeRuntime() {
         return requireProductionSession().biomeRuntime();
@@ -455,8 +459,10 @@ public final class WorldServices {
                                         net.minecraft.world.level.chunk.ChunkAccess chunk,
                                         local.plaincraft.greatwall.model.WallTypes.ChunkWritePlan plan) {
         if (level == null || chunk == null || plan == null) return;
-        local.plaincraft.greatwall.generation.WallPlanSupport.markPlannedColumns(plan);
         var services = find(level.getServer());
+        // 区块从磁盘恢复也复用实际体素占地，不能只恢复道路保护而漏掉结构保护。
+        local.plaincraft.greatwall.generation.WallPlanSupport.publishPlannedColumns(plan,
+                services == null || services.production == null ? null : services.structures());
         if (services == null || services.production == null) return;
         // 开局加载区块可能先于走廊发布；落地后补刷本区块，且只同步确实改变的群系。
         var runtime = services.production.biomeRuntime();

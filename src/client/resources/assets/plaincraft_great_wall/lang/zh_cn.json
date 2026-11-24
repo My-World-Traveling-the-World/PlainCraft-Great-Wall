@@ -1,4 +1,7 @@
 {
+  "option.plaincraft_great_wall.oceanBreakLengthBlocks": "大海收口界限（连续海水格数）",
+  "option.plaincraft_great_wall.oceanBreakLengthBlocks.tooltip": "原始海洋群系中连续过水达到此长度时允许收口；河流、湖泊及较短海湾连续建墙并下填。仅新世界生效。",
+  "biome.plaincraft_great_wall.great_wall": "万里长城",
   "screen.plaincraft_great_wall.config": "长城配置",
   "option.plaincraft_great_wall.lengthMode": "长城长度",
   "option.plaincraft_great_wall.lengthMode.unlimited": "无限（一直延伸到世界边界）",

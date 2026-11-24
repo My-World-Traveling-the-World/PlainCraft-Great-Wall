@@ -7,6 +7,6 @@
     "NoiseInterpolatorAccess", "NoiseGeneratorAccess",
     "SpawnProbeMixin", "BootstrapSpawnMixin", "TreeFeatureMixin", "OwnershipMutationMixin",
     "NaturalSpawnMixin", "BaseSpawnerAccess", "OwnedMobLootMixin", "IgnitionUseMixin",
-    "TorchIgnitionMixin", "WallSpawnerMixin", "ChunkGeneratorBiomeMixin"],
+    "TorchIgnitionMixin", "WallSpawnerMixin", "ChunkGeneratorBiomeMixin", "StructureStartMixin"],
   "injectors": {"defaultRequire": 1}
 }

@@ -68,6 +68,18 @@ class WallRoadRecoveryTest {
         assertTrue(cache.isEmpty());
     }
 
+    @Test void reopenRestoresStructureProtectionFromTheSameDurablePlan() throws Exception {
+        var store = ChunkEvidenceStore.production(root);
+        store.persistPlan(plan(SOLID, true));
+        var structures = new StructurePlacementGuard();
+        var report = WallRoadRecovery.restore(Set.of(SOLID), false, key -> null,
+                key -> store.readPlan(key).orElse(null), ignored -> {}, structures);
+        // 扩16格的边界也必须随重开恢复，不能仅验证新世界的首次发布。
+        assertTrue(report.complete());
+        assertTrue(structures.intersects(new Bounds(-32, -64, 16, -31, 100, 17)));
+        assertFalse(structures.intersects(new Bounds(-31, -64, 16, -30, 100, 17)));
+    }
+
     private static WallRoadRecovery.Report restore(ChunkEvidenceStore store, Set<ChunkKey> keys,
                                                     Map<ChunkKey,ChunkWritePlan> cache) {
         return WallRoadRecovery.restore(keys, false, cache::get, key -> store.readPlan(key).orElse(null),

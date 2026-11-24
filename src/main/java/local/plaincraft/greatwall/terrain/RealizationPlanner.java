@@ -328,6 +328,9 @@ public final class RealizationPlanner {
         }
         for(var water:waters) {
             if(water.classification()!=WaterClass.NARROW)continue;
+            // 新普通世界的跨水段使用连续实物墙并下填，不能再交给50格水门产生空占位。
+            if(water.banks().isEmpty()&&recipe!=null
+                    &&local.plaincraft.greatwall.model.WallRecipeRules.landFirst(recipe.config()))continue;
             long center=(water.crossing().fromQ8()+water.crossing().toQ8())/2;
             if(ImportedSiteGeometry.enabled(recipe)&&center>=terminal)continue;
             if(!field.weathers()&&water.crossing().toQ8()+8L*256>terminal) {

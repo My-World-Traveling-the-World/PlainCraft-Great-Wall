@@ -110,8 +110,8 @@ public final class HeightContractPlanner {
         boolean[] cuts = new boolean[n];
         for (int i = 1; i < n; i++) {
             long distance = nodes.get(i).s - nodes.get(i - 1).s;
-            // 两格最多抬一级，为对角落列余出余量，避免台阶跳两级。
-            limits[i] = gentle ? distance / (2 * 256) : Math.floorDiv(3 * distance, 4 * 256);
+            // 四格最多抬一级，提前抬高低处的墙基，避免靠连续陡阶追随山体。
+            limits[i] = gentle ? distance / (4 * 256) : Math.floorDiv(3 * distance, 4 * 256);
         }
         int lastHard = -1;
         long reach = 0;

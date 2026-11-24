@@ -29,6 +29,11 @@ public final class WallPlanSupport {
 
     /** 返回本计划的独立列数，不能把体素层数当保护列数写进诊断。 */
     public static int publishPlannedColumns(ChunkWritePlan plan) {
+        return publishPlannedColumns(plan, null);
+    }
+
+    /** 同一次体素扫描供道路和建筑保护复用，避免新守卫再遍历整墙。 */
+    public static int publishPlannedColumns(ChunkWritePlan plan, StructurePlacementGuard structures) {
         if (plan == null) return 0;
         int ownerX = plan.owner().x(), ownerZ = plan.owner().z();
         long[] ownerMask = new long[4];
@@ -48,10 +53,12 @@ public final class WallPlanSupport {
             mask[bit >> 6] |= 1L << (bit & 63);
         }
         int columns = publishMask(ownerX, ownerZ, ownerMask);
+        if (structures != null) structures.mark(ownerX, ownerZ, ownerMask);
         if (spill != null) {
             for (var entry : spill.entrySet()) {
                 long key = entry.getKey();
                 columns += publishMask((int) (key >> 32), (int) key, entry.getValue());
+                if (structures != null) structures.mark((int) (key >> 32), (int) key, entry.getValue());
             }
         }
         return columns;

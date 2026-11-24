@@ -49,6 +49,12 @@ public final class GreatWallConfigScreen {
                 .setSaveConsumer(conf::setUnlimitedPrewarmBlocks)
                 .build());
 
+        // 海洋阈值改变走线和成品，只有新世界读取冻结值，运行中编辑不切换半条墙。
+        ridge.addEntry(eb.startIntField(Component.translatable("option.plaincraft_great_wall.oceanBreakLengthBlocks"),
+                        conf.oceanBreakLengthBlocks())
+                .setDefaultValue(def.oceanBreakLengthBlocks()).setMin(64).setMax(GreatWallConfig.SEGMENT_BLOCKS)
+                .setTooltip(Component.translatable("option.plaincraft_great_wall.oceanBreakLengthBlocks.tooltip"))
+                .setSaveConsumer(conf::setOceanBreakLengthBlocks).build());
         // 新版先选陆地，再比较坡度和走向；旧的水域权重和精采抽稀不再出现在界面。
         ridge.addEntry(eb
                 .startIntField(Component.translatable("config.plaincraft_great_wall.ridge_slope_weight"),

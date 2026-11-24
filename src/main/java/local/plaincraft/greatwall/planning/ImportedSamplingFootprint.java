@@ -43,6 +43,8 @@ public record ImportedSamplingFootprint(Map<Integer, List<Bounds>> byStation) {
         }
         for (var water : plan.geometry().water()) {
             if (water.classification() != WaterClass.NARROW) continue;
+            // 没有水门双岸契约的连续墙不需要整段矩形附件，墙带逐列已覆盖其河床。
+            if (water.banks().isEmpty()) continue;
             long center = base + (water.crossing().fromQ8() + water.crossing().toQ8()) / 2;
             if (base + water.crossing().fromQ8() < 0) continue;
             // 跨缝水门允许读到段外；按实现器的站线外推取证。
@@ -54,6 +56,7 @@ public record ImportedSamplingFootprint(Map<Integer, List<Bounds>> byStation) {
         for (var water : plan.geometry().water()) {
             // 短水门也可能因桥墩无支撑而收口，两岸的候选都要预留取证。
             if (water.classification() == WaterClass.DRY) continue;
+            if (water.classification() == WaterClass.NARROW && water.banks().isEmpty()) continue;
             addCapArcs(capArcs, base + water.crossing().fromQ8(), false, base, end);
             addCapArcs(capArcs, base + water.crossing().toQ8(), true, base, end);
         }

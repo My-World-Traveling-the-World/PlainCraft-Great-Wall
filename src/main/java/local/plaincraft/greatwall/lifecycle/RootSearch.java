@@ -109,6 +109,7 @@ public final class RootSearch {
     private static final int[] AXIS_ACROSS = {0, -48, 48};
     private static final int[] LAND_AXIS_ACROSS = {0, -10, 10};
     private final boolean landFirst;
+    private final MacroLandSurvey macroSurvey;
     private final Point3i spawn;
     private final DimensionBounds bounds;
     /**
@@ -230,6 +231,10 @@ public final class RootSearch {
             BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation, boolean screenStructures,
             local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance, boolean landFirst) {
         this.landFirst = landFirst;
+        var settings = local.plaincraft.greatwall.config.GreatWallConfig.parameters();
+        long surveyLength = settings.bounded() ? settings.wallLengthBlocks()
+                : local.plaincraft.greatwall.config.GreatWallConfig.get().unlimitedPrewarmBlocks();
+        macroSurvey = landFirst ? new MacroLandSurvey(spawn, bounds, surveyLength) : null;
         this.spawn = Objects.requireNonNull(spawn);
         this.bounds = Objects.requireNonNull(bounds);
         int heightSpan = Math.max(1, bounds.maxYExclusive() - bounds.minY());
@@ -255,6 +260,7 @@ public final class RootSearch {
                 // Yield before the next primitive in the guard window; completed batches
                 // still include the full duration of any individually slow primitive.
                 if (System.nanoTime() >= deadline - BATCH_GUARD_NANOS) break;
+                if (macroSurvey != null && !macroSurvey.done()) { macroSurvey.advance(oracle); continue; }
                 switch (phase) {
                     case 0 -> coarseStep(oracle);
                     case 1 -> footprintStep(oracle);
@@ -291,12 +297,13 @@ public final class RootSearch {
         // 恢复条件：仅在用户重新授权后。
         // ═══════════════════════════════════════════════════════════════════════════
         return new Selection(best.axis(), best.radiusIndex(), best.angleIndex(), best.axisIndex(), best.ridgeScore(),
-                columns, maxBatchNanos, over40msBatches);
+                columns + (macroSurvey == null ? 0 : macroSurvey.sampleCount()), maxBatchNanos, over40msBatches);
     }
 
     public Progress progress() {
         claimOwner();
-        return new Progress(phase, candidateIndex, shortlisted.size(), sampleIndex, axisIndex, columns,
+        return new Progress(phase, candidateIndex, shortlisted.size(), sampleIndex, axisIndex,
+                columns + (macroSurvey == null ? 0 : macroSurvey.sampleCount()),
                 maxBatchNanos, over40msBatches);
     }
     /** Diagnostic-only, lane-owned copy. It is never an input to selection or persisted recipe identity. */
@@ -360,7 +367,8 @@ public final class RootSearch {
 
     private void coarseStep(NaturalTerrainOracle oracle) {
         if (candidateIndex == RADII.length * 36) {
-            var ordered = candidates.stream().sorted(Comparator.comparingInt(Candidate::wet)
+            var ordered = candidates.stream().sorted(Comparator.comparingLong((Candidate c) -> macroScore(c))
+                    .thenComparingInt(Candidate::wet)
                     .thenComparingInt(Candidate::slope).thenComparingLong(v -> landFirst ? 0 : -v.ridge())
                     .thenComparingInt(Candidate::radius).thenComparingInt(Candidate::angle)).toList();
             logCoarseSummary(ordered.size());
@@ -471,6 +479,15 @@ public final class RootSearch {
                 historic ? "SHORTLIST_ELIGIBLE" : admitted ? "RANKED_ONLY"
                         : unusable ? "REJECTED_INVALID" : "REJECTED"));
         candidateIndex++; resetSamples();
+    }
+
+    /** 宏观评分必须在截取八个入口之前生效，否则远处陆地更多的主轴根本不会被精查。 */
+    private long macroScore(Candidate candidate) {
+        if (macroSurvey == null) return 0;
+        long best = Long.MIN_VALUE;
+        for (int i = 0; i < AXIS_DEGREES.length; i++)
+            best = Math.max(best, macroSurvey.score(axis(candidate.origin(), i)));
+        return -best;
     }
 
     private void footprintStep(NaturalTerrainOracle oracle) {
@@ -658,7 +675,8 @@ public final class RootSearch {
         }
         if (sampleIndex < 9) return;
         // 水列优先于起伏；少一列水不应输给更平但更湿的轴向。
-        if (landFirst) axisScore = -((long) wet << 32) - (max - (long) min);
+        // 先比较全长两端的陆地，再比较近处九列，不能用1024格局部视野决定整条墙入海。
+        if (landFirst) axisScore = macroSurvey.score(axis) * 1000 - (long) wet * 100 - (max - (long) min);
         // One wet column in nine is tolerated. The axis is a line the wall can bridge - that is what
         // its water gate is for - and the pad itself was already cleared by the footprint phase.
         // Zero tolerance here is what a water-blind probe made look free.

@@ -11,6 +11,18 @@ import org.junit.jupiter.api.Test;
 
 final class RootSearchTest {
     private static final DimensionBounds BOUNDS = new DimensionBounds(-64, 320, 30_000_000);
+    @Test void landFirstProductionSearchRanksTheFullLengthBeforeShortlistingEntrances() {
+        var domain = new SpawnDomain(); domain.authorize(new ChunkKey("minecraft:overworld", 0, 0), 1);
+        var root = new RootSearch(new Point3i(0, 64, 0), BOUNDS, domain.snapshot(), (o,c) -> true, false,
+                local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance.none(), true);
+        try (var oracle = new local.plaincraft.greatwall.terrain.AnalyticTerrainOracle((x,z) ->
+                new ColumnSample(64, OptionalInt.empty(), OptionalInt.empty(),
+                        Math.abs(x) > 1600 ? "minecraft:ocean" : "minecraft:plains", Quality.REFERENCE, false), true)) {
+            while (root.advance(oracle, 256) != WorkState.DONE) {}
+            var axis = root.finish().axis();
+            assertTrue(Math.abs(axis.ezQ30()) > Math.abs(axis.exQ30()), "近处都平坦，但整条东西轴会入海");
+        }
+    }
     @Test void selectedAxisHasSeparateRotatedEntranceEvidenceWithinTheOriginalBudget() {
         var search=search((o,c)->true);var oracle=new Fixture(false);
         while(search.advance(oracle,64)!=WorkState.DONE){}

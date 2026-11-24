@@ -74,6 +74,7 @@ public final class ImportedRibbonSection implements IntervalWallTemplate {
                     ? tangent[0] >= 0 ? Direction.SOUTH : Direction.NORTH
                     : tangent[1] >= 0 ? Direction.WEST : Direction.EAST;
             int phase = phases.at(s);
+            var stair = slopeFloor(null, stations, s, tangent);
             boolean seam = false;
             for (var site : sites) if (site.state() == SiteState.PLANNED) {
                 var ports = ImportedSiteGeometry.layout(site).ports();
@@ -97,7 +98,10 @@ public final class ImportedRibbonSection implements IntervalWallTemplate {
                 int profileY = y - w + PairedWallProfile.FEET;
                 var state = profileY < 0 ? PairedWallProfile.at(phase, lateral, 0, side)
                         : PairedWallProfile.at(phase, lateral, profileY, side);
-                boolean floor = profileY == 14 && Math.abs(lateral) < 5 && functional;
+                boolean roadColumn = Math.abs(lateral) < 5 && functional;
+                // 楼梯必须放在低平台之上；替换其地板会挖低半格，产生横贯马道的槽。
+                boolean floor = roadColumn && (stair == null ? profileY == 14 : profileY == 15);
+                if (floor && stair != null) state = stair;
                 Part part = profileY < 0 ? Part.FOUNDATION : floor ? Part.FLOOR
                         : profileY >= 15 ? Part.PARAPET : Part.CORE;
                 IntentKind kind = IntentKind.SOLID;
@@ -105,12 +109,11 @@ public final class ImportedRibbonSection implements IntervalWallTemplate {
                     if (!functional || Math.abs(lateral) >= 5 || profileY < 15 || profileY > 16) continue;
                     state = AIR; part = Part.AIR; kind = IntentKind.OWNED_VOID;
                 }
-                // 地基只补原始空气；真实水体仍由水门判定负责，不能当空地填平。
-                if (profileY < 0 && !column.airOrReplaceablePlant(y)) continue;
+                // 普通墙从真实河床向上填水，才能在河湖保持完整墙基；固体地形仍不挖。
+                if (profileY < 0 && !column.airOrReplaceablePlant(y) && !column.water(y)) continue;
                 boolean required = functional && (part == Part.FLOOR || part == Part.AIR || profileY < 15);
                 var local = new Point3i(Math.toIntExact(Math.floorDiv(s - from, 256)), y - w - 5, lateral);
                 if (!decay.keep(sample, part, local, s, identity, required)) continue;
-                if (floor) state = slopeFloor(state, stations, s, tangent);
                 CompiledAllocation.charge(256);
                 voxels.add(new VoxelIntent(new Point3i(x, y, z), kind, part, state, input.site().id(), 400, required, floor));
             }

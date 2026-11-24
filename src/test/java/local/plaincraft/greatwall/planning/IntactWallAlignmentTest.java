@@ -34,22 +34,25 @@ class IntactWallAlignmentTest {
         var recipe = ImportedSiteScheduleTest.recipe(3);
         var key = new SegmentKey(recipe.recipeHash(), recipe.dimension(), 0);
         var a = new Point2q(128, 128);
-        var b = new Point2q(128L * 256 + 128, 128);
-        var geometry = new SegmentGeometry(key, List.of(a, b), List.of(0L, 128L * 256), List.of(), Optional.empty(),
+        // 高点两边各留足128格；旧64格夹具只容得下二分之一陡坡，不能当缓坡可行例。
+        var b = new Point2q(256L * 256 + 128, 128);
+        var geometry = new SegmentGeometry(key, List.of(a, b), List.of(0L, 256L * 256), List.of(), Optional.empty(),
                 new Boundary(0, a, 84, recipe.recipeHash()), new Boundary(1, b, 84, recipe.recipeHash()),
                 0, 0, recipe.recipeHash());
         var heights = new HeightContractPlanner(recipe);
         var columns = new HashMap<Point2q, ColumnSample>();
         var prefix = PrefixSummaryIndex.origin();
         for (var p : heights.samplePoints(geometry, prefix, List.of()))
-            columns.put(p, AnalyticTerrainOracle.dry(p.xQ8() / 256 == 64 ? 96 : 64));
+            columns.put(p, AnalyticTerrainOracle.dry(p.xQ8() / 256 == 128 ? 96 : 64));
         var table = heights.solve(geometry, prefix, List.of(), columns);
         assertTrue(table.breaks().isEmpty());
-        assertEquals(116, heights.walkY(table, 64L * 256));
-        assertEquals(114, heights.walkY(table, 60L * 256));
-        assertEquals(114, heights.walkY(table, 68L * 256));
-        for (long s = 256; s <= 128L * 256; s += 256)
+        assertEquals(116, heights.walkY(table, 128L * 256));
+        assertEquals(115, heights.walkY(table, 124L * 256));
+        assertEquals(115, heights.walkY(table, 132L * 256));
+        for (long s = 256; s <= 256L * 256; s += 256)
             assertTrue(Math.abs(heights.walkY(table, s) - heights.walkY(table, s - 256)) <= 1);
+        for (long s = 4 * 256; s <= 256L * 256; s += 256)
+            assertTrue(Math.abs(heights.walkY(table, s) - heights.walkY(table, s - 4 * 256)) <= 1);
     }
 
     @Test void bothSegmentsUseHeightFromAcrossTheirSharedSeam() {
@@ -61,7 +64,7 @@ class IntactWallAlignmentTest {
             var b = planner.begin(new SegmentKey(recipe.recipeHash(), recipe.dimension(), 1), oracle);
             while (planner.advance(a, 64) != WorkState.DONE) {}
             while (planner.advance(b, 64) != WorkState.DONE) {}
-            assertEquals(108, planner.finish(a).end().walkY());
+            assertEquals(112, planner.finish(a).end().walkY());
             assertEquals(planner.finish(a).end(), planner.finish(b).start());
         }
     }

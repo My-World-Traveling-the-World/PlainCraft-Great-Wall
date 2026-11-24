@@ -21,6 +21,41 @@ import org.junit.jupiter.api.io.TempDir;
 class PlannerSchedulerTest {
     @TempDir Path directory;
 
+    @Test void frozenStartupHeightsOverridePinnedRawPlanAndSurviveReopen() throws Exception {
+        var recipe = PlanningFixtures.recipe(0);
+        var path = directory.resolve("final/cache");
+        SegmentPlan frozen;
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> new AnalyticTerrainOracle(
+                     (x, z) -> AnalyticTerrainOracle.dry(64), true), new SegmentCacheStore(path, recipe), io);
+             var lease = scheduler.requirePlan(0, Priority.PLAYER)) {
+            scheduler.startupPump();
+            var raw = lease.future().get(30, TimeUnit.SECONDS);
+            var stations = raw.stations().stations().stream().map(s -> new Station(
+                    s.globalSQ8(), s.point(), s.walkY() + 20, s.flags())).toList();
+            var unhashed = new StationTable(stations, raw.stations().breaks(), "0".repeat(64), raw.stations().biomeKeys());
+            var table = new StationTable(stations, unhashed.breaks(),
+                    local.plaincraft.greatwall.geometry.DeterministicHash.sha256(CanonicalCodec.stations(unhashed)), unhashed.biomeKeys());
+            var plan = new SegmentPlan(raw.geometry(), raw.prefix(), table, raw.sites(), "0".repeat(64));
+            frozen = new SegmentPlan(plan.geometry(), plan.prefix(), table, plan.sites(),
+                    local.plaincraft.greatwall.geometry.DeterministicHash.sha256(CanonicalCodec.plan(plan)));
+            scheduler.freezeStartupPlans(List.of(frozen)).get(10, TimeUnit.SECONDS);
+            // 保持旧租约未释放，证明不是恰好缓存淘汰后才读到最终结果。
+            try (var query = scheduler.requirePlan(0, Priority.PLAYER)) {
+                assertEquals(frozen, query.future().get(5, TimeUnit.SECONDS));
+                assertNotEquals(raw.stations(), query.future().join().stations());
+            }
+            assertEquals(frozen, new SegmentCacheStore(path, recipe).readPlan(frozen.geometry().key()).orElseThrow());
+        }
+        try (var io = Executors.newSingleThreadExecutor();
+             var reopened = new PlannerScheduler(recipe, () -> new AnalyticTerrainOracle(
+                     (x, z) -> AnalyticTerrainOracle.dry(64), true), new SegmentCacheStore(path, recipe), io);
+             var query = reopened.requirePlan(0, Priority.PLAYER)) {
+            reopened.startupPump();
+            assertEquals(frozen, query.future().get(30, TimeUnit.SECONDS));
+        }
+    }
+
     @Test void samplingFailureIsNotReplacedByGenericClosedInParentPlan() throws Exception {
         var recipe = PlanningFixtures.recipe(0);
         try (var io = Executors.newSingleThreadExecutor();

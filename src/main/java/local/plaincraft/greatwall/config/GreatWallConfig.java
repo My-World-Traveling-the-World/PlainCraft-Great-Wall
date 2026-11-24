@@ -60,6 +60,8 @@ public final class GreatWallConfig {
     private long wallLengthBlocks = UNLIMITED_LENGTH;
     // 只影响开局工作的范围，不写进配方摘要；会话启动时取一次。
     private int unlimitedPrewarmBlocks = DEFAULT_PREWARM_SEGMENTS * SEGMENT_BLOCKS;
+    /** 只把连续的大海作为收口候选；河湖不能再被旧50格阈值截断。 */
+    private int oceanBreakLengthBlocks = 512;
 
     // ── 0.1.0 山脊规划打分参数（最细粒度奖励惩罚体系，默认值 = RidgePlanner 原硬编码）──
     /** 刀锋山脊（中心凸起）权重：正值奖励凸起、负值惩罚凸起。默认 +4 保持原行为。 */
@@ -184,16 +186,9 @@ public final class GreatWallConfig {
             int summitFlatThreshold, int summitFlatReward, int knifeRidgePenalty,
             int ridgeAsymmetryWeight, int ridgeAccumulatedSlopeWeight, int obstacleMarginBlocks,
             int fineStep, int steepThreshold, boolean refineWater, int coreHalfWidth,
-            int fineSampleGridStep) {
-        /**
-         * Digest schema. <b>Bump this when the field list changes.</b> A world frozen under the old
-         * schema must refuse rather than reinterpret its stored numbers under the new one.
-         *
-         * <p>2: added {@code fineSampleGridStep} (the sampling grid). A schema-1 world refuses with
-         * {@code RECIPE_MISMATCH} and is closed gracefully instead of failing the server tick, which
-         * is the same path a changed value on any existing knob takes.
-         */
-        public static final int SCHEMA = 2;
+            int fineSampleGridStep, int oceanBreakLengthBlocks) {
+        /** 海洋收口阈值参与冻结摘要，不能让同一世界后半段突然采用另一种水域规则。 */
+        public static final int SCHEMA = 3;
 
         /** The stock parameter set: what a fresh install generates. */
         public static final Semantic DEFAULTS = new GreatWallConfig().semantic();
@@ -234,6 +229,7 @@ public final class GreatWallConfig {
                 out.writeBoolean(refineWater);
                 out.writeInt(coreHalfWidth);
                 out.writeInt(fineSampleGridStep);
+                out.writeInt(oceanBreakLengthBlocks);
             } catch (java.io.IOException impossible) {
                 throw new IllegalStateException(impossible);
             }
@@ -242,9 +238,10 @@ public final class GreatWallConfig {
 
         /** 现行配方只冻结会改变成品的旋钮，旧抽稀等不再使新世界的计划失效。 */
         public String landFirstDigest() {
-            var fields = java.nio.ByteBuffer.allocate(Long.BYTES + 5 * Integer.BYTES);
+            var fields = java.nio.ByteBuffer.allocate(Long.BYTES + 6 * Integer.BYTES);
             fields.putLong(wallLengthBlocks).putInt(ridgeSlopeWeight).putInt(ridgeTurnWeight)
-                    .putInt(ridgeDepartureWeight).putInt(ridgeAccumulatedSlopeWeight).putInt(obstacleMarginBlocks);
+                    .putInt(ridgeDepartureWeight).putInt(ridgeAccumulatedSlopeWeight).putInt(obstacleMarginBlocks)
+                    .putInt(oceanBreakLengthBlocks);
             return local.plaincraft.greatwall.geometry.DeterministicHash.sha256(fields.array());
         }
     }
@@ -255,7 +252,7 @@ public final class GreatWallConfig {
                 ridgeTurnWeight, ridgeWetWeight, ridgeDepartureWeight, summitFlatThreshold,
                 summitFlatReward, knifeRidgePenalty, ridgeAsymmetryWeight, ridgeAccumulatedSlopeWeight,
                 obstacleMarginBlocks, fineStep(), steepThreshold(), refineWater(), coreHalfWidth(),
-                fineSampleGridStep());
+                fineSampleGridStep(), oceanBreakLengthBlocks());
     }
 
     /**
@@ -284,6 +281,11 @@ public final class GreatWallConfig {
     public static String parameterDigest() { return get().semantic().digest(); }
 
     public long wallLengthBlocks() { return wallLengthBlocks; }
+
+    /** 与界面共用边界，避免手改JSON制造无法计量的负长度。 */
+    // 水文证据目前只含相邻段；阈值不超过一段，任一过海段都能拿到完整阈值邻域。
+    public int oceanBreakLengthBlocks() { return Math.clamp(oceanBreakLengthBlocks, 64, SEGMENT_BLOCKS); }
+    public void setOceanBreakLengthBlocks(int value) { oceanBreakLengthBlocks = value; }
 
     /** Driver interval in ms, floored at 1 so a config typo cannot stop the stage from progressing. */
     public int fineSampleDriverIntervalMs() { return Math.max(1, fineSampleDriverIntervalMs); }
@@ -407,6 +409,7 @@ public final class GreatWallConfig {
         var copy = new GreatWallConfig();
         copy.wallLengthBlocks = wallLengthBlocks;
         copy.unlimitedPrewarmBlocks = unlimitedPrewarmBlocks;
+        copy.oceanBreakLengthBlocks = oceanBreakLengthBlocks;
         copy.ridgeWeight = ridgeWeight;
         copy.ridgeProminenceWeight = ridgeProminenceWeight;
         copy.ridgeSlopeWeight = ridgeSlopeWeight;
@@ -435,6 +438,7 @@ public final class GreatWallConfig {
         Objects.requireNonNull(other);
         setWallLengthBlocks(other.wallLengthBlocks);
         setUnlimitedPrewarmBlocks(other.unlimitedPrewarmBlocks);
+        oceanBreakLengthBlocks = other.oceanBreakLengthBlocks;
         ridgeWeight = other.ridgeWeight;
         ridgeProminenceWeight = other.ridgeProminenceWeight;
         ridgeSlopeWeight = other.ridgeSlopeWeight;
@@ -500,6 +504,7 @@ public final class GreatWallConfig {
                 catch (RuntimeException malformed) { /* keep default */ }
             }
             readInt(json, "unlimitedPrewarmBlocks", config::setUnlimitedPrewarmBlocks);
+            readInt(json, "oceanBreakLengthBlocks", config::setOceanBreakLengthBlocks);
             // 0.1.0 山脊打分参数：逐项读取，缺失或畸形回退默认值。
             readInt(json, "ridgeWeight", v -> config.ridgeWeight = v);
             readInt(json, "ridgeProminenceWeight", v -> config.ridgeProminenceWeight = v);
@@ -553,6 +558,7 @@ public final class GreatWallConfig {
         var json = new JsonObject();
         json.addProperty("wallLengthBlocks", config.wallLengthBlocks);
         json.addProperty("unlimitedPrewarmBlocks", config.unlimitedPrewarmBlocks);
+        json.addProperty("oceanBreakLengthBlocks", config.oceanBreakLengthBlocks);
         // Written for a human reading the file: the prewarm count is derived, and
         // showing it here explains what the length implies without being read back.
         json.addProperty("prewarmSegmentsDerived", config.prewarmSegmentsTarget());
