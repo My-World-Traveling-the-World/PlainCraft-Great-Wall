@@ -192,6 +192,9 @@ final class ComponentAssembly {
                 // floor, Gate's threshold and Ramp's landing all live on exactly that layer
                 // (Fort:89 / Gate:31 / Ramp:113), and dropping to `y < groundTopY` deletes them wholesale.
                 if (y < support.groundTopY() - 1) continue;
+                // 水门拱洞只占用地表以上。实体可贴地承重，空气意图不能挖掉浅滩的表层。
+                if (input.site().id().kind() == SiteKind.WATER_GATE && !decay.weathers()
+                        && cell.part() == Part.AIR && y < support.groundTopY()) continue;
                 if (support.thinIceY().isPresent()&&y==support.thinIceY().getAsInt()) {
                     boolean main=input.site().id().kind()==SiteKind.WATER_GATE&&local.x()>=-2&&local.x()<2&&cell.part()==Part.WATER;
                     if(!main) {

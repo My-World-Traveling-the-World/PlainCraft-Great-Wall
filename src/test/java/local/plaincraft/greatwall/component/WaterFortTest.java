@@ -26,6 +26,35 @@ class WaterFortTest {
             else assertTrue(changed.isEmpty(),"side ice is not rewritten as water");
         }
     }
+    @Test void aShallowBankDoesNotInvalidateTheChunkOrEraseTheWaterOpening() {
+        var base = TemplateFixtures.input(SiteKind.WATER_GATE,new Bounds(-16,-32,-6,17,3,6));
+        var supports = new HashMap<>(base.supports());
+        // 拱洞一侧有伸进水面的浅滩，另一侧仍须过水，马道也必须保留。
+        supports.replaceAll((p,v) -> p.x() >= -7 && p.x() < 7 && p.z() != -4
+                ? new ProbeResult(ProbeKind.WATER,58,OptionalInt.of(63),OptionalInt.of(58),6,TemplateFixtures.HASH)
+                : v);
+        var water = new WaterEvidence(new ArcInterval(313L*256,327L*256),WaterClass.NARROW,
+                14L*256,14L*256,63,List.of(),List.of(),TemplateFixtures.HASH);
+        var input = new ComponentInput(base.site(),base.stations(),supports,base.decay(),base.family(),false,List.of(water),List.of());
+        var gate = new WaterGate(new DecayField(0,local.plaincraft.greatwall.model.WallRecipeRules.INTACT),
+                TemplateFixtures.PALETTE).compile(input);
+        assertTrue(gate.voxels().stream().anyMatch(v -> v.pos().equals(new Point3i(0,63,0))
+                && v.kind()==IntentKind.OWNED_VOID));
+        assertTrue(gate.voxels().stream().anyMatch(v -> v.pos().equals(new Point3i(0,83,0)) && v.walkable()));
+        var before = new HashMap<Point3i,String>();
+        for (var v : gate.voxels()) {
+            var p = v.pos();
+            var support = supports.get(new Point3i(p.x(),84,p.z()));
+            before.put(p,p.y()<support.groundTopY() ? "minecraft:stone{}" : "minecraft:air{}");
+        }
+        var owner = new ChunkKey("minecraft:overworld",0,-1);
+        var cell = new RealizationCell(new CellKey(TemplateFixtures.HASH,owner.dimension(),4),List.of(),List.of(gate),
+                TemplateFixtures.HASH,0,TemplateFixtures.HASH,TemplateFixtures.HASH);
+        var plan = new local.plaincraft.greatwall.generation.ChunkPlanCompiler().compile(owner,TemplateFixtures.HASH,List.of(cell),before);
+        assertFalse(plan.voxels().isEmpty());
+        assertFalse(plan.voxels().stream().anyMatch(v -> v.pos().equals(new Point3i(0,63,-4))));
+    }
+
     @Test void sevenColumnTailCannotBeMergedIntoFourPlusTwoPierUnderSixLimit() {
         assertTrue(4+2+1>6,"retained counterexample to literal remainder merge");
         assertEquals(7,5+2,"minimal tail uses five clear columns and the existing bank's two-column footing");

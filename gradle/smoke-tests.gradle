@@ -275,6 +275,17 @@ def prepareProductionInputs = { runtimeSource, String gameJarName, File smokeFil
     def evidence = new groovy.json.JsonSlurper().parse(file('gradle/local-inputs.json'))
     def api = evidence.artifacts.find { it.id == 'fabric-api' }
     def apiFile = file(api.path)
+    if (!apiFile.isFile()) {
+        // 整合包会升级 Fabric API；烟测仍复用原锁定字节，避免无意改变对照环境。
+        def cached = fileTree(new File(gradle.gradleUserHomeDir,
+                "caches/modules-2/files-2.1/net.fabricmc.fabric-api/fabric-api/${api.version}")).matching {
+            include "**/fabric-api-${api.version}.jar"
+        }.files
+        if (cached.size() != 1) {
+            throw new GradleException("找不到唯一的锁定 Fabric API ${api.version}：检查原路径 ${apiFile} 或 Gradle 缓存")
+        }
+        apiFile = cached.iterator().next()
+    }
     def digest = java.security.MessageDigest.getInstance('SHA-256')
     apiFile.withInputStream { stream ->
         byte[] buffer = new byte[65536]
