@@ -53,6 +53,32 @@ class ImportedTerminalSamplingTest {
         assertThrows(IllegalArgumentException.class, () -> ImportedSamplePath.forSampling(plan));
     }
 
+    @Test void landFirstProgressCountsTheFullWindowExactly() throws Exception {
+        var old = AdaptiveSiteSearchTest.recipe();
+        var hash = DeterministicHash.sha256(CanonicalCodec.recipe(old));
+        var recipe = new WorldRecipe(old.instance(), hash, old.seed(), old.dimension(), old.frozenSpawn(),
+                old.axis(), old.bounds(), old.config(), old.terrainHash(), old.paletteHash(), old.templatesHash(), hash);
+        var settings = local.plaincraft.greatwall.config.GreatWallConfig.get();
+        long length = settings.wallLengthBlocks();
+        settings.setWallLengthBlocks(2100);
+        local.plaincraft.greatwall.config.GreatWallConfig.freezeParameters();
+        try (var io = Executors.newSingleThreadExecutor();
+             var scheduler = new PlannerScheduler(recipe, () -> new AnalyticTerrainOracle(
+                     (x,z) -> AnalyticTerrainOracle.dry(64), true),
+                     new SegmentCacheStore(directory.resolve("exact"), recipe), io)) {
+            scheduler.startupPump();
+            var index = scheduler.requireFineSamples(Priority.PLAYER).get(60, TimeUnit.SECONDS);
+            assertTrue(index.size()>30_000, "两段实际墙和楼体必须有足够的非空取证");
+            var stage = local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE;
+            assertEquals(index.size(), local.plaincraft.greatwall.lifecycle.PrewarmProgress.subTotalFor(stage),
+                    "不能用首段面积乘总段数，也不能重复计入收口附件");
+            assertEquals(index.size(), local.plaincraft.greatwall.lifecycle.PrewarmProgress.subDoneFor(stage));
+        } finally {
+            settings.setWallLengthBlocks(length);
+            local.plaincraft.greatwall.config.GreatWallConfig.freezeParameters();
+        }
+    }
+
     /** 构造真实模板配方并重新盖语义哈希；不能拿非法配方测不到采样入口。 */
     private static WorldRecipe recipe() {
         var old = PlanningFixtures.recipe(0, 1 << 30, 0, 7000);

@@ -114,7 +114,15 @@ final class FineSampleStage {
         // 固定 48 片分布到任意数量通道；采样范围不依赖硬件线程数。
         int slices = FINE_SAMPLE_SLICES_PER_SEGMENT;
         // 按列报进度，大切片工作时也能持续更新。
-        var expectedColumns = new java.util.concurrent.atomic.AtomicInteger(1);
+        var expectedColumns = new java.util.concurrent.atomic.AtomicInteger(scheduler.landFirstPlanning() ? 0 : 1);
+        // 全部路线已知前不冒充精确分母；收齐矩形后只做一次并集扫描。
+        var samplingArea = new SamplingArea();
+        var areaPublished = new java.util.concurrent.atomic.AtomicBoolean();
+        Runnable publishArea = () -> {
+            if (scheduler.landFirstPlanning() && areaPublished.compareAndSet(false, true)) {
+                expectedColumns.set(samplingArea.finish());
+            }
+        };
         // 提前估算整段组，避免后续补分母使进度倒退。
         var expectedSeeded = new java.util.concurrent.atomic.AtomicBoolean();
         // 进度按实际网格步长估计，保持与游标的网格口径一致。
@@ -164,11 +172,19 @@ final class FineSampleStage {
                 // 保留提前发布策略；常规结案须等待路径和切片全部完成。
                 if (!forcedFlag.get()) {
                     if (enqueueing.get()) return;
-                    if (routesPending.get() > 0 || slicesPending.get() > 0) return;
+                    if (routesPending.get() > 0) return;
+                    if (scheduler.landFirstPlanning()) {
+                        publishArea.run();
+                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE,
+                                sampledColumns.get(), expectedColumns.get());
+                    }
+                    if (slicesPending.get() > 0) return;
                 }
                 if (aggregate.isDone() || !published.compareAndSet(false, true)) return;
+                if (scheduler.landFirstPlanning()) publishArea.run();
                 int done = sampledColumns.get();
-                // 保留独立估计值，加载界面负责显示限幅。
+                // 新版分母是完整占地并集；旧版维持其估计口径。
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
                         local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.FINE_SAMPLE, Math.min(done, Math.max(1, expectedColumns.get())), expectedColumns.get());
                 // 拆开地形步进、构建和缓存成本，便于定位耗时。
@@ -269,7 +285,7 @@ final class FineSampleStage {
                         }, pump).thenApply(java.util.Optional::of);
                 // 路径确定时估算完整窗口，不等各段前缀再叠加分母。
                 path.thenAcceptAsync(candidate -> {
-                    if (aggregate.isDone() || candidate.isEmpty()) return;
+                    if (aggregate.isDone() || candidate.isEmpty() || scheduler.landFirstPlanning()) return;
                     var sampled = candidate.orElseThrow();
                     // 分母与切片沿用同一末端判定。
                     long points = Math.max(1L, terminalPointLimit(sampled, sampled.points().size())
@@ -285,12 +301,7 @@ final class FineSampleStage {
                     long baseWidth = 2L * (WallFinePlanner.BASE_LATERAL / Math.max(1, gridStep)) + 1L;
                     long wideWidth = 2L * (WallFinePlanner.LATERAL / Math.max(1, gridStep)) + 1L;
                     long perPoint = (3L * baseWidth + wideWidth) / 4L;
-                    // 实物占地每列都是真样本；估计按墙条和楼体面积，不能沿用旧网格的分母。
-                    long estimated = sampled instanceof ImportedSamplePath imported && imported.footprint() != null
-                            ? imported.points().size() * 24L + imported.footprint().byStation().values().stream()
-                                    .flatMap(List::stream).mapToLong(b -> (long) (b.maxXExclusive() - b.minX())
-                                            * (b.maxZExclusive() - b.minZ())).sum()
-                            : (points / Math.max(1, gridStep)) * perPoint;
+                    long estimated = (points / Math.max(1, gridStep)) * perPoint;
                     // 首段乘总段数，后到更长的段只上调估计，不再累加。
                     int projected = (int) Math.min(Integer.MAX_VALUE - 1L, estimated * projectedSegments);
                     if (expectedSeeded.compareAndSet(false, true)) {
@@ -317,6 +328,7 @@ final class FineSampleStage {
                         return;
                     }
                     var sampled = candidate.orElseThrow();
+                    if (scheduler.landFirstPlanning()) samplingArea.add((ImportedSamplePath)sampled);
                     // 建筑按绝对弧长排布，先拿段前缀才能定宽截面。
                     CompletableFuture<PrefixSummary> before;
                     try {
