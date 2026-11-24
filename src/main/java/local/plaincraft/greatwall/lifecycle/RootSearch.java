@@ -107,6 +107,8 @@ public final class RootSearch {
     private static final int[] AXIS_DEGREES = {-40, -20, 0, 20, 40};
     private static final int[] AXIS_DISTANCES = {256, 512, 1024};
     private static final int[] AXIS_ACROSS = {0, -48, 48};
+    private static final int[] LAND_AXIS_ACROSS = {0, -10, 10};
+    private final boolean landFirst;
     private final Point3i spawn;
     private final DimensionBounds bounds;
     /**
@@ -221,6 +223,13 @@ public final class RootSearch {
     public RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
             BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation,boolean screenStructures,
             local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance) {
+        this(spawn, bounds, early, foundation, screenStructures, sanctuaryAvoidance, false);
+    }
+
+    RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
+            BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation, boolean screenStructures,
+            local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance, boolean landFirst) {
+        this.landFirst = landFirst;
         this.spawn = Objects.requireNonNull(spawn);
         this.bounds = Objects.requireNonNull(bounds);
         int heightSpan = Math.max(1, bounds.maxYExclusive() - bounds.minY());
@@ -352,7 +361,7 @@ public final class RootSearch {
     private void coarseStep(NaturalTerrainOracle oracle) {
         if (candidateIndex == RADII.length * 36) {
             var ordered = candidates.stream().sorted(Comparator.comparingInt(Candidate::wet)
-                    .thenComparingInt(Candidate::slope).thenComparing(Comparator.comparingLong(Candidate::ridge).reversed())
+                    .thenComparingInt(Candidate::slope).thenComparingLong(v -> landFirst ? 0 : -v.ridge())
                     .thenComparingInt(Candidate::radius).thenComparingInt(Candidate::angle)).toList();
             logCoarseSummary(ordered.size());
             // Water is not negotiable: a ring point that is mostly water is not ground to build on, and a
@@ -621,7 +630,8 @@ public final class RootSearch {
             }
         }
         int distance = AXIS_DISTANCES[sampleIndex / 3];
-        int across = AXIS_ACROSS[sampleIndex % 3];
+        // 只看实际墙带附近的水陆；两侧 48 格的崖谷不是墙体占地。
+        int across = (landFirst ? LAND_AXIS_ACROSS : AXIS_ACROSS)[sampleIndex % 3];
         int x = Math.toIntExact(current.origin().x() + FixedMath.roundDiv(
                 (long) distance * axis.exQ30() - (long) across * axis.ezQ30(), 1L << 30));
         int z = Math.toIntExact(current.origin().z() + FixedMath.roundDiv(
@@ -636,7 +646,7 @@ public final class RootSearch {
         lastSampleX = x; lastSampleZ = z;
         acceptHeight(value);
         if (sampleIndex % 3 == 0) centerHeight = value.groundTopY();
-        else axisScore += centerHeight - (long) value.groundTopY();
+        else if (!landFirst) axisScore += centerHeight - (long) value.groundTopY();
         sampleIndex++;
         // (A) Exact-equivalence early exit: axisOk needs invalidSamples*3 <= 9 (at most three censored
         // columns of nine) and wet <= 3, and both counts only grow. A line that has already spent its
@@ -647,6 +657,8 @@ public final class RootSearch {
             axisIndex++; resetSamples(); return;
         }
         if (sampleIndex < 9) return;
+        // 水列优先于起伏；少一列水不应输给更平但更湿的轴向。
+        if (landFirst) axisScore = -((long) wet << 32) - (max - (long) min);
         // One wet column in nine is tolerated. The axis is a line the wall can bridge - that is what
         // its water gate is for - and the pad itself was already cleared by the footprint phase.
         // Zero tolerance here is what a water-blind probe made look free.

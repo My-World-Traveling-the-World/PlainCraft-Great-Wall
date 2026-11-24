@@ -96,7 +96,8 @@ public final class PlanningColumnProvider {
 
     public PlanningColumnProvider(FineHeightIndex index, int fillRadius) {
         this.index = Objects.requireNonNull(index, "index");
-        this.offsets = orderedOffsets(Math.max(FILL_RADIUS, fillRadius));
+        // 新版保留真实缺列，避免把窄水或陡崖伪装成相邻干地。
+        this.offsets = index.exact() ? List.of() : orderedOffsets(Math.max(FILL_RADIUS, fillRadius));
         for (var column : index.columns()) {
             byChunk.computeIfAbsent(chunkKey(column.x() >> 4, column.z() >> 4), key -> new ArrayList<>())
                     .add(column);
@@ -131,16 +132,18 @@ public final class PlanningColumnProvider {
         for (var owner : owners) collectOnce(resolved, visited, buckets, owner.x(), owner.z());
         // Copies may also grow from just outside the requested set: a hole sitting on a chunk border
         // has neighbours on the far side of it.
-        var sources = new HashMap<>(resolved);
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                if (dx == 0 && dz == 0) continue;
-                for (var owner : owners) {
-                    collectOnce(sources, visited, buckets, owner.x() + dx, owner.z() + dz);
+        if (!offsets.isEmpty()) {
+            var sources = new HashMap<>(resolved);
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    if (dx == 0 && dz == 0) continue;
+                    for (var owner : owners) {
+                        collectOnce(sources, visited, buckets, owner.x() + dx, owner.z() + dz);
+                    }
                 }
             }
+            fillLadderHoles(resolved, sources, owners, offsets);
         }
-        fillLadderHoles(resolved, sources, owners, offsets);
         var result = new HashMap<Point3i, SurfaceProbe.ColumnView>(resolved.size() * 2);
         for (var column : resolved.values()) {
             result.put(new Point3i(column.x(), 0, column.z()),

@@ -8,8 +8,14 @@ import local.plaincraft.greatwall.model.WallTypes.Point3i;
 public final class WallRecipeRules {
     public static final int AUTHORED = 2;
     public static final int INTACT = 3;
+    public static final int LAND_FIRST_PLANNING = 2;
 
     private WallRecipeRules() {}
+
+    /** 新规划与历史夹具共享模板；算法号单独标记走线规则。 */
+    public static boolean landFirst(WallTypes.GenerationConfig config) {
+        return config.algorithmVersion() == LAND_FIRST_PLANNING;
+    }
 
     public static boolean usesAuthoredTemplates(int version) {
         return version == AUTHORED || version == INTACT;

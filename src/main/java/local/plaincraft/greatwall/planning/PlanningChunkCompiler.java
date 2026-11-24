@@ -44,7 +44,7 @@ public final class PlanningChunkCompiler {
     PlanningChunkCompiler(RealizationWindow window,ChunkPlanCompiler compiler,FineHeightIndex index,List<Bounds> structures){
         this(window::resolve,compiler,index,structures);
         // 捕获区块也必须选择同一版模板，否则新楼的高屋顶和宽底板不在证据范围内。
-        coverage = new CoveragePlanner(window.templateVersion());
+        coverage = new CoveragePlanner(window.templateVersion(), index.exact());
         realizationWindow = window;
     }
 

@@ -206,7 +206,7 @@ final class FineSampleStage {
                         walkedSections.get() == 0 ? 0 : probedColumns.get() / walkedSections.get(),
                         done == 0 ? 0 : probedColumns.get() / done);
                 try {
-                    var index = evidence.finish();
+                    var index = evidence.finish(scheduler.landFirstPlanning());
                     if (index == null) return; // 并发取消或关闭已接管结案。
                     int emitted = index.orderedColumns().size(), distinct = index.size();
                     // 复用正式索引的大小，避免仅为日志再遍历坐标并建一张集合。
@@ -224,7 +224,10 @@ final class FineSampleStage {
             }
         };
         // 停滞触发后移除提前结案回调，避免重复发布。
-        fineSampleAbandon = completion;
+        // 新版必须取齐施工证据；驱动确实停滞时明确失败。
+        fineSampleAbandon = scheduler.landFirstPlanning()
+                ? () -> aggregate.completeExceptionally(new IllegalStateException("长城精采样停止推进，施工证据不完整"))
+                : completion;
         aggregate.whenComplete((v, e) -> {
             // 提前结案或失败时扫尾，取消与迟到的备用路线申请可以并发。
             synchronized (this) {
@@ -252,7 +255,7 @@ final class FineSampleStage {
                 if (sites.imported()) {
                     // 不创建旧超时支线，避免两分钟后又悄悄启动一条未使用的旧路线。
                     var planLease = segmentLease.own(scheduler.requirePlan(index, priority));
-                    path = planLease.future().thenApply(ImportedSamplePath::forSampling);
+                    path = planLease.future().thenApply(plan -> ImportedSamplePath.forSampling(plan, scheduler.landFirstPlanning()));
                 } else path = lease.future()
                         .<RoutePath>thenApply(geometry -> geometry)
                         .completeOnTimeout(null, 120, java.util.concurrent.TimeUnit.SECONDS)
@@ -282,7 +285,12 @@ final class FineSampleStage {
                     long baseWidth = 2L * (WallFinePlanner.BASE_LATERAL / Math.max(1, gridStep)) + 1L;
                     long wideWidth = 2L * (WallFinePlanner.LATERAL / Math.max(1, gridStep)) + 1L;
                     long perPoint = (3L * baseWidth + wideWidth) / 4L;
-                    long estimated = (points / Math.max(1, gridStep)) * perPoint;
+                    // 实物占地每列都是真样本；估计按墙条和楼体面积，不能沿用旧网格的分母。
+                    long estimated = sampled instanceof ImportedSamplePath imported && imported.footprint() != null
+                            ? imported.points().size() * 24L + imported.footprint().byStation().values().stream()
+                                    .flatMap(List::stream).mapToLong(b -> (long) (b.maxXExclusive() - b.minX())
+                                            * (b.maxZExclusive() - b.minZ())).sum()
+                            : (points / Math.max(1, gridStep)) * perPoint;
                     // 首段乘总段数，后到更长的段只上调估计，不再累加。
                     int projected = (int) Math.min(Integer.MAX_VALUE - 1L, estimated * projectedSegments);
                     if (expectedSeeded.compareAndSet(false, true)) {
@@ -327,7 +335,7 @@ final class FineSampleStage {
                         var wideAt = widePoints(sampled, prefix.lengthBeforeQ8());
                         int points = sampled.points().size();
                         // 保留原几何在途末端判据；缺少就绪证据就采全段，避免编译缺列。
-                        points = terminalPointLimit(sampled, points);
+                        if (!(sampled instanceof ImportedSamplePath)) points = terminalPointLimit(sampled, points);
                         int perSlice = Math.max(1, (points + slices - 1) / slices);
                         for (int s = 0; s < slices; s++) {
                             int from = s * perSlice;
@@ -404,7 +412,7 @@ final class FineSampleStage {
         long expected = total.get();
         long columns = done.get();
         // 估计分母仍是初始值一时不用比例判断，避免误触发。
-        if (expected >= FINE_SAMPLE_RUNAWAY_MIN_EXPECTED
+        if (!scheduler.landFirstPlanning() && expected >= FINE_SAMPLE_RUNAWAY_MIN_EXPECTED
                 && columns > FINE_SAMPLE_RUNAWAY_NUMERATOR * expected) {
             return abandonFineSample(abandon, columns, expected, "ratio");
         }
@@ -431,6 +439,8 @@ final class FineSampleStage {
         } else {
             runawayStallChecks = 0;
         }
+        // 同一区块能提供许多不同的实测列，缓存命中不能作为新版采样的结案依据。
+        if (scheduler.landFirstPlanning()) return false;
         if (columnDelta < FINE_SAMPLE_RUNAWAY_MIN_COLUMNS || missDelta > columnDelta / 50L) {
             runawayIdleChecks = 0;   // 仍在发现新地形。
             return false;
@@ -446,10 +456,9 @@ final class FineSampleStage {
         if (fineSampleForced != null) fineSampleForced.set(true);
         stopFineSampleDriver();
         GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_RUNAWAY reason={} columns={} expected={} ratio={} "
-                        + "sections={} - the stage is re-walking columns the index already holds, so the "
-                        + "index is published as it stands instead of waiting for a convergence that never comes.",
+                        + "sections={} publishPartial={}",
                 why, columns, expected, expected <= 0 ? 0 : columns / expected,
-                fineSampleSections == null ? 0L : fineSampleSections.get());
+                fineSampleSections == null ? 0L : fineSampleSections.get(), !scheduler.landFirstPlanning());
         try {
             abandon.run();
         } catch (RuntimeException alreadyPublished) {

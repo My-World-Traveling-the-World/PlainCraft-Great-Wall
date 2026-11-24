@@ -56,17 +56,25 @@ public final class FineHeightIndex {
                     .thenComparing(column -> column.sample().biomeKey())
                     .thenComparing(column -> column.sample().upperCensored());
 
+    // 新版实测列不允许用邻列代替，也不参与旧横截面的共用地基。
+    private final boolean exact;
+    boolean exact() { return exact; }
     private final Map<Long, WallFinePlanner.FineColumn> byXZ;
     /** Original sampler order, including duplicate cross-section columns; grouping depends on it. */
     private final List<WallFinePlanner.FineColumn> routeColumns;
 
     private FineHeightIndex(Map<Long, WallFinePlanner.FineColumn> byXZ,
-                            List<WallFinePlanner.FineColumn> routeColumns) {
+                            List<WallFinePlanner.FineColumn> routeColumns, boolean exact) {
+        this.exact = exact;
         this.byXZ = byXZ;
         this.routeColumns = List.copyOf(routeColumns);
     }
 
     public static FineHeightIndex of(List<WallFinePlanner.FineColumn> columns) {
+        return of(columns, false);
+    }
+
+    static FineHeightIndex of(List<WallFinePlanner.FineColumn> columns, boolean exact) {
         Objects.requireNonNull(columns, "columns");
         var map = new HashMap<Long, WallFinePlanner.FineColumn>(columns.size() * 2);
         for (var column : columns) {
@@ -78,7 +86,7 @@ public final class FineHeightIndex {
         // 53 s inside ImmutableCollections$MapN.<init> against ~0.1 s here - single-threaded, on the
         // thread that completes the fine-sample stage and holds its aggregate future.
         // The map is built above, never aliased, and the view keeps the read-only contract.
-        return new FineHeightIndex(java.util.Collections.unmodifiableMap(map), columns);
+        return new FineHeightIndex(java.util.Collections.unmodifiableMap(map), columns, exact);
     }
 
     /** {@return whichever of the two columns for one {@code (x, z)} {@link #CONFLICT_ORDER} ranks first} */

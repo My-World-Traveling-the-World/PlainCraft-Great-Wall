@@ -74,7 +74,7 @@ public final class WorldBootstrap implements AutoCloseable {
 
     public WorldBootstrap(MinecraftServer server, WorldManifest manifest, Executor io) {
         this(server, manifest, io, server.getWorldData().worldGenOptions().seed(),
-                server.getWorldData().overworldData().isInitialized(), ProductionRecipeVersions::newWorld, ProductionRecipeVersions.readable());
+                server.getWorldData().overworldData().isInitialized(), ProductionRecipeVersions::newWorld, List.of());
     }
 
     WorldBootstrap(WorldManifest manifest, Executor io, long seed, boolean originallyInitialized) {
@@ -351,7 +351,9 @@ public final class WorldBootstrap implements AutoCloseable {
                                     cachedSelection.angleIndex(), cachedSelection.axisIndex());
                             publishRecipeFor(cachedSelection, authorization, inputs);
                         } else {
-                            var search = new RootSearch(spawn.get("chosen"), inputs.bounds(), earlyDomain.snapshot(), inputs.foundation(),inputs.structures()!=null, inputs.sanctuaryAvoidance());
+                            var search = new RootSearch(spawn.get("chosen"), inputs.bounds(), earlyDomain.snapshot(),
+                                    inputs.foundation(), inputs.structures() != null, inputs.sanctuaryAvoidance(),
+                                    local.plaincraft.greatwall.model.WallRecipeRules.landFirst(authorization.config()));
                             rootSearchStartedAt = System.nanoTime();
                             advance(search, lanes.getFirst(), authorization, inputs);
                         }
@@ -902,7 +904,7 @@ public final class WorldBootstrap implements AutoCloseable {
         try {
             var identity = RootSearchCache.identityOf(seed, "minecraft:overworld", chosen,
                     inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash(),
-                    config.parametersHash());
+                    ProductionRecipeVersions.rootAxisParameters(config));
             var entry = RootSearchCache.read(directory, identity);
             if (entry.isPresent()) return entry;
             GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_CACHE_MISS searching; no usable entry at {}",
@@ -922,7 +924,7 @@ public final class WorldBootstrap implements AutoCloseable {
         try {
             var identity = RootSearchCache.identityOf(seed, "minecraft:overworld", chosen,
                     inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash(),
-                    config.parametersHash());
+                    ProductionRecipeVersions.rootAxisParameters(config));
             RootSearchCache.write(directory, RootSearchCache.of(identity, selection.axis(),
                     selection.radiusIndex(), selection.angleIndex(), selection.axisIndex()));
             GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_CACHE_STORED axis={} radiusIndex={} angleIndex={} "

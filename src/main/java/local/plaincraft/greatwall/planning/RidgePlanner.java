@@ -26,6 +26,7 @@ public final class RidgePlanner {
     private final WorldRecipe recipe;
     private final AnchorField anchors;
     private final boolean gentle;
+    private final boolean landFirst;
     /**
      * Resolved structure footprints along the corridor, injected after the planning-time scan
      * completes. Empty until then, so the ridge behaves exactly as before the refactor when no
@@ -41,6 +42,7 @@ public final class RidgePlanner {
         this.recipe = Objects.requireNonNull(recipe, "recipe");
         this.anchors = Objects.requireNonNull(anchors, "anchors");
         this.gentle = recipe.config().templateVersion() >= WallRecipeRules.INTACT;
+        this.landFirst = WallRecipeRules.landFirst(recipe.config());
         if (recipe.config().columnBudget() != 150000 || recipe.config().corridorHalfWidth() != 512) {
             throw new IllegalArgumentException("requires frozen 150000/512 budget and corridor");
         }
@@ -148,6 +150,7 @@ public final class RidgePlanner {
                     || Math.abs(delta) > (129 - c.step) * 8) { c.candidate++; return; }
             c.lookahead = 0; c.sampleIndex = 0; c.candidateScore = 0; c.candidatePreviousHeight = c.previousHeight;
             c.candidateClimb = 0;
+            c.candidateWet = 0;
             c.candidateActive = true;
         }
         int u = (c.step + c.lookahead) * 16;
@@ -165,7 +168,9 @@ public final class RidgePlanner {
                     c.previousHeight - 30, c.previousHeight + 30)) { rejectCandidate(c); return; }
             Point2q prior = c.lookahead == 0 ? position(c, (c.step - 1) * 16 * 256, c.controls.getLast()) : c.lookaheadPoint;
             if (!heading(prior, center)) { rejectCandidate(c); return; }
-            var offset = OFFSETS.get(c.sampleIndex);
+            // 首截面抽查左右各 10 格；前瞻保留中线探测，控制原生水陆查询次数。
+            int across = c.sampleIndex == 0 ? 0 : c.sampleIndex == 1 ? -10 : 10;
+            var offset = landFirst ? new Point2q(0, across) : OFFSETS.get(c.sampleIndex);
             long dx = FixedMath.mulDiv(offset.xQ8() * 256, recipe.axis().exQ30(), 1L << 30)
                     - FixedMath.mulDiv(offset.zQ8() * 256, recipe.axis().ezQ30(), 1L << 30);
             long dz = FixedMath.mulDiv(offset.xQ8() * 256, recipe.axis().ezQ30(), 1L << 30)
@@ -184,7 +189,8 @@ public final class RidgePlanner {
             if (failure.code() != FailureCode.OUT_OF_BOUNDS) throw failure;
             rejectCandidate(c); return;
         }
-        if (c.sampleIndex != (gentle ? 1 : 9)) return;
+        int sampleCount = landFirst ? (c.lookahead == 0 ? 3 : 1) : gentle ? 1 : 9;
+        if (c.sampleIndex != sampleCount) return;
         var h = c.samples[0];
         long slope = Math.min(1024, Math.abs((long) h.groundTopY() - c.candidatePreviousHeight) * 256 / 16);
         // 累计爬升（0.1.0 补上实现）：只累加上坡，下坡不得奖励，刻度与 slope 一致（每格 16）。
@@ -200,21 +206,31 @@ public final class RidgePlanner {
         long score = cfg.ridgeSlopeWeight() * slope
                 + cfg.ridgeAccumulatedSlopeWeight() * c.candidateClimb
                 + cfg.ridgeTurnWeight() * turn
-                + cfg.ridgeWetWeight() * wet * (gentle ? 2 : 1)
+                + (landFirst ? 0 : cfg.ridgeWetWeight() * wet * (gentle ? 2 : 1))
                 + cfg.ridgeDepartureWeight() * departure;
-        if (!gentle) score += legacySummitScore(c, h, cfg);
+        // 先比干地，再比转弯和坡度。不能把无水证据的截断列记成干地。
+        if (landFirst) {
+            for (int i = 0; i < sampleCount; i++) {
+                var value = c.samples[i];
+                if (value.waterTopY().isPresent() || value.upperCensored() || value.quality() != Quality.REFERENCE) {
+                    c.candidateWet++;
+                }
+            }
+        } else if (!gentle) score += legacySummitScore(c, h, cfg);
         c.candidateScore += score * (c.lookahead == 0 ? 4 : c.lookahead == 1 ? 2 : 1);
         if (c.lookahead == 0) c.candidateFirstHeight = h.groundTopY();
         c.candidatePreviousHeight = h.groundTopY(); c.lookaheadPoint = center;
         if (++c.lookahead < c.lookaheadLimit) { c.sampleIndex = 0; return; }
-        if (c.candidateScore > c.bestScore) {
+        if ((!landFirst || c.candidateWet == c.bestWet) && c.candidateScore > c.bestScore
+                || landFirst && c.candidateWet < c.bestWet) {
             c.bestScore = c.candidateScore; c.bestCandidate = c.candidate;
+            c.bestWet = c.candidateWet;
             c.bestHeight = c.candidateFirstHeight; c.bestOffset = c.candidateOffset;
         }
         rejectCandidate(c);
     }
 
-    /** 旧存档续建仍使用冻结的登顶权重；新配方不会为这些权重额外读八列。 */
+    /** 离线历史夹具保留登顶权重；新配方不会为这些权重额外读八列。 */
     private static long legacySummitScore(Cursor c, ColumnSample h,
             local.plaincraft.greatwall.config.GreatWallConfig.Semantic cfg) {
         long ridge = Math.clamp(Math.floorDiv((2L * h.groundTopY() - c.samples[3].groundTopY() - c.samples[4].groundTopY()) * 256, 96), -256, 256);
@@ -251,6 +267,7 @@ public final class RidgePlanner {
         }
         c.controls.add(tapered(c.previousOffsetQ8, c.step * 16));
         c.step++; c.candidate = 0; c.bestCandidate = -1; c.bestScore = Long.MIN_VALUE;
+        c.bestWet = Integer.MAX_VALUE;
     }
 
     private ColumnSample sample(Cursor c, Point2q point, SampleKind kind, boolean boundary) {
@@ -398,6 +415,7 @@ public final class RidgePlanner {
         private int boundaryIndex, seamProbe, seamGround, seamWalkY;
         private int degradation, lookaheadLimit, bestCandidate = -1, previousHeight, candidatePreviousHeight;
         private int candidateFirstHeight, bestHeight, curveIndex;
+        private int candidateWet, bestWet = Integer.MAX_VALUE;
         private long previousOffsetQ8, previousDeltaQ8, bestScore = Long.MIN_VALUE, candidateScore, candidateOffset, bestOffset;
         /** 当前候选在自己那段前瞻里的累计爬升（只算上坡，刻度同 slope：每格 16）。 */
         private long candidateClimb;

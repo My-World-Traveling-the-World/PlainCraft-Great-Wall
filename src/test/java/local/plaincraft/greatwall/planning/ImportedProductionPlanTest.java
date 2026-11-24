@@ -60,7 +60,7 @@ class ImportedProductionPlanTest {
     }
 
     @Test void waterGateBuildsOnShortWaterAndWideWaterLeavesBothBanks() {
-        var recipe = ImportedSiteScheduleTest.recipe(3);
+        var recipe = AdaptiveSiteSearchTest.recipe();
         var stations = new ArrayList<Station>();
         for (int x = 0; x <= 384; x += 4)
             stations.add(new Station(x * 256L, new Point2q(x * 256L + 128, 128), 84, 0));
@@ -77,18 +77,29 @@ class ImportedProductionPlanTest {
                 new Boundary(0, a, 84, H), new Boundary(1, b, 84, H), 0, 0, H);
         var ribbon = new SegmentPlan(geometry, PrefixSummaryIndex.origin(), new StationTable(stations, List.of(), H),
                 List.of(), H);
-        var columns = new HashMap<Point3i, SurfaceProbe.ColumnView>();
-        for (int x = -16; x < 400; x++) for (int z = -40; z <= 40; z++)
-            columns.put(new Point3i(x, 0, z), x >= 84 && x < 98 || x >= 176 && x < 231 ? WATER : FLAT);
-        var fixture = new Fixture(recipe, ribbon, null, columns);
+        // 接上正式窄带采样和区块取证，不能用手填矩形掩盖水门和收口的漏采。
+        var index = ImportedProductionBoundaryTest.exactIndex(ribbon, (x, z) ->
+                x >= 84 && x < 98 || x >= 176 && x < 231
+                        ? AnalyticTerrainOracle.water(63, 58) : AnalyticTerrainOracle.dry(64));
+        var coverage = new CoveragePlanner(3, true).prepareOwners(new PlanWindow(List.of(ribbon)));
+        var provider = new PlanningColumnProvider(index);
         var planner = planner(recipe);
-        var cross = planner.resolve(input(fixture, 1, List.of()));
+        java.util.function.LongFunction<RealizationCell> resolve = arc -> {
+            var cell = new CellKey(recipe.recipeHash(), recipe.dimension(), arc);
+            return planner.resolve(input(new Fixture(recipe, ribbon, null, provider.columnsFor(coverage.forCell(cell))), arc, List.of()));
+        };
+        var cross = resolve.apply(1);
         var gate = cross.components().stream().filter(c -> c.id().kind() == SiteKind.WATER_GATE).findFirst().orElseThrow();
         // 短水的地面不是假设在桥下平地：真实构件必须既有马道也保住水源。
         assertTrue(gate.voxels().stream().anyMatch(v -> v.part() == Part.FLOOR));
         assertTrue(gate.voxels().stream().anyMatch(v -> v.state().id().equals("minecraft:water")));
-        var left = planner.resolve(input(fixture, 2, List.of()));
-        var right = planner.resolve(input(fixture, 4, List.of()));
+        var left = resolve.apply(2);
+        var right = resolve.apply(4);
+        // 两岸都要有实体收口，光看到附近仍有墙无法抓住收口漏采。
+        for (var bank : List.of(left, resolve.apply(3))) {
+            var cap = bank.components().stream().filter(c -> c.id().kind() == SiteKind.END_CAP).findFirst().orElseThrow();
+            assertTrue(cap.voxels().stream().anyMatch(v -> v.part() == Part.FLOOR), "收口必须有马道");
+        }
         assertTrue(left.breaks().stream().anyMatch(g -> g.reason() == BreakReason.RIVER_WIDE && g.range().equals(wideWater.crossing())));
         var placed = java.util.stream.Stream.concat(left.components().stream(), right.components().stream())
                 .filter(c -> c.id().kind() == SiteKind.WALL)
@@ -240,7 +251,7 @@ class ImportedProductionPlanTest {
 
     static RealizationPlanner planner(WorldRecipe recipe) {
         return new RealizationPlanner(recipe, new SurfaceProbe(), S2TemplateSet.create(recipe.seed(),
-                (i, p, l, w, s, h) -> S1TemplateSet.material(i.family(), i.redSandstone(), p)));
+                (i, p, l, w, s, h) -> S1TemplateSet.material(i.family(), i.redSandstone(), p), recipe.config().templateVersion()));
     }
     static RealizationPlanner.Input input(Fixture f, long cell, List<Bounds> protection) {
         return new RealizationPlanner.Input(new CellKey(f.recipe().recipeHash(), f.recipe().dimension(), cell), new PlanWindow(List.of(f.plan())),

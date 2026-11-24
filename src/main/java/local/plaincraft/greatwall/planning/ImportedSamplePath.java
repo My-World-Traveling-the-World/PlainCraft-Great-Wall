@@ -7,9 +7,17 @@ import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** 精采样沿冻结后的接引墙线走；只给旧路线加宽仍会漏掉建筑正交端面外的弯段。 */
-record ImportedSamplePath(SegmentKey key, List<Point2q> points, List<Long> localSQ8) implements RoutePath {
+record ImportedSamplePath(SegmentKey key, List<Point2q> points, List<Long> localSQ8,
+                          ImportedSamplingFootprint footprint) implements RoutePath {
+    ImportedSamplePath(SegmentKey key, List<Point2q> points, List<Long> localSQ8) {
+        this(key, points, localSQ8, null);
+    }
     /** 前段已遇海的空计划没有施工足迹；不能让它取消前段有效墙线的整轮取证。 */
     static Optional<RoutePath> forSampling(SegmentPlan plan) {
+        return forSampling(plan, false);
+    }
+
+    static Optional<RoutePath> forSampling(SegmentPlan plan, boolean exact) {
         if (plan.prefix().terminal().filter(t -> t.segment() < plan.geometry().key().index()).isPresent()) {
             // 只接纳调度器明确定义的终止空段，活动段缺站仍由 of 报错，防止吞掉坏计划。
             if (!plan.stations().stations().isEmpty() || !plan.sites().isEmpty()) {
@@ -17,10 +25,14 @@ record ImportedSamplePath(SegmentKey key, List<Point2q> points, List<Long> local
             }
             return Optional.empty();
         }
-        return Optional.of(of(plan));
+        return Optional.of(of(plan, exact));
     }
 
     static ImportedSamplePath of(SegmentPlan plan) {
+        return of(plan, false);
+    }
+
+    static ImportedSamplePath of(SegmentPlan plan, boolean exact) {
         var points = new ArrayList<Point2q>();
         var arcs = new ArrayList<Long>();
         var stations = plan.stations().stations();
@@ -47,6 +59,8 @@ record ImportedSamplePath(SegmentKey key, List<Point2q> points, List<Long> local
             points=new ArrayList<>(points.subList(0,limit));
             arcs=new ArrayList<>(arcs.subList(0,limit));
         }
-        return new ImportedSamplePath(plan.geometry().key(), List.copyOf(points), List.copyOf(arcs));
+        // 附件只属于本次精采游标，不进入存档或冻结计划的编码。
+        return new ImportedSamplePath(plan.geometry().key(), List.copyOf(points), List.copyOf(arcs),
+                exact ? ImportedSamplingFootprint.of(plan, arcs) : null);
     }
 }

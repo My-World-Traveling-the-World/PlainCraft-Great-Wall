@@ -32,7 +32,9 @@ final class PlanningCompileContext {
         bounds = minY == Integer.MAX_VALUE ? new DimensionBounds(-64, 320, 29_999_000)
                 : new DimensionBounds(minY, maxY, 29_999_000);
 
-        var sections = WallFoundationPlanner.plan(index.orderedColumns());
+        // 实物墙和楼按本列地表填基；附件列不能混入旧横截面的最高点裁决。
+        var sections = index.exact() ? List.<WallFoundationPlanner.ColumnFoundation>of()
+                : WallFoundationPlanner.plan(index.orderedColumns());
         foundationSections = new FoundationSectionIndex(sections);
         var floor = new HashMap<Long, Integer>();
         for (var section : sections) for (var fill : section.fills()) {

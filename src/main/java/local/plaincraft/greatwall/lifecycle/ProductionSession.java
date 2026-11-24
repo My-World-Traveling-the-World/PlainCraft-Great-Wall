@@ -389,7 +389,7 @@ final class ProductionSession implements AutoCloseable {
         var palette = new PaletteResolver(recipe.seed(), catalog);
         var biome = new BiomePaletteIndex(BiomePaletteIndex.freeze(level.registryAccess(), catalog));
         return new RealizationPlanner(recipe, new SurfaceProbe(), biome, local.plaincraft.greatwall.component.ImportedSiteGeometry.enabled(recipe)
-                ? S2TemplateSet.create(recipe.seed(), palette) : S1TemplateSet.create(recipe.seed(), palette));
+                ? S2TemplateSet.create(recipe.seed(), palette, recipe.config().templateVersion()) : S1TemplateSet.create(recipe.seed(), palette));
     }
 
     /**
@@ -430,7 +430,8 @@ final class ProductionSession implements AutoCloseable {
         // density work at all. It runs off the route lease so it never blocks the startup, and its numbers
         // are available whether or not the hydrology classifier ever certifies a column - which is the
         // measurement the crossing rule has always been missing.
-        try {
+        // 诊断请求也会冻结第 0 段；新版由正式水文日志出数，避免先于结构索引启动。
+        if (!local.plaincraft.greatwall.model.WallRecipeRules.landFirst(recipe.config())) try {
             var waterLease = planner.requireRoute(0L, Priority.PLAYER_PREFETCH);
             waterLease.future().whenCompleteAsync((waterRoute, waterError) -> {
                 try {
@@ -480,7 +481,8 @@ final class ProductionSession implements AutoCloseable {
         // totalMs=869,011 against 981,497 serial, because the scan is chunk-load bound and therefore
         // hides almost entirely behind the sample. See SERIAL_STAGES above for the full numbers and
         // for why the stage rows mislead. -Dgreatwall.startup.serialStages=true restores serial.
-        if (!SERIAL_STAGES) startFineSample(planner);
+        // 新版精采依赖已经避让结构的冻结墙线和楼址，不能提前启动规划。
+        if (!SERIAL_STAGES && !local.plaincraft.greatwall.model.WallRecipeRules.landFirst(recipe.config())) startFineSample(planner);
         // The wall's true corridor band (segment endpoints + half-width): candidates outside it are
         // dropped up front, so an angled wall no longer scans the AABB's 3.5x overscan.
         var corridor = new local.plaincraft.greatwall.generation.CorridorStructureScan.Corridor(
@@ -1117,7 +1119,7 @@ final class ProductionSession implements AutoCloseable {
             // which is the exact seam the frozen parameter snapshot exists to prevent. Compared against
             // the live digest on purpose - this is the drift detector, not a generation input.
             if (!snapshot.recipe().config().parametersHash()
-                    .equals(local.plaincraft.greatwall.config.GreatWallConfig.parameterDigest())) {
+                    .equals(local.plaincraft.greatwall.config.GreatWallConfig.get().semantic().landFirstDigest())) {
                 throw new WallFailure(FailureCode.RECIPE_MISMATCH, "generation parameters changed; create a new world");
             }
             trace.record("PRODUCTION_RECIPE_ACCEPTED", "*", 0, 0, "reload", "none");

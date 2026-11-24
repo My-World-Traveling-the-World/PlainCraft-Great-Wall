@@ -41,6 +41,10 @@ public final class SiteScheduler {
     }
 
     public List<SiteRecord> schedule(GeometryWindow window, long fromQ8, long toQ8) {
+        return select(candidates(window, fromQ8, toQ8), fromQ8, toQ8);
+    }
+
+    List<SiteRecord> candidates(GeometryWindow window, long fromQ8, long toQ8) {
         if (fromQ8 < 0 || toQ8 <= fromQ8 || toQ8 - fromQ8 > 5L * 4096 * 256) throw new IllegalArgumentException("bounded schedule interval required");
         var geometries = new HashMap<Long, SegmentGeometry>();
         var prefixes = new HashMap<Long, PrefixSummary>();
@@ -57,7 +61,9 @@ public final class SiteScheduler {
             if (prefix == null) throw new IllegalArgumentException("missing exact schedule prefix");
             if (g.terminal().isPresent()) terminalS = Math.min(terminalS, Math.addExact(prefix.lengthBeforeQ8(), g.terminal().get().localSQ8()));
         }
-        long halo = ImportedSiteGeometry.enabled(recipe) ? 512L * 256 : 256L * 256;
+        // 移动后仍要收齐能影响本段楼位的冲突候选。
+        long halo = local.plaincraft.greatwall.model.WallRecipeRules.landFirst(recipe.config()) ? 1024L * 256
+                : ImportedSiteGeometry.enabled(recipe) ? 512L * 256 : 256L * 256;
         long low = Math.max(0, fromQ8 - halo), high = Math.addExact(toQ8, halo);
         var sites = new ArrayList<SiteRecord>();
         for (long n = Math.max(1, low / (300 * 256)); n <= high / (300 * 256) + 1; n++) {
@@ -72,6 +78,10 @@ public final class SiteScheduler {
             add(sites, new SiteId(recipe.wallId(), SiteKind.FORT, n), fortPositionQ8(n), low, high, terminalS, geometries, prefixes);
         }
         sites.sort(ORDER);
+        return sites;
+    }
+
+    List<SiteRecord> select(List<SiteRecord> sites, long fromQ8, long toQ8) {
         var resolved = ImportedSiteGeometry.enabled(recipe) ? resolveImported(sites) : resolve(sites);
         var selected = new ArrayList<SiteRecord>();
         var included = new HashSet<SiteId>();
@@ -142,6 +152,11 @@ public final class SiteScheduler {
             if (s >= start && s < start + g.localSQ8().getLast()) { geometry = g; localS = s - start; break; }
         }
         if (geometry == null) return;
+        sites.add(at(id, s, geometry, localS));
+    }
+
+    /** 楼位平移仍使用原站点 ID、同一端面锚点和正交旋转规则。 */
+    SiteRecord at(SiteId id, long s, SegmentGeometry geometry, long localS) {
         var point = ArcLength.pointAt(geometry, localS);
         int edge = ArcLength.edgeAt(geometry.localSQ8(), localS);
         var a = geometry.points().get(edge); var b = geometry.points().get(edge + 1);
@@ -152,7 +167,7 @@ public final class SiteScheduler {
         int y = Math.toIntExact(geometry.start().walkY() + FixedMath.roundDiv((geometry.end().walkY() - (long) geometry.start().walkY()) * localS, total));
         var frame = new Frame(point, tx, tz, y, mirror);
         if (ImportedSiteGeometry.enabled(recipe)) frame = ImportedSiteGeometry.cardinal(frame);
-        sites.add(new SiteRecord(id, s, frame, worldBounds(id, frame), SiteState.PLANNED, Optional.empty(), Optional.empty()));
+        return new SiteRecord(id, s, frame, worldBounds(id, frame), SiteState.PLANNED, Optional.empty(), Optional.empty());
     }
 
     private List<SiteRecord> resolve(List<SiteRecord> sites) {
@@ -219,8 +234,11 @@ public final class SiteScheduler {
         var order = Comparator.<SiteRecord>comparingInt(s -> priority(s.id().kind())).reversed().thenComparing(SiteRecord::id, IDS);
         var result = new ArrayList<SiteRecord>();
         for (var site : sites) {
+            // 没找到楼址的候选不参与挤占其他楼，更不能留下断墙。
+            if (site.state() != SiteState.PLANNED) { result.add(site); continue; }
             // 只比较直接冲突的固定候选，不靠窗口内贪心顺序，跨规划段也能得到同一个赢家。
-            var winner = sites.stream().filter(other -> !other.id().equals(site.id()) && order.compare(other, site) < 0
+            var winner = sites.stream().filter(other -> other.state() == SiteState.PLANNED
+                    && !other.id().equals(site.id()) && order.compare(other, site) < 0
                     && (Math.abs(other.globalSQ8() - site.globalSQ8())
                     < (ImportedSiteGeometry.reach(other.id()) + ImportedSiteGeometry.reach(site.id())) * 256L
                     || overlaps(other.bounds(), site.bounds()))).min(order);

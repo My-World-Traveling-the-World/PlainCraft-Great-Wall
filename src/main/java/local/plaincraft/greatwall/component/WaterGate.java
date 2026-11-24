@@ -19,11 +19,15 @@ public final class WaterGate implements ComponentTemplate {
     private final java.util.Set<SiteId> depthSkipped = java.util.concurrent.ConcurrentHashMap.newKeySet();
     public WaterGate(DecayField decay,PaletteBinding palette){this.decay=Objects.requireNonNull(decay);this.palette=Objects.requireNonNull(palette);}
     @Override public Bounds localBounds(ComponentInput input) {
-        WaterEvidence w=evidence(input);
-        // A half-block center must not rasterize an extra column before the reserved bank apron.
-        int from=FixedMath.floorBlock(w.crossing().fromQ8()-input.site().globalSQ8()+255)-8;
-        int to=FixedMath.floorBlock(w.crossing().toQ8()-input.site().globalSQ8()+255)+8;
-        return new Bounds(from,-32,-6,to,3,6);
+        var w = evidence(input);
+        return footprint(w.crossing().fromQ8(), w.crossing().toQ8(), input.site().globalSQ8());
+    }
+
+    /** 采样和落块共用两岸余量，避免半格中心在斜跨时多裁一列。 */
+    public static Bounds footprint(long first, long last, long center) {
+        int from = FixedMath.floorBlock(first - center + 255) - 8;
+        int to = FixedMath.floorBlock(last - center + 255) + 8;
+        return new Bounds(from, -32, -6, to, 3, 6);
     }
     @Override public ComponentVoxels compile(ComponentInput input) {
         var evidence=evidence(input); Bounds b=localBounds(input); int w=input.site().frame().walkY();
@@ -68,7 +72,8 @@ public final class WaterGate implements ComponentTemplate {
         for(var s:sideSpans(-from))spans.add(new Span(-s.to(),-s.from()));
         for(int x=Math.min(from,-4);x<Math.max(to,4);x++) {
             Span span=null;for(var s:spans)if(x>=s.from()&&x<s.to()){span=s;break;}
-            if(span==null) {a.box(x,-32,-5,x+1,0,5,Part.ARCH,true);continue;}
+            // 桥墩承托马道。完整墙配方保留最上层马道，避免实心墩覆盖可走方块。
+            if(span==null) {a.box(x,-32,-5,x+1,decay.weathers()?0:-1,5,Part.ARCH,true);continue;}
             double offset=(x+0.5-(span.from()+span.to())/2.0)/((span.to()-span.from())/2.0);
             int arc=(int)StrictMath.floor(2*StrictMath.sqrt(Math.max(0,1-offset*offset)));
             int ceiling=Math.min(-2,water+3+arc);

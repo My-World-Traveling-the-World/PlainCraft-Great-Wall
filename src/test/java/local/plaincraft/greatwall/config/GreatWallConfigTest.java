@@ -113,6 +113,18 @@ class GreatWallConfigTest {
                 "scheduling knobs must not invalidate an existing world");
     }
 
+    @Test void landFirstWorldIgnoresRetiredKnobsButRecordsGeometryChanges() {
+        var config = new GreatWallConfig();
+        var original = config.semantic();
+        // 旧配置留下的字段不得让现行世界的施工计划失效，但历史夹具仍保留原口径。
+        config.setRidgeWetWeight(original.ridgeWetWeight() + 1);
+        config.setFineSampleGridStep(4);
+        assertEquals(original.landFirstDigest(), config.semantic().landFirstDigest());
+        assertNotEquals(original.digest(), config.semantic().digest());
+        config.setWallLengthBlocks(original.wallLengthBlocks() == 8000 ? 9000 : 8000);
+        assertNotEquals(original.landFirstDigest(), config.semantic().landFirstDigest());
+    }
+
     @Test void aFrozenSnapshotOutlivesLiveEdits() throws IOException {
         Path path = GreatWallConfig.file();
         byte[] original = Files.isRegularFile(path) ? Files.readAllBytes(path) : null;

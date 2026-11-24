@@ -26,7 +26,9 @@ final class FineSampleEvidence {
         return true;
     }
 
-    FineHeightIndex finish() {
+    FineHeightIndex finish() { return finish(false); }
+
+    FineHeightIndex finish(boolean exact) {
         var ordered = new ArrayList<FineColumn>();
         synchronized (this) {
             if (sealed) return null;
@@ -37,7 +39,7 @@ final class FineSampleEvidence {
             persist();
         }
         // 后续只读局部快照，停服不必等坐标索引构建完。
-        return FineHeightIndex.of(ordered);
+        return FineHeightIndex.of(ordered, exact);
     }
 
     synchronized void discardSlices() {

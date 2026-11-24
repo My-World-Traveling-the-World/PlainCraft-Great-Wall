@@ -85,6 +85,21 @@ public final class StructureObstacleIndex {
         return count;
     }
 
+    /** 楼体比墙宽，必须按整个旋转后的占地查相交，不能只避让中心列。 */
+    boolean intersects(local.plaincraft.greatwall.model.WallTypes.Bounds bounds, int minY, int maxYExclusive) {
+        int maxX = bounds.maxXExclusive() - 1, maxZ = bounds.maxZExclusive() - 1;
+        for (int x = bounds.minX() >> CELL_BITS; x <= maxX >> CELL_BITS; x++) {
+            for (int z = bounds.minZ() >> CELL_BITS; z <= maxZ >> CELL_BITS; z++) {
+                var boxes = cells.get(cellKey(x, z));
+                if (boxes == null) continue;
+                for (var box : boxes) if (bounds.minX() <= box.maxX() + marginBlocks
+                        && maxX >= box.minX() - marginBlocks && bounds.minZ() <= box.maxZ() + marginBlocks
+                        && maxZ >= box.minZ() - marginBlocks && minY <= box.maxY() && maxYExclusive > box.minY()) return true;
+            }
+        }
+        return false;
+    }
+
     private static long cellKey(int cx, int cz) {
         return ((long) cx << 32) ^ (cz & 0xffffffffL);
     }

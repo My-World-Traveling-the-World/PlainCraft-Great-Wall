@@ -239,6 +239,14 @@ public final class GreatWallConfig {
             }
             return local.plaincraft.greatwall.geometry.DeterministicHash.sha256(bytes.toByteArray());
         }
+
+        /** 现行配方只冻结会改变成品的旋钮，旧抽稀等不再使新世界的计划失效。 */
+        public String landFirstDigest() {
+            var fields = java.nio.ByteBuffer.allocate(Long.BYTES + 5 * Integer.BYTES);
+            fields.putLong(wallLengthBlocks).putInt(ridgeSlopeWeight).putInt(ridgeTurnWeight)
+                    .putInt(ridgeDepartureWeight).putInt(ridgeAccumulatedSlopeWeight).putInt(obstacleMarginBlocks);
+            return local.plaincraft.greatwall.geometry.DeterministicHash.sha256(fields.array());
+        }
     }
 
     /** Snapshot of the values this instance holds right now, with accessor clamping applied. */
@@ -599,11 +607,13 @@ public final class GreatWallConfig {
         write(get());
         var frozen = frozenParameters;
         if (frozen == null) return;
-        String live = parameterDigest();
-        if (!frozen.digest().equals(live)) {
+        // 配置界面只服务现行正式配方，保存提示和新世界重开采用同一份身份。
+        String live = get().semantic().landFirstDigest();
+        String original = frozen.landFirstDigest();
+        if (!original.equals(live)) {
             GreatWallMod.LOGGER.warn("[GreatWall:config] generation parameters changed ({} -> {}); this world "
                     + "keeps using the frozen set, and the next time it is opened it will require a new world",
-                    frozen.digest(), live);
+                    original, live);
         }
     }
 

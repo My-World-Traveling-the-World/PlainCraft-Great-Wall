@@ -7,15 +7,7 @@ import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-/**
- * The wall's player-facing options, built on Cloth Config so the fine-grained
- * ridge-scoring parameters are editable with the same control set RoadWeaver uses.
- *
- * <p>This replaces the hand-written {@code Screen} that exposed only the wall
- * length. Every ridge-scoring weight is now a labelled entry with a default and a
- * tooltip, grouped into one category so the player can tune how the wall avoids
- * knife-edge ridges without reading the source.</p>
- */
+/** 只展示会影响当前走线和调度的参数，避免玩家调到已停用的山脊权重或采样档位。 */
 public final class GreatWallConfigScreen {
     private GreatWallConfigScreen() {
     }
@@ -36,10 +28,6 @@ public final class GreatWallConfigScreen {
                 Component.translatable("config.plaincraft_great_wall.category.ridge"));
         ConfigCategory perf = builder.getOrCreateCategory(
                 Component.translatable("config.plaincraft_great_wall.category.performance"));
-        // Deliberately its own category: unlike the performance knobs above, these change what the
-        // sampler does, so they must not sit under a heading that promises "no effect on results".
-        ConfigCategory sampling = builder.getOrCreateCategory(
-                Component.translatable("config.plaincraft_great_wall.category.sampling"));
 
         // ── 长度 ──
         length.addEntry(eb
@@ -61,7 +49,7 @@ public final class GreatWallConfigScreen {
                 .setSaveConsumer(conf::setUnlimitedPrewarmBlocks)
                 .build());
 
-        // 六个旧山顶权重保留在配置读取和配方摘要里，避免改变已有世界；新版界面不再展示。
+        // 新版先选陆地，再比较坡度和走向；旧的水域权重和精采抽稀不再出现在界面。
         ridge.addEntry(eb
                 .startIntField(Component.translatable("config.plaincraft_great_wall.ridge_slope_weight"),
                         conf.ridgeSlopeWeight())
@@ -77,14 +65,6 @@ public final class GreatWallConfigScreen {
                 .setTooltip(Component.translatable("config.plaincraft_great_wall.ridge_turn_weight.tooltip"))
                 .setMin(-20).setMax(20)
                 .setSaveConsumer(conf::setRidgeTurnWeight)
-                .build());
-        ridge.addEntry(eb
-                .startIntField(Component.translatable("config.plaincraft_great_wall.ridge_wet_weight"),
-                        conf.ridgeWetWeight())
-                .setDefaultValue(def.ridgeWetWeight())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.ridge_wet_weight.tooltip"))
-                .setMin(-20).setMax(20)
-                .setSaveConsumer(conf::setRidgeWetWeight)
                 .build());
         ridge.addEntry(eb
                 .startIntField(Component.translatable("config.plaincraft_great_wall.ridge_departure_weight"),
@@ -136,46 +116,6 @@ public final class GreatWallConfigScreen {
                 .setMin(4).setMax(256)
                 .setSaveConsumer(conf::setChunkCacheLimit)
                 .build());
-        sampling.addEntry(eb
-                .startIntField(Component.translatable("config.plaincraft_great_wall.fine_sample_grid_step"),
-                        conf.fineSampleGridStep())
-                .setDefaultValue(def.fineSampleGridStep())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.fine_sample_grid_step.tooltip"))
-                .setMin(1).setMax(GreatWallConfig.MAX_FINE_SAMPLE_GRID_STEP)
-                .setSaveConsumer(conf::setFineSampleGridStep)
-                .build());
-        sampling.addEntry(eb
-                .startIntField(Component.translatable("config.plaincraft_great_wall.fine_step"),
-                        conf.fineStep())
-                .setDefaultValue(def.fineStep())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.fine_step.tooltip"))
-                .setMin(1).setMax(4)
-                .setSaveConsumer(conf::setFineStep)
-                .build());
-        sampling.addEntry(eb
-                .startIntField(Component.translatable("config.plaincraft_great_wall.steep_threshold"),
-                        conf.steepThreshold())
-                .setDefaultValue(def.steepThreshold())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.steep_threshold.tooltip"))
-                .setMin(1).setMax(16)
-                .setSaveConsumer(conf::setSteepThreshold)
-                .build());
-        sampling.addEntry(eb
-                .startIntField(Component.translatable("config.plaincraft_great_wall.core_half_width"),
-                        conf.coreHalfWidth())
-                .setDefaultValue(def.coreHalfWidth())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.core_half_width.tooltip"))
-                .setMin(0).setMax(52)
-                .setSaveConsumer(conf::setCoreHalfWidth)
-                .build());
-        sampling.addEntry(eb
-                .startBooleanToggle(Component.translatable("config.plaincraft_great_wall.refine_water"),
-                        conf.refineWater())
-                .setDefaultValue(def.refineWater())
-                .setTooltip(Component.translatable("config.plaincraft_great_wall.refine_water.tooltip"))
-                .setSaveConsumer(conf::setRefineWater)
-                .build());
-
         return builder.build();
     }
 }

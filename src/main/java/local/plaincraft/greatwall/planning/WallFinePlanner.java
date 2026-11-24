@@ -280,6 +280,7 @@ public final class WallFinePlanner {
             }
             // Emit the cross-section sample points for the current centre point.
             c.pending = c.section();
+            if (c.pending.isEmpty()) { c.pending = null; c.index++; return; }
             if (c.claims != null) {
                 // Road-style claim: a column belongs to the first cursor that asks for it, and every
                 // other cursor drops it. This is the piece that was missing - the planner deduped a
@@ -425,7 +426,8 @@ public final class WallFinePlanner {
             if (c.sampled.contains(columnKey)) continue;
             // Only REFERENCE-quality, uncensored samples reach the shared map, so a hit here is a sample
             // this session can reuse verbatim.
-            if (shared && c.walks.containsKey(columnKey)) continue;
+            // 新版缓存命中只省探测，本轮施工索引仍须收到这一列。
+            if (c.footprint == null && shared && c.walks.containsKey(columnKey)) continue;
             return false;
         }
         return true;
@@ -607,7 +609,8 @@ public final class WallFinePlanner {
         /** Route points that need the full {@link #LATERAL} band; {@code null} means every point. */
         private final java.util.function.IntPredicate wideAt;
         /** Sampling rules captured once per cursor: a config edit must not change a run mid-corridor. */
-        private final FineSamplePlan.Rules rules = FineSamplePlan.Rules.fromConfig();
+        private final FineSamplePlan.Rules rules;
+        private final ImportedSamplingFootprint footprint;
         private FineSamplePlan plan;
         /** Slot being probed (probe phase) and slot being emitted (emit phase) are different cursors. */
         private int emit;
@@ -641,13 +644,16 @@ public final class WallFinePlanner {
             this.waterCarry = carryWater;
             // Frozen snapshot, not the live config: the grid decides which columns are probed, so a
             // mid-world edit would change the terrain the second half of the wall is built on.
-            this.gridStep = local.plaincraft.greatwall.config.GreatWallConfig.parameters().fineSampleGridStep();
+            this.footprint = route instanceof ImportedSamplePath imported ? imported.footprint() : null;
+            // 施工占地每列都要有真实证据，避免陡坡、门洞或水下地基取到邻列替身。
+            this.gridStep = footprint == null ? local.plaincraft.greatwall.config.GreatWallConfig.parameters().fineSampleGridStep() : 1;
+            this.rules = footprint == null ? FineSamplePlan.Rules.fromConfig() : FineSamplePlan.Rules.full();
             this.fromIndex = Math.max(0, fromIndex);
             this.toIndex = Math.min(route.points().size(), Math.max(this.fromIndex, toIndex));
             // Only the cursor that holds a route end samples past it, so every apron column is
             // produced exactly once — PlannerScheduler predicts the same split for its progress bar.
             // 澄海楼从起点唯一接口向后伸出 91 格，旧端部余量不足以覆盖其真实底板。
-            int apron = route instanceof ImportedSamplePath ? 112 : APRON_BLOCKS;
+            int apron = footprint != null ? 0 : route instanceof ImportedSamplePath ? 112 : APRON_BLOCKS;
             this.apronBefore = this.fromIndex == 0 ? apron : 0;
             this.apronAfter = this.toIndex == route.points().size() ? apron : 0;
             // 内部切片只走自己的站点；共享去重省不掉重复构造前缀截面及认领列的开销。
@@ -658,6 +664,8 @@ public final class WallFinePlanner {
         /** The current cross-section: a route point, or the apron past one of the route's ends. */
         private List<Target> section() {
             var points = route.points();
+            if (footprint != null) return footprint.section((ImportedSamplePath) route, index,
+                    globalBaseQ8 + route.localSQ8().get(index));
             if (index < 0) return identify(apron(points, 0, -index, false, gridStep),
                     globalBaseQ8 + index * 256L, 0, 0);
             if (index >= points.size()) return identify(

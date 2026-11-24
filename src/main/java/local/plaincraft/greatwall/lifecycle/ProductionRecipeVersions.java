@@ -10,24 +10,27 @@ import local.plaincraft.greatwall.geometry.DeterministicHash;
 import local.plaincraft.greatwall.model.WallRecipeRules;
 import local.plaincraft.greatwall.model.WallTypes.GenerationConfig;
 
-/** 新世界选新版，已有凭证继续认旧版；版本变化不改存档字段，也不替旧世界升级构件。 */
+/** 正式入口使用现行配方；旧模板摘要只保留给离线历史夹具。 */
 final class ProductionRecipeVersions {
     private ProductionRecipeVersions() {}
 
     static GenerationConfig newWorld() {
-        return withTemplates(WallRecipeRules.INTACT);
+        return withVersions(WallRecipeRules.LAND_FIRST_PLANNING, WallRecipeRules.INTACT);
     }
 
-    /** 仍承认已经发布的两代凭证，但它们只用于打开对应旧世界。 */
-    static java.util.List<GenerationConfig> readable() {
-        return java.util.List.of(WorldBootstrap.defaultConfig(), withTemplates(WallRecipeRules.AUTHORED));
-    }
-
-    private static GenerationConfig withTemplates(int version) {
+    private static GenerationConfig withVersions(int algorithm, int version) {
         var old = WorldBootstrap.defaultConfig();
-        return new GenerationConfig(old.algorithmVersion(), version, old.segmentBlocks(), old.stationBlocks(), old.columnBudget(),
+        return new GenerationConfig(algorithm, version, old.segmentBlocks(), old.stationBlocks(), old.columnBudget(),
                 old.carrierAmplitude(), old.corridorHalfWidth(), old.maxGeometryInflight(), old.segmentBytes(),
-                old.terrainBytes(), old.compiledBytes(), old.parametersHash());
+                old.terrainBytes(), old.compiledBytes(),
+                local.plaincraft.greatwall.config.GreatWallConfig.parameters().landFirstDigest());
+    }
+
+    /** 保留历史查找键；同一套模板升级规划后不能捡到旧主轴。 */
+    static String rootAxisParameters(GenerationConfig config) {
+        return config.algorithmVersion() == 1 ? config.parametersHash()
+                : DeterministicHash.sha256(("root-axis-planning:" + config.algorithmVersion() + ":" + config.parametersHash())
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     static String templatesHash(int version) throws IOException {

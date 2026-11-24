@@ -58,6 +58,7 @@ public final class PlannerScheduler implements AutoCloseable {
     private static final String laneThreadPrefix = "pgw-oracle-";
     private final HeightContractPlanner heights;
     private final SiteScheduler sites;
+    private volatile StructureObstacleIndex siteObstacles = StructureObstacleIndex.empty(8);
     // 准入状态和缓存归协作类拥有，调度器只负责任务推进及生命周期次序。
     private final PlannerAdmissions admissions;
     private final List<OracleLane> lanes;
@@ -378,7 +379,10 @@ public final class PlannerScheduler implements AutoCloseable {
     /** 结构扫描结束后才能安装索引并启动批量任务，避免先算出不绕行路线。 */
     public void setObstacles(StructureObstacleIndex index) {
         ridge.setObstacles(index);
+        siteObstacles = index;
     }
+
+    boolean landFirstPlanning() { return local.plaincraft.greatwall.model.WallRecipeRules.landFirst(recipe.config()); }
 
     public SegmentGeometry computeGeometryNow(long segment, NaturalTerrainOracle diagnosticOracle) {
         key(segment);
@@ -464,6 +468,11 @@ public final class PlannerScheduler implements AutoCloseable {
             if (error != null) { result.completeExceptionally(error); return; }
             try {
                 long from = inputs.prefix.lengthBeforeQ8(), to = from + inputs.geometry.localSQ8().getLast();
+                if (landFirstPlanning()) {
+                    // 楼址依赖冻结水文，在地形通道上分批抽查，不能卡住调度线程。
+                    enqueue(new ContractJob(inputs, new AdaptiveSiteSearch(recipe, sites, siteObstacles, w, from, to), priority, result));
+                    return;
+                }
                 var provisional = sites.schedule(w, from, to);
                 var points = heights.samplePoints(inputs.geometry, inputs.prefix, provisional);
                 enqueue(new ContractJob(inputs, provisional, points, priority, result));
@@ -881,8 +890,9 @@ public final class PlannerScheduler implements AutoCloseable {
 
     private final class ContractJob extends Job<SegmentPlan> {
         private final Pair inputs;
-        private final List<SiteRecord> provisional;
-        private final List<Point2q> points;
+        private List<SiteRecord> provisional;
+        private List<Point2q> points;
+        private AdaptiveSiteSearch search;
         private final Map<Point2q, ColumnSample> columns = new HashMap<>();
         private int index;
         private NaturalTerrainOracle.ColumnCursor column;
@@ -890,7 +900,20 @@ public final class PlannerScheduler implements AutoCloseable {
             super(priority, "HEIGHT_CONTRACT", result); this.inputs = inputs; this.provisional = provisional; this.points = points;
             result.thenAcceptAsync(cacheIo::persist, pump);
         }
+        private ContractJob(Pair inputs, AdaptiveSiteSearch search, Priority priority, CompletableFuture<SegmentPlan> result) {
+            this(inputs, null, null, priority, result);
+            this.search = search;
+        }
         @Override boolean advance(NaturalTerrainOracle oracle, int limit) {
+            if (search != null) {
+                for (int i = 0; i < limit && !search.done(); i++) { search.advance(oracle); operations++; }
+                if (!search.done()) return false;
+                long from = inputs.prefix.lengthBeforeQ8();
+                provisional = sites.select(search.result(), from, from + inputs.geometry.localSQ8().getLast());
+                points = heights.samplePoints(inputs.geometry, inputs.prefix, provisional);
+                search = null;
+                return false;
+            }
             for (int i = 0; i < limit && index < points.size(); i++) {
                 if (closed()) throw closedFailure();
                 var p = points.get(index); operations++;

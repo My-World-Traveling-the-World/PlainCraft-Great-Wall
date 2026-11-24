@@ -16,17 +16,22 @@ import local.plaincraft.greatwall.model.WallFailure;
 import local.plaincraft.greatwall.model.WallRecipeRules;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.persistence.EvidenceCodec;
+import local.plaincraft.greatwall.planning.ImportedSamplingFootprint;
 
 /** A canonical per-owner envelope includes every potential local template/retreat, not just accepted cells. */
 public final class CoveragePlanner {
     private final java.util.Map<SiteKind,ComponentTemplate> templates;
     private final int version;
+    private final boolean exact;
     private static final java.util.Comparator<ChunkKey> OWNER_ORDER = java.util.Comparator.comparing(ChunkKey::dimension)
             .thenComparingInt(ChunkKey::x).thenComparingInt(ChunkKey::z);
     public CoveragePlanner() { this(1); }
-    public CoveragePlanner(int version) {
+    public CoveragePlanner(int version) { this(version, false); }
+
+    public CoveragePlanner(int version, boolean exact) {
         this.version=version;
-        templates=imported()?S2TemplateSet.create(0,(i,p,l,w,s,h)->S1TemplateSet.material(i.family(),i.redSandstone(),p))
+        this.exact=exact;
+        templates=imported()?S2TemplateSet.create(0,(i,p,l,w,s,h)->S1TemplateSet.material(i.family(),i.redSandstone(),p), version)
                 :S1TemplateSet.create(0);
     }
     /** 新配方的跨段半单元必须都保留，不能沿用旧版择一策略。 */
@@ -118,7 +123,7 @@ public final class CoveragePlanner {
         var orderedStations = plans.plans().size() == 1
                 ? plans.plans().getFirst().stations().stations() : stations(plans);
         var footprints = new ArrayList<SiteFootprint>();
-        for(var plan:plans.plans())for(var site:plan.sites()) {
+        if (!exact) for(var plan:plans.plans())for(var site:plan.sites()) {
             var template=templates.get(site.id().kind());
             if(template==null)throw new WallFailure(FailureCode.INVALID_RESOURCE,"unknown capture footprint: "+site.id());
             var provisional=new ComponentInput(site,List.of(),java.util.Map.of(),new DecaySample(DecayState.INTACT,0,20),
@@ -127,7 +132,10 @@ public final class CoveragePlanner {
                     :Rasterizer.worldBounds(site.frame(),template.localBounds(provisional));
             footprints.add(new SiteFootprint(site.globalSQ8(), footprintReach(site,b), b));
         }
-        return new OwnerLookup(orderedStations, List.copyOf(footprints));
+        var attachments = exact ? plans.plans().stream()
+                .flatMap(plan -> ImportedSamplingFootprint.attachments(plan).stream()).toList()
+                : List.<ImportedSamplingFootprint.Attachment>of();
+        return new OwnerLookup(orderedStations, List.copyOf(footprints), attachments);
     }
 
     private record SiteFootprint(long arc, long reach, Bounds bounds) { }
@@ -136,7 +144,11 @@ public final class CoveragePlanner {
         private final List<Station> stations;
         private final List<SiteFootprint> footprints;
 
-        private OwnerLookup(List<Station> stations, List<SiteFootprint> footprints) {
+        private final List<ImportedSamplingFootprint.Attachment> attachments;
+
+        private OwnerLookup(List<Station> stations, List<SiteFootprint> footprints,
+                List<ImportedSamplingFootprint.Attachment> attachments) {
+            this.attachments = attachments;
             this.stations = stations;
             this.footprints = footprints;
         }
@@ -166,6 +178,8 @@ public final class CoveragePlanner {
                 if(owners.size()+footprintOwnerCount(b)>256 && (arc<from || arc>to))continue;
                 addOwners(owners,cell.dimension(),b);
             }
+            // 收口按断点选候选，落点和读列可退到断点较远的区块。
+            for (var a : attachments) if (a.arc() >= from && a.arc() <= to) addOwners(owners, cell.dimension(), a.bounds());
             if(owners.size()>256)throw new WallFailure(FailureCode.CAPACITY,"realization footprint exceeds 256 capture owners");
             return List.copyOf(owners);
         }
