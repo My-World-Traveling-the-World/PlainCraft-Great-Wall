@@ -148,17 +148,24 @@ public final class RealizationPlanner {
         return memos.evidence(plan,input.key(),()->evidenceHash(input));
     }
     public RealizationCell resolve(Input input) {
-        return resolve(input,null,null);
+        return resolve(input,null,null,null);
     }
     /** Production callers must obtain these certificates through the lock-external resolver first. */
     public RealizationCell resolve(Input input,List<GroundExitDecision> decisions) {
         Objects.requireNonNull(decisions);
-        return resolve(input,List.copyOf(decisions),null);
+        return resolve(input,List.copyOf(decisions),null,null);
     }
     public GroundExitDecision.Slice inspect(Input input) {
         GroundExitDecision.Slice[] result={null};
-        resolve(input,null,s->result[0]=s);
+        resolve(input,null,s->result[0]=s,null);
         return Objects.requireNonNull(result[0],"missing exit slice");
+    }
+
+    /** 补采只需要真实断点；复用同一判定链，但不编普通墙、不认证自然出口或缓存旧列摘要。 */
+    public List<BreakInterval> inspectBreaks(Input input) {
+        var result=new java.util.concurrent.atomic.AtomicReference<List<BreakInterval>>();
+        resolve(input,null,null,result::set);
+        return Objects.requireNonNull(result.get(),"missing break inspection");
     }
     public static long inspectionBytes(GroundExitDecision.Slice value){
         return inspectionBytes(value.cell(),value.exits(),value.breaks());
@@ -181,15 +188,17 @@ public final class RealizationPlanner {
         return new GroundExitDecision.CapVote(cap,t0);
     }
     private RealizationCell resolve(Input input,List<GroundExitDecision> decisions,
-            java.util.function.Consumer<GroundExitDecision.Slice> inspection) {
+            java.util.function.Consumer<GroundExitDecision.Slice> inspection,
+            java.util.function.Consumer<List<BreakInterval>> breakInspection) {
         long temporary=workingBytes(input);
         CompiledAllocation.charge(temporary);
         try { return ProtectedColumnView.indexed(input.protectedBounds(),input.columns().keySet(),
-                ()->resolveAccounted(input,decisions,inspection)); }
+                ()->resolveAccounted(input,decisions,inspection,breakInspection)); }
         finally { CompiledAllocation.discard(temporary); }
     }
     private RealizationCell resolveAccounted(Input input,List<GroundExitDecision> decisions,
-            java.util.function.Consumer<GroundExitDecision.Slice> inspection) {
+            java.util.function.Consumer<GroundExitDecision.Slice> inspection,
+            java.util.function.Consumer<List<BreakInterval>> breakInspection) {
         if(input.key().arcCell()<0)throw new IllegalArgumentException("negative arc cell");
         if(recipe!=null&&(!recipe.recipeHash().equals(input.key().recipeHash())||!recipe.dimension().equals(input.key().dimension())))
             throw new WallFailure(FailureCode.RECIPE_MISMATCH,"foreign realization request");
@@ -197,6 +206,7 @@ public final class RealizationPlanner {
         long from=Math.multiplyExact(input.key().arcCell(),64L*256),to=Math.addExact(from,64L*256);
         String t0=hash(input.tiles().values().stream().map(t->t.key().identity()+":"+t.hash()).sorted().toList().toString());
         if(stations.size()<2||from>=stations.getLast().globalSQ8()) {
+            if(breakInspection!=null){breakInspection.accept(List.of());return null;}
             if(inspection!=null)inspection.accept(inspection(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHashFor(input)));
             return result(input,breaks,accepted,t0);
         }
@@ -207,12 +217,13 @@ public final class RealizationPlanner {
         if(from<stations.getFirst().globalSQ8()) {
             if(ImportedSiteGeometry.enabled(recipe)&&to>stations.getFirst().globalSQ8())from=stations.getFirst().globalSQ8();
             else {
+                if(breakInspection!=null){breakInspection.accept(List.of());return null;}
                 if(inspection!=null)inspection.accept(inspection(input.key(),List.of(),List.of(),terminal(input.plans()),evidenceHashFor(input)));
                 return result(input,breaks,accepted,t0);
             }
         }
         to=Math.min(to,stations.getLast().globalSQ8());
-        if(inspection!=null||decisions!=null)requireRibbonColumns(input,stations,from,to);
+        if(inspection!=null||decisions!=null||breakInspection!=null)requireRibbonColumns(input,stations,from,to);
         var bounds=recipe!=null?recipe.bounds():new DimensionBounds(
                 input.tiles().keySet().stream().mapToInt(TerrainTile.Key::minY).min().orElseThrow(),
                 input.tiles().keySet().stream().mapToInt(k->k.maxY()+1).max().orElseThrow(),29_999_000);
@@ -315,7 +326,7 @@ public final class RealizationPlanner {
                 maintained.add(site.globalSQ8());
                 if(site.globalSQ8()>=from&&site.globalSQ8()<to&&site.globalSQ8()<terminal) {
                     accepted.add(component);
-                    if(naturalExit(input,site,component)) {
+                    if(breakInspection==null&&naturalExit(input,site,component)) {
                         if(evidence==null)evidence=evidenceHashFor(input);
                         exits.add(new GroundExitDecision.Exit(site.id(),site.globalSQ8(),
                                 new ArcInterval(siteFrom,siteTo),component.hash(),evidence));
@@ -354,12 +365,12 @@ public final class RealizationPlanner {
                 walkBreaks.add(new BreakInterval(new ArcInterval(s,Math.min(s+256,decayTo)),BreakReason.BURIED,BreakScope.REALIZED));
         }
         var walkMerged=merge(walkBreaks);
+        if(breakInspection!=null) {
+            breakInspection.accept(coreBreaks(walkMerged,from,to));
+            return null;
+        }
         if(inspection!=null) {
-            var core=new ArrayList<BreakInterval>();
-            for(var gap:walkMerged) {
-                long a=Math.max(from,gap.range().fromQ8()),b=Math.min(to,gap.range().toQ8());
-                if(a<b)core.add(new BreakInterval(new ArcInterval(a,b),gap.reason(),gap.scope()));
-            }
+            var core=coreBreaks(walkMerged,from,to);
             inspection.accept(inspection(input.key(),exits,core,terminal(input.plans()),evidence==null?evidenceHashFor(input):evidence));
             return result(input,walkMerged,accepted,t0);
         }
@@ -450,6 +461,15 @@ public final class RealizationPlanner {
         if(decisions==null)return resolved;
         return new RealizationCell(resolved.key(),resolved.breaks(),resolved.components(),resolved.t0Hash(),resolved.gateRevision(),
                 resolved.protectionHash(),hash(resolved.hash()+"\n"+decisions.stream().map(GroundExitDecision::hash).sorted().toList()));
+    }
+
+    private static List<BreakInterval> coreBreaks(List<BreakInterval> gaps,long from,long to) {
+        var result=new ArrayList<BreakInterval>();
+        for(var gap:gaps) {
+            long a=Math.max(from,gap.range().fromQ8()),b=Math.min(to,gap.range().toQ8());
+            if(a<b)result.add(new BreakInterval(new ArcInterval(a,b),gap.reason(),gap.scope()));
+        }
+        return List.copyOf(result);
     }
     public GroundExitDecision.CapVote probeCap(Input input,GroundExitDecision.Edge edge) {
         long temporary=workingBytes(input);

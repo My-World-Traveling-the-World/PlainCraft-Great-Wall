@@ -21,6 +21,8 @@ public final class RealizationWindow implements AutoCloseable {
     RealizationWindow(RealizationPlanner source){planner=source.forkForWindow(this);}
     public RealizationCell resolve(RealizationPlanner.Input input){return planner.resolve(input);}
     public GroundExitDecision.Slice inspect(RealizationPlanner.Input input){return planner.inspect(input);}
+    /** 补采前不写地形摘要缓存，最终编译才能对新增列重新取证。 */
+    public List<BreakInterval> inspectBreaks(RealizationPlanner.Input input){return planner.inspectBreaks(input);}
     public int templateVersion(){return planner.templateVersion();}
     public ImportedBuildingMemo.Stats buildingMemoStats(){return buildings.stats();}
     public ImportedProjectionMemo.Stats projectionMemoStats(){return projections.stats();}

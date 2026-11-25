@@ -245,6 +245,19 @@ public final class PlannerScheduler implements AutoCloseable {
         dispatch();
     }
 
+    /** 动态收口只提交缺列；没有服务端tick或初采定时器时也能按原预算推进。 */
+    CompletableFuture<List<WallFinePlanner.FineColumn>> requireSupplementalColumns(
+            List<WallFinePlanner.Target> targets,Priority priority) {
+        return SupplementalColumnStage.sample(this,pump,targets,fineSamples.cache(),priority,laneState.size());
+    }
+
+    CompletableFuture<List<WallFinePlanner.FineColumn>> enqueueSupplemental(List<WallFinePlanner.Target> targets,
+            local.plaincraft.greatwall.terrain.FineSampleCache cache,Priority priority) {
+        var result=new CompletableFuture<List<WallFinePlanner.FineColumn>>();
+        enqueue(new SupplementalJob(targets,cache,priority,result));
+        return result;
+    }
+
     void cancelDemandTimer() {
         if (startupTimer != null) startupTimer.cancel(false);
     }
@@ -798,6 +811,17 @@ public final class PlannerScheduler implements AutoCloseable {
         abstract boolean advance(NaturalTerrainOracle oracle, int limit);
         abstract T value();
         @SuppressWarnings("unchecked") private void complete(Object value) { result.complete((T) value); }
+    }
+
+    private final class SupplementalJob extends Job<List<WallFinePlanner.FineColumn>> {
+        private final SupplementalColumnCursor cursor;
+        private SupplementalJob(List<WallFinePlanner.Target> targets,
+                local.plaincraft.greatwall.terrain.FineSampleCache cache,Priority priority,
+                CompletableFuture<List<WallFinePlanner.FineColumn>> result) {
+            super(priority,"SUPPLEMENTAL_COLUMNS",result);cursor=new SupplementalColumnCursor(targets,cache);
+        }
+        @Override boolean advance(NaturalTerrainOracle oracle,int limit){operations+=limit;return cursor.advance(oracle,limit);}
+        @Override List<WallFinePlanner.FineColumn> value(){return cursor.result();}
     }
 
     private final class RouteJob extends Job<RouteShape> {

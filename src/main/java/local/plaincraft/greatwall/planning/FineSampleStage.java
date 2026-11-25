@@ -87,6 +87,9 @@ final class FineSampleStage {
         this.fineSampleCache = java.util.Objects.requireNonNull(cache, "cache");
     }
 
+    /** 补采只复用同一份已装入内存的缓存，不再次启动初采或改写其结案状态。 */
+    local.plaincraft.greatwall.terrain.FineSampleCache cache(){return fineSampleCache;}
+
     /** 生成开头段的截面地形索引供编译，落块期不需要逐方块重采。 */
     synchronized CompletableFuture<FineHeightIndex> requireFineSamples(Priority priority) {
         if (scheduler.closed()) return CompletableFuture.failedFuture(scheduler.closedFailure());

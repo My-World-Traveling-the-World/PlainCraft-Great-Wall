@@ -1,5 +1,14 @@
 # 万里长城开发指南与交接
 
+## 2026-11-25 · 收口补采第一步：等价端口
+
+1. **改动**：新增inspectBreaks，沿用原保护探针/楼体/水门判定，不编普通墙、不认证自然出口、不缓存补列前的全列摘要。新增按行并集合并缺列、既有OracleLane上的REFERENCE游标及补采专用推进表；初轮结束或无服务端tick时也能完成，关闭会话可释放等待。
+2. **验证**：1074项JUnit，跳过/失败/错误均0，compileClientJava成功。当前algorithm=2/template=3真实窄带夹具已复现：原计划无断点，保护冲突跨256格单元缝，probeCap实际抛T0_MISSING。轻量与原inspect断点完全相同，少一次每列摘要hash。
+3. **未验证**：此提交仅端口，尚未接生产启动补采；不能宣称收口已修或部署。新增补列暂只保留会话内存，不单独用初轮旧缓存快照写盘，避免覆盖本轮初采缓存。未验收整合包耗时或画面。
+4. **负控**：断开补采driveStartupSlice→无tick完成测试红；预检重算全列摘要→摘要次数测试红；重新提交已有列→唯一缺列测试红。三组均git checkout精确恢复，1074项完整结果从相同输入构建缓存恢复验证，日志build/cap-ports-restored.log；变异表build/cap-ports-mutations.json。
+5. **下一步**：把全窗缓坡后的真实断点跨单元合并，按候选收口占地补缺列，重建exact索引及Coverage/OwnerIndex再编译；补列后重新预检直到没有新缺列。最终编译仍重判，不能把第一次断点直接当最终几何。预检按唯一SourceCell执行，记录次数与耗时，不报未经实测的提速。
+6. **历史与回退**：基线960bbec5，行为等价的接口新增；尚未改变0.7.144生产调用、模板、配方和存档。端口与行为接线分提交，保持单一写入方。
+
 ## 2026-11-25 · 0.7.144 · 构件证据复用与收口诊断
 
 **本批最终交付**：`0.7.144-api-standardization` 已部署WAYFARING，代码提交 `d375a194`；恢复所有负控后的最终回归1068项、零跳过/失败/错误，正式构建成功。部署件与构建件SHA256一致：`fc532cf5950f6455fbb292dabc0990a23260da2974fdb9a8336490f87d70119d`。旧包备份 `D:\minecraft\Plain Craft Launcher 2\.minecraft\backups\wayfaring-optimization-20261125-204514`，四包完整清单在SeedGen补丁的build/optimization-deployment-manifest.json。未启动完整整合包验收画面或帧率，未改玩家存档。
