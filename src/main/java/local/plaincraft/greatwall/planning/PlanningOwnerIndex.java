@@ -55,11 +55,12 @@ final class PlanningOwnerIndex {
                                         work, PlanningOwnerIndex::prefer);
                     }
                 }
-            } catch (Throwable failure) {
+            } catch (RuntimeException | Error failure) {
                 cancellation.rethrowCancellation(failure);
-                // 与整窗入口一致：坏段不应取消其他段已登记的区块。
-                GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_PLAN_SKIPPED 段归属枚举失败 prefix={} failure={}",
+                // 尚未得到完整区块集合，无法给丢失段计入失败率；必须阻止残缺枚举冒充完整结案。
+                GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_ENUMERATION_FAILED 段归属枚举失败 prefix={} failure={}",
                         plan.prefix().lengthBeforeQ8(), PlanningChunkCompiler.summarize(failure), failure);
+                throw failure;
             }
         }
         var result = new ArrayList<OwnerWork>(byOwner.size());
