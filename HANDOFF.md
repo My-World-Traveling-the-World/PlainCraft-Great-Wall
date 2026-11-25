@@ -2,6 +2,8 @@
 
 ## 2026-11-25 · 0.7.147 · 地形证据存在性哈希查询
 
+**本轮最终交付**：实现57b08b88已推GitHub现有refactor/planning-frozen-feature-paint分支；0.7.147已部署WAYFARING，SHA256=`afe807f9acbd4f5eead98b544a41dcecf5d8bd467242fd3b9191b35e41670176`，与恢复十组负控后的1091项回归/正式构建件一致。旧0.7.144备份在`D:\minecraft\Plain Craft Launcher 2\.minecraft\backups\wayfaring-profile-cap-20261125-233357`，清单位于相邻道路build/profile-cap-deployment.json。0.7.145/.146从未部署；未改玩家存档，未启动完整整合包验收画面。
+
 1. **改动**：EntranceColumns明确委托内部哈希表containsKey，保留复制一次/复用自有快照/不可修改；不让逐列完整性检查退回AbstractMap逐项扫描。exact模式FINE_COVERAGE日志报告ordinaryWallRadius=8和模板附件，旧横截面只在旧模式打印。补强五资产健康分支必须无断点，避免相同失败路径互相背书。
 2. **验证**：恢复全部变异后1091项JUnit，skipped/failures/errors均0，compileClientJava/remapJar/interopJar与真实独立Fabric服务器成功。真实Point3i计数守卫四次存在性查询均查索引、entrySet遍历0；五种v3健康分支均无断点且保护分支确实拒绝。新普通世界seed=9282026、8192格、4/4段，初采204532/补列14014，预检2轮/8次整段调用耗3177ms；2149/2149计划发布，compileFailed=publishFailed=0，compileMs=108978、publishMs=17548。游戏启动185.214秒，40tick后正常停服。日志build/cap-evidence-hash-release.log，目录build/run/serverSmoke/vanilla/cap-evidence-8192-20261125-03。
 3. **未验证**：.146已通过1090项全量但独立8192启动再次超过5分钟，未部署。jcmd线程证据build/cap-evidence-plan-native-threads.txt显示commonPool-worker在AbstractMap.containsKey遍历entrySet，单线程CPU约213秒；.145同初采/补列口径的预检170311ms，本版3177ms，不据此推算整包倍率。本版无T0_MISSING，但终点仍见CAP_EMPTY，明确原因为WATER地面入口不合格；未绕过它。启动后40tick烟测仍报一次落后3500ms/70ticks，整包帧率、补建峰值、全长物理落块和补列冷重开缓存均未验收。
