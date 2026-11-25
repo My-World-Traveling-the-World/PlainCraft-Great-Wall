@@ -459,6 +459,8 @@ public final class WorldServices {
                                         net.minecraft.world.level.chunk.ChunkAccess chunk,
                                         local.plaincraft.greatwall.model.WallTypes.ChunkWritePlan plan) {
         if (level == null || chunk == null || plan == null) return;
+        // 仅真实施工结案才通知远景刷新，不能把计划发布当成已落块。
+        net.shiroha233.roadweaver.api.outgoing.WorldgenPreviewApi.completed(level,plan.owner().x(),plan.owner().z());
         var services = find(level.getServer());
         // 区块从磁盘恢复也复用实际体素占地，不能只恢复道路保护而漏掉结构保护。
         local.plaincraft.greatwall.generation.WallPlanSupport.publishPlannedColumns(plan,

@@ -35,6 +35,17 @@ public final class WallWorldgenPlanCache {
         session(level).put(plan.owner(), plan);
     }
 
+    /** 远景查询不能为已卸载世界创建新会话，也不能从磁盘补读。 */
+    public static ChunkWritePlan peek(ServerLevel level, ChunkKey key) {
+        var current=SESSIONS.get(level);
+        return current==null?null:current.get(key);
+    }
+
+    public static net.shiroha233.roadweaver.api.outgoing.WorldgenPreviewApi.Chunk peekPreview(ServerLevel level,ChunkKey key) {
+        var current=SESSIONS.get(level);
+        return current==null?net.shiroha233.roadweaver.api.outgoing.WorldgenPreviewApi.Chunk.unavailable():current.preview(key);
+    }
+
     public static void invalidate(ServerLevel level) {
         if (level == null) return;
         SESSIONS.remove(level);
@@ -63,6 +74,8 @@ public final class WallWorldgenPlanCache {
 
     static final class Session {
         private final Object lock = new Object();
+        private record Projection(ChunkWritePlan source,net.shiroha233.roadweaver.api.outgoing.WorldgenPreviewApi.Chunk value) {}
+        private final LinkedHashMap<ChunkKey,Projection> previews=new LinkedHashMap<>(32,.75f,true);
         private final Map<ChunkKey, ReadTicket> reads = new HashMap<>();
         private final LinkedHashMap<ChunkKey, ChunkWritePlan> nonEmpty =
                 new LinkedHashMap<>(256, 0.75F, true) {
@@ -84,6 +97,24 @@ public final class WallWorldgenPlanCache {
                 ChunkWritePlan plan = nonEmpty.get(key);
                 return plan != null ? plan : empty.get(key);
             }
+        }
+
+        net.shiroha233.roadweaver.api.outgoing.WorldgenPreviewApi.Chunk preview(ChunkKey key) {
+            ChunkWritePlan plan;
+            synchronized(lock) {
+                plan=get(key);
+                if(plan==null)return net.shiroha233.roadweaver.api.outgoing.WorldgenPreviewApi.Chunk.unavailable();
+                var cached=previews.get(key);
+                if(cached!=null&&cached.source()==plan)return cached.value();
+            }
+            // 大模板的状态序列化不占用施工缓存锁；同版本只为远景投影一次。
+            var value=WallPreviewProvider.convert(plan);
+            synchronized(lock) {
+                if(get(key)!=plan)return net.shiroha233.roadweaver.api.outgoing.WorldgenPreviewApi.Chunk.unavailable();
+                previews.put(key,new Projection(plan,value));
+                while(previews.size()>64)previews.remove(previews.keySet().iterator().next());
+            }
+            return value;
         }
 
         void put(ChunkKey key, ChunkWritePlan plan) {
@@ -116,6 +147,7 @@ public final class WallWorldgenPlanCache {
             LinkedHashMap<ChunkKey, ChunkWritePlan> own = isEmpty ? empty : nonEmpty;
             LinkedHashMap<ChunkKey, ChunkWritePlan> other = isEmpty ? nonEmpty : empty;
             other.remove(key);
+            previews.remove(key);
             own.put(key, plan);
         }
     }

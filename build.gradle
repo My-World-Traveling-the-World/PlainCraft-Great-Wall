@@ -27,6 +27,7 @@ dependencies {
         throw new GradleException('缺云游四海世界生成 API，请先在独立前置仓库执行 :api:contractJar :api-fabric:devModJar')
     }
     compileOnly files(roadApiContract)
+    testImplementation files(roadApiContract)
     // 状态契约由河流成品自己提供；长城只编译和测试，绝不重复打包可选API。
     def streamsPlanApi = rootProject.file("../streams-reflowing-src/build/contract/streams-plan-api.jar")
     if (!streamsPlanApi.exists()) throw new GradleException("缺河流状态契约，请先在streams-reflowing-src执行planContractJar")
