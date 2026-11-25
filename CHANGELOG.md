@@ -1,4 +1,8 @@
-﻿# 万里长城 · 更新记录
+# 万里长城 · 更新记录
+
+## 0.7.144 · 构件证据复用与收口诊断 · 2026-11-25
+
+- 新增EntranceColumns独立HashMap只读快照，Input仅冻结一次，GroundEntranceContract.Evidence复用自身快照；外部unmodifiableMap仍复制。完整构件只扫描一次占地，确实缺列时才计算全量诊断。CAP_EMPTY日志带既有入口拒绝原因，不硬放行超过32格落地坡道。
 
 以下版本来自 Git 的构建配置。日期对应版本提交，下载状态以实际发布页为准。
 

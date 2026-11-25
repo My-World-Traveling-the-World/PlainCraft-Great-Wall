@@ -36,11 +36,8 @@ public final class RealizationPlanner {
             // 只复用拥有独立存储的地基快照，其他调用者仍进行防御性复制。
             foundationFloor=FoundationFloorSnapshot.copyOf(foundationFloor);
             foundations=List.copyOf(foundations);
-            // A read-only view of the column map, not a second copy. It holds one entry per sampled column
-            // (about 27k on a real cell) and the provider already hands out an unmodifiable view, so
-            // Map.copyOf here was a duplicate quadratic table build per owner - the same
-            // ImmutableCollections$MapN cost FineHeightIndex.of documents at 53 s for 192k entries.
-            columns=java.util.Collections.unmodifiableMap(columns);
+            // 一份独立HashMap快照供所有构件重试复用；避免每次收口候选复制整单元证据或使用碰撞聚集的MapN。
+            columns=EntranceColumns.copyOf(columns);
             if(gateRevision<0)throw new IllegalArgumentException("negative revision");
             local.plaincraft.greatwall.model.WallTypes.requireHash(protectionHash);
         }
@@ -631,8 +628,8 @@ public final class RealizationPlanner {
             }
             if(cap.voxels().isEmpty()){
                 if(capEmpty++==0)local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
-                        "[GreatWall:diag] CAP_EMPTY s={} attemptGlobalSQ8={} walkY={}",
-                        s,attempt.globalSQ8(),attempt.frame().walkY());
+                        "[GreatWall:diag] CAP_EMPTY 收口无合格地面入口 s={} attemptGlobalSQ8={} walkY={} entranceReason={}",
+                        s,attempt.globalSQ8(),attempt.frame().walkY(),GroundEntranceContract.lastRejectionReason());
                 continue;
             }
             long actual=attempt.globalSQ8();
@@ -770,16 +767,13 @@ public final class RealizationPlanner {
         CompiledAllocation.charge(Math.addExact(1024,Math.multiplyExact(columns,256)));
         // Templates only borrow their full authorized footprint, never the unrelated cell support table.
         var supports=new HashMap<Point3i,ProbeResult>();
-        // Count the footprint's missing columns before walking it. The failure below names a single point,
-        // and a component that straddles the sparse fine-sample plan's unprobed wings is missing dozens of
-        // them - one point says nothing about which. This line says how big the footprint is, how much of
-        // it the sample covered, and where the uncovered part lies, which is what decides whether the
-        // sample is too sparse or the placement is out of band. It is a diagnostic only: the walk below
-        // and its throw are unchanged.
-        logFootprintCoverage(site, world, input.columns());
         for(int z=world.minZ();z<world.maxZExclusive();z++)for(int x=world.minX();x<world.maxXExclusive();x++) {
             var pos=new Point3i(x,0,z);var column=input.columns().get(pos);
-            if(column==null)throw new WallFailure(FailureCode.T0_MISSING,"complete component T0 column missing: "+pos);
+            if(column==null){
+                // 正常构件只遍历一次占地；确实缺证据时再统计完整缺列包围盒，保留原故障诊断。
+                logFootprintCoverage(site,world,input.columns());
+                throw new WallFailure(FailureCode.T0_MISSING,"complete component T0 column missing: "+pos);
+            }
             var key=new Point3i(x,site.frame().walkY(),z);
             var existing=known.get(key);
             supports.put(key,existing!=null?existing:ProtectedColumnView.use(column,pos,input.protectedBounds(),

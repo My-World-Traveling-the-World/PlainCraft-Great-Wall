@@ -31,7 +31,7 @@ public final class GroundEntranceContract {
         }
     }
     public record Evidence(Source source,DimensionBounds bounds,Map<Point3i,SurfaceProbe.ColumnView> columns) {
-        public Evidence {Objects.requireNonNull(source);Objects.requireNonNull(bounds);columns=Map.copyOf(columns);}
+        public Evidence {Objects.requireNonNull(source);Objects.requireNonNull(bounds);columns=EntranceColumns.copyOf(columns);}
         /** Compatibility input for the analytic component fixtures, never a durable production proof. */
         public static Evidence analytic(Map<Point3i,ProbeResult> supports){
             var columns=new HashMap<Point3i,SurfaceProbe.ColumnView>();
