@@ -7,7 +7,7 @@
 3. **未验证**：本项不补回失败段，而是阻止错误成功结案；不是现场缺口的定位结论。未跑新普通世界烟测、GameTest或整合包实机，不证明全长实物已完成。收口运行时新增断点漏采、CAP_EMPTY与远海绕行仍待处理；道路三条首次LOCKED_HEIGHT仍缺现场新地形。
 4. **负控**：StartupPlanWindow直接返回输入，五项中四项红；正式缓坡调用改回原始plans，接线测试红。每次均git checkout恢复暂存正确源码。上一提交另有吞枚举异常的两例红。日志在build/startup-window-mutation.log及startup-window-wiring-mutation.log。
 5. **下一步**：优先按当前缓坡和跨水规则复现实际新增断点的收口缺列，再设计局部补采及owner同步；避免为少数收口扩大全线采样。新档复跑道路八条，区分五条干谷分类已修与三条首次锁高未修；河流继续以冻结独立实现对拍，等待真实密集河网耗时再决定算法改动。
-6. **历史与回退**：基线1edc5b14；行为变更，0.7.142-api-standardization，不改模板与存档格式。开工三仓库已pull且干净；SeedGen按用户要求停止。正式JAR已构建，尚未部署到整合包；本轮未启动游戏或改玩家存档。提交后推送当前分支，远端结果以收尾检查为准。
+6. **历史与回退**：基线1edc5b14；行为变更，0.7.142-api-standardization，不改模板与存档格式。开工三仓库已pull且干净；SeedGen按用户要求停止。实现提交1edc5b14与3e61b310已推送GitHub当前refactor/planning-frozen-feature-paint分支。0.7.142已部署到【云游四海】WAYFARING/mods，源与目标SHA256一致：4C3ED6827B6CEAB718AE6FD6F828EF0911BDFF4F63E62E637B843B5F418F7056。旧0.7.141备份在build/deployment-backups/0.7.141-before-0.7.142。部署前未检出javaw进程，本轮未启动游戏或修改玩家存档，仍需实机验收。
 
 ## 2026-11-25 · 区块枚举失败不得伪装成功
 
