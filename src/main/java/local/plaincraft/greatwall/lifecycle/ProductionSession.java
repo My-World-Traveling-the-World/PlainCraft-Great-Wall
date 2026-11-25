@@ -1080,7 +1080,9 @@ final class ProductionSession implements AutoCloseable {
             java.util.List<SegmentPlan> plans, FineHeightIndex terrain) {
         try {
             // 全窗精采已齐才解最终缓坡，跨段高点不能再被局部硬边界压回山体。
-            var raised = local.plaincraft.greatwall.planning.WindowHeightEnvelope.solve(snapshot.recipe(), plans, terrain);
+            // 异步获取失败只留下成功段；先对照冻结范围，不能让后续编译误报完整成功。
+            var complete = StartupPlanWindow.complete(plans, snapshot.planner().startupRange().segments(), snapshot.recipe());
+            var raised = local.plaincraft.greatwall.planning.WindowHeightEnvelope.solve(snapshot.recipe(), complete, terrain);
             snapshot.planner().freezeStartupPlans(raised).whenComplete((ignored, error) -> {
                 // 不阻塞推进线程等磁盘；持久化失败不能继续宣告最终高度已经冻结。
                 if (error != null) { failCompile(snapshot, "final-plan-write", error); return; }
