@@ -25,6 +25,7 @@ class PlanBreakInspectionParityTest {
             var result=compare(new RealizedCapSamplingTest.Fixture(f.recipe(),f.plan(),index,protection),false);
             if(!protection.isEmpty())assertTrue(result.breaks().stream().anyMatch(b->b.reason()==BreakReason.CONFLICT),
                     "建筑必须确实被拒绝，不能拿空断点给整段预检背书");
+            else assertTrue(result.breaks().isEmpty(),"健康楼体必须确实通过，不能让两条相同的失败路径互相背书");
         }
     }
 

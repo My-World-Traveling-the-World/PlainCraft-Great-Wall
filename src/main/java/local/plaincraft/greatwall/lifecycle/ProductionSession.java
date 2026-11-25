@@ -622,6 +622,13 @@ final class ProductionSession implements AutoCloseable {
                 maxLateral = Math.max(maxLateral, column.lateral());
                 lateralSlots.add(column.lateral());
             }
+            if(index.exact()) {
+                // 实测足迹的lateral恒为0；不能继续把旧±52横截面打印成新版实际采样带。
+                GreatWallMod.LOGGER.info("[GreatWall:diag] FINE_COVERAGE mode=exact-footprint distinct={} raw={} x=[{},{}] z=[{},{}] ordinaryWallRadius={} 附件按模板占地采样",
+                        index.size(),index.orderedColumns().size(),minX,maxX,minZ,maxZ,
+                        local.plaincraft.greatwall.planning.ImportedSamplingFootprint.RADIUS);
+                return;
+            }
             GreatWallMod.LOGGER.info("[GreatWall:diag] FINE_COVERAGE distinct={} raw={} x=[{},{}] z=[{},{}] "
                             + "lateral=[{},{}] lateralSlots={} fullCrossSection={} band=+/-{}",
                     index.size(), index.orderedColumns().size(), minX, maxX, minZ, maxZ,

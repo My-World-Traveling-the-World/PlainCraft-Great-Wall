@@ -1,5 +1,14 @@
 # 万里长城开发指南与交接
 
+## 2026-11-25 · 0.7.147 · 地形证据存在性哈希查询
+
+1. **改动**：EntranceColumns明确委托内部哈希表containsKey，保留复制一次/复用自有快照/不可修改；不让逐列完整性检查退回AbstractMap逐项扫描。exact模式FINE_COVERAGE日志报告ordinaryWallRadius=8和模板附件，旧横截面只在旧模式打印。补强五资产健康分支必须无断点，避免相同失败路径互相背书。
+2. **验证**：恢复全部变异后1091项JUnit，skipped/failures/errors均0，compileClientJava/remapJar/interopJar与真实独立Fabric服务器成功。真实Point3i计数守卫四次存在性查询均查索引、entrySet遍历0；五种v3健康分支均无断点且保护分支确实拒绝。新普通世界seed=9282026、8192格、4/4段，初采204532/补列14014，预检2轮/8次整段调用耗3177ms；2149/2149计划发布，compileFailed=publishFailed=0，compileMs=108978、publishMs=17548。游戏启动185.214秒，40tick后正常停服。日志build/cap-evidence-hash-release.log，目录build/run/serverSmoke/vanilla/cap-evidence-8192-20261125-03。
+3. **未验证**：.146已通过1090项全量但独立8192启动再次超过5分钟，未部署。jcmd线程证据build/cap-evidence-plan-native-threads.txt显示commonPool-worker在AbstractMap.containsKey遍历entrySet，单线程CPU约213秒；.145同初采/补列口径的预检170311ms，本版3177ms，不据此推算整包倍率。本版无T0_MISSING，但终点仍见CAP_EMPTY，明确原因为WATER地面入口不合格；未绕过它。启动后40tick烟测仍报一次落后3500ms/70ticks，整包帧率、补建峰值、全长物理落块和补列冷重开缓存均未验收。
+4. **负控**：移除containsKey重写→membershipAndKeySetMembershipUseTheHashIndexInsteadOfScanningEntries实际红；本轮另重新执行推进/摘要/唯一列三组、生产足迹/覆盖/owner复核/正式provider四组、整段/终点范围两组，共十组均红并git checkout精确恢复。记录build/entrance-membership-mutation.json、cap-ports-mutations.json、cap-evidence-mutations.json、plan-break-mutations.json。
+5. **下一步**：已通过第三个独立8192普通世界，部署本版替换0.7.144后，在完整整合包新档核收口、河墙路联动和游戏内补建峰值。保留前两次超时日志；高平台或水中终点无合格自然出口的CAP_EMPTY单独处理，不以零发布失败冒充收口全完美。
+6. **历史与回退**：基线026b4bfd；行为等价的查询性能修复与日志纠偏，版本0.7.147。0.7.145/.146均未部署；模板、保护判据、精度、几何、配置键和存档schema不变。
+
 ## 2026-11-25 · 0.7.146 · 收口预检合并重叠扫描
 
 1. **改动**：对每段原SourceCell的captureOwners取并集，沿完全相同的支撑/楼体/水门判据一次检查；范围取原单元core并集再裁站表，不能盲扫terminal后的保留站。只影响新增补采预检，正式compiler仍按原单元输出。轻量预检不把成功楼体和水门加入accepted列表，避免整段强留全部体素。

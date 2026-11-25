@@ -16,6 +16,8 @@ public final class EntranceColumns extends AbstractMap<Point3i,SurfaceProbe.Colu
         return source instanceof EntranceColumns?source:new EntranceColumns(source);
     }
     @Override public SurfaceProbe.ColumnView get(Object key){return columns.get(key);}
+    // AbstractMap的默认containsKey逐项遍历；墙带完整性逐列调用时会把哈希查询退化为平方级扫描。
+    @Override public boolean containsKey(Object key){return columns.containsKey(key);}
     @Override public int size(){return columns.size();}
     @Override public Set<Entry<Point3i,SurfaceProbe.ColumnView>> entrySet(){return columns.entrySet();}
 }

@@ -58,7 +58,8 @@ public final class FineHeightIndex {
 
     // 新版实测列不允许用邻列代替，也不参与旧横截面的共用地基。
     private final boolean exact;
-    boolean exact() { return exact; }
+    /** 诊断需识别实际足迹模式，避免把旧横截面宽度误报成当前采样范围。 */
+    public boolean exact() { return exact; }
     private final Map<Long, WallFinePlanner.FineColumn> byXZ;
     /** Original sampler order, including duplicate cross-section columns; grouping depends on it. */
     private final List<WallFinePlanner.FineColumn> routeColumns;

@@ -18,7 +18,7 @@ public record ImportedSamplingFootprint(Map<Integer, List<Bounds>> byStation) {
         Attachment(long arc, Bounds bounds) { this(arc, arc, bounds); }
     }
     // 施工检查世界坐标的 ±7 方形，另外留一格给站距取整及转角接缝。
-    static final int RADIUS = 8;
+    public static final int RADIUS = 8;
 
     static ImportedSamplingFootprint of(SegmentPlan plan, List<Long> arcs) {
         var entries = new HashMap<Integer, List<Bounds>>();
