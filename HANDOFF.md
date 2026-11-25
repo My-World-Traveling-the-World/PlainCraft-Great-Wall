@@ -3,11 +3,11 @@
 ## 2026-11-25 · 模板体素远景（0.7.143）
 
 1. **改动**：注册great_wall，只读本世界已有冻结ChunkWritePlan；保留属性与显式空气，KEEP不覆盖。最多缓存64份投影，按计划身份复用，换代失效；序列化在施工缓存锁外。真实结案才发完工通知。
-2. **验证**：全量JUnit与compileClientJava、remapJar通过；新增两例验证负坐标、属性、空气和换代缓存。日志build/preview-final.log，精确总数收尾按XML汇总。
+2. **验证**：XML汇总1067项JUnit，skipped/failures/errors均0；compileClientJava、remapJar通过，新增两例验证负坐标、属性、空气和换代缓存。日志build/preview-final.log。
 3. **未验证**：未验收整合包全长远景画面；驱逐计划返回未知，不为预览读盘。原收口新增断点漏采、CAP_EMPTY、远海绕行、放行前全长实物完成仍未结案。本轮不改模板、采样与几何。
 4. **负控**：跳过OWNED_VOID空气意图，WallPreviewProviderTest两例红；git checkout恢复后全量及构建通过。日志build/preview-mutation-drop-air.log。
 5. **下一步**：结合远景补丁验收真实施工后的Voxy内容；继续复现现行缓坡/跨水规则的收口缺列，不以扩大全线精采掩盖问题。
-6. **历史与回退**：基线aa655f8c，行为新增，API最低1.2.0。保持refactor/planning-frozen-feature-paint分支；不改存档格式，部署及推送结果另记。
+6. **历史与回退**：基线aa655f8c，行为新增，API最低1.2.0，不改存档。87311084已推送GitHub现有refactor/planning-frozen-feature-paint分支；0.7.143已部署WAYFARING，SHA256为109040dd938182430eb65d0b6c17f9524e12bfd49577e6ba206fd33c90d6e2a4。旧包及配置备份在相邻plaincraft-voxyseedgen-l10n/build/deployment-backups/preview-1.2.0-20261125-162224，未改玩家存档。
 
 ## 2026-11-25 · 启动分段完整性（0.7.142）
 
