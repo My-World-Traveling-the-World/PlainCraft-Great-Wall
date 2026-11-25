@@ -2,11 +2,13 @@
 
 ## 2026-11-25 · 0.7.144 · 构件证据复用与收口诊断
 
+**本批最终交付**：`0.7.144-api-standardization` 已部署WAYFARING，代码提交 `d375a194`；恢复所有负控后的最终回归1068项、零跳过/失败/错误，正式构建成功。部署件与构建件SHA256一致：`fc532cf5950f6455fbb292dabc0990a23260da2974fdb9a8336490f87d70119d`。旧包备份 `D:\minecraft\Plain Craft Launcher 2\.minecraft\backups\wayfaring-optimization-20261125-204514`，四包完整清单在SeedGen补丁的build/optimization-deployment-manifest.json。未启动完整整合包验收画面或帧率，未改玩家存档。
+
 1. **改动**：新增EntranceColumns独立HashMap只读快照，Input仅冻结一次，GroundEntranceContract.Evidence复用自身快照；外部unmodifiableMap仍复制。完整构件只扫描一次占地，确实缺列时才计算全量诊断。CAP_EMPTY日志带既有入口拒绝原因，不硬放行超过32格落地坡道。
 2. **验证**：恢复变异后1068项JUnit，跳过/失败/错误均0；compileClientJava/remapJar/interopJar成功。新增外部源清空不污染证据、自有快照复用、entry不可修改测试；保留原证据哈希与产物回归。
 3. **未验证**：未测整合包实际编译/补建耗时；动态收口漏采仍需两阶段补采+owner重枚举，不能靠扩大整线采样掩盖。旧500万分母来自0.7.139日志，当前并集计数已修，不再当现行实测列。
 4. **负控**：直接复用外部只读包装→源清空后证据消失，EntranceColumnsTest红；git checkout恢复。正常完整构件日志扫描减少由生产调用位置核实，没有承诺性能倍数。
-5. **下一步**：实现前先用现行无计划断点直线+中途保护盒复现REALIZED断点；按合并后实际边沿补33个后退候选的局部证据，更新captureOwners后再编译。合法无入口CAP_EMPTY保持完整平截墙端。远海专用绕行及无限墙后续窗口仍待验收。
+5. **下一步**：动态REALIZED收口的补采尚未实施；旧日志END_CAP缺列不能代替当前v3模板重放。先用真实窄带、保护冲突、跨64格单元夹具复现，再按唯一SourceCell预检并跨单元合并断点，通过原OracleLane只补缺失列，重建FineHeightIndex及Coverage/OwnerIndex后再发布。补采要有独立推进timer（初轮已停驱动），不能重复requireFineSamples或拿旧compiler继续编译。预检不能按owner重复，也不能全窗重复编普通墙；需记录支撑检查与编译耗时，确认没有负优化。高平台超过出口32格能力时CAP_EMPTY保留明确原因，不强造穿地出口。
 6. **历史与回退**：基线435b8911，等价优化+观测补充，0.7.144-api-standardization。配方、模板、存档及采样精度未改；未操作玩家存档。
 
 ## 2026-11-25 · 模板体素远景（0.7.143）
