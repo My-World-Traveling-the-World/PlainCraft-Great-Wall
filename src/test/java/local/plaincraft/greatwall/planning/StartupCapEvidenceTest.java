@@ -33,6 +33,7 @@ class StartupCapEvidenceTest {
             assertTrue(prepared.terrain().contains(242,-7));
             assertFalse(prepared.terrain().contains(0,28),"收口补采不能变成整线宽带");
             assertTrue(prepared.passes()>=2);
+            assertEquals(prepared.passes(),prepared.inspectedPlans(),"每轮单段只能预检一次，不能退回重叠的逐cell扫描");
             var inputs=RealizedCapSamplingTest.inputs(f,prepared.terrain(),prepared.coverage());
             var expected=new HashMap<Point3i,BlockSpec>();
             for(long cell:List.of(3L,4L))for(var part:prepared.realization().resolve(inputs.get(cell)).components())

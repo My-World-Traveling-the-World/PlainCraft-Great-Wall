@@ -23,6 +23,8 @@ public final class RealizationWindow implements AutoCloseable {
     public GroundExitDecision.Slice inspect(RealizationPlanner.Input input){return planner.inspect(input);}
     /** 补采前不写地形摘要缓存，最终编译才能对新增列重新取证。 */
     public List<BreakInterval> inspectBreaks(RealizationPlanner.Input input){return planner.inspectBreaks(input);}
+    /** 只有补采预检按整段运行，正式施工仍按原单元逐个结案。 */
+    public List<BreakInterval> inspectPlanBreaks(RealizationPlanner.Input input,ArcInterval range){return planner.inspectPlanBreaks(input,range);}
     public int templateVersion(){return planner.templateVersion();}
     public ImportedBuildingMemo.Stats buildingMemoStats(){return buildings.stats();}
     public ImportedProjectionMemo.Stats projectionMemoStats(){return projections.stats();}

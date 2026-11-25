@@ -163,8 +163,15 @@ public final class RealizationPlanner {
 
     /** 补采只需要真实断点；复用同一判定链，但不编普通墙、不认证自然出口或缓存旧列摘要。 */
     public List<BreakInterval> inspectBreaks(Input input) {
+        return inspectBreaks(input,null);
+    }
+    /** 整段共享同一套判据；启动补采不必为每个64格单元反复扫描重叠的160格邻域。 */
+    public List<BreakInterval> inspectPlanBreaks(Input input,ArcInterval range) {
+        return inspectBreaks(input,Objects.requireNonNull(range));
+    }
+    private List<BreakInterval> inspectBreaks(Input input,ArcInterval range) {
         var result=new java.util.concurrent.atomic.AtomicReference<List<BreakInterval>>();
-        resolve(input,null,null,result::set);
+        resolve(input,null,null,result::set,range);
         return Objects.requireNonNull(result.get(),"missing break inspection");
     }
     public static long inspectionBytes(GroundExitDecision.Slice value){
@@ -190,20 +197,26 @@ public final class RealizationPlanner {
     private RealizationCell resolve(Input input,List<GroundExitDecision> decisions,
             java.util.function.Consumer<GroundExitDecision.Slice> inspection,
             java.util.function.Consumer<List<BreakInterval>> breakInspection) {
+        return resolve(input,decisions,inspection,breakInspection,null);
+    }
+    private RealizationCell resolve(Input input,List<GroundExitDecision> decisions,
+            java.util.function.Consumer<GroundExitDecision.Slice> inspection,
+            java.util.function.Consumer<List<BreakInterval>> breakInspection,ArcInterval range) {
         long temporary=workingBytes(input);
         CompiledAllocation.charge(temporary);
         try { return ProtectedColumnView.indexed(input.protectedBounds(),input.columns().keySet(),
-                ()->resolveAccounted(input,decisions,inspection,breakInspection)); }
+                ()->resolveAccounted(input,decisions,inspection,breakInspection,range)); }
         finally { CompiledAllocation.discard(temporary); }
     }
     private RealizationCell resolveAccounted(Input input,List<GroundExitDecision> decisions,
             java.util.function.Consumer<GroundExitDecision.Slice> inspection,
-            java.util.function.Consumer<List<BreakInterval>> breakInspection) {
+            java.util.function.Consumer<List<BreakInterval>> breakInspection,ArcInterval range) {
         if(input.key().arcCell()<0)throw new IllegalArgumentException("negative arc cell");
         if(recipe!=null&&(!recipe.recipeHash().equals(input.key().recipeHash())||!recipe.dimension().equals(input.key().dimension())))
             throw new WallFailure(FailureCode.RECIPE_MISMATCH,"foreign realization request");
         var stations=stationList(input.plans());var accepted=new ArrayList<ComponentVoxels>();var breaks=new ArrayList<BreakInterval>();
         long from=Math.multiplyExact(input.key().arcCell(),64L*256),to=Math.addExact(from,64L*256);
+        if(range!=null&&!stations.isEmpty()){from=Math.max(range.fromQ8(),stations.getFirst().globalSQ8());to=Math.min(range.toQ8(),stations.getLast().globalSQ8());}
         String t0=hash(input.tiles().values().stream().map(t->t.key().identity()+":"+t.hash()).sorted().toList().toString());
         if(stations.size()<2||from>=stations.getLast().globalSQ8()) {
             if(breakInspection!=null){breakInspection.accept(List.of());return null;}
@@ -325,7 +338,8 @@ public final class RealizationPlanner {
                 }else occupied.add(replacement);
                 maintained.add(site.globalSQ8());
                 if(site.globalSQ8()>=from&&site.globalSQ8()<to&&site.globalSQ8()<terminal) {
-                    accepted.add(component);
+                    // 断点预检不发布楼体，不能把整段成功建筑额外强留到预检结束。
+                    if(breakInspection==null)accepted.add(component);
                     if(breakInspection==null&&naturalExit(input,site,component)) {
                         if(evidence==null)evidence=evidenceHashFor(input);
                         exits.add(new GroundExitDecision.Exit(site.id(),site.globalSQ8(),
@@ -351,7 +365,7 @@ public final class RealizationPlanner {
             var component=compile(SiteKind.WATER_GATE,()->componentInput(input,site,stations,
                     field.sample(center,PaletteFamily.STONE,maintained),List.of(water),bounds,supported),input);
             if(component==null||component.voxels().isEmpty())breaks.add(new BreakInterval(water.crossing(),BreakReason.NO_SUPPORT,BreakScope.REALIZED));
-            else if(center>=from&&center<to&&center<terminal)accepted.add(component);
+            else if(breakInspection==null&&center>=from&&center<to&&center<terminal)accepted.add(component);
         }
         var merged=merge(breaks);var excluded=new ArrayList<>(occupied);merged.forEach(b->excluded.add(b.range()));
         var walkBreaks=new ArrayList<>(merged);

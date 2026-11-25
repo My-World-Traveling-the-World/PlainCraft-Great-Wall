@@ -14,7 +14,7 @@ import local.plaincraft.greatwall.terrain.RealizationWindow;
 /** 先发现真实收口，再局部补列并重建归属；生产发布前不允许把缺证据当成空地。 */
 public final class StartupCapEvidence {
     public record Prepared(FineHeightIndex terrain,CoveragePlanner coverage,RealizationWindow realization,
-            int passes,int inspectedCells,int supplementalColumns) implements AutoCloseable {
+            int passes,int inspectedPlans,int supplementalColumns) implements AutoCloseable {
         public PlanningChunkCompiler compiler(ChunkPlanCompiler compiler,List<Bounds> structures,CompileWindowMemory memory) {
             return new PlanningChunkCompiler(realization,compiler,terrain,structures,memory,coverage);
         }
@@ -50,7 +50,7 @@ public final class StartupCapEvidence {
             if(targets.isEmpty()) {
                 // 已有列也可能首次进入这个单元的captureOwners；归属变化后仍须按最终输入复核一次。
                 if(!next.extra().equals(extra))return pass(terrain,next.extra());
-                GreatWallMod.LOGGER.info("[GreatWall:收口补采] 预检完成 passes={} cells={} addedColumns={} elapsedMs={}",
+                GreatWallMod.LOGGER.info("[GreatWall:收口补采] 预检完成 passes={} plans={} addedColumns={} elapsedMs={}",
                         passes,inspected,added,(System.nanoTime()-started)/1_000_000);
                 return CompletableFuture.completedFuture(new Prepared(terrain,next.coverage(),realization,passes,inspected,added));
             }
@@ -75,11 +75,22 @@ public final class StartupCapEvidence {
         var provider=new PlanningColumnProvider(terrain);
         var context=new PlanningCompileContext(terrain,structures);
         var seen=Collections.newSetFromMap(new IdentityHashMap<PlanningOwnerIndex.CellWork,Boolean>());
+        var captures=new IdentityHashMap<SegmentPlan,Set<ChunkKey>>();
+        var firstCell=new IdentityHashMap<SegmentPlan,PlanningOwnerIndex.CellWork>();
+        var ranges=new IdentityHashMap<SegmentPlan,ArcInterval>();
         var breaks=new ArrayList<BreakInterval>();
         for(var owner:owners)for(var cell:owner.cells()) {
             if(!seen.add(cell))continue;
+            firstCell.putIfAbsent(cell.plan(),cell);
+            captures.computeIfAbsent(cell.plan(),ignored->new LinkedHashSet<>()).addAll(cell.captureOwners());
+            long from=cell.cell().arcCell()*64L*256,to=from+64L*256;
+            ranges.merge(cell.plan(),new ArcInterval(from,to),(a,b)->new ArcInterval(Math.min(a.fromQ8(),b.fromQ8()),Math.max(a.toQ8(),b.toQ8())));
+        }
+        for(var plan:plans) {
+            var cell=firstCell.get(plan);if(cell==null)continue;
             active.run();inspected++;
-            breaks.addAll(realization.inspectBreaks(context.input(cell,provider.columnsFor(cell.captureOwners()))));
+            // 整段只投影、探针和判楼一次；每列不再随相邻单元的捕获环重复检查。
+            breaks.addAll(realization.inspectPlanBreaks(context.input(cell,provider.columnsFor(captures.get(plan))),ranges.get(plan)));
         }
         // 先合并跨64格单元的片段，否则会把单元缝当成额外收口。
         var merged=GroundExitResolver.merge(breaks);

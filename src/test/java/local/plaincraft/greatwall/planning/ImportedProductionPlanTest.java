@@ -211,7 +211,11 @@ class ImportedProductionPlanTest {
     }
 
     static Fixture fixture(Asset asset, int rotation) {
-        var recipe = ImportedSiteScheduleTest.recipe();
+        return fixture(asset,rotation,2);
+    }
+    // 同一冻结几何可切到当前模板版本对拍判据，避免所有新守卫仍只覆盖旧模板。
+    static Fixture fixture(Asset asset, int rotation,int version) {
+        var recipe = ImportedSiteScheduleTest.recipe(version);
         long s = asset == Asset.CHENGHAI_TOWER ? 0 : 512L * 256;
         int[][] direction = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
         int dx = direction[rotation][0], dz = direction[rotation][1];
