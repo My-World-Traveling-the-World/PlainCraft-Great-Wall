@@ -23,14 +23,23 @@ public final class CoveragePlanner {
     private final java.util.Map<SiteKind,ComponentTemplate> templates;
     private final int version;
     private final boolean exact;
+    private final java.util.Map<Long,List<ImportedSamplingFootprint.Attachment>> supplemental;
     private static final java.util.Comparator<ChunkKey> OWNER_ORDER = java.util.Comparator.comparing(ChunkKey::dimension)
             .thenComparingInt(ChunkKey::x).thenComparingInt(ChunkKey::z);
     public CoveragePlanner() { this(1); }
     public CoveragePlanner(int version) { this(version, false); }
 
     public CoveragePlanner(int version, boolean exact) {
+        this(version,exact,java.util.Map.of());
+    }
+
+    /** 补列和施工共用同一份附加足迹，不能采到了地形却仍按旧区块集合裁掉新收口。 */
+    public CoveragePlanner(int version,boolean exact,java.util.Map<Long,List<ImportedSamplingFootprint.Attachment>> supplemental) {
         this.version=version;
         this.exact=exact;
+        var frozen=new java.util.HashMap<Long,List<ImportedSamplingFootprint.Attachment>>();
+        supplemental.forEach((segment,boxes)->frozen.put(segment,List.copyOf(boxes)));
+        this.supplemental=java.util.Map.copyOf(frozen);
         templates=imported()?S2TemplateSet.create(0,(i,p,l,w,s,h)->S1TemplateSet.material(i.family(),i.redSandstone(),p), version)
                 :S1TemplateSet.create(0);
     }
@@ -133,7 +142,8 @@ public final class CoveragePlanner {
             footprints.add(new SiteFootprint(site.globalSQ8(), footprintReach(site,b), b));
         }
         var attachments = exact ? plans.plans().stream()
-                .flatMap(plan -> ImportedSamplingFootprint.attachments(plan).stream()).toList()
+                .flatMap(plan -> java.util.stream.Stream.concat(ImportedSamplingFootprint.attachments(plan).stream(),
+                        supplemental.getOrDefault(plan.geometry().key().index(),List.of()).stream())).toList()
                 : List.<ImportedSamplingFootprint.Attachment>of();
         return new OwnerLookup(orderedStations, List.copyOf(footprints), attachments);
     }

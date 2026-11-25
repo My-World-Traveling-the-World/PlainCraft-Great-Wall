@@ -65,10 +65,32 @@ public record ImportedSamplingFootprint(Map<Integer, List<Bounds>> byStation) {
             addCapArcs(capArcs, gap.range().toQ8(), true, base, end);
         }
         plan.geometry().terminal().ifPresent(t -> addCapArcs(capArcs, base + t.localSQ8(), false, base, end));
-        for (var cap : capArcs) {
+        entries.addAll(capAttachments(capArcs,stations,false));
+        return List.copyOf(entries);
+    }
+
+    /** 实现期才出现的断点沿用同一退让表；额外一列供收口的地表出口检查。 */
+    public static List<Attachment> realizedCaps(SegmentPlan plan,List<BreakInterval> breaks) {
+        var stations=plan.stations().stations();
+        if(stations.size()<2)return List.of();
+        var caps=new LinkedHashSet<CapCandidate>();
+        long from=stations.getFirst().globalSQ8(),to=stations.getLast().globalSQ8();
+        for(var gap:breaks) {
+            addCapArcs(caps,gap.range().fromQ8(),false,from,to);
+            addCapArcs(caps,gap.range().toQ8(),true,from,to);
+        }
+        return capAttachments(caps,stations,true);
+    }
+
+    private static List<Attachment> capAttachments(LinkedHashSet<CapCandidate> caps,List<Station> stations,boolean apron) {
+        var entries=new ArrayList<Attachment>();
+        for (var cap : caps) {
             long s = cap.station();
-            var frame = frameAt(plan.stations().stations(), s);
-            if (frame != null) entries.add(new Attachment(cap.edge(), s, Rasterizer.worldBounds(frame, EndCap.potentialLocalBounds())));
+            var frame = frameAt(stations, s);
+            if(frame==null)continue;
+            var box=Rasterizer.worldBounds(frame,EndCap.potentialLocalBounds());
+            if(apron)box=new Bounds(box.minX()-1,box.minY(),box.minZ()-1,box.maxXExclusive()+1,box.maxYExclusive(),box.maxZExclusive()+1);
+            entries.add(new Attachment(cap.edge(),s,box));
         }
         return List.copyOf(entries);
     }

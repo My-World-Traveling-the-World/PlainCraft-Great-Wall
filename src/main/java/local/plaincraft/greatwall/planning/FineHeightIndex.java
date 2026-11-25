@@ -137,6 +137,14 @@ public final class FineHeightIndex {
         return byXZ.size();
     }
 
+    /** 没有缺列时直接沿用索引；补列只追加实测证据，不改写已有列或横截面次序。 */
+    FineHeightIndex withSupplemental(List<WallFinePlanner.FineColumn> extra) {
+        if(extra.isEmpty())return this;
+        var columns=new ArrayList<WallFinePlanner.FineColumn>(routeColumns.size()+extra.size());
+        columns.addAll(routeColumns);columns.addAll(extra);
+        return of(columns,exact);
+    }
+
     /** All sampled columns, for callers that must enumerate the footprint. */
     public java.util.Collection<WallFinePlanner.FineColumn> columns() {
         return byXZ.values();

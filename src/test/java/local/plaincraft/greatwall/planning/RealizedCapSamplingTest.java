@@ -19,12 +19,16 @@ class RealizedCapSamplingTest {
     @BeforeAll static void bootstrap(){ImportedProductionPlanTest.bootstrap();}
 
     static Fixture fixture() {
+        return fixture(0);
+    }
+
+    static Fixture fixture(int originZ) {
         var old=AdaptiveSiteSearchTest.recipe();
         var recipe=new WorldRecipe(old.instance(),old.wallId(),old.seed(),old.dimension(),old.frozenSpawn(),
                 old.axis(),old.bounds(),old.config(),old.terrainHash(),old.paletteHash(),old.templatesHash(),
                 DeterministicHash.sha256(CanonicalCodec.recipe(old)));
         var stations=new ArrayList<Station>();
-        for(int s=0;s<=512;s+=4)stations.add(new Station(s*256L,new Point2q(s*256L+128,128),84,0));
+        for(int s=0;s<=512;s+=4)stations.add(new Station(s*256L,new Point2q(s*256L+128,originZ*256L+128),84,0));
         var a=stations.getFirst().point();var b=stations.getLast().point();
         var raw=new SegmentGeometry(new SegmentKey(recipe.recipeHash(),recipe.dimension(),0),List.of(a,b),
                 List.of(0L,512L*256),List.of(),Optional.empty(),new Boundary(0,a,84,H),new Boundary(1,b,84,H),0,0,H);
@@ -34,7 +38,7 @@ class RealizedCapSamplingTest {
         var original=new SegmentPlan(geometry,PrefixSummaryIndex.origin(),table,List.of(),H);
         var plan=new SegmentPlan(geometry,original.prefix(),table,List.of(),DeterministicHash.sha256(CanonicalCodec.plan(original)));
         return new Fixture(recipe,plan,ImportedProductionBoundaryTest.exactIndex(plan,(x,z)->AnalyticTerrainOracle.dry(64)),
-                List.of(new Bounds(250,0,-1,252,128,2)));
+                List.of(new Bounds(250,0,originZ-1,252,128,originZ+2)));
     }
 
     static Map<Long,RealizationPlanner.Input> inputs(Fixture f,FineHeightIndex index,CoveragePlanner coverage) {

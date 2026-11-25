@@ -60,6 +60,12 @@ public final class PlanningChunkCompiler {
         this(window,compiler,index,structures);this.memory=Objects.requireNonNull(memory);
     }
 
+    /** 最终补采索引与最终归属一起安装，旧provider或coverage都不能跨过这条边界复用。 */
+    PlanningChunkCompiler(RealizationWindow window,ChunkPlanCompiler compiler,FineHeightIndex index,
+            List<Bounds> structures,CompileWindowMemory memory,CoveragePlanner coverage){
+        this(window,compiler,index,structures,memory);this.coverage=Objects.requireNonNull(coverage);
+    }
+
     @FunctionalInterface
     interface CellResolver {
         RealizationCell resolve(RealizationPlanner.Input input);

@@ -1001,8 +1001,6 @@ final class ProductionSession implements AutoCloseable {
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.COMPILE);
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
-        var compiler = new local.plaincraft.greatwall.planning.PlanningChunkCompiler(
-                realization, chunkCompiler, index, planningStructures, compileMemory);
         var planner = snapshot.planner();
         // 重试也使用已冻结的窗口，避免重新读取配置后请求边界外计划。
         long target = planner.startupRange().segments();
@@ -1038,7 +1036,7 @@ final class ProductionSession implements AutoCloseable {
                         return;
                     }
                     if (remaining.decrementAndGet() == 0) {
-                        publishOrFail(snapshot, level, compiler, collected, index);
+                        publishOrFail(snapshot, level, collected, index);
                     }
                 });
             }
@@ -1063,31 +1061,38 @@ final class ProductionSession implements AutoCloseable {
                         }
                     } finally {
                         lease.close();
-                        if (remaining.decrementAndGet() == 0) publishOrFail(snapshot, level, compiler, collected, index);
+                        if (remaining.decrementAndGet() == 0) publishOrFail(snapshot, level, collected, index);
                     }
                 });
             } catch (RuntimeException error) {
                 GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PLAN_REQUEST_FAILED segment={} reason={}",
                         segment, error.toString());
-                if (remaining.decrementAndGet() == 0) publishOrFail(snapshot, level, compiler, collected, index);
+                if (remaining.decrementAndGet() == 0) publishOrFail(snapshot, level, collected, index);
             }
         }
     }
 
     /** Publishes the window, turning any failure into a reported, released outcome. */
     private void publishOrFail(Installed snapshot, ServerLevel level,
-            local.plaincraft.greatwall.planning.PlanningChunkCompiler compiler,
             java.util.List<SegmentPlan> plans, FineHeightIndex terrain) {
         try {
             // 全窗精采已齐才解最终缓坡，跨段高点不能再被局部硬边界压回山体。
             // 异步获取失败只留下成功段；先对照冻结范围，不能让后续编译误报完整成功。
             var complete = StartupPlanWindow.complete(plans, snapshot.planner().startupRange().segments(), snapshot.recipe());
             var raised = local.plaincraft.greatwall.planning.WindowHeightEnvelope.solve(snapshot.recipe(), complete, terrain);
-            snapshot.planner().freezeStartupPlans(raised).whenComplete((ignored, error) -> {
-                // 不阻塞推进线程等磁盘；持久化失败不能继续宣告最终高度已经冻结。
-                if (error != null) { failCompile(snapshot, "final-plan-write", error); return; }
-                try { publishPlanningWindow(snapshot, level, compiler, raised); }
-                catch (Throwable failure) { failCompile(snapshot, "publish", failure); }
+            local.plaincraft.greatwall.planning.StartupCapEvidence.prepare(raised,terrain,planningStructures,
+                    realization,snapshot.planner(),this::active).whenComplete((prepared,prepareError)->{
+                if(prepareError!=null){failCompile(snapshot,"cap-evidence",prepareError);return;}
+                try {
+                    // 补采和最终归属已经稳定；写盘回调不能占住采样pump执行整窗编译。
+                    snapshot.planner().freezeStartupPlans(raised).whenCompleteAsync((ignored,error)->{
+                        try(prepared) {
+                            if(error!=null){failCompile(snapshot,"final-plan-write",error);return;}
+                            active();
+                            publishPlanningWindow(snapshot,level,prepared.compiler(chunkCompiler,planningStructures,compileMemory),raised);
+                        } catch(Throwable failure){failCompile(snapshot,"publish",failure);}
+                    });
+                } catch(Throwable failure){prepared.close();failCompile(snapshot,"final-plan-write",failure);}
             });
         } catch (Throwable failure) {
             failCompile(snapshot, "publish", failure);
