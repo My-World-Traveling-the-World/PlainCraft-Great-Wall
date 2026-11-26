@@ -144,7 +144,7 @@ class PlanningChunkCompilerRealizationTest {
     /** 走两段生产游标，离线只替换地形；跨段正反向的调度不在此夹具中模拟。 */
     private static FineHeightIndex sampleSeam(PlanWindow plans, boolean shareClaims) {
         var claims = new HashSet<Long>();
-        var evidence = new FineSampleEvidence(FineSampleCache.none());
+        var evidence = new FineSampleEvidence(new FineSamplePersistence(FineSampleCache.none(), Runnable::run));
         try (var oracle = new AnalyticTerrainOracle((x, z) -> {
             if (x == SEAM - 1 && Math.abs(z) == WallFinePlanner.LATERAL) return AnalyticTerrainOracle.water(65, 62);
             return AnalyticTerrainOracle.dry(x == SEAM - 1 && z == 5 ? 68 : 64);

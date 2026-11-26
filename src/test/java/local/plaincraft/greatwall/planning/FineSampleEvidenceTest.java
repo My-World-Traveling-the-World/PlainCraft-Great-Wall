@@ -18,7 +18,8 @@ class FineSampleEvidenceTest {
 
     @Test void finishKeepsBothRouteSectionsAndDoesNotRewriteSuccessfulCacheOnClose() throws Exception {
         var file = directory.resolve("columns.bin");
-        var evidence = new FineSampleEvidence(FineSampleCache.load(file, "world"));
+        var persistence = new FineSamplePersistence(FineSampleCache.load(file, "world"), Runnable::run);
+        var evidence = new FineSampleEvidence(persistence);
         var earlier = column(4, 64, 256);
         var later = column(4, 58, 512);
         var probed = column(12, 72, 512);
@@ -30,6 +31,8 @@ class FineSampleEvidenceTest {
         assertEquals(List.of(earlier, later), result.orderedColumns());
         assertEquals(1, result.size());
         assertEquals(earlier.sample(), result.at(4, 0));
+        assertFalse(Files.exists(file), "初采结案不单独写盘，仍待补采并集");
+        assertTrue(persistence.finish().join());
         var reloaded = FineSampleCache.load(file, "world");
         assertEquals(probed.sample(), reloaded.get(12, 0));
         assertNull(reloaded.get(4, 0), "插值不可进入磁盘缓存");
@@ -38,29 +41,35 @@ class FineSampleEvidenceTest {
         // 删除成功写出的文件，第二次写盘就会将它重建，不依赖文件时间戳精度。
         Files.delete(file);
         evidence.close();
+        persistence.close();
         assertFalse(Files.exists(file), "正常停服不能再写一次同批探测列");
     }
 
     @Test void closeRetriesActualIoFailureAndRetainsOnlyProbedColumns() throws Exception {
         var file = directory.resolve("columns.bin");
-        var evidence = new FineSampleEvidence(FineSampleCache.load(file, "world"));
+        var persistence = new FineSamplePersistence(FineSampleCache.load(file, "world"), Runnable::run);
+        var evidence = new FineSampleEvidence(persistence);
         var temp = Files.createDirectory(directory.resolve("columns.bin.tmp"));
         var sampled = column(-7, 55, 256);
         assertTrue(evidence.accept(256, List.of(sampled), List.of(sampled)));
         assertEquals(sampled.sample(), evidence.finish().at(-7, 0));
+        assertFalse(persistence.finish().join(), "真实IO故障必须可辨认");
         assertFalse(Files.exists(file), "临时路径是目录，第一次必须写失败");
         Files.delete(temp);
         evidence.close();
+        persistence.close();
         assertEquals(sampled.sample(), FineSampleCache.load(file, "world").get(-7, 0));
     }
 
     @Test void closeBeforeFinishPersistsAcceptedEvidenceAndRejectsLateSlice() {
         var file = directory.resolve("columns.bin");
-        var evidence = new FineSampleEvidence(FineSampleCache.load(file, "world"));
+        var persistence = new FineSamplePersistence(FineSampleCache.load(file, "world"), Runnable::run);
+        var evidence = new FineSampleEvidence(persistence);
         var accepted = column(3, 64, 256);
         var late = column(4, 60, 512);
         assertTrue(evidence.accept(256, List.of(accepted), List.of(accepted)));
         evidence.close();
+        persistence.close();
         assertFalse(evidence.accept(512, List.of(late), List.of(late)));
         assertNull(evidence.finish());
         var reloaded = FineSampleCache.load(file, "world");

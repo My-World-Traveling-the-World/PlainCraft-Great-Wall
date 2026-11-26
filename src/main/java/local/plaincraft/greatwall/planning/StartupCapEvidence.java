@@ -52,7 +52,8 @@ public final class StartupCapEvidence {
                 if(!next.extra().equals(extra))return pass(terrain,next.extra());
                 GreatWallMod.LOGGER.info("[GreatWall:收口补采] 预检完成 passes={} plans={} addedColumns={} elapsedMs={}",
                         passes,inspected,added,(System.nanoTime()-started)/1_000_000);
-                return CompletableFuture.completedFuture(new Prepared(terrain,next.coverage(),realization,passes,inspected,added));
+                // 缓存失败只影响下次复用，不得丢弃本次已齐全的施工证据。
+                return scheduler.finishFineSampleCache().thenApply(saved->new Prepared(terrain,next.coverage(),realization,passes,inspected,added));
             }
             GreatWallMod.LOGGER.info("[GreatWall:收口补采] 仅补缺失地形列 pass={} missing={} retained={}",passes,targets.size(),terrain.size());
             return scheduler.requireSupplementalColumns(targets,Priority.PLAYER_PREFETCH).thenComposeAsync(columns->{

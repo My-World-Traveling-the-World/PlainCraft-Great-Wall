@@ -66,6 +66,39 @@ class StartupCapEvidenceTest {
         }
     }
 
+    @Test void stablePreflightPersistsRealSupplementalColumnsAndColdReopenDoesNotProbeAgain() throws Exception {
+        var f=RealizedCapSamplingTest.fixture(8);var file=directory.resolve("fine-columns.bin");
+        FineSampleCache.load(file,"world").store(List.of(new FineSampleCache.Entry(-999,0,AnalyticTerrainOracle.dry(59))));
+        var reads=new AtomicInteger();var cache=FineSampleCache.load(file,"world");
+        FineHeightIndex expected;int count;
+        try(var io=Executors.newSingleThreadExecutor();var scheduler=new PlannerScheduler(f.recipe(),
+                ()->new AnalyticTerrainOracle((x,z)->{reads.incrementAndGet();return AnalyticTerrainOracle.dry(64);},true),
+                new SegmentCacheStore(directory.resolve("first"),f.recipe()),io)) {
+            scheduler.setFineSampleCache(cache);
+            try(var prepared=StartupCapEvidence.prepare(List.of(f.plan()),f.index(),f.protection(),
+                    ImportedProductionPlanTest.planner(f.recipe()),scheduler,()->{}).get(60,TimeUnit.SECONDS)) {
+                expected=prepared.terrain();count=prepared.supplementalColumns();
+                assertTrue(count>100,"必须沿正式收口路径实际补列");assertEquals(count,reads.get());
+                var disk=FineSampleCache.load(file,"world");
+                assertEquals(count+1,disk.size(),"prepare完成前必须已保存全部新列及旧磁盘列");
+                assertEquals(64,disk.get(242,-7).groundTopY());assertEquals(59,disk.get(-999,0).groundTopY());
+            }
+        }
+        reads.set(0);cache=FineSampleCache.load(file,"world");
+        try(var io=Executors.newSingleThreadExecutor();var scheduler=new PlannerScheduler(f.recipe(),
+                ()->new AnalyticTerrainOracle((x,z)->{reads.incrementAndGet();return AnalyticTerrainOracle.dry(99);},true),
+                new SegmentCacheStore(directory.resolve("reopen"),f.recipe()),io)) {
+            scheduler.setFineSampleCache(cache);
+            try(var prepared=StartupCapEvidence.prepare(List.of(f.plan()),f.index(),f.protection(),
+                    ImportedProductionPlanTest.planner(f.recipe()),scheduler,()->{}).get(60,TimeUnit.SECONDS)) {
+                assertEquals(count,prepared.supplementalColumns(),"重开仍要把缓存列加入本次索引，不能空跳流程");
+                assertEquals(expected.orderedColumns(),prepared.terrain().orderedColumns());
+                assertEquals(0,reads.get(),"磁盘命中不得再次调用oracle.begin");
+                assertEquals(count,cache.hits());
+            }
+        }
+    }
+
     @Test void preparedCompilerRetainsAdditionalOwnersIncludingValidEmptyPlans() {
         var f=RealizedCapSamplingTest.fixture();
         // 当前直线收口的实物仍被旧±16格owner罩住；另外注入明确越界的候选取证足迹守住覆盖端口。

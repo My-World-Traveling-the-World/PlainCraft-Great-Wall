@@ -1,5 +1,29 @@
 # 万里长城开发指南与交接
 
+## 2026-11-26 · 0.7.149 · 初采与收口补采合并持久化
+
+**交付状态**：源码和回归完成，1102项零跳过/失败/错误；新建8192格与最终冷重开副本均正常发布/退出。因中间一轮关服卸载等待超过600秒且尚未归因，0.7.149暂缓部署，WAYFARING保留0.7.148。测试世界均位于build，SeedGen1.2.4已单独完成部署。
+
+1. **改动**：FineSamplePersistence独立拥有本会话实测列、唯一提交future和关闭重试；初采FineSampleEvidence只汇总有序截面，补采job仅上交oracle.finish列，收口预检稳定才在已有production.io合并写一次。cache.tryStore继续携带磁盘C，同批初采A+所有补采B提交，格式1不变。close先到/finish先到都占同一提交，不竞争.tmp。真实冷重开发现原WallFinePlanner将命中也列入probed，已删该追加；计数改oracle.begin成功后增加，禁用磁盘仍可见真实工作量。新增卸载诊断仅serverSmoke、须显式greatwall.smoke.traceUnload，不进入正式JAR。
+2. **验证**：最终1102项JUnit零跳过/失败/错误，compileClientJava/remapJar/interopJar成功，日志build/supplemental-cache-final.log。真实文件A+B1+B2+C合并一次写、更新覆盖旧同列、过滤CENSORED、IO失败完整批保留并重试、两种关闭竞态均过；正式收口预检前次确实探测>100列，重开oracle严格0且同索引。新建独立8192世界seed9282026初采204532+补采14014，缓存一次218546列，预检2轮/8次整段，2149计划全部发布、compileFailed=publishFailed=0，40tick后正常退出；日志build/supplemental-cache-release-native.log。冷重开最终hits218546/misses0/probed0，无stored重写，缓存字节摘要不变，2149计划仍全部成功；关闭结果单列以下未验证，不能冒充整轮PASS。
+3. **未验证**：完整整合包画面、帧率、物理全长落地和补建峰值未验收。冷重开一次卡Saving worlds，600秒后测试进程超时；线程build/native-wall-threads.txt在原版ChunkMap卸载队列重排、generationRefs未清（字节码链已核），新缓存IO线程idle，没有证据直接归因writer。同档副本0.7.148对照正常关闭1.01秒；最终0.7.149含只读卸载诊断的另一独立副本也正常关闭1.00秒，exit0/PASS，缓存SHA256均为c4d20a547906d1ae6b791bf97aea4bb3d25464cdef3f49c79b3e20c3d5750d82，未重写。记录build/cache-shutdown-baseline.json与cache-shutdown-trace149.json。一次正常不能抹掉先前600秒异常，仍未定位具体holder，不作单因果结论，暂缓部署。已完成slice/job的实测列才保存；关服时尚未完成job的部分列仍可能重采，这是既有边界，不影响存档/本次已完成计划。
+4. **负控**：8组均实际断言红，逐组git checkout精确恢复，表build/supplemental-cache-mutations.json。丢补采、漏稳定提交、仅最后批、失败清空、close不等、close不占提交、命中冒充新增、探测计数恒0，分别由正式冷重开/完整文件回归/双向竞态/真实oracle计数抓住。无负控留入成品。第一次真机式冷重开暴露命中列重写，未将该次不满足验收标为通过。
+5. **下一步**：0.7.149同档副本复验已通过；下一轮用当前test-only卸载诊断反复冷重开并记录backfill在途，复现后取具体holder坐标/refs/saveFuture，再仅在隔离测试关闭强加载作对照；不直接改产品默认或取消原版future掩盖。通过前成品保持0.7.148。道路.128/1900项及河流fix17/107项本轮未改，不凭旧失败日志松约束；SeedGen1.2.4完成281树配置，见其HANDOFF。
+6. **历史与回退**：开工42d1923a，pull已最新，行为等价的采样产物与缓存性能优化；版本0.7.149，真实几何/模板/精度/配置键/存档schema不变。仅build内独立测试世界及其副本，无玩家存档操作。源码及诊断提交现有开发分支并推送GitHub；0.7.149构建已通过但未部署，整合包明确保留成品0.7.148。
+
+| 故意破坏 | 实际结果 |
+| --- | --- |
+| 补采不交共享待写批 | 正式预检冷重开文件缺列，红 |
+| 稳定后不提交 | prepare返回前磁盘仍旧，红 |
+| 每批清空只留最后批 | A/B1/C完整性错误，红 |
+| 写失败也清待写 | 解除真实.tmp目录故障后重试缺列，红 |
+| 关闭不等在途写入 | latch阻住写入但close提前返回，红 |
+| close先到不占提交 | 后到finish二次派发，红 |
+| 初采命中当新实测 | warm.probed非空，红 |
+| 探测计数恒0 | 真实oracle调用非零/计数0，红 |
+
+
+
 ## 2026-11-26 · 0.7.148 · 收口先验入口再组装主体
 
 **部署完成**：0.7.148-api-standardization已安装WAYFARING，SHA256=`b37cc4f90680b8f99f57100af806ac5a8aa8cd0885a268479dbca0227dade34b`，与构建件逐字一致。部署前未检出运行的Minecraft客户端；目录内此ID仅一个启用JAR，旧件改.disabled并完整备份至`D:\minecraft\Plain Craft Launcher 2\.minecraft\backups\wayfaring-seedgen-surface-20261126-093841`。四包清单见相邻SeedGen补丁build/decorator-deployment.json。未修改玩家存档或SeedGen/VSS配置，完整整合包画面与帧率待重启验收。

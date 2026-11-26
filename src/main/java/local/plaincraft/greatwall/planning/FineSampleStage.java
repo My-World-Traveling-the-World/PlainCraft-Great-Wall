@@ -15,17 +15,21 @@ final class FineSampleStage {
     private final PrefixSummaryIndex prefixes;
     private final SiteScheduler sites;
     private final int laneCount;
+    private final Executor io;
+    private FineSamplePersistence persistence;
     private final Function<SegmentKey, CompletableFuture<SegmentGeometry>> geometryFlight;
 
     FineSampleStage(PlannerScheduler scheduler, ScheduledThreadPoolExecutor pump,
             PrefixSummaryIndex prefixes, SiteScheduler sites, int laneCount,
-            Function<SegmentKey, CompletableFuture<SegmentGeometry>> geometryFlight) {
+            Function<SegmentKey, CompletableFuture<SegmentGeometry>> geometryFlight, Executor io) {
         this.scheduler = scheduler;
         this.pump = pump;
         this.prefixes = prefixes;
         this.sites = sites;
         this.laneCount = laneCount;
         this.geometryFlight = geometryFlight;
+        this.io=io;
+        this.persistence=new FineSamplePersistence(fineSampleCache,io);
     }
 
     /** 用全局调用计数区分多次启动与单次切片重复。 */
@@ -85,10 +89,14 @@ final class FineSampleStage {
     /** 切片提交前装好缓存，同一次取样采用相同证据来源。 */
     void setFineSampleCache(local.plaincraft.greatwall.terrain.FineSampleCache cache) {
         this.fineSampleCache = java.util.Objects.requireNonNull(cache, "cache");
+        this.persistence=new FineSamplePersistence(cache,io);
     }
 
     /** 补采只复用同一份已装入内存的缓存，不再次启动初采或改写其结案状态。 */
     local.plaincraft.greatwall.terrain.FineSampleCache cache(){return fineSampleCache;}
+
+    boolean acceptSupplemental(List<WallFinePlanner.FineColumn> probed){return persistence.accept(probed);}
+    CompletableFuture<Boolean> finishCache(){return persistence.finish();}
 
     /** 生成开头段的截面地形索引供编译，落块期不需要逐方块重采。 */
     synchronized CompletableFuture<FineHeightIndex> requireFineSamples(Priority priority) {
@@ -100,7 +108,7 @@ final class FineSampleStage {
         }
         var aggregate = new CompletableFuture<FineHeightIndex>();
         var cache = fineSampleCache;
-        var evidence = new FineSampleEvidence(cache);
+        var evidence = new FineSampleEvidence(persistence);
         activeSample = aggregate;
         evidenceToClose = evidence;
         var sampledColumns = new java.util.concurrent.atomic.AtomicInteger();
@@ -636,12 +644,8 @@ final class FineSampleStage {
         // 先结束等待者，再串行保存已走过的列。构建索引完成也不能抢回已取消的结果。
         if (current != null) current.completeExceptionally(scheduler.closedFailure());
         if (evidence != null) {
-            try {
-                evidence.close();
-            } catch (RuntimeException cannotPersist) {
-                GreatWallMod.LOGGER.warn("[GreatWall:S1C] FINE_SAMPLE_CACHE_CLOSE_FAILED reason={}",
-                        cannotPersist.toString());
-            }
+            evidence.close();
         }
+        persistence.close();
     }
 }

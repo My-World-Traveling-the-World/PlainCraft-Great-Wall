@@ -132,7 +132,7 @@ public final class PlannerScheduler implements AutoCloseable {
                 this::closedFailure, PlannerScheduler::retainedBytes);
         this.cacheIo = new PlannerCacheIo(pump, io, cache, state, this::failCacheIo);
         this.prefixes = new PrefixSummaryIndex(i -> requireGeometry(i, Priority.PLAYER_PREFETCH), pump, cache, cacheIo::execute);
-        this.fineSamples = new FineSampleStage(this, pump, prefixes, sites, laneState.size(), geometryFlights::get);
+        this.fineSamples = new FineSampleStage(this, pump, prefixes, sites, laneState.size(), geometryFlights::get, io);
         this.bulkPrewarm = new BulkPrewarmStage(this, pump, state, laneState.size(), recipe.config().maxGeometryInflight());
     }
 
@@ -250,6 +250,9 @@ public final class PlannerScheduler implements AutoCloseable {
             List<WallFinePlanner.Target> targets,Priority priority) {
         return SupplementalColumnStage.sample(this,pump,targets,fineSamples.cache(),priority,laneState.size());
     }
+
+    /** 收口足迹稳定后再合并提交，正常启动只写一次初采与补采的并集。 */
+    CompletableFuture<Boolean> finishFineSampleCache(){return fineSamples.finishCache();}
 
     CompletableFuture<List<WallFinePlanner.FineColumn>> enqueueSupplemental(List<WallFinePlanner.Target> targets,
             local.plaincraft.greatwall.terrain.FineSampleCache cache,Priority priority) {
@@ -821,7 +824,10 @@ public final class PlannerScheduler implements AutoCloseable {
             super(priority,"SUPPLEMENTAL_COLUMNS",result);cursor=new SupplementalColumnCursor(targets,cache);
         }
         @Override boolean advance(NaturalTerrainOracle oracle,int limit){operations+=limit;return cursor.advance(oracle,limit);}
-        @Override List<WallFinePlanner.FineColumn> value(){return cursor.result();}
+        @Override List<WallFinePlanner.FineColumn> value(){
+            fineSamples.acceptSupplemental(cursor.probed());
+            return cursor.result();
+        }
     }
 
     private final class RouteJob extends Job<RouteShape> {

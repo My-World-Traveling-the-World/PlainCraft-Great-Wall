@@ -192,10 +192,7 @@ public final class WallFinePlanner {
         return new Cursor(route, oracle, fromIndex, toIndex, cache, wideAt, walks, claims, carryWater, 0L);
     }
 
-    /**
-     * The columns this cursor resolved itself (probed now, or answered from the cache): exactly the
-     * set worth persisting, since the conservative fills depend on the sampling rules instead.
-     */
+    /** 仅返回本轮实际探测列；旧磁盘列由缓存自动携带，命中列不能再冒充新增写盘。 */
     public static List<FineColumn> probed(Cursor c) {
         return List.copyOf(c.probed);
     }
@@ -229,16 +226,9 @@ public final class WallFinePlanner {
         return c.wideSections;
     }
 
-    /**
-     * {@return REFERENCE walks this cursor started, i.e. columns no cache or memo answered}
-     *
-     * <p>Read from {@link Cursor#probed}, the list every resolved probe is added to, because the field
-     * this used to read was declared and never incremented: a real session printed {@code probesPerSection=0}
-     * and {@code probesPerColumn=0} for eleven minutes, which reads as "the probe plan visits nothing"
-     * when it actually means "nobody counted".
-     */
+    /** 按真实oracle.begin计数；命中不是探测，禁用磁盘缓存时也必须能看到实际工作量。 */
     public static long probedColumns(Cursor c) {
-        return c.probed.size();
+        return c.probedColumns;
     }
 
     public static WorkState advance(Cursor c, int primitiveLimit) {
@@ -369,12 +359,10 @@ public final class WallFinePlanner {
             if (cached == null) cached = c.cache.get(target.x(), target.z());
             if (cached != null) {
                 c.plan.record(next, cached);
-                if (c.cache.persistent()) {
-                    c.probed.add(target.resolve(cached));
-                }
                 return;
             }
             c.column = c.oracle.begin(target.x(), target.z(), SampleKind.REFERENCE);
+            c.probedColumns++;
             return;
         }
         // Probing is finished: emit every slot in order - probed columns carry their real sample,
