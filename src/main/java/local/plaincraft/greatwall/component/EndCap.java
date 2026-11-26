@@ -90,6 +90,11 @@ public final class EndCap implements ComponentTemplate {
                 var f=input.site().frame();boolean positiveX=candidate>=2;
                 var bodyFrame=new Frame(f.center(),f.txQ30(),f.tzQ30(),f.walkY(),f.mirror()^(candidate%2==1));
                 var current=ComponentComposer.frame(input,bodyFrame,input.site().globalSQ8());
+                // 入口无效的组合最终必为空；先验证同一个出口，避免构造随后丢弃的整座收口。
+                var rampFrame=positiveX?new Frame(f.center(),-bodyFrame.txQ30(),-bodyFrame.tzQ30(),f.walkY(),!bodyFrame.mirror()):bodyFrame;
+                var rampInput=ComponentComposer.frame(current,rampFrame,current.site().globalSQ8());
+                int lower=Ramp.ground(rampInput);
+                if(lower==Integer.MIN_VALUE)return ComponentAssembly.empty(current.site().id(),Rasterizer.worldBounds(current.site().frame(),localBounds(current)));
                 var a=new ComponentAssembly(current,localBounds(current),decay,palette);
                 a.foundation(-30,-5,0,5,-20);
                 for(int x=-30;x<0;x++) {
@@ -105,8 +110,7 @@ public final class EndCap implements ComponentTemplate {
                     a.floor(-29,3,29,6,0,Part.FLOOR,"east");
                     a.route(new Point3i(-28,0,3),new Point3i(28,0,4));
                 }
-                var rampFrame=positiveX?new Frame(f.center(),-bodyFrame.txQ30(),-bodyFrame.tzQ30(),f.walkY(),!bodyFrame.mirror()):bodyFrame;
-                var ramp=new Ramp(decay,palette).compileInFrame(ComponentComposer.frame(current,rampFrame,current.site().globalSQ8()));
+                var ramp=new Ramp(decay,palette).compileBetween(rampInput,lower,rampFrame.walkY());
                 var body=a.finish();
                 var result=ComponentComposer.merge(current,List.of(body,ramp));
                 boolean functional=current.decay().state()==DecayState.INTACT||current.decay().state()==DecayState.PARTIAL;

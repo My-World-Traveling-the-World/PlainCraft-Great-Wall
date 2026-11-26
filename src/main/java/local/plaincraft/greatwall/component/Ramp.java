@@ -33,10 +33,12 @@ public final class Ramp implements ComponentTemplate {
     }
     /** A compound template fixes its own connector frame and must not silently rotate one child. */
     ComponentVoxels compileInFrame(ComponentInput input) {
-        int lower=ground(input,-30,5,-26,12);
+        int lower=ground(input);
         if(lower==Integer.MIN_VALUE)return ComponentAssembly.empty(input.site().id(),input.site().bounds());
         return compileBetween(input,lower,input.site().frame().walkY());
     }
+    /** 收口预检与真正楼梯必须使用同一入口范围，避免优化后检查另一片地面。 */
+    static int ground(ComponentInput input) { return ground(input,-30,5,-26,12); }
     static int ground(ComponentInput input,int x0,int z0,int x1,int z1) {
         return entrance(input,x0,z0,x1,z1).map(GroundEntranceContract.Certificate::lowerFeetY).orElse(Integer.MIN_VALUE);
     }

@@ -1,5 +1,15 @@
 # 万里长城开发指南与交接
 
+## 2026-11-26 · 0.7.148 · 收口先验入口再组装主体
+
+1. **改动**：EndCap先固定原楼梯朝向，沿Ramp共用入口范围检查自然地面。入口拒绝直接返回空；成功复用同一lowerFeetY编译楼梯，检查次数仍为一次。主体、四朝向顺序、退让、连通/水/保护判据和失败原因不变；不修饰或掩盖WATER导致的CAP_EMPTY。
+2. **验证**：恢复负控后完整1093项JUnit，skipped/failures/errors均0；test/compileClientJava/remapJar/interopJar成功（build/cap-preflight-final.log）。修改前先运行原实现冻结四朝向完整产物hash，修改后逐个相等。所有DecayState的合法几何水入口在256KiB记账预算内拒绝且palette调用严格0，合法陆地非空且palette>0，证明优化没有靠测试空转通过。
+3. **未验证**：本轮未再启动8192格普通世界或完整整合包，实际启动时间/补建最慢tick/帧率未测，不给加速倍数。分配预算是现有生产记账机制，不等同JVM堆实测；补采14014列冷重开持久化仍未实现，独立缓存写入不能拿初轮旧快照覆盖新列。
+4. **负控**：临时恢复旧EndCap主体先构造的实现，waterExitRejectsBeforeBodyAllocationAndPaletteWorkInEveryState实际抛CAPACITY变红，非编译失败。git checkout精确恢复。记录build/cap-preflight-mutation.json及对应日志。
+5. **下一步**：完整整合包新档核收口与实际耗时；补采缓存若实施，必须由同一串行IO会话合并既有C/初采A/补采B后再写，补测试冷重开仍可见三者，不单写delta。
+6. **历史与回退**：开工基线a68f6b92，pull已是最新；行为等价的分配优化，版本0.7.148，未改玩家存档、模板、缓坡/水规则、配置键或schema。部署结果另补记。
+
+
 ## 2026-11-25 · 0.7.147 · 地形证据存在性哈希查询
 
 **本轮最终交付**：实现57b08b88已推GitHub现有refactor/planning-frozen-feature-paint分支；0.7.147已部署WAYFARING，SHA256=`afe807f9acbd4f5eead98b544a41dcecf5d8bd467242fd3b9191b35e41670176`，与恢复十组负控后的1091项回归/正式构建件一致。旧0.7.144备份在`D:\minecraft\Plain Craft Launcher 2\.minecraft\backups\wayfaring-profile-cap-20261125-233357`，清单位于相邻道路build/profile-cap-deployment.json。0.7.145/.146从未部署；未改玩家存档，未启动完整整合包验收画面。
