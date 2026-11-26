@@ -146,6 +146,8 @@
 
 ## 构建和验证
 
+菜单编译依赖由 Maven 解析。离线构建可显式传 `-PmodMenuJar=<路径>`、`-PclothConfigJar=<路径>` 和 `-PclothMathJar=<路径>`。Loom 生成的 Minecraft 模块名带检出路径哈希，依赖锁跳过这两个生成坐标，Minecraft 版本和其余依赖仍单独固定。
+
 使用 JDK 21、外置 Gradle 9.4.1、Mojang 官方映射。先在同级 `plaincraft-worldgen-api` 运行 `:api:contractJar :api-fabric:devModJar :api-fabric:contractIntermediaryJar`，再在同级河流源码运行 `planContractJar`。自定义前置路径用 `-PworldgenApiProjectDir=<路径>`。
 
 ```powershell
