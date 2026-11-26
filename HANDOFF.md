@@ -2,6 +2,9 @@
 
 ## 2026-11-26 · 0.7.148 · 收口先验入口再组装主体
 
+**部署完成**：0.7.148-api-standardization已安装WAYFARING，SHA256=`b37cc4f90680b8f99f57100af806ac5a8aa8cd0885a268479dbca0227dade34b`，与构建件逐字一致。部署前未检出运行的Minecraft客户端；目录内此ID仅一个启用JAR，旧件改.disabled并完整备份至`D:\minecraft\Plain Craft Launcher 2\.minecraft\backups\wayfaring-seedgen-surface-20261126-093841`。四包清单见相邻SeedGen补丁build/decorator-deployment.json。未修改玩家存档或SeedGen/VSS配置，完整整合包画面与帧率待重启验收。
+
+
 1. **改动**：EndCap先固定原楼梯朝向，沿Ramp共用入口范围检查自然地面。入口拒绝直接返回空；成功复用同一lowerFeetY编译楼梯，检查次数仍为一次。主体、四朝向顺序、退让、连通/水/保护判据和失败原因不变；不修饰或掩盖WATER导致的CAP_EMPTY。
 2. **验证**：恢复负控后完整1093项JUnit，skipped/failures/errors均0；test/compileClientJava/remapJar/interopJar成功（build/cap-preflight-final.log）。修改前先运行原实现冻结四朝向完整产物hash，修改后逐个相等。所有DecayState的合法几何水入口在256KiB记账预算内拒绝且palette调用严格0，合法陆地非空且palette>0，证明优化没有靠测试空转通过。
 3. **未验证**：本轮未再启动8192格普通世界或完整整合包，实际启动时间/补建最慢tick/帧率未测，不给加速倍数。分配预算是现有生产记账机制，不等同JVM堆实测；补采14014列冷重开持久化仍未实现，独立缓存写入不能拿初轮旧快照覆盖新列。
