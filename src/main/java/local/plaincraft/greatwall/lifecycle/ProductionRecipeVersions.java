@@ -27,9 +27,10 @@ final class ProductionRecipeVersions {
     }
 
     /** 保留历史查找键；同一套模板升级规划后不能捡到旧主轴。 */
-    static String rootAxisParameters(GenerationConfig config) {
+    static String rootAxisParameters(GenerationConfig config, RootAxisWindow window) {
         return config.algorithmVersion() == 1 ? config.parametersHash()
-                : DeterministicHash.sha256(("root-axis-planning:" + config.algorithmVersion() + ":" + config.parametersHash())
+                : DeterministicHash.sha256(("root-axis-endpoint-v4:" + config.algorithmVersion() + ":" + config.parametersHash()
+                        + ":forward=" + window.forwardBlocks())
                         .getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 

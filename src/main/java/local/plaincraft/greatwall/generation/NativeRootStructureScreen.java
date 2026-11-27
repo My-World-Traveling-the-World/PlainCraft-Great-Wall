@@ -106,15 +106,20 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
     }
     private CompletableFuture<Vote> check(Candidate candidate,Window window) {
         active();
-        var footprints=candidate.axes().stream().map(NativeRootStructureScreen::footprint).toList();
-        var positions=referencePositions(footprints);
+        // 有限墙的不同起点相距可达数万格。一次租借只取本次地基已验完的一座楼。
+        var footprints=candidate.endpointBounds()!=null ? List.of(candidate.endpointBounds())
+                : candidate.axes().stream().map(NativeRootStructureScreen::footprint).toList();
+        var positions=referencePositions(footprints,candidate.endpointBounds()!=null?121:81);
         return window.references.get(positions,missing->request(window,missing,ChunkStatus.STRUCTURE_REFERENCES))
                 .thenComposeAsync(chunks->{
                     active();
                     var starts=new TreeSet<>(CHUNK_ORDER);
                     for(var chunk:chunks.values())for(var refs:chunk.getAllReferences().values())
                         for(long ref:refs)if(!chunks.containsKey(new ChunkPos(ref)))starts.add(new ChunkPos(ref));
-                    if(chunks.size()+starts.size()>81)
+                    // 原生引用按实际区块归属读取，异常密集时只拒绝本方向，绝不把缺证据当作放行。
+                    if(candidate.endpointBounds()!=null && starts.size()>256)
+                        return CompletableFuture.completedFuture(endpointVote(candidate,"UNRESOLVED_REFERENCE_CAPACITY"));
+                    if(candidate.endpointBounds()==null && chunks.size()+starts.size()>81)
                         throw new WallFailure(FailureCode.CAPACITY,"root reference/starts union exceeds 81");
                     if(starts.isEmpty()) return CompletableFuture.completedFuture(vote(candidate,footprints,chunks,chunks));
                     return window.starts.get(List.copyOf(starts),missing->request(window,missing,ChunkStatus.STRUCTURE_STARTS))
@@ -130,7 +135,8 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
     private static final Comparator<ChunkPos> CHUNK_ORDER =
             Comparator.comparingInt((ChunkPos p)->p.x).thenComparingInt(p->p.z);
 
-    static List<ChunkPos> referencePositions(List<Bounds> footprints) {
+    static List<ChunkPos> referencePositions(List<Bounds> footprints) { return referencePositions(footprints,81); }
+    static List<ChunkPos> referencePositions(List<Bounds> footprints,int limit) {
         var positions=new TreeSet<>(CHUNK_ORDER);
         for(int i=0;i<footprints.size();i++){
             var b=footprints.get(i);
@@ -140,14 +146,18 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
                 for(int z=Math.floorDiv(b.minZ()-1,16);z<=Math.floorDiv(b.maxZExclusive(),16);z++)
                     positions.add(new ChunkPos(x,z));
         }
-        if(positions.size()>81)throw new WallFailure(FailureCode.CAPACITY,"root reference footprint exceeds finite lease");
+        if(positions.size()>limit)throw new WallFailure(FailureCode.CAPACITY,"root reference footprint exceeds finite lease");
         return List.copyOf(positions);
     }
 
     private Map<ChunkPos,CompletableFuture<ChunkAccess>> request(Window window,List<ChunkPos> missing,ChunkStatus status) {
-        var lease=track(new StructureLease(level,missing,status));
-        window.leases.add(lease);
-        return lease.chunks();
+        // 最大配置边距 32 时楼周覆盖至多 11×11 个区块，按原有票据单批容量分割，不扩大单租约。
+        var chunks = new HashMap<ChunkPos,CompletableFuture<ChunkAccess>>();
+        for (int from=0;from<missing.size();from+=81) {
+            var lease=track(new StructureLease(level,missing.subList(from,Math.min(from+81,missing.size())),status));
+            window.leases.add(lease); chunks.putAll(lease.chunks());
+        }
+        return chunks;
     }
 
     private Vote vote(Candidate candidate,List<Bounds> footprints,Map<ChunkPos,ChunkAccess> referenceChunks,
@@ -166,6 +176,12 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
                     else addFact(structure,start,facts);
                 }
             });
+        }
+        if(candidate.endpointBounds()!=null) {
+            var result=reason(candidate,candidate.endpointBounds(),facts,missing);
+            GreatWallMod.LOGGER.info("[GreatWall:root-structure] 端楼选址 方向={} 实际保护盒={} 结果={}",
+                    candidate.endpointAxis(),candidate.endpointBounds(),result);
+            return endpointVote(candidate,result);
         }
         var allowed=new ArrayList<Integer>();var reasons=new ArrayList<String>();
         var firstFootprint=footprints.getFirst();
@@ -187,11 +203,22 @@ public final class NativeRootStructureScreen implements RootStructureScreen {
                 uniform, allowed.size(), footprints.get(0));
         return new Vote(candidate.radiusIndex(),candidate.angleIndex(),allowed,reasons);
     }
+    private static Vote endpointVote(Candidate candidate,String result) {
+        int i=candidate.endpointAxis();
+        var reasons=new ArrayList<>(java.util.Collections.nCopies(5,"NOT_INSPECTED"));
+        reasons.set(i,result);
+        return new Vote(candidate.radiusIndex(),candidate.angleIndex(),result.equals("CLEAR")?List.of(i):List.of(),reasons);
+    }
+    static boolean blocksRoot(Candidate candidate,Bounds footprint,Bounds obstacle) {
+        // 旧根只证明地面；端楼的投票涵盖已实测的基底至屋顶，地上高架结构不能漏判。
+        Bounds screened=candidate.endpointBounds()!=null ? footprint
+                : new Bounds(footprint.minX(),candidate.origin().y()-1,footprint.minZ(),
+                        footprint.maxXExclusive(),candidate.origin().y()+1,footprint.maxZExclusive());
+        return intersects(screened,obstacle);
+    }
     private static String reason(Candidate candidate,Bounds footprint,Map<String,Fact> facts,Set<String> missing) {
         if(!missing.isEmpty())return "UNRESOLVED_REFERENCE:"+missing;
-        var surface=new Bounds(footprint.minX(),candidate.origin().y()-1,footprint.minZ(),
-                footprint.maxXExclusive(),candidate.origin().y()+1,footprint.maxZExclusive());
-        var hits=facts.values().stream().filter(f->intersects(surface,f.box())).map(f->f.id()+":"+f.box()).toList();
+        var hits=facts.values().stream().filter(f->blocksRoot(candidate,footprint,f.box())).map(f->f.id()+":"+f.box()).toList();
         return hits.isEmpty() ? "CLEAR" : "STRUCTURE_CONFLICT:"+hits;
     }
 

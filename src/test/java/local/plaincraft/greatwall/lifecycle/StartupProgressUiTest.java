@@ -9,13 +9,36 @@ import static local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.*;
 
 /** 主阶段并行发布与真实进度数据守卫，不启动Minecraft客户端。 */
 class StartupProgressUiTest {
+    @Test void zeroWorkWithoutConfirmationCannotReportComplete() {
+        PrewarmProgress.clear(); PrewarmProgress.begin(0, 2);
+        PrewarmProgress.setStage(DONE);
+        assertEquals(0, PrewarmProgress.snapshot().overallPercent());
+        assertFalse(PrewarmUiModel.complete(DONE, PrewarmProgress.snapshot()));
+    }
+
     @AfterEach void clear() { PrewarmProgress.clear(); }
 
     @Test void parallelPlanningPublishesOneStableSamplingStageWithIndependentCounts() {
         PrewarmProgress.clear(); PrewarmProgress.begin(4, 2);
         PrewarmProgress.setStage(STRUCTURE_SCAN);
         PrewarmProgress.beginParallelPlanning();
-        assertEquals(FINE_SAMPLE, PrewarmProgress.snapshot().stage());
+        var waiting = PrewarmProgress.snapshot();
+        assertEquals(PREWARM, waiting.stage());
+        assertTrue(PrewarmUiModel.running(PREWARM, waiting));
+        assertFalse(PrewarmUiModel.running(FINE_SAMPLE, waiting));
+        assertFalse(PrewarmUiModel.complete(FINE_SAMPLE, waiting));
+        assertTrue(PrewarmUiModel.stages().indexOf(PREWARM) < PrewarmUiModel.stages().indexOf(FINE_SAMPLE));
+        PrewarmProgress.fineSliceScheduled();
+        PrewarmProgress.setSubProgress(FINE_SAMPLE, 1, 0);
+        int priorCredit = PrewarmProgress.snapshot().overallPercent();
+        var previousWork = PrewarmProgress.snapshot().workSignature();
+        PrewarmProgress.fineSliceAccepted(48, 192);
+        var acceptedWork = PrewarmProgress.snapshot().workSignature();
+        assertNotEquals(previousWork, acceptedWork, "切片验收即使所有列去重，也是真实工作");
+        PrewarmProgress.fineSliceAccepted(48, 200);
+        assertEquals(acceptedWork, PrewarmProgress.snapshot().workSignature(), "只改估计分母不应让超时从头计时");
+        assertTrue(PrewarmProgress.snapshot().overallPercent() > priorCredit, "其他段尚未给出列总数，已采切片也必须推动总条");
+        assertArrayEquals(new int[]{1, 0}, PrewarmProgress.snapshot().subFor(FINE_SAMPLE));
         PrewarmProgress.setSubProgress(FINE_SAMPLE, 7, 20);
         PrewarmProgress.setCompleted(1);
         var s = PrewarmProgress.snapshot();
@@ -41,6 +64,77 @@ class StartupProgressUiTest {
         assertFalse(PrewarmUiModel.complete(BACKFILL, s));
     }
 
+    @Test void capFailureMarksCompileEvenAfterEverySegmentIsPlanned() {
+        PrewarmProgress.clear(); PrewarmProgress.begin(5, 2);
+        PrewarmProgress.setStage(COMPILE); PrewarmProgress.setCompleted(5);
+        PrewarmProgress.setCompileStep(PrewarmProgress.CompileStep.CAP_EVIDENCE);
+        PrewarmProgress.setSubProgress(COMPILE, 3, 5);
+        PrewarmProgress.finish(false);
+        // 复现门楼预检失败，保留已规划的分段以及真正失败的子步骤。
+        PrewarmProgress.setCompileStep(PrewarmProgress.CompileStep.PUBLISH_CHUNKS);
+        var s = PrewarmProgress.snapshot();
+        assertFalse(s.active()); assertTrue(s.failed());
+        assertEquals(5, s.completed());
+        assertEquals(94, s.overallPercent());
+        assertEquals(PrewarmProgress.CompileStep.CAP_EVIDENCE, s.compileStep());
+        assertTrue(PrewarmUiModel.failed(COMPILE, s));
+        assertFalse(PrewarmUiModel.failed(PREWARM, s));
+        assertTrue(PrewarmUiModel.complete(PREWARM, s));
+        assertFalse(PrewarmUiModel.complete(DONE, s));
+    }
+
+    @Test void macroColumnsDoNotCountAsCandidatesAndPublicationDoesNotMeanDone() {
+        PrewarmProgress.clear();
+        PrewarmProgress.begin(5, 2);
+        // 网格、候选与分段的单位各异，各自过半都应当推动同一条总进度。
+        PrewarmProgress.setRootDisplay(PrewarmProgress.ROOT_MACRO_SURVEY, 105, 210);
+        var macro = PrewarmProgress.snapshot();
+        assertEquals("macro", PrewarmUiModel.rootStep(macro.rootPhase()));
+        assertEquals(105, macro.rootCandidate());
+        assertEquals(50, macro.stagePercent());
+        assertEquals(2, macro.overallPercent());
+        PrewarmProgress.setRootDisplay(0, 27, 324);
+        var candidates = PrewarmProgress.snapshot();
+        assertEquals("candidates", PrewarmUiModel.rootStep(candidates.rootPhase()));
+        assertEquals(8, candidates.stagePercent());
+        assertTrue(candidates.overallPercent() > macro.overallPercent());
+        PrewarmProgress.setRootDisplay(4, 0, 0);
+        PrewarmProgress.setStructureProgress(16, 64);
+        int screening = PrewarmProgress.snapshot().overallPercent();
+        PrewarmProgress.setStructureProgress(48, 64);
+        assertTrue(PrewarmProgress.snapshot().overallPercent() > screening);
+        PrewarmProgress.setStage(STRUCTURE_SCAN);
+        PrewarmProgress.setSubProgress(FINE_SAMPLE, 50, 100);
+        PrewarmProgress.beginParallelPlanning();
+        var overlap = PrewarmProgress.snapshot();
+        assertEquals(50, overlap.subDone());
+        int fineOnly = overlap.overallPercent();
+        PrewarmProgress.setCompleted(3);
+        PrewarmProgress.setCompleted(2);
+        assertEquals(3, PrewarmProgress.snapshot().completed(), "迟到的较小计数不能让下栏和总条倒走");
+        int segmentCredit = PrewarmProgress.snapshot().overallPercent();
+        assertTrue(segmentCredit > fineOnly);
+        PrewarmProgress.setSubProgress(FINE_SAMPLE, 90, 100);
+        assertTrue(PrewarmProgress.snapshot().overallPercent() > segmentCredit);
+        PrewarmProgress.setStage(COMPILE);
+        PrewarmProgress.setCompileStep(PrewarmProgress.CompileStep.PUBLISH_CHUNKS);
+        PrewarmProgress.setSubProgress(COMPILE, 236, 236);
+        assertEquals(98, PrewarmProgress.snapshot().overallPercent());
+        PrewarmProgress.setStage(DONE);
+        PrewarmProgress.setSubProgress(DONE, 150, 200);
+        assertEquals(99, PrewarmProgress.snapshot().overallPercent());
+        assertFalse(PrewarmUiModel.complete(DONE, PrewarmProgress.snapshot()));
+        PrewarmProgress.finish(true);
+        assertTrue(PrewarmUiModel.complete(DONE, PrewarmProgress.snapshot()));
+        assertEquals(100, PrewarmProgress.snapshot().overallPercent());
+        PrewarmProgress.clear();
+        assertEquals(0, PrewarmProgress.snapshot().overallPercent());
+        // 新会话不应被迟到的旧快照抬高。
+        assertEquals(fineOnly, overlap.overallPercent());
+        PrewarmProgress.beginRootSearch(2);
+        assertEquals(0, PrewarmProgress.snapshot().overallPercent());
+    }
+
     @Test void rateClockBelongsToItsStageAndResetClearsPreviousWorld() throws Exception {
         PrewarmProgress.clear(); PrewarmProgress.begin(5, 2);
         PrewarmProgress.setStage(FINE_SAMPLE);
@@ -56,6 +150,17 @@ class StartupProgressUiTest {
         assertTrue(s.stageElapsedMillis(FINE_SAMPLE) < 10_000);
         PrewarmProgress.clear();
         assertEquals(0, PrewarmProgress.snapshot().stageElapsedMillis(STRUCTURE_SCAN));
+    }
+
+    @Test void healthyLongStartupOutlivesItsStallWindow() {
+        // 直接推进单调时钟，同一工作签名持续完整期限才算停滞。
+        long minute = java.util.concurrent.TimeUnit.MINUTES.toNanos(1);
+        var clock = new StartupStallClock(0, 30 * minute);
+        assertFalse(clock.stalled(0, () -> "选址"));
+        assertFalse(clock.stalled(29 * minute, () -> "结构扫描"));
+        assertFalse(clock.stalled(58 * minute, () -> "精采"));
+        assertFalse(clock.stalled(87 * minute, () -> "精采"));
+        assertTrue(clock.stalled(88 * minute, () -> "精采"));
     }
 
     @Test void cardFitsEveryLogicalScreenWithoutDroppingRows() {

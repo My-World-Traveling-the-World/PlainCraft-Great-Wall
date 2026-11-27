@@ -85,7 +85,13 @@ public final class RootSearch {
     public record Selection(Axis axis, int radiusIndex, int angleIndex, int axisIndex, long ridgeScore,
             int columns, long maxBatchNanos, long over40msBatches) {}
     public record Progress(int phase, int candidate, int shortlisted, int footprintColumn,
-            int axisIndex, int columns, long maxBatchNanos, long over40msBatches) {}
+            int axisIndex, int columns, long maxBatchNanos, long over40msBatches, int workDone, int workTotal) {
+        // 离线诊断只记原始采样计数，历史批次没有细分工作量。
+        public Progress(int phase, int candidate, int shortlisted, int footprintColumn,
+                int axisIndex, int columns, long maxBatchNanos, long over40msBatches) {
+            this(phase, candidate, shortlisted, footprintColumn, axisIndex, columns, maxBatchNanos, over40msBatches, 0, 0);
+        }
+    }
     public record Audit(String stage, Point3i origin, int radiusIndex, int angleIndex, int axisIndex,
             int wetColumns, int invalidSamples, int failedFoundations, int minY, int maxY, String result) {}
     private record Candidate(Point3i origin, int radius, int angle, int wet, int slope, long ridge) {}
@@ -107,8 +113,11 @@ public final class RootSearch {
     private static final int[] AXIS_DEGREES = {-40, -20, 0, 20, 40};
     private static final int[] AXIS_DISTANCES = {256, 512, 1024};
     private static final int[] AXIS_ACROSS = {0, -48, 48};
-    private static final int[] LAND_AXIS_ACROSS = {0, -10, 10};
     private final boolean landFirst;
+    private final long finiteLength;
+    private final List<RootEndpointSite> endpointTrials = new ArrayList<>();
+    private int endpointIndex;
+
     private final MacroLandSurvey macroSurvey;
     private final Point3i spawn;
     private final DimensionBounds bounds;
@@ -135,7 +144,7 @@ public final class RootSearch {
     private long distinctColumnCount;
     private long totalColumnReads;
     /** Column reads by coordinate; see {@link #read}. */
-    private final java.util.Map<Long, ColumnSample> columnMemo = new java.util.HashMap<>();
+    private final java.util.Map<Long, Prefetched> columnMemo = new java.util.HashMap<>();
 
     private List<Candidate> structureCandidates = List.of();
     /** Candidates past the first screen batch; only reached through {@link #screenNextStructureBatch()}. */
@@ -153,6 +162,8 @@ public final class RootSearch {
             Math.max(8, Integer.getInteger("greatwall.structureScreenCandidates", 64));
     private List<Candidate> remainingScreened = List.of();
     private int screenedOffset;
+    private List<Candidate> fallbackCenters;
+    private int nextFallbackCenter;
     private Map<Integer,List<Integer>> allowedAxes = Map.of();
     private final boolean screenStructures;
     private final local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance;
@@ -230,11 +241,23 @@ public final class RootSearch {
     RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
             BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation, boolean screenStructures,
             local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance, boolean landFirst) {
+        this(spawn,bounds,early,foundation,screenStructures,sanctuaryAvoidance,landFirst,
+                local.plaincraft.greatwall.config.GreatWallConfig.parameters().wallLengthBlocks());
+    }
+    RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
+            BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation, boolean screenStructures,
+            local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance, boolean landFirst,
+            long frozenLength) {
+        this(spawn, bounds, early, foundation, screenStructures, sanctuaryAvoidance, landFirst,
+                RootAxisWindow.of(frozenLength, local.plaincraft.greatwall.config.GreatWallConfig.get().unlimitedPrewarmBlocks()), MacroRiverWater.NONE);
+    }
+    RootSearch(Point3i spawn, DimensionBounds bounds, List<ChunkKey> early,
+            BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation, boolean screenStructures,
+            local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance, boolean landFirst,
+            RootAxisWindow window, MacroRiverWater riverWater) {
         this.landFirst = landFirst;
-        var settings = local.plaincraft.greatwall.config.GreatWallConfig.parameters();
-        long surveyLength = settings.bounded() ? settings.wallLengthBlocks()
-                : local.plaincraft.greatwall.config.GreatWallConfig.get().unlimitedPrewarmBlocks();
-        macroSurvey = landFirst ? new MacroLandSurvey(spawn, bounds, surveyLength) : null;
+        finiteLength = landFirst ? window.wallLength() : 0;
+        macroSurvey = landFirst ? new MacroLandSurvey(spawn, bounds, window, riverWater, RADII[RADII.length-1]) : null;
         this.spawn = Objects.requireNonNull(spawn);
         this.bounds = Objects.requireNonNull(bounds);
         int heightSpan = Math.max(1, bounds.maxYExclusive() - bounds.minY());
@@ -262,8 +285,8 @@ public final class RootSearch {
                 if (System.nanoTime() >= deadline - BATCH_GUARD_NANOS) break;
                 if (macroSurvey != null && !macroSurvey.done()) { macroSurvey.advance(oracle); continue; }
                 switch (phase) {
-                    case 0 -> coarseStep(oracle);
-                    case 1 -> footprintStep(oracle);
+                    case 0 -> { if (landFirst) rankRootDirections(); else coarseStep(oracle); }
+                    case 1 -> { if (landFirst) checkEndpoint(oracle); else footprintStep(oracle); }
                     case 2 -> axisStep(oracle);
                     case 5 -> entranceStep(oracle);
                     default -> throw new IllegalStateException("unknown root phase");
@@ -302,9 +325,40 @@ public final class RootSearch {
 
     public Progress progress() {
         claimOwner();
-        return new Progress(phase, candidateIndex, shortlisted.size(), sampleIndex, axisIndex,
+        // 宏观粗采先于候选扫描，单独报告，免得候选 0/324 被误解为卡住。
+        boolean surveying = macroSurvey != null && !macroSurvey.done();
+        int displayPhase = surveying ? PrewarmProgress.ROOT_MACRO_SURVEY : phase;
+        if (landFirst && (phase == 1 || phase == 4) && endpointIndex < endpointTrials.size()) {
+            var trial = endpointTrials.get(endpointIndex);
+            int shown = phase == 1 ? PrewarmProgress.ROOT_ENDPOINT_GROUND : PrewarmProgress.ROOT_ENDPOINT_STRUCTURES;
+            // 首个合格即停止；总候选数乘楼底面积并不是要采的列数，只报当前真实占地。
+            return new Progress(shown,candidateIndex,endpointTrials.size(),trial.examined(),trial.direction,
+                    columns+macroSurvey.sampleCount(),maxBatchNanos,over40msBatches,trial.examined(),trial.size());
+        }
+        int units = switch (displayPhase) {
+            case PrewarmProgress.ROOT_MACRO_SURVEY -> macroSurvey.visitedCells();
+            case 0 -> candidateIndex;
+            case 1, 2, 5 -> verificationUnits();
+            default -> 0;
+        };
+        int total = switch (displayPhase) {
+            case PrewarmProgress.ROOT_MACRO_SURVEY -> macroSurvey.gridCells();
+            case 0 -> RADIUS_COUNT * 36;
+            case 1, 2, 5 -> screenedOffset * 10_000;
+            default -> 0;
+        };
+        return new Progress(displayPhase, candidateIndex, shortlisted.size(), sampleIndex, axisIndex,
                 columns + (macroSurvey == null ? 0 : macroSurvey.sampleCount()),
-                maxBatchNanos, over40msBatches);
+                maxBatchNanos, over40msBatches, units, total);
+    }
+
+    private int verificationUnits() {
+        // 一个候选内先核 48×48 占地，再核各走向与入口。前一走向结束后继续累加。
+        int finished = screenedOffset - shortlisted.size() + selectedIndex;
+        if (phase == 1) return finished * 10_000 + 5_000 * sampleIndex / (48 * 48);
+        int axisWork = phase == 5 ? 500 + 500 * entranceIndex / Math.max(1, entrancePositions.size())
+                : 500 * sampleIndex / 9;
+        return finished * 10_000 + 5_000 + (axisIndex * 1_000 + axisWork) * 5 / AXIS_DEGREES.length;
     }
     /** Diagnostic-only, lane-owned copy. It is never an input to selection or persisted recipe identity. */
     public List<Audit> audit() { claimOwner(); return List.copyOf(audit); }
@@ -341,11 +395,26 @@ public final class RootSearch {
     public List<RootStructureScreen.Candidate> pendingStructureCandidates(){
         claimOwner();
         if(phase!=4)throw new IllegalStateException("root is not waiting for structure votes");
+        if (landFirst) {
+            var trial = endpointTrials.get(endpointIndex);
+            return List.of(new RootStructureScreen.Candidate(trial.midpoint.origin(), trial.radius, trial.angle,
+                    java.util.stream.IntStream.range(0,5).mapToObj(i->axis(trial.midpoint.origin(),i)).toList(),
+                    trial.direction,trial.protection(local.plaincraft.greatwall.config.GreatWallConfig.parameters().obstacleMarginBlocks())));
+        }
         return structureCandidates.stream().map(c->new RootStructureScreen.Candidate(c.origin(),c.radius(),c.angle(),
                 java.util.stream.IntStream.range(0,5).mapToObj(i->axis(c.origin(),i)).toList())).toList();
     }
     public void acceptStructureVotes(List<RootStructureScreen.Vote> votes){
         claimOwner();
+        if (landFirst) {
+            if (phase!=4 || votes.size()!=1) throw new IllegalArgumentException("缺少端楼的结构投票");
+            var trial = endpointTrials.get(endpointIndex); var vote = votes.getFirst();
+            if (vote.radiusIndex()!=trial.radius || vote.angleIndex()!=trial.angle)
+                throw new IllegalArgumentException("投票和待验端楼不匹配");
+            if (vote.allowedAxes().contains(trial.direction)) acceptEndpoint(trial);
+            else rejectEndpoint(trial,vote.reasons().get(trial.direction));
+            return;
+        }
         if(phase!=4||votes.size()!=structureCandidates.size())throw new IllegalArgumentException("complete pending root votes required");
         var map=new java.util.HashMap<Integer,List<Integer>>();
         for(int n=0;n<votes.size();n++){
@@ -367,9 +436,12 @@ public final class RootSearch {
 
     private void coarseStep(NaturalTerrainOracle oracle) {
         if (candidateIndex == RADII.length * 36) {
-            var ordered = candidates.stream().sorted(Comparator.comparingLong((Candidate c) -> macroScore(c))
-                    .thenComparingInt(Candidate::wet)
-                    .thenComparingInt(Candidate::slope).thenComparingLong(v -> landFirst ? 0 : -v.ridge())
+            if (fallbackCenters != null) {
+                resolveFallbackCenters(oracle);
+                return;
+            }
+            var ordered = candidates.stream().sorted(Comparator.comparingInt(Candidate::wet)
+                    .thenComparingInt(Candidate::slope).thenComparingLong(v -> -v.ridge())
                     .thenComparingInt(Candidate::radius).thenComparingInt(Candidate::angle)).toList();
             logCoarseSummary(ordered.size());
             // Water is not negotiable: a ring point that is mostly water is not ground to build on, and a
@@ -379,15 +451,17 @@ public final class RootSearch {
             if (ordered.isEmpty() && !fallbackPool.isEmpty()) {
                 var fallback = fallbackPool.stream().sorted(Comparator.comparingInt(Candidate::wet)
                         .thenComparingInt(Candidate::slope).thenComparingInt(Candidate::radius)
-                        .thenComparingInt(Candidate::angle)).limit(8).toList();
+                        .thenComparingInt(Candidate::angle))
+                        .filter(c -> java.util.stream.IntStream.range(0, AXIS_DEGREES.length)
+                                .anyMatch(i -> legalDirection(axis(c.origin(), i)))).limit(screenStructures ? FOOTPRINT_CANDIDATE_LIMIT : 8).toList();
+                if (fallback.isEmpty()) throw notFound();
                 relaxed = true;
                 local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
                         "[GreatWall:S1C] ROOT_FALLBACK no candidate meets the siting contract (relief bound {} blocks, "+
                                 "{} candidates measured); using the best of {} - the wall is built on the best ground the ring offers",                        coarseRelief, candidateIndex, fallbackPool.size());
-                shortlisted = fallback;
-                remainingScreened = fallback;
-                screenedOffset = shortlisted.size();
-                phase = 1; resetSamples(); return;
+                // 早退的候选可能还没采到中心；只对这批实际入围的点取得准确高度。
+                fallbackCenters = new ArrayList<>(fallback);
+                return;
             }
             if(screenStructures){
                 if(ordered.isEmpty())throw notFound();
@@ -481,13 +555,83 @@ public final class RootSearch {
         candidateIndex++; resetSamples();
     }
 
-    /** 宏观评分必须在截取八个入口之前生效，否则远处陆地更多的主轴根本不会被精查。 */
-    private long macroScore(Candidate candidate) {
-        if (macroSurvey == null) return 0;
-        long best = Long.MIN_VALUE;
-        for (int i = 0; i < AXIS_DEGREES.length; i++)
-            best = Math.max(best, macroSurvey.score(axis(candidate.origin(), i)));
-        return -best;
+    private void resolveFallbackCenters(NaturalTerrainOracle oracle) {
+        if (nextFallbackCenter < fallbackCenters.size()) {
+            var c = fallbackCenters.get(nextFallbackCenter);
+            var sample = read(oracle, c.origin().x(), c.origin().z(), false);
+            if (sample == null) return;
+            var origin = new Point3i(c.origin().x(), sample.groundTopY(), c.origin().z());
+            fallbackCenters.set(nextFallbackCenter++, new Candidate(origin, c.radius(), c.angle(), c.wet(), c.slope(), c.ridge()));
+            return;
+        }
+        // 宽松选址只放宽地形起伏；结构投票、生态保护与出生区仍是硬边界。
+        if (screenStructures) {
+            structureCandidates = fallbackCenters.stream().limit(STRUCTURE_SCREEN_LIMIT).toList();
+            structureRemainder = fallbackCenters.stream().skip(STRUCTURE_SCREEN_LIMIT).toList();
+            phase = 4;
+        } else {
+            shortlisted = List.copyOf(fallbackCenters);
+            remainingScreened = shortlisted;
+            screenedOffset = shortlisted.size();
+            phase = 1;
+        }
+        fallbackCenters = null;
+        resetSamples();
+    }
+
+    private boolean legalDirection(Axis trial) {
+        long dx = (long) trial.origin().x() - spawn.x(), dz = (long) trial.origin().z() - spawn.z();
+        return dx * trial.exQ30() + dz * trial.ezQ30() > 0 && SpawnDomain.disjointFuture(trial, early)
+                && !crossesSanctuary(trial);
+    }
+
+    /** 在同一圆域比较五条轴向；有限墙以候选为中点，无限墙以候选为端口。 */
+    private void rankRootDirections() {
+        if (candidateIndex == RADII.length * 36) {
+            // 同分保留由近至远的环、方位、方向顺序，避免哈希或线程顺序决定走线。
+            endpointTrials.sort(Comparator.comparingLong((RootEndpointSite t) -> t.score).reversed());
+            phase = 1;
+            return;
+        }
+        int radius = candidateIndex / 36, angle = candidateIndex++ % 36;
+        var center = ringPoint(radius, angle);
+        for (int i = 0; i < AXIS_DEGREES.length; i++) {
+            var mid = axis(center, i);
+            if (RootEndpointSite.allowed(mid, finiteLength, spawn, early, bounds, sanctuaryAvoidance))
+                endpointTrials.add(new RootEndpointSite(mid, finiteLength, radius, angle, i, macroSurvey.score(mid)));
+        }
+    }
+
+    private void checkEndpoint(NaturalTerrainOracle oracle) {
+        if (endpointIndex >= endpointTrials.size()) throw notFound();
+        var t = endpointTrials.get(endpointIndex);
+        // 外海或密集建筑可能用完整个选址预算，这属于本世界无已证实的楼址，而非服务端损坏。
+        if (columns >= 150000 && column == null)
+            throw new WallFailure(FailureCode.ROOT_NOT_FOUND, "端楼选址已达采样预算，已淘汰方向=" + endpointIndex + "，候选方向=" + endpointTrials.size());
+        var key = t.column(t.examined());
+        var sample = read(oracle,key.x(),key.z(),key.requireFoundation());
+        if (sample == null) return;
+        String reason = t.record(sample,bounds);
+        if (reason != null) { rejectEndpoint(t,reason); return; }
+        if (t.examined() == t.size()) {
+            if (screenStructures) phase=4; else acceptEndpoint(t);
+        }
+    }
+
+    private void rejectEndpoint(RootEndpointSite trial,String reason) {
+        audit.add(new Audit("endpoint",trial.midpoint.origin(),trial.radius,trial.angle,trial.direction,
+                0,0,0,0,0,reason));
+        endpointIndex++; phase=1;
+    }
+
+    private void acceptEndpoint(RootEndpointSite t) {
+        audit.add(new Audit("endpoint",t.midpoint.origin(),t.radius,t.angle,t.direction,0,0,0,
+                t.protection().minY(), t.protection().maxYExclusive(), "ENDPOINT_ELIGIBLE"));
+        local.plaincraft.greatwall.GreatWallMod.LOGGER.info(
+                "[GreatWall:root] 端楼自然地面及高度复核通过，实际承重面由施工前方块证据核验：端口={} 楼体保护盒={}",
+                local.plaincraft.greatwall.model.WallRecipeRules.centerFiniteAxis(t.selectedMidpoint(),finiteLength,
+                        local.plaincraft.greatwall.model.WallRecipeRules.INTACT).origin(),t.protection());
+        best = new Selection(t.selectedMidpoint(),t.radius,t.angle,t.direction,t.score,0,0,0); phase=3;
     }
 
     private void footprintStep(NaturalTerrainOracle oracle) {
@@ -499,20 +643,9 @@ public final class RootSearch {
                 shortlisted=List.copyOf(remainingScreened.subList(screenedOffset,end));
                 screenedOffset=end;selectedIndex=0;resetSamples();return;
             }
-            if (best == null && relaxed && !shortlisted.isEmpty()) {
-                // Last resort of the fallback: every pad was walked and every axis was refused, so take
-                // the head of the ranking with axis 0. The wall is built, and the log says the siting
-                // contract was not met - which is the trade the fallback exists to make.
-                var chosen = shortlisted.get(0);
-                local.plaincraft.greatwall.GreatWallMod.LOGGER.warn(
-                        "[GreatWall:S1C] ROOT_FALLBACK_SITE no pad passed any axis check; building on the "
-                                + "best measured candidate radius={} angle={} origin={} (axis 0)",
-                        chosen.radius(), chosen.angle(), chosen.origin());
-                best = new Selection(axis(chosen.origin(), 0), chosen.radius(), chosen.angle(), 0, 0L, 0, 0, 0);
-                phase = 3;
-                return;
-            }
             if (best == null) {
+                // 本批有通过结构投票的轴，也仍可能全部验地失败，应继续尚未投票的候选。
+                if (screenNextStructureBatch()) { selectedIndex = 0; return; }
                 logAxisSummary();
                 throw notFound();
             }
@@ -550,7 +683,7 @@ public final class RootSearch {
         // its 81 samples: up to 5% of the footprint may be uncertified.
         boolean tooMuchCensored = censoredSamples * 20 > 48 * 48;
         boolean reliefOverflow = max - min > footprintRelief;
-        if ((hardFailure || tooMuchCensored || reliefOverflow) && !relaxed) {
+        if (hardFailure || !relaxed && (tooMuchCensored || reliefOverflow)) {
             rejectFootprint(current, wet > MAX_WET_FOOTPRINT_CELLS,
                     failedFoundations > MAX_UNSUPPORTED_FOOTPRINT_CELLS,
                     reliefOverflow || tooMuchCensored);
@@ -647,8 +780,8 @@ public final class RootSearch {
             }
         }
         int distance = AXIS_DISTANCES[sampleIndex / 3];
-        // 只看实际墙带附近的水陆；两侧 48 格的崖谷不是墙体占地。
-        int across = (landFirst ? LAND_AXIS_ACROSS : AXIS_ACROSS)[sampleIndex % 3];
+        // 此处仅供旧配方：保留原有的九点山脊比较。
+        int across = AXIS_ACROSS[sampleIndex % 3];
         int x = Math.toIntExact(current.origin().x() + FixedMath.roundDiv(
                 (long) distance * axis.exQ30() - (long) across * axis.ezQ30(), 1L << 30));
         int z = Math.toIntExact(current.origin().z() + FixedMath.roundDiv(
@@ -663,7 +796,7 @@ public final class RootSearch {
         lastSampleX = x; lastSampleZ = z;
         acceptHeight(value);
         if (sampleIndex % 3 == 0) centerHeight = value.groundTopY();
-        else if (!landFirst) axisScore += centerHeight - (long) value.groundTopY();
+        else axisScore += centerHeight - (long) value.groundTopY();
         sampleIndex++;
         // (A) Exact-equivalence early exit: axisOk needs invalidSamples*3 <= 9 (at most three censored
         // columns of nine) and wet <= 3, and both counts only grow. A line that has already spent its
@@ -674,9 +807,6 @@ public final class RootSearch {
             axisIndex++; resetSamples(); return;
         }
         if (sampleIndex < 9) return;
-        // 水列优先于起伏；少一列水不应输给更平但更湿的轴向。
-        // 先比较全长两端的陆地，再比较近处九列，不能用1024格局部视野决定整条墙入海。
-        if (landFirst) axisScore = macroSurvey.score(axis) * 1000 - (long) wet * 100 - (max - (long) min);
         // One wet column in nine is tolerated. The axis is a line the wall can bridge - that is what
         // its water gate is for - and the pad itself was already cleared by the footprint phase.
         // Zero tolerance here is what a water-blind probe made look free.
@@ -777,10 +907,14 @@ public final class RootSearch {
      */
     private ColumnSample read(NaturalTerrainOracle oracle, int x, int z, boolean requireFoundation) {
         long key = (((long) x) << 32) ^ (z & 0xffffffffL) ^ (requireFoundation ? 0x4000000000000000L : 0L);
-        ColumnSample memoised = columnMemo.get(key);
-        if (memoised != null) return memoised;
+        Prefetched memoised = columnMemo.get(key);
+        if (memoised != null) {
+            // 同一列重用于地基或门口时，也要恢复该列的支撑判定。
+            lastSupport = memoised.lastSupport();
+            return memoised.sample();
+        }
         ColumnSample fresh = readUnmemoised(oracle, x, z, requireFoundation);
-        if (fresh != null) columnMemo.put(key, fresh);
+        if (fresh != null) columnMemo.put(key, new Prefetched(fresh, lastSupport));
         return fresh;
     }
 
@@ -832,8 +966,8 @@ public final class RootSearch {
             return null;
         }
         if (!column.done()) { oracle.advance(column, 1); return null; }
-        ColumnSample result = oracle.finish(column);
         lastSupport = !requireFoundation || foundation.test(oracle, column);
+        ColumnSample result = oracle.finish(column);
         column = null;
         return result;
     }
@@ -881,6 +1015,17 @@ public final class RootSearch {
      * {@code advance} on lane 0 fail the ownership check.
      */
     public List<ColumnKey> pendingFootprintReads() {
+        if (landFirst) {
+            if (phase!=1 || endpointIndex>=endpointTrials.size()) return List.of();
+            var t=endpointTrials.get(endpointIndex);
+            int first=t.examined()+(column==null?0:1);
+            // 滑窗只预取当前选址，临海楼址一经拒绝不再花费工作线程扫后面的整楼。
+            var pending=new ArrayList<ColumnKey>();
+            for(int i=first;i<Math.min(first+192,t.size());i++) {
+                var key=t.column(i); if(!claimed.contains(key) && !prefetched.containsKey(key)) pending.add(key);
+            }
+            return pending;
+        }
         if (phase != 1 || shortlisted.isEmpty()) return List.of();
         int ahead = footprintPrefetchAhead;
         var result = new ArrayList<ColumnKey>(Math.max(0, 48 * 48 * ahead));
@@ -918,7 +1063,8 @@ public final class RootSearch {
      * root pump to hand work to the other lanes.
      */
     public List<ColumnKey> pendingCoarseReads() {
-        if (phase != 0) return List.of();
+        // 新版有限与无限墙都复用宏观网格，不再为旧 48×48 楼台预取。
+        if (phase != 0 || landFirst) return List.of();
         // Four candidates ahead rather than two: the samples are now cached across candidates,
         // so a position sampled for one candidate is still the answer for the next, and a wider
         // window keeps eleven lanes fed instead of letting them idle behind the pump.
@@ -993,9 +1139,8 @@ public final class RootSearch {
 
     /** Remembers a refused candidate with the statistics it had when it was refused. */
     private void noteFallback(Point3i origin) {
-        int height = centerHeight != 0 ? centerHeight : origin.y();
-        fallbackPool.add(new Candidate(new Point3i(origin.x(), height, origin.z()), candidateIndex / 36,
-                candidateIndex % 36, wet, max - min, 81L * height - sum));
+        // 备选按水、地形和方向排序，入围以后才读该点中心的真实高度。
+        fallbackPool.add(new Candidate(origin, candidateIndex / 36, candidateIndex % 36, wet, max - min, 0));
     }
 
     private void acceptHeight(ColumnSample value) {

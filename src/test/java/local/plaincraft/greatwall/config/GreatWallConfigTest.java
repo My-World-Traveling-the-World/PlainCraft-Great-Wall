@@ -18,6 +18,13 @@ import org.junit.jupiter.api.Test;
  * live for the session and silently back to the default after a restart.
  */
 class GreatWallConfigTest {
+    @Test void structureMarginFileAndPlanningMatchUiBounds() {
+        var c=new GreatWallConfig();
+        c.setObstacleMarginBlocks(Integer.MAX_VALUE);
+        assertEquals(32,c.semantic().obstacleMarginBlocks());
+        c.setObstacleMarginBlocks(-8);
+        assertEquals(0,c.obstacleMarginBlocks());
+    }
     @Test void oceanThresholdUsesTheSameHonestBoundsAndChangesTheFrozenLandFirstDigest() {
         var config = new GreatWallConfig();
         var before = config.semantic().landFirstDigest();

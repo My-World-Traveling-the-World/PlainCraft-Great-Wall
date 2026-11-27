@@ -39,6 +39,13 @@ public final class PrewarmProgress {
     private static final AtomicInteger TOTAL_SEGMENTS = new AtomicInteger();
     private static final AtomicInteger COMPLETED_SEGMENTS = new AtomicInteger();
     private static final AtomicInteger LANES = new AtomicInteger();
+    // 总占地齐备前，已验收切片 / 整窗最多切片数可为精采提供独立的保守进展。
+    private static volatile int fineSlicesDone, fineSliceLimit;
+    public static synchronized void fineSliceAccepted(int done, int limit) {
+        if (FINISHED.get()) return;
+        fineSlicesDone = Math.max(fineSlicesDone, done);
+        fineSliceLimit = limit;
+    }
     private static final AtomicLong STARTED_AT_NANOS = new AtomicLong();
     private static final AtomicBoolean FAILED = new AtomicBoolean();
     /**
@@ -93,7 +100,11 @@ public final class PrewarmProgress {
     /** Candidate index the root search has reached, and the total it will scan. */
     private static final AtomicInteger ROOT_CANDIDATE = new AtomicInteger();
     private static final AtomicInteger ROOT_TOTAL = new AtomicInteger();
-    /** Root-search phase (0 coarse, 1 footprint, 2 axis, 4 structure, 5 entrance). */
+    /** 粗采还没有固定候选分母，保留独立的显示阶段。 */
+    public static final int ROOT_MACRO_SURVEY = 6;
+    // 有限墙按方向先验真实端楼地基，再取这座楼的结构票，与旧中点筛查单位不同。
+    public static final int ROOT_ENDPOINT_GROUND = 7, ROOT_ENDPOINT_STRUCTURES = 8;
+    /** Root-search phase (0 candidates, 1 footprint, 2 axis, 4 structure, 5 entrance, 6 survey). */
     private static final AtomicInteger ROOT_PHASE = new AtomicInteger();
     /** Structure-screen candidate the wall is validating, and the total. */
     private static final AtomicInteger STRUCTURE_CANDIDATE = new AtomicInteger();
@@ -108,22 +119,16 @@ public final class PrewarmProgress {
     public enum Stage {
         ROOT_SEARCH, STRUCTURE_SCAN, FINE_SAMPLE, PREWARM, COMPILE, BACKFILL, DONE
     }
-    /**
-     * Overall-percent weight of each stage, indexed by {@link Stage#ordinal()}. The weights are the
-     * stages' relative measured durations on a real world, and they must sum to 100.
-     *
-     * <p>Measured on the 2026-11-01 session ({@code WALL_STARTUP_ACCOUNT totalMs=857886 rootMs=253955
-     * scanMs=213812 fineMs=319649 prewarmMs=0 compileMs=70465}): root 254 s, structure scan 214 s,
-     * fine sample 320 s, compile 70 s. The table before this one was calibrated on a 2026-10-15 run
-     * whose stages took 128/181/158/20 s, so every stage was off by 2-13x and the bar read wrong the
-     * whole way through - that is the "57495/113152 but the card says 80%" people kept reporting.
-     *
-     * <p>The prewarm gets no slice of its own: it overlaps the fine sample and the account folds it
-     * into {@code fineMs} (see the stage bookkeeping in {@code ProductionSession}). Giving it points
-     * would make the total jump ahead of the work it is waiting for. Backfill runs after the road
-     * gate, outside this account.
-     */
-    private static final int[] STAGE_WEIGHT = {30, 25, 37, 0, 8, 0, 0};
+
+    /** 编译内部各步骤的工作单位不同，阶段名可以独立于区块计数发布。 */
+    public enum CompileStep {
+        ASSEMBLE_WINDOW, HEIGHT_ENVELOPE, CAP_EVIDENCE, FREEZE_PLANS, PUBLISH_CHUNKS
+    }
+    private static final AtomicReference<CompileStep> COMPILE_STEP = new AtomicReference<>(CompileStep.ASSEMBLE_WINDOW);
+
+    public static synchronized void setCompileStep(CompileStep step) {
+        if (!FINISHED.get() && COMPILE_STEP.getAndSet(step) != step) SUB_BY_STAGE.remove(Stage.COMPILE);
+    }
     /** Monotonic overall peak for the loading card; reset when a new prewarm begins or clears. */
     private static final java.util.concurrent.atomic.AtomicInteger PEAK_OVERALL_PERCENT =
             new java.util.concurrent.atomic.AtomicInteger();
@@ -142,19 +147,8 @@ public final class PrewarmProgress {
     /** When the first startup stage opened; the wall-clock anchor for totalMs. */
     private static final java.util.concurrent.atomic.AtomicLong SESSION_START_NANOS =
             new java.util.concurrent.atomic.AtomicLong();
-    /** Sub-progress of the active stage: done/total; total 0 means "indeterminate, still running". */
-    private static final AtomicInteger SUB_DONE = new AtomicInteger();
-    private static final AtomicInteger SUB_TOTAL = new AtomicInteger();
-    /**
-     * Which stage wrote {@link #SUB_DONE}/{@link #SUB_TOTAL}.
-     *
-     * <p>Those two are a single global pair, and every stage writes them: the corridor scan counts
-     * candidates, the segment prewarm counts segments, the compile counts owners. Two stages that
-     * overlap therefore overwrite each other and the card shows a number jumping between e.g.
-     * 5000/13085 and 2/4. Stamping the writer and ignoring a stamp that belongs to another stage
-     * keeps each stage's number its own.
-     */
-    private static final AtomicReference<Stage> SUB_STAGE = new AtomicReference<>();
+    // 终态卡片可能继续显示，停留时长不能加到本次预热耗时里。
+    private static volatile long endedAtNanos;
     /** Per-stage sub-progress, so two stages running together each keep their own number. */
     private static final java.util.concurrent.ConcurrentHashMap<Stage, int[]> SUB_BY_STAGE =
             new java.util.concurrent.ConcurrentHashMap<>();
@@ -215,21 +209,10 @@ public final class PrewarmProgress {
      */
     public static void setSubProgress(Stage stage, int done, int total) {
         SUB_BY_STAGE.put(stage, new int[] {Math.max(0, done), Math.max(0, total)});
-        if (stage != STAGE.get()) return;
-        SUB_STAGE.set(stage);
-        SUB_DONE.set(Math.max(0, done));
-        SUB_TOTAL.set(Math.max(0, total));
     }
 
     public static void setSubProgress(int done, int total) {
-        Stage stage = STAGE.get();
-        SUB_STAGE.set(stage);
-        SUB_DONE.set(Math.max(0, done));
-        SUB_TOTAL.set(Math.max(0, total));
-        // Keep every stage's own pair as well: the stages overlap (the corridor scan and the prewarm
-        // run together, so do the fine sample and the prewarm), and the card is meant to show each
-        // one's number at the same time rather than whichever wrote last.
-        SUB_BY_STAGE.put(stage, new int[] {Math.max(0, done), Math.max(0, total)});
+        setSubProgress(STAGE.get(), done, total);
     }
 
     /**
@@ -246,10 +229,10 @@ public final class PrewarmProgress {
     }
 
     /** Records that a prewarm began, how many segments it will produce, and on how many lanes. */
-    public static void begin(int totalSegments, int lanes) {
+    public static synchronized void begin(int totalSegments, int lanes) {
+        endedAtNanos = 0L;
         FINISHED.set(false);  // each prewarm may finish once; see the guard in finish()
         REQUESTED.set(true);
-        PEAK_OVERALL_PERCENT.set(0);
         synchronized (LATCH_LOCK) {
             // Replace the latch only once the previous one has been released.
             //
@@ -309,7 +292,10 @@ public final class PrewarmProgress {
      * lands and {@link #begin} runs, the segment count and percentage take over; the two are
      * the same lifecycle and {@link #finish} closes whichever one was entered.
      */
-    public static void beginRootSearch(int lanes) {
+    public static synchronized void beginRootSearch(int lanes) {
+        endedAtNanos = 0L;
+        PEAK_OVERALL_PERCENT.set(0);
+        fineSlicesDone = fineSliceLimit = 0;
         synchronized (LATCH_LOCK) {
             if (settled == null || settled.getCount() == 0L) {
                 settled = new CountDownLatch(1);
@@ -363,6 +349,12 @@ public final class PrewarmProgress {
         ROOT_PHASE.set(Math.max(0, phase));
     }
 
+    /** 一起发布阶段和计数，避免客户端把粗采列数当成候选数。 */
+    static synchronized void setRootDisplay(int phase, int done, int total) {
+        setRootProgress(done, total);
+        setRootPhase(phase);
+    }
+
     /**
      * Publishes the structure-screen progress for the loading card.
      *
@@ -376,11 +368,12 @@ public final class PrewarmProgress {
 
     /** Records one more finished segment. */
     public static void setCompleted(int completedSegments) {
-        COMPLETED_SEGMENTS.set(Math.max(0, Math.min(TOTAL_SEGMENTS.get(), completedSegments)));
+        // 分段在不同工作线程结案，较早的回调可能晚到；已完成计数不能从 8 退回 7。
+        COMPLETED_SEGMENTS.accumulateAndGet(Math.clamp(completedSegments, 0, TOTAL_SEGMENTS.get()), Math::max);
     }
 
     /** Records that the prewarm finished, successfully or not. */
-    public static void finish(boolean success) {
+    public static synchronized void finish(boolean success) {
         // Once per session. finish() has several callers - the compile path, the bootstrap failure
         // path and the long-stop watchdog - and a measured session logged the whole WALL_STARTUP_ACCOUNT
         // block twice, 52 minutes apart, the second time into a totalMs of 3,926,577. The watchdog is
@@ -390,6 +383,7 @@ public final class PrewarmProgress {
                     + "this call changes nothing", success);
             return;
         }
+        endedAtNanos = System.nanoTime();
         // The one place a session actually releases the road gate, so this is where the ordering question
         // gets answered. It used to be logged inside signalWorldgenReady, which clear() also calls to
         // release a stale latch before installing a fresh one - so every world load printed a release that
@@ -525,7 +519,7 @@ public final class PrewarmProgress {
     }
 
     /** Clears everything; used between sessions so a stale snapshot cannot be served. */
-    public static void clear() {
+    public static synchronized void clear() {
         FINISHED.set(false);  // a new session may finish once more
         ACTIVE.set(false);
         // A new world in the same JVM must re-anchor the wall-clock total, or the second session
@@ -537,6 +531,7 @@ public final class PrewarmProgress {
         STARTED_AT_NANOS.set(0L);
         FAILED.set(false);
         PEAK_OVERALL_PERCENT.set(0);
+        fineSlicesDone = fineSliceLimit = 0;
         STATE.clear();
         ROOT_CANDIDATE.set(0);
         ROOT_TOTAL.set(0);
@@ -550,9 +545,8 @@ public final class PrewarmProgress {
         PUBLISHED.set(false); // A plan from the previous save must not satisfy the new startup.
         // 阶段与子进度也属于世界会话，不能把旧存档的COMPILE和计数补给新存档。
         STAGE.set(Stage.ROOT_SEARCH);
-        SUB_STAGE.set(null);
-        SUB_DONE.set(0);
-        SUB_TOTAL.set(0);
+        COMPILE_STEP.set(CompileStep.ASSEMBLE_WINDOW);
+        endedAtNanos = 0L;
         SUB_BY_STAGE.clear();
         stageSinceNanos = 0L;
         for (int i = 0; i < STAGE_NANOS.length(); i++) STAGE_NANOS.set(i, 0L);
@@ -640,10 +634,16 @@ public final class PrewarmProgress {
         }
     }
 
-    /** 采样与分段规划同时运行，主标题一次进入采样阶段，分段计数仍独立发布。 */
-    public static void beginParallelPlanning() {
-        setStage(Stage.FINE_SAMPLE);
-        setSubProgress(Stage.FINE_SAMPLE, 0, 0);
+    /** 等待首个段计划时仍属于规划；历史配方若已在结构扫描期间启动切片，则保留其进度。 */
+    public static synchronized void beginParallelPlanning() {
+        setStage(SUB_BY_STAGE.containsKey(Stage.FINE_SAMPLE) ? Stage.FINE_SAMPLE : Stage.PREWARM);
+    }
+
+    /** 首个带真实占地的采样切片已入队；等待路径的 future 不能启动精采计时。 */
+    public static synchronized void fineSliceScheduled() {
+        if (FINISHED.get() || !ACTIVE.get()) return;
+        SUB_BY_STAGE.putIfAbsent(Stage.FINE_SAMPLE, new int[] {0, 0});
+        if (STAGE.get() == Stage.PREWARM) setStage(Stage.FINE_SAMPLE);
     }
 
     public static synchronized Snapshot snapshot() {
@@ -651,25 +651,30 @@ public final class PrewarmProgress {
         int completed = Math.min(total, COMPLETED_SEGMENTS.get());
         long startedAt = SESSION_START_NANOS.get();
         if (startedAt == 0L) startedAt = STARTED_AT_NANOS.get();
+        long end = endedAtNanos;
+        long now = end == 0L ? System.nanoTime() : end;
         long elapsedMillis = startedAt == 0L
                 ? 0L
-                : TimeUnit.NANOSECONDS.toMillis(Math.max(0L, System.nanoTime() - startedAt));
+                : TimeUnit.NANOSECONDS.toMillis(Math.max(0L, now - startedAt));
         // 阶段速率使用自己的累计时间，不能拿总会话时间混算。
         var elapsedByStage = new java.util.EnumMap<Stage, Long>(Stage.class);
-        long now = System.nanoTime();
         for (Stage stage : Stage.values()) {
             long nanos = STAGE_NANOS.get(stage.ordinal());
             if (stage == STAGE.get() && stageSinceNanos != 0L) nanos += Math.max(0L, now - stageSinceNanos);
             elapsedByStage.put(stage, nanos / 1_000_000L);
         }
-        return new Snapshot(ACTIVE.get(), total, completed, LANES.get(), elapsedMillis,
+        var stage = STAGE.get();
+        var counts = java.util.Map.copyOf(SUB_BY_STAGE);
+        var current = counts.get(stage);
+        var result = new Snapshot(ACTIVE.get(), total, completed, LANES.get(), elapsedMillis,
                 STATE.containsKey("root-search"), FAILED.get(), ROOT_CANDIDATE.get(), ROOT_TOTAL.get(),
                 ROOT_PHASE.get(), STRUCTURE_CANDIDATE.get(), STRUCTURE_TOTAL.get(),
-                STAGE.get(),
-                // Only the stage that wrote the numbers may report them.
-                SUB_STAGE.get() == STAGE.get() ? SUB_DONE.get() : 0,
-                SUB_STAGE.get() == STAGE.get() ? SUB_TOTAL.get() : 0,
-                java.util.Map.copyOf(SUB_BY_STAGE), java.util.Map.copyOf(elapsedByStage));
+                stage, current == null ? 0 : current[0], current == null ? 0 : current[1],
+                counts, java.util.Map.copyOf(elapsedByStage), COMPILE_STEP.get(), PEAK_OVERALL_PERCENT.get(), FINISHED.get(),
+                fineSlicesDone, fineSliceLimit);
+        // 峰值属于生成这份快照的会话。旧界面晚一帧读取旧快照时不能写回新世界。
+        if (result.active() || result.failed()) PEAK_OVERALL_PERCENT.set(result.overallPercent());
+        return result;
     }
 
     /**
@@ -696,18 +701,27 @@ public final class PrewarmProgress {
                            int rootPhase, int structureCandidate, int structureTotal,
                            Stage stage, int subDone, int subTotal,
                             java.util.Map<Stage, int[]> subByStage,
-                            java.util.Map<Stage, Long> elapsedByStage) {
+                            java.util.Map<Stage, Long> elapsedByStage, CompileStep compileStep, int previousPeak, boolean finished,
+                           int fineSlicesDone, int fineSliceLimit) {
         /** 旧的纯数据夹具没有阶段时钟，显示时保持未知速率，不能拿总时长代替。 */
         public Snapshot(boolean active, int total, int completed, int lanes, long elapsedMillis,
                         boolean rootSearch, boolean failed, int rootCandidate, int rootTotal,
                         int rootPhase, int structureCandidate, int structureTotal,
                         Stage stage, int subDone, int subTotal, java.util.Map<Stage, int[]> subByStage) {
             this(active, total, completed, lanes, elapsedMillis, rootSearch, failed, rootCandidate, rootTotal,
-                    rootPhase, structureCandidate, structureTotal, stage, subDone, subTotal, subByStage, java.util.Map.of());
+                    rootPhase, structureCandidate, structureTotal, stage, subDone, subTotal, subByStage,
+                    java.util.Map.of(), CompileStep.ASSEMBLE_WINDOW, 0, false, 0, 0);
         }
 
         public long stageElapsedMillis(Stage stage) {
             return elapsedByStage.getOrDefault(stage, 0L);
+        }
+
+        /** 同一套工作计数供长城与道路判断停滞，耗时和采样预估的波动不算施工进展。 */
+        public String workSignature() {
+            return active + "|" + failed + "|" + stage + "|" + completed + "|" + rootSearch + "|" + rootCandidate
+                    + "|" + rootPhase + "|" + structureCandidate + "|" + subDone + "|" + fineSlicesDone + "|" + compileStep
+                    + "|" + (stage == Stage.STRUCTURE_SCAN ? subFor(Stage.FINE_SAMPLE)[0] : 0);
         }
 
         /** {@return {done, total} for one stage; {0, 0} when it has not reported} */
@@ -767,24 +781,12 @@ public final class PrewarmProgress {
         /**
          * Overall startup progress across all the wall stages, 0-100.
          *
-         * <p>Each stage owns the slice of the bar given by {@link #STAGE_WEIGHT}; the active
-         * stage fills its slice by {@link #stagePercent()}. Finished stages fill theirs
-         * completely, pending stages not at all, so the number only ever moves forward.
+         * 并行工序各自按已完成工作计分，预计工作量增加时保持已经显示的峰值。
          */
         public int overallPercent() {
-            if (!active && !failed) return 100;
-            int done = 0;
-            int activeOrdinal = stage.ordinal();
-            for (int i = 0; i < activeOrdinal && i < STAGE_WEIGHT.length; i++) {
-                done += STAGE_WEIGHT[i];
-            }
-            if (activeOrdinal < STAGE_WEIGHT.length) {
-                done += Math.round(STAGE_WEIGHT[activeOrdinal] * stagePercent() / 100.0F);
-            }
-            final int calculated = Math.max(0, Math.min(100, done));
-            // Monotonic peak guard (mirrors RoadWeaver's PEAK_OVERALL_PERCENT): the card never
-            // walks backwards when a stage's sub-total is not ready yet or the stage flips.
-            return PEAK_OVERALL_PERCENT.updateAndGet(current -> Math.max(current, calculated));
+            // 未开工和零段没有完成证明；100 只由真正结案的当前会话产生。
+            if (!active && !failed) return finished ? 100 : 0;
+            return Math.max(previousPeak, WallProgressWeights.overall(this));
         }
 
         /**

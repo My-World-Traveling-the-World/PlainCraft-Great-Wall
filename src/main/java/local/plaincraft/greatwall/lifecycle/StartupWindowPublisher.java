@@ -66,7 +66,6 @@ final class StartupWindowPublisher {
                 plans.size(), report.owners(), report.emitted(), published, failed, report.failed(), publication.failed(),
                 compileMillis, TimeUnit.NANOSECONDS.toMillis(publishNanos),
                 access.leases(), access.misses(), access.suppressed());
-        int tolerated = Math.max(8, (report.emitted() + report.failed()) / 20);
         if (published == 0) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_EMPTY owners={} failed={}；没有成功发布的区块，保持未发布状态",
                     report.owners(), failed);
@@ -75,18 +74,13 @@ final class StartupWindowPublisher {
             return;
         }
         access.enqueue(publication.queuedHashes());
-        if (failed > tolerated) {
-            GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_FAILED published={} failed={} of "
-                            + "{} owners (tolerated {})；发布失败超过容忍上限",
-                            published, failed, report.owners(), tolerated, publication.firstFailure());
+        // 遗漏的区块不会出现在后续保护清单中；已接纳的可继续补建，但整窗不能通知道路开工。
+        if (failed > 0) {
+            GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_FAILED 长城保护范围未完整发布 published={} failed={} owners={}",
+                    published, failed, report.owners(), publication.firstFailure());
             release.run();
             PrewarmProgress.finish(false);
             return;
-        }
-        if (failed > 0) {
-            GreatWallMod.LOGGER.warn("[GreatWall:S1C] PLANNING_COMPILE_PARTIAL published={} failed={} of "
-                            + "{} owners (tolerated {})；部分区块发布失败，保留已接纳区块的补建队列",
-                            published, failed, report.owners(), tolerated, publication.firstFailure());
         }
         release.run();
         PrewarmProgress.setSubProgress(report.owners(), report.owners());

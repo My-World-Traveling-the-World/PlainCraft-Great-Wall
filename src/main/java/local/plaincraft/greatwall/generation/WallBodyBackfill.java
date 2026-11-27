@@ -124,10 +124,14 @@ public final class WallBodyBackfill {
         try {
             var store = local.plaincraft.greatwall.persistence.ChunkEvidenceStore.production(evidence);
             for (ChunkKey key : store.planOwners(dimension)) {
+                state.knownOwners.add(key);
                 if (state.completed.contains(key) || state.doneHint.contains(key)) continue;
                 if (state.pending.add(key)) added++;
             }
+            state.inventoryReady = true;
+            state.inventoryFailed = false;
         } catch (java.io.IOException | java.nio.file.DirectoryIteratorException unreadable) {
+            state.inventoryReady = false;
             state.inventoryFailed = true;
             GreatWallMod.LOGGER.warn("[GreatWall:S1C] WALL_BACKFILL_SEED_FAILED 无法盘点长城计划 root={} reason={}",
                     evidence, unreadable.toString());
@@ -238,7 +242,10 @@ public final class WallBodyBackfill {
                         // 回到服务器线程后验证原会话与存储，不能借回调重新创建已卸载的状态。
                         boolean current = STATES.get(level) == state && planStore == store
                                 && WallWorldgenPlanCache.isReadSessionCurrent(level, session);
-                        if (session.finishRead(key, ticket, current ? loaded : null)) state.pending.add(key);
+                        if (session.finishRead(key, ticket, current ? loaded : null)) {
+                            state.knownOwners.add(key);
+                            state.pending.add(key);
+                        }
                     });
                 } catch (java.util.concurrent.RejectedExecutionException closing) {
                     session.finishRead(key, ticket, null);
@@ -464,6 +471,7 @@ public final class WallBodyBackfill {
         int added = 0;
         for (var entry : hashes.entrySet()) {
             ChunkKey key = entry.getKey();
+            state.knownOwners.add(key);
             if (state.completed.matches(key, entry.getValue())) continue;
             boolean replaced = state.completed.forget(key);
             if (!replaced && DONE.contains(key.x() + "_" + key.z())
@@ -483,6 +491,7 @@ public final class WallBodyBackfill {
     /** Feature 明确报告落块未完成，不受磁盘完成提示影响。 */
     public static void enqueueUnfinished(ServerLevel level, ChunkKey key) {
         State state = state(level);
+        state.knownOwners.add(key);
         state.completed.forget(key);
         state.doneHint.remove(key);
         state.pending.add(key);
@@ -530,7 +539,9 @@ public final class WallBodyBackfill {
         ChunkWritePlan plan = WallWorldgenPlanCache.get(level, key);
         if (plan != null && state.completed.matches(key, plan.hash())) return;
         if (state.doneHint.remove(key) || plan != null) state.pending.add(key);
-        if (plan == null && (!state.completed.contains(key) || state.pending.contains(key))) {
+        // 完整盘点后普通地形区块无需查盘；真实墙块即使耗尽过本轮施工重试，下次加载仍可再试。
+        boolean mayHavePlan = !state.inventoryReady || state.knownOwners.contains(key) || state.pending.contains(key);
+        if (plan == null && mayHavePlan && (!state.completed.contains(key) || state.pending.contains(key))) {
             requestPlanRead(level, state, key);
         }
     }
@@ -700,7 +711,14 @@ public final class WallBodyBackfill {
                 key -> WallWorldgenPlanCache.get(level, key),
                 key -> store == null ? null : store.read(key).orElse(null),
                 plan -> WallWorldgenPlanCache.put(level, plan),
-                services == null || !services.productionFixture() ? null : services.structures());
+                services == null || !services.productionFixture() ? null : services.structures(),
+                done -> local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(
+                        local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.DONE, done, keys.size()), state.published);
+    }
+
+    /** 只在编译成功发布真实占地后留回执，最终确认可省去对同一实体的二次遍历。 */
+    public static void publishStartupFootprint(ServerLevel level, ChunkWritePlan plan, StructurePlacementGuard structures) {
+        state(level).published.publish(plan, structures);
     }
     /** Whether every planned chunk loaded so far has been written. */
     public static boolean complete(ServerLevel level) {
@@ -871,6 +889,9 @@ public final class WallBodyBackfill {
 
     private static final class State {
         final Set<ChunkKey> pending = ConcurrentHashMap.newKeySet();
+        final Set<ChunkKey> knownOwners = ConcurrentHashMap.newKeySet();
+        final WallRoadRecovery.Published published = new WallRoadRecovery.Published();
+        volatile boolean inventoryReady;
         /** DONE ledger entries waiting for their chunk's persistent PRODUCTION marker check. */
         final Set<ChunkKey> doneHint = ConcurrentHashMap.newKeySet();
         final BackfillCompletions completed = new BackfillCompletions();

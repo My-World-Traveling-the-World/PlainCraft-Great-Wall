@@ -14,6 +14,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class FineSampleProbeAccountingTest {
     @TempDir Path directory;
 
+    @Test void awaitingRoutesAloneDoesNotTriggerTheLandFirstFineSamplerWatchdog() {
+        // 规划尚未交出占地不是精采卡死；一旦有未完成切片，仍应检测停滞。
+        assertFalse(FineSampleStage.hasFineWork(true,8,0));
+        assertTrue(FineSampleStage.hasFineWork(true,0,1));
+        assertTrue(FineSampleStage.hasFineWork(false,1,0));
+        assertFalse(FineSampleStage.hasFineWork(false,0,0));
+    }
+
     @Test void cachedInitialSamplingEmitsIdenticalColumnsWithoutProbingOrPendingWrites() {
         var file=directory.resolve("initial.bin");var route=route();var reads=new AtomicInteger();
         var cache=FineSampleCache.load(file,"world");

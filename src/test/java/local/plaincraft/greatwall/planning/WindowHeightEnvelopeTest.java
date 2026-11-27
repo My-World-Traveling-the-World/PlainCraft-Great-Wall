@@ -47,6 +47,34 @@ class WindowHeightEnvelopeTest {
         assertEquals(platform.getFirst().walkY(), raised.sites().getFirst().frame().walkY());
         assertEquals(SiteState.PLANNED, raised.sites().getFirst().state());
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
+    void raisedOrdinaryTowerCannotPierceTheRoofLimitOrAHighStructureButItsWallRemains(boolean structure) {
+        var recipe = AdaptiveSiteSearchTest.recipe(); var original = plan(recipe, 0);
+        var site = new SiteScheduler(recipe).at(new SiteId(recipe.wallId(), SiteKind.ENEMY_TOWER, 1),
+                1024L * 256, original.geometry(), 1024L * 256);
+        var input = new SegmentPlan(original.geometry(), original.prefix(), original.stations(), List.of(site), H);
+        // 结构只在抬升后与楼体相交，单靠初始平台高度将遗漏它。
+        var b = site.bounds(); int x = b.minX() + 1, z = b.minZ() + 1;
+        var obstacle = new local.plaincraft.greatwall.generation.CorridorStructureScan.OwnedBox("test:roof",0L,
+                new net.minecraft.world.level.levelgen.structure.BoundingBox(x,150,z,x,150,z));
+        var index = structure ? StructureObstacleIndex.of(List.of(obstacle), 0) : StructureObstacleIndex.empty(0);
+        assertFalse(index.intersects(b, b.minY(), b.maxYExclusive()));
+        int peak = structure ? 120 : recipe.bounds().maxYExclusive() - 32;
+        var columns = new ArrayList<WallFinePlanner.FineColumn>();
+        for (int cx = -8; cx <= 2056; cx++) for (int cz = -8; cz <= 8; cz++)
+            columns.add(new WallFinePlanner.FineColumn(cx, cz, 0, AnalyticTerrainOracle.dry(cx == 1040 ? peak : 64)));
+        var solved = WindowHeightEnvelope.solve(recipe, List.of(input), FineHeightIndex.of(columns,true), index).getFirst();
+        var finalSite = solved.sites().getFirst();
+        assertEquals(SiteState.SUPPRESSED, finalSite.state());
+        assertEquals(Optional.of(structure ? BreakReason.STRUCTURE_CONFLICT : BreakReason.WORLD_LIMIT), finalSite.reason());
+        assertTrue(solved.stations().breaks().isEmpty());
+        var projection = new local.plaincraft.greatwall.component.ImportedRibbonProjection(solved.stations().stations(), solved.sites());
+        var wall = projection.contract(1024,0);
+        assertNotNull(wall, "撤楼后原楼中心应有连续的可施工墙线");
+        assertTrue(wall.walkY() >= peak + 20);
+    }
+
     @Test void mountainNearASeamRaisesBothSegmentsAndNeverLowersTheSampledTerrainTarget() {
         var recipe = AdaptiveSiteSearchTest.recipe();
         var a = plan(recipe, 0);

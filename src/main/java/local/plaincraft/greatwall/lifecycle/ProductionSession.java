@@ -86,23 +86,7 @@ final class ProductionSession implements AutoCloseable {
     private final ConcurrentHashMap<String, Boolean> state = new ConcurrentHashMap<>();
     /** 回调与编译交接一次精采样，避免开局后还由会话持有整条路线的地形列。 */
     private final StartupSampleHandoff startupSamples = new StartupSampleHandoff();
-    /**
-     * Whether startup stages run one at a time.
-     *
-     * <p><b>False (overlapped) by default as of 0.7.119.</b> This used to default to serial on the
-     * argument that the stages are individually parallel and share one CPU, so overlapping them
-     * makes each wait for the other's threads. Two same-seed 16-core runs measured the opposite:
-     * the overlap run came in at {@code totalMs=869,011} against {@code 981,497} serial — the scan
-     * (291 s) is hidden behind the fine sample almost for free, because the scan is dominated by
-     * chunk loading rather than by arithmetic. Overlapping costs the fine sample itself ~145 s
-     * (545 s overlapped vs 400 s alone) but hides 291 s of scan, so the wall still wins ~112 s.
-     *
-     * <p>The accounting hides this: while overlapped, the FINE_SAMPLE stage timer only starts when
-     * the scan callback runs, so {@code fineMs} reports the tail (254 s) rather than the real
-     * duration (545 s). Compare {@code totalMs}, not the stage rows, when judging this flag.
-     *
-     * <p>{@code -Dgreatwall.startup.serialStages=true} forces the old serial shape for an A/B run.
-     */
+    /** 旧配方可比较结构扫描与精采是否并行；新版无论此开关取值，都须先取得走廊障碍。 */
     private static final boolean SERIAL_STAGES = Boolean.parseBoolean(
             System.getProperty("greatwall.startup.serialStages", "false"));
     /** Set when a compile attempt deferred for want of the fine sample, so the callback re-triggers it. */
@@ -477,14 +461,7 @@ final class ProductionSession implements AutoCloseable {
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
                 local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.STRUCTURE_SCAN);
         local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
-        // Start the fine sample NOW, beside the scan. The scan reads the world for 130 s to resolve
-        // structure boxes; the sample only needs the recipe's route, so leaving it until the boxes are
-        // installed puts the longest stage of the startup behind a stage it does not depend on.
-        // Overlapped by default since 0.7.119: two same-seed 16-core runs put the overlap at
-        // totalMs=869,011 against 981,497 serial, because the scan is chunk-load bound and therefore
-        // hides almost entirely behind the sample. See SERIAL_STAGES above for the full numbers and
-        // for why the stage rows mislead. -Dgreatwall.startup.serialStages=true restores serial.
-        // 新版精采依赖已经避让结构的冻结墙线和楼址，不能提前启动规划。
+        // 旧配方的截面不依赖绕障；新版必须先得到障碍与真实楼址，不能提前精采候选走廊。
         if (!SERIAL_STAGES && !local.plaincraft.greatwall.model.WallRecipeRules.landFirst(recipe.config())) startFineSample(planner);
         // The wall's true corridor band (segment endpoints + half-width): candidates outside it are
         // dropped up front, so an angled wall no longer scans the AABB's 3.5x overscan.
@@ -515,7 +492,7 @@ final class ProductionSession implements AutoCloseable {
                     PrewarmProgress.finish(false);
                 });
         if (installed) {
-            // 两项工作继续并行；主阶段先发布一次，避免预热标题立即跳回采样。
+            // 先登记分段规划。各段有了实际占地才能启用自己的精采切片，无需等待最慢的一段。
             PrewarmProgress.beginParallelPlanning();
             startBulkPrewarm(planner, "structures-installed");
             startFineSample(planner);
@@ -548,14 +525,7 @@ final class ProductionSession implements AutoCloseable {
 
     }
 
-    /**
-     * Requests the fine cross-section sample, once per session.
-     *
-     * <p>Called from two places on purpose: the scan path calls it <em>before</em> the corridor
-     * structure scan, and the installer calls it again (a no-op by then) so a structure-scan cache hit
-     * still starts the sample. Idempotent, because a second {@code requireFineSamples} would walk the
-     * whole route again and publish a second index.
-     */
+    /** 注册本会话唯一的精采任务；扫描命中缓存也要注册，具体切片等各自路径和占地就绪。 */
     private void startFineSample(PlannerScheduler planner) {
         if (!startupSamples.begin()) return;
         try {
@@ -804,6 +774,9 @@ final class ProductionSession implements AutoCloseable {
             }
             bootstrap.prepareLevelsEntered(level, frozen.bootstrap());
             trace.record("PRODUCTION_PREPARE_LEVELS", "minecraft:overworld", 0, 0, "all-LOAD-complete", "none");
+        } catch (MacroRiverWater.Unavailable waterFailure) {
+            // 水文失败只终止新墙与依赖它的初始道路；外层仍须能进入世界。
+            fail(waterFailure);
         } catch (Throwable error) { fail(error); throw new IllegalStateException("Production input freeze failed", error); }
     }
     void started() { state.put("server-started", true); }
@@ -957,6 +930,7 @@ final class ProductionSession implements AutoCloseable {
      * wall cannot park the roads behind it.
      */
     private void failCompile(Installed snapshot, String phase, Throwable error) {
+        abortStartup();
         GreatWallMod.LOGGER.error("[GreatWall:S1C] PLANNING_COMPILE_FAILED phase={} reason={}; "
                 + "the wall will not paint in this session", phase, error.toString(), error);
         try {
@@ -1005,9 +979,10 @@ final class ProductionSession implements AutoCloseable {
                     new IllegalStateException("minecraft:overworld is not loaded"));
             return;
         }
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setStage(
-                local.plaincraft.greatwall.lifecycle.PrewarmProgress.Stage.COMPILE);
-        local.plaincraft.greatwall.lifecycle.PrewarmProgress.setSubProgress(0, 0);
+        // 区块尚未开始编译，先展示全窗拼合和后续预检各自的状态。
+        PrewarmProgress.setCompileStep(PrewarmProgress.CompileStep.ASSEMBLE_WINDOW);
+        PrewarmProgress.setStage(PrewarmProgress.Stage.COMPILE);
+        PrewarmProgress.setSubProgress(0, 0);
         var planner = snapshot.planner();
         // 重试也使用已冻结的窗口，避免重新读取配置后请求边界外计划。
         long target = planner.startupRange().segments();
@@ -1086,16 +1061,21 @@ final class ProductionSession implements AutoCloseable {
             // 全窗精采已齐才解最终缓坡，跨段高点不能再被局部硬边界压回山体。
             // 异步获取失败只留下成功段；先对照冻结范围，不能让后续编译误报完整成功。
             var complete = StartupPlanWindow.complete(plans, snapshot.planner().startupRange().segments(), snapshot.recipe());
-            var raised = local.plaincraft.greatwall.planning.WindowHeightEnvelope.solve(snapshot.recipe(), complete, terrain);
+            PrewarmProgress.setCompileStep(PrewarmProgress.CompileStep.HEIGHT_ENVELOPE);
+            var raised = local.plaincraft.greatwall.planning.WindowHeightEnvelope.solve(snapshot.recipe(), complete, terrain, snapshot.planner().siteObstacles());
+            PrewarmProgress.setCompileStep(PrewarmProgress.CompileStep.CAP_EVIDENCE);
             local.plaincraft.greatwall.planning.StartupCapEvidence.prepare(raised,terrain,planningStructures,
-                    realization,snapshot.planner(),this::active).whenComplete((prepared,prepareError)->{
+                    realization,snapshot.planner(),this::active,
+                    (done,total)->PrewarmProgress.setSubProgress(PrewarmProgress.Stage.COMPILE,done,total)).whenComplete((prepared,prepareError)->{
                 if(prepareError!=null){failCompile(snapshot,"cap-evidence",prepareError);return;}
                 try {
                     // 补采和最终归属已经稳定；写盘回调不能占住采样pump执行整窗编译。
+                    PrewarmProgress.setCompileStep(PrewarmProgress.CompileStep.FREEZE_PLANS);
                     snapshot.planner().freezeStartupPlans(raised).whenCompleteAsync((ignored,error)->{
                         try(prepared) {
                             if(error!=null){failCompile(snapshot,"final-plan-write",error);return;}
                             active();
+                            PrewarmProgress.setCompileStep(PrewarmProgress.CompileStep.PUBLISH_CHUNKS);
                             publishPlanningWindow(snapshot,level,prepared.compiler(chunkCompiler,planningStructures,compileMemory),raised);
                         } catch(Throwable failure){failCompile(snapshot,"publish",failure);}
                     });
@@ -1116,7 +1096,7 @@ final class ProductionSession implements AutoCloseable {
             public void active() { ProductionSession.this.active(); }
             public void install(ChunkWritePlan plan) { DurablePlanInstall.accept(plan, p -> WallWorldgenPlanCache.put(level,p)); }
             public void footprint(ChunkWritePlan plan,CorridorIndex corridor) {
-                WallPlanSupport.publishPlannedColumns(plan, structures);
+                WallBodyBackfill.publishStartupFootprint(level, plan, structures);
                 vegetation.publishPrepared(plan.owner(),corridor);
                 var biomes=biomeRuntime;
                 if(biomes!=null&&!biomes.closed())biomes.publishPrepared(plan.owner(),corridor,1);
@@ -1129,10 +1109,12 @@ final class ProductionSession implements AutoCloseable {
     }
 
     void validateReload() {
+        // 语义变化或停服已关闭的会话没有可重启的生成任务。
+        if (state.containsKey("closed") || state.containsKey("failed")) return;
         var snapshot = snapshots.get("installed");
         if (snapshot == null) { fail(new IllegalStateException("reload during incomplete production bootstrap")); return; }
-        try {
-            var next = ProductionInputs.freeze(levels.get("minecraft:overworld"),snapshot.recipe().config().templateVersion()).bootstrap();
+        try (var comparison = ProductionInputs.freeze(levels.get("minecraft:overworld"),snapshot.recipe().config().templateVersion())) {
+            var next = comparison.bootstrap();
             if (!snapshot.recipe().terrainHash().equals(next.terrainHash())
                     || !snapshot.recipe().paletteHash().equals(next.paletteHash())
                     || !snapshot.recipe().templatesHash().equals(next.templatesHash())) {
@@ -1164,6 +1146,10 @@ final class ProductionSession implements AutoCloseable {
     }
     void active() {
         if (state.containsKey("closed") || state.containsKey("failed")) throw new WallFailure(FailureCode.CLOSED, "production session is closed/failed");
+    }
+    void abortStartup() {
+        // 异步预检及每个区块发布都会检查此标志，失败后不得再发布新计划。
+        state.put("failed", true);
     }
     void fail(Throwable error) {
         if (state.containsKey("closed") || failures.putIfAbsent("required", error.toString()) != null) {
@@ -1221,6 +1207,8 @@ final class ProductionSession implements AutoCloseable {
      */
     static String survivableReason(Throwable error) {
         for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            // 选轴不能使用半份河网；只关闭当前长城，不因跨模组水文异常崩掉整局。
+            if (cause instanceof MacroRiverWater.Unavailable) return "RIVER_SURVEY_UNAVAILABLE " + cause.getMessage();
             if (cause instanceof WallFailure failure) {
                 if (failure.code() == FailureCode.ROOT_NOT_FOUND) {
                     return "ROOT_UNAVAILABLE no ring candidate satisfies the siting contract;";

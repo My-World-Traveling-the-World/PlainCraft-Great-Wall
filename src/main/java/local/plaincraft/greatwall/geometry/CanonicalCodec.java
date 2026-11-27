@@ -118,7 +118,8 @@ public final class CanonicalCodec {
     }
 
     public static String hashComponent(ComponentVoxels value) {
-        return CodecIO.hash(COMPONENT_BYTES, out -> { out.writeInt(1); componentBody(out, value); });
+        // 门楼地基可能跨很多区块，拆分前只流式计算摘要，无需套用整块字节数组的容量限制。
+        return CodecIO.hash(Integer.MAX_VALUE, out -> { out.writeInt(1); componentBody(out, value); });
     }
     public static String componentHash(ComponentVoxels value) { return hashComponent(value); }
 

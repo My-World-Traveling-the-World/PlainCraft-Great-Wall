@@ -84,7 +84,29 @@ final class RootSearchFailureDiagnosticsTest {
         assertTrue(selection.axis().origin().y() > 0, "the fallback must still produce a site");
     }
 
-    /** Dry, fully supported, but stepped far beyond any relief bound. */
+    /** 陡地备选也必须经过保护判定，起点高度取自入围候选自己的中心。 */
+    @Test void steepFallbackStillRequestsAndHonorsStructureVotes() {
+        var domain = new SpawnDomain();
+        domain.authorize(new ChunkKey("minecraft:overworld", -63, -63), 11);
+        var search = new RootSearch(new Point3i(-1000, 64, -1000), BOUNDS,
+                domain.snapshot(), (o, c) -> true, true);
+        var oracle = new SteepFixture();
+        // 真正跑到生产结构投票点；不能用空候选让拒绝断言空转。
+        while (!search.needsStructureScreen()) {
+            org.junit.jupiter.api.Assertions.assertNotEquals(WorkState.DONE, search.advance(oracle, 256));
+        }
+        var pending = search.pendingStructureCandidates();
+        assertTrue(!pending.isEmpty());
+        for (var c : pending) {
+            org.junit.jupiter.api.Assertions.assertEquals(64 + Math.floorMod(c.origin().x() / 8, 2) * 120, c.origin().y());
+        }
+        var denied = pending.stream().map(c -> new RootStructureScreen.Vote(c.radiusIndex(), c.angleIndex(),
+                java.util.List.of(), java.util.Collections.nCopies(5, "STRUCTURE_CONFLICT"))).toList();
+        org.junit.jupiter.api.Assertions.assertEquals(FailureCode.ROOT_NOT_FOUND,
+                assertThrows(WallFailure.class, () -> search.acceptStructureVotes(denied)).code());
+    }
+
+    /** 大起伏保持干燥且有承重，便于只改变结构投票条件。 */
     private static final class SteepFixture implements NaturalTerrainOracle {
         private static final class Cursor implements ColumnCursor {
             private boolean done; private int x;

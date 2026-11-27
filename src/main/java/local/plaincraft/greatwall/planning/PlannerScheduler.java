@@ -419,6 +419,9 @@ public final class PlannerScheduler implements AutoCloseable {
         siteObstacles = index;
     }
 
+    /** 终态楼高必须对照选线时安装的同一批结构，而不是再读不同窗口的世界。 */
+    public StructureObstacleIndex siteObstacles() { return siteObstacles; }
+
     boolean landFirstPlanning() { return local.plaincraft.greatwall.model.WallRecipeRules.landFirst(recipe.config()); }
 
     public SegmentGeometry computeGeometryNow(long segment, NaturalTerrainOracle diagnosticOracle) {
@@ -963,6 +966,8 @@ public final class PlannerScheduler implements AutoCloseable {
                 if (!search.done()) return false;
                 long from = inputs.prefix.lengthBeforeQ8();
                 provisional = sites.select(search.result(), from, from + inputs.geometry.localSQ8().getLast());
+                search.reuseVerified(provisional, columns);
+                if (inputs.geometry.key().index() < startupRange.segments()) fineSamples.rememberSiteColumns(columns);
                 points = heights.samplePoints(inputs.geometry, inputs.prefix, provisional);
                 search = null;
                 return false;
@@ -970,7 +975,12 @@ public final class PlannerScheduler implements AutoCloseable {
             for (int i = 0; i < limit && index < points.size(); i++) {
                 if (closed()) throw closedFailure();
                 var p = points.get(index); operations++;
-                if (column == null) column = oracle.begin(FixedMath.floorBlock(p.xQ8()), FixedMath.floorBlock(p.zQ8()), SampleKind.REFERENCE);
+                // 站表可能是分数坐标；只要落入同一世界方块列，楼址已核实的样本就可原样复用。
+                if (column == null) {
+                    var known = columns.get(new Point2q(Math.floorDiv(p.xQ8(), 256) * 256 + 128, Math.floorDiv(p.zQ8(), 256) * 256 + 128));
+                    if (known != null && known.quality() == Quality.REFERENCE && !known.upperCensored()) { columns.put(p, known); index++; continue; }
+                    column = oracle.begin(FixedMath.floorBlock(p.xQ8()), FixedMath.floorBlock(p.zQ8()), SampleKind.REFERENCE);
+                }
                 else if (!column.done()) oracle.advance(column, 1);
                 else { columns.put(p, oracle.finish(column)); column = null; index++; }
             }

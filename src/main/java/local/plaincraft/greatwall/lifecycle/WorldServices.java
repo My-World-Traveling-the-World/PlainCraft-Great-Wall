@@ -67,6 +67,7 @@ public final class WorldServices {
     /** Flat workshops whose completion check waits for the two anchor chunks to load. */
     private static final java.util.concurrent.ConcurrentHashMap<ServerLevel, Long> SHOWCASE_PENDING_CHECK =
             new java.util.concurrent.ConcurrentHashMap<>();
+    private final WallRiverStartupGate riverStartup = new WallRiverStartupGate();
     private final ProbePlanner planner;
     private final ProductionSession production;
     private final MinecraftServer server;
@@ -242,7 +243,11 @@ public final class WorldServices {
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, successful) -> {
             var services = find(server);
             if (services == null || !successful) return;
-            if (services.production != null) { services.production.validateReload(); return; }
+            if (services.production != null) {
+                // 展台不冻结世界生成配方；已终止的会话也不能被一次资源重载重新启动。
+                if (!flatWorkshop(server) && !services.production.rejected()) services.production.validateReload();
+                return;
+            }
             try {
                 for (var entry : services.recipes.entrySet()) {
                     ServerLevel level = server.getAllLevels().iterator().next();
@@ -516,7 +521,29 @@ public final class WorldServices {
         if (production == null) throw new IllegalStateException("S0 laboratory has no production services");
         return production;
     }
-    public static void warming(MinecraftServer server) {
+    private static boolean flatWorkshop(MinecraftServer server) {
+        return server.overworld().getChunkSource().getGenerator() instanceof net.minecraft.world.level.levelgen.FlatLevelSource;
+    }
+
+    /** 河流可能在 prepareLevels 的另一个 HEAD 才启动；先让出线程，所有 HEAD 都返回后再复查。 */
+    public static boolean runWallStartup(MinecraftServer server, boolean afterRiverHook) {
+        var services = find(server);
+        if (services == null) return false;
+        return services.riverStartup.enter(afterRiverHook,
+                () -> local.plaincraft.greatwall.compat.RiverStartupQuery.prerequisite(server.overworld(),
+                        services.production != null && !flatWorkshop(server) && FabricLoader.getInstance().isModLoaded("streamsreflowing")),
+                () -> { warming(server); blockAndPumpUntilPrewarmSettled(server); },
+                reason -> {
+                    GreatWallMod.LOGGER.error("[GreatWall] RIVER_PREREQUISITE_FAILED {}，本次长城预热取消", reason);
+                    // 尚未冻结输入，关闭本会话才能释放等待配方的区块和运行期请求。
+                    if (services.production != null) {
+                        services.production.abortStartup();
+                        services.production.close();
+                    } else PrewarmProgress.finish(false);
+                });
+    }
+
+    private static void warming(MinecraftServer server) {
         // A flat test world carries no ridge, no noise generator and no sampling worth doing: the
         // production oracle refuses a non-noise generator outright, and the crash would take the whole
         // world down before the wonder sample ever ran. Skip the wall's warm-up there entirely.
@@ -546,7 +573,8 @@ public final class WorldServices {
     public static void afterRoadReached(MinecraftServer server) {
         try {
             var services = find(server);
-            if (services != null && services.production != null) services.production.afterRoadReached();
+            if (services != null && services.production != null && !services.production.rejected())
+                services.production.afterRoadReached();
         } catch (Throwable t) {
             // A mixin at the TAIL of prepareLevels: anything thrown here ends the server tick and takes
             // the game down with it. Every failure inside the session is already logged and handled -
@@ -665,7 +693,7 @@ public final class WorldServices {
         // and the wall was left sampling beside it. The ownership handover below is the whole design -
         // wall first (priority 950), then the road (priority 1000).
         long timeoutMinutes = Math.max(1L, Long.getLong("greatwall.prewarmTimeoutMinutes", 30L));
-        long deadlineNanos = System.nanoTime() + java.util.concurrent.TimeUnit.MINUTES.toNanos(timeoutMinutes);
+        var stall = new StartupStallClock(System.nanoTime(), java.util.concurrent.TimeUnit.MINUTES.toNanos(timeoutMinutes));
         // The compile runs once, on this thread, the moment the segments settle. Doing it here rather
         // than from the server tick loop is what makes "the wall is finished before the roads start"
         // true rather than aspirational: this thread holds the stage, the tick loop cannot run while
@@ -683,9 +711,9 @@ public final class WorldServices {
             // 同时每轮刷一条 PRODUCTION_STARTUP_COMPILE ran=false。
             // 实测（新世界存档 + 0.7.107）：4 分钟刷了 137,892 行、日志 50 KB/s 涨到 15.8 MB。
             if (PrewarmProgress.isFinished() && PrewarmProgress.isFailed()) {
+                // 此返回值只解除世界加载等待，道路另按长城失败状态关闭初始规划。
                 GreatWallMod.LOGGER.warn("[GreatWall:S1C] PREWARM_TERMINAL_ABORT - 墙体启动阶段已终态失败"
-                        + "（见上方 RECIPE_REJECTED / PREWARM_WAIT_TIMEOUT），立即释放启动阶段，"
-                        + "让道路在没有墙的情况下继续");
+                        + "，结束世界加载等待。初始道路仍受长城保护联动限制，失败详情见上方日志");
                 return true;
             }
             // A compile that deferred for want of the fine sample is normally queued with
@@ -710,15 +738,11 @@ public final class WorldServices {
                     // keep draining until the local queue is empty
                 }
             }
-            if (System.nanoTime() >= deadlineNanos) {
-                // Historically this gave up silently: the wall stopped waiting, the road gate stayed
-                // closed until the road's own timeout expired, and nothing in the log said why the
-                // player waited twice. Report it and open the gate, so the road proceeds on a stated
-                // reason instead of a mystery.
-                GreatWallMod.LOGGER.error("[GreatWall:S1C] PREWARM_WAIT_TIMEOUT after {} minute(s); "
-                                + "the wall gives up its startup stage and the road gate is opened without it",
+            if (stall.stalled(System.nanoTime(), () -> PrewarmProgress.snapshot().workSignature())) {
+                // 超时与编译异常同样属于失败；结束世界等待，同时阻止在途任务继续发布占地。
+                GreatWallMod.LOGGER.error("[GreatWall:S1C] PREWARM_WAIT_TIMEOUT 长城连续 {} 分钟未报告进展，本次初始道路保持关闭",
                         timeoutMinutes);
-                PrewarmProgress.finish(false);
+                abortStartup(startupOwner);
                 return true;
             }
             // Wait on the segment latch, never on the peer gate: that one only opens once the
@@ -758,8 +782,15 @@ public final class WorldServices {
             return ran;
         } catch (Throwable error) {
             GreatWallMod.LOGGER.error("[GreatWall:S1C] PRODUCTION_STARTUP_COMPILE_FAILED", error);
+            abortStartup(services);
             return true;
         }
+    }
+
+    private static void abortStartup(WorldServices services) {
+        // 只终止当前长城任务，保留玩家进入世界和读取既有方块的能力。
+        if (services != null && services.production != null) services.production.abortStartup();
+        PrewarmProgress.finish(false);
     }
 
     /** The wall's current prewarm progress, for diagnostics and for a progress display. */

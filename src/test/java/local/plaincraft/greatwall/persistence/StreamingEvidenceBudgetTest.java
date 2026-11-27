@@ -2,17 +2,22 @@ package local.plaincraft.greatwall.persistence;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,6 +68,29 @@ class StreamingEvidenceBudgetTest {
                 assertEquals(0, budget.stats().used());
             }
             assertTrue(budget.stats().peak() <= 16384);
+        }
+    }
+
+    @Test void gateLargerThanMaterializedLimitCanStillBeHashed() throws Exception {
+        // 重复引用重现大门楼地基的编码体量，避免夹具本身分配几十万份方块对象。
+        var gate = new SiteId(H, SiteKind.GATE, 0);
+        var foundation = new VoxelIntent(POS, IntentKind.SOLID, Part.SKIN,
+                new BlockSpec("minecraft:stone", Map.of()), gate, 400, true, false);
+        var value = new ComponentVoxels(gate, new Bounds(-16, 5900, -16, 0, 6100, 0),
+                Collections.nCopies(650_000, foundation), List.of(), List.of(), List.of(), H);
+        var digest = MessageDigest.getInstance("SHA-256");
+        try (var out = new DataOutputStream(new BufferedOutputStream(
+                new DigestOutputStream(OutputStream.nullOutputStream(), digest)))) {
+            writeReferenceComponent(out, value);
+            assertTrue(out.size() > 64 * 1024 * 1024, "夹具必须跨过原限制");
+        }
+        var error = assertThrows(IllegalArgumentException.class, () -> CanonicalCodec.component(value));
+        assertInstanceOf(IOException.class, error.getCause());
+        assertEquals("canonical payload exceeds 67108864", error.getCause().getMessage());
+        try (var budget = new AllocationBudget(16384)) {
+            String actual = CompiledAllocation.run(budget, () -> CanonicalCodec.componentHash(value), ignored -> 0);
+            assertEquals(HexFormat.of().formatHex(digest.digest()), actual);
+            assertEquals(0, budget.stats().used());
         }
     }
 
@@ -291,12 +319,18 @@ class StreamingEvidenceBudgetTest {
 
     private static byte[] referenceComponent(ComponentVoxels value) throws IOException {
         var bytes = new ByteArrayOutputStream(); var out = new DataOutputStream(bytes);
+        writeReferenceComponent(out, value);
+        return bytes.toByteArray();
+    }
+
+    // 共用独立参考编码，既能逐字节对拍，也能直接把大型夹具写入摘要。
+    private static void writeReferenceComponent(DataOutputStream out, ComponentVoxels value) throws IOException {
         out.writeInt(1); site(out, value.id()); bounds(out, value.bounds());
         list(out, value.voxels(), StreamingEvidenceBudgetTest::voxel);
         list(out, value.blockEntities(), StreamingEvidenceBudgetTest::entity);
         list(out, value.spawnSlots(), StreamingEvidenceBudgetTest::slot);
         list(out, value.requiredRoutes(), (o, route) -> list(o, route, StreamingEvidenceBudgetTest::point));
-        string(out, value.realizedState().name()); return bytes.toByteArray();
+        string(out, value.realizedState().name());
     }
 
     private static byte[] referencePlan(ChunkWritePlan value) throws IOException {

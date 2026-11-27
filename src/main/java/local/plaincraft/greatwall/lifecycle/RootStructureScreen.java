@@ -7,10 +7,16 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 
 /** Immutable, lock-external root votes. This port must never request FEATURES or await a recipe. */
 public interface RootStructureScreen extends AutoCloseable {
-    record Candidate(Point3i origin, int radiusIndex, int angleIndex, List<Axis> axes) {
+    record Candidate(Point3i origin, int radiusIndex, int angleIndex, List<Axis> axes,
+                     int endpointAxis, Bounds endpointBounds) {
+        public Candidate(Point3i origin,int radiusIndex,int angleIndex,List<Axis> axes) {
+            this(origin,radiusIndex,angleIndex,axes,-1,null);
+        }
         public Candidate {
             Objects.requireNonNull(origin);
             axes=List.copyOf(axes);
+            if (endpointBounds==null ? endpointAxis!=-1 : endpointAxis<0 || endpointAxis>=axes.size())
+                throw new IllegalArgumentException("端楼保护证据必须明确对应一个走向");
             if(radiusIndex<0||radiusIndex>=RootSearch.RADIUS_COUNT||angleIndex<0||angleIndex>=36||axes.size()!=5)
                 throw new IllegalArgumentException("frozen root candidate indices required");
         }

@@ -46,6 +46,39 @@ class AdaptiveSiteSearchTest {
         assertTrue(direction > 0 ? b.minX() >= 290 : b.maxXExclusive() <= 311, b.toString());
     }
 
+    @Test void singleWetColumnBetweenRoughSamplesMovesTheSameTowerAndHandsOffItsRealColumns() {
+        var recipe = recipe(); var segment = straight(recipe);
+        var scheduler = new SiteScheduler(recipe); var prefix = PrefixSummaryIndex.origin();
+        var id = new SiteId(recipe.wallId(), SiteKind.ENEMY_TOWER, 1);
+        var original = scheduler.at(id, 300L * 256, segment, 300L * 256);
+        int wetX = original.bounds().minX() + 1, wetZ = original.bounds().minZ() + 1;
+        var search = new AdaptiveSiteSearch(recipe, scheduler, StructureObstacleIndex.empty(0),
+                new GeometryWindow(List.of(segment), List.of(prefix)), 0, 1000L * 256);
+        var reads = new HashMap<Point2q, ColumnSample>();
+        try (var oracle = new AnalyticTerrainOracle((x,z) -> {
+            var value = x == wetX && z == wetZ ? AnalyticTerrainOracle.water(63,58) : AnalyticTerrainOracle.dry(64);
+            reads.put(new Point2q(x * 256L + 128, z * 256L + 128), value); return value;
+        }, true)) {
+            for (int i = 0; i < 200000 && !search.done(); i++) search.advance(oracle);
+        }
+        assertTrue(search.done());
+        var tower = search.result().stream().filter(site -> site.id().equals(id)).findFirst().orElseThrow();
+        // 名义楼脚的一格窄水只会被整面命中；向前第一个备选整面干燥，应保留同一座楼。
+        assertEquals(SiteState.PLANNED, tower.state());
+        assertEquals(332L * 256, tower.globalSQ8());
+        var verified = new HashMap<Point2q, ColumnSample>();
+        search.reuseVerified(List.of(tower), verified);
+        var box = tower.bounds();
+        assertEquals((box.maxXExclusive() - box.minX()) * (box.maxZExclusive() - box.minZ()), verified.size());
+        for (var entry : verified.entrySet()) {
+            assertSame(reads.get(entry.getKey()), entry.getValue(), "必须移交采到的原列而不是合成地形");
+            assertTrue(entry.getValue().waterTopY().isEmpty());
+        }
+        var height = new HeightContractPlanner(recipe);
+        for (var p : height.samplePoints(segment, prefix, List.of(tower))) verified.putIfAbsent(p, AnalyticTerrainOracle.dry(64));
+        assertEquals(SiteState.PLANNED, height.solveWithSites(segment, prefix, List.of(tower), verified).sites().getFirst().state());
+    }
+
     @Test void submergedInteriorColumnRejectsThePlatformWithoutCuttingTheWall() {
         var recipe = recipe();
         var segment = straight(recipe);

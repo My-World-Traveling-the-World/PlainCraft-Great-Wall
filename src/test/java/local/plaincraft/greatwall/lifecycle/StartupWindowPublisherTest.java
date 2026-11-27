@@ -50,14 +50,14 @@ class StartupWindowPublisherTest {
         assertFalse(PrewarmProgress.isPublished());assertEquals(1,release[0]);assertTrue(access.queued.isEmpty());
     }
 
-    @Test void originalFailureThresholdAndQueueBeforeFailureRemainUnchanged() {
-        for(int failures:new int[]{8,9}) {
+    @Test void evenOneUnprotectedOwnerBlocksRoadsAndKeepsAcceptedJobs() {
+        for(int failures:new int[]{1,8,9}) {
             PrewarmProgress.clear();PrewarmProgress.begin(1,2);
             var access=new Access();access.rejected=failures;var releases=new int[1];
             new StartupWindowPublisher(PlanningFixtures.recipe(0),()->releases[0]++,(w,p,s)->{
                 for(int x=0;x<=failures;x++)s.accept(plan(x));return new CompileReport(failures+1, failures+1, 0);
             },access).publish(List.of(segment()));
-            assertEquals(failures<=8,PrewarmProgress.isPublished(),"原8项容忍边界不能在拆分时改变");
+            assertFalse(PrewarmProgress.isPublished(),"少一个区块也不能让道路拿到不完整的长城占地");
             assertEquals(1,access.queued.size(),"已接纳计划仍须进入补建，不因其他区块失败而丢弃");
             assertEquals(1,releases[0]);
         }

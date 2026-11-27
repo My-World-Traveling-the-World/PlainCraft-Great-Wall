@@ -163,15 +163,16 @@ class WallStartupContractTest {
     }
 
     @Test
-    void signatureTracksNineProgressFieldsButNeverWallClock() {
+    void signatureTracksWorkButNeverWallClock() {
         AtomicReference<PrewarmProgress.Snapshot> snapshot = new AtomicReference<>(progress(3, 1));
         var provider = new GreatWallReadinessProvider((timeout, unit) -> false, snapshot::get);
-        assertEquals("true|false|COMPILE|3|true|4|5|6|7", provider.progressSignature());
+        // 即使没有验收切片，也必须保留切片数的位置；时间变化不能改变签名。
+        assertEquals("true|false|COMPILE|3|true|4|5|6|7|0|ASSEMBLE_WINDOW|0", provider.progressSignature());
         String first = provider.progressSignature();
         snapshot.set(progress(3, 999999));
         assertEquals(first, provider.progressSignature());
         snapshot.set(progress(4, 999999));
-        assertEquals("true|false|COMPILE|4|true|4|5|6|7", provider.progressSignature());
+        assertEquals("true|false|COMPILE|4|true|4|5|6|7|0|ASSEMBLE_WINDOW|0", provider.progressSignature());
         assertNotEquals(first, provider.progressSignature());
     }
 

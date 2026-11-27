@@ -86,6 +86,24 @@ class WallRoadRecoveryTest {
                 plan -> cache.put(plan.owner(), plan));
     }
 
+    @Test void receiptsExpireWhenRoadGuardOrStructureGuardChanges() {
+        var receipts = new WallRoadRecovery.Published();
+        var oldStructures = new StructurePlacementGuard();
+        var currentStructures = new StructurePlacementGuard();
+        var solid = plan(SOLID, true);
+        receipts.publish(solid, oldStructures);
+        WallRoadGuard.clear();
+        assertFalse(WallRoadGuard.isMarked(-48, 16));
+        assertEquals(1, receipts.confirm(solid, oldStructures));
+        assertTrue(WallRoadGuard.isMarked(-48, 16));
+        // 另一份结构守卫即使读到同一哈希也必须补上实际占地。
+        receipts.publish(solid, oldStructures);
+        assertEquals(1, receipts.confirm(solid, currentStructures));
+        assertTrue(currentStructures.intersects(new Bounds(-48, -64, 16, -47, 100, 17)));
+        receipts.publish(solid, currentStructures);
+        assertEquals(0, receipts.confirm(plan(SOLID, false), currentStructures));
+    }
+
     private static ChunkWritePlan plan(ChunkKey owner, boolean voxels) {
         var compiler = new ChunkPlanCompiler();
         if (!voxels) return compiler.compile(owner, HASH, List.of(), Map.of());

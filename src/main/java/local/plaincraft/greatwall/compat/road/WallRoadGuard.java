@@ -23,6 +23,10 @@ public final class WallRoadGuard {
     /** Only a write-side lookup shortcut. It is valid only while it is still the array in MASKS. */
     private static final ThreadLocal<Cache> MARK = ThreadLocal.withInitial(Cache::new);
     private static volatile long lastMarkMillis;
+    private static final java.util.concurrent.atomic.AtomicLong GENERATION = new java.util.concurrent.atomic.AtomicLong();
+
+    /** 一次清空使旧的占地发布回执失效，即使下一次遇到完全相同的施工哈希。 */
+    public static long generation() { return GENERATION.get(); }
 
     private static final class Cache {
         long key = Long.MIN_VALUE;
@@ -115,6 +119,7 @@ public final class WallRoadGuard {
     public static void clear() {
         MASKS.clear();
         RECTS.clear();
+        GENERATION.incrementAndGet();
         lastMarkMillis = 0L;
         GreatWallMod.LOGGER.info("[GreatWall:road] ROAD_GUARD_CLEARED");
     }

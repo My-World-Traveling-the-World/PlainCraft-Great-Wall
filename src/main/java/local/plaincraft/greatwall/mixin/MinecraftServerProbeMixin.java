@@ -12,11 +12,15 @@ public abstract class MinecraftServerProbeMixin {
     @Inject(method = "prepareLevels", at = @At("HEAD"))
     private void greatwall$startupWarmup(CallbackInfo callback) {
         MinecraftServer server = (MinecraftServer) (Object) this;
-        WorldServices.warming(server);
-        // The wall owns the main thread for its own stage: pump both event loops here until the
-        // prewarm settles, then return and hand the thread to the roads (priority 1000). The
-        // roads then pass the gate in zero milliseconds instead of parking here for us.
-        WorldServices.blockAndPumpUntilPrewarmSettled(server);
+        // 河流已完成时仍在加载画面内等待长城；河流尚未开始时不能堵住其他 HEAD。
+        WorldServices.runWallStartup(server, false);
+    }
+
+    // 所有 HEAD 已执行，而原版尚未请求出生区块，不能等到 TAIL 才首次安装长城计划。
+    @Inject(method = "prepareLevels", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/server/MinecraftServer;overworld()Lnet/minecraft/server/level/ServerLevel;", ordinal = 0), require = 1)
+    private void greatwall$beforeSpawnChunks(CallbackInfo callback) {
+        WorldServices.runWallStartup((MinecraftServer) (Object) this, true);
     }
 
     /**
@@ -28,6 +32,7 @@ public abstract class MinecraftServerProbeMixin {
      */
     @Inject(method = "prepareLevels", at = @At("TAIL"))
     private void greatwall$afterRoadBulk(CallbackInfo callback) {
-        WorldServices.afterRoadReached((MinecraftServer) (Object) this);
+        MinecraftServer server = (MinecraftServer) (Object) this;
+        WorldServices.afterRoadReached(server);
     }
 }

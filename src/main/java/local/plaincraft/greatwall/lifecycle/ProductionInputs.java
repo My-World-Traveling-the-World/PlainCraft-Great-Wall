@@ -30,6 +30,9 @@ public record ProductionInputs(WorldBootstrap.Frozen bootstrap, BlockCatalog blo
         inputs.put("block-classification-sha256", new JsonPrimitive(blocks.hash()));
         inputs.put("tree-bounds-sha256", new JsonPrimitive(trees.hash()));
         String terrainHash = WorldRecipeGuard.fingerprint(inputs);
+        // 在服务端属主线程取得本世界的河流会话；真正查询仅发生在选轴线程的有限宏观格上。
+        var riverWater = MacroRiverWater.freeze(level, net.fabricmc.loader.api.FabricLoader.getInstance()
+                .isModLoaded("streamsreflowing"));
         var frozen = CpuTerrainOracle.freeze(level, terrainHash);
         var catalog = local.plaincraft.greatwall.decay.PaletteResolver.load(level.getServer().getResourceManager());
         new local.plaincraft.greatwall.decay.PaletteResolver(0, catalog);
@@ -45,7 +48,7 @@ public record ProductionInputs(WorldBootstrap.Frozen bootstrap, BlockCatalog blo
                     return evidence.size() == 3 && evidence.stream()
                             .allMatch(spec -> blocks.flags(BlockCatalog.token(BlockCatalog.resolveState(spec), false)).support());
                 },new local.plaincraft.greatwall.generation.NativeRootStructureScreen(level),
-                local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance.of(level));
+                local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance.of(level), riverWater);
         return new ProductionInputs(root, blocks, trees);
     }
 }

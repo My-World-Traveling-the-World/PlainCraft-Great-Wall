@@ -30,7 +30,14 @@ public final class WorldBootstrap implements AutoCloseable {
     public record Frozen(DimensionBounds bounds, String terrainHash, String paletteHash, String templatesHash,
             Supplier<NaturalTerrainOracle> factory,
             BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation,RootStructureScreen structures,
-            local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance) {
+            local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance, MacroRiverWater riverWater) {
+        public Frozen(DimensionBounds bounds, String terrainHash, String paletteHash, String templatesHash,
+                Supplier<NaturalTerrainOracle> factory,
+                BiPredicate<NaturalTerrainOracle, NaturalTerrainOracle.ColumnCursor> foundation, RootStructureScreen structures,
+                local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance sanctuaryAvoidance) {
+            this(bounds, terrainHash, paletteHash, templatesHash, factory, foundation, structures, sanctuaryAvoidance,
+                    MacroRiverWater.NONE);
+        }
         public Frozen(DimensionBounds bounds,String terrainHash,String paletteHash,String templatesHash,
                 Supplier<NaturalTerrainOracle> factory,BiPredicate<NaturalTerrainOracle,NaturalTerrainOracle.ColumnCursor> foundation){
             this(bounds,terrainHash,paletteHash,templatesHash,factory,foundation,null,
@@ -43,7 +50,7 @@ public final class WorldBootstrap implements AutoCloseable {
                     local.plaincraft.greatwall.compat.erdtree.SanctuaryAvoidance.none());
         }
         public Frozen {
-            Objects.requireNonNull(bounds); Objects.requireNonNull(factory); Objects.requireNonNull(foundation);
+            Objects.requireNonNull(bounds); Objects.requireNonNull(factory); Objects.requireNonNull(foundation); Objects.requireNonNull(riverWater);
             local.plaincraft.greatwall.model.WallTypes.requireHash(terrainHash);
             local.plaincraft.greatwall.model.WallTypes.requireHash(paletteHash);
             local.plaincraft.greatwall.model.WallTypes.requireHash(templatesHash);
@@ -55,6 +62,7 @@ public final class WorldBootstrap implements AutoCloseable {
     private final WorldManifest manifest;
     private final Executor io;
     private final long seed;
+    private final RootAxisWindow rootWindow = RootAxisWindow.current();
     private final boolean originallyInitialized;
     private final Thread eventOwner = Thread.currentThread();
     private final SpawnDomain earlyDomain = new SpawnDomain();
@@ -353,7 +361,8 @@ public final class WorldBootstrap implements AutoCloseable {
                         } else {
                             var search = new RootSearch(spawn.get("chosen"), inputs.bounds(), earlyDomain.snapshot(),
                                     inputs.foundation(), inputs.structures() != null, inputs.sanctuaryAvoidance(),
-                                    local.plaincraft.greatwall.model.WallRecipeRules.landFirst(authorization.config()));
+                                    local.plaincraft.greatwall.model.WallRecipeRules.landFirst(authorization.config()),
+                                    rootWindow, inputs.riverWater());
                             rootSearchStartedAt = System.nanoTime();
                             advance(search, lanes.getFirst(), authorization, inputs);
                         }
@@ -564,62 +573,50 @@ public final class WorldBootstrap implements AutoCloseable {
      * next one while any remain.
      */
     private CompletableFuture<Void> screenThenVote(RootSearch search, OracleLane lane,
-            Frozen inputs,
-            List<RootStructureScreen.Candidate> candidates) {
-        if (candidates.isEmpty()) {
-            return submitVotesWithRetry(search, lane, List.of());
-        }
-        return inputs.structures().inspect(candidates)
-                .thenCompose(votes -> submitVotesWithRetry(search, lane, votes))
-                .handle((done, error) -> {
-                    Throwable cause = error;
-                    while (cause instanceof java.util.concurrent.CompletionException && cause.getCause() != null) {
-                        cause = cause.getCause();
-                    }
-                    if (cause instanceof WallFailure blocked
-                            && blocked.code() == local.plaincraft.greatwall.model.WallTypes.FailureCode.ROOT_NOT_FOUND
-                            && search.hasStructureRemainder()) {
-                        GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SCREEN_NEXT_BATCH candidates={} - the "
-                                + "previous batch was entirely blocked", candidates.size());
-                        if (search.screenNextStructureBatch()) {
-                            return screenThenVote(search, lane, inputs,
-                                    search.pendingStructureCandidates());
-                        }
-                    }
-                    return error == null
-                            ? CompletableFuture.<Void>completedFuture(null)
-                            : CompletableFuture.<Void>failedFuture(cause);
-                })
-                .thenCompose(next -> next);
+            Frozen inputs, List<RootStructureScreen.Candidate> candidates) {
+        CompletableFuture<List<RootStructureScreen.Vote>> inspected = candidates.isEmpty()
+                ? CompletableFuture.completedFuture(List.of()) : inputs.structures().inspect(candidates);
+        return inspected.thenCompose(votes -> submitVotesWithRetry(search, lane, votes))
+                .thenCompose(result -> {
+                    if (result.failure() != null) return CompletableFuture.failedFuture(result.failure());
+                    if (result.next().isEmpty()) return CompletableFuture.completedFuture(null);
+                    GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_SCREEN_NEXT_BATCH 首批受保护，继续检查 {} 个候选", result.next().size());
+                    return screenThenVote(search, lane, inputs, result.next());
+                });
     }
 
-    private CompletableFuture<Void> submitVotesWithRetry(RootSearch search, OracleLane lane,
+    private record VoteResult(List<RootStructureScreen.Candidate> next, WallFailure failure) {}
+
+    private CompletableFuture<VoteResult> submitVotesWithRetry(RootSearch search, OracleLane lane,
             List<RootStructureScreen.Vote> votes) {
-        CompletableFuture<Void> submitted;
         try {
-            submitted = lane.submit(oracle -> {
+            return lane.submit(oracle -> {
                 active();
-                search.acceptStructureVotes(votes);
+                try {
+                    search.acceptStructureVotes(votes);
+                } catch (WallFailure blocked) {
+                    // 正常拒绝不能让采样线程永久报故障；候选列表和游标也只允许由所属线程读取。
+                    if (blocked.code() != local.plaincraft.greatwall.model.WallTypes.FailureCode.ROOT_NOT_FOUND) throw blocked;
+                    return search.screenNextStructureBatch()
+                            ? new VoteResult(search.pendingStructureCandidates(), null)
+                            : new VoteResult(List.of(), blocked);
+                }
                 progress.put("root", search.progress());
                 rootAudit.put("root", search.audit());
-                return (Void) null;
+                return new VoteResult(List.of(), null);
             });
         } catch (RuntimeException rejected) {
             if (state.containsKey("closed") || state.containsKey("failed")) {
-                return java.util.concurrent.CompletableFuture.failedFuture(
-                        new java.util.concurrent.CancellationException("bootstrap closed"));
+                return CompletableFuture.failedFuture(new java.util.concurrent.CancellationException("bootstrap closed"));
             }
-            // A saturated lane is transient; retry shortly on the root pump rather than
-            // failing the bootstrap. schedule() tolerates the pump being busy.
-            var retry = new CompletableFuture<Void>();
+            var retry = new CompletableFuture<VoteResult>();
             rootPump.schedule(() -> submitVotesWithRetry(search, lane, votes)
-                    .whenComplete((ignored, error) -> {
+                    .whenComplete((result, error) -> {
                         if (error != null) retry.completeExceptionally(error);
-                        else retry.complete(null);
+                        else retry.complete(result);
                     }), 50, java.util.concurrent.TimeUnit.MILLISECONDS);
             return retry;
         }
-        return submitted;
     }
 
     private void advance(RootSearch search, OracleLane lane, WorldRecipeSelection selection, Frozen inputs) {
@@ -703,8 +700,8 @@ public final class WorldBootstrap implements AutoCloseable {
             // Publish the candidate index to the loading card, so the root search shows a
             // moving number rather than an indeterminate "searching" that reads as frozen.
             var now = batch.progress();
-            PrewarmProgress.setRootProgress(now.candidate(), RootSearch.RADIUS_COUNT * 36);
-            PrewarmProgress.setRootPhase(now.phase());
+            // 主进度和详情使用同一批次的单位；粗采按已判网格，复核按占地和轴向。
+            PrewarmProgress.setRootDisplay(now.phase(), now.workDone(), now.workTotal());
             // One line per 25 candidates, plus every phase change. The ring is RADIUS_COUNT x 36 = 324
             // candidates, and a line per candidate produced 200 lines that carried nothing a reader could
             // act on - they buried the lines that do matter. Only the sampling changed, not the numbers.
@@ -856,7 +853,7 @@ public final class WorldBootstrap implements AutoCloseable {
         var instance = authorization.creation().instance();
         // 选址仍围绕出生点做，存进配方的轴首向反方向退半长。
         var axis = local.plaincraft.greatwall.model.WallRecipeRules.centerFiniteAxis(selection.axis(),
-                local.plaincraft.greatwall.config.GreatWallConfig.parameters().wallLengthBlocks(),
+                rootWindow.wallLength(),
                 authorization.config().templateVersion());
         var provisional = new WorldRecipe(instance, "0".repeat(64), seed, "minecraft:overworld",
                 spawn.get("chosen"), axis, inputs.bounds(), authorization.config(), inputs.terrainHash(),
@@ -904,8 +901,12 @@ public final class WorldBootstrap implements AutoCloseable {
         try {
             var identity = RootSearchCache.identityOf(seed, "minecraft:overworld", chosen,
                     inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash(),
-                    ProductionRecipeVersions.rootAxisParameters(config));
+                    rootAxisKey(config, inputs));
             var entry = RootSearchCache.read(directory, identity);
+            // 已保存草案的轴仍须避让这次真实载入的出生保护与圣域；检查只是几何投影，不重扫地形。
+            if (local.plaincraft.greatwall.model.WallRecipeRules.landFirst(config))
+                entry = entry.filter(e -> RootEndpointSite.allowed(RootSearchCache.axisOf(e), rootWindow.wallLength(),
+                        chosen, earlyDomain.snapshot(), inputs.bounds(), inputs.sanctuaryAvoidance()));
             if (entry.isPresent()) return entry;
             GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_CACHE_MISS searching; no usable entry at {}",
                     RootSearchCache.file(directory));
@@ -913,6 +914,10 @@ public final class WorldBootstrap implements AutoCloseable {
         } catch (RuntimeException unusable) {
             return Optional.empty();
         }
+    }
+
+    private String rootAxisKey(GenerationConfig config, Frozen inputs) {
+        return inputs.riverWater().rootCacheKey(ProductionRecipeVersions.rootAxisParameters(config, rootWindow));
     }
 
     /** Records the searched axis for the next launch of this world. */
@@ -924,7 +929,7 @@ public final class WorldBootstrap implements AutoCloseable {
         try {
             var identity = RootSearchCache.identityOf(seed, "minecraft:overworld", chosen,
                     inputs.terrainHash(), inputs.paletteHash(), inputs.templatesHash(),
-                    ProductionRecipeVersions.rootAxisParameters(config));
+                    rootAxisKey(config, inputs));
             RootSearchCache.write(directory, RootSearchCache.of(identity, selection.axis(),
                     selection.radiusIndex(), selection.angleIndex(), selection.axisIndex()));
             GreatWallMod.LOGGER.info("[GreatWall:S1C] ROOT_CACHE_STORED axis={} radiusIndex={} angleIndex={} "

@@ -19,10 +19,8 @@ import net.shiroha233.roadweaver.api.outgoing.GreatWallReadinessRegistry;
  * 拼进度签名。现在长城自己实现 {@link GreatWallReadiness} 并注册，方法改名会变成
  * <b>编译期</b>错误，快照结构也只在长城内部可见。</p>
  *
- * <p>签名仍按原先那九个字段、原先的顺序拼：{@code active|failed|stage|completed|
- * rootSearch|rootCandidate|rootPhase|structureCandidate|subDone}。
- * <b>刻意不含 {@code elapsedMillis}</b> —— 那是墙钟，进了签名就每次轮询都变，
- * 「五分钟没变化」的卡死判据永远不成立（历史事故，见接口 javadoc）。</p>
+ * <p>签名同时反映阶段、工作计数与编译子步骤。签名不含墙钟，
+ * 因为等待方需要区分工作仍在推进和仅仅时间流逝。</p>
  */
 public final class GreatWallReadinessProvider implements GreatWallReadiness {
 
@@ -97,10 +95,8 @@ public final class GreatWallReadinessProvider implements GreatWallReadiness {
         try {
             PrewarmProgress.Snapshot s = snapshot.get();
             if (s == null) return null;
-            // 顺序必须与道路历史上那九个字段一致；不含 elapsedMillis。
-            return s.active() + "|" + s.failed() + "|" + s.stage() + "|" + s.completed() + "|"
-                    + s.rootSearch() + "|" + s.rootCandidate() + "|" + s.rootPhase() + "|"
-                    + s.structureCandidate() + "|" + s.subDone();
+            // 保留原有字段顺序，附上编译工序。等待者只把实际工作变化当作进展。
+            return s.workSignature();
         } catch (Throwable failure) {
             // 契约要求：出错回 null（= 没有信号），不要回常量。
             return null;

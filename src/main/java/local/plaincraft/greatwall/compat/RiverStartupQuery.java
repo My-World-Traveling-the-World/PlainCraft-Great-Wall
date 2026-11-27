@@ -17,8 +17,33 @@ public final class RiverStartupQuery {
         }
     }
 
+    public enum Action { ALLOW, WAIT, REJECT }
+    public record Check(Action action, long session, String phase, String reason) {}
+
+    /** 单独安装长城时不链接河流；已经安装却没有注册提供方时不能把故障当成缺席。 */
+    public static Check prerequisite(Object world, boolean installed) {
+        if (!installed) return new Check(Action.ALLOW, 0, "ABSENT", "");
+        try {
+            return Contract.prerequisite(world);
+        } catch (RuntimeException | LinkageError failure) {
+            return new Check(Action.REJECT, 0, "CONTRACT_FAILED", failure.toString());
+        }
+    }
+
     /** 独立链接可选契约，主类在不装河流时仍能被正常加载。 */
     private static final class Contract {
+        static Check prerequisite(Object world) {
+            if (!dev.streamsreflowing.api.RiverPlanApi.isInstalled())
+                return new Check(Action.REJECT, 0, "UNREGISTERED", "河流已加载但未注册计划接口");
+            var status = dev.streamsreflowing.api.RiverPlanApi.startup(world);
+            var action = switch (status.phase()) {
+                case COMPLETE, DISABLED -> Action.ALLOW;
+                case NOT_STARTED, BUILDING -> Action.WAIT;
+                case FAILED, STOPPED -> Action.REJECT;
+            };
+            return new Check(action, status.session(), status.phase().name(), status.reason());
+        }
+
         static Map<String, Object> snapshot(Object world) {
             if (!dev.streamsreflowing.api.RiverPlanApi.isInstalled())
                 return Map.of("availability", "ABSENT", "reason", "河流提供方未安装");

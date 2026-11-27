@@ -11,7 +11,7 @@ import local.plaincraft.greatwall.geometry.FixedMath;
 import local.plaincraft.greatwall.model.WallTypes.*;
 import local.plaincraft.greatwall.terrain.NaturalTerrainOracle;
 
-/** 水文确定后在名义里程前后找楼址；只给胜出的位置做全占地逐列精采。 */
+/** 水文先排除不可用里程，粗网只作筛选；整座楼逐列合格后才确定楼址。 */
 final class AdaptiveSiteSearch {
     private static final int STEP = 32, RADIUS = 192, PROBE_STEP = 12, FLAT_RELIEF = 8;
     private final WorldRecipe recipe;
@@ -22,7 +22,13 @@ final class AdaptiveSiteSearch {
     private final List<SiteRecord> selected = new ArrayList<>();
     private final Map<Point2q, ColumnSample> probes = new HashMap<>();
     private int siteIndex, attempt, probeIndex, low, high;
-    private SiteRecord candidate, best;
+    private SiteRecord candidate;
+    // 同一楼址的备选范围有限；没有平地时，按真实地形起伏和原偏移顺序择优。
+    private record Choice(SiteRecord site, int order, int relief, int leftY, int rightY) {}
+    private final List<Choice> roughSlopes = new ArrayList<>();
+    private final Map<Point2q, ColumnSample> confirmed = new HashMap<>();
+    private Choice exact, best;
+    private int exactX, exactZ, exactLow, exactHigh;
     private Owner owner;
     private int bestRelief = Integer.MAX_VALUE;
     private BreakReason rejection = BreakReason.SLOPE;
@@ -48,16 +54,28 @@ final class AdaptiveSiteSearch {
     boolean done() { return siteIndex >= nominal.size(); }
     List<SiteRecord> result() { return List.copyOf(selected); }
 
+    /** 仅移交本段仍要放置的楼址；重叠窗口或已淘汰楼的样本不必一直持有。 */
+    void reuseVerified(List<SiteRecord> sites, Map<Point2q, ColumnSample> output) {
+        for (var site : sites) if (site.state() == SiteState.PLANNED && site.globalSQ8() != 0)
+            copyFootprint(site.bounds(), confirmed, output);
+    }
+
     void advance(NaturalTerrainOracle oracle) {
         var site = nominal.get(siteIndex);
         // 澄海楼是起点唯一端口，移动它会在路线头部留下没有接口的墙。
         if (site.globalSQ8() == 0) { finish(site); return; }
         // 同一座楼的逐列游标无需反复查询名义里程属于哪一段。
         if (owner == null) owner = owners.stream().filter(o -> o.contains(site.globalSQ8())).findFirst().orElseThrow();
+        if (exact != null) { advanceExact(oracle); return; }
         if (candidate == null) {
             if (attempt > 2 * RADIUS / STEP) {
+                // 粗网起伏是真实起伏的下界，已经不可能胜出的备选不用再做整面精采。
+                while (!roughSlopes.isEmpty()) {
+                    var next = roughSlopes.removeFirst();
+                    if (improves(next.relief(), next.order())) { startExact(next); return; }
+                }
                 finish(best == null ? new SiteRecord(site.id(), site.globalSQ8(), site.frame(), site.bounds(),
-                        SiteState.SUPPRESSED, Optional.empty(), Optional.of(rejection)) : best);
+                        SiteState.SUPPRESSED, Optional.empty(), Optional.of(rejection)) : best.site());
                 return;
             }
             // 同距离先向前、再向后。窗口重叠时只读名义位置所属段，重算不会换楼址。
@@ -81,48 +99,100 @@ final class AdaptiveSiteSearch {
             probeIndex = 0; low = Integer.MAX_VALUE; high = Integer.MIN_VALUE;
         }
         var point = points.get(probeIndex);
-        var sample = probes.get(point);
-        if (sample == null) {
-            if (column == null) { column = oracle.begin(FixedMath.floorBlock(point.xQ8()), FixedMath.floorBlock(point.zQ8()), SampleKind.REFERENCE); return; }
-            if (!column.done()) { oracle.advance(column, 1); return; }
-            sample = oracle.finish(column); column = null; probes.put(point, sample);
-        }
-        if (sample.upperCensored() || sample.quality() != Quality.REFERENCE || sample.waterTopY().isPresent()) {
+        var sample = read(oracle, point);
+        if (sample == null) return;
+        if (unusable(sample)) {
             rejection = BreakReason.NO_SUPPORT; candidate = null; return;
         }
         if (probeIndex < points.size() - 2) {
             low = Math.min(low, sample.groundTopY()); high = Math.max(high, sample.groundTopY());
         }
         if (++probeIndex < points.size()) return;
-        int walk = high + 15;
-        var box = candidate.bounds();
-        int shift = walk - candidate.frame().walkY();
-        if (box.minY() + shift < recipe.bounds().minY() || box.maxYExclusive() + shift > recipe.bounds().maxYExclusive()) {
-            rejection = BreakReason.WORLD_LIMIT; candidate = null; return;
+        var option = new Choice(candidate, attempt, high - low,
+                probes.get(points.get(points.size() - 2)).groundTopY() + 20, sample.groundTopY() + 20);
+        candidate = null;
+        if (option.relief() <= FLAT_RELIEF) startExact(option);
+        else if (improves(option.relief(), option.order())) {
+            roughSlopes.add(option);
+            roughSlopes.sort(java.util.Comparator.comparingInt(Choice::relief).thenComparingInt(Choice::order));
         }
-        // 抬高墙和地基可以，但平台必须给两侧 64 格接引留出逐级升降的距离。
-        int relief = high - low;
-        int left = probes.get(points.get(points.size() - 2)).groundTopY() + 20;
-        int right = sample.groundTopY() + 20;
+    }
+
+    private boolean improves(int relief, int order) {
+        return best == null || relief < bestRelief || relief == bestRelief && order < best.order();
+    }
+
+    private void startExact(Choice option) {
+        exact = option;
+        exactX = option.site().bounds().minX(); exactZ = option.site().bounds().minZ();
+        exactLow = Integer.MAX_VALUE; exactHigh = Integer.MIN_VALUE;
+    }
+
+    /** 复用同一次搜索已走过的格子；每次只推一列的一步，不能让大楼整面探测霸占通道。 */
+    private ColumnSample read(NaturalTerrainOracle oracle, Point2q point) {
+        var sample = probes.get(point);
+        if (sample != null) return sample;
+        if (column == null) {
+            column = oracle.begin(FixedMath.floorBlock(point.xQ8()), FixedMath.floorBlock(point.zQ8()), SampleKind.REFERENCE);
+            return null;
+        }
+        if (!column.done()) { oracle.advance(column, 1); return null; }
+        sample = oracle.finish(column); column = null; probes.put(point, sample);
+        return sample;
+    }
+
+    private static Point2q center(int x, int z) { return new Point2q(x * 256L + 128, z * 256L + 128); }
+
+    private static boolean unusable(ColumnSample sample) {
+        return sample.upperCensored() || sample.quality() != Quality.REFERENCE || sample.waterTopY().isPresent();
+    }
+
+    private void advanceExact(NaturalTerrainOracle oracle) {
+        var box = exact.site().bounds();
+        var sample = read(oracle, center(exactX, exactZ));
+        if (sample == null) return;
+        if (unusable(sample)) { rejection = BreakReason.NO_SUPPORT; exact = null; return; }
+        exactLow = Math.min(exactLow, sample.groundTopY());
+        exactHigh = Math.max(exactHigh, sample.groundTopY());
+        int relief = exactHigh - exactLow;
+        if (relief > FLAT_RELIEF && !improves(relief, exact.order())) { exact = null; return; }
+        if (++exactX < box.maxXExclusive()) return;
+        exactX = box.minX();
+        if (++exactZ < box.maxZExclusive()) return;
+
+        // 最高列即使在粗网之间也决定整楼平台；用它检查屋顶、接引坡度以及所在高度的结构。
+        var option = exact; exact = null;
+        var site = option.site();
+        int walk = exactHigh + 15, shift = walk - site.frame().walkY();
+        if (box.minY() + shift < recipe.bounds().minY() || box.maxYExclusive() + shift > recipe.bounds().maxYExclusive()) {
+            rejection = BreakReason.WORLD_LIMIT; return;
+        }
         long platformReach = (ImportedSiteGeometry.extent(site.id()) + ImportedSiteGeometry.STRAIGHT) * 256L;
-        long s = candidate.globalSQ8();
-        if (Math.abs(walk - left) > 30 || Math.abs(walk - right) > 30
+        long s = site.globalSQ8();
+        if (Math.abs(walk - option.leftY()) > 30 || Math.abs(walk - option.rightY()) > 30
                 || Math.abs(walk - owner.geometry.start().walkY()) > (s - platformReach - owner.from) / 512
                 || Math.abs(walk - owner.geometry.end().walkY()) > (owner.fullEnd() - s - platformReach) / 512) {
-            rejection = BreakReason.SLOPE; candidate = null; return;
+            rejection = BreakReason.SLOPE; return;
         }
         if (obstacles.intersects(box, box.minY() + shift, box.maxYExclusive() + shift)) {
-            rejection = BreakReason.STRUCTURE_CONFLICT; candidate = null; return;
+            rejection = BreakReason.STRUCTURE_CONFLICT; return;
         }
-        if (relief <= FLAT_RELIEF) { finish(candidate); return; }
-        if (relief < bestRelief) { best = candidate; bestRelief = relief; }
-        candidate = null;
+        if (relief <= FLAT_RELIEF) { finish(site); return; }
+        if (improves(relief, option.order())) { best = option; bestRelief = relief; }
+    }
+
+    private static void copyFootprint(Bounds b, Map<Point2q, ColumnSample> source, Map<Point2q, ColumnSample> output) {
+        for (int z = b.minZ(); z < b.maxZExclusive(); z++) for (int x = b.minX(); x < b.maxXExclusive(); x++) {
+            var p = center(x, z);
+            output.put(p, java.util.Objects.requireNonNull(source.get(p), "获选楼址缺少逐列证据"));
+        }
     }
 
     private void finish(SiteRecord site) {
+        if (site.state() == SiteState.PLANNED && site.globalSQ8() != 0) copyFootprint(site.bounds(), probes, confirmed);
         selected.add(site); siteIndex++; attempt = 0; best = null; candidate = null;
         bestRelief = Integer.MAX_VALUE; rejection = BreakReason.SLOPE;
-        owner = null;
+        owner = null; probes.clear(); roughSlopes.clear();
     }
 
     private static List<Point2q> samplePoints(Bounds box, Owner owner, long s, long reach) {

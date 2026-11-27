@@ -17,7 +17,12 @@ public final class WindowHeightEnvelope {
     private static final String ZERO = "0".repeat(64);
     private record Node(Station station, int height) {}
 
-    public static List<SegmentPlan> solve(WorldRecipe recipe, List<SegmentPlan> plans, FineHeightIndex terrain) {
+    static List<SegmentPlan> solve(WorldRecipe recipe, List<SegmentPlan> plans, FineHeightIndex terrain) {
+        return solve(recipe, plans, terrain, StructureObstacleIndex.empty(0));
+    }
+
+    public static List<SegmentPlan> solve(WorldRecipe recipe, List<SegmentPlan> plans, FineHeightIndex terrain,
+            StructureObstacleIndex obstacles) {
         if (!WallRecipeRules.landFirst(recipe.config()) || plans.isEmpty()) return plans;
         var sorted = plans.stream().sorted(Comparator.comparingLong(p -> p.geometry().key().index())).toList();
         var nodes = new TreeMap<Long, Node>();
@@ -69,11 +74,23 @@ public final class WindowHeightEnvelope {
             var breaks = plan.stations().breaks().stream().filter(b -> b.reason() != BreakReason.SLOPE).toList();
             var raw = new StationTable(stations, breaks, ZERO, plan.stations().biomeKeys());
             var table = new StationTable(stations, breaks, DeterministicHash.sha256(CanonicalCodec.stations(raw)), raw.biomeKeys());
-            var bound = binder.bindHeights(plan.sites(), table);
-            // 楼台整体抬升后再检查屋顶，不能为了缓坡裁掉实物楼顶。
-            for (var site : bound) if (site.state() == SiteState.PLANNED
-                    && ImportedSiteGeometry.bounds(site).maxYExclusive() > recipe.bounds().maxYExclusive())
-                throw new WallFailure(FailureCode.OUT_OF_BOUNDS, "缓坡抬升后楼体屋顶超界");
+            var bound = new ArrayList<SiteRecord>();
+            for (var site : binder.bindHeights(plan.sites(), table)) {
+                if (site.state() == SiteState.PLANNED) {
+                    var box = ImportedSiteGeometry.bounds(site);
+                    var reason = box.maxYExclusive() > recipe.bounds().maxYExclusive() ? BreakReason.WORLD_LIMIT
+                            : obstacles.intersects(box, box.minY(), box.maxYExclusive()) ? BreakReason.STRUCTURE_CONFLICT : null;
+                    if (reason != null) {
+                        // 起点是唯一的出墙端面；普通楼终态放不下时保留已经精采、解坡的连续马道。
+                        if (site.id().kind() == SiteKind.FORT && site.id().ordinal() == 0)
+                            throw new WallFailure(reason == BreakReason.WORLD_LIMIT ? FailureCode.OUT_OF_BOUNDS : FailureCode.OWNERSHIP_CONFLICT,
+                                    "起点澄海楼缓坡终态不合格 reason=" + reason + " bounds=" + box);
+                        site = new SiteRecord(site.id(), site.globalSQ8(), site.frame(), box, SiteState.SUPPRESSED,
+                                site.absorbedBy(), java.util.Optional.of(reason));
+                    }
+                }
+                bound.add(site);
+            }
             var rawPlan = new SegmentPlan(plan.geometry(), plan.prefix(), table, bound, ZERO);
             result.add(new SegmentPlan(plan.geometry(), plan.prefix(), table, bound,
                     DeterministicHash.sha256(CanonicalCodec.plan(rawPlan))));

@@ -238,8 +238,9 @@ public final class GreatWallConfig {
 
         /** 现行配方只冻结会改变成品的旋钮，旧抽稀等不再使新世界的计划失效。 */
         public String landFirstDigest() {
-            var fields = java.nio.ByteBuffer.allocate(Long.BYTES + 6 * Integer.BYTES);
-            fields.putLong(wallLengthBlocks).putInt(ridgeSlopeWeight).putInt(ridgeTurnWeight)
+            // 端楼先验与楼址逐列重选会改变成品，新世界不能读回旧算法的分段缓存。
+            var fields = java.nio.ByteBuffer.allocate(Long.BYTES + 7 * Integer.BYTES);
+            fields.putInt(2).putLong(wallLengthBlocks).putInt(ridgeSlopeWeight).putInt(ridgeTurnWeight)
                     .putInt(ridgeDepartureWeight).putInt(ridgeAccumulatedSlopeWeight).putInt(obstacleMarginBlocks)
                     .putInt(oceanBreakLengthBlocks);
             return local.plaincraft.greatwall.geometry.DeterministicHash.sha256(fields.array());
@@ -251,7 +252,7 @@ public final class GreatWallConfig {
         return new Semantic(wallLengthBlocks, ridgeWeight, ridgeProminenceWeight, ridgeSlopeWeight,
                 ridgeTurnWeight, ridgeWetWeight, ridgeDepartureWeight, summitFlatThreshold,
                 summitFlatReward, knifeRidgePenalty, ridgeAsymmetryWeight, ridgeAccumulatedSlopeWeight,
-                obstacleMarginBlocks, fineStep(), steepThreshold(), refineWater(), coreHalfWidth(),
+                obstacleMarginBlocks(), fineStep(), steepThreshold(), refineWater(), coreHalfWidth(),
                 fineSampleGridStep(), oceanBreakLengthBlocks());
     }
 
@@ -341,7 +342,8 @@ public final class GreatWallConfig {
     public int knifeRidgePenalty() { return knifeRidgePenalty; }
     public int ridgeAsymmetryWeight() { return ridgeAsymmetryWeight; }
     public int ridgeAccumulatedSlopeWeight() { return ridgeAccumulatedSlopeWeight; }
-    public int obstacleMarginBlocks() { return obstacleMarginBlocks; }
+    // 配置文件可能绕过界面的 0..32；选址和施工必须使用同一上限，避免恶意或误填的超大扫描域。
+    public int obstacleMarginBlocks() { return Math.clamp(obstacleMarginBlocks,0,32); }
 
     public void setRidgeWeight(int v) { this.ridgeWeight = v; }
     public void setRidgeProminenceWeight(int v) { this.ridgeProminenceWeight = v; }

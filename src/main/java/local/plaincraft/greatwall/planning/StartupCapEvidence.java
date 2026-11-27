@@ -25,18 +25,26 @@ public final class StartupCapEvidence {
     private final PlannerScheduler scheduler;
     private final RealizationWindow realization;
     private final Runnable active;
+    private final java.util.function.BiConsumer<Integer, Integer> progress;
     private final long started=System.nanoTime();
     private int passes,inspected,added;
 
     private StartupCapEvidence(List<SegmentPlan> plans,List<Bounds> structures,PlannerScheduler scheduler,
-            RealizationWindow realization,Runnable active) {
+            RealizationWindow realization,Runnable active,java.util.function.BiConsumer<Integer,Integer> progress) {
         this.plans=List.copyOf(plans);this.structures=List.copyOf(structures);this.scheduler=scheduler;
-        this.realization=realization;this.active=active;
+        this.realization=realization;this.active=active;this.progress=progress;
     }
 
     public static CompletableFuture<Prepared> prepare(List<SegmentPlan> plans,FineHeightIndex terrain,List<Bounds> structures,
             RealizationPlanner realization,PlannerScheduler scheduler,Runnable active) {
-        var work=new StartupCapEvidence(plans,structures,scheduler,realization.openWindow(),active);
+        return prepare(plans,terrain,structures,realization,scheduler,active,(done,total)->{});
+    }
+
+    /** 补采可能触发复核，阶段计数只表示本轮真正检查过的分段。 */
+    public static CompletableFuture<Prepared> prepare(List<SegmentPlan> plans,FineHeightIndex terrain,List<Bounds> structures,
+            RealizationPlanner realization,PlannerScheduler scheduler,Runnable active,
+            java.util.function.BiConsumer<Integer,Integer> progress) {
+        var work=new StartupCapEvidence(plans,structures,scheduler,realization.openWindow(),active,progress);
         // 预检不能占住规划pump，否则后续补采正在等待的也是这条线程。
         var result=work.pass(terrain,Map.of());
         result.whenComplete((value,error)->{if(error!=null)work.realization.close();});
@@ -87,11 +95,16 @@ public final class StartupCapEvidence {
             long from=cell.cell().arcCell()*64L*256,to=from+64L*256;
             ranges.merge(cell.plan(),new ArcInterval(from,to),(a,b)->new ArcInterval(Math.min(a.fromQ8(),b.fromQ8()),Math.max(a.toQ8(),b.toQ8())));
         }
-        for(var plan:plans) {
-            var cell=firstCell.get(plan);if(cell==null)continue;
-            active.run();inspected++;
-            // 整段只投影、探针和判楼一次；每列不再随相邻单元的捕获环重复检查。
-            breaks.addAll(realization.inspectPlanBreaks(context.input(cell,provider.columnsFor(captures.get(plan))),ranges.get(plan)));
+        progress.accept(0,plans.size());
+        for(int i=0;i<plans.size();i++) {
+            var plan=plans.get(i);
+            var cell=firstCell.get(plan);
+            if(cell!=null) {
+                active.run();inspected++;
+                // 整段只投影一次；只有检查返回后才对外计为完成。
+                breaks.addAll(realization.inspectPlanBreaks(context.input(cell,provider.columnsFor(captures.get(plan))),ranges.get(plan)));
+            }
+            progress.accept(i+1,plans.size());
         }
         // 先合并跨64格单元的片段，否则会把单元缝当成额外收口。
         var merged=GroundExitResolver.merge(breaks);

@@ -43,7 +43,7 @@ class StartupPlanWindowTest {
         var source = java.nio.file.Files.readString(java.nio.file.Path.of(
                 "src/main/java/local/plaincraft/greatwall/lifecycle/ProductionSession.java"));
         int check = source.indexOf("var complete = StartupPlanWindow.complete(plans, snapshot.planner().startupRange().segments(), snapshot.recipe());");
-        int solve = source.indexOf("WindowHeightEnvelope.solve(snapshot.recipe(), complete, terrain)");
+        int solve = source.indexOf("WindowHeightEnvelope.solve(snapshot.recipe(), complete, terrain, snapshot.planner().siteObstacles())");
         int persist = source.indexOf("freezeStartupPlans(raised)");
         assertTrue(check >= 0); assertTrue(solve > check); assertTrue(persist > solve);
     }
