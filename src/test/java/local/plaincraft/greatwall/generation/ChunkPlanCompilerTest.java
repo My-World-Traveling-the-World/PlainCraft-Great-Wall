@@ -124,4 +124,22 @@ class ChunkPlanCompilerTest {
         var failure = assertThrows(WallFailure.class, () -> window.compile(key, H, List.of(cell(forged, 0)), before));
         assertEquals("component hash mismatch", failure.getMessage());
     }
+
+    @Test void interleavedAdjacentGroupsReuseResolutionWithoutChangingPlanBytes() {
+        // 两组构件都覆盖两个区块；交错裁切要保留各自体素、元数据和施工证据。
+        var a = List.of(cell(component(List.of(voxel(0, IntentKind.SOLID, "minecraft:stone"),
+                voxel(16, IntentKind.KEEP, "minecraft:air"))), 2));
+        var b = List.of(cell(component(List.of(voxel(0, IntentKind.KEEP, "minecraft:air"),
+                voxel(16, IntentKind.SOLID, "minecraft:dirt"))), 3));
+        var compiler = new ChunkPlanCompiler();
+        var window = compiler.window();
+        var before = Map.of(new Point3i(0, 1, 0), AIR, new Point3i(16, 1, 0), AIR);
+        for (int i = 0; i < 4; i++) {
+            var owner = new ChunkKey("minecraft:overworld", i / 2, 0);
+            var cells = i % 2 == 0 ? a : b;
+            assertArrayEquals(CanonicalCodec.writePlan(compiler.compile(owner, H, cells, before)),
+                    CanonicalCodec.writePlan(window.compile(owner, H, cells, before)));
+        }
+        assertEquals(2, window.resolutions(), "两个构件组各解析一次");
+    }
 }

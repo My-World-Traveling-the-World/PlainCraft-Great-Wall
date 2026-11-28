@@ -575,12 +575,14 @@ public final class WallBodyBackfill {
             // 选择开销单独计时，否则大队列选候选超时会导致每一轮都不检查区块。
             long scanStartedAt = System.nanoTime();
             int inspected = 0;
+            // 服务端开 tick 和玩家已进主世界不是同一刻；没人时不主动拉远处区块。
+            boolean mayLoadChunks = FORCE_LOAD.get() && !level.players().isEmpty();
             for (ChunkKey key : candidates) {
                 if (inspected == MAX_DRAIN_CHECKS || System.nanoTime() - scanStartedAt >= DRAIN_BUDGET_NANOS) break;
                 inspected++;
                 LevelChunk chunk = level.getChunkSource().getChunkNow(key.x(), key.z());
                 if (chunk == null) {
-                    if (FORCE_LOAD.get() && state.requests.size() < MAX_DRAIN_REQUESTS
+                    if (mayLoadChunks && state.requests.size() < MAX_DRAIN_REQUESTS
                             && !state.requests.containsKey(key)) {
                         StartupRequest request = requestChunk(level, key, "drain");
                         if (request != null) state.requests.put(key, request);

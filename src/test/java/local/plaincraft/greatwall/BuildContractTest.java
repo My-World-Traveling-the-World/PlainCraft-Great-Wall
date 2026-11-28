@@ -442,6 +442,20 @@ class BuildContractTest {
         assertTrue(code.contains("WallBackfillSlice.advance(cursor,"), "游戏内补建必须经过分批事务");
     }
 
+    @Test
+    void forcedWallChunkTicketsRequireAPlayerInTheOverworld() throws IOException {
+        // 启动过但还没人登录的服务端也会 tick；只允许自然加载，不为墙主动申请新票。
+        var file = java.nio.file.Path.of("src/main/java/local/plaincraft/greatwall/generation/WallBodyBackfill.java");
+        var code = java.nio.file.Files.readString(file, StandardCharsets.UTF_8)
+                .replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("(?m)//.*$", "");
+        var calls = java.util.regex.Pattern.compile("\\brequestChunk\\s*\\(").matcher(code).results().count();
+        assertEquals(2, calls, "只有定义和唯一游戏内申请点，不能绕过玩家判据");
+        assertTrue(code.matches("(?s).*boolean mayLoadChunks = FORCE_LOAD\\.get\\(\\) && !level\\.players\\(\\)\\.isEmpty\\(\\);"
+                + ".*if \\(mayLoadChunks && state\\.requests\\.size\\(\\) < MAX_DRAIN_REQUESTS"
+                + ".*StartupRequest request = requestChunk\\(level, key, \"drain\"\\);.*"),
+                "启动结束但还没有玩家时，长城不能主动申请 FULL 区块");
+    }
+
     /** 行为由端口测试验证，这里补实际入口和结案接线，避免只测Fake而生产继续跳过。 */
     @Test void firstPaintingUsesPublishedPlanAndOnlyCompleteSweepSettles() throws IOException {
         String root="src/main/java/local/plaincraft/greatwall/generation/";

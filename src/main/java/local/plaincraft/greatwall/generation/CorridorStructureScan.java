@@ -207,8 +207,10 @@ public final class CorridorStructureScan {
         // structure manager), and RoadWeaver runs the same call in a parallel native-structure pool,
         // so the corridor scan uses the same adaptive budget instead of a fixed small pool.
         int parallelism = adaptiveScanWorkers();
+        // 维度级群系交集只取决于结构集，与候选坐标无关；保留观察口径但不逐候选重查注册表。
+        var impossibleInDimension = impossibleSets(level, candidates);
         if (parallelism <= 1 || candidates.size() < 64) {
-            return resolveBoxesSerial(level, candidates, progress);
+            return resolveBoxesSerial(level, candidates, impossibleInDimension, progress);
         }
         var done = new java.util.concurrent.atomic.AtomicInteger();
         var seedParts = java.util.Collections.synchronizedList(new ArrayList<List<OwnedBox>>());
@@ -237,7 +239,7 @@ public final class CorridorStructureScan {
                         int from = cursor.getAndAdd(batch);
                         if (from >= candidates.size()) break;
                         int to = Math.min(candidates.size(), from + batch);
-                        collected.addAll(resolveBoxesSerial(level, candidates.subList(from, to), count -> {
+                        collected.addAll(resolveBoxesSerial(level, candidates.subList(from, to), impossibleInDimension, count -> {
                             int d = done.addAndGet(count);
                             if (progress != null) progress.accept(d);
                         }));
@@ -326,7 +328,23 @@ public final class CorridorStructureScan {
     public static long[] filterYield() {
         return new long[] {FILTER_TESTED.sum(), FILTER_WOULD_SKIP.sum()};
     }
+    private static Set<Holder<StructureSet>> impossibleSets(ServerLevel level, List<Candidate> candidates) {
+        var biomes = level.getChunkSource().getGenerator().getBiomeSource().possibleBiomes();
+        Set<Holder<StructureSet>> checked = new HashSet<>();
+        Set<Holder<StructureSet>> impossible = new HashSet<>();
+        for (var candidate : candidates) {
+            var set = candidate.structureSet();
+            if (!checked.add(set) || set.value().structures().isEmpty()) continue;
+            if (set.value().structures().stream()
+                    .noneMatch(entry -> entry.structure().value().biomes().stream().anyMatch(biomes::contains))) {
+                impossible.add(set);
+            }
+        }
+        return Set.copyOf(impossible);
+    }
+
     private static List<OwnedBox> resolveBoxesSerial(ServerLevel level, List<Candidate> candidates,
+                                                      Set<Holder<StructureSet>> impossibleInDimension,
                                                       java.util.function.IntConsumer sliceProgress) {
         if (level == null || candidates == null || candidates.isEmpty()) return List.of();
         var generatorState = level.getChunkSource().getGeneratorState();
@@ -346,19 +364,9 @@ public final class CorridorStructureScan {
             ChunkPos pos = candidate.startChunk();
             List<StructureSet.StructureSelectionEntry> entries = structureSet.structures();
             if (entries.isEmpty()) continue;
-            // DRY_RUN only: count the candidates a dimension-level biome filter would never generate.
-            // Nothing is skipped here - the count is what decides whether the filter is worth enabling.
-            {
-                boolean possible = false;
-                for (var entry : entries) {
-                    for (var holder : entry.structure().value().biomes()) {
-                        if (generator.getBiomeSource().possibleBiomes().contains(holder)) { possible = true; break; }
-                    }
-                    if (possible) break;
-                }
-                FILTER_TESTED.increment();
-                if (!possible) FILTER_WOULD_SKIP.increment();
-            }
+            // 整合包实测命中为零，暂只记账，不改变原生加权选择或跳过任何结构。
+            FILTER_TESTED.increment();
+            if (impossibleInDimension.contains(setHolder)) FILTER_WOULD_SKIP.increment();
             ArrayList<StructureSet.StructureSelectionEntry> remaining =
                     entries.size() == 1 ? null : new ArrayList<>(entries);
             var random = STRUCTURE_SELECTION_RANDOM.get();

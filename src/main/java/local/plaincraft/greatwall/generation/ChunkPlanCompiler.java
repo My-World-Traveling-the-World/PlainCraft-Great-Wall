@@ -1,5 +1,6 @@
 package local.plaincraft.greatwall.generation;
 
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -39,8 +40,9 @@ public final class ChunkPlanCompiler {
     public Window window() { return new Window(); }
 
     public final class Window {
-        // 同一批中邻接 owner 先后使用同组，只保留最近一组；旧组只在仍执行的 worker 手里。
+        // 并行裁切常在两组相邻构件之间交错；只多留上一组，避免把整窗解析结果留在内存。
         private Entry recent;
+        private Entry previous;
         private long resolutions;
 
         /** 对比实际解析次数和 owner 数，确认窗口确实省下重复工作。 */
@@ -62,10 +64,18 @@ public final class ChunkPlanCompiler {
             Entry entry;
             boolean prepare;
             synchronized (this) {
-                prepare = recent == null || !recent.matches(owner.dimension(), recipeHash, cells);
-                if (prepare) {
+                if (recent != null && recent.matches(owner.dimension(), recipeHash, cells)) {
+                    prepare = false;
+                } else if (previous != null && previous.matches(owner.dimension(), recipeHash, cells)) {
+                    Entry hit = previous;
+                    previous = recent;
+                    recent = hit;
+                    prepare = false;
+                } else {
+                    previous = recent;
                     recent = new Entry(owner.dimension(), recipeHash, List.copyOf(cells));
                     resolutions++;
+                    prepare = true;
                 }
                 entry = recent;
             }
@@ -105,6 +115,8 @@ public final class ChunkPlanCompiler {
 
     private record Resolved(Map<SiteId, ComponentVoxels> components, Map<Point3i, VoxelIntent> voxels,
             Map<ChunkKey, List<VoxelIntent>> byOwner, Map<Point3i, BlockEntityIntent> entities,
+            Map<ChunkKey, List<ComponentVoxels>> componentsByOwner,
+            Map<ChunkKey, List<SpawnSlot>> slotsByOwner,
             TreeSet<String> inputs, TreeSet<String> t0, long revision) { }
 
     private static Resolved resolve(String dimension, String recipeHash, List<RealizationCell> cells, boolean indexOwners) {
@@ -122,7 +134,28 @@ public final class ChunkPlanCompiler {
             }
         }
         var logical=new TreeMap<Point3i,VoxelIntent>(POS);
-        for(var c:components.values()) for(var v:c.voxels()) logical.merge(v.pos(),v,ChunkPlanCompiler::winner);
+        Map<ChunkKey, List<ComponentVoxels>> componentsByOwner = indexOwners ? new HashMap<>() : null;
+        Map<ChunkKey, List<SpawnSlot>> slotsByOwner = indexOwners ? new HashMap<>() : null;
+        var owners = indexOwners ? new LongOpenHashSet() : null;
+        for (var c : components.values()) {
+            // 区块元数据按原始构件占地计算：KEEP 和输掉落块裁决的体素也要保留构件状态。
+            for (var v : c.voxels()) {
+                logical.merge(v.pos(), v, ChunkPlanCompiler::winner);
+                if (owners != null) owners.add((long)(v.pos().x() >> 4) << 32 | (v.pos().z() >> 4) & 0xffffffffL);
+            }
+            if (owners != null) {
+                var it = owners.iterator();
+                while (it.hasNext()) {
+                    long pos = it.nextLong();
+                    var owner = new ChunkKey(dimension, (int)(pos >> 32), (int)pos);
+                    componentsByOwner.computeIfAbsent(owner, unused -> new ArrayList<>()).add(c);
+                }
+                owners.clear();
+                // 刷怪点独立归属，实际可站脚性仍等最终体素裁决。
+                for (var slot : c.spawnSlots()) slotsByOwner.computeIfAbsent(
+                        chunkAt(dimension, slot.feet()), unused -> new ArrayList<>()).add(slot);
+            }
+        }
         var authored=new java.util.HashSet<SiteId>();
         for(var c:components.values())if(c.blockEntities().stream().anyMatch(e->e.fields().containsKey(PlannedBlockEntityNbt.DECORATION)))
             authored.add(c.id());
@@ -142,10 +175,10 @@ public final class ChunkPlanCompiler {
         Map<ChunkKey, List<VoxelIntent>> byOwner = indexOwners ? new HashMap<>() : null;
         if (indexOwners) for (var v : resolved.values()) {
             if (v.kind() == IntentKind.KEEP) continue;
-            var key = new ChunkKey(dimension, Math.floorDiv(v.pos().x(), 16), Math.floorDiv(v.pos().z(), 16));
+            var key = chunkAt(dimension, v.pos());
             byOwner.computeIfAbsent(key, unused -> new ArrayList<>()).add(v);
         }
-        return new Resolved(components, resolved, byOwner, entities, inputs, t0, revision);
+        return new Resolved(components, resolved, byOwner, entities, componentsByOwner, slotsByOwner, inputs, t0, revision);
     }
 
     private static ChunkWritePlan compileOwner(ChunkKey owner, String recipeHash, Map<Point3i, String> beforeStates,
@@ -183,10 +216,14 @@ public final class ChunkPlanCompiler {
             if(v.walkable()&&!solid(resolved.get(f))&&!solid(resolved.get(new Point3i(f.x(),f.y()+1,f.z())))) feet.add(f);
         }
         var slots=new ArrayList<SpawnSlot>();var states=new TreeMap<SiteId,DecayState>(SITE);
-        for(var c:components.values()) {
-            boolean intersects=c.voxels().stream().anyMatch(v->owns(owner,v.pos()));
-            if(intersects) states.put(c.id(),c.realizedState());
-            for(var s:c.spawnSlots()) if(owns(owner,s.feet())&&feet.contains(s.feet())) slots.add(s);
+        if (input.componentsByOwner() == null) {
+            for (var c : components.values()) {
+                if (c.voxels().stream().anyMatch(v -> owns(owner, v.pos()))) states.put(c.id(), c.realizedState());
+                for (var s : c.spawnSlots()) if (owns(owner, s.feet()) && feet.contains(s.feet())) slots.add(s);
+            }
+        } else {
+            for (var c : input.componentsByOwner().getOrDefault(owner, List.of())) states.put(c.id(), c.realizedState());
+            for (var s : input.slotsByOwner().getOrDefault(owner, List.of())) if (feet.contains(s.feet())) slots.add(s);
         }
         slots.sort(Comparator.comparing(SpawnSlot::site,SITE).thenComparingInt(SpawnSlot::slot));
         String inputHash=hash(recipeHash+"\n"+owner+"\n"+String.join("\n",input.inputs()));
@@ -292,6 +329,9 @@ public final class ChunkPlanCompiler {
         return new VoxelIntent(v.pos(),v.kind(),v.part(),new local.plaincraft.greatwall.model.WallTypes.BlockSpec(v.state().id(),properties),v.component(),v.priority(),v.required(),v.walkable());
     }
     private static boolean solid(VoxelIntent v){return v!=null&&v.kind()==IntentKind.SOLID;}
+    private static ChunkKey chunkAt(String dimension, Point3i p) {
+        return new ChunkKey(dimension, Math.floorDiv(p.x(), 16), Math.floorDiv(p.z(), 16));
+    }
     private static boolean owns(ChunkKey key,Point3i p){return Math.floorDiv(p.x(),16)==key.x()&&Math.floorDiv(p.z(),16)==key.z();}
     private static boolean replaceableVoid(String token) {
         int end=token.indexOf('{');String id=end<0?token:token.substring(0,end);
