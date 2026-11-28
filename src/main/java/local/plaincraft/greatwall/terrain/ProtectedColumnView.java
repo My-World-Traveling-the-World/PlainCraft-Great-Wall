@@ -73,6 +73,12 @@ final class ProtectedColumnView {
             public int highestNonPlantFeet() { return original.highestNonPlantFeet(); }
             public String hash() { return original.hash(); }
             public boolean naturalThinIce(int y) { return original.naturalThinIce(y) && !protectedAt(y); }
+            public boolean protectedBetween(int from, int to) {
+                // 保护盒与深地基做区间相交，不随地基深度线性扫每个方块。
+                if (original.protectedBetween(from, to)) return true;
+                for (Bounds box : local) if (box.minY() < to && from < box.maxYExclusive()) return true;
+                return false;
+            }
             public boolean protectedAt(int y) {
                 if (original.protectedAt(y)) return true;
                 for (Bounds box : local) if (y >= box.minY() && y < box.maxYExclusive()) return true;

@@ -279,14 +279,21 @@ public final class RealizationPlanner {
             if(contract==null||importedProjection!=null&&(contract.globalSQ8()<stations.getFirst().globalSQ8()
                     ||contract.globalSQ8()>=stations.getLast().globalSQ8()))continue;
             if(contract.globalSQ8()<Math.max(0,from-160L*256)||contract.globalSQ8()>=to+160L*256)continue;
-            var value=ProtectedColumnView.use(e.getValue(),e.getKey(),input.protectedBounds(),
-                    column->probe.probe(column,contract.walkY(),bounds));
-            supported.put(new Point3i(e.getKey().x(),contract.walkY(),e.getKey().z()),value);
-            // 配套墙逐列从真实地表填起，不能再用旧 20 格底座的 12 格挖深阈值裁断高平台。
-            if(contract.lateralCell()>=-5&&contract.lateralCell()<5&&value.kind()!=ProbeKind.SUPPORTED&&value.kind()!=ProbeKind.WATER
-                    &&(importedProjection==null||value.kind()!=ProbeKind.NO_SUPPORT)){
+            var gap=ProtectedColumnView.use(e.getValue(),e.getKey(),input.protectedBounds(),column->{
+                var value=probe.probe(column,contract.walkY(),bounds);
+                supported.put(new Point3i(e.getKey().x(),contract.walkY(),e.getKey().z()),value);
+                int lateral=contract.lateralCell();
+                if(importedProjection!=null && Math.abs(lateral)<=5) {
+                    // 预检按实际净空及深地基验收；有冲突交给收口流程，保留单元中其余区块。
+                    return ImportedConstructionGuard.wallBreak(column,contract.walkY(),lateral,bounds);
+                }
+                if(importedProjection==null && lateral>=-5 && lateral<5
+                        && value.kind()!=ProbeKind.SUPPORTED && value.kind()!=ProbeKind.WATER) return reason(value.kind());
+                return null;
+            });
+            if(gap!=null) {
                 long bin=Math.floorDiv(contract.globalSQ8(),256)*256;
-                breaks.add(new BreakInterval(new ArcInterval(Math.max(0,bin-8L*256),bin+9L*256),reason(value.kind()),BreakScope.REALIZED));
+                breaks.add(new BreakInterval(new ArcInterval(Math.max(0,bin-8L*256),bin+9L*256),gap,BreakScope.REALIZED));
             }
         }
         var occupied=new ArrayList<ArcInterval>();

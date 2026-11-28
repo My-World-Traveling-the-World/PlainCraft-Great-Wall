@@ -37,7 +37,8 @@ public final class WindowHeightEnvelope {
             for (int dz = -8; sampled && dz <= 8; dz++) for (int dx = -8; dx <= 8; dx++) {
                 var column = terrain.at(x + dx, z + dz);
                 if (column == null) throw new WallFailure(FailureCode.T0_MISSING, "缓坡求解缺少墙宽精采列");
-                target = Math.max(target, column.groundTopY() + 20);
+                // 只把水面当作马道净空的下界，避免在水面上再多抬一层墙高。
+                target = Math.max(target, Math.max(column.groundTopY() + 20, column.waterTopY().orElse(Integer.MIN_VALUE)));
             }
             final int height = target;
             nodes.merge(station.globalSQ8(), new Node(station, height),

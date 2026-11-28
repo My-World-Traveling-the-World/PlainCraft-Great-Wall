@@ -11,6 +11,18 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 final class ImportedConstructionGuard {
     private ImportedConstructionGuard() {}
 
+    static BreakReason wallBreak(SurfaceProbe.ColumnView column, int walkY, int lateral, DimensionBounds limits) {
+        int surface = column.highestNonPlantFeet();
+        // 与配套墙同一个写入范围：从实际地表到垛口。仅测马道附近会漏掉深地基。
+        if (surface < limits.minY() || walkY + 3 > limits.maxYExclusive()) return BreakReason.WORLD_LIMIT;
+        if (surface >= walkY) return BreakReason.BURIED;
+        if (column.protectedBetween(surface, walkY + 3)) return BreakReason.STRUCTURE_CONFLICT;
+        // 两层马道净空不能是岩石或水；冻结高度已抬过正常河面，这里保留终态边界。
+        if (Math.abs(lateral) < 5 && (!column.airOrReplaceablePlant(walkY) || !column.airOrReplaceablePlant(walkY + 1)))
+            return BreakReason.BURIED;
+        return null;
+    }
+
     static ComponentVoxels validate(ComponentVoxels value, RealizationPlanner.Input input, DimensionBounds limits) {
         var columns = new HashMap<Point3i, SurfaceProbe.ColumnView>();
         for (var voxel : value.voxels()) {

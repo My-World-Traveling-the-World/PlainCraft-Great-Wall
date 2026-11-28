@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import local.plaincraft.greatwall.diagnostics.AllocationBudget;
+import local.plaincraft.greatwall.diagnostics.CodecIO;
 import local.plaincraft.greatwall.diagnostics.CodecMemory;
 import local.plaincraft.greatwall.diagnostics.CompiledAllocation;
 import local.plaincraft.greatwall.geometry.CanonicalCodec;
@@ -132,6 +133,29 @@ class StreamingEvidenceBudgetTest {
                 return 0L;
             }, Long::longValue);
         }
+    }
+
+    @Test void tallOwnerProofAboveEightMiBHashesWritesAndReopensWithoutDroppingBlocks() throws Exception {
+        var voxels = new ArrayList<VoxelIntent>();
+        var proofs = new ArrayList<BlockProof>();
+        var state = new BlockSpec("minecraft:stone_bricks",Map.of());
+        // 16×16 的唯一列位置，200 格高；不能靠重复同一坐标伪造大包。
+        for (int y=5800;y<6000;y++) for (int z=-16;z<0;z++) for (int x=-16;x<0;x++) {
+            var pos = new Point3i(x,y,z);
+            voxels.add(new VoxelIntent(pos,IntentKind.SOLID,Part.FOUNDATION,state,SITE,400,true,false));
+            proofs.add(new BlockProof(pos,"minecraft:air{}:fluid=minecraft:empty:be=false",
+                    "minecraft:stone_bricks{}:fluid=minecraft:empty:be=false",false,SITE));
+        }
+        var raw = new ChunkWritePlan(OWNER,H,H,voxels,proofs,List.of(),List.of(),List.of(),List.of(),WriteMetadata.EMPTY,H);
+        var hash = CanonicalCodec.writePlanHash(raw);
+        var value = new ChunkWritePlan(OWNER,H,H,voxels,proofs,List.of(),List.of(),List.of(),List.of(),WriteMetadata.EMPTY,hash);
+        byte[] bytes = CanonicalCodec.writePlan(value);
+        assertTrue(bytes.length > 8*1024*1024);
+        assertEquals(hash,CodecIO.sha256(bytes));
+        var store = ChunkEvidenceStore.production(directory);
+        store.persistPlan(value);
+        store.persistPlan(value); // 验证已存在的大记录也走同一上限。
+        assertEquals(value,ChunkEvidenceStore.production(directory).readPlan(OWNER).orElseThrow());
     }
 
     @Test void repeatedLargePlanPersistenceUsesBoundedScratchAndNeverOverwrites() throws Exception {

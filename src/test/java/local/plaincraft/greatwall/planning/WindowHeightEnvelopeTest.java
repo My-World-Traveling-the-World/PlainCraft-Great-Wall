@@ -29,6 +29,32 @@ class WindowHeightEnvelopeTest {
         for (int x = 0; x < 60; x++) assertTrue(Math.abs(projection.contract(x + 4, 0).walkY()
                 - projection.contract(x, 0).walkY()) <= 1, "四格坡度失守 x=" + x);
     }
+    @Test void continuousRiverKeepsWalkwayOverWaterAndFillsFromItsBed() {
+        ImportedProductionPlanTest.bootstrap();
+        var recipe = AdaptiveSiteSearchTest.recipe();
+        var columns = new ArrayList<WallFinePlanner.FineColumn>();
+        for (int x = -8; x <= 2056; x++) for (int z = -8; z <= 8; z++)
+            columns.add(new WallFinePlanner.FineColumn(x, z, 0, x >= 1008 && x <= 1040
+                    ? new ColumnSample(42, OptionalInt.of(94), OptionalInt.of(42), "minecraft:river", Quality.REFERENCE, false)
+                    : AnalyticTerrainOracle.dry(64)));
+        var fine = FineHeightIndex.of(columns,true);
+        var result = WindowHeightEnvelope.solve(recipe,List.of(plan(recipe,0)),fine).getFirst();
+        var provider = new PlanningColumnProvider(fine);
+        var key = new CellKey(recipe.recipeHash(),recipe.dimension(),16);
+        var window = new PlanWindow(List.of(result));
+        var coverage = new local.plaincraft.greatwall.generation.CoveragePlanner(3,true).prepareOwners(window);
+        var input = new local.plaincraft.greatwall.terrain.RealizationPlanner.Input(key,window,Map.of(),
+                provider.columnsFor(coverage.forCell(key)),List.of(),Map.of(),0,H);
+        var resolved = ImportedProductionPlanTest.planner(recipe).resolve(input);
+        var wall = resolved.components().stream().filter(c->c.id().kind()==SiteKind.WALL).findFirst().orElseThrow();
+        assertTrue(wall.voxels().stream().anyMatch(v->v.pos().equals(new Point3i(1025,42,0)) && v.part()==Part.FOUNDATION));
+        assertEquals(94, result.stations().stations().stream().mapToInt(Station::walkY).max().orElseThrow(),
+                "水面只约束净空，不能额外把全段抬高一层墙");
+        assertTrue(wall.voxels().stream().anyMatch(v->v.pos().x()==1025 && v.pos().z()==0
+                && v.pos().y()>=93 && v.walkable()));
+        assertTrue(resolved.breaks().isEmpty());
+    }
+
     @Test void aBuildingPlatformRisesAsOneLevelInsteadOfKeepingAnOldHardHeight() {
         var recipe = AdaptiveSiteSearchTest.recipe();
         var original = plan(recipe, 0);
@@ -98,7 +124,7 @@ class WindowHeightEnvelopeTest {
         }
         assertEquals(result, WindowHeightEnvelope.solve(recipe, result, FineHeightIndex.of(columns, true)), "重复求解不能越抬越高");
     }
-    private static SegmentPlan plan(WorldRecipe recipe, int segment) {
+    static SegmentPlan plan(WorldRecipe recipe, int segment) {
         var stations = new ArrayList<Station>();
         for (int x = segment * 2048; x <= (segment + 1) * 2048; x += 4)
             stations.add(new Station(x * 256L, new Point2q(x * 256L + 128, 128), 84, 0));

@@ -16,6 +16,8 @@ import local.plaincraft.greatwall.model.WallTypes.*;
 /** Version-one semantic bytes. Only the root object's self hash is omitted. */
 public final class CanonicalCodec {
     private static final int MIB = 1024 * 1024;
+    // 高维度整列地基同时保存方块和前后凭证；扩大单计划上限，保留原编码和归属检查。
+    public static final int WRITE_PLAN_LIMIT = 64 * MIB;
     private static final String ZERO = "0".repeat(64);
     private static final Comparator<String> UTF8 = CanonicalCodec::compareUtf8;
 
@@ -136,15 +138,15 @@ public final class CanonicalCodec {
     }
 
     public static byte[] writePlan(ChunkWritePlan value) {
-        return encode(8 * MIB, out -> writePlanBody(out, value));
+        return encode(WRITE_PLAN_LIMIT, out -> writePlanBody(out, value));
     }
 
     public static void writePlanTo(java.io.OutputStream target, ChunkWritePlan value) throws IOException {
-        CodecIO.write(target, 8 * MIB, out -> { out.writeInt(1); writePlanBody(out, value); });
+        CodecIO.write(target, WRITE_PLAN_LIMIT, out -> { out.writeInt(1); writePlanBody(out, value); });
     }
 
     public static String hashWritePlan(ChunkWritePlan value) {
-        return CodecIO.hash(8 * MIB, out -> { out.writeInt(1); writePlanBody(out, value); });
+        return CodecIO.hash(WRITE_PLAN_LIMIT, out -> { out.writeInt(1); writePlanBody(out, value); });
     }
     public static String writePlanHash(ChunkWritePlan value) { return hashWritePlan(value); }
 
@@ -193,7 +195,7 @@ public final class CanonicalCodec {
 
     public static ChunkWritePlan readWritePlan(byte[] payload) throws IOException {
         try (var memory = CodecMemory.open()) {
-        var decoded = decode(payload, 8 * MIB, in -> {
+        var decoded = decode(payload, WRITE_PLAN_LIMIT, in -> {
             var owner = chunk(in);
             String recipe = string(in), input = string(in);
             var voxels = list(in, 8 * MIB / 12, CanonicalCodec::voxel);

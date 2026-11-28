@@ -178,6 +178,45 @@ class ImportedProductionPlanTest {
         }
     }
 
+    @Test void deepFoundationConflictAtOuterParapetCutsOnlyItsLocalWallAndKeepsBothSides() {
+        var recipe = AdaptiveSiteSearchTest.recipe();
+        var plan = WindowHeightEnvelopeTest.plan(recipe, 0);
+        var fine = new ArrayList<WallFinePlanner.FineColumn>();
+        for (int x = 800; x <= 1260; x++) for (int z = -8; z <= 8; z++)
+            fine.add(new WallFinePlanner.FineColumn(x, z, 0, AnalyticTerrainOracle.dry(64)));
+        var cell = new CellKey(recipe.recipeHash(), recipe.dimension(), 16);
+        var window = new PlanWindow(List.of(plan));
+        var coverage = new CoveragePlanner(3, true).prepareOwners(window);
+        var provider = new PlanningColumnProvider(FineHeightIndex.of(fine, true));
+        var columns = new HashMap<>(provider.columnsFor(coverage.forCell(cell)));
+        var open = new Fixture(recipe, plan, null, columns);
+        var planner = planner(recipe);
+        var control = planner.resolve(input(open, 16, List.of()));
+        var ribbon = new ImportedRibbonProjection(plan.stations().stations(), List.of());
+        // 从本来可建的真实外侧墙选一列，避免夹具从第一步起就不合法。
+        var hit = control.components().stream().filter(c -> c.id().kind() == SiteKind.WALL)
+                .flatMap(c -> c.voxels().stream()).filter(v -> {
+                    var c = ribbon.contract(v.pos().x(), v.pos().z());
+                    return c.lateralCell() == 5 && v.pos().x() == 1055;
+                }).findFirst().orElseThrow().pos();
+        var contract = ribbon.contract(hit.x(), hit.z());
+        int y = contract.walkY()-45;
+        var col = new Point3i(hit.x(), 0, hit.z());
+        columns.put(col, new PlanningColumnView(col.x(), col.z(), AnalyticTerrainOracle.dry(y-2)));
+        var obstacles = List.of(new Bounds(hit.x(), y, hit.z(), hit.x()+1, y+1, hit.z()+1));
+        var disputed = input(open, 16, obstacles);
+        var gaps = planner.inspectBreaks(disputed);
+        assertTrue(gaps.stream().anyMatch(g -> g.reason() == BreakReason.STRUCTURE_CONFLICT
+                && g.range().fromQ8() <= contract.globalSQ8() && g.range().toQ8() > contract.globalSQ8()));
+        var result = planner.resolve(disputed);
+        var wall = result.components().stream().filter(c -> c.id().kind() == SiteKind.WALL).findFirst().orElseThrow();
+        assertTrue(wall.voxels().stream().noneMatch(v -> v.pos().equals(new Point3i(hit.x(), y, hit.z()))));
+        var floors = wall.voxels().stream().filter(VoxelIntent::walkable)
+                .map(v -> ribbon.contract(v.pos().x(), v.pos().z()).globalSQ8()).toList();
+        assertTrue(floors.stream().anyMatch(s -> s < 1034L*256), "冲突前仍要有真实马道");
+        assertTrue(floors.stream().anyMatch(s -> s > 1078L*256), "冲突后仍要有真实马道");
+    }
+
     @Test void actualRoofProtectionRejectsTheWholeBuildingWithAReason() {
         var f = fixture(Asset.GATE, 0);
         var body = planner(f.recipe()).resolve(input(f, 8, List.of())).components().stream()

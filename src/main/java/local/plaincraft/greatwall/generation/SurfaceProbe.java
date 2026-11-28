@@ -10,6 +10,11 @@ public final class SurfaceProbe {
         String state(int y);
         boolean solidSupport(int y);
         boolean protectedAt(int y);
+        /** 长城地基可延至低谷；按完整的半开写入区间检查保护。 */
+        default boolean protectedBetween(int from, int to) {
+            for (int y = from; y < to; y++) if (protectedAt(y)) return true;
+            return false;
+        }
         boolean water(int y);
         boolean airOrReplaceablePlant(int y);
         int highestNonPlantFeet();

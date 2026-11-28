@@ -65,6 +65,9 @@ public final class PlanningColumnView implements SurfaceProbe.ColumnView {
         return false; // protection is layered by ProtectedColumnView from planning structure boxes
     }
 
+    // 此视图只携带原始精采地形；真实结构区间由外层视图按盒查询。
+    @Override public boolean protectedBetween(int from, int to) { return false; }
+
     @Override
     public boolean water(int y) {
         return sample.waterTopY().isPresent()

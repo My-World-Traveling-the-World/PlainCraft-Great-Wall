@@ -22,6 +22,7 @@ public final class ChunkEvidenceStore {
     private static final int MAGIC = 0x50475430;
     private static final int LIMIT = 2 * 1024 * 1024;
     private static final int RECORD_LIMIT = 8 * 1024 * 1024;
+    private static final int PLAN_MAGIC = 0x50475031;
     private final Path root;
     private final boolean partitioned;
 
@@ -202,13 +203,13 @@ public final class ChunkEvidenceStore {
     public void persistPlan(ChunkWritePlan plan) throws IOException {
         try (var memory = CodecMemory.open()) {
             CanonicalCodec.validateWritePlan(plan);
-            persistRecord(directory(plan.owner()).resolve("build-proof.bin"), 0x50475031,
+            persistRecord(directory(plan.owner()).resolve("build-proof.bin"), PLAN_MAGIC,
                     out -> CanonicalCodec.writePlanTo(out, plan), plan.hash());
         }
     }
     public Optional<ChunkWritePlan> readPlan(ChunkKey key) throws IOException {
         try (var memory = CodecMemory.open()) {
-            var bytes = readRecord(directory(key).resolve("build-proof.bin"), 0x50475031);
+            var bytes = readRecord(directory(key).resolve("build-proof.bin"), PLAN_MAGIC);
             if (bytes.isEmpty()) return Optional.empty();
             var value = CanonicalCodec.readWritePlan(bytes.get());
             if (!value.owner().equals(key)) throw new IOException("proof owner mismatch");
@@ -338,9 +339,14 @@ public final class ChunkEvidenceStore {
         return memory.keep(result, retainedBytes(result));
     }
 
+    // 只扩大施工计划凭证；地形、保护和出口记录仍使用原上限。
+    private static int recordLimit(int magic) {
+        return magic == PLAN_MAGIC ? CanonicalCodec.WRITE_PLAN_LIMIT : RECORD_LIMIT;
+    }
+
     private void persistRecord(Path path, int magic, CodecIO.Writer writer, String expectedHash) throws IOException {
         try (var memory = CodecMemory.open()) {
-            var summary = CodecIO.summarize(RECORD_LIMIT, writer);
+            var summary = CodecIO.summarize(recordLimit(magic), writer);
             if (expectedHash != null && !summary.sha256().equals(expectedHash)) throw new IOException("authoritative evidence hash mismatch");
             if (Files.exists(path)) { verifyRecord(path, magic, summary); return; }
             Files.createDirectories(path.getParent()); Path temporary = Files.createTempFile(path.getParent(), "proof-", ".tmp");
@@ -349,7 +355,7 @@ public final class ChunkEvidenceStore {
                     var out = new DataOutputStream(new BufferedOutputStream(Channels.newOutputStream(channel), 8192));
                     out.writeInt(magic); out.writeInt(1); out.writeInt(summary.length()); out.writeLong(summary.crc());
                     out.write(HexFormat.of().parseHex(summary.sha256()));
-                    var actual = CodecIO.writeAndSummarize(out, RECORD_LIMIT, writer);
+                    var actual = CodecIO.writeAndSummarize(out, recordLimit(magic), writer);
                     if (!actual.equals(summary)) throw new IOException("authoritative payload changed between passes");
                     out.flush(); channel.force(true);
                 }
@@ -361,11 +367,11 @@ public final class ChunkEvidenceStore {
         try (var memory = CodecMemory.open()) {
             if (!Files.exists(path)) return Optional.empty();
             long length = Files.size(path);
-            if (length < 52 || length > RECORD_LIMIT + 52L) throw new IOException("authoritative evidence length");
+            if (length < 52 || length > recordLimit(magic) + 52L) throw new IOException("authoritative evidence length");
             try (var in = new DataInputStream(Files.newInputStream(path))) {
                 if (in.readInt() != magic || in.readInt() != 1) throw new IOException("authoritative evidence header");
                 int size = in.readInt(); long checksum = in.readLong();
-                if (size < 0 || size > RECORD_LIMIT || length != size + 52L) throw new IOException("authoritative evidence length");
+                if (size < 0 || size > recordLimit(magic) || length != size + 52L) throw new IOException("authoritative evidence length");
                 byte[] sha = new byte[32]; in.readFully(sha);
                 CodecMemory.charge(CodecMemory.arrayBytes(size));
                 byte[] bytes = new byte[size]; in.readFully(bytes);
@@ -380,11 +386,11 @@ public final class ChunkEvidenceStore {
     private void verifyRecord(Path path, int magic, CodecIO.Summary expected) throws IOException {
         try (var memory = CodecMemory.open(); var scratch = CodecMemory.scratch(CodecMemory.arrayBytes(8192))) {
             long length = Files.size(path);
-            if (length < 52 || length > RECORD_LIMIT + 52L) throw new IOException("authoritative evidence length");
+            if (length < 52 || length > recordLimit(magic) + 52L) throw new IOException("authoritative evidence length");
             try (var in = new DataInputStream(Files.newInputStream(path))) {
                 if (in.readInt() != magic || in.readInt() != 1) throw new IOException("authoritative evidence header");
                 int size = in.readInt(); long checksum = in.readLong();
-                if (size < 0 || size > RECORD_LIMIT || length != size + 52L) throw new IOException("authoritative evidence length");
+                if (size < 0 || size > recordLimit(magic) || length != size + 52L) throw new IOException("authoritative evidence length");
                 byte[] sha = new byte[32]; in.readFully(sha);
                 byte[] buffer = new byte[8192]; int remaining = size;
                 var digest = CodecIO.digest(); var crc = new CRC32C();
